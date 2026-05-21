@@ -1,8 +1,8 @@
 {
-  "name": "multiversion-scoped",
+  "name": "multiversion-scoped-real",
   "version": "1.0.0",
   "dependencies": {
-    "@babel/helper-string-parser": "^7.24.0",
-    "legacy-parser": "^1.0.0"
+    "@octokit/endpoint": "9.0.6",
+    "@octokit/request-error": "3.0.3"
   }
 }

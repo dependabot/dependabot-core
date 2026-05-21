@@ -290,30 +290,27 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
     context "with multiple versions of a dependency that each have their own subdependencies" do
       let(:dependency_files) { project_dependency_files("grapher/npm_with_multiversion_subdeps_nested") }
 
-      it "includes both versions as separate resolved dependencies" do
+      it "includes both versions of kind-of as separate resolved dependencies" do
         resolved_dependencies = grapher.resolved_dependencies
 
-        is_number6 = resolved_dependencies["pkg:npm/is-number@6.0.0"]
-        expect(is_number6).not_to be_nil
-        expect(is_number6.direct).to be(true)
+        kind_of6 = resolved_dependencies["pkg:npm/kind-of@6.0.3"]
+        expect(kind_of6).not_to be_nil
+        expect(kind_of6.direct).to be(true)
+        expect(kind_of6.dependencies).to eq([])
 
-        is_number7 = resolved_dependencies["pkg:npm/is-number@7.0.0"]
-        expect(is_number7).not_to be_nil
-        expect(is_number7.direct).to be(false)
+        kind_of3 = resolved_dependencies["pkg:npm/kind-of@3.2.2"]
+        expect(kind_of3).not_to be_nil
+        expect(kind_of3.direct).to be(false)
+        expect(kind_of3.dependencies).to include("pkg:npm/is-buffer@1.1.6")
       end
 
-      it "assigns the correct subdependencies to each version" do
+      it "correctly maps the dependency chain through is-number to kind-of@3" do
         resolved_dependencies = grapher.resolved_dependencies
 
-        # is-number@6.0.0 depends on kind-of
-        is_number6 = resolved_dependencies["pkg:npm/is-number@6.0.0"]
-        expect(is_number6).not_to be_nil
-        expect(is_number6.dependencies).to include("pkg:npm/kind-of@3.2.2")
-
-        # is-number@7.0.0 depends on is-finite
-        is_number7 = resolved_dependencies["pkg:npm/is-number@7.0.0"]
-        expect(is_number7).not_to be_nil
-        expect(is_number7.dependencies).to include("pkg:npm/is-finite@1.1.0")
+        is_number = resolved_dependencies["pkg:npm/is-number@3.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.direct).to be(true)
+        expect(is_number.dependencies).to include("pkg:npm/kind-of@3.2.2")
       end
     end
 
@@ -344,16 +341,27 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
     context "with a yarn lockfile with multiple versions that each have their own subdependencies" do
       let(:dependency_files) { project_dependency_files("grapher/yarn_with_multiversion_subdeps_nested") }
 
-      it "assigns the correct subdependencies to each version" do
+      it "includes both versions of kind-of as separate resolved dependencies" do
         resolved_dependencies = grapher.resolved_dependencies
 
-        is_number6 = resolved_dependencies["pkg:npm/is-number@6.0.0"]
-        expect(is_number6).not_to be_nil
-        expect(is_number6.dependencies).to include("pkg:npm/kind-of@3.2.2")
+        kind_of6 = resolved_dependencies["pkg:npm/kind-of@6.0.3"]
+        expect(kind_of6).not_to be_nil
+        expect(kind_of6.direct).to be(true)
+        expect(kind_of6.dependencies).to eq([])
 
-        is_number7 = resolved_dependencies["pkg:npm/is-number@7.0.0"]
-        expect(is_number7).not_to be_nil
-        expect(is_number7.dependencies).to include("pkg:npm/is-finite@1.1.0")
+        kind_of3 = resolved_dependencies["pkg:npm/kind-of@3.2.2"]
+        expect(kind_of3).not_to be_nil
+        expect(kind_of3.direct).to be(false)
+        expect(kind_of3.dependencies).to include("pkg:npm/is-buffer@1.1.6")
+      end
+
+      it "correctly maps the dependency chain through is-number to kind-of@3" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        is_number = resolved_dependencies["pkg:npm/is-number@3.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.direct).to be(true)
+        expect(is_number.dependencies).to include("pkg:npm/kind-of@3.2.2")
       end
     end
 
@@ -384,44 +392,59 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
     context "with a pnpm lockfile with multiple versions that each have their own subdependencies" do
       let(:dependency_files) { project_dependency_files("grapher/pnpm_with_multiversion_subdeps_nested") }
 
-      it "assigns the correct subdependencies to each version" do
+      it "includes both versions of kind-of as separate resolved dependencies" do
         resolved_dependencies = grapher.resolved_dependencies
 
-        is_number6 = resolved_dependencies["pkg:npm/is-number@6.0.0"]
-        expect(is_number6).not_to be_nil
-        expect(is_number6.dependencies).to include("pkg:npm/kind-of@3.2.2")
+        kind_of6 = resolved_dependencies["pkg:npm/kind-of@6.0.3"]
+        expect(kind_of6).not_to be_nil
+        expect(kind_of6.direct).to be(true)
+        expect(kind_of6.dependencies).to eq([])
 
-        is_number7 = resolved_dependencies["pkg:npm/is-number@7.0.0"]
-        expect(is_number7).not_to be_nil
-        expect(is_number7.dependencies).to include("pkg:npm/is-finite@1.1.0")
+        kind_of3 = resolved_dependencies["pkg:npm/kind-of@3.2.2"]
+        expect(kind_of3).not_to be_nil
+        expect(kind_of3.direct).to be(false)
+        expect(kind_of3.dependencies).to include("pkg:npm/is-buffer@1.1.6")
+      end
+
+      it "correctly maps the dependency chain through is-number to kind-of@3" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        is_number = resolved_dependencies["pkg:npm/is-number@3.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.direct).to be(true)
+        expect(is_number.dependencies).to include("pkg:npm/kind-of@3.2.2")
       end
     end
 
     context "with multiple versions of a scoped package" do
       let(:dependency_files) { project_dependency_files("grapher/npm_with_multiversion_scoped") }
 
-      it "includes both versions of the scoped package as separate resolved dependencies" do
+      it "includes both versions of @octokit/types as separate resolved dependencies" do
         resolved_dependencies = grapher.resolved_dependencies
 
-        helper_v25 = resolved_dependencies["pkg:npm/%40babel/helper-string-parser@7.25.9"]
-        expect(helper_v25).not_to be_nil
-        expect(helper_v25.direct).to be(true)
+        types13 = resolved_dependencies["pkg:npm/%40octokit/types@13.10.0"]
+        expect(types13).not_to be_nil
+        expect(types13.direct).to be(false)
+        expect(types13.dependencies).to include("pkg:npm/%40octokit/openapi-types@24.2.0")
 
-        helper_v22 = resolved_dependencies["pkg:npm/%40babel/helper-string-parser@7.22.5"]
-        expect(helper_v22).not_to be_nil
-        expect(helper_v22.direct).to be(false)
+        types9 = resolved_dependencies["pkg:npm/%40octokit/types@9.3.2"]
+        expect(types9).not_to be_nil
+        expect(types9.direct).to be(false)
+        expect(types9.dependencies).to include("pkg:npm/%40octokit/openapi-types@18.1.1")
       end
 
-      it "assigns the correct subdependencies to each version of the scoped package" do
+      it "correctly resolves the scoped dependency chain" do
         resolved_dependencies = grapher.resolved_dependencies
 
-        helper_v25 = resolved_dependencies["pkg:npm/%40babel/helper-string-parser@7.25.9"]
-        expect(helper_v25).not_to be_nil
-        expect(helper_v25.dependencies).to include("pkg:npm/unicode-helpers@2.1.0")
+        endpoint = resolved_dependencies["pkg:npm/%40octokit/endpoint@9.0.6"]
+        expect(endpoint).not_to be_nil
+        expect(endpoint.direct).to be(true)
+        expect(endpoint.dependencies).to include("pkg:npm/%40octokit/types@13.10.0")
 
-        helper_v22 = resolved_dependencies["pkg:npm/%40babel/helper-string-parser@7.22.5"]
-        expect(helper_v22).not_to be_nil
-        expect(helper_v22.dependencies).to include("pkg:npm/char-codes@1.3.0")
+        request_error = resolved_dependencies["pkg:npm/%40octokit/request-error@3.0.3"]
+        expect(request_error).not_to be_nil
+        expect(request_error.direct).to be(true)
+        expect(request_error.dependencies).to include("pkg:npm/%40octokit/types@9.3.2")
       end
     end
 

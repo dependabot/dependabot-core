@@ -293,11 +293,10 @@ module Dependabot
             version = details["version"]
             key = "#{package_name}@#{version}"
 
-            # Resolve each child to name@version by looking up the installed
-            # version in the packages section (nested first, then top-level)
+            # Resolve each child to name@version using Node.js resolution:
+            # walk up the node_modules tree from the package's location
             rels[key] = children.filter_map do |child_name|
-              child_details = packages["#{path}/node_modules/#{child_name}"] ||
-                              packages["node_modules/#{child_name}"]
+              child_details = resolve_npm_child(packages, path, child_name)
               next unless child_details
 
               "#{child_name}@#{child_details['version']}"
@@ -307,6 +306,35 @@ module Dependabot
 
         # if packages isn't present, attempt a v1 fallback
         fetch_npm_v1_lock_relationships(parsed)
+      end
+
+      # Walks up the node_modules tree to resolve a child dependency,
+      # matching Node.js module resolution behavior.
+      sig do
+        params(
+          packages: T::Hash[String, T.untyped],
+          parent_path: String,
+          child_name: String
+        ).returns(T.nilable(T::Hash[String, T.untyped]))
+      end
+      def resolve_npm_child(packages, parent_path, child_name)
+        # First check directly nested under parent
+        candidate = "#{parent_path}/node_modules/#{child_name}"
+        return packages[candidate] if packages.key?(candidate)
+
+        # Walk up the tree: strip trailing node_modules/pkg segments
+        segments = parent_path.split("node_modules/")
+        segments.pop # remove the current package segment
+
+        while segments.any?
+          candidate = "#{segments.join('node_modules/')}node_modules/#{child_name}"
+          return packages[candidate] if packages.key?(candidate)
+
+          segments.pop
+        end
+
+        # Top-level fallback
+        packages["node_modules/#{child_name}"]
       end
 
       sig { params(parsed: T::Hash[String, T.untyped]).returns(T::Hash[String, T::Array[String]]) }
