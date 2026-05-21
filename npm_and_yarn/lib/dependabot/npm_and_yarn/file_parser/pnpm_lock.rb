@@ -44,6 +44,7 @@ module Dependabot
 
         # rubocop:disable Metrics/MethodLength
         # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/PerceivedComplexity
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def dependencies
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
@@ -104,6 +105,7 @@ module Dependabot
 
           dependency_set
         end
+        # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/MethodLength
 

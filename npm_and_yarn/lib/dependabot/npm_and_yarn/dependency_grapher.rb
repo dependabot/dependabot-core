@@ -44,7 +44,7 @@ module Dependabot
 
             resolved[purl] = Dependabot::DependencyGraphers::ResolvedDependency.new(
               package_url: purl,
-              direct: version_dep.top_level? || version_dep.metadata[:alias] != nil,
+              direct: version_dep.top_level? || !version_dep.metadata[:alias].nil?,
               runtime: version_dep.production?,
               dependencies: subdependency_purls_for(version_dep)
             )
@@ -287,25 +287,28 @@ module Dependabot
         packages = parsed.fetch("packages", {})
 
         # v3/v2 lockfiles use a flat "packages" section
-        if packages.is_a?(Hash) && !packages.empty?
-          return packages.each_with_object({}) do |(path, details), rels|
-            next if path.empty? # skip root package entry
-            next unless details.is_a?(Hash)
-
-            children = details.fetch("dependencies", {}).keys
-            next if children.empty?
-
-            package_name = details["name"] || path.split("node_modules/").last
-            version = details["version"]
-            next if version.nil? || version.to_s.empty?
-
-            resolved = resolve_npm_v3_children(packages, path, children)
-            rels["#{package_name}@#{version}"] = resolved unless resolved.empty?
-          end
-        end
+        return build_npm_v3_relationships(packages) if packages.is_a?(Hash) && !packages.empty?
 
         # if packages isn't present, attempt a v1 fallback
         fetch_npm_v1_lock_relationships(parsed)
+      end
+
+      sig { params(packages: T::Hash[String, T.untyped]).returns(T::Hash[String, T::Array[String]]) }
+      def build_npm_v3_relationships(packages)
+        packages.each_with_object({}) do |(path, details), rels|
+          next if path.empty? # skip root package entry
+          next unless details.is_a?(Hash)
+
+          children = details.fetch("dependencies", {}).keys
+          next if children.empty?
+
+          package_name = details["name"] || path.split("node_modules/").last
+          version = details["version"]
+          next if version.nil? || version.to_s.empty?
+
+          resolved = resolve_npm_v3_children(packages, path, children)
+          rels["#{package_name}@#{version}"] = resolved unless resolved.empty?
+        end
       end
 
       sig do
