@@ -72,14 +72,21 @@ module Dependabot
       sig { params(dependency_name: String, recursive: T::Boolean).returns(String) }
       def self.run_pnpm_deep_update_command(dependency_name, recursive: false)
         # `pnpm update --depth Infinity <dep>` traverses the full dependency
-        # graph, allowing transitive dependencies to be updated in the lockfile
-        # without modifying any package.json (unlike `pnpm audit --fix`).
-        # `-r --include-workspace-root` is required for workspace repos so the
-        # update is applied across all packages.
+        # graph so transitive dependencies can be updated in the lockfile.
+        # `--no-save` is required: without it, pnpm rewrites caret ranges in
+        # `package.json` and the matching `specifier:` lines in
+        # `pnpm-lock.yaml` to `^<currently-resolved-version>` for every
+        # direct dependency whose resolved version is newer than its
+        # declared range floor. Dependabot only returns the lockfile from
+        # this flow, so those package.json mutations are discarded while
+        # the lockfile keeps `specifier:` entries that no longer match the
+        # manifest, which a downstream frozen-lockfile install rejects.
+        # `-r --include-workspace-root` is required for workspace repos so
+        # the update is applied across all packages.
         flags = recursive ? "-r --include-workspace-root " : ""
         Helpers.run_pnpm_command(
-          "#{flags}update #{dependency_name} --depth Infinity --lockfile-only",
-          fingerprint: "#{flags}update <dependency_name> --depth Infinity --lockfile-only"
+          "#{flags}update #{dependency_name} --depth Infinity --lockfile-only --no-save",
+          fingerprint: "#{flags}update <dependency_name> --depth Infinity --lockfile-only --no-save"
         )
       end
 

@@ -772,8 +772,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             .ordered
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
             .with(
-              "-r --include-workspace-root update prettier --depth Infinity --lockfile-only",
-              { fingerprint: "-r --include-workspace-root update <dependency_name> --depth Infinity --lockfile-only" }
+              "-r --include-workspace-root update prettier --depth Infinity --lockfile-only --no-save",
+              { fingerprint: "-r --include-workspace-root update <dependency_name> --depth Infinity --lockfile-only --no-save" }
             )
             .ordered
             .and_return("")
