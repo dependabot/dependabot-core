@@ -3310,6 +3310,25 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           expect(digest_up_to_date?).to be false
         end
       end
+
+      context "when the tag is non-comparable (e.g., 'latest' or distro codename) with digest" do
+        let(:version) { "artful" }
+        let(:source) do
+          {
+            tag: "artful",
+            digest: "old_digest_that_differs_from_registry"
+          }
+        end
+
+        before do
+          stub_request(:head, repo_url + "manifests/artful")
+            .and_return(status: 200, headers: JSON.parse(headers_response))
+        end
+
+        it "still detects digest changes (suppression only applies to versioned tags)" do
+          expect(digest_up_to_date?).to be false
+        end
+      end
     end
 
     context "when experiment is disabled" do
