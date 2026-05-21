@@ -276,6 +276,73 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
               .not_to include(%(rsc.io/quote v1.4.0/go.mod h1:))
           end
 
+          context "when go tooling over-prunes an unrelated go.mod checksum" do
+            let(:gonum_gomod_line) do
+              "gonum.org/v1/gonum v0.16.0/go.mod h1:fef3am4MQ93R2HHpKnLk4/Tbh/s0+wqD5nfa6Pnwy4E="
+            end
+            let(:gonum_zip_line) do
+              "gonum.org/v1/gonum v0.16.0 h1:JKbmSgVMFkFMDpGCixMRJCMEMmNhrsJuJqVDPMGPnQY="
+            end
+
+            before do
+              # Simulate: original go.sum has gonum lines, go tooling removes the /go.mod one
+              original_sum = fixture("projects", project_name, "go.sum") +
+                             "#{gonum_zip_line}\n#{gonum_gomod_line}\n"
+              pruned_sum = original_sum.lines.reject { |l| l.chomp == gonum_gomod_line }.join
+
+              allow(File).to receive(:read).and_call_original
+              allow(File).to receive(:read).with("go.sum").and_return(original_sum, pruned_sum)
+
+              # Graph shows gonum unchanged before and after
+              graph_with_gonum = Dependabot::GoModules::FileUpdater::GoModGraph.new(
+                modules: Set[
+                  "rsc.io/quote@v1.5.2",
+                  "gonum.org/v1/gonum@v0.16.0"
+                ]
+              )
+              graph_after = Dependabot::GoModules::FileUpdater::GoModGraph.new(
+                modules: Set[
+                  "rsc.io/quote@v1.5.2",
+                  "gonum.org/v1/gonum@v0.16.0"
+                ]
+              )
+
+              allow(Dependabot::GoModules::FileUpdater::GoModGraph)
+                .to receive(:capture)
+                .and_return(graph_with_gonum, graph_after)
+            end
+
+            it "restores the unrelated go.mod checksum line" do
+              expect(updated_go_mod_content).to include(gonum_gomod_line)
+            end
+          end
+
+          context "when a module version changes legitimately" do
+            before do
+              original_sum = fixture("projects", project_name, "go.sum")
+
+              allow(File).to receive(:read).and_call_original
+              allow(File).to receive(:read).with("go.sum").and_return(original_sum)
+
+              # Graph shows rsc.io/quote changed version (it's being updated)
+              graph_before = Dependabot::GoModules::FileUpdater::GoModGraph.new(
+                modules: Set["rsc.io/quote@v1.4.0"]
+              )
+              graph_after = Dependabot::GoModules::FileUpdater::GoModGraph.new(
+                modules: Set["rsc.io/quote@v1.5.2"]
+              )
+
+              allow(Dependabot::GoModules::FileUpdater::GoModGraph)
+                .to receive(:capture)
+                .and_return(graph_before, graph_after)
+            end
+
+            it "does not restore the old checksum for the updated dependency" do
+              expect(updated_go_mod_content)
+                .not_to include(%(rsc.io/quote v1.4.0/go.mod h1:))
+            end
+          end
+
           describe "a non-existent dependency with a pseudo-version" do
             let(:project_name) { "non_existent_dependency" }
 

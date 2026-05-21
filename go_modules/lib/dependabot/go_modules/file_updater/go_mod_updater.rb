@@ -7,6 +7,7 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/logger"
 require "dependabot/go_modules/file_updater"
+require "dependabot/go_modules/file_updater/go_mod_graph"
 require "dependabot/go_modules/go_work_parser"
 require "dependabot/go_modules/replace_stubber"
 require "dependabot/go_modules/resolvability_errors"
@@ -197,6 +198,10 @@ module Dependabot
             original_manifest = parse_manifest
             original_go_sum = File.read("go.sum") if File.exist?("go.sum")
 
+            # Capture module graph before updating to detect which modules
+            # actually change, so we can scope go.sum modifications.
+            graph_before = GoModGraph.capture
+
             substitutions = replace_directive_substitutions(original_manifest)
             build_module_stubs(substitutions.values)
 
@@ -224,6 +229,17 @@ module Dependabot
 
             updated_go_sum = original_go_sum ? File.read("go.sum") : nil
             updated_go_mod = File.read("go.mod")
+
+            # Restore go.sum lines that were removed for modules unrelated
+            # to the update — Go tooling can over-prune /go.mod checksums.
+            if original_go_sum && updated_go_sum
+              graph_after = GoModGraph.capture
+              updated_go_sum = reconcile_go_sum(
+                original_go_sum,
+                updated_go_sum,
+                graph_before.changed_modules(graph_after)
+              )
+            end
 
             { go_mod: updated_go_mod, go_sum: updated_go_sum }
           end
@@ -403,6 +419,38 @@ module Dependabot
           SharedHelpers.in_a_temporary_repo_directory(directory, repo_contents_path) do
             SharedHelpers.with_git_configured(credentials: credentials, &block)
           end
+        end
+
+        # Restores /go.mod checksum lines in go.sum that were removed for
+        # modules unrelated to the dependency update. Go tooling can
+        # over-prune these entries, causing CI failures downstream.
+        sig do
+          params(
+            original: String,
+            updated: String,
+            changed_modules: T::Set[String]
+          ).returns(String)
+        end
+        def reconcile_go_sum(original, updated, changed_modules)
+          return updated if changed_modules.empty?
+
+          updated_lines = updated.lines(chomp: true).reject(&:empty?)
+          updated_set = updated_lines.to_set
+
+          restored = original.lines(chomp: true).reject(&:empty?).select do |line|
+            next false if updated_set.include?(line)
+            next false unless line.include?("/go.mod h1:")
+
+            module_path = line.split(/\s+/, 2).first
+            next false unless module_path
+
+            !changed_modules.include?(module_path)
+          end
+
+          return updated if restored.empty?
+
+          Dependabot.logger.info "Restoring #{restored.size} over-pruned go.sum checksum(s)"
+          (updated_lines + restored).sort.join("\n") + "\n"
         end
 
         sig { params(stub_paths: T::Array[String]).void }
