@@ -221,7 +221,11 @@ module Dependabot
           # the lockfile.
 
           if top_level_dependency_updates.all? { |dep| requirements_changed?(dep[:name]) }
-            Helpers.run_yarn_command("install #{yarn_berry_args}".strip)
+            # Yarn berry resolves ranges to the latest matching version, ignoring
+            # Dependabot's target version. To pin the exact version we install it
+            # explicitly, then rewrite the lockfile descriptor back to the original
+            # range — the same approach yarn classic uses via replaceLockfileDeclaration.
+            install_and_pin_berry_versions(top_level_dependency_updates, yarn_lock)
           else
             updates = top_level_dependency_updates.collect do |dep|
               dep[:name]
@@ -241,6 +245,132 @@ module Dependabot
           return false unless dep
 
           dep.requirements != dep.previous_requirements
+        end
+
+        # Installs exact target versions via `yarn up dep@version`, then rewrites
+        # the lockfile descriptors from exact back to the original ranges. This
+        # mirrors yarn classic's replaceLockfileDeclaration approach.
+        sig do
+          params(
+            top_level_dependency_updates: T::Array[T::Hash[Symbol, T.untyped]],
+            yarn_lock: Dependabot::DependencyFile
+          ).void
+        end
+        def install_and_pin_berry_versions(top_level_dependency_updates, yarn_lock)
+          top_level_dependency_updates.each do |dep|
+            version = dep[:version]
+            next unless version
+
+            dep_name = T.cast(dep[:name], String)
+            reqs = dep[:requirements]
+            next if reqs.nil? || reqs.empty?
+            next if reqs.any? { |req| req[:source] && req[:source][:type] == "git" }
+
+            # Install the exact version to get correct checksum/deps in lockfile
+            Helpers.run_yarn_command(
+              "up #{dep_name}@#{version} #{yarn_berry_args}".strip,
+              fingerprint: "up <dep>@<version> #{yarn_berry_args}".strip
+            )
+
+            # Rewrite lockfile descriptors from exact version back to the range
+            reqs.each do |req|
+              requirement = req[:requirement]
+              next unless requirement
+
+              replace_berry_lockfile_declaration(
+                yarn_lock, dep_name, T.cast(version, String), requirement
+              )
+            end
+          end
+        end
+
+        # Rewrites a yarn berry lockfile descriptor from an exact version key
+        # back to the semver range key. Reads the protocol from the existing
+        # lockfile entry rather than hardcoding it.
+        #
+        # Example: "axios@npm:1.15.2" → "axios@npm:^1.15.2"
+        # The resolved version, checksum, and dependencies remain unchanged.
+        sig do
+          params(
+            yarn_lock: Dependabot::DependencyFile,
+            dep_name: String,
+            version: String,
+            requirement: String
+          ).void
+        end
+        def replace_berry_lockfile_declaration(yarn_lock, dep_name, version, requirement)
+          lockfile_path = yarn_lock.name
+          return unless File.exist?(lockfile_path)
+
+          content = File.read(lockfile_path)
+          exact_key = find_berry_lockfile_key(content, dep_name, version)
+          return unless exact_key
+
+          protocol = extract_berry_protocol(exact_key, dep_name)
+          new_key = "#{dep_name}@#{protocol}#{requirement}"
+
+          escaped_exact = Regexp.escape(exact_key)
+          updated_content = content.gsub(/^"#{escaped_exact}":/m, "\"#{new_key}\":")
+          File.write(lockfile_path, updated_content)
+        end
+
+        # Finds the lockfile key matching the given dependency name and exact version.
+        # Handles scoped packages (e.g., @scope/pkg) and composite keys (e.g., "a@npm:1.0, a@npm:^1.0").
+        sig { params(content: String, dep_name: String, version: String).returns(T.nilable(String)) }
+        def find_berry_lockfile_key(content, dep_name, version)
+          parsed = YAML.safe_load(content)
+          return unless parsed.is_a?(Hash)
+
+          parsed.keys.find do |key|
+            next false unless key.is_a?(String)
+
+            key.split(", ").any? { |part| berry_descriptor_matches?(part, dep_name, version) }
+          end
+        end
+
+        # Checks if a single descriptor part matches the given dep name and version.
+        sig { params(part: String, dep_name: String, version: String).returns(T::Boolean) }
+        def berry_descriptor_matches?(part, dep_name, version)
+          name, descriptor = split_berry_descriptor(part)
+          name == dep_name && (descriptor&.end_with?(version) || false)
+        end
+
+        # Splits a yarn berry descriptor into package name and version/range part.
+        # Handles scoped packages like @scope/pkg@npm:^1.0.0.
+        sig { params(descriptor: String).returns([String, T.nilable(String)]) }
+        def split_berry_descriptor(descriptor)
+          if descriptor.start_with?("@")
+            at_index = descriptor.index("@", 1)
+            return [descriptor, nil] unless at_index
+
+            [T.must(descriptor[0...at_index]), descriptor[(at_index + 1)..]]
+          else
+            parts = descriptor.split("@", 2)
+            [T.must(parts[0]), parts[1]]
+          end
+        end
+
+        # Extracts the protocol prefix (e.g., "npm:") from a yarn berry
+        # lockfile descriptor key.
+        sig { params(key: String, dep_name: String).returns(String) }
+        def extract_berry_protocol(key, dep_name)
+          # Match the part after dep_name@ to extract protocol
+          # e.g., "axios@npm:1.15.2" → "npm:"
+          # e.g., "@scope/pkg@npm:^1.0.0" → "npm:"
+          parts = key.split(", ").find { |p| p.include?(dep_name) }
+          return "" unless parts
+
+          after_name = if parts.start_with?("@")
+                         at_index = parts.index("@", 1)
+                         return "" unless at_index
+
+                         parts[(at_index + 1)..]
+                       else
+                         parts.split("@", 2)[1]
+                       end
+
+          match = after_name&.match(/^([a-z]+:)/)
+          match ? T.must(match[1]) : ""
         end
 
         sig { params(yarn_lock: Dependabot::DependencyFile).returns(T::Hash[String, String]) }
