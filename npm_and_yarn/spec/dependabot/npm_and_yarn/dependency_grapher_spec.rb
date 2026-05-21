@@ -260,6 +260,272 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
       end
     end
 
+    context "with multiple versions of the same transitive dependency" do
+      let(:dependency_files) { project_dependency_files("grapher/npm_with_multiversion_subdeps") }
+
+      it "includes both versions as separate resolved dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        # is-number@6.0.0 is a direct top-level dependency
+        is_number6 = resolved_dependencies["pkg:npm/is-number@6.0.0"]
+        expect(is_number6).not_to be_nil
+        expect(is_number6.direct).to be(true)
+
+        # is-number@7.0.0 is a nested transitive dependency of to-regex-range
+        is_number7 = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number7).not_to be_nil
+        expect(is_number7.direct).to be(false)
+      end
+
+      it "correctly maps subdependencies to the nested version" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        to_regex_range = resolved_dependencies["pkg:npm/to-regex-range@5.0.1"]
+        expect(to_regex_range).not_to be_nil
+        expect(to_regex_range.direct).to be(true)
+        expect(to_regex_range.dependencies).to include("pkg:npm/is-number@7.0.0")
+      end
+    end
+
+    context "with multiple versions of a dependency that each have their own subdependencies" do
+      let(:dependency_files) { project_dependency_files("grapher/npm_with_multiversion_subdeps_nested") }
+
+      it "includes both versions of kind-of as separate resolved dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        kind_of6 = resolved_dependencies["pkg:npm/kind-of@6.0.3"]
+        expect(kind_of6).not_to be_nil
+        expect(kind_of6.direct).to be(true)
+        expect(kind_of6.dependencies).to eq([])
+
+        kind_of3 = resolved_dependencies["pkg:npm/kind-of@3.2.2"]
+        expect(kind_of3).not_to be_nil
+        expect(kind_of3.direct).to be(false)
+        expect(kind_of3.dependencies).to include("pkg:npm/is-buffer@1.1.6")
+      end
+
+      it "correctly maps the dependency chain through is-number to kind-of@3" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        is_number = resolved_dependencies["pkg:npm/is-number@3.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.direct).to be(true)
+        expect(is_number.dependencies).to include("pkg:npm/kind-of@3.2.2")
+      end
+    end
+
+    context "with a yarn lockfile with multiple versions of the same transitive dependency" do
+      let(:dependency_files) { project_dependency_files("grapher/yarn_with_multiversion_subdeps") }
+
+      it "includes both versions as separate resolved dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        is_number6 = resolved_dependencies["pkg:npm/is-number@6.0.0"]
+        expect(is_number6).not_to be_nil
+        expect(is_number6.direct).to be(true)
+
+        is_number7 = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number7).not_to be_nil
+        expect(is_number7.direct).to be(false)
+      end
+
+      it "correctly maps subdependencies to the nested version" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        to_regex_range = resolved_dependencies["pkg:npm/to-regex-range@5.0.1"]
+        expect(to_regex_range).not_to be_nil
+        expect(to_regex_range.dependencies).to include("pkg:npm/is-number@7.0.0")
+      end
+    end
+
+    context "with a yarn lockfile with multiple versions that each have their own subdependencies" do
+      let(:dependency_files) { project_dependency_files("grapher/yarn_with_multiversion_subdeps_nested") }
+
+      it "includes both versions of kind-of as separate resolved dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        kind_of6 = resolved_dependencies["pkg:npm/kind-of@6.0.3"]
+        expect(kind_of6).not_to be_nil
+        expect(kind_of6.direct).to be(true)
+        expect(kind_of6.dependencies).to eq([])
+
+        kind_of3 = resolved_dependencies["pkg:npm/kind-of@3.2.2"]
+        expect(kind_of3).not_to be_nil
+        expect(kind_of3.direct).to be(false)
+        expect(kind_of3.dependencies).to include("pkg:npm/is-buffer@1.1.6")
+      end
+
+      it "correctly maps the dependency chain through is-number to kind-of@3" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        is_number = resolved_dependencies["pkg:npm/is-number@3.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.direct).to be(true)
+        expect(is_number.dependencies).to include("pkg:npm/kind-of@3.2.2")
+      end
+    end
+
+    context "with a pnpm lockfile with multiple versions of the same transitive dependency" do
+      let(:dependency_files) { project_dependency_files("grapher/pnpm_with_multiversion_subdeps") }
+
+      it "includes both versions as separate resolved dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        is_number6 = resolved_dependencies["pkg:npm/is-number@6.0.0"]
+        expect(is_number6).not_to be_nil
+        expect(is_number6.direct).to be(true)
+
+        is_number7 = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number7).not_to be_nil
+        expect(is_number7.direct).to be(false)
+      end
+
+      it "correctly maps subdependencies to the nested version" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        to_regex_range = resolved_dependencies["pkg:npm/to-regex-range@5.0.1"]
+        expect(to_regex_range).not_to be_nil
+        expect(to_regex_range.dependencies).to include("pkg:npm/is-number@7.0.0")
+      end
+    end
+
+    context "with a pnpm lockfile with multiple versions that each have their own subdependencies" do
+      let(:dependency_files) { project_dependency_files("grapher/pnpm_with_multiversion_subdeps_nested") }
+
+      it "includes both versions of kind-of as separate resolved dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        kind_of6 = resolved_dependencies["pkg:npm/kind-of@6.0.3"]
+        expect(kind_of6).not_to be_nil
+        expect(kind_of6.direct).to be(true)
+        expect(kind_of6.dependencies).to eq([])
+
+        kind_of3 = resolved_dependencies["pkg:npm/kind-of@3.2.2"]
+        expect(kind_of3).not_to be_nil
+        expect(kind_of3.direct).to be(false)
+        expect(kind_of3.dependencies).to include("pkg:npm/is-buffer@1.1.6")
+      end
+
+      it "correctly maps the dependency chain through is-number to kind-of@3" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        is_number = resolved_dependencies["pkg:npm/is-number@3.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.direct).to be(true)
+        expect(is_number.dependencies).to include("pkg:npm/kind-of@3.2.2")
+      end
+    end
+
+    context "with multiple versions of a scoped package" do
+      let(:dependency_files) { project_dependency_files("grapher/npm_with_multiversion_scoped") }
+
+      it "includes both versions of @octokit/types as separate resolved dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        types13 = resolved_dependencies["pkg:npm/%40octokit/types@13.10.0"]
+        expect(types13).not_to be_nil
+        expect(types13.direct).to be(false)
+        expect(types13.dependencies).to include("pkg:npm/%40octokit/openapi-types@24.2.0")
+
+        types9 = resolved_dependencies["pkg:npm/%40octokit/types@9.3.2"]
+        expect(types9).not_to be_nil
+        expect(types9.direct).to be(false)
+        expect(types9.dependencies).to include("pkg:npm/%40octokit/openapi-types@18.1.1")
+      end
+
+      it "correctly resolves the scoped dependency chain" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        endpoint = resolved_dependencies["pkg:npm/%40octokit/endpoint@9.0.6"]
+        expect(endpoint).not_to be_nil
+        expect(endpoint.direct).to be(true)
+        expect(endpoint.dependencies).to include("pkg:npm/%40octokit/types@13.10.0")
+
+        request_error = resolved_dependencies["pkg:npm/%40octokit/request-error@3.0.3"]
+        expect(request_error).not_to be_nil
+        expect(request_error.direct).to be(true)
+        expect(request_error.dependencies).to include("pkg:npm/%40octokit/types@9.3.2")
+      end
+    end
+
+    context "with a pnpm v9 lockfile with multiple versions of the same transitive dependency" do
+      let(:dependency_files) { project_dependency_files("grapher/pnpm_v9_with_multiversion_subdeps") }
+
+      it "includes both versions as separate resolved dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        is_number6 = resolved_dependencies["pkg:npm/is-number@6.0.0"]
+        expect(is_number6).not_to be_nil
+        expect(is_number6.direct).to be(true)
+
+        is_number7 = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number7).not_to be_nil
+        expect(is_number7.direct).to be(false)
+      end
+
+      it "correctly maps subdependencies to the nested version" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        to_regex_range = resolved_dependencies["pkg:npm/to-regex-range@5.0.1"]
+        expect(to_regex_range).not_to be_nil
+        expect(to_regex_range.dependencies).to include("pkg:npm/is-number@7.0.0")
+      end
+    end
+
+    context "with an npm lockfile containing a workspace link (no version)" do
+      let(:dependency_files) { project_dependency_files("grapher/npm_with_workspace_link") }
+
+      it "gracefully skips workspace link entries and resolves versioned deps correctly" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        is_number = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.direct).to be(true)
+
+        # Workspace link entry (no version) should not produce a malformed purl
+        malformed = resolved_dependencies.keys.select { |k| k.end_with?("@") }
+        expect(malformed).to be_empty
+      end
+    end
+
+    context "with a yarn lockfile using grouped requirement keys" do
+      let(:dependency_files) { project_dependency_files("grapher/yarn_with_grouped_keys") }
+
+      it "resolves the correct version from grouped lockfile keys" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        # is-number@^6.0.0 and is-number@^7.0.0 are grouped into one entry resolving to 7.0.0
+        is_number = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.direct).to be(true)
+
+        # to-regex-range depends on is-number@^7.0.0 which is in the grouped key
+        to_regex_range = resolved_dependencies["pkg:npm/to-regex-range@5.0.1"]
+        expect(to_regex_range).not_to be_nil
+        expect(to_regex_range.dependencies).to include("pkg:npm/is-number@7.0.0")
+      end
+    end
+
+    context "with a pnpm lockfile containing peer metadata suffixes" do
+      let(:dependency_files) { project_dependency_files("grapher/pnpm_with_peer_metadata") }
+
+      it "strips peer metadata suffixes and produces clean purls" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        # react-dom@18.2.0 has key "react-dom@18.2.0(react@18.2.0)" in snapshots
+        react_dom = resolved_dependencies["pkg:npm/react-dom@18.2.0"]
+        expect(react_dom).not_to be_nil
+        expect(react_dom.direct).to be(true)
+        # Its subdeps should reference clean versions (no parenthesized suffixes)
+        expect(react_dom.dependencies).to include("pkg:npm/scheduler@0.23.0")
+        expect(react_dom.dependencies).to include("pkg:npm/react@18.2.0")
+
+        # No purls should contain parenthesized peer metadata
+        all_purls = resolved_dependencies.values.flat_map(&:dependencies) + resolved_dependencies.keys
+        expect(all_purls.select { |p| p.include?("(") }).to be_empty
+      end
+    end
+
     context "without a lockfile - exact versions" do
       let(:dependency_files) { project_dependency_files("grapher/npm_exact_versions_no_lockfile") }
 
