@@ -168,9 +168,20 @@ module Dependabot
         modified_content = content
 
         old_images.each do |old_image|
-          old_image_regex = /^\s*(?:-\s)?image:\s+#{old_image}(?=\s|$)/
-          modified_content = modified_content&.gsub(old_image_regex) do |old_img|
-            old_img.gsub(old_image.to_s, new_yaml_image(file).to_s)
+          escaped_old_image = Regexp.escape(old_image)
+          old_image_regex = %r{^(\s*(?:-\s)?image:\s+["']?)(docker\.io/)?#{escaped_old_image}(["']?)(?=\s|$)}
+          old_block_image_regex =
+            %r{^(\s*(?:-\s)?image:\s*[>|][-+]?\s*\n\s*)(docker\.io/)?#{escaped_old_image}(?=\s|$)}
+
+          modified_content = modified_content&.gsub(old_image_regex) do
+            prefix = T.must(Regexp.last_match(1))
+            registry_prefix = Regexp.last_match(2).to_s
+            quote = Regexp.last_match(3).to_s
+            "#{prefix}#{registry_prefix}#{new_yaml_image(file)}#{quote}"
+          end
+
+          modified_content = modified_content&.gsub(old_block_image_regex) do
+            "#{T.must(Regexp.last_match(1))}#{Regexp.last_match(2)}#{new_yaml_image(file)}"
           end
         end
         modified_content

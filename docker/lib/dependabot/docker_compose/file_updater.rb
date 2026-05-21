@@ -40,7 +40,7 @@ module Dependabot
 
           updated_files << updated_file(
             file: file,
-            content: T.must(updated_dockerfile_content(file))
+            content: T.must(updated_compose_content(file))
           )
         end
 
@@ -48,6 +48,17 @@ module Dependabot
         raise "No files changed!" if updated_files.none?
 
         updated_files
+      end
+
+      private
+
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
+      def updated_compose_content(file)
+        updated_dockerfile_content(file)
+      rescue RuntimeError => e
+        raise unless e.message == "Expected content to change!"
+
+        updated_yaml_content(file)
       end
     end
   end
