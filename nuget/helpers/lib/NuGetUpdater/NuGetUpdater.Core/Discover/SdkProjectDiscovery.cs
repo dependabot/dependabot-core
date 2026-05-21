@@ -722,12 +722,16 @@ internal static class SdkProjectDiscovery
                 _ => null,
             };
 
-            if (packageManagementFile is not null)
+            // If a repo has an incomplete setup of package management, it's possible we detect it but then get an
+            // empty string for the special file path.  The fix is to explicitly check for that and not just a null
+            // value.  A check below will then autocorrect to default package management since that's what's really
+            // being used.
+            if (!string.IsNullOrWhiteSpace(packageManagementFile))
             {
                 packageManagementFile = Path.GetRelativePath(projectFullDirectory, packageManagementFile).NormalizePathToUnix();
             }
 
-            if (packageManagementKind != PackageManagementKind.Default && packageManagementFile is null)
+            if (packageManagementKind != PackageManagementKind.Default && string.IsNullOrWhiteSpace(packageManagementFile))
             {
                 logger.Warn($"Project [{projectRelativePath}] detected package management kind of {packageManagementKind} but no package management file found; forcing management kind to {PackageManagementKind.Default}.");
                 packageManagementKind = PackageManagementKind.Default;
