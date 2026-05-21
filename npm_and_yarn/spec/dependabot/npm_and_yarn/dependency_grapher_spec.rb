@@ -872,7 +872,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
         corrupt_lockfile = Dependabot::DependencyFile.new(
           name: "package-lock.json", content: "not valid json {{{", directory: "/"
         )
-        grapher.instance_variable_set(:@npm_lockfile, corrupt_lockfile)
+        grapher.send(:lockfiles_hash)[:npm] = corrupt_lockfile
       end
 
       it "sets the errored_fetching_subdependencies flag" do
@@ -907,7 +907,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
         corrupt_lockfile = Dependabot::DependencyFile.new(
           name: "yarn.lock", content: "\x00\x01 invalid", directory: "/"
         )
-        grapher.instance_variable_set(:@yarn_lockfile, corrupt_lockfile)
+        grapher.send(:lockfiles_hash)[:yarn] = corrupt_lockfile
       end
 
       it "sets the errored_fetching_subdependencies flag" do
@@ -942,7 +942,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
         corrupt_lockfile = Dependabot::DependencyFile.new(
           name: "pnpm-lock.yaml", content: ": :\n  invalid: [yaml", directory: "/"
         )
-        grapher.instance_variable_set(:@pnpm_lockfile, corrupt_lockfile)
+        grapher.send(:lockfiles_hash)[:pnpm] = corrupt_lockfile
       end
 
       it "sets the errored_fetching_subdependencies flag" do

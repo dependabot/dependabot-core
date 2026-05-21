@@ -110,11 +110,14 @@ module Dependabot
 
       sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
       def lockfiles_hash
-        {
-          npm: dependency_files.find { |f| f.name.end_with?(NpmPackageManager::LOCKFILE_NAME) },
-          yarn: dependency_files.find { |f| f.name.end_with?(YarnPackageManager::LOCKFILE_NAME) },
-          pnpm: dependency_files.find { |f| f.name.end_with?(PNPMPackageManager::LOCKFILE_NAME) }
-        }
+        @lockfiles_hash ||= T.let(
+          {
+            npm: dependency_files.find { |f| f.name.end_with?(NpmPackageManager::LOCKFILE_NAME) },
+            yarn: dependency_files.find { |f| f.name.end_with?(YarnPackageManager::LOCKFILE_NAME) },
+            pnpm: dependency_files.find { |f| f.name.end_with?(PNPMPackageManager::LOCKFILE_NAME) }
+          },
+          T.nilable(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)])
+        )
       end
 
       sig { returns(String) }
@@ -161,6 +164,7 @@ module Dependabot
 
         # Clear our cached lockfile reference so it picks up the new one
         remove_instance_variable(:@lockfile) if instance_variable_defined?(:@lockfile)
+        remove_instance_variable(:@lockfiles_hash) if instance_variable_defined?(:@lockfiles_hash)
 
         # Clear the FileParser's memoized lockfile references so it will
         # find the newly injected lockfile when parse is called
@@ -237,6 +241,11 @@ module Dependabot
           fetch_package_relationships,
           T.nilable(T::Hash[String, T::Array[String]])
         )
+      rescue StandardError => e
+        errored_fetching_subdependencies!
+        @subdependency_error = T.let(e, T.nilable(StandardError))
+        Dependabot.logger.error("Error fetching subdependencies: #{e.message}")
+        @package_relationships = {}
       end
 
       sig { returns(T::Hash[String, T::Array[String]]) }
