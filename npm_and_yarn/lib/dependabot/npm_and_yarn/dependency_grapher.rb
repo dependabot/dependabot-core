@@ -408,21 +408,26 @@ module Dependabot
       sig { params(children: T::Hash[String, String], parsed: T::Hash[String, T.untyped]).returns(T::Array[String]) }
       def resolve_yarn_children(children, parsed)
         children.filter_map do |child_name, child_req|
-          # Try exact key first
-          child_entry = parsed["#{child_name}@#{child_req}"]
-          next "#{child_name}@#{child_entry['version']}" if child_entry && child_entry["version"]
-
-          # Yarn groups multiple requirements into single keys like "foo@^1.0.0, foo@^1.2.0"
-          target_req = "#{child_name}@#{child_req}"
-          grouped_match = parsed.find { |k, _| k.split(", ").include?(target_req) }
-          next "#{child_name}@#{grouped_match.last['version']}" if grouped_match && grouped_match.last["version"]
-
-          # Fallback: find by name only if there's exactly one candidate
-          candidates = parsed.select { |k, _| k.split(/(?<=\w)\@/).first == child_name }
-          if candidates.size == 1 && candidates.first.last["version"]
-            "#{child_name}@#{candidates.first.last['version']}"
-          end
+          version = resolve_yarn_child_version(child_name, child_req, parsed)
+          "#{child_name}@#{version}" if version
         end
+      end
+
+      sig { params(child_name: String, child_req: String, parsed: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
+      def resolve_yarn_child_version(child_name, child_req, parsed)
+        # Try exact key first
+        child_entry = parsed["#{child_name}@#{child_req}"]
+        return child_entry["version"] if child_entry && child_entry["version"]
+
+        # Yarn groups multiple requirements into single keys like "foo@^1.0.0, foo@^1.2.0"
+        target_req = "#{child_name}@#{child_req}"
+        grouped_match = parsed.find { |k, _| k.split(", ").include?(target_req) }
+        return grouped_match.last["version"] if grouped_match && grouped_match.last["version"]
+
+        # Fallback: find by name only if there's exactly one candidate
+        candidates = parsed.select { |k, _| k.split(/(?<=\w)\@/).first == child_name }
+        candidate = candidates.first
+        candidate.last["version"] if candidates.size == 1 && candidate
       end
 
       sig { returns(T::Hash[String, T::Array[String]]) }
