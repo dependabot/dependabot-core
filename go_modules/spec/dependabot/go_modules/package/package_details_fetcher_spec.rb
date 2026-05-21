@@ -315,6 +315,15 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
             fingerprint: "go list -m -versions -json <dependency_name>"
           )
           .and_return('{"Path":"github.com/unknown/repo","Version":"v1.0.0"}')
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(
+            "go list -m -versions -json github.com/unknown",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: "no matching versions", error_context: {}
+                     ))
       end
 
       it "falls back to the current version" do
