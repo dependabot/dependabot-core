@@ -57,6 +57,10 @@ function Get-SdkVersionsToInstall([string] $repoRoot, [string[]] $updateDirector
 function Get-DirectoriesMatchingPattern([string] $repoRoot, [string] $pattern) {
     $repoRoot = $repoRoot.Replace("\", "/").TrimEnd("/")
     $pattern = $pattern.Replace("\", "/").Trim("/")
+    if ($pattern -eq ".") {
+        # this handles a common scenario where `$pattern` is initially "/."
+        $pattern = ""
+    }
     $normalizedDirectory = "$repoRoot/$pattern"
     $directoryRegex = "^"
     $includeAnchor = $true
