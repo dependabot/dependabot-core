@@ -213,6 +213,15 @@ module Dependabot
           expected_digest =
             if source_tag
               latest_tag = latest_tag_from(source_tag)
+
+              # When digest-only updates are suppressed and the tag hasn't changed,
+              # treat the digest as up-to-date to avoid proposing a PR that only
+              # bumps the digest without a corresponding version change.
+              if Dependabot::Experiments.enabled?(:docker_digest_only_update_suppression) &&
+                 latest_tag.name == source_tag
+                next true
+              end
+
               digest_of(latest_tag.name)
             else
               updated_digest
