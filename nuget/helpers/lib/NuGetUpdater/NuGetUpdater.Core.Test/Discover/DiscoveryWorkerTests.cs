@@ -1667,13 +1667,55 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                 </Project>
                 """)
         );
-        var actualEntryPoints = (await DiscoveryWorker.ExpandEntryPointsIntoProjectsAsync([Path.Combine(tempDir.DirectoryPath, "src/dirs.proj")], new ExperimentsManager(), new TestLogger()))
+        var actualEntryPoints = (await DiscoveryWorker.ExpandEntryPointsIntoProjectsAsync([Path.Combine(tempDir.DirectoryPath, "src/dirs.proj")], new ExperimentsManager(), new TestLogger(), repoRootPath: tempDir.DirectoryPath))
             .Select(p => p.NormalizePathToUnix())
             .ToArray();
         var expectedEntryPoints = new[]
         {
             Path.Combine(tempDir.DirectoryPath, "src/project1/project1.csproj").NormalizePathToUnix(),
             Path.Combine(tempDir.DirectoryPath, "src/project2/project2.csproj").NormalizePathToUnix(),
+        };
+        AssertEx.Equal(expectedEntryPoints, actualEntryPoints);
+    }
+
+    [Fact]
+    public async Task ExpandEntryPoints_FiltersProjectsInSubmodules()
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            (".gitmodules", """
+                [submodule "vendor/external"]
+                    path = vendor/external
+                    url = https://github.com/example/external.git
+                """),
+            ("src/dirs.proj", """
+                <Project>
+                  <ItemGroup>
+                    <ProjectFile Include="project1\project1.csproj" />
+                    <ProjectFile Include="$(MSBuildThisFileDirectory)..\vendor\external\project2.csproj" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("src/project1/project1.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                </Project>
+                """),
+            ("vendor/external/project2.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                </Project>
+                """)
+        );
+        var actualEntryPoints = (await DiscoveryWorker.ExpandEntryPointsIntoProjectsAsync([Path.Combine(tempDir.DirectoryPath, "src/dirs.proj")], new ExperimentsManager(), new TestLogger(), repoRootPath: tempDir.DirectoryPath))
+            .Select(p => p.NormalizePathToUnix())
+            .ToArray();
+        var expectedEntryPoints = new[]
+        {
+            Path.Combine(tempDir.DirectoryPath, "src/project1/project1.csproj").NormalizePathToUnix(),
         };
         AssertEx.Equal(expectedEntryPoints, actualEntryPoints);
     }

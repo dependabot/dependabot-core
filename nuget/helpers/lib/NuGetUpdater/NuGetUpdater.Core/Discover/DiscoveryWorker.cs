@@ -204,7 +204,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         ImmutableArray<string> projects;
         try
         {
-            projects = await ExpandEntryPointsIntoProjectsAsync(entryPoints, _experimentsManager, _logger);
+            projects = await ExpandEntryPointsIntoProjectsAsync(entryPoints, _experimentsManager, _logger, repoRootPath);
         }
         catch (InvalidProjectFileException e)
         {
@@ -252,7 +252,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             .ToImmutableArray();
     }
 
-    internal async static Task<ImmutableArray<string>> ExpandEntryPointsIntoProjectsAsync(IEnumerable<string> entryPoints, ExperimentsManager experimentsManager, ILogger logger)
+    internal async static Task<ImmutableArray<string>> ExpandEntryPointsIntoProjectsAsync(IEnumerable<string> entryPoints, ExperimentsManager experimentsManager, ILogger logger, string repoRootPath)
     {
         HashSet<string> expandedProjects = new(PathComparer.Instance);
         HashSet<string> seenProjects = new(PathComparer.Instance);
@@ -313,6 +313,24 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         }
 
         var result = expandedProjects.OrderBy(p => p).ToImmutableArray();
+
+        // pre-filter projects that are in submodules to avoid unnecessary restore operations
+        var submodulePaths = GetSubmodulePaths(repoRootPath);
+        if (submodulePaths.Length > 0)
+        {
+            result = [.. result.Where(p =>
+            {
+                var relativePath = Path.GetRelativePath(repoRootPath, p).NormalizePathToUnix();
+                if (IsPathInSubmodule(relativePath, submodulePaths))
+                {
+                    logger.Info($"    Excluding project [{relativePath}] because it is in a submodule.");
+                    return false;
+                }
+
+                return true;
+            })];
+        }
+
         return result;
     }
 
@@ -373,7 +391,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         try
         {
             // get all packages.config results first
-            var expandedProjects = await ExpandEntryPointsIntoProjectsAsync(normalizedProjectPaths, _experimentsManager, _logger);
+            var expandedProjects = await ExpandEntryPointsIntoProjectsAsync(normalizedProjectPaths, _experimentsManager, _logger, repoRootPath);
             foreach (var expandedProject in expandedProjects)
             {
                 var packagesConfigResult = await PackagesConfigDiscovery.Discover(repoRootPath, workspacePath, expandedProject, _logger);
