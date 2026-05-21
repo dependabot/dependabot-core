@@ -52,13 +52,20 @@ module Dependabot
 
       private
 
+      # Compose files can express image references in either a dockerfile-style declaration
+      # (e.g. `image: nginx:1`) or as a YAML scalar value, including folded/literal block
+      # scalars. Try the dockerfile-style replacement first, then fall back to YAML image
+      # replacement when nothing matched, so both forms are supported without coupling to a
+      # specific exception message.
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
       def updated_compose_content(file)
-        updated_dockerfile_content(file)
-      rescue RuntimeError => e
-        raise unless e.message == "Expected content to change!"
+        dockerfile_content = build_updated_dockerfile_content(file)
+        return dockerfile_content if dockerfile_content != file.content
 
-        updated_yaml_content(file)
+        yaml_content = build_updated_yaml_content(file)
+        raise "Expected content to change!" if yaml_content == file.content
+
+        yaml_content
       end
     end
   end

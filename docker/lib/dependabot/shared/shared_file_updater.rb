@@ -52,16 +52,26 @@ module Dependabot
 
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
       def updated_dockerfile_content(file)
+        updated_content = build_updated_dockerfile_content(file)
+
+        raise "Expected content to change!" if updated_content == file.content
+
+        updated_content
+      end
+
+      # Returns the dockerfile-style updated content, or the original content unchanged when no
+      # declaration matched. Unlike #updated_dockerfile_content this does not raise, so callers
+      # can fall back to another strategy when needed.
+      sig { params(file: Dependabot::DependencyFile).returns(String) }
+      def build_updated_dockerfile_content(file)
         old_sources = previous_sources(file)
         new_sources = sources(file)
 
-        updated_content = T.let(file.content, T.untyped)
+        updated_content = T.let(T.must(file.content), String)
 
         T.must(old_sources).zip(new_sources).each do |old_source, new_source|
           updated_content = update_digest_and_tag(updated_content, old_source, T.must(new_source))
         end
-
-        raise "Expected content to change!" if updated_content == file.content
 
         updated_content
       end
@@ -135,12 +145,21 @@ module Dependabot
 
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
       def updated_yaml_content(file)
-        updated_content = file.content
-        updated_content = update_helm(file, updated_content) if Shared::Utils.likely_helm_chart?(file)
-        updated_content = update_image(file, updated_content)
+        updated_content = build_updated_yaml_content(file)
 
         raise "Expected content to change!" if updated_content == file.content
 
+        updated_content
+      end
+
+      # Returns the YAML-style updated content, or the original content unchanged when no
+      # image/tag matched. Unlike #updated_yaml_content this does not raise, so callers can
+      # fall back to another strategy when needed.
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
+      def build_updated_yaml_content(file)
+        updated_content = file.content
+        updated_content = update_helm(file, updated_content) if Shared::Utils.likely_helm_chart?(file)
+        updated_content = update_image(file, updated_content)
         updated_content
       end
 
