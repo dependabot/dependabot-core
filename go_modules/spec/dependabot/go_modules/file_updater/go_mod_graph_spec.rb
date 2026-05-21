@@ -47,17 +47,21 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModGraph do
 
   describe "#changed_modules" do
     it "detects modules with changed versions" do
-      before_graph = described_class.new(modules: Set[
-        "github.com/onsi/gomega@v1.39.0",
-        "google.golang.org/grpc@v1.81.1",
-        "gonum.org/v1/gonum@v0.17.0"
-      ])
+      before_graph = described_class.new(
+        modules: Set[
+          "github.com/onsi/gomega@v1.39.0",
+          "google.golang.org/grpc@v1.81.1",
+          "gonum.org/v1/gonum@v0.17.0"
+        ]
+      )
 
-      after_graph = described_class.new(modules: Set[
-        "github.com/onsi/gomega@v1.40.0",
-        "google.golang.org/grpc@v1.81.1",
-        "gonum.org/v1/gonum@v0.17.0"
-      ])
+      after_graph = described_class.new(
+        modules: Set[
+          "github.com/onsi/gomega@v1.40.0",
+          "google.golang.org/grpc@v1.81.1",
+          "gonum.org/v1/gonum@v0.17.0"
+        ]
+      )
 
       changed = before_graph.changed_modules(after_graph)
       expect(changed).to include("github.com/onsi/gomega")
@@ -66,14 +70,16 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModGraph do
     end
 
     it "detects added modules" do
-      before_graph = described_class.new(modules: Set[
-        "github.com/onsi/gomega@v1.39.0"
-      ])
+      before_graph = described_class.new(
+        modules: Set["github.com/onsi/gomega@v1.39.0"]
+      )
 
-      after_graph = described_class.new(modules: Set[
-        "github.com/onsi/gomega@v1.39.0",
-        "github.com/kr/pretty@v0.3.1"
-      ])
+      after_graph = described_class.new(
+        modules: Set[
+          "github.com/onsi/gomega@v1.39.0",
+          "github.com/kr/pretty@v0.3.1"
+        ]
+      )
 
       changed = before_graph.changed_modules(after_graph)
       expect(changed).to include("github.com/kr/pretty")
@@ -81,14 +87,16 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModGraph do
     end
 
     it "detects removed modules" do
-      before_graph = described_class.new(modules: Set[
-        "github.com/onsi/gomega@v1.39.0",
-        "github.com/old/dep@v1.0.0"
-      ])
+      before_graph = described_class.new(
+        modules: Set[
+          "github.com/onsi/gomega@v1.39.0",
+          "github.com/old/dep@v1.0.0"
+        ]
+      )
 
-      after_graph = described_class.new(modules: Set[
-        "github.com/onsi/gomega@v1.39.0"
-      ])
+      after_graph = described_class.new(
+        modules: Set["github.com/onsi/gomega@v1.39.0"]
+      )
 
       changed = before_graph.changed_modules(after_graph)
       expect(changed).to include("github.com/old/dep")
@@ -96,10 +104,12 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModGraph do
     end
 
     it "returns empty set when graphs are identical" do
-      graph = described_class.new(modules: Set[
-        "github.com/onsi/gomega@v1.39.0",
-        "gonum.org/v1/gonum@v0.17.0"
-      ])
+      graph = described_class.new(
+        modules: Set[
+          "github.com/onsi/gomega@v1.39.0",
+          "gonum.org/v1/gonum@v0.17.0"
+        ]
+      )
 
       expect(graph.changed_modules(graph)).to be_empty
     end

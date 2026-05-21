@@ -234,11 +234,13 @@ module Dependabot
             # to the update — Go tooling can over-prune /go.mod checksums.
             if original_go_sum && updated_go_sum
               graph_after = GoModGraph.capture
-              updated_go_sum = reconcile_go_sum(
-                original_go_sum,
-                updated_go_sum,
-                graph_before.changed_modules(graph_after)
-              )
+              unless graph_before.empty? || graph_after.empty?
+                updated_go_sum = reconcile_go_sum(
+                  original_go_sum,
+                  updated_go_sum,
+                  graph_before.changed_modules(graph_after)
+                )
+              end
             end
 
             { go_mod: updated_go_mod, go_sum: updated_go_sum }
@@ -432,8 +434,6 @@ module Dependabot
           ).returns(String)
         end
         def reconcile_go_sum(original, updated, changed_modules)
-          return updated if changed_modules.empty?
-
           updated_lines = updated.lines(chomp: true).reject(&:empty?)
           updated_set = updated_lines.to_set
 

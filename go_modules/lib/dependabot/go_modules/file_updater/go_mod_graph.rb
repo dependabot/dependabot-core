@@ -74,7 +74,9 @@ module Dependabot
 
             output.each_line do |line|
               line.strip.split(/\s+/).each do |entry|
-                result.add(entry) unless entry.empty?
+                # Only include versioned entries (module@version), skip
+                # the root module which has no @version suffix.
+                result.add(entry) if entry.include?("@")
               end
             end
 
@@ -91,14 +93,14 @@ module Dependabot
           result = T.let(Hash.new { |h, k| h[k] = Set.new }, T::Hash[String, T::Set[String]])
 
           entries.each do |entry|
-            at_index = T.must(entry).rindex("@")
+            at_index = entry.rindex("@")
             next unless at_index
 
-            path = T.must(entry)[0...at_index]
-            version = T.must(entry)[(at_index + 1)..]
+            path = entry[0...at_index]
+            version = entry[(at_index + 1)..]
             next unless path && version && !path.empty?
 
-            result[path].add(version)
+            T.must(result[path]).add(version)
           end
 
           result

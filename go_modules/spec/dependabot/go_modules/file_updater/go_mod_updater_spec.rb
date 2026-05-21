@@ -290,13 +290,17 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
                              "#{gonum_zip_line}\n#{gonum_gomod_line}\n"
               pruned_sum = original_sum.lines.reject { |l| l.chomp == gonum_gomod_line }.join
 
+              read_count = 0
               allow(File).to receive(:read).and_call_original
-              allow(File).to receive(:read).with("go.sum").and_return(original_sum, pruned_sum)
+              allow(File).to receive(:read).with("go.sum") do
+                read_count += 1
+                read_count == 1 ? original_sum : pruned_sum
+              end
 
-              # Graph shows gonum unchanged before and after
-              graph_with_gonum = Dependabot::GoModules::FileUpdater::GoModGraph.new(
+              # Graph: rsc.io/quote updated, gonum unchanged
+              graph_before = Dependabot::GoModules::FileUpdater::GoModGraph.new(
                 modules: Set[
-                  "rsc.io/quote@v1.5.2",
+                  "rsc.io/quote@v1.4.0",
                   "gonum.org/v1/gonum@v0.16.0"
                 ]
               )
@@ -309,7 +313,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
               allow(Dependabot::GoModules::FileUpdater::GoModGraph)
                 .to receive(:capture)
-                .and_return(graph_with_gonum, graph_after)
+                .and_return(graph_before, graph_after)
             end
 
             it "restores the unrelated go.mod checksum line" do
@@ -319,11 +323,6 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
           context "when a module version changes legitimately" do
             before do
-              original_sum = fixture("projects", project_name, "go.sum")
-
-              allow(File).to receive(:read).and_call_original
-              allow(File).to receive(:read).with("go.sum").and_return(original_sum)
-
               # Graph shows rsc.io/quote changed version (it's being updated)
               graph_before = Dependabot::GoModules::FileUpdater::GoModGraph.new(
                 modules: Set["rsc.io/quote@v1.4.0"]
