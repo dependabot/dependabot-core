@@ -230,17 +230,8 @@ module Dependabot
             updated_go_sum = original_go_sum ? File.read("go.sum") : nil
             updated_go_mod = File.read("go.mod")
 
-            # Restore go.sum lines that were removed for modules unrelated
-            # to the update — Go tooling can over-prune /go.mod checksums.
             if original_go_sum && updated_go_sum
-              graph_after = GoModGraph.capture
-              unless graph_before.empty? || graph_after.empty?
-                updated_go_sum = reconcile_go_sum(
-                  original_go_sum,
-                  updated_go_sum,
-                  graph_before.changed_modules(graph_after)
-                )
-              end
+              updated_go_sum = reconcile_updated_go_sum(original_go_sum, updated_go_sum, graph_before)
             end
 
             { go_mod: updated_go_mod, go_sum: updated_go_sum }
@@ -421,6 +412,22 @@ module Dependabot
           SharedHelpers.in_a_temporary_repo_directory(directory, repo_contents_path) do
             SharedHelpers.with_git_configured(credentials: credentials, &block)
           end
+        end
+
+        # Captures the post-update module graph, diffs it against the
+        # pre-update graph, and restores over-pruned go.sum lines.
+        sig do
+          params(
+            original_go_sum: String,
+            updated_go_sum: String,
+            graph_before: GoModGraph
+          ).returns(String)
+        end
+        def reconcile_updated_go_sum(original_go_sum, updated_go_sum, graph_before)
+          graph_after = GoModGraph.capture
+          return updated_go_sum if graph_before.empty? || graph_after.empty?
+
+          reconcile_go_sum(original_go_sum, updated_go_sum, graph_before.changed_modules(graph_after))
         end
 
         # Restores /go.mod checksum lines in go.sum that were removed for
