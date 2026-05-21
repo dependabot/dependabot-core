@@ -739,4 +739,143 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       expect(result).to be(false)
     end
   end
+
+  describe "#skip_dependency? directory filtering" do
+    let(:group) do
+      instance_double(
+        Dependabot::DependencyGroup,
+        name: "test-group",
+        dependencies: group_dependencies,
+        group_by_dependency_name?: false
+      )
+    end
+
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:allow_refresh_group_with_all_dependencies)
+        .and_return(false)
+    end
+
+    context "when dependency directory matches the job source directory" do
+      let(:source_directory) { "/app" }
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: "/app")
+      end
+
+      it "does not skip the dependency" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(false)
+      end
+    end
+
+    context "when dependency directory differs from the job source directory" do
+      let(:source_directory) { "/app" }
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: "/other")
+      end
+
+      it "skips the dependency" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(true)
+      end
+    end
+
+    context "when dependency directory is nil" do
+      let(:source_directory) { "/app" }
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: nil)
+      end
+
+      it "does not skip the dependency (nil is treated as belonging to any directory)" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(false)
+      end
+    end
+
+    context "when both dependency directory and source directory are '/'" do
+      let(:source_directory) { "/" }
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: "/")
+      end
+
+      it "does not skip the dependency" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(false)
+      end
+    end
+  end
+
+  describe "#skip_dependency? single-directory regression" do
+    let(:source_directory) { "/" }
+    let(:group) do
+      instance_double(
+        Dependabot::DependencyGroup,
+        name: "test-group",
+        dependencies: group_dependencies,
+        group_by_dependency_name?: false
+      )
+    end
+
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:allow_refresh_group_with_all_dependencies)
+        .and_return(false)
+    end
+
+    context "when dependency directory matches root '/'" do
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: "/")
+      end
+
+      it "does not skip the dependency" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(false)
+      end
+    end
+
+    context "when dependency directory is nil in single-directory job" do
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: nil)
+      end
+
+      it "does not skip the dependency" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(false)
+      end
+    end
+
+    context "when dependency has already been handled" do
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: "/")
+      end
+
+      before do
+        allow(dependency_snapshot).to receive(:handled_dependencies).and_return(Set.new(["dep1"]))
+      end
+
+      it "skips the dependency" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(true)
+      end
+    end
+
+    context "when dependency has been handled but is a group refresh" do
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: "/")
+      end
+
+      before do
+        allow(dependency_snapshot).to receive(:handled_dependencies).and_return(Set.new(["dep1"]))
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:allow_refresh_group_with_all_dependencies)
+          .and_return(true)
+        allow(job).to receive(:dependency_group_to_refresh).and_return("test-group")
+      end
+
+      it "does not skip the dependency" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(false)
+      end
+    end
+  end
 end
