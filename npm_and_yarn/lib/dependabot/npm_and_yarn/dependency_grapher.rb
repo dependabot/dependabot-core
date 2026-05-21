@@ -220,7 +220,9 @@ module Dependabot
                    end
         return [name_version, nil] unless at_index
 
-        [name_version[0...at_index], name_version[(at_index + 1)..]]
+        version = name_version[(at_index + 1)..]
+        version = nil if version.nil? || version.empty?
+        [name_version[0...at_index], version]
       end
 
       sig { returns(T::Hash[String, T::Array[String]]) }
@@ -291,21 +293,34 @@ module Dependabot
 
             package_name = path.split("node_modules/").last
             version = details["version"]
-            key = "#{package_name}@#{version}"
+            next if version.nil? || version.to_s.empty?
 
-            # Resolve each child to name@version using Node.js resolution:
-            # walk up the node_modules tree from the package's location
-            rels[key] = children.filter_map do |child_name|
-              child_details = resolve_npm_child(packages, path, child_name)
-              next unless child_details
-
-              "#{child_name}@#{child_details['version']}"
-            end
+            resolved = resolve_npm_v3_children(packages, path, children)
+            rels["#{package_name}@#{version}"] = resolved unless resolved.empty?
           end
         end
 
         # if packages isn't present, attempt a v1 fallback
         fetch_npm_v1_lock_relationships(parsed)
+      end
+
+      sig do
+        params(
+          packages: T::Hash[String, T.untyped],
+          parent_path: String,
+          children: T::Array[String]
+        ).returns(T::Array[String])
+      end
+      def resolve_npm_v3_children(packages, parent_path, children)
+        children.filter_map do |child_name|
+          child_details = resolve_npm_child(packages, parent_path, child_name)
+          next unless child_details
+
+          child_version = child_details["version"]
+          next if child_version.nil? || child_version.to_s.empty?
+
+          "#{child_name}@#{child_version}"
+        end
       end
 
       # Walks up the node_modules tree to resolve a child dependency,
@@ -349,16 +364,23 @@ module Dependabot
           next unless nested.is_a?(Hash)
 
           version = details["version"]
-          key = "#{name}@#{version}"
+          next if version.nil? || version.to_s.empty?
 
-          children = nested.filter_map do |child_name, child_details|
-            next unless child_details.is_a?(Hash)
-
-            "#{child_name}@#{child_details['version']}"
-          end
-
-          rels[key] = children unless children.empty?
+          children = resolve_npm_v1_children(nested)
+          rels["#{name}@#{version}"] = children unless children.empty?
           rels.merge!(fetch_npm_v1_lock_relationships(details))
+        end
+      end
+
+      sig { params(nested: T::Hash[String, T.untyped]).returns(T::Array[String]) }
+      def resolve_npm_v1_children(nested)
+        nested.filter_map do |child_name, child_details|
+          next unless child_details.is_a?(Hash)
+
+          child_version = child_details["version"]
+          next if child_version.nil? || child_version.to_s.empty?
+
+          "#{child_name}@#{child_version}"
         end
       end
 
@@ -386,12 +408,19 @@ module Dependabot
       sig { params(children: T::Hash[String, String], parsed: T::Hash[String, T.untyped]).returns(T::Array[String]) }
       def resolve_yarn_children(children, parsed)
         children.filter_map do |child_name, child_req|
+          # Try exact key first
           child_entry = parsed["#{child_name}@#{child_req}"]
-          if child_entry && child_entry["version"]
-            "#{child_name}@#{child_entry['version']}"
-          else
-            found = parsed.find { |k, _| k.split(/(?<=\w)\@/).first == child_name }
-            found ? "#{child_name}@#{found.last['version']}" : nil
+          next "#{child_name}@#{child_entry['version']}" if child_entry && child_entry["version"]
+
+          # Yarn groups multiple requirements into single keys like "foo@^1.0.0, foo@^1.2.0"
+          target_req = "#{child_name}@#{child_req}"
+          grouped_match = parsed.find { |k, _| k.split(", ").include?(target_req) }
+          next "#{child_name}@#{grouped_match.last['version']}" if grouped_match && grouped_match.last["version"]
+
+          # Fallback: find by name only if there's exactly one candidate
+          candidates = parsed.select { |k, _| k.split(/(?<=\w)\@/).first == child_name }
+          if candidates.size == 1 && candidates.first.last["version"]
+            "#{child_name}@#{candidates.first.last['version']}"
           end
         end
       end
@@ -416,7 +445,13 @@ module Dependabot
           name_version = name_version.sub(/\(.*\)$/, "")
 
           # pnpm dependencies are already resolved: {"name": "version"}
-          resolved_children = children.map { |child_name, child_version| "#{child_name}@#{child_version}" }
+          # Strip any peer metadata suffixes like "7.49.0(react@18.2.0)"
+          resolved_children = children.filter_map do |child_name, child_version|
+            clean_version = child_version.to_s.sub(/\(.*\)$/, "")
+            next if clean_version.empty?
+
+            "#{child_name}@#{clean_version}"
+          end
 
           rels[name_version] ||= []
           rels[name_version].concat(resolved_children).uniq!

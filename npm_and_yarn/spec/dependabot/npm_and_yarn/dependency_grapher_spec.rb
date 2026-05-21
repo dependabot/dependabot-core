@@ -472,6 +472,60 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
       end
     end
 
+    context "with an npm lockfile containing a workspace link (no version)" do
+      let(:dependency_files) { project_dependency_files("grapher/npm_with_workspace_link") }
+
+      it "gracefully skips workspace link entries and resolves versioned deps correctly" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        is_number = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.direct).to be(true)
+
+        # Workspace link entry (no version) should not produce a malformed purl
+        malformed = resolved_dependencies.keys.select { |k| k.end_with?("@") }
+        expect(malformed).to be_empty
+      end
+    end
+
+    context "with a yarn lockfile using grouped requirement keys" do
+      let(:dependency_files) { project_dependency_files("grapher/yarn_with_grouped_keys") }
+
+      it "resolves the correct version from grouped lockfile keys" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        # is-number@^6.0.0 and is-number@^7.0.0 are grouped into one entry resolving to 7.0.0
+        is_number = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.direct).to be(true)
+
+        # to-regex-range depends on is-number@^7.0.0 which is in the grouped key
+        to_regex_range = resolved_dependencies["pkg:npm/to-regex-range@5.0.1"]
+        expect(to_regex_range).not_to be_nil
+        expect(to_regex_range.dependencies).to include("pkg:npm/is-number@7.0.0")
+      end
+    end
+
+    context "with a pnpm lockfile containing peer metadata suffixes" do
+      let(:dependency_files) { project_dependency_files("grapher/pnpm_with_peer_metadata") }
+
+      it "strips peer metadata suffixes and produces clean purls" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        # react-dom@18.2.0 has key "react-dom@18.2.0(react@18.2.0)" in snapshots
+        react_dom = resolved_dependencies["pkg:npm/react-dom@18.2.0"]
+        expect(react_dom).not_to be_nil
+        expect(react_dom.direct).to be(true)
+        # Its subdeps should reference clean versions (no parenthesized suffixes)
+        expect(react_dom.dependencies).to include("pkg:npm/scheduler@0.23.0")
+        expect(react_dom.dependencies).to include("pkg:npm/react@18.2.0")
+
+        # No purls should contain parenthesized peer metadata
+        all_purls = resolved_dependencies.values.flat_map(&:dependencies) + resolved_dependencies.keys
+        expect(all_purls.select { |p| p.include?("(") }).to be_empty
+      end
+    end
+
     context "without a lockfile - exact versions" do
       let(:dependency_files) { project_dependency_files("grapher/npm_exact_versions_no_lockfile") }
 
