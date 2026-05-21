@@ -397,6 +397,58 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
       end
     end
 
+    context "with multiple versions of a scoped package" do
+      let(:dependency_files) { project_dependency_files("grapher/npm_with_multiversion_scoped") }
+
+      it "includes both versions of the scoped package as separate resolved dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        helper_v25 = resolved_dependencies["pkg:npm/%40babel/helper-string-parser@7.25.9"]
+        expect(helper_v25).not_to be_nil
+        expect(helper_v25.direct).to be(true)
+
+        helper_v22 = resolved_dependencies["pkg:npm/%40babel/helper-string-parser@7.22.5"]
+        expect(helper_v22).not_to be_nil
+        expect(helper_v22.direct).to be(false)
+      end
+
+      it "assigns the correct subdependencies to each version of the scoped package" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        helper_v25 = resolved_dependencies["pkg:npm/%40babel/helper-string-parser@7.25.9"]
+        expect(helper_v25).not_to be_nil
+        expect(helper_v25.dependencies).to include("pkg:npm/unicode-helpers@2.1.0")
+
+        helper_v22 = resolved_dependencies["pkg:npm/%40babel/helper-string-parser@7.22.5"]
+        expect(helper_v22).not_to be_nil
+        expect(helper_v22.dependencies).to include("pkg:npm/char-codes@1.3.0")
+      end
+    end
+
+    context "with a pnpm v9 lockfile with multiple versions of the same transitive dependency" do
+      let(:dependency_files) { project_dependency_files("grapher/pnpm_v9_with_multiversion_subdeps") }
+
+      it "includes both versions as separate resolved dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        is_number6 = resolved_dependencies["pkg:npm/is-number@6.0.0"]
+        expect(is_number6).not_to be_nil
+        expect(is_number6.direct).to be(true)
+
+        is_number7 = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number7).not_to be_nil
+        expect(is_number7.direct).to be(false)
+      end
+
+      it "correctly maps subdependencies to the nested version" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        to_regex_range = resolved_dependencies["pkg:npm/to-regex-range@5.0.1"]
+        expect(to_regex_range).not_to be_nil
+        expect(to_regex_range.dependencies).to include("pkg:npm/is-number@7.0.0")
+      end
+    end
+
     context "without a lockfile - exact versions" do
       let(:dependency_files) { project_dependency_files("grapher/npm_exact_versions_no_lockfile") }
 

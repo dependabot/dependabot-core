@@ -1,0 +1,8 @@
+{
+  "name": "multiversion-scoped",
+  "version": "1.0.0",
+  "dependencies": {
+    "@babel/helper-string-parser": "^7.24.0",
+    "legacy-parser": "^1.0.0"
+  }
+}
