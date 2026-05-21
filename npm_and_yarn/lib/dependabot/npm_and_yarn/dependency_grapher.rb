@@ -27,6 +27,31 @@ module Dependabot
         lockfile || package_json
       end
 
+      # Override to expand multi-version dependencies into separate resolved
+      # dependency entries. When the same package exists at multiple versions
+      # (e.g., is-number@6.0.0 direct + is-number@7.0.0 transitive), each
+      # version gets its own entry with correct subdependency edges.
+      sig { override.returns(T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency]) }
+      def resolved_dependencies
+        prepare! unless prepared
+
+        @dependencies.each_with_object({}) do |dep, resolved|
+          all_versions = dep.metadata[:all_versions] || [dep]
+
+          all_versions.each do |version_dep|
+            purl = build_purl(version_dep)
+            next if resolved.key?(purl)
+
+            resolved[purl] = Dependabot::DependencyGraphers::ResolvedDependency.new(
+              package_url: purl,
+              direct: version_dep.top_level?,
+              runtime: version_dep.production?,
+              dependencies: subdependency_purls_for(version_dep)
+            )
+          end
+        end
+      end
+
       sig { override.void }
       def prepare!
         if lockfile.nil?
@@ -156,7 +181,46 @@ module Dependabot
 
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def fetch_subdependencies(dependency)
-        package_relationships.fetch(dependency.name, [])
+        key = "#{dependency.name}@#{dependency.version}"
+        package_relationships.fetch(key, [])
+      end
+
+      # Builds purl strings for subdependencies directly from the name@version
+      # entries in package_relationships, without going through dependencies_by_name
+      # which only holds one combined dep per package name.
+      sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+      def subdependency_purls_for(dependency)
+        return [] if errored_fetching_subdependencies
+
+        key = "#{dependency.name}@#{dependency.version}"
+        children = package_relationships.fetch(key, [])
+
+        children.filter_map do |child_key|
+          child_name, child_version = split_name_version(child_key)
+          next unless child_name && child_version
+
+          purl_name = child_name.sub(/^@/, "%40")
+          format(PURL_TEMPLATE, type: "npm", name: purl_name, version: "@#{child_version}")
+        end
+      rescue StandardError => e
+        errored_fetching_subdependencies!
+        @subdependency_error = T.let(e, T.nilable(StandardError))
+        Dependabot.logger.error("Error fetching subdependencies: #{e.message}")
+        []
+      end
+
+      # Splits a "name@version" string, handling scoped packages like "@scope/pkg@1.0.0"
+      sig { params(name_version: String).returns([T.nilable(String), T.nilable(String)]) }
+      def split_name_version(name_version)
+        # For scoped packages (@scope/name@version), find the second @
+        at_index = if name_version.start_with?("@")
+                     name_version.index("@", 1)
+                   else
+                     name_version.index("@")
+                   end
+        return [name_version, nil] unless at_index
+
+        [name_version[0...at_index], name_version[(at_index + 1)..]]
       end
 
       sig { returns(T::Hash[String, T::Array[String]]) }
@@ -225,7 +289,19 @@ module Dependabot
             children = details.fetch("dependencies", {}).keys
             next if children.empty?
 
-            rels[path.split("node_modules/").last] = children
+            package_name = path.split("node_modules/").last
+            version = details["version"]
+            key = "#{package_name}@#{version}"
+
+            # Resolve each child to name@version by looking up the installed
+            # version in the packages section (nested first, then top-level)
+            rels[key] = children.filter_map do |child_name|
+              child_details = packages["#{path}/node_modules/#{child_name}"] ||
+                              packages["node_modules/#{child_name}"]
+              next unless child_details
+
+              "#{child_name}@#{child_details['version']}"
+            end
           end
         end
 
@@ -244,8 +320,16 @@ module Dependabot
           nested = details.fetch("dependencies", nil)
           next unless nested.is_a?(Hash)
 
-          children = nested.keys
-          rels[name] = children unless children.empty?
+          version = details["version"]
+          key = "#{name}@#{version}"
+
+          children = nested.filter_map do |child_name, child_details|
+            next unless child_details.is_a?(Hash)
+
+            "#{child_name}@#{child_details['version']}"
+          end
+
+          rels[key] = children unless children.empty?
           rels.merge!(fetch_npm_v1_lock_relationships(details))
         end
       end
@@ -257,13 +341,30 @@ module Dependabot
         parsed.each_with_object({}) do |(req, details), rels|
           next unless details.is_a?(Hash)
 
+          version = details["version"]
           parent_name = T.must(req.split(/(?<=\w)\@/).first)
-          children = details.fetch("dependencies", {})&.keys || []
+          children = details.fetch("dependencies", {})
 
-          next if children.empty?
+          next if children.nil? || children.empty?
 
-          rels[parent_name] ||= []
-          rels[parent_name].concat(children).uniq!
+          key = "#{parent_name}@#{version}"
+          resolved_children = resolve_yarn_children(children, parsed)
+
+          rels[key] ||= []
+          rels[key].concat(resolved_children).uniq!
+        end
+      end
+
+      sig { params(children: T::Hash[String, String], parsed: T::Hash[String, T.untyped]).returns(T::Array[String]) }
+      def resolve_yarn_children(children, parsed)
+        children.filter_map do |child_name, child_req|
+          child_entry = parsed["#{child_name}@#{child_req}"]
+          if child_entry && child_entry["version"]
+            "#{child_name}@#{child_entry['version']}"
+          else
+            found = parsed.find { |k, _| k.split(/(?<=\w)\@/).first == child_name }
+            found ? "#{child_name}@#{found.last['version']}" : nil
+          end
         end
       end
 
@@ -278,13 +379,19 @@ module Dependabot
           next unless details.is_a?(Hash)
 
           # Keys are "/name@version" (v6) or "name@version" (v9)
-          parent_name = key.sub(%r{^/}, "").split(/(?<=\w)\@/).first
-          children = details.fetch("dependencies", {})&.keys || []
+          name_version = key.sub(%r{^/}, "")
+          children = details.fetch("dependencies", {})
 
-          next if children.empty?
+          next if children.nil? || children.empty?
 
-          rels[parent_name] ||= []
-          rels[parent_name].concat(children).uniq!
+          # Strip any pnpm suffix metadata (e.g., parenthesized peer dep info)
+          name_version = name_version.sub(/\(.*\)$/, "")
+
+          # pnpm dependencies are already resolved: {"name": "version"}
+          resolved_children = children.map { |child_name, child_version| "#{child_name}@#{child_version}" }
+
+          rels[name_version] ||= []
+          rels[name_version].concat(resolved_children).uniq!
         end
       end
 
