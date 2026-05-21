@@ -122,6 +122,53 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
       end
     end
 
+    context "with an aliased dependency that creates multiple versions of the same package" do
+      let(:dependency_files) { project_dependency_files("grapher/npm_with_alias_multiversion") }
+
+      it "marks the direct version as direct" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        is_number7 = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number7).not_to be_nil
+        expect(is_number7.direct).to be(true)
+        expect(is_number7.dependencies).to eq([])
+      end
+
+      it "marks the aliased version as direct" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        # The aliased version appears under its real name and is still direct
+        # because the manifest explicitly declares it (via the alias)
+        is_number3 = resolved_dependencies["pkg:npm/is-number@3.0.0"]
+        expect(is_number3).not_to be_nil
+        expect(is_number3.direct).to be(true)
+        expect(is_number3.dependencies).to include("pkg:npm/kind-of@3.2.2")
+      end
+
+      it "marks transitive versions as not direct" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        # is-number@2.1.0 is brought in transitively by fill-range
+        is_number2 = resolved_dependencies["pkg:npm/is-number@2.1.0"]
+        expect(is_number2).not_to be_nil
+        expect(is_number2.direct).to be(false)
+
+        # is-number@4.0.0 is brought in transitively by randomatic
+        is_number4 = resolved_dependencies["pkg:npm/is-number@4.0.0"]
+        expect(is_number4).not_to be_nil
+        expect(is_number4.direct).to be(false)
+      end
+
+      it "resolves subdependencies of the aliased version correctly" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        kind_of = resolved_dependencies["pkg:npm/kind-of@3.2.2"]
+        expect(kind_of).not_to be_nil
+        expect(kind_of.direct).to be(false)
+        expect(kind_of.dependencies).to include("pkg:npm/is-buffer@1.1.6")
+      end
+    end
+
     context "with a yarn aliased dependency" do
       let(:dependency_files) { project_dependency_files("grapher/yarn_with_alias") }
 
