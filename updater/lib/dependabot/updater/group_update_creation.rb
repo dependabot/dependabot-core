@@ -177,6 +177,9 @@ module Dependabot
 
       sig { params(dependency: Dependabot::Dependency, group: Dependabot::DependencyGroup).returns(T::Boolean) }
       def skip_dependency?(dependency, group)
+        # Skip dependencies that belong to a different directory than the one currently being processed
+        return true if dependency.directory != job.source.directory
+
         # Check if dependency has already been handled
         handled_dependency = dependency_snapshot.handled_dependencies.include?(dependency.name)
 
