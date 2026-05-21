@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "json"
-require "yaml"
 require "sorbet-runtime"
 
 require "dependabot/dependency_graphers"
@@ -17,6 +16,9 @@ module Dependabot
       extend T::Sig
 
       require_relative "dependency_grapher/lockfile_generator"
+      require_relative "dependency_grapher/npm_relationship_resolver"
+      require_relative "dependency_grapher/yarn_relationship_resolver"
+      require_relative "dependency_grapher/pnpm_relationship_resolver"
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
@@ -241,234 +243,13 @@ module Dependabot
       def fetch_package_relationships
         case detected_package_manager
         when NpmPackageManager::NAME
-          fetch_npm_lock_relationships
+          NpmRelationshipResolver.new(T.must(lockfiles_hash[:npm])).relationships
         when YarnPackageManager::NAME
-          fetch_yarn_lock_relationships
+          YarnRelationshipResolver.new(T.must(lockfiles_hash[:yarn])).relationships
         when PNPMPackageManager::NAME
-          fetch_pnpm_lock_relationships
+          PnpmRelationshipResolver.new(T.must(lockfiles_hash[:pnpm])).relationships
         else
           {}
-        end
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def npm_lockfile
-        return @npm_lockfile if defined?(@npm_lockfile)
-
-        @npm_lockfile = T.let(
-          dependency_files.find { |f| f.name.end_with?(NpmPackageManager::LOCKFILE_NAME) },
-          T.nilable(Dependabot::DependencyFile)
-        )
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def yarn_lockfile
-        return @yarn_lockfile if defined?(@yarn_lockfile)
-
-        @yarn_lockfile = T.let(
-          dependency_files.find { |f| f.name.end_with?(YarnPackageManager::LOCKFILE_NAME) },
-          T.nilable(Dependabot::DependencyFile)
-        )
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def pnpm_lockfile
-        return @pnpm_lockfile if defined?(@pnpm_lockfile)
-
-        @pnpm_lockfile = T.let(
-          dependency_files.find { |f| f.name.end_with?(PNPMPackageManager::LOCKFILE_NAME) },
-          T.nilable(Dependabot::DependencyFile)
-        )
-      end
-
-      sig { returns(T::Hash[String, T::Array[String]]) }
-      def fetch_npm_lock_relationships
-        parsed = JSON.parse(T.must(T.must(npm_lockfile).content))
-        packages = parsed.fetch("packages", {})
-
-        # v3/v2 lockfiles use a flat "packages" section
-        return build_npm_v3_relationships(packages) if packages.is_a?(Hash) && !packages.empty?
-
-        # if packages isn't present, attempt a v1 fallback
-        fetch_npm_v1_lock_relationships(parsed)
-      end
-
-      sig { params(packages: T::Hash[String, T.untyped]).returns(T::Hash[String, T::Array[String]]) }
-      def build_npm_v3_relationships(packages)
-        packages.each_with_object({}) do |(path, details), rels|
-          next if path.empty? # skip root package entry
-          next unless details.is_a?(Hash)
-
-          children = details.fetch("dependencies", {}).keys
-          next if children.empty?
-
-          package_name = details["name"] || path.split("node_modules/").last
-          version = details["version"]
-          next if version.nil? || version.to_s.empty?
-
-          resolved = resolve_npm_v3_children(packages, path, children)
-          rels["#{package_name}@#{version}"] = resolved unless resolved.empty?
-        end
-      end
-
-      sig do
-        params(
-          packages: T::Hash[String, T.untyped],
-          parent_path: String,
-          children: T::Array[String]
-        ).returns(T::Array[String])
-      end
-      def resolve_npm_v3_children(packages, parent_path, children)
-        children.filter_map do |child_name|
-          child_details = resolve_npm_child(packages, parent_path, child_name)
-          next unless child_details
-
-          child_version = child_details["version"]
-          next if child_version.nil? || child_version.to_s.empty?
-
-          # Use the "name" field for aliased packages (real name vs path alias)
-          real_name = child_details["name"] || child_name
-          "#{real_name}@#{child_version}"
-        end
-      end
-
-      # Walks up the node_modules tree to resolve a child dependency,
-      # matching Node.js module resolution behavior.
-      sig do
-        params(
-          packages: T::Hash[String, T.untyped],
-          parent_path: String,
-          child_name: String
-        ).returns(T.nilable(T::Hash[String, T.untyped]))
-      end
-      def resolve_npm_child(packages, parent_path, child_name)
-        # First check directly nested under parent
-        candidate = "#{parent_path}/node_modules/#{child_name}"
-        return packages[candidate] if packages.key?(candidate)
-
-        # Walk up the tree: strip trailing node_modules/pkg segments
-        segments = parent_path.split("node_modules/")
-        segments.pop # remove the current package segment
-
-        while segments.any?
-          candidate = "#{segments.join('node_modules/')}node_modules/#{child_name}"
-          return packages[candidate] if packages.key?(candidate)
-
-          segments.pop
-        end
-
-        # Top-level fallback
-        packages["node_modules/#{child_name}"]
-      end
-
-      sig { params(parsed: T::Hash[String, T.untyped]).returns(T::Hash[String, T::Array[String]]) }
-      def fetch_npm_v1_lock_relationships(parsed)
-        dependencies = parsed.fetch("dependencies", {})
-        return {} unless dependencies.is_a?(Hash)
-
-        dependencies.each_with_object({}) do |(name, details), rels|
-          next unless details.is_a?(Hash)
-
-          nested = details.fetch("dependencies", nil)
-          next unless nested.is_a?(Hash)
-
-          version = details["version"]
-          next if version.nil? || version.to_s.empty?
-
-          children = resolve_npm_v1_children(nested)
-          rels["#{name}@#{version}"] = children unless children.empty?
-          rels.merge!(fetch_npm_v1_lock_relationships(details))
-        end
-      end
-
-      sig { params(nested: T::Hash[String, T.untyped]).returns(T::Array[String]) }
-      def resolve_npm_v1_children(nested)
-        nested.filter_map do |child_name, child_details|
-          next unless child_details.is_a?(Hash)
-
-          child_version = child_details["version"]
-          next if child_version.nil? || child_version.to_s.empty?
-
-          "#{child_name}@#{child_version}"
-        end
-      end
-
-      sig { returns(T::Hash[String, T::Array[String]]) }
-      def fetch_yarn_lock_relationships
-        parsed = FileParser::YarnLock.new(T.must(yarn_lockfile)).parsed
-
-        parsed.each_with_object({}) do |(req, details), rels|
-          next unless details.is_a?(Hash)
-
-          version = details["version"]
-          parent_name = T.must(req.split(/(?<=\w)\@/).first)
-          children = details.fetch("dependencies", {})
-
-          next if children.nil? || children.empty?
-
-          key = "#{parent_name}@#{version}"
-          resolved_children = resolve_yarn_children(children, parsed)
-
-          rels[key] ||= []
-          rels[key].concat(resolved_children).uniq!
-        end
-      end
-
-      sig { params(children: T::Hash[String, String], parsed: T::Hash[String, T.untyped]).returns(T::Array[String]) }
-      def resolve_yarn_children(children, parsed)
-        children.filter_map do |child_name, child_req|
-          version = resolve_yarn_child_version(child_name, child_req, parsed)
-          "#{child_name}@#{version}" if version
-        end
-      end
-
-      sig { params(child_name: String, child_req: String, parsed: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
-      def resolve_yarn_child_version(child_name, child_req, parsed)
-        # Try exact key first
-        child_entry = parsed["#{child_name}@#{child_req}"]
-        return child_entry["version"] if child_entry && child_entry["version"]
-
-        # Yarn groups multiple requirements into single keys like "foo@^1.0.0, foo@^1.2.0"
-        target_req = "#{child_name}@#{child_req}"
-        grouped_match = parsed.find { |k, _| k.split(", ").include?(target_req) }
-        return grouped_match.last["version"] if grouped_match && grouped_match.last["version"]
-
-        # Fallback: find by name only if there's exactly one candidate
-        candidates = parsed.select { |k, _| k.split(/(?<=\w)\@/).first == child_name }
-        candidate = candidates.first
-        candidate.last["version"] if candidates.size == 1 && candidate
-      end
-
-      sig { returns(T::Hash[String, T::Array[String]]) }
-      def fetch_pnpm_lock_relationships
-        parsed = YAML.safe_load(T.must(T.must(pnpm_lockfile).content)) || {}
-
-        # v9+ uses "snapshots" for resolved dependency details; v6 uses "packages"
-        entries = parsed.fetch("snapshots", nil) || parsed.fetch("packages", {})
-
-        entries.each_with_object({}) do |(key, details), rels|
-          next unless details.is_a?(Hash)
-
-          # Keys are "/name@version" (v6) or "name@version" (v9)
-          name_version = key.sub(%r{^/}, "")
-          children = details.fetch("dependencies", {})
-
-          next if children.nil? || children.empty?
-
-          # Strip any pnpm suffix metadata (e.g., parenthesized peer dep info)
-          name_version = name_version.sub(/\(.*\)$/, "")
-
-          # pnpm dependencies are already resolved: {"name": "version"}
-          # Strip any peer metadata suffixes like "7.49.0(react@18.2.0)"
-          resolved_children = children.filter_map do |child_name, child_version|
-            clean_version = child_version.to_s.sub(/\(.*\)$/, "")
-            next if clean_version.empty?
-
-            "#{child_name}@#{clean_version}"
-          end
-
-          rels[name_version] ||= []
-          rels[name_version].concat(resolved_children).uniq!
         end
       end
 
