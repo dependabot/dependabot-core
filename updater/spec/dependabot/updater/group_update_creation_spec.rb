@@ -803,6 +803,18 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         expect(result).to be(false)
       end
     end
+
+    context "when directories are equivalent but differ in formatting" do
+      let(:source_directory) { "/app/./config/../config" }
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: "/app/config")
+      end
+
+      it "does not skip the dependency (paths are normalized before comparison)" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(false)
+      end
+    end
   end
 
   describe "#skip_dependency? single-directory regression" do
