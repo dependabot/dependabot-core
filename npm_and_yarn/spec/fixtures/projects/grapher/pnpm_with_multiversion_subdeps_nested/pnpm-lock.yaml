@@ -1,0 +1,41 @@
+lockfileVersion: '6.0'
+
+dependencies:
+  is-number:
+    specifier: ^6.0.0
+    version: 6.0.0
+  to-regex-range:
+    specifier: ^5.0.1
+    version: 5.0.1
+
+packages:
+
+  /is-finite@1.1.0:
+    resolution: {integrity: sha512-cdyMTqX/BOqqNBBiKlIVkytNHm49MtMlYyn1zxzvJKWmFMlGzm+ry5BBfYyeY9YmNKbRSo/o7OX9w9ale0wg3==}
+    dev: false
+
+  /is-number@6.0.0:
+    resolution: {integrity: sha512-Wu1VRaEGsfC7jQys4LMAB2Nv78dMNMXHit+n1DP2N8YFVNHOXY/mH0lpYKMaBgGrMBIXEo5VGFLmBpFglaJA==}
+    engines: {node: '>=0.10.0'}
+    dependencies:
+      kind-of: 3.2.2
+    dev: false
+
+  /is-number@7.0.0:
+    resolution: {integrity: sha512-41Cifbd2qBWR5GqFQ+nbq/RqNh6cMo0tMGt2Mms/XP/4e0Nbkr09RkdSyORSvKFHxDBIF26BAhOqfWtQd0jFg==}
+    engines: {node: '>=0.12.0'}
+    dependencies:
+      is-finite: 1.1.0
+    dev: false
+
+  /kind-of@3.2.2:
+    resolution: {integrity: sha512-NOW9QQXMoZGg/oqnVNoNTTIFEIid1527WEmEDTYWFc7dqItAA8qHfia12cOfc6VIFBMQUIFQ79NABY2GRISMHA==}
+    engines: {node: '>=0.10.0'}
+    dev: false
+
+  /to-regex-range@5.0.1:
+    resolution: {integrity: sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==}
+    engines: {node: '>=8.0'}
+    dependencies:
+      is-number: 7.0.0
+    dev: false

@@ -1,0 +1,8 @@
+{
+  "name": "multiversion-subdeps-nested",
+  "version": "1.0.0",
+  "dependencies": {
+    "to-regex-range": "^5.0.1",
+    "is-number": "^6.0.0"
+  }
+}
