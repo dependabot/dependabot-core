@@ -192,6 +192,54 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "when latest version is in cooldown" do
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7
+        )
+      end
+
+      before do
+        # Stub commit_metadata_details to return a recent date (simulating latest in cooldown)
+        allow_any_instance_of(described_class) # rubocop:disable RSpec/AnyInstance
+          .to receive(:commit_metadata_details)
+          .and_return(Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z"))
+      end
+
+      it "falls back to a previous version not in cooldown" do
+        older_tag = {
+          tag: "v5.0.0",
+          version: Dependabot::PreCommit::Version.new("5.0.0"),
+          commit_sha: "abc123"
+        }
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
+          .and_return([older_tag])
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return({ url: "https://github.com/pre-commit/pre-commit-hooks" })
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git show --no-patch/, any_args)
+          .and_return((Time.now - (30 * 24 * 60 * 60)).utc.strftime("%Y-%m-%d %H:%M:%S %z"))
+
+        result = finder.latest_release_version
+        expect(result.to_s).to eq("5.0.0")
+      end
+
+      it "returns current version when no fallback candidates exist" do
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
+          .and_return([])
+
+        result = finder.latest_release_version
+        expect(result.to_s).to eq("4.4.0")
+      end
+    end
+
     context "with nil cooldown" do
       let(:update_cooldown) { nil }
 

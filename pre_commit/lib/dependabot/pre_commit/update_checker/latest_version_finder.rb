@@ -87,6 +87,13 @@ module Dependabot
 
           release = cooldown_filter(release)
           if release.nil?
+            Dependabot.logger.info("Latest release is in cooldown, searching for next available version")
+            fallback = find_latest_version_not_in_cooldown
+            if fallback
+              Dependabot.logger.info("Found fallback version not in cooldown: #{fallback}")
+              return fallback
+            end
+
             Dependabot.logger.info("Returning current version/ref (no viable filtered release) #{current_version}")
             return current_version
           end
@@ -158,6 +165,75 @@ module Dependabot
           end
 
           release
+        end
+
+        sig { returns(T.nilable(Dependabot::Version)) }
+        def find_latest_version_not_in_cooldown
+          # Only applicable for version-tagged releases, not commit SHA releases
+          return nil if release_type_sha?
+
+          candidate_tags = sorted_candidate_version_tags
+          return nil if candidate_tags.empty?
+
+          Dependabot.logger.info("Checking #{candidate_tags.length} older versions for cooldown fallback")
+
+          find_first_tag_not_in_cooldown(candidate_tags)
+        rescue StandardError => e
+          Dependabot.logger.error("Error finding fallback version: #{e.message}")
+          nil
+        end
+
+        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        def sorted_candidate_version_tags
+          all_tags = @git_helper.git_commit_checker.local_tags_for_allowed_versions_matching_existing_precision
+          latest_tag = latest_version_tag
+          latest_version_value = latest_tag&.fetch(:version, nil)
+          cur_version = current_version
+
+          all_tags
+            .select { |tag| tag[:version].is_a?(Gem::Version) }
+            .reject { |tag| latest_version_value && tag[:version] == latest_version_value }
+            .select { |tag| cur_version.nil? || tag[:version] > cur_version }
+            .sort_by { |tag| tag[:version] }
+            .reverse
+        end
+
+        sig do
+          params(candidate_tags: T::Array[T::Hash[Symbol, T.untyped]])
+            .returns(T.nilable(Dependabot::Version))
+        end
+        def find_first_tag_not_in_cooldown(candidate_tags)
+          url = @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
+          source = T.must(Source.from_url(url))
+
+          SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
+            repo_contents_path = File.join(temp_dir, File.basename(source.repo))
+            SharedHelpers.run_shell_command("git clone --bare --no-recurse-submodules #{url} #{repo_contents_path}")
+
+            Dir.chdir(repo_contents_path) do
+              candidate_tags.each do |tag|
+                commit_sha = tag[:commit_sha]
+                next unless commit_sha
+
+                date_str = SharedHelpers.run_shell_command(
+                  "git show --no-patch --format=\"%cd\" --date=iso #{commit_sha}",
+                  fingerprint: "git show --no-patch --format=\"%cd\" --date=iso <commit_sha>"
+                )
+                release_date = Time.parse(date_str)
+
+                unless release_in_cooldown_period?(release_date)
+                  Dependabot.logger.info(
+                    "Found version #{tag[:version]} not in cooldown (released #{release_date})"
+                  )
+                  return T.cast(tag[:version], Dependabot::Version)
+                end
+
+                Dependabot.logger.info("Version #{tag[:version]} also in cooldown, trying next")
+              end
+            end
+          end
+
+          nil
         end
 
         sig { returns(T.nilable(String)) }
