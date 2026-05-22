@@ -646,6 +646,7 @@ internal static partial class MSBuildHelper
         ThrowOnBadResponse(output);
         ThrowOnUnparseableFile(output);
         ThrowOnMultipleProjectsForPackagesConfig(output);
+        ThrowOnCircularDependency(output);
     }
 
     private static void ThrowOnUnauthenticatedFeed(string stdout)
@@ -785,6 +786,15 @@ internal static partial class MSBuildHelper
         if (output.Contains("Found multiple project files for "))
         {
             throw new Exception("Multiple project files found for single packages.config");
+        }
+    }
+
+    private static void ThrowOnCircularDependency(string output)
+    {
+        var pattern = new Regex(@"Circular dependency detected '.*'");
+        if (pattern.IsMatch(output))
+        {
+            throw new Exception("Circular dependency detected");
         }
     }
 
