@@ -25,6 +25,12 @@ module Dependabot
         # Remove 'v' prefix if present (common in Julia)
         version_string = version_string.sub(/^v/, "") if version_string.match?(/^v\d/)
 
+        # Strip build metadata suffix (e.g. "0.0.43+1" -> "0.0.43"). Julia's JLL
+        # packages use the "+N" suffix to identify rebuilds of the same source
+        # version; per semver build metadata is ignored when ordering versions,
+        # and Julia's Pkg treats "0.0.43" and "0.0.43+1" as compatibility-equivalent.
+        version_string = version_string.sub(/\+.*\z/, "")
+
         @version_string = T.let(version_string, String)
         super(version_string)
       end
