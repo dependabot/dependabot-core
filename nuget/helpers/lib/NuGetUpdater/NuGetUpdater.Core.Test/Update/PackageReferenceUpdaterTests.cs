@@ -12,7 +12,7 @@ namespace NuGetUpdater.Core.Test.Update;
 public class PackageReferenceUpdaterTests
 {
     [Fact]
-    public void BuildReverseGraph_ReturnsCorrectParentsAndVersions()
+    public void BuildReverseGraph_ReturnsCorrectParents()
     {
         // arrange
         var dependencyGraph = new Dictionary<string, ImmutableArray<string>>(StringComparer.OrdinalIgnoreCase)
@@ -23,14 +23,30 @@ public class PackageReferenceUpdaterTests
         }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase);
 
         // act
-        var (packageParents, packageVersions) = PackageReferenceUpdater.BuildReverseGraph(dependencyGraph, new TestLogger());
+        var packageParents = PackageReferenceUpdater.BuildReverseGraph(dependencyGraph, new TestLogger());
 
         // assert
-        Assert.Equal("1.0.0", packageVersions["Parent.Package"].ToString());
-        Assert.Equal("2.0.0", packageVersions["Transitive.Package"].ToString());
-        Assert.Equal("3.0.0", packageVersions["Super.Transitive.Package"].ToString());
         Assert.Equal("Parent.Package", packageParents["Transitive.Package"].Single());
         Assert.Equal("Transitive.Package", packageParents["Super.Transitive.Package"].Single());
+    }
+
+    [Fact]
+    public void BuildReverseGraph_HandlesMultipleVersionsOfSamePackage()
+    {
+        // arrange - simulates a merged graph where the same package appears at different versions
+        var dependencyGraph = new Dictionary<string, ImmutableArray<string>>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Parent.Package/1.0.0"] = ["Child.Package/1.0.0"],
+            ["Parent.Package/2.0.0"] = ["Child.Package/2.0.0"],
+            ["Child.Package/1.0.0"] = [],
+            ["Child.Package/2.0.0"] = [],
+        }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase);
+
+        // act
+        var packageParents = PackageReferenceUpdater.BuildReverseGraph(dependencyGraph, new TestLogger());
+
+        // assert - both version entries contribute the same parent name
+        Assert.Equal("Parent.Package", packageParents["Child.Package"].Single());
     }
 
     [Theory]

@@ -36,7 +36,7 @@ internal static class PackageReferenceUpdater
             .Where(d => d.Item2)
             .ToDictionary(d => d.Item1, d => d.Item3!, StringComparer.OrdinalIgnoreCase);
 
-        var (packageParents, packageVersions) = BuildReverseGraph(dependencyGraph, logger);
+        var packageParents = BuildReverseGraph(dependencyGraph, logger);
         var updateOperations = new List<UpdateOperationBase>();
         foreach (var (requestedDependencyName, requestedDependencyVersion) in requestedVersions)
         {
@@ -90,7 +90,7 @@ internal static class PackageReferenceUpdater
                                 NewVersion = requestedVersions[requestedDependencyName],
                                 UpdatedFiles = [],
                                 ParentDependencyName = rootPackageName,
-                                ParentNewVersion = packageVersions[rootPackageName],
+                                ParentNewVersion = rootPackageVersion,
                             });
                         }
                     }
@@ -106,13 +106,12 @@ internal static class PackageReferenceUpdater
 
     /// <summary>
     /// Converts a forward dependency graph (keyed as "Name/Version" -> children as "Name/Version") into a reverse
-    /// graph of package parents and a version lookup, suitable for walking transitive dependency chains upward.
+    /// graph of package parents, suitable for walking transitive dependency chains upward.
     /// </summary>
-    internal static (Dictionary<string, HashSet<string>> PackageParents, Dictionary<string, NuGetVersion> PackageVersions) BuildReverseGraph(
+    internal static Dictionary<string, HashSet<string>> BuildReverseGraph(
         ImmutableDictionary<string, ImmutableArray<string>> dependencyGraph, ILogger logger)
     {
         var packageParents = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
-        var packageVersions = new Dictionary<string, NuGetVersion>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var (key, children) in dependencyGraph)
         {
@@ -124,10 +123,6 @@ internal static class PackageReferenceUpdater
             }
 
             var parentName = parts[0];
-            if (NuGetVersion.TryParse(parts[1], out var parentVersion))
-            {
-                packageVersions[parentName] = parentVersion;
-            }
 
             foreach (var child in children)
             {
@@ -144,6 +139,6 @@ internal static class PackageReferenceUpdater
             }
         }
 
-        return (packageParents, packageVersions);
+        return packageParents;
     }
 }
