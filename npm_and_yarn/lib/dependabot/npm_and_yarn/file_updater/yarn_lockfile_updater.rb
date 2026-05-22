@@ -221,11 +221,14 @@ module Dependabot
           # the lockfile.
 
           if top_level_dependency_updates.all? { |dep| requirements_changed?(dep[:name]) }
-            # Yarn berry resolves ranges to the latest matching version, ignoring
-            # Dependabot's target version. To pin the exact version we install it
-            # explicitly, then rewrite the lockfile descriptor back to the original
-            # range — the same approach yarn classic uses via replaceLockfileDeclaration.
-            install_and_pin_berry_versions(top_level_dependency_updates, yarn_lock)
+            Helpers.run_yarn_command("install #{yarn_berry_args}".strip)
+
+            # Yarn berry resolves ranges to the latest matching version, which
+            # may differ from Dependabot's target. If the lockfile resolved to a
+            # different version, re-install with the exact target and rewrite
+            # the lockfile descriptor back to the range — same approach as yarn
+            # classic's replaceLockfileDeclaration.
+            pin_berry_versions_if_needed(top_level_dependency_updates, yarn_lock)
           else
             updates = top_level_dependency_updates.collect do |dep|
               dep[:name]
@@ -247,40 +250,70 @@ module Dependabot
           dep.requirements != dep.previous_requirements
         end
 
-        # Installs exact target versions via `yarn up dep@version`, then rewrites
-        # the lockfile descriptors from exact back to the original ranges. This
-        # mirrors yarn classic's replaceLockfileDeclaration approach.
+        # Checks if yarn resolved to a different version than Dependabot's target
+        # and re-pins if needed. This handles security updates where yarn resolves
+        # to the latest in a range instead of the intended minimum safe version.
         sig do
           params(
             top_level_dependency_updates: T::Array[T::Hash[Symbol, T.untyped]],
             yarn_lock: Dependabot::DependencyFile
           ).void
         end
-        def install_and_pin_berry_versions(top_level_dependency_updates, yarn_lock)
+        def pin_berry_versions_if_needed(top_level_dependency_updates, yarn_lock)
+          lockfile_content = File.read(yarn_lock.name)
+
           top_level_dependency_updates.each do |dep|
-            version = dep[:version]
-            next unless version
+            pin_berry_version_if_needed(dep, yarn_lock, lockfile_content)
+          end
+        end
 
-            dep_name = T.cast(dep[:name], String)
-            reqs = dep[:requirements]
-            next if reqs.nil? || reqs.empty?
-            next if reqs.any? { |req| req[:source] && req[:source][:type] == "git" }
+        sig do
+          params(
+            dep: T::Hash[Symbol, T.untyped],
+            yarn_lock: Dependabot::DependencyFile,
+            lockfile_content: String
+          ).void
+        end
+        def pin_berry_version_if_needed(dep, yarn_lock, lockfile_content)
+          version = dep[:version]
+          return unless version
 
-            # Install the exact version to get correct checksum/deps in lockfile
-            Helpers.run_yarn_command(
-              "up #{dep_name}@#{version} #{yarn_berry_args}".strip,
-              fingerprint: "up <dep>@<version> #{yarn_berry_args}".strip
+          dep_name = T.cast(dep[:name], String)
+          reqs = dep[:requirements]
+          return if reqs.nil? || reqs.empty?
+          return if reqs.any? { |req| req[:source] && req[:source][:type] == "git" }
+
+          # Skip if yarn already resolved to the target version
+          return if berry_lockfile_version_matches?(lockfile_content, dep_name, T.cast(version, String))
+
+          # Yarn resolved to a different version — re-install with exact target
+          Helpers.run_yarn_command(
+            "up #{dep_name}@#{version} #{yarn_berry_args}".strip,
+            fingerprint: "up <dep>@<version> #{yarn_berry_args}".strip
+          )
+
+          # Rewrite lockfile descriptors from exact version back to the range
+          reqs.each do |req|
+            requirement = req[:requirement]
+            next unless requirement
+
+            replace_berry_lockfile_declaration(
+              yarn_lock, dep_name, T.cast(version, String), requirement
             )
+          end
+        end
 
-            # Rewrite lockfile descriptors from exact version back to the range
-            reqs.each do |req|
-              requirement = req[:requirement]
-              next unless requirement
+        # Checks if the yarn berry lockfile has the target version for a dependency.
+        sig { params(content: String, dep_name: String, version: String).returns(T::Boolean) }
+        def berry_lockfile_version_matches?(content, dep_name, version)
+          parsed = YAML.safe_load(content)
+          return false unless parsed.is_a?(Hash)
 
-              replace_berry_lockfile_declaration(
-                yarn_lock, dep_name, T.cast(version, String), requirement
-              )
-            end
+          parsed.any? do |key, value|
+            next false unless key.is_a?(String) && value.is_a?(Hash)
+
+            key.split(", ").any? { |part| split_berry_descriptor(part)[0] == dep_name } &&
+              value["version"] == version
           end
         end
 
