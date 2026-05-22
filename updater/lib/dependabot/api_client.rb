@@ -408,11 +408,11 @@ module Dependabot
           return []
         end
         data = parsed.fetch("data", [])
-        unless data.is_a?(Array)
+        unless data.is_a?(Array) && data.all?(Hash)
           Dependabot.logger.warn("Unexpected blocked versions format, continuing without them")
           return []
         end
-        data
+        T.cast(data, T::Array[T::Hash[String, T.untyped]])
       rescue JSON::ParserError => e
         Dependabot.logger.warn("Failed to parse blocked versions response: #{e.message}, continuing without them")
         []
