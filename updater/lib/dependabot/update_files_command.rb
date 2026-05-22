@@ -76,8 +76,6 @@ module Dependabot
             repo_contents_path: Environment.repo_contents_path
           )
 
-          # Fetch blocked versions from the API if the experiment is enabled.
-          # Experiments are registered during Job construction, so the flag is available here.
           if Experiments.enabled?(:blocked_versions)
             blocked = service.fetch_blocked_versions(update_job.package_manager)
             update_job.blocked_versions = blocked
