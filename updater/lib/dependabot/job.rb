@@ -491,25 +491,25 @@ module Dependabot
     sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
     def blocked_versions_for(dependency)
       matching_blocked_entries(dependency).filter_map do |bv|
-        req = bv["version-requirement"].strip
-        req.empty? ? nil : req
+        version = bv["version"].strip
+        version.empty? ? nil : version
       end
     end
 
     sig { params(dependency: Dependabot::Dependency).void }
     def log_blocked_versions_for(dependency)
       entries = matching_blocked_entries(dependency).filter_map do |bv|
-        req = bv["version-requirement"].strip
-        next if req.empty?
+        version = bv["version"].strip
+        next if version.empty?
 
         reason = bv["reason"].is_a?(String) ? bv["reason"].strip : nil
-        { version_requirement: req, reason: reason&.empty? ? nil : reason }
+        { version: version, reason: reason&.empty? ? nil : reason }
       end
       return if entries.empty?
 
       Dependabot.logger.info("Blocked versions (by GitHub Security):")
       entries.each do |entry|
-        msg = "  #{entry[:version_requirement]}"
+        msg = "  #{entry[:version]}"
         msg += " - reason: #{entry[:reason]}" if entry[:reason]
         Dependabot.logger.info(msg)
       end
@@ -524,7 +524,7 @@ module Dependabot
       normalized_dep_name = T.must(normaliser).call(dependency.name)
 
       blocked_versions
-        .select { |bv| bv["dependency-name"].is_a?(String) && bv["version-requirement"].is_a?(String) }
+        .select { |bv| bv["dependency-name"].is_a?(String) && bv["version"].is_a?(String) }
         .select { |bv| T.must(normaliser).call(bv["dependency-name"]) == normalized_dep_name }
     end
 
