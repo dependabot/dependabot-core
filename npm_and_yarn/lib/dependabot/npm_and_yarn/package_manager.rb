@@ -387,18 +387,11 @@ module Dependabot
         index = 0
 
         while index < constraint.length
-          character = constraint[index]
+          character = T.must(constraint[index])
 
           if whitespace_character?(character)
-            index += 1
-            index += 1 while index < constraint.length && whitespace_character?(constraint[index])
-
-            if !current.empty? && index < constraint.length && comparator_start?(constraint[index])
-              tokens << current
-              current = +""
-            elsif !current.empty? && index < constraint.length
-              current << " "
-            end
+            index = skip_whitespace_characters(constraint, index + 1)
+            normalize_boundary_after_whitespace(constraint, index, current, tokens)
 
             next
           end
@@ -409,6 +402,31 @@ module Dependabot
 
         tokens << current unless current.empty?
         tokens
+      end
+
+      sig { params(constraint: String, index: Integer).returns(Integer) }
+      def skip_whitespace_characters(constraint, index)
+        index += 1 while index < constraint.length && whitespace_character?(T.must(constraint[index]))
+        index
+      end
+
+      sig do
+        params(
+          constraint: String,
+          index: Integer,
+          current: String,
+          tokens: T::Array[String]
+        ).void
+      end
+      def normalize_boundary_after_whitespace(constraint, index, current, tokens)
+        return if current.empty? || index >= constraint.length
+
+        if comparator_start?(T.must(constraint[index]))
+          tokens << current.dup
+          current.clear
+        else
+          current << " "
+        end
       end
 
       sig { params(character: String).returns(T::Boolean) }
