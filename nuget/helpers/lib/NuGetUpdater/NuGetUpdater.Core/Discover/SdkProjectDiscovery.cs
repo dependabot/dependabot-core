@@ -635,6 +635,60 @@ internal static class SdkProjectDiscovery
                 .ThenBy(d => d.Version)
                 .ToImmutableArray();
 
+            // extract dependency graph from project.assets.json
+            var dependencyGraphBuilder = new Dictionary<string, ImmutableArray<string>>(StringComparer.OrdinalIgnoreCase);
+            if (assetsJson.Value is { } assetsForGraph &&
+                assetsForGraph.TryGetProperty("targets", out var graphTargets))
+            {
+                foreach (var tfmObject in graphTargets.EnumerateObject())
+                {
+                    // Build a complete lookup of package name -> resolved version for this TFM.
+                    // This must be a separate pass because the dependency resolution below needs to
+                    // look up any package by name, including ones that appear later in the enumeration.
+                    var resolvedVersions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var packageObject in tfmObject.Value.EnumerateObject())
+                    {
+                        var parts = packageObject.Name.Split('/');
+                        if (parts.Length == 2)
+                        {
+                            resolvedVersions[parts[0]] = parts[1];
+                        }
+                    }
+
+                    // Now that all resolved versions are known, build the dependency graph edges.
+                    foreach (var packageObject in tfmObject.Value.EnumerateObject())
+                    {
+                        var parts = packageObject.Name.Split('/');
+                        if (parts.Length == 2)
+                        {
+                            var packageName = parts[0];
+                            var packageVersion = parts[1];
+                            var graphKey = $"{packageName}/{packageVersion}";
+                            var depEntries = packageObject.Value.TryGetProperty("dependencies", out var deps)
+                                ? deps.EnumerateObject()
+                                    .Where(d => resolvedVersions.ContainsKey(d.Name))
+                                    .Select(d => $"{d.Name}/{resolvedVersions[d.Name]}")
+                                : [];
+                            if (!dependencyGraphBuilder.TryGetValue(graphKey, out var existing))
+                            {
+                                dependencyGraphBuilder[graphKey] = depEntries
+                                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                                    .ToImmutableArray();
+                            }
+                            else
+                            {
+                                dependencyGraphBuilder[graphKey] = existing
+                                    .Union(depEntries, StringComparer.OrdinalIgnoreCase)
+                                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                                    .ToImmutableArray();
+                            }
+                        }
+                    }
+                }
+            }
+
+            var dependencyGraph = dependencyGraphBuilder.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase);
+
             // other values
             var projectProperties = resolvedProperties[projectPath];
             var referenced = referencedProjects.GetOrAdd(projectPath, () => new(PathComparer.Instance))
@@ -702,6 +756,7 @@ internal static class SdkProjectDiscovery
                 PackageManagementKind = packageManagementKind,
                 PackageManagementSpecialFileRelativePath = packageManagementFile,
                 HasNoWarnNU1701 = hasNoWarnNU1701,
+                DependencyGraph = dependencyGraph,
             };
             projectDiscoveryResults.Add(projectDiscoveryResult);
         }

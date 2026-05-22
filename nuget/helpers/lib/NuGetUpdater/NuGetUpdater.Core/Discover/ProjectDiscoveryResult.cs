@@ -17,4 +17,8 @@ public record ProjectDiscoveryResult : IDiscoveryResultWithDependencies
     public required ImmutableArray<string> AdditionalFiles { get; init; }
     public required ImmutableArray<Dependency> Dependencies { get; init; }
     public bool HasNoWarnNU1701 { get; init; } = false;
+    /// <summary>
+    /// Maps each package (keyed as "Name/Version") to its direct dependency package names, as extracted from project.assets.json.
+    /// </summary>
+    public ImmutableDictionary<string, ImmutableArray<string>> DependencyGraph { get; init; } = ImmutableDictionary<string, ImmutableArray<string>>.Empty;
 }
