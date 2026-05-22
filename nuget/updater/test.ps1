@@ -52,6 +52,12 @@ try {
         -expectedSdksToInstall @("1.2.3")
 
     Test-GlobalJsonVersions `
+        -testDirectory "global-json-discovery-root-with-file" `
+        -directories @("/.") `
+        -installedSdks @("8.0.404", "9.0.101") `
+        -expectedSdksToInstall @("1.2.3")
+
+    Test-GlobalJsonVersions `
         -testDirectory "global-json-discovery-none" `
         -directories @("src") `
         -installedSdks @("8.0.404", "9.0.101") `

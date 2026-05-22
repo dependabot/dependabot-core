@@ -213,6 +213,11 @@ internal static class SdkProjectDiscovery
                     logger.Warn($"  Error determining dependencies from `{startingProjectPath}`:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
                 }
 
+                if (!File.Exists(binLogPath))
+                {
+                    throw new FileNotFoundException("Dependency discovery didn't produce a log file.");
+                }
+
                 var buildRoot = BinaryLog.ReadBuild(binLogPath);
                 buildRoot.VisitAllChildren<BaseNode>(node =>
                 {

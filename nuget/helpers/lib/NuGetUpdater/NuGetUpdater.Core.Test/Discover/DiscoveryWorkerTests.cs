@@ -1667,13 +1667,55 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                 </Project>
                 """)
         );
-        var actualEntryPoints = (await DiscoveryWorker.ExpandEntryPointsIntoProjectsAsync([Path.Combine(tempDir.DirectoryPath, "src/dirs.proj")], new ExperimentsManager(), new TestLogger()))
+        var actualEntryPoints = (await DiscoveryWorker.ExpandEntryPointsIntoProjectsAsync([Path.Combine(tempDir.DirectoryPath, "src/dirs.proj")], new ExperimentsManager(), new TestLogger(), repoRootPath: tempDir.DirectoryPath))
             .Select(p => p.NormalizePathToUnix())
             .ToArray();
         var expectedEntryPoints = new[]
         {
             Path.Combine(tempDir.DirectoryPath, "src/project1/project1.csproj").NormalizePathToUnix(),
             Path.Combine(tempDir.DirectoryPath, "src/project2/project2.csproj").NormalizePathToUnix(),
+        };
+        AssertEx.Equal(expectedEntryPoints, actualEntryPoints);
+    }
+
+    [Fact]
+    public async Task ExpandEntryPoints_FiltersProjectsInSubmodules()
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            (".gitmodules", """
+                [submodule "vendor/external"]
+                    path = vendor/external
+                    url = https://github.com/example/external.git
+                """),
+            ("src/dirs.proj", """
+                <Project>
+                  <ItemGroup>
+                    <ProjectFile Include="project1\project1.csproj" />
+                    <ProjectFile Include="$(MSBuildThisFileDirectory)..\vendor\external\project2.csproj" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("src/project1/project1.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                </Project>
+                """),
+            ("vendor/external/project2.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                </Project>
+                """)
+        );
+        var actualEntryPoints = (await DiscoveryWorker.ExpandEntryPointsIntoProjectsAsync([Path.Combine(tempDir.DirectoryPath, "src/dirs.proj")], new ExperimentsManager(), new TestLogger(), repoRootPath: tempDir.DirectoryPath))
+            .Select(p => p.NormalizePathToUnix())
+            .ToArray();
+        var expectedEntryPoints = new[]
+        {
+            Path.Combine(tempDir.DirectoryPath, "src/project1/project1.csproj").NormalizePathToUnix(),
         };
         AssertEx.Equal(expectedEntryPoints, actualEntryPoints);
     }
@@ -1927,6 +1969,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             AdditionalFiles = ["a/packages.config"],
             PackageManagementKind = PackageManagementKind.Default,
             PackageManagementSpecialFileRelativePath = null,
+            HasNoWarnNU1701 = false,
         };
         var result2 = new ProjectDiscoveryResult()
         {
@@ -1943,6 +1986,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             AdditionalFiles = ["b/app.config"],
             PackageManagementKind = PackageManagementKind.CentralPackageManagement,
             PackageManagementSpecialFileRelativePath = "Directory.Packages.props",
+            HasNoWarnNU1701 = true,
         };
 
         // to make sure we're checking everything exactly, we'll explicitly check each item
@@ -1971,6 +2015,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         AssertEx.Equal(["a/packages.config", "b/app.config"], merged.AdditionalFiles);
         Assert.Equal(PackageManagementKind.CentralPackageManagement, merged.PackageManagementKind);
         Assert.Equal("Directory.Packages.props", merged.PackageManagementSpecialFileRelativePath);
+        Assert.True(merged.HasNoWarnNU1701);
     }
 
     [Fact]
@@ -1991,5 +2036,117 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             AdditionalFiles = [],
         };
         Assert.Throws<InvalidOperationException>(() => DiscoveryWorker.MergeProjectDiscovery(result1, result2));
+    }
+
+    [Fact]
+    public async Task ProjectsInSubmodulesAreFilteredOut()
+    {
+        await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+            ],
+            workspacePath: "",
+            files:
+            [
+                (".gitmodules", """
+                    [submodule "vendor/external"]
+                        path = vendor/external
+                        url = https://github.com/example/external.git
+                    """),
+                ("myapp.slnx", """
+                    <Solution>
+                      <Folder Name="/src/">
+                        <Project Path="src\project.csproj" />
+                      </Folder>
+                      <Folder Name="/vendor/external/">
+                        <Project Path="vendor\external\project.csproj" />
+                      </Folder>
+                    </Solution>
+                    """),
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("vendor/external/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Path = "",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "src/project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ],
+                ExpectedProjectCount = 1,
+            }
+        );
+    }
+
+    [Fact]
+    public async Task GlobalJsonInSubmoduleIsFilteredOut()
+    {
+        await TestDiscoveryAsync(
+            packages: [],
+            workspacePath: "vendor/external",
+            files:
+            [
+                (".gitmodules", """
+                    [submodule "vendor/external"]
+                        path = vendor/external
+                        url = https://github.com/example/external.git
+                    """),
+                ("vendor/external/global.json", """
+                    {
+                      "sdk": {
+                        "version": "8.0.100"
+                      }
+                    }
+                    """),
+                ("vendor/external/.config/dotnet-tools.json", """
+                    {
+                      "version": 1,
+                      "isRoot": true,
+                      "tools": {
+                        "dotnetsay": {
+                          "version": "2.1.3",
+                          "commands": ["dotnetsay"]
+                        }
+                      }
+                    }
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Path = "vendor/external",
+                GlobalJson = null,
+                DotNetToolsJson = null,
+                Projects = [],
+                ExpectedProjectCount = 0,
+            }
+        );
     }
 }

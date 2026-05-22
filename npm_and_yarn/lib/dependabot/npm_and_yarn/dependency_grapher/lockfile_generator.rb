@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/dependency_file"
+require "dependabot/errors"
 require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package_manager"
@@ -14,6 +15,12 @@ module Dependabot
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
       class LockfileGenerator
         extend T::Sig
+
+        # URL extraction patterns
+        GENERIC_URL_REGEX = T.let(%r{(https?://[^\s"']+)}, Regexp)
+        NETWORK_ERROR_HOST_REGEX = T.let(/E(?:NOTFOUND|TIMEDOUT)\s+(\S+)/i, Regexp)
+
+        FALLBACK_SOURCE = "a private registry"
 
         sig do
           params(
@@ -202,20 +209,48 @@ module Dependabot
             "Failed to generate lockfile with #{package_manager}: #{error.message}"
           )
 
-          # Log more details for debugging
           if error.message.include?("ERESOLVE")
             Dependabot.logger.error(
               "Dependency resolution failed. This may be due to conflicting peer dependencies."
             )
+            raise Dependabot::DependencyFileNotResolvable,
+                  "Could not resolve dependencies. This may be due to conflicting peer dependencies."
           elsif error.message.include?("ENOTFOUND") || error.message.include?("ETIMEDOUT")
             Dependabot.logger.error(
               "Network error while generating lockfile. Registry may be unreachable."
             )
-          elsif error.message.include?("401") || error.message.include?("403")
+            raise Dependabot::PrivateSourceTimedOut, extract_network_error_host(error.message)
+          elsif authentication_error?(error.message)
             Dependabot.logger.error(
               "Authentication error. Check that credentials are configured correctly."
             )
+            raise Dependabot::PrivateSourceAuthenticationFailure, extract_url(error.message)
           end
+        end
+
+        sig { params(message: String).returns(T::Boolean) }
+        def authentication_error?(message)
+          message.include?("401") ||
+            message.include?("403") ||
+            message.include?(NpmAndYarn::AUTHENTICATION_TOKEN_NOT_PROVIDED) ||
+            message.include?(NpmAndYarn::AUTHENTICATION_IS_NOT_CONFIGURED) ||
+            message.include?(NpmAndYarn::AUTHENTICATION_HEADER_NOT_PROVIDED) ||
+            message.match?(NpmAndYarn::AUTH_REQUIRED_ERROR)
+        end
+
+        sig { params(message: String).returns(String) }
+        def extract_url(message)
+          match = message.match(GENERIC_URL_REGEX)
+          match ? T.must(match[1]).chomp(":") : FALLBACK_SOURCE
+        end
+
+        sig { params(message: String).returns(String) }
+        def extract_network_error_host(message)
+          match = message.match(NETWORK_ERROR_HOST_REGEX)
+          return T.must(match[1]) if match
+
+          match = message.match(GENERIC_URL_REGEX)
+          match ? T.must(match[1]) : FALLBACK_SOURCE
         end
       end
     end
