@@ -216,13 +216,6 @@ module Dependabot
         nil
       end
 
-      sig { params(constraints: T::Array[String]).returns(T::Array[String]) }
-      def split_compound_constraints(constraints)
-        constraints.flat_map do |constraint|
-          constraint.strip.split(/\s+(?=[<>]=?|=)/)
-        end
-      end
-
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/PerceivedComplexity
@@ -381,6 +374,52 @@ module Dependabot
       end
 
       private
+
+      sig { params(constraints: T::Array[String]).returns(T::Array[String]) }
+      def split_compound_constraints(constraints)
+        constraints.flat_map { |constraint| split_compound_constraint(constraint) }
+      end
+
+      sig { params(constraint: String).returns(T::Array[String]) }
+      def split_compound_constraint(constraint)
+        tokens = T.let([], T::Array[String])
+        current = +""
+        index = 0
+
+        while index < constraint.length
+          character = constraint[index]
+
+          if whitespace_character?(character)
+            index += 1
+            index += 1 while index < constraint.length && whitespace_character?(constraint[index])
+
+            if !current.empty? && index < constraint.length && comparator_start?(constraint[index])
+              tokens << current
+              current = +""
+            elsif !current.empty? && index < constraint.length
+              current << " "
+            end
+
+            next
+          end
+
+          current << character
+          index += 1
+        end
+
+        tokens << current unless current.empty?
+        tokens
+      end
+
+      sig { params(character: String).returns(T::Boolean) }
+      def whitespace_character?(character)
+        character == " " || character == "\t" || character == "\n" || character == "\r" || character == "\f"
+      end
+
+      sig { params(character: String).returns(T::Boolean) }
+      def comparator_start?(character)
+        character == ">" || character == "<" || character == "="
+      end
 
       sig { params(name: String, version: String).void }
       def raise_if_unsupported!(name, version)
