@@ -642,7 +642,9 @@ internal static class SdkProjectDiscovery
             {
                 foreach (var tfmObject in graphTargets.EnumerateObject())
                 {
-                    // build a lookup of package name -> resolved version for this TFM
+                    // Build a complete lookup of package name -> resolved version for this TFM.
+                    // This must be a separate pass because the dependency resolution below needs to
+                    // look up any package by name, including ones that appear later in the enumeration.
                     var resolvedVersions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                     foreach (var packageObject in tfmObject.Value.EnumerateObject())
                     {
@@ -653,6 +655,7 @@ internal static class SdkProjectDiscovery
                         }
                     }
 
+                    // Now that all resolved versions are known, build the dependency graph edges.
                     foreach (var packageObject in tfmObject.Value.EnumerateObject())
                     {
                         var parts = packageObject.Name.Split('/');
