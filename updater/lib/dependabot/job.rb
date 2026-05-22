@@ -122,6 +122,9 @@ module Dependabot
     sig { returns(T::Array[T::Hash[String, T.untyped]]) }
     attr_reader :blocked_versions
 
+    sig { params(blocked_versions: T::Array[T::Hash[String, T.untyped]]).void }
+    attr_writer :blocked_versions
+
     sig { returns(Dependabot::Config::UpdateConfig) }
     attr_reader :update_config
 
@@ -491,25 +494,25 @@ module Dependabot
     sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
     def blocked_versions_for(dependency)
       matching_blocked_entries(dependency).filter_map do |bv|
-        version = bv["version"].strip
-        version.empty? ? nil : version
+        req = bv["version-requirement"].strip
+        req.empty? ? nil : req
       end
     end
 
     sig { params(dependency: Dependabot::Dependency).void }
     def log_blocked_versions_for(dependency)
       entries = matching_blocked_entries(dependency).filter_map do |bv|
-        version = bv["version"].strip
-        next if version.empty?
+        req = bv["version-requirement"].strip
+        next if req.empty?
 
         reason = bv["reason"].is_a?(String) ? bv["reason"].strip : nil
-        { version: version, reason: reason&.empty? ? nil : reason }
+        { version_requirement: req, reason: reason&.empty? ? nil : reason }
       end
       return if entries.empty?
 
       Dependabot.logger.info("Blocked versions (by GitHub Security):")
       entries.each do |entry|
-        msg = "  #{entry[:version]}"
+        msg = "  #{entry[:version_requirement]}"
         msg += " - reason: #{entry[:reason]}" if entry[:reason]
         Dependabot.logger.info(msg)
       end
@@ -524,7 +527,7 @@ module Dependabot
       normalized_dep_name = T.must(normaliser).call(dependency.name)
 
       blocked_versions
-        .select { |bv| bv["dependency-name"].is_a?(String) && bv["version"].is_a?(String) }
+        .select { |bv| bv["dependency-name"].is_a?(String) && bv["version-requirement"].is_a?(String) }
         .select { |bv| T.must(normaliser).call(bv["dependency-name"]) == normalized_dep_name }
     end
 
