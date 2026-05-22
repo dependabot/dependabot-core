@@ -52,11 +52,18 @@ module Dependabot
 
       private
 
-      # Compose files can express image references in either a dockerfile-style declaration
-      # (e.g. `image: nginx:1`) or as a YAML scalar value, including folded/literal block
-      # scalars. Try the dockerfile-style replacement first, then fall back to YAML image
-      # replacement when nothing matched, so both forms are supported without coupling to a
-      # specific exception message.
+      # Compose files can express image references in two distinct ways:
+      #
+      #   1. As an embedded Dockerfile via the `build.dockerfile_inline` key, where image
+      #      references appear as `FROM <image>:<tag>` inside a YAML block scalar. These are
+      #      matched by the dockerfile-style declaration regex.
+      #   2. As a compose `image:` value, either inline (`image: nginx:1`) or as a folded/
+      #      literal YAML block scalar that wraps onto the next line. These are matched by
+      #      the YAML image replacement helper.
+      #
+      # We try the dockerfile-style replacement first to cover `dockerfile_inline` blocks,
+      # and fall back to the YAML image replacement when no `FROM` declaration matched so
+      # the `image:` form (including folded/literal scalars) is still handled.
       sig { params(file: Dependabot::DependencyFile).returns(String) }
       def updated_compose_content(file)
         dockerfile_content = build_updated_dockerfile_content(file)
