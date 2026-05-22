@@ -108,9 +108,18 @@ module Dependabot
             .reject { |r| r.tag_name.nil? }
             .select { |r| r.tag_name.start_with?(dep_prefix) }
 
-          return releases unless releases_with_dependency_name.any?
+          return releases_with_dependency_name if releases_with_dependency_name.any?
 
-          releases_with_dependency_name
+          if source&.directory && ![".", "/"].include?(source.directory)
+            releases_with_dir_prefix =
+              releases
+              .reject { |r| r.tag_name.nil? }
+              .select { |r| r.tag_name.start_with?("#{T.must(source).directory}/") }
+
+            return releases_with_dir_prefix if releases_with_dir_prefix.any?
+          end
+
+          releases
         end
 
         sig { returns(T::Array[T.untyped]) }

@@ -255,6 +255,42 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       end
     end
 
+    context "with a Go module monorepo using path-prefixed tags" do
+      let(:dependency_name) { "github.com/opentdf/platform/protocol/go" }
+      let(:dependency_version) { "0.31.0" }
+      let(:dependency_previous_version) { "0.30.0" }
+      let(:package_manager) { "go_modules" }
+      let(:source) do
+        Dependabot::Source.new(
+          provider: "github",
+          repo: "opentdf/platform",
+          directory: "protocol/go"
+        )
+      end
+
+      before do
+        allow(builder)
+          .to receive(:fetch_dependency_tags)
+          .and_return(
+            %w(
+              otdfctl/v0.31.0
+              otdfctl/v0.30.0
+              protocol/go/v0.31.0
+              protocol/go/v0.30.0
+              sdk/v0.20.0
+              sdk/v0.19.0
+            )
+          )
+      end
+
+      it "uses the correct path-prefixed tags" do
+        expect(commits_url).to eq(
+          "https://github.com/opentdf/platform/" \
+          "compare/protocol/go/v0.30.0...protocol/go/v0.31.0"
+        )
+      end
+    end
+
     context "with a github repo and tags with no prefix" do
       before do
         allow(builder)
