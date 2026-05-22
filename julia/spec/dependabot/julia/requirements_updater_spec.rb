@@ -63,6 +63,16 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
         ["1", "1.0.0", "1"],
         # Caret spec covering the target
         ["^2.0", "2.6.0", "^2.0"]
+      ],
+      "bumps exact pins to the new target rather than appending a looser spec" => [
+        # An exact "=X" pin expresses a hard constraint; appending would silently
+        # relax it. Bump the pin to the new exact version instead.
+        ["=6.1.0", "6.1.1", "=6.1.1"],
+        ["=6.1.0", "7.0.0", "=7.0.0"],
+        ["=0.0.43", "0.0.44", "=0.0.44"],
+        ["=1.2.3", "2.0.0", "=2.0.0"],
+        # Tolerate spaces around the operator
+        ["= 1.2.3", "1.5.0", "=1.5.0"]
       ]
     }.each do |description, test_cases|
       context "when #{description}" do
