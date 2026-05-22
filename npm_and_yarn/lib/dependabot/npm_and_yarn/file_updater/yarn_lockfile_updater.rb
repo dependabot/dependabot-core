@@ -286,6 +286,9 @@ module Dependabot
           # Skip if yarn already resolved to the target version
           return if berry_lockfile_version_matches?(lockfile_content, dep_name, T.cast(version, String))
 
+          # Save the current package.json contents before yarn up modifies them
+          saved_package_jsons = save_package_jsons
+
           # Yarn resolved to a different version — re-install with exact target
           Helpers.run_yarn_command(
             "up #{dep_name}@#{version} #{yarn_berry_args}".strip,
@@ -300,6 +303,32 @@ module Dependabot
             replace_berry_lockfile_declaration(
               yarn_lock, dep_name, T.cast(version, String), requirement
             )
+          end
+
+          # Restore original package.json files and run yarn install to normalize
+          # the lockfile with the correct range descriptors — same approach as
+          # yarn classic's replaceLockfileDeclaration flow.
+          restore_package_jsons(saved_package_jsons)
+          Helpers.run_yarn_command("install #{yarn_berry_args}".strip)
+        end
+
+        # Saves the current content of all package.json files in the temp directory.
+        sig { returns(T::Hash[String, String]) }
+        def save_package_jsons
+          result = T.let({}, T::Hash[String, String])
+          package_files.each do |file|
+            next unless File.exist?(file.name)
+
+            result[file.name] = File.read(file.name)
+          end
+          result
+        end
+
+        # Restores previously saved package.json contents.
+        sig { params(saved: T::Hash[String, String]).void }
+        def restore_package_jsons(saved)
+          saved.each do |path, content|
+            File.write(path, content)
           end
         end
 
