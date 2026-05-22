@@ -207,12 +207,20 @@ module Dependabot
         end
 
         if constraints && !constraints.empty?
-          Dependabot.logger.info("Parsed constraints for #{name}: #{constraints.join(', ')}")
-          Requirement.new(constraints)
+          normalized_constraints = split_compound_constraints(constraints)
+          Dependabot.logger.info("Parsed constraints for #{name}: #{normalized_constraints.join(', ')}")
+          Requirement.new(normalized_constraints)
         end
       rescue StandardError => e
         Dependabot.logger.error("Error processing constraints for #{name}: #{e.message}")
         nil
+      end
+
+      sig { params(constraints: T::Array[String]).returns(T::Array[String]) }
+      def split_compound_constraints(constraints)
+        constraints.flat_map do |constraint|
+          constraint.strip.split(/\s+(?=[<>]=?|=)/)
+        end
       end
 
       # rubocop:disable Metrics/CyclomaticComplexity

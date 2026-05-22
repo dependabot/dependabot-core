@@ -492,6 +492,24 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
     end
 
+    context "when node engines include a compound range and an alternative comparator" do
+      let(:package_json) do
+        {
+          "name" => "example",
+          "version" => "1.0.0",
+          "engines" => {
+            "node" => "^22.0.0 || >=24"
+          }
+        }
+      end
+
+      it "returns a requirement without raising illformed requirement errors" do
+        requirement = helper.find_engine_constraints_as_requirement("node")
+        expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
+        expect(requirement.constraints).to eq([">= 22.0.0", "< 23.0.0", ">= 24"])
+      end
+    end
+
     context "when the engines field contains npm >=11.0.0 constraint" do
       let(:package_json) do
         {
