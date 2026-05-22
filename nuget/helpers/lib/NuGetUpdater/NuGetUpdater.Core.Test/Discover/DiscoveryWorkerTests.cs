@@ -2266,4 +2266,63 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             }
         );
     }
+
+    [Theory]
+    [InlineData("net10.0", "net10.0")]
+    [InlineData("net10.0-android", "net10.0")]
+    [InlineData("net10.0-android", "net10.0-android")]
+    public async Task TestDependencyGraphWithDifferentTargetFrameworks(string projectTfm, string packageTfm)
+    {
+        await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Parent.Package", "1.0.0", packageTfm,
+                    dependencyGroups: [(null, [("Transitive.Package", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", packageTfm,
+                    dependencyGroups: [(null, [("Super.Transitive.Package", "3.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Super.Transitive.Package", "3.0.0", "net8.0"),
+            ],
+            workspacePath: "src",
+            files:
+            [
+                ("src/project.csproj", $"""
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFrameworks>{projectTfm}</TargetFrameworks>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Parent.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects =
+                [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = [projectTfm],
+                        Dependencies =
+                        [
+                            new Dependency("Parent.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: [projectTfm]),
+                            new Dependency("Super.Transitive.Package", "3.0.0", DependencyType.Unknown, TargetFrameworks: [projectTfm], IsTopLevel: false),
+                            new Dependency("Transitive.Package", "2.0.0", DependencyType.Unknown, TargetFrameworks: [projectTfm], IsTopLevel: false),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                        ExpectedDependencyGraph = new Dictionary<string, ImmutableArray<string>>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["Parent.Package/1.0.0"] = ["Transitive.Package/2.0.0"],
+                            ["Transitive.Package/2.0.0"] = ["Super.Transitive.Package/3.0.0"],
+                            ["Super.Transitive.Package/3.0.0"] = [],
+                        }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase),
+                    }
+                ]
+            }
+        );
+    }
 }
