@@ -402,7 +402,20 @@ module Dependabot
           return []
         end
 
-        parse_blocked_versions_response(response.body.to_s)
+        parsed = JSON.parse(response.body.to_s)
+        unless parsed.is_a?(Hash)
+          Dependabot.logger.warn("Unexpected blocked versions format, continuing without them")
+          return []
+        end
+        data = parsed.fetch("data", [])
+        unless data.is_a?(Array) && data.all?(Hash)
+          Dependabot.logger.warn("Unexpected blocked versions format, continuing without them")
+          return []
+        end
+        data
+      rescue JSON::ParserError, TypeError => e
+        Dependabot.logger.warn("Failed to parse blocked versions response: #{e.message}, continuing without them")
+        []
       rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError => e
         Dependabot.logger.warn("Failed to fetch blocked versions: #{e.message}, continuing without them")
         []
@@ -410,24 +423,6 @@ module Dependabot
     end
 
     private
-
-    sig { params(body: String).returns(T::Array[T::Hash[String, T.untyped]]) }
-    def parse_blocked_versions_response(body)
-      parsed = JSON.parse(body)
-      unless parsed.is_a?(Hash)
-        Dependabot.logger.warn("Unexpected blocked versions format, continuing without them")
-        return []
-      end
-      data = parsed.fetch("data", [])
-      unless data.is_a?(Array) && data.all?(Hash)
-        Dependabot.logger.warn("Unexpected blocked versions format, continuing without them")
-        return []
-      end
-      data
-    rescue JSON::ParserError, TypeError => e
-      Dependabot.logger.warn("Failed to parse blocked versions response: #{e.message}, continuing without them")
-      []
-    end
 
     # Update return type to allow returning a Hash or nil
     sig do
