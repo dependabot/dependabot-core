@@ -3039,7 +3039,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
-      context "with a security update that pins to exact target version" do
+      context "when the target version differs from latest in range (security update)" do
         let(:project_name) { "yarn_berry/security_update" }
         let(:files) { project_dependency_files(project_name) }
         let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
@@ -3064,14 +3064,46 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           }]
         end
 
-        it "resolves to the exact target version with the range descriptor" do
+        it "pins to the exact target version with the caret range descriptor" do
           parsed_lockfile = YAML.safe_load(updated_yarn_lock.content)
           axios_entry = parsed_lockfile.find { |k, _| k.is_a?(String) && k.include?("axios") }
 
-          # Lockfile key should keep the range
           expect(axios_entry&.first).to include("^1.15.2")
-          # Resolved version should be the exact target, not latest
           expect(axios_entry&.last&.dig("version")).to eq("1.15.2")
+        end
+      end
+
+      context "when the target version differs from latest in range (version update with ignore)" do
+        let(:project_name) { "yarn_berry/security_update" }
+        let(:files) { project_dependency_files(project_name) }
+        let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+        let(:dependency_name) { "lodash" }
+        let(:version) { "4.17.10" }
+        let(:previous_version) { "4.17.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "~4.17.10",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "~4.17.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "pins to the exact target version with the tilde range descriptor" do
+          parsed_lockfile = YAML.safe_load(updated_yarn_lock.content)
+          lodash_entry = parsed_lockfile.find { |k, _| k.is_a?(String) && k.include?("lodash") }
+
+          expect(lodash_entry&.first).to include("~4.17.10")
+          expect(lodash_entry&.last&.dig("version")).to eq("4.17.10")
         end
       end
     end
