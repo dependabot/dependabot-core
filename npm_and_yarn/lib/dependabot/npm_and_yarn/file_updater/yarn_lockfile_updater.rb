@@ -260,10 +260,11 @@ module Dependabot
           ).void
         end
         def pin_berry_versions_if_needed(top_level_dependency_updates, yarn_lock)
-          lockfile_content = File.read(yarn_lock.name)
+          parsed_lockfile = parse_berry_lockfile(yarn_lock.name)
+          return unless parsed_lockfile
 
           top_level_dependency_updates.each do |dep|
-            pin_berry_version_if_needed(dep, yarn_lock, lockfile_content)
+            pin_berry_version_if_needed(dep, yarn_lock, parsed_lockfile)
           end
         end
 
@@ -271,10 +272,10 @@ module Dependabot
           params(
             dep: T::Hash[Symbol, T.untyped],
             yarn_lock: Dependabot::DependencyFile,
-            lockfile_content: String
+            parsed_lockfile: T::Hash[String, T.untyped]
           ).void
         end
-        def pin_berry_version_if_needed(dep, yarn_lock, lockfile_content)
+        def pin_berry_version_if_needed(dep, yarn_lock, parsed_lockfile)
           version = dep[:version]
           return unless version
 
@@ -282,123 +283,88 @@ module Dependabot
           reqs = dep[:requirements]
           return if reqs.nil? || reqs.empty?
           return if reqs.any? { |req| req[:source] && req[:source][:type] == "git" }
+          return if berry_lockfile_version_matches?(parsed_lockfile, dep_name, T.cast(version, String))
 
-          # Skip if yarn already resolved to the target version
-          return if berry_lockfile_version_matches?(lockfile_content, dep_name, T.cast(version, String))
-
-          # Save the current package.json contents before yarn up modifies them
           saved_package_jsons = save_package_jsons
 
-          # Yarn resolved to a different version — re-install with exact target
           Helpers.run_yarn_command(
             "up #{dep_name}@#{version} #{yarn_berry_args}".strip,
             fingerprint: "up <dep>@<version> #{yarn_berry_args}".strip
           )
 
-          # Rewrite lockfile descriptors from exact version back to the range
           reqs.each do |req|
             requirement = req[:requirement]
             next unless requirement
 
-            replace_berry_lockfile_declaration(
-              yarn_lock, dep_name, T.cast(version, String), requirement
-            )
+            replace_berry_lockfile_declaration(yarn_lock, dep_name, T.cast(version, String), requirement)
           end
 
-          # Restore original package.json files and run yarn install to normalize
-          # the lockfile with the correct range descriptors — same approach as
-          # yarn classic's replaceLockfileDeclaration flow.
+          # Restore package.json and re-install to normalize lockfile descriptors,
+          # same as yarn classic's replaceLockfileDeclaration flow.
           restore_package_jsons(saved_package_jsons)
           Helpers.run_yarn_command("install #{yarn_berry_args}".strip)
         end
 
-        # Saves the current content of all package.json files in the temp directory.
-        sig { returns(T::Hash[String, String]) }
-        def save_package_jsons
-          result = T.let({}, T::Hash[String, String])
-          package_files.each do |file|
-            next unless File.exist?(file.name)
+        # Parses a yarn berry lockfile (YAML format). Returns nil if unparseable.
+        sig { params(lockfile_path: String).returns(T.nilable(T::Hash[String, T.untyped])) }
+        def parse_berry_lockfile(lockfile_path)
+          return unless File.exist?(lockfile_path)
 
-            result[file.name] = File.read(file.name)
-          end
-          result
+          parsed = YAML.safe_load_file(lockfile_path)
+          parsed.is_a?(Hash) ? parsed : nil
         end
 
-        # Restores previously saved package.json contents.
-        sig { params(saved: T::Hash[String, String]).void }
-        def restore_package_jsons(saved)
-          saved.each do |path, content|
-            File.write(path, content)
-          end
-        end
-
-        # Checks if the yarn berry lockfile has the target version for a dependency.
-        sig { params(content: String, dep_name: String, version: String).returns(T::Boolean) }
-        def berry_lockfile_version_matches?(content, dep_name, version)
-          parsed = YAML.safe_load(content)
-          return false unless parsed.is_a?(Hash)
-
+        sig { params(parsed: T::Hash[String, T.untyped], dep_name: String, version: String).returns(T::Boolean) }
+        def berry_lockfile_version_matches?(parsed, dep_name, version)
           parsed.any? do |key, value|
-            next false unless key.is_a?(String) && value.is_a?(Hash)
+            next false unless value.is_a?(Hash)
 
-            key.split(", ").any? { |part| split_berry_descriptor(part)[0] == dep_name } &&
+            key.to_s.split(", ").any? { |part| split_berry_descriptor(part)[0] == dep_name } &&
               value["version"] == version
           end
         end
 
-        # Rewrites a yarn berry lockfile descriptor from an exact version key
-        # back to the semver range key. Reads the protocol from the existing
-        # lockfile entry rather than hardcoding it.
-        #
+        # Rewrites a yarn berry lockfile descriptor key from exact version to range.
         # Example: "axios@npm:1.15.2" → "axios@npm:^1.15.2"
-        # The resolved version, checksum, and dependencies remain unchanged.
         sig do
-          params(
-            yarn_lock: Dependabot::DependencyFile,
-            dep_name: String,
-            version: String,
-            requirement: String
-          ).void
+          params(yarn_lock: Dependabot::DependencyFile, dep_name: String, version: String, requirement: String).void
         end
         def replace_berry_lockfile_declaration(yarn_lock, dep_name, version, requirement)
           lockfile_path = yarn_lock.name
           return unless File.exist?(lockfile_path)
 
           content = File.read(lockfile_path)
-          exact_key = find_berry_lockfile_key(content, dep_name, version)
+          parsed = parse_berry_lockfile(lockfile_path)
+          return unless parsed
+
+          exact_key = find_berry_exact_key(parsed, dep_name, version)
           return unless exact_key
 
-          protocol = extract_berry_protocol(exact_key, dep_name)
-          new_key = "#{dep_name}@#{protocol}#{requirement}"
+          _, descriptor = split_berry_descriptor(
+            T.must(exact_key.split(", ").find { |p| split_berry_descriptor(p)[0] == dep_name })
+          )
+          protocol = descriptor&.match(/^([a-z]+:)/)&.then { |m| m[1] } || ""
 
-          escaped_exact = Regexp.escape(exact_key)
-          updated_content = content.gsub(/^"#{escaped_exact}":/m, "\"#{new_key}\":")
-          File.write(lockfile_path, updated_content)
+          new_key = "#{dep_name}@#{protocol}#{requirement}"
+          escaped = Regexp.escape(exact_key)
+          File.write(lockfile_path, content.gsub(/^"#{escaped}":/m, "\"#{new_key}\":"))
         end
 
-        # Finds the lockfile key matching the given dependency name and exact version.
-        # Handles scoped packages (e.g., @scope/pkg) and composite keys (e.g., "a@npm:1.0, a@npm:^1.0").
-        sig { params(content: String, dep_name: String, version: String).returns(T.nilable(String)) }
-        def find_berry_lockfile_key(content, dep_name, version)
-          parsed = YAML.safe_load(content)
-          return unless parsed.is_a?(Hash)
-
+        # Finds the lockfile key containing the given dep name with the exact version.
+        sig { params(parsed: T::Hash[String, T.untyped], dep_name: String, version: String).returns(T.nilable(String)) }
+        def find_berry_exact_key(parsed, dep_name, version)
           parsed.keys.find do |key|
             next false unless key.is_a?(String)
 
-            key.split(", ").any? { |part| berry_descriptor_matches?(part, dep_name, version) }
+            key.split(", ").any? do |part|
+              name, desc = split_berry_descriptor(part)
+              name == dep_name && (desc&.end_with?(version) || false)
+            end
           end
         end
 
-        # Checks if a single descriptor part matches the given dep name and version.
-        sig { params(part: String, dep_name: String, version: String).returns(T::Boolean) }
-        def berry_descriptor_matches?(part, dep_name, version)
-          name, descriptor = split_berry_descriptor(part)
-          name == dep_name && (descriptor&.end_with?(version) || false)
-        end
-
-        # Splits a yarn berry descriptor into package name and version/range part.
-        # Handles scoped packages like @scope/pkg@npm:^1.0.0.
+        # Splits "axios@npm:^1.15.2" into ["axios", "npm:^1.15.2"].
+        # Handles scoped packages like "@scope/pkg@npm:^1.0.0".
         sig { params(descriptor: String).returns([String, T.nilable(String)]) }
         def split_berry_descriptor(descriptor)
           if descriptor.start_with?("@")
@@ -412,27 +378,20 @@ module Dependabot
           end
         end
 
-        # Extracts the protocol prefix (e.g., "npm:") from a yarn berry
-        # lockfile descriptor key.
-        sig { params(key: String, dep_name: String).returns(String) }
-        def extract_berry_protocol(key, dep_name)
-          # Match the part after dep_name@ to extract protocol
-          # e.g., "axios@npm:1.15.2" → "npm:"
-          # e.g., "@scope/pkg@npm:^1.0.0" → "npm:"
-          parts = key.split(", ").find { |p| p.include?(dep_name) }
-          return "" unless parts
+        sig { returns(T::Hash[String, String]) }
+        def save_package_jsons
+          result = T.let({}, T::Hash[String, String])
+          package_files.each do |file|
+            next unless File.exist?(file.name)
 
-          after_name = if parts.start_with?("@")
-                         at_index = parts.index("@", 1)
-                         return "" unless at_index
+            result[file.name] = File.read(file.name)
+          end
+          result
+        end
 
-                         parts[(at_index + 1)..]
-                       else
-                         parts.split("@", 2)[1]
-                       end
-
-          match = after_name&.match(/^([a-z]+:)/)
-          match ? T.must(match[1]) : ""
+        sig { params(saved: T::Hash[String, String]).void }
+        def restore_package_jsons(saved)
+          saved.each { |path, content| File.write(path, content) }
         end
 
         sig { params(yarn_lock: Dependabot::DependencyFile).returns(T::Hash[String, String]) }
