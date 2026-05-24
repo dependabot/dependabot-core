@@ -201,8 +201,8 @@ module Dependabot
               original_content = File.read(lockfile_name)
 
               Helpers.run_yarn_command(
-                "up -R #{dependency.name} #{Helpers.yarn_berry_args}".strip,
-                fingerprint: "up -R <dependency_name> #{Helpers.yarn_berry_args}".strip
+                "up -R #{dependency.name} #{Helpers.yarn_berry_upgrade_args}".strip,
+                fingerprint: "up -R <dependency_name> #{Helpers.yarn_berry_upgrade_args}".strip
               )
 
               updated_content = File.read(lockfile_name)
