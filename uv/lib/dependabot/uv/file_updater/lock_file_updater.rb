@@ -96,10 +96,15 @@ module Dependabot
           updated_files = pyproject_files.filter_map do |file|
             next unless file_changed?(file)
 
-            updated_file(
+            updated = updated_file(
               file: file,
               content: T.must(updated_pyproject_content_for(file))
             )
+            # support_file must be false to prevent DependencyChangeBuilder from discarding the inner TOML,
+            # since doing so causes a conflict between the updated lock file and the committed TOML
+            # and breaks `uv sync --locked` in CI.
+            updated.support_file = false
+            updated
           end
 
           if lockfile && !build_system_only_dependency?

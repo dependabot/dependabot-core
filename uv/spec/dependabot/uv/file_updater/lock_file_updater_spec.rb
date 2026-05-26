@@ -479,6 +479,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
 
         member_pyproject = updated_dependency_files.find { |f| f.name == "packages/my-package/pyproject.toml" }
         expect(member_pyproject.content).to include('"click>=8.2.0"')
+        expect(member_pyproject.support_file).to be(false)
 
         updated_lock = updated_dependency_files.find { |f| f.name == "uv.lock" }
         expect(updated_lock.content).to include('version = "8.2.0"')
