@@ -7,6 +7,7 @@ require "sorbet-runtime"
 require "dependabot/environment"
 require "dependabot/experiments"
 require "dependabot/dependency_graphers"
+require "dependabot/file_filtering"
 require "dependabot/logger"
 
 # Updater components
@@ -52,6 +53,8 @@ module Dependabot
       branch = job.source.branch || default_branch
 
       T.must(job.source.directories).each do |directory|
+        next if Dependabot::FileFiltering.should_exclude_path?(directory, "graph job directory", job.exclude_paths)
+
         # Each directory is processed with its own error handling so one failure will not
         # block the overall job.
         process_directory(branch:, directory:)
@@ -156,7 +159,14 @@ module Dependabot
 
     sig { params(directory: String).returns(T::Array[Dependabot::DependencyFile]) }
     def dependency_files_for(directory)
-      dependency_files.select { |f| f.directory == directory }
+      files = dependency_files.select { |f| f.directory == directory }
+      exclude_paths = job.exclude_paths
+      return files if exclude_paths.nil? || exclude_paths.empty?
+
+      files.reject do |file|
+        path = File.join(file.directory, file.name).sub(%r{^/+}, "/")
+        Dependabot::FileFiltering.should_exclude_path?(path, "graph job dependency file", exclude_paths)
+      end
     end
 
     sig do
