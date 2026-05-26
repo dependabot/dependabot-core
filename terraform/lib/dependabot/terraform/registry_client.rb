@@ -21,6 +21,10 @@ module Dependabot
         T::Array[String]
       )
       PUBLIC_HOSTNAME = "registry.terraform.io"
+      CERTIFICATE_ERROR_KEYWORDS = T.let(
+        %w(certificate SSL x509 verify).freeze,
+        T::Array[String]
+      )
 
       sig { params(hostname: String, credentials: T::Array[Dependabot::Credential]).void }
       def initialize(hostname: PUBLIC_HOSTNAME, credentials: [])
@@ -176,10 +180,14 @@ module Dependabot
         @services ||= T.let(
           begin
             response = http_get(url_for("/.well-known/terraform.json"))
-            if response.status == 200 && !response.body.empty?
-              JSON.parse(response.body)
-            else
+            if response.status == 200
+              response.body.empty? ? {} : JSON.parse(response.body)
+            elsif response.status == 404
               {}
+            elsif response.status == 401
+              raise PrivateSourceAuthenticationFailure, hostname
+            else
+              raise PrivateSourceBadResponse, hostname
             end
           rescue JSON::ParserError => e
             Dependabot.logger.warn("Failed to parse Terraform registry services: #{e.message}")
@@ -207,7 +215,11 @@ module Dependabot
           url: url.to_s,
           headers: headers_for(hostname)
         )
-      rescue Excon::Error::Socket, Excon::Error::Timeout
+      rescue Excon::Error::Socket => e
+        raise PrivateSourceCertificateFailure, hostname if certificate_error?(e.message)
+
+        raise PrivateSourceBadResponse, hostname
+      rescue Excon::Error::Timeout
         raise PrivateSourceBadResponse, hostname
       end
 
@@ -239,6 +251,11 @@ module Dependabot
       sig { params(message: String).returns(Dependabot::DependabotError) }
       def error(message)
         Dependabot::DependabotError.new(message)
+      end
+
+      sig { params(message: String).returns(T::Boolean) }
+      def certificate_error?(message)
+        CERTIFICATE_ERROR_KEYWORDS.any? { |keyword| message.include?(keyword) }
       end
     end
   end
