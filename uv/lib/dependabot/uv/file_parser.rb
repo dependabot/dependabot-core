@@ -3,6 +3,7 @@
 
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/experiments"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/file_parsers/base/dependency_set"
@@ -55,7 +56,7 @@ module Dependabot
 
         dependency_set += pyproject_file_dependencies if pyproject
         dependency_set += uv_lock_file_dependencies
-        dependency_set += requirement_dependencies if requirement_files.any?
+        dependency_set += requirement_dependencies if requirement_files.any? && !exclude_pip_files?
 
         dependency_set.dependencies
       end
@@ -186,6 +187,11 @@ module Dependabot
       sig { returns(T::Array[DependencyFile]) }
       def requirement_files
         dependency_files.select { |f| f.name.end_with?(".txt", ".in") }
+      end
+
+      sig { returns(T::Boolean) }
+      def exclude_pip_files?
+        Dependabot::Experiments.enabled?(:uv_excludes_pip)
       end
 
       sig { returns(T::Array[DependencyFile]) }
