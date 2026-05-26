@@ -933,17 +933,37 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     context "when an excluded path matches a configured directory" do
       let(:exclude_paths) { ["subproject"] }
 
-      it "skips the excluded directory and processes the rest" do
-        payload = nil
-        expect(service).to receive(:create_dependency_submission).once do |args|
-          payload = args[:dependency_submission].payload
+      it "emits a SKIPPED submission for the excluded directory so the previous snapshot is replaced" do
+        payloads = []
+        allow(service).to receive(:create_dependency_submission) do |args|
+          payloads << args[:dependency_submission].payload
         end
 
         update_graph_processor.run
 
-        expect(payload).not_to be_nil
-        expect(payload[:job][:correlator]).to eq("dependabot-bundler")
-        expect(payload[:manifests].keys).to eq(["/Gemfile.lock"])
+        expect(payloads.length).to eq(2)
+        included = payloads.find { |p| p[:job][:correlator] == "dependabot-bundler" }
+        excluded = payloads.find { |p| p[:job][:correlator] == "dependabot-bundler-subproject" }
+
+        expect(included[:manifests].keys).to eq(["/Gemfile.lock"])
+
+        expect(excluded[:detector][:name]).to eq("dependabot")
+        expect(excluded[:manifests]).to be_empty
+        expect(excluded[:job][:html_url]).to be_nil if excluded[:job].key?(:html_url)
+        expect(excluded[:scanned]).to be_nil if excluded.key?(:scanned)
+      end
+
+      it "marks the excluded-directory submission as SKIPPED with the exclude_paths reason" do
+        submissions = []
+        allow(service).to receive(:create_dependency_submission) do |args|
+          submissions << args[:dependency_submission]
+        end
+
+        update_graph_processor.run
+
+        excluded = submissions.find { |s| s.payload[:job][:correlator] == "dependabot-bundler-subproject" }
+        expect(excluded.status).to eq(GithubApi::DependencySubmission::SnapshotStatus::SKIPPED)
+        expect(excluded.reason).to eq(GithubApi::DependencySubmission::EMPTY_REASON_EXCLUDED_PATHS)
       end
     end
 
@@ -962,6 +982,24 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         expect(subproject_payload).not_to be_nil
         # Gemfile.lock was excluded, leaving only the Gemfile manifest for /subproject.
         expect(subproject_payload[:manifests].keys).to eq(["/subproject/Gemfile"])
+      end
+    end
+
+    context "when every dependency file in a directory is excluded" do
+      let(:exclude_paths) { ["subproject/Gemfile", "subproject/Gemfile.lock"] }
+
+      it "emits a SKIPPED submission tagged with the exclude_paths reason" do
+        submissions = []
+        allow(service).to receive(:create_dependency_submission) do |args|
+          submissions << args[:dependency_submission]
+        end
+
+        update_graph_processor.run
+
+        excluded = submissions.find { |s| s.payload[:job][:correlator] == "dependabot-bundler-subproject" }
+        expect(excluded.status).to eq(GithubApi::DependencySubmission::SnapshotStatus::SKIPPED)
+        expect(excluded.reason).to eq(GithubApi::DependencySubmission::EMPTY_REASON_EXCLUDED_PATHS)
+        expect(excluded.payload[:manifests]).to be_empty
       end
     end
 

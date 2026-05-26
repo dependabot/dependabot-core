@@ -21,6 +21,7 @@ module GithubApi
     # Expected reasons for empty or degraded snapshots
     DEGRADED_REASON_SUBDEPENDENCY_ERR = "error fetching sub-dependencies"
     EMPTY_REASON_NO_MANIFESTS = "missing manifest files"
+    EMPTY_REASON_EXCLUDED_PATHS = "all manifest files excluded by exclude_paths configuration"
 
     class SnapshotStatus < T::Enum
       enums do
