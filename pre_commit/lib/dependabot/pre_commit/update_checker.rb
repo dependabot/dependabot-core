@@ -349,7 +349,8 @@ module Dependabot
           source: source,
           credentials: credentials,
           requirements: dependency.requirements,
-          current_version: dependency.version
+          current_version: dependency.version,
+          cooldown_options: update_cooldown
         )
       rescue StandardError => e
         Dependabot.logger.error("Error creating checker for #{language}: #{e.message}")
