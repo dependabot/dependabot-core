@@ -193,25 +193,84 @@ module Dependabot
       def find_engine_constraints_as_requirement(name)
         Dependabot.logger.info("Processing engine constraints for #{name}")
 
-        return nil unless @engines.is_a?(Hash) && @engines[name]
-
-        raw_constraint = @engines[name].to_s.strip
+        raw_constraint = raw_engine_constraint(name)
         return nil if raw_constraint.empty?
 
-        constraints = ConstraintHelper.extract_ruby_constraints(raw_constraint)
-        # When constraints are invalid we return constraints array nil
-        if constraints.nil?
+        constraint_groups = parse_constraint_groups(raw_constraint)
+
+        if constraint_groups.empty?
           Dependabot.logger.warn(
             "Unrecognized constraint format for #{name}: #{raw_constraint}"
           )
+          return nil
         end
 
-        if constraints && !constraints.empty?
-          Dependabot.logger.info("Parsed constraints for #{name}: #{constraints.join(', ')}")
-          Requirement.new(constraints)
-        end
+        parsed_constraints = constraint_groups.map { |group| group.join(" ") }.join(" || ")
+        Dependabot.logger.info("Parsed constraints for #{name}: #{parsed_constraints}")
+
+        requirement_for_group(constraint_groups, name)
       rescue StandardError => e
         Dependabot.logger.error("Error processing constraints for #{name}: #{e.message}")
+        nil
+      end
+
+      sig { params(name: String).returns(String) }
+      def raw_engine_constraint(name)
+        return "" unless @engines.is_a?(Hash) && @engines[name]
+
+        @engines[name].to_s.strip
+      end
+
+      sig { params(raw_constraint: String).returns(T::Array[T::Array[String]]) }
+      def parse_constraint_groups(raw_constraint)
+        raw_constraint.split("||").map(&:strip).reject(&:empty?).filter_map do |constraint_group|
+          constraints = ConstraintHelper.extract_ruby_constraints(constraint_group)
+          next if constraints.nil?
+
+          expanded_constraints(constraints)
+        end.reject(&:empty?)
+      end
+
+      sig { params(constraints: T::Array[String]).returns(T::Array[String]) }
+      def expanded_constraints(constraints)
+        constraints.flat_map do |constraint|
+          parts = constraint.strip.split(/\s+/)
+          if parts.length > 1 && parts.all? { |part| part.match?(ConstraintHelper::VALID_CONSTRAINT_REGEX) }
+            parts
+          else
+            [constraint]
+          end
+        end
+      end
+
+      sig do
+        params(
+          constraint_groups: T::Array[T::Array[String]],
+          name: String
+        ).returns(Requirement)
+      end
+      def requirement_for_group(constraint_groups, name)
+        requirements = constraint_groups.map { |constraints| Requirement.new(constraints) }
+
+        current_version = current_engine_version(name)
+        return requirements.first unless current_version
+
+        matching_requirement = requirements.find { |requirement| requirement.satisfied_by?(current_version) }
+        matching_requirement || requirements.first
+      end
+
+      sig { params(name: String).returns(T.nilable(Dependabot::Version)) }
+      def current_engine_version(name)
+        raw_version = if name == Language::NAME
+                        Helpers.node_version
+                      else
+                        @installed_versions[name]
+                      end
+
+        return nil if raw_version.to_s.strip.empty?
+
+        Version.new(raw_version)
+      rescue StandardError
         nil
       end
 

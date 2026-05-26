@@ -522,6 +522,45 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
     end
 
+    context "when the engines field contains a caret OR constraint" do
+      let(:package_json) do
+        {
+          "name" => "example",
+          "version" => "1.0.0",
+          "engines" => {
+            "node" => "^22 || >=24"
+          }
+        }
+      end
+
+      it "expands caret constraints into separate comparators" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:node_version).and_return("22.6.0")
+
+        requirement = helper.find_engine_constraints_as_requirement("node")
+
+        expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
+        expect(requirement.constraints).to eq([">= 22.0.0", "< 23.0.0"])
+      end
+
+      it "selects the matching OR branch for current node version" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:node_version).and_return("24.2.0")
+
+        requirement = helper.find_engine_constraints_as_requirement("node")
+
+        expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
+        expect(requirement.constraints).to eq([">= 24"])
+      end
+
+      it "falls back to the first OR branch when current node version is unavailable" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:node_version).and_return(nil)
+
+        requirement = helper.find_engine_constraints_as_requirement("node")
+
+        expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
+        expect(requirement.constraints).to eq([">= 22.0.0", "< 23.0.0"])
+      end
+    end
+
     context "when the engines field does not contain the specified package manager" do
       it "returns nil" do
         requirement = helper.find_engine_constraints_as_requirement("nonexistent")
