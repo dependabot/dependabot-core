@@ -302,13 +302,11 @@ public class FileWriterWorker
                 continue;
             }
 
-            var computedUpdateOperations = await PackageReferenceUpdater.ComputeUpdateOperations(
-                repoContentsPath.FullName,
-                projectPath.FullName,
-                targetFramework,
+            var computedUpdateOperations = PackageReferenceUpdater.ComputeUpdateOperations(
                 initialTopLevelDependencies,
                 desiredDependencies,
                 resolvedDependencies.Value,
+                finalProjectDiscovery.DependencyGraph,
                 _logger);
             var filteredUpdateOperations = computedUpdateOperations
                 .Where(op =>

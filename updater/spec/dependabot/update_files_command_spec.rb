@@ -443,7 +443,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
     subject(:perform_job) { job.perform_job }
 
     before do
-      Dependabot::Experiments.register(:dependabot_blocked_versions, true)
+      Dependabot::Experiments.register(:blocked_versions, true)
       allow(service).to receive(:fetch_blocked_versions).and_return(blocked_versions)
     end
 
@@ -457,7 +457,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       ]
     end
 
-    it "fetches blocked versions and injects them into the job definition" do
+    it "fetches blocked versions and sets them on the job" do
       dummy_runner = double(run: nil)
       allow(Dependabot::Updater).to receive(:new).and_return(dummy_runner)
       allow(dummy_runner).to receive(:run)
@@ -475,7 +475,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
     context "when the experiment is enabled via the job definition" do
       let(:job_definition) do
         definition = JSON.parse(fixture("jobs/job_without_credentials.json"))
-        definition["job"]["experiments"] = { "dependabot_blocked_versions" => true }
+        definition["job"]["experiments"] = { "blocked-versions" => true }
         definition
       end
 
@@ -484,7 +484,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         allow(service).to receive(:fetch_blocked_versions).and_return(blocked_versions)
       end
 
-      it "reads the experiment flag from the job definition and fetches blocked versions" do
+      it "registers the experiment from the job payload and fetches blocked versions" do
         dummy_runner = double(run: nil)
         allow(Dependabot::Updater).to receive(:new).and_return(dummy_runner)
         allow(dummy_runner).to receive(:run)
@@ -500,6 +500,27 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       end
     end
 
+    context "when the experiment is not enabled" do
+      before do
+        Dependabot::Experiments.reset!
+      end
+
+      it "does not fetch blocked versions" do
+        dummy_runner = double(run: nil)
+        allow(Dependabot::Updater).to receive(:new).and_return(dummy_runner)
+        allow(dummy_runner).to receive(:run)
+        allow(service).to receive(:mark_job_as_processed)
+        allow(service).to receive(:update_dependency_list)
+
+        expect(service).not_to receive(:fetch_blocked_versions)
+
+        perform_job
+
+        job_instance = job.send(:job)
+        expect(job_instance.blocked_versions).to eq([])
+      end
+    end
+
     context "when the API returns no blocked versions" do
       let(:blocked_versions) { [] }
 
@@ -512,7 +533,6 @@ RSpec.describe Dependabot::UpdateFilesCommand do
 
         perform_job
 
-        # Job should still have empty blocked_versions (the default)
         job_instance = job.send(:job)
         expect(job_instance.blocked_versions).to eq([])
       end

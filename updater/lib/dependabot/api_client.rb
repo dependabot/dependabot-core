@@ -402,7 +402,7 @@ module Dependabot
           return []
         end
 
-        parsed = JSON.parse(response.body)
+        parsed = JSON.parse(response.body.to_s)
         unless parsed.is_a?(Hash)
           Dependabot.logger.warn("Unexpected blocked versions format, continuing without them")
           return []
@@ -413,7 +413,7 @@ module Dependabot
           return []
         end
         data
-      rescue JSON::ParserError => e
+      rescue JSON::ParserError, TypeError => e
         Dependabot.logger.warn("Failed to parse blocked versions response: #{e.message}, continuing without them")
         []
       rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError => e
