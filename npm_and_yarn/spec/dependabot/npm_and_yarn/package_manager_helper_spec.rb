@@ -161,6 +161,16 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
     end
 
+    context "with OR constraints where the lower branch is on the right" do
+      let(:lockfiles) { {} }
+      let(:package_json) { { "engines" => { "pnpm" => ">=10 || >=7 <9" } } }
+
+      it "selects the highest matching supported pnpm version" do
+        expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::PNPMPackageManager)
+        expect(helper.package_manager.detected_version).to eq("10")
+      end
+    end
+
     context "when neither lockfile, packageManager, nor engines field exists" do
       let(:lockfiles) { {} }
       let(:package_json) { {} }
@@ -621,6 +631,27 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
 
         expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
         expect(requirement.constraints).to eq([">= 22.0.0", "< 23.0.0"])
+      end
+
+      context "when the lower branch appears on the right" do
+        let(:package_json) do
+          {
+            "name" => "example",
+            "version" => "1.0.0",
+            "engines" => {
+              "node" => ">=24 || >=22.0.0 <23.0.0"
+            }
+          }
+        end
+
+        it "selects the higher matching branch" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:node_version).and_return("24.2.0")
+
+          requirement = helper.find_engine_constraints_as_requirement("node")
+
+          expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
+          expect(requirement.constraints).to eq([">= 24"])
+        end
       end
     end
 
