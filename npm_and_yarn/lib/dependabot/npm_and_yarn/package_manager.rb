@@ -210,9 +210,7 @@ module Dependabot
 
         constraint_groups = constraint_groups.reject(&:empty?)
 
-        if constraint_groups.empty?
-          return nil
-        end
+        return nil if constraint_groups.empty?
 
         parsed_constraints = constraint_groups.map { |group| group.join(" ") }.join(" || ")
         Dependabot.logger.info("Parsed constraints for #{name}: #{parsed_constraints}")
