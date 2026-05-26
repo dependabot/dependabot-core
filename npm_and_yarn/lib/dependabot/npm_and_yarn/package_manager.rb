@@ -251,12 +251,13 @@ module Dependabot
       end
       def requirement_for_group(constraint_groups, name)
         requirements = constraint_groups.map { |constraints| Requirement.new(constraints) }
+        fallback_requirement = T.must(requirements.first)
 
         current_version = current_engine_version(name)
-        return requirements.first unless current_version
+        return fallback_requirement unless current_version
 
         matching_requirement = requirements.find { |requirement| requirement.satisfied_by?(current_version) }
-        matching_requirement || requirements.first
+        matching_requirement || fallback_requirement
       end
 
       sig { params(name: String).returns(T.nilable(Dependabot::Version)) }
