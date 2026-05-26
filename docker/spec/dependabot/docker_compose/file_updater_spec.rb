@@ -638,5 +638,97 @@ RSpec.describe Dependabot::DockerCompose::FileUpdater do
         its(:content) { is_expected.to include "image: ${UBUNTU_IMAGE:-ubuntu:17.10}\n" }
       end
     end
+
+    context "when dependency is in a folded scalar image field" do
+      let(:dockerfile_body) do
+        fixture("docker_compose", "composefiles", "folded_digest")
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "library/nginx",
+          version: "1.25.5",
+          previous_version: "1.25.4",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "docker-compose.yml",
+            source: {
+              tag: "1.25.5",
+              digest: "9a5f6c8a4e8b1c3b0e0c2d7c9d5f0e2b6c1a9f4d8e7b3c2a1f0d9e8c7b6a5f4d"
+            }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "docker-compose.yml",
+            source: {
+              tag: "1.25.4",
+              digest: "3f5f6c8a4e8b1c3b0e0c2d7c9d5f0e2b6c1a9f4d8e7b3c2a1f0d9e8c7b6a5f4c"
+            }
+          }],
+          package_manager: "docker_compose"
+        )
+      end
+
+      describe "the updated docker-compose.yml" do
+        subject(:updated_dockerfile) do
+          updated_files.find { |f| f.name == "docker-compose.yml" }
+        end
+
+        its(:content) do
+          is_expected.to include(
+            "docker.io/library/nginx:1.25.5@sha256:" \
+            "9a5f6c8a4e8b1c3b0e0c2d7c9d5f0e2b6c1a9f4d8e7b3c2a1f0d9e8c7b6a5f4d"
+          )
+        end
+      end
+    end
+
+    context "when dependency is in a literal scalar image field" do
+      let(:dockerfile_body) do
+        fixture("docker_compose", "composefiles", "literal_digest")
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "library/nginx",
+          version: "1.25.5",
+          previous_version: "1.25.4",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "docker-compose.yml",
+            source: {
+              tag: "1.25.5",
+              digest: "9a5f6c8a4e8b1c3b0e0c2d7c9d5f0e2b6c1a9f4d8e7b3c2a1f0d9e8c7b6a5f4d"
+            }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "docker-compose.yml",
+            source: {
+              tag: "1.25.4",
+              digest: "3f5f6c8a4e8b1c3b0e0c2d7c9d5f0e2b6c1a9f4d8e7b3c2a1f0d9e8c7b6a5f4c"
+            }
+          }],
+          package_manager: "docker_compose"
+        )
+      end
+
+      describe "the updated docker-compose.yml" do
+        subject(:updated_dockerfile) do
+          updated_files.find { |f| f.name == "docker-compose.yml" }
+        end
+
+        its(:content) do
+          is_expected.to include(
+            "docker.io/library/nginx:1.25.5@sha256:" \
+            "9a5f6c8a4e8b1c3b0e0c2d7c9d5f0e2b6c1a9f4d8e7b3c2a1f0d9e8c7b6a5f4d"
+          )
+        end
+      end
+    end
   end
 end
