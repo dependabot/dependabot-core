@@ -85,6 +85,19 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
 
       it { is_expected.to be_falsy }
+
+      context "when docker_digest_only_update_suppression experiment is enabled" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:docker_digest_only_update_suppression).and_return(true)
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:docker_created_timestamp_validation).and_return(false)
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:docker_pin_digests).and_return(false)
+        end
+
+        it { is_expected.to be_truthy }
+      end
     end
   end
 
@@ -3221,6 +3234,130 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it "returns true" do
         expect(digest_up_to_date?).to be true
+      end
+    end
+  end
+
+  describe "#digest_up_to_date? with docker_digest_only_update_suppression experiment" do
+    subject(:digest_up_to_date?) { checker.send(:digest_up_to_date?) }
+
+    let(:headers_response) do
+      fixture("docker", "registry_manifest_headers", "generic.json")
+    end
+
+    context "when experiment is enabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:docker_digest_only_update_suppression).and_return(true)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:docker_created_timestamp_validation).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:docker_pin_digests).and_return(false)
+      end
+
+      context "when the tag has not changed but the digest has" do
+        let(:version) { "17.10" }
+        let(:source) do
+          {
+            tag: "17.10",
+            digest: "old_digest_that_differs_from_registry"
+          }
+        end
+
+        before do
+          stub_request(:head, repo_url + "manifests/17.10")
+            .and_return(status: 200, headers: JSON.parse(headers_response))
+        end
+
+        it "treats the digest as up-to-date (suppresses digest-only update)" do
+          expect(digest_up_to_date?).to be true
+        end
+      end
+
+      context "when the tag has changed and the digest differs" do
+        let(:version) { "17.04" }
+        let(:source) do
+          {
+            tag: "17.04",
+            digest: "old_digest"
+          }
+        end
+
+        before do
+          stub_request(:head, repo_url + "manifests/17.10")
+            .and_return(status: 200, headers: JSON.parse(headers_response))
+        end
+
+        it "reports the digest as out of date" do
+          expect(digest_up_to_date?).to be false
+        end
+      end
+
+      context "when only a digest is present (no tag)" do
+        let(:version) { "latest" }
+        let(:source) do
+          {
+            digest: "old_digest"
+          }
+        end
+
+        before do
+          stub_request(:head, repo_url + "manifests/latest")
+            .and_return(status: 200, headers: JSON.parse(headers_response))
+        end
+
+        it "still detects digest changes (suppression only applies to tagged images)" do
+          expect(digest_up_to_date?).to be false
+        end
+      end
+
+      context "when the tag is non-comparable (e.g., 'latest' or distro codename) with digest" do
+        let(:version) { "artful" }
+        let(:source) do
+          {
+            tag: "artful",
+            digest: "old_digest_that_differs_from_registry"
+          }
+        end
+
+        before do
+          stub_request(:head, repo_url + "manifests/artful")
+            .and_return(status: 200, headers: JSON.parse(headers_response))
+        end
+
+        it "still detects digest changes (suppression only applies to versioned tags)" do
+          expect(digest_up_to_date?).to be false
+        end
+      end
+    end
+
+    context "when experiment is disabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:docker_digest_only_update_suppression).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:docker_created_timestamp_validation).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:docker_pin_digests).and_return(false)
+      end
+
+      context "when the tag has not changed but the digest has" do
+        let(:version) { "17.10" }
+        let(:source) do
+          {
+            tag: "17.10",
+            digest: "old_digest_that_differs_from_registry"
+          }
+        end
+
+        before do
+          stub_request(:head, repo_url + "manifests/17.10")
+            .and_return(status: 200, headers: JSON.parse(headers_response))
+        end
+
+        it "reports the digest as out of date (existing behavior)" do
+          expect(digest_up_to_date?).to be false
+        end
       end
     end
   end

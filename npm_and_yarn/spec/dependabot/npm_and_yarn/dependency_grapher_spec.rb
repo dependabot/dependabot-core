@@ -98,6 +98,121 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
       end
     end
 
+    context "with an aliased dependency" do
+      let(:dependency_files) { project_dependency_files("grapher/npm_with_alias") }
+
+      it "includes the real aliased package in resolved dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        # The aliased package (is-number aliased as my-is-number) should appear
+        # under its real name
+        is_number = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.package_url).to eq("pkg:npm/is-number@7.0.0")
+        expect(is_number.direct).to be(true)
+        expect(is_number.runtime).to be(true)
+      end
+
+      it "includes non-aliased dependencies normally" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        etag = resolved_dependencies["pkg:npm/etag@1.8.1"]
+        expect(etag).not_to be_nil
+        expect(etag.direct).to be(true)
+      end
+    end
+
+    context "with an aliased dependency that creates multiple versions of the same package" do
+      let(:dependency_files) { project_dependency_files("grapher/npm_with_alias_multiversion") }
+
+      it "marks the direct version as direct" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        is_number7 = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number7).not_to be_nil
+        expect(is_number7.direct).to be(true)
+        expect(is_number7.dependencies).to eq([])
+      end
+
+      it "marks the aliased version as direct" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        # The aliased version appears under its real name and is still direct
+        # because the manifest explicitly declares it (via the alias)
+        is_number3 = resolved_dependencies["pkg:npm/is-number@3.0.0"]
+        expect(is_number3).not_to be_nil
+        expect(is_number3.direct).to be(true)
+        expect(is_number3.dependencies).to include("pkg:npm/kind-of@3.2.2")
+      end
+
+      it "marks transitive versions as not direct" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        # is-number@2.1.0 is brought in transitively by fill-range
+        is_number2 = resolved_dependencies["pkg:npm/is-number@2.1.0"]
+        expect(is_number2).not_to be_nil
+        expect(is_number2.direct).to be(false)
+
+        # is-number@4.0.0 is brought in transitively by randomatic
+        is_number4 = resolved_dependencies["pkg:npm/is-number@4.0.0"]
+        expect(is_number4).not_to be_nil
+        expect(is_number4.direct).to be(false)
+      end
+
+      it "resolves subdependencies of the aliased version correctly" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        kind_of = resolved_dependencies["pkg:npm/kind-of@3.2.2"]
+        expect(kind_of).not_to be_nil
+        expect(kind_of.direct).to be(false)
+        expect(kind_of.dependencies).to include("pkg:npm/is-buffer@1.1.6")
+      end
+    end
+
+    context "with a yarn aliased dependency" do
+      let(:dependency_files) { project_dependency_files("grapher/yarn_with_alias") }
+
+      it "includes the real aliased package in resolved dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        fetch_factory = resolved_dependencies["pkg:npm/fetch-factory@0.0.1"]
+        expect(fetch_factory).not_to be_nil
+        expect(fetch_factory.package_url).to eq("pkg:npm/fetch-factory@0.0.1")
+        expect(fetch_factory.direct).to be(true)
+        expect(fetch_factory.runtime).to be(true)
+      end
+
+      it "includes non-aliased dependencies normally" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        etag = resolved_dependencies["pkg:npm/etag@1.8.1"]
+        expect(etag).not_to be_nil
+        expect(etag.direct).to be(true)
+      end
+    end
+
+    context "with a pnpm aliased dependency" do
+      let(:dependency_files) { project_dependency_files("grapher/pnpm_with_alias") }
+
+      it "includes the real aliased package in resolved dependencies" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        fetch_factory = resolved_dependencies["pkg:npm/fetch-factory@0.0.2"]
+        expect(fetch_factory).not_to be_nil
+        expect(fetch_factory.package_url).to eq("pkg:npm/fetch-factory@0.0.2")
+        expect(fetch_factory.direct).to be(true)
+        expect(fetch_factory.runtime).to be(true)
+      end
+
+      it "includes non-aliased dependencies normally" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        etag = resolved_dependencies["pkg:npm/etag@1.8.1"]
+        expect(etag).not_to be_nil
+        expect(etag.direct).to be(true)
+      end
+    end
+
     context "with a lockfile containing subdependencies" do
       let(:dependency_files) { project_dependency_files("grapher/npm_with_subdeps") }
 
@@ -757,7 +872,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
         corrupt_lockfile = Dependabot::DependencyFile.new(
           name: "package-lock.json", content: "not valid json {{{", directory: "/"
         )
-        grapher.instance_variable_set(:@npm_lockfile, corrupt_lockfile)
+        grapher.send(:lockfiles_hash)[:npm] = corrupt_lockfile
       end
 
       it "sets the errored_fetching_subdependencies flag" do
@@ -792,7 +907,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
         corrupt_lockfile = Dependabot::DependencyFile.new(
           name: "yarn.lock", content: "\x00\x01 invalid", directory: "/"
         )
-        grapher.instance_variable_set(:@yarn_lockfile, corrupt_lockfile)
+        grapher.send(:lockfiles_hash)[:yarn] = corrupt_lockfile
       end
 
       it "sets the errored_fetching_subdependencies flag" do
@@ -827,7 +942,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
         corrupt_lockfile = Dependabot::DependencyFile.new(
           name: "pnpm-lock.yaml", content: ": :\n  invalid: [yaml", directory: "/"
         )
-        grapher.instance_variable_set(:@pnpm_lockfile, corrupt_lockfile)
+        grapher.send(:lockfiles_hash)[:pnpm] = corrupt_lockfile
       end
 
       it "sets the errored_fetching_subdependencies flag" do

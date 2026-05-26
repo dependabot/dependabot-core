@@ -398,6 +398,13 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 if (packagesConfigResult is not null)
                 {
                     var relativeProjectPath = Path.GetRelativePath(workspacePath, expandedProject).NormalizePathToUnix();
+                    var dependencyGraph = packagesConfigResult.Dependencies
+                        .Where(d => !string.IsNullOrEmpty(d.Version))
+                        .OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
+                        .ToImmutableDictionary(
+                            d => $"{d.Name}/{d.Version}",
+                            _ => ImmutableArray<string>.Empty,
+                            StringComparer.OrdinalIgnoreCase);
                     results[relativeProjectPath] = new ProjectDiscoveryResult()
                     {
                         FilePath = relativeProjectPath,
@@ -405,6 +412,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                         TargetFrameworks = packagesConfigResult.TargetFrameworks,
                         ImportedFiles = [], // no imported files resolved for packages.config scenarios
                         AdditionalFiles = packagesConfigResult.AdditionalFiles,
+                        DependencyGraph = dependencyGraph,
                     };
                 }
             }
@@ -520,6 +528,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             PackageManagementKind = (PackageManagementKind)Math.Max((int)result1.PackageManagementKind, (int)result2.PackageManagementKind),
             PackageManagementSpecialFileRelativePath = result1.PackageManagementSpecialFileRelativePath ?? result2.PackageManagementSpecialFileRelativePath,
             HasNoWarnNU1701 = result1.HasNoWarnNU1701 || result2.HasNoWarnNU1701,
+            DependencyGraph = MergeDependencyGraphs(result1.DependencyGraph, result2.DependencyGraph),
         };
         return mergedResult;
     }
@@ -544,6 +553,29 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         }
 
         return [.. filtered];
+    }
+
+    private static ImmutableDictionary<string, ImmutableArray<string>> MergeDependencyGraphs(
+        ImmutableDictionary<string, ImmutableArray<string>> graph1,
+        ImmutableDictionary<string, ImmutableArray<string>> graph2)
+    {
+        var merged = graph1.ToDictionary(kvp => kvp.Key, kvp => kvp.Value, StringComparer.OrdinalIgnoreCase);
+        foreach (var kvp in graph2)
+        {
+            if (merged.TryGetValue(kvp.Key, out var existing))
+            {
+                merged[kvp.Key] = existing
+                    .Union(kvp.Value, StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                    .ToImmutableArray();
+            }
+            else
+            {
+                merged[kvp.Key] = kvp.Value;
+            }
+        }
+
+        return merged.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase);
     }
 
     internal static async Task WriteResultsAsync(string repoRootPath, string outputPath, WorkspaceDiscoveryResult result)

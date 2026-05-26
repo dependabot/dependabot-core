@@ -28,6 +28,7 @@
     <PackageReference Include="MSBuild.StructuredLogger" />
     <PackageReference Include="Microsoft.VisualStudio.SolutionPersistence" />
     <PackageReference Include="OpenTelemetry" />
+    <PackageReference Include="packageurl-dotnet" />
     <PackageReference Include="OpenTelemetry.Exporter.Console" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
   </ItemGroup>
