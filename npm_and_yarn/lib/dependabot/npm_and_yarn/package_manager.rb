@@ -223,9 +223,9 @@ module Dependabot
 
       sig { params(raw_constraint: String).returns(T::Array[T::Array[String]]) }
       def parse_constraint_groups(raw_constraint)
-        raw_constraint.split("||").map(&:strip).reject(&:empty?).filter_map do |constraint_group|
+        raw_constraint.split("||").map(&:strip).reject(&:empty?).map do |constraint_group|
           constraints = ConstraintHelper.extract_ruby_constraints(constraint_group)
-          next if constraints.nil?
+          return [] if constraints.nil?
 
           expanded_constraints(constraints)
         end.reject(&:empty?)
@@ -273,6 +273,12 @@ module Dependabot
       rescue StandardError
         nil
       end
+
+      private :raw_engine_constraint,
+              :parse_constraint_groups,
+              :expanded_constraints,
+              :requirement_for_group,
+              :current_engine_version
 
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/AbcSize

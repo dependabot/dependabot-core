@@ -559,6 +559,26 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
         expect(requirement.constraints).to eq([">= 22.0.0", "< 23.0.0"])
       end
+
+      context "when one OR branch is invalid" do
+        let(:package_json) do
+          {
+            "name" => "example",
+            "version" => "1.0.0",
+            "engines" => {
+              "node" => "^22 || invalid"
+            }
+          }
+        end
+
+        it "logs a warning and returns nil" do
+          expect(Dependabot.logger).to receive(:warn).with(/Unrecognized constraint format for node: \^22 \|\| invalid/)
+
+          requirement = helper.find_engine_constraints_as_requirement("node")
+
+          expect(requirement).to be_nil
+        end
+      end
     end
 
     context "when the engines field does not contain the specified package manager" do
