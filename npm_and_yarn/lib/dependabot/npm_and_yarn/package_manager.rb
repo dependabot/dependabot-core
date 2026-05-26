@@ -197,11 +197,20 @@ module Dependabot
         return nil if raw_constraint.empty?
 
         constraint_groups = parse_constraint_groups(raw_constraint)
-
-        if constraint_groups.empty?
+        if constraint_groups.nil?
           Dependabot.logger.warn(
             "Unrecognized constraint format for #{name}: #{raw_constraint}"
           )
+          return nil
+        end
+
+        # A wildcard/latest branch translates to no constraints, which means
+        # there is effectively no engine requirement.
+        return nil if constraint_groups.any?(&:empty?)
+
+        constraint_groups = constraint_groups.reject(&:empty?)
+
+        if constraint_groups.empty?
           return nil
         end
 
@@ -221,14 +230,14 @@ module Dependabot
         @engines[name].to_s.strip
       end
 
-      sig { params(raw_constraint: String).returns(T::Array[T::Array[String]]) }
+      sig { params(raw_constraint: String).returns(T.nilable(T::Array[T::Array[String]])) }
       def parse_constraint_groups(raw_constraint)
         raw_constraint.split("||").map(&:strip).reject(&:empty?).map do |constraint_group|
           constraints = ConstraintHelper.extract_ruby_constraints(constraint_group)
-          return [] if constraints.nil?
+          return nil if constraints.nil?
 
           expanded_constraints(constraints)
-        end.reject(&:empty?)
+        end
       end
 
       sig { params(constraints: T::Array[String]).returns(T::Array[String]) }

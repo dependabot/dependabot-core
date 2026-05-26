@@ -579,6 +579,28 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
           expect(requirement).to be_nil
         end
       end
+
+      context "when one OR branch is a wildcard" do
+        let(:package_json) do
+          {
+            "name" => "example",
+            "version" => "1.0.0",
+            "engines" => {
+              "node" => "* || >=24"
+            }
+          }
+        end
+
+        it "returns nil without logging an unrecognized warning" do
+          allow(Dependabot.logger).to receive(:warn)
+
+          requirement = helper.find_engine_constraints_as_requirement("node")
+
+          expect(requirement).to be_nil
+          expect(Dependabot.logger).not_to have_received(:warn)
+            .with(/Unrecognized constraint format for node/)
+        end
+      end
     end
 
     context "when the engines field does not contain the specified package manager" do
