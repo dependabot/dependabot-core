@@ -122,6 +122,9 @@ module Dependabot
     sig { returns(T::Array[T::Hash[String, T.untyped]]) }
     attr_reader :blocked_versions
 
+    sig { params(blocked_versions: T::Array[T::Hash[String, T.untyped]]).void }
+    attr_writer :blocked_versions
+
     sig { returns(Dependabot::Config::UpdateConfig) }
     attr_reader :update_config
 

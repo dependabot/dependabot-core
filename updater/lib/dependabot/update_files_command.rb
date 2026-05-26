@@ -70,27 +70,18 @@ module Dependabot
     def job
       @job ||= T.let(
         begin
-          definition = JSON.parse(JSON.generate(Environment.job_definition))
-          job_hash = definition["job"]
-
-          # Fetch blocked versions from the API if the experiment is enabled.
-          # Check both the Experiments registry and the raw job definition since
-          # job-scoped experiments are not registered until Job construction.
-          # Inject them into the job definition so they're available at construction time.
-          experiments = job_hash["experiments"] || {}
-          if Experiments.enabled?(:dependabot_blocked_versions) ||
-             experiments["dependabot_blocked_versions"] ||
-             experiments["dependabot-blocked-versions"]
-            package_manager = job_hash["package-manager"] || job_hash["package_manager"] || ""
-            blocked = service.fetch_blocked_versions(package_manager)
-            job_hash["blocked-versions"] = blocked
-          end
-
-          Job.new_update_job(
+          update_job = Job.new_update_job(
             job_id: job_id,
-            job_definition: definition,
+            job_definition: Environment.job_definition,
             repo_contents_path: Environment.repo_contents_path
           )
+
+          if Experiments.enabled?(:blocked_versions)
+            blocked = service.fetch_blocked_versions(update_job.package_manager)
+            update_job.blocked_versions = blocked
+          end
+
+          update_job
         end,
         T.nilable(Dependabot::Job)
       )
