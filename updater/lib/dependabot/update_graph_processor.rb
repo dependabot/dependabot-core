@@ -164,8 +164,7 @@ module Dependabot
       return files if exclude_paths.nil? || exclude_paths.empty?
 
       files.reject do |file|
-        path = File.join(file.directory, file.name).sub(%r{^/+}, "/")
-        Dependabot::FileFiltering.should_exclude_path?(path, "graph job dependency file", exclude_paths)
+        Dependabot::FileFiltering.should_exclude_path?(file.path, "graph job dependency file", exclude_paths)
       end
     end
 
