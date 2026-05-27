@@ -24,7 +24,9 @@ module Dependabot
       end
       def self.run_deno_command(*args, dir:)
         env = { "DENO_DIR" => File.join(dir, ".deno_cache") }
-        output, status = Open3.capture2e(env, "deno", *args, chdir: dir)
+        # T.unsafe escape hatch: Sorbet's strict mode rejects unbounded splats
+        # into variadic methods, but Open3.capture2e expects the splat form.
+        output, status = T.unsafe(Open3).capture2e(env, "deno", *args, chdir: dir)
 
         unless status.success?
           raise DenoCommandError,

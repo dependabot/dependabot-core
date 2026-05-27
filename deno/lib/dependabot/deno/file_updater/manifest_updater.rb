@@ -33,9 +33,7 @@ module Dependabot
             new_reqs = dep.requirements.select { |r| r[:file] == manifest.name }
 
             prev_reqs.zip(new_reqs).each do |prev_req, new_req|
-              next unless prev_req && new_req
-
-              content = apply_substitution(content, dep, prev_req, new_req)
+              content = apply_substitution(content, dep, prev_req, T.must(new_req))
             end
           end
 
