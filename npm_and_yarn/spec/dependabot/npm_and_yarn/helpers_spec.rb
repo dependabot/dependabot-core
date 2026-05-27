@@ -610,8 +610,10 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         "node -v",
         fingerprint: "node -v"
       ).and_return("v16.13.1")
+      allow(Dependabot.logger).to receive(:info)
 
       expect(described_class.node_version).to eq("16.13.1")
+      expect(Dependabot.logger).to have_received(:info).with("Using node version: 16.13.1")
     end
 
     it "raises an error if the Node.js version command fails" do
