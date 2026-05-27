@@ -1374,6 +1374,46 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
 
+    describe "#run_npm_install_lockfile_only" do
+      let(:files) { project_dependency_files("npm8/simple") }
+      let(:install_args) { ["lodash@4.18.1"] }
+
+      context "when security_updates_only is true" do
+        let(:updater) do
+          described_class.new(
+            lockfile: package_lock,
+            dependency_files: files,
+            dependencies: dependencies,
+            credentials: credentials,
+            security_updates_only: true
+          )
+        end
+
+        it "passes --min-release-age=0 to override the .npmrc setting" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
+            expect(command).to include("--min-release-age=0")
+            expect(command).to include("--package-lock-only")
+            expect(command).to include("--force")
+            ""
+          end
+
+          updater.send(:run_npm_install_lockfile_only, install_args)
+        end
+      end
+
+      context "when security_updates_only is false (default)" do
+        it "does not pass --min-release-age=0" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
+            expect(command).not_to include("--min-release-age=0")
+            expect(command).to include("--package-lock-only")
+            ""
+          end
+
+          updater.send(:run_npm_install_lockfile_only, install_args)
+        end
+      end
+    end
+
     describe "#optional_dependency?" do
       it "correctly identifies optional dependencies" do
         optional_dep = Dependabot::Dependency.new(

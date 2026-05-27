@@ -117,6 +117,16 @@ public class DiscoveryWorkerTestBase : TestBase
             {
                 Assert.Equal(expectedProject.ExpectedPackageManagementSpecialFileRelativePath, actualProject.PackageManagementSpecialFileRelativePath);
             }
+
+            if (expectedProject.ExpectedDependencyGraph is not null)
+            {
+                Assert.Equal(expectedProject.ExpectedDependencyGraph.Count, actualProject.DependencyGraph.Count);
+                foreach (var (key, expectedDeps) in expectedProject.ExpectedDependencyGraph)
+                {
+                    Assert.True(actualProject.DependencyGraph.TryGetValue(key, out var actualDeps), $"Dependency graph missing key: {key}. Available keys: [{string.Join(", ", actualProject.DependencyGraph.Keys)}]");
+                    AssertEx.Equal(expectedDeps, actualDeps, message: $"Dependency graph mismatch for key: {key}");
+                }
+            }
         }
     }
 

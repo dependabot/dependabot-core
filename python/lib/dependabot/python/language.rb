@@ -13,15 +13,15 @@ module Dependabot
       extend T::Sig
 
       # This list must match the versions specified at the top of `python/Dockerfile`
-      # ARG PY_3_13=3.13.2
+      # e.g. ARG PY_3_13=3.13.x
       # Note: uv ecosystem aliases this class, so updates here apply to both ecosystems.
       PRE_INSTALLED_PYTHON_VERSIONS_RAW = %w(
-        3.14.2
-        3.13.11
-        3.12.12
-        3.11.14
-        3.10.19
-        3.9.24
+        3.14.5
+        3.13.13
+        3.12.13
+        3.11.15
+        3.10.20
+        3.9.25
       ).freeze
 
       PRE_INSTALLED_PYTHON_VERSIONS = T.let(
@@ -47,7 +47,9 @@ module Dependabot
         T::Array[Dependabot::Python::Version]
       )
 
-      NON_SUPPORTED_HIGHEST_VERSION = "3.8"
+      # The highest Python version that is no longer fully supported.
+      # Deprecated now (warning); unsupported once removed from PRE_INSTALLED_PYTHON_VERSIONS_RAW.
+      NON_SUPPORTED_HIGHEST_VERSION = "3.9"
 
       DEPRECATED_VERSIONS = T.let([Version.new(NON_SUPPORTED_HIGHEST_VERSION)].freeze, T::Array[Dependabot::Version])
 

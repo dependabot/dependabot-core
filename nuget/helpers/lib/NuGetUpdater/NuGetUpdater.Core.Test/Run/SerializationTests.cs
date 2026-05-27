@@ -978,4 +978,104 @@ public class SerializationTests : TestBase
             }
         ];
     }
+
+    [Fact]
+    public void SerializeCreateDependencySubmission()
+    {
+        var submission = new CreateDependencySubmission()
+        {
+            Version = 1,
+            Sha = "TEST-SHA",
+            Ref = "refs/heads/main",
+            Job = new CreateDependencySubmission.SubmissionJob()
+            {
+                Correlator = "dependabot-nuget-MyProject",
+                Id = "cli"
+            },
+            Detector = new CreateDependencySubmission.SubmissionDetector()
+            {
+                Name = "dependabot",
+                Version = "0.372.0",
+                Url = "https://github.com/dependabot/dependabot-core"
+            },
+            Manifests = new Dictionary<string, CreateDependencySubmission.Manifest>()
+            {
+                ["/src/MyProject.csproj"] = new CreateDependencySubmission.Manifest()
+                {
+                    Name = "/src/MyProject.csproj",
+                    File = new CreateDependencySubmission.ManifestFile()
+                    {
+                        SourceLocation = "src/MyProject.csproj"
+                    },
+                    Metadata = new CreateDependencySubmission.ManifestMetadata()
+                    {
+                        Ecosystem = "nuget"
+                    },
+                    Resolved = new Dictionary<string, CreateDependencySubmission.ResolvedDependency>()
+                    {
+                        ["pkg:nuget/Some.Package@1.0.0"] = new CreateDependencySubmission.ResolvedDependency()
+                        {
+                            PackageUrl = "pkg:nuget/Some.Package@1.0.0",
+                            Relationship = "direct",
+                            Scope = "runtime",
+                            Dependencies = ["pkg:nuget/Some.Dependency@2.0.0"]
+                        },
+                        ["pkg:nuget/Some.Dependency@2.0.0"] = new CreateDependencySubmission.ResolvedDependency()
+                        {
+                            PackageUrl = "pkg:nuget/Some.Dependency@2.0.0",
+                            Relationship = "indirect",
+                            Scope = "runtime",
+                            Dependencies = []
+                        }
+                    }
+                }
+            },
+            Metadata = new CreateDependencySubmission.SubmissionMetadata()
+            {
+                Status = "ok",
+                ScannedManifestPath = "nuget::/src"
+            }
+        };
+
+        var actual = HttpApiHandler.Serialize(submission);
+        var expected = """
+            {"data":{"version":1,"sha":"TEST-SHA","ref":"refs/heads/main","job":{"correlator":"dependabot-nuget-MyProject","id":"cli"},"detector":{"name":"dependabot","version":"0.372.0","url":"https://github.com/dependabot/dependabot-core"},"manifests":{"/src/MyProject.csproj":{"name":"/src/MyProject.csproj","file":{"source_location":"src/MyProject.csproj"},"metadata":{"ecosystem":"nuget"},"resolved":{"pkg:nuget/Some.Package@1.0.0":{"package_url":"pkg:nuget/Some.Package@1.0.0","relationship":"direct","scope":"runtime","dependencies":["pkg:nuget/Some.Dependency@2.0.0"]},"pkg:nuget/Some.Dependency@2.0.0":{"package_url":"pkg:nuget/Some.Dependency@2.0.0","relationship":"indirect","scope":"runtime","dependencies":[]}}}},"metadata":{"status":"ok","scanned_manifest_path":"nuget::/src"}}}
+            """;
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void SerializeCreateDependencySubmission_Skipped()
+    {
+        var submission = new CreateDependencySubmission()
+        {
+            Version = 1,
+            Sha = "TEST-SHA",
+            Ref = "refs/heads/main",
+            Job = new CreateDependencySubmission.SubmissionJob()
+            {
+                Correlator = "dependabot-nuget-casing",
+                Id = "cli"
+            },
+            Detector = new CreateDependencySubmission.SubmissionDetector()
+            {
+                Name = "dependabot",
+                Version = "0.372.0",
+                Url = "https://github.com/dependabot/dependabot-core"
+            },
+            Manifests = new Dictionary<string, CreateDependencySubmission.Manifest>(),
+            Metadata = new CreateDependencySubmission.SubmissionMetadata()
+            {
+                Status = "skipped",
+                ScannedManifestPath = "nuget::/casing",
+                Reason = "missing manifest files"
+            }
+        };
+
+        var actual = HttpApiHandler.Serialize(submission);
+        var expected = """
+            {"data":{"version":1,"sha":"TEST-SHA","ref":"refs/heads/main","job":{"correlator":"dependabot-nuget-casing","id":"cli"},"detector":{"name":"dependabot","version":"0.372.0","url":"https://github.com/dependabot/dependabot-core"},"manifests":{},"metadata":{"status":"skipped","scanned_manifest_path":"nuget::/casing","reason":"missing manifest files"}}}
+            """;
+        Assert.Equal(expected, actual);
+    }
 }

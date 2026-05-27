@@ -299,6 +299,40 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
       end
     end
 
+    context "when the metadata endpoint raises a certificate error" do
+      it "raises PrivateSourceCertificateFailure" do
+        stub_request(:get, metadata).to_raise(
+          Excon::Error::Socket.new(
+            StandardError.new("SSL_connect returned=1 errno=0 state=error: certificate verify failed")
+          )
+        )
+
+        expect do
+          client.service_url_for("modules.v1")
+        end.to raise_error(Dependabot::PrivateSourceCertificateFailure)
+      end
+    end
+
+    context "when the metadata endpoint returns a 5xx error" do
+      it "raises PrivateSourceBadResponse instead of the misleading service error" do
+        stub_request(:get, metadata).and_return(status: 502)
+
+        expect do
+          client.service_url_for("modules.v1")
+        end.to raise_error(Dependabot::PrivateSourceBadResponse)
+      end
+    end
+
+    context "when the metadata endpoint returns a 401 error" do
+      it "raises PrivateSourceAuthenticationFailure" do
+        stub_request(:get, metadata).and_return(status: 401)
+
+        expect do
+          client.service_url_for("modules.v1")
+        end.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+      end
+    end
+
     context "when the service url is not available" do
       it "raises an error" do
         stub_request(:get, metadata).and_return(body: { "modules.v1": "/v1/modules/" }.to_json)

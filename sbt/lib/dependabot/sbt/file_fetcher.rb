@@ -31,14 +31,6 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        unless allow_beta_ecosystems?
-          raise Dependabot::DependencyFileNotFound.new(
-            nil,
-            "Sbt support is currently in beta. Enable the beta ecosystems experiment to use it " \
-            "(for example, run bin/dry-run.rb --enable-beta-ecosystems)."
-          )
-        end
-
         fetched_files = T.let([], T::Array[DependencyFile])
 
         fetched_files << build_sbt

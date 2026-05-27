@@ -4,6 +4,7 @@
 require "spec_helper"
 require "dependabot/cargo/update_checker"
 require "dependabot/pre_commit/additional_dependency_checkers/rust"
+require "dependabot/package/release_cooldown_options"
 
 RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Rust do
   let(:checker) do
@@ -228,6 +229,57 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Rust do
       expect(updated.first[:source][:hook_id]).to eq("nickel-lint")
       expect(updated.first[:source][:hook_repo]).to eq("https://github.com/nickel-org/rust-nickel")
       expect(updated.first[:source][:package_name]).to eq("serde")
+    end
+  end
+
+  describe "cooldown passthrough" do
+    let(:cooldown_options) do
+      Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3)
+    end
+
+    let(:checker_with_cooldown) do
+      described_class.new(
+        source: source,
+        credentials: credentials,
+        requirements: requirements,
+        current_version: current_version,
+        cooldown_options: cooldown_options
+      )
+    end
+
+    let(:cargo_checker_class) { class_double(Dependabot::Cargo::UpdateChecker) }
+    let(:cargo_checker) { instance_double(Dependabot::UpdateCheckers::Base) }
+
+    before do
+      allow(Dependabot::UpdateCheckers).to receive(:for_package_manager)
+        .with("cargo")
+        .and_return(cargo_checker_class)
+    end
+
+    it "passes cooldown_options as update_cooldown to the cargo UpdateChecker" do
+      allow(cargo_checker_class).to receive(:new).with(
+        hash_including(update_cooldown: cooldown_options)
+      ).and_return(cargo_checker)
+      allow(cargo_checker).to receive(:latest_version).and_return(nil)
+
+      checker_with_cooldown.latest_version
+
+      expect(cargo_checker_class).to have_received(:new).with(
+        hash_including(update_cooldown: cooldown_options)
+      )
+    end
+
+    it "passes nil update_cooldown when no cooldown_options provided" do
+      allow(cargo_checker_class).to receive(:new).with(
+        hash_including(update_cooldown: nil)
+      ).and_return(cargo_checker)
+      allow(cargo_checker).to receive(:latest_version).and_return(nil)
+
+      checker.latest_version
+
+      expect(cargo_checker_class).to have_received(:new).with(
+        hash_including(update_cooldown: nil)
+      )
     end
   end
 end
