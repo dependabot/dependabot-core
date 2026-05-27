@@ -42,9 +42,10 @@ RSpec.describe Dependabot::Deno::FileUpdater::LockfileUpdater do
       content = updater.updated_lockfile_content
       lock = JSON.parse(content)
 
-      # Specifier key reflects the bumped constraint; resolved value is any 1.1.x.
-      resolved = lock.fetch("specifiers").fetch("jsr:@std/path@^1.1.4")
-      expect(resolved).to match(/\A1\.1\.\d+\z/)
+      # Specifier key reflects the bumped constraint; resolved value must satisfy ^1.1.4.
+      resolved = Gem::Version.new(lock.fetch("specifiers").fetch("jsr:@std/path@^1.1.4"))
+      expect(resolved).to be >= Gem::Version.new("1.1.4")
+      expect(resolved).to be < Gem::Version.new("2.0.0")
 
       # Old pinned 1.0.0 entry is gone.
       expect(lock.fetch("jsr")).not_to have_key("@std/path@1.0.0")
@@ -83,8 +84,9 @@ RSpec.describe Dependabot::Deno::FileUpdater::LockfileUpdater do
     it "updates the npm block in the lockfile" do
       content = updater.updated_lockfile_content
       lock = JSON.parse(content)
-      resolved = lock.fetch("specifiers").fetch("npm:chalk@^5.4.0")
-      expect(resolved).to match(/\A5\.[4-9]\.\d+\z/)
+      resolved = Gem::Version.new(lock.fetch("specifiers").fetch("npm:chalk@^5.4.0"))
+      expect(resolved).to be >= Gem::Version.new("5.4.0")
+      expect(resolved).to be < Gem::Version.new("6.0.0")
       expect(lock.fetch("npm")).not_to have_key("chalk@5.3.0")
     end
   end
@@ -115,7 +117,9 @@ RSpec.describe Dependabot::Deno::FileUpdater::LockfileUpdater do
     it "regenerates the lockfile from a JSONC manifest" do
       content = updater.updated_lockfile_content
       lock = JSON.parse(content)
-      expect(lock.dig("specifiers", "jsr:@std/path@^1.1.4")).to match(/\A1\.1\.\d+\z/)
+      resolved = Gem::Version.new(lock.dig("specifiers", "jsr:@std/path@^1.1.4"))
+      expect(resolved).to be >= Gem::Version.new("1.1.4")
+      expect(resolved).to be < Gem::Version.new("2.0.0")
     end
   end
 
@@ -145,7 +149,13 @@ RSpec.describe Dependabot::Deno::FileUpdater::LockfileUpdater do
     it "bumps the targeted dep while keeping untouched deps resolvable" do
       content = updater.updated_lockfile_content
       lock = JSON.parse(content)
-      expect(lock["jsr"].keys).to include(match(%r{^@std/path@1\.1\.\d+$}))
+
+      path_keys = lock["jsr"].keys.grep(%r{^@std/path@})
+      expect(path_keys.length).to eq(1)
+      path_version = Gem::Version.new(path_keys.first.split("@").last)
+      expect(path_version).to be >= Gem::Version.new("1.1.4")
+      expect(path_version).to be < Gem::Version.new("2.0.0")
+
       expect(lock["jsr"].keys).to include(match(%r{^@std/assert@}))
     end
   end

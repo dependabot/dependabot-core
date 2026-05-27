@@ -15,6 +15,11 @@ Deno support for [`dependabot-core`][core-repo].
   [dependabot-core-dev] ~ $ cd deno && rspec
   ```
 
+  The lockfile-regeneration specs (`spec/dependabot/deno/file_updater/lockfile_updater_spec.rb`) shell out
+  to a real `deno install` and hit the JSR/npm registries. They expect the `deno` binary on `PATH` and
+  network access — both are provided by the `bin/docker-dev-shell deno` image, but local runs outside
+  the container need them too.
+
 [core-repo]: https://github.com/dependabot/dependabot-core
 
 ### Implementation Status

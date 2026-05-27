@@ -237,7 +237,9 @@ RSpec.describe Dependabot::Deno::FileUpdater do
       it "updates the lockfile to a version satisfying the new constraint" do
         lockfile = updater.updated_dependency_files.find { |f| f.name == "deno.lock" }
         lock = JSON.parse(lockfile.content)
-        expect(lock.dig("specifiers", "jsr:@std/path@^1.1.4")).to match(/\A1\.1\.\d+\z/)
+        resolved = Gem::Version.new(lock.dig("specifiers", "jsr:@std/path@^1.1.4"))
+        expect(resolved).to be >= Gem::Version.new("1.1.4")
+        expect(resolved).to be < Gem::Version.new("2.0.0")
       end
     end
 
