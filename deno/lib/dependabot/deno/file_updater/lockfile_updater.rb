@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "json"
@@ -75,7 +75,7 @@ module Dependabot
                 Helpers.run_deno_command("install", "--frozen=false", dir: dir.to_s)
                 File.read(File.join(dir.to_s, LOCKFILE_FILENAME))
               end
-            rescue Helpers::DenoCommandError, Errno::ENOENT => e
+            rescue SharedHelpers::HelperSubprocessFailed, Errno::ENOENT => e
               raise Dependabot::DependencyFileNotResolvable, e.message
             end
 

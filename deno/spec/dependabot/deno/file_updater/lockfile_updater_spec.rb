@@ -177,8 +177,10 @@ RSpec.describe Dependabot::Deno::FileUpdater::LockfileUpdater do
     before do
       allow(Dependabot::Deno::Helpers).to receive(:run_deno_command)
         .and_raise(
-          Dependabot::Deno::Helpers::DenoCommandError,
-          "deno install failed (exit 1): error: Unable to parse config file"
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: "error: Unable to parse config file",
+            error_context: { command: "deno install" }
+          )
         )
     end
 
