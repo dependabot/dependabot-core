@@ -383,13 +383,48 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
         .to receive(:run_yarn_audit_fix_command).and_return("")
     end
 
-    it "falls back to yarn npm audit --fix when lockfile still has previous version" do
-      expect(Dependabot::NpmAndYarn::NativeHelpers)
-        .to receive(:run_yarn_audit_fix_command).once.and_return("")
+    context "when running a security update" do
+      let(:updater) do
+        described_class.new(
+          dependency_files: files,
+          dependencies: dependencies,
+          credentials: credentials,
+          repo_contents_path: nil,
+          security_update: true
+        )
+      end
 
-      # Trigger the update via the public API; the stubbed run_yarn_commands
-      # simulates a no-op so the updater should fall back to yarn audit fix.
-      updated_yarn_lock_content
+      it "falls back to yarn npm audit --fix when lockfile still has previous version" do
+        expect(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive(:run_yarn_audit_fix_command).once.and_return("")
+
+        # Trigger the update via the public API; the stubbed run_yarn_commands
+        # simulates a no-op so the updater should fall back to yarn audit fix.
+        updated_yarn_lock_content
+      end
+
+      context "when the enable_audit_fix_fallback experiment is disabled" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:enable_audit_fix_fallback).and_return(false)
+        end
+
+        it "does not call yarn npm audit --fix" do
+          expect(Dependabot::NpmAndYarn::NativeHelpers)
+            .not_to receive(:run_yarn_audit_fix_command)
+
+          updated_yarn_lock_content
+        end
+      end
+    end
+
+    context "when not running a security update" do
+      it "does not call yarn npm audit --fix" do
+        expect(Dependabot::NpmAndYarn::NativeHelpers)
+          .not_to receive(:run_yarn_audit_fix_command)
+
+        updated_yarn_lock_content
+      end
     end
   end
 end

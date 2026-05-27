@@ -4355,4 +4355,84 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
     end
   end
+
+  describe "security_update metadata bridge to lockfile updaters" do
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(name: "package.json", content: "{}")
+      ]
+    end
+    let(:yarn_updater_double) do
+      instance_double(Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater)
+    end
+    let(:pnpm_updater_double) do
+      instance_double(Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater)
+    end
+    let(:npm_updater_double) do
+      instance_double(Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater)
+    end
+
+    before do
+      allow(Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater)
+        .to receive(:new).and_return(yarn_updater_double)
+      allow(Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater)
+        .to receive(:new).and_return(pnpm_updater_double)
+      allow(Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater)
+        .to receive(:new).and_return(npm_updater_double)
+    end
+
+    context "when at least one dependency carries :security_update => true metadata" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: version,
+          previous_version: previous_version,
+          requirements: requirements,
+          previous_requirements: previous_requirements,
+          package_manager: "npm_and_yarn",
+          metadata: { security_update: true }
+        )
+      end
+
+      it "forwards security_update: true to YarnLockfileUpdater" do
+        updater.send(:yarn_lockfile_updater)
+        expect(Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater)
+          .to have_received(:new).with(hash_including(security_update: true))
+      end
+
+      it "forwards security_update: true to PnpmLockfileUpdater" do
+        updater.send(:pnpm_lockfile_updater)
+        expect(Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater)
+          .to have_received(:new).with(hash_including(security_update: true))
+      end
+
+      it "forwards security_update: true to NpmLockfileUpdater" do
+        lockfile = Dependabot::DependencyFile.new(name: "package-lock.json", content: "{}")
+        updater.send(:npm_lockfile_updater_for, lockfile)
+        expect(Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater)
+          .to have_received(:new).with(hash_including(security_update: true))
+      end
+    end
+
+    context "when no dependency carries :security_update metadata" do
+      it "forwards security_update: false to YarnLockfileUpdater" do
+        updater.send(:yarn_lockfile_updater)
+        expect(Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater)
+          .to have_received(:new).with(hash_including(security_update: false))
+      end
+
+      it "forwards security_update: false to PnpmLockfileUpdater" do
+        updater.send(:pnpm_lockfile_updater)
+        expect(Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater)
+          .to have_received(:new).with(hash_including(security_update: false))
+      end
+
+      it "forwards security_update: false to NpmLockfileUpdater" do
+        lockfile = Dependabot::DependencyFile.new(name: "package-lock.json", content: "{}")
+        updater.send(:npm_lockfile_updater_for, lockfile)
+        expect(Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater)
+          .to have_received(:new).with(hash_including(security_update: false))
+      end
+    end
+  end
 end

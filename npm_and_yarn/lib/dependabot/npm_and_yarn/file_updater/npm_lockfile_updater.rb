@@ -29,15 +29,17 @@ module Dependabot
             lockfile: Dependabot::DependencyFile,
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
-            credentials: T::Array[Credential]
+            credentials: T::Array[Credential],
+            security_update: T::Boolean
           )
             .void
         end
-        def initialize(lockfile:, dependencies:, dependency_files:, credentials:)
+        def initialize(lockfile:, dependencies:, dependency_files:, credentials:, security_update: false)
           @lockfile = lockfile
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
+          @security_update = security_update
         end
 
         sig { returns(Dependabot::DependencyFile) }
@@ -71,6 +73,11 @@ module Dependabot
 
         sig { returns(T::Array[Credential]) }
         attr_reader :credentials
+
+        sig { returns(T::Boolean) }
+        def security_update?
+          @security_update
+        end
 
         UNREACHABLE_GIT = /fatal: repository '(?<url>.*)' not found/
         FORBIDDEN_GIT = /fatal: Authentication failed for '(?<url>.*)'/
@@ -337,7 +344,9 @@ module Dependabot
           NativeHelpers.run_npm8_subdependency_update_command(dependency_names)
 
           updated_content = File.read(lockfile_basename)
-          if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+          if updated_content == original_content &&
+             Dependabot::Experiments.enabled?(:enable_audit_fix_fallback) &&
+             security_update?
             # `npm update` is a no-op for transitive dependencies not listed in
             # any package.json (common in workspace repos). Fall back to
             # `npm audit fix` which can update these in the lockfile.

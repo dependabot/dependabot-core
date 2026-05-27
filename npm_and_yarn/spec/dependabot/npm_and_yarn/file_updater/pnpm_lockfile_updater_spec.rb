@@ -760,32 +760,69 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
 
       context "when updating a regular package dependency" do
-        it "uses pnpm update followed by install" do
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
-            .with(
-              "update prettier@3.3.3  --lockfile-only --no-save -r",
-              { fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r" }
+        context "when running a security update" do
+          let(:updater) do
+            described_class.new(
+              dependency_files: files,
+              dependencies: dependencies,
+              credentials: credentials,
+              repo_contents_path: repo_contents_path,
+              security_update: true
             )
-            .ordered
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
-            .with("install --lockfile-only")
-            .ordered
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
-            .with(
-              "-r --include-workspace-root update prettier --depth Infinity --lockfile-only",
-              { fingerprint: "-r --include-workspace-root update <dependency_name> --depth Infinity --lockfile-only" }
-            )
-            .ordered
-            .and_return("")
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
-            .with("audit --fix", { fingerprint: "audit --fix" })
-            .ordered
-            .and_return("")
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
-            .with("install --lockfile-only")
-            .ordered
+          end
 
-          updated_pnpm_lock_content
+          it "uses pnpm update followed by install and audit --fix" do
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+              .with(
+                "update prettier@3.3.3  --lockfile-only --no-save -r",
+                { fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r" }
+              )
+              .ordered
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+              .with("install --lockfile-only")
+              .ordered
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+              .with(
+                "-r --include-workspace-root update prettier --depth Infinity --lockfile-only",
+                { fingerprint: "-r --include-workspace-root update <dependency_name> --depth Infinity --lockfile-only" }
+              )
+              .ordered
+              .and_return("")
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+              .with("audit --fix", { fingerprint: "audit --fix" })
+              .ordered
+              .and_return("")
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+              .with("install --lockfile-only")
+              .ordered
+
+            updated_pnpm_lock_content
+          end
+        end
+
+        context "when not running a security update" do
+          it "uses pnpm update followed by install, runs deep update but skips audit --fix" do
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+              .with(
+                "update prettier@3.3.3  --lockfile-only --no-save -r",
+                { fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r" }
+              )
+              .ordered
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+              .with("install --lockfile-only")
+              .ordered
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+              .with(
+                "-r --include-workspace-root update prettier --depth Infinity --lockfile-only",
+                { fingerprint: "-r --include-workspace-root update <dependency_name> --depth Infinity --lockfile-only" }
+              )
+              .ordered
+              .and_return("")
+            expect(Dependabot::NpmAndYarn::Helpers).not_to receive(:run_pnpm_command)
+              .with("audit --fix", { fingerprint: "audit --fix" })
+
+            updated_pnpm_lock_content
+          end
         end
       end
     end

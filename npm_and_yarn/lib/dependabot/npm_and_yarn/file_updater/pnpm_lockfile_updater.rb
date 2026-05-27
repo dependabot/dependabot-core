@@ -21,14 +21,16 @@ module Dependabot
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
             repo_contents_path: T.nilable(String),
-            credentials: T::Array[Dependabot::Credential]
+            credentials: T::Array[Dependabot::Credential],
+            security_update: T::Boolean
           ).void
         end
-        def initialize(dependencies:, dependency_files:, repo_contents_path:, credentials:)
+        def initialize(dependencies:, dependency_files:, repo_contents_path:, credentials:, security_update: false)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
+          @security_update = security_update
           @error_handler = T.let(
             PnpmErrorHandler.new(
               dependencies: dependencies,
@@ -76,6 +78,11 @@ module Dependabot
 
         sig { returns(PnpmErrorHandler) }
         attr_reader :error_handler
+
+        sig { returns(T::Boolean) }
+        def security_update?
+          @security_update
+        end
 
         IRRESOLVABLE_PACKAGE = "ERR_PNPM_NO_MATCHING_VERSION"
         INVALID_REQUIREMENT = "ERR_PNPM_SPEC_NOT_SUPPORTED_BY_ANY_RESOLVER"
@@ -172,7 +179,9 @@ module Dependabot
                 updated_content = File.read(pnpm_lock.name)
               end
 
-              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+              if updated_content == original_content &&
+                 Dependabot::Experiments.enabled?(:enable_audit_fix_fallback) &&
+                 security_update?
                 run_pnpm_audit_fix_fallback(pnpm_lock, original_content)
                 updated_content = File.read(pnpm_lock.name)
               end

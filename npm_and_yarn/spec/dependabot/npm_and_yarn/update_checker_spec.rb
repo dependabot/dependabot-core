@@ -633,7 +633,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
             latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
-            repo_contents_path: nil
+            repo_contents_path: nil,
+            security_advisories: security_advisories
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)
@@ -698,7 +699,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               dependency_files: dependency_files,
               ignored_versions: ignored_versions,
               latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
-              repo_contents_path: nil
+              repo_contents_path: nil,
+              security_advisories: security_advisories
             ).and_return(dummy_version_resolver)
           expect(dummy_version_resolver)
             .to receive(:latest_resolvable_version)
@@ -866,7 +868,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
             latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
-            repo_contents_path: nil
+            repo_contents_path: nil,
+            security_advisories: security_advisories
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)
@@ -1538,7 +1541,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 previous_version: "1.0.0",
                 requirements: [],
                 previous_requirements: [],
-                metadata: { information_only: true }
+                metadata: { information_only: true, security_update: true }
               ),
               Dependabot::Dependency.new(
                 name: "@dependabot-fixtures/npm-parent-dependency",
@@ -1562,7 +1565,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                     type: "registry",
                     url: "https://registry.npmjs.org"
                   }
-                }]
+                }],
+                metadata: { security_update: true }
               )
             ]
           )
@@ -1582,7 +1586,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 previous_version: "1.0.0",
                 requirements: [],
                 version: "1.0.1",
-                metadata: { information_only: true }
+                metadata: { information_only: true, security_update: true }
               ),
               Dependabot::Dependency.new(
                 name: "@dependabot-fixtures/npm-intermediate-dependency",
@@ -1590,7 +1594,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 previous_requirements: [],
                 previous_version: "0.0.1",
                 requirements: [],
-                version: "0.0.2"
+                version: "0.0.2",
+                metadata: { security_update: true }
               )
             ]
           )
@@ -1625,7 +1630,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                   url: "https://registry.npmjs.org"
                 }
               }],
-              version: "2.0.2"
+              version: "2.0.2",
+              metadata: { security_update: true }
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-parent-dependency-2",
@@ -1649,7 +1655,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                   url: "https://registry.npmjs.org"
                 }
               }],
-              version: "2.1.1"
+              version: "2.1.1",
+              metadata: { security_update: true }
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-parent-dependency-3",
@@ -1673,7 +1680,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                   url: "https://registry.npmjs.org"
                 }
               }],
-              version: "3.0.0"
+              version: "3.0.0",
+              metadata: { security_update: true }
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-transitive-dependency",
@@ -1682,7 +1690,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               previous_version: "1.0.0",
               requirements: [],
               version: "1.0.1",
-              metadata: { information_only: true }
+              metadata: { information_only: true, security_update: true }
             )
           )
         end
@@ -1701,7 +1709,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               previous_version: "1.0.0",
               requirements: [],
               removed: true,
-              metadata: { information_only: true }
+              metadata: { information_only: true, security_update: true }
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-remove-dependency",
@@ -1725,7 +1733,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                   url: "https://registry.npmjs.org"
                 }
               }],
-              version: "10.0.1"
+              version: "10.0.1",
+              metadata: { security_update: true }
             )
           )
         end
@@ -1764,7 +1773,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 previous_version: "1.0.0",
                 requirements: [],
                 version: "2.0.0",
-                metadata: { information_only: true }
+                metadata: { information_only: true, security_update: true }
               ),
               Dependabot::Dependency.new(
                 name: "@dependabot-fixtures/npm-parent-dependency-with-more-versions",
@@ -1788,7 +1797,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                     url: "https://registry.npmjs.org"
                   }
                 }],
-                version: "1.0.1"
+                version: "1.0.1",
+                metadata: { security_update: true }
               )
             ]
           )
@@ -1844,7 +1854,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                     type: "registry",
                     url: "https://registry.npmjs.org"
                   }
-                }]
+                }],
+                metadata: { security_update: true }
               ),
               Dependabot::Dependency.new(
                 name: "@msgpack/msgpack",
@@ -1852,7 +1863,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 package_manager: "npm_and_yarn",
                 previous_version: "3.0.0",
                 requirements: [],
-                previous_requirements: []
+                previous_requirements: [],
+                metadata: { security_update: true }
               )
             ]
           )
@@ -1906,7 +1918,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           result = checker.send(:updated_dependencies_after_full_unlock)
           expect(result.map(&:name)).to eq(["@dependabot-fixtures/npm-transitive-dependency"])
           expect(result.first.version).to eq("1.0.1")
-          expect(result.first.metadata).to eq({})
+          expect(result.first.metadata).to eq({ security_update: true })
         end
       end
 
@@ -1942,7 +1954,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           target_dep = result.find { |d| d.name == "@dependabot-fixtures/npm-transitive-dependency" }
           parent_dep = result.find { |d| d.name == "@dependabot-fixtures/npm-parent-dependency" }
 
-          expect(target_dep.metadata).to eq({ information_only: true })
+          expect(target_dep.metadata).to eq({ information_only: true, security_update: true })
           expect(parent_dep.version).to eq("2.0.2")
           expect(parent_dep.previous_version).to eq("2.0.0")
         end
@@ -2393,6 +2405,92 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(updated_deps.length).to eq(1)
       expect(updated_deps[0].version).to eq("1.1.0")
       expect(updated_deps[0].name).to eq("is-stream")
+    end
+  end
+
+  describe "security_update metadata stamping" do
+    let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
+    let(:dependency_name) { "etag" }
+    let(:dependency_version) { "1.0.0" }
+    let(:target_version) { "1.7.0" }
+
+    context "when security advisories are present" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["< 1.7.0"]
+          )
+        ]
+      end
+
+      it "stamps :security_update on dependencies returned with :all unlock" do
+        updated_deps = checker.updated_dependencies(requirements_to_unlock: :all)
+        expect(updated_deps).not_to be_empty
+        expect(updated_deps).to all(have_attributes(metadata: include(security_update: true)))
+      end
+
+      it "stamps :security_update on dependencies returned with :own unlock" do
+        updated_deps = checker.updated_dependencies(requirements_to_unlock: :own)
+        expect(updated_deps).not_to be_empty
+        expect(updated_deps).to all(have_attributes(metadata: include(security_update: true)))
+      end
+    end
+
+    context "when there are no security advisories" do
+      let(:security_advisories) { [] }
+
+      it "does not stamp :security_update on dependencies with :all unlock" do
+        updated_deps = checker.updated_dependencies(requirements_to_unlock: :all)
+        expect(updated_deps).not_to be_empty
+        updated_deps.each do |dep|
+          expect(dep.metadata[:security_update]).to be_nil
+        end
+      end
+
+      it "does not stamp :security_update on dependencies with :own unlock" do
+        updated_deps = checker.updated_dependencies(requirements_to_unlock: :own)
+        expect(updated_deps).not_to be_empty
+        updated_deps.each do |dep|
+          expect(dep.metadata[:security_update]).to be_nil
+        end
+      end
+    end
+
+    context "with a sub-dependency security update (:none unlock)" do
+      let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
+      let(:dependency_name) { "etag" }
+      let(:dependency_version) { "1.0.0" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["< 1.7.0"]
+          )
+        ]
+      end
+
+      before do
+        allow(checker)
+          .to receive(:latest_resolvable_version_with_no_unlock)
+          .and_return(Dependabot::NpmAndYarn::Version.new("1.7.0"))
+      end
+
+      it "stamps :security_update on the dependency returned via :none unlock" do
+        updated_deps = checker.updated_dependencies(requirements_to_unlock: :none)
+        expect(updated_deps).not_to be_empty
+        expect(updated_deps.first.metadata[:security_update]).to be(true)
+      end
+
+      it "does not stamp :security_update on the dependency when no advisories present" do
+        allow(checker).to receive(:security_advisories).and_return([])
+
+        updated_deps = checker.updated_dependencies(requirements_to_unlock: :none)
+        expect(updated_deps).not_to be_empty
+        expect(updated_deps.first.metadata[:security_update]).to be_nil
+      end
     end
   end
 end
