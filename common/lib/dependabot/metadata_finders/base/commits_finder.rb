@@ -90,7 +90,6 @@ module Dependabot
 
         private
 
-        # rubocop:disable Metrics/PerceivedComplexity
         sig { returns(T.nilable(String)) }
         def previous_tag
           previous_version = dependency.previous_version
@@ -110,8 +109,6 @@ module Dependabot
             lowest_tag_satisfying_previous_requirements
           end
         end
-
-        # rubocop:enable Metrics/PerceivedComplexity
 
         sig { returns(T.nilable(String)) }
         def lowest_tag_satisfying_previous_requirements
