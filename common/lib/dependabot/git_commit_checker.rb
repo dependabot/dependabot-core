@@ -680,10 +680,10 @@ module Dependabot
       @github_releases ||= T.let(
         begin
           return [] unless listing_source_url
-          return [] if github_dot_com_api_endpoint_overridden?
 
           source = Source.from_url(listing_source_url)
           return [] unless source&.provider == "github"
+          return [] if source.hostname == "github.com" && github_dot_com_api_endpoint_overridden?
 
           client = Dependabot::Clients::GithubWithRetries.for_source(
             source: T.must(source),

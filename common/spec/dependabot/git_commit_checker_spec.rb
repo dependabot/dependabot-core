@@ -2165,6 +2165,43 @@ RSpec.describe Dependabot::GitCommitChecker do
           expect(checker.send(:github_releases)).to eq([])
         end
       end
+
+      context "when github.com credentials use a custom API endpoint but source is GHES" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token",
+            "api-endpoint" => "https://ghe.example.com/api/v3/"
+          }]
+        end
+
+        before do
+          allow(checker).to receive(:listing_source_url).and_return("https://ghe.example.com/org/repo")
+          allow(Dependabot::Source).to receive(:from_url)
+            .and_return(
+              Dependabot::Source.new(
+                provider: "github",
+                repo: "org/repo",
+                hostname: "ghe.example.com",
+                api_endpoint: "https://ghe.example.com/api/v3"
+              )
+            )
+
+          mock_client = double("GithubWithRetries")
+          allow(Dependabot::Clients::GithubWithRetries)
+            .to receive(:for_source)
+            .and_return(mock_client)
+          allow(mock_client).to receive(:releases).and_return([])
+        end
+
+        it "still attempts release lookup" do
+          checker.send(:github_releases)
+
+          expect(Dependabot::Clients::GithubWithRetries).to have_received(:for_source)
+        end
+      end
     end
 
     context "when dependency is not from GitHub" do
