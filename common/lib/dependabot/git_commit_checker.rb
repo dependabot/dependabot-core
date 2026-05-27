@@ -683,6 +683,7 @@ module Dependabot
 
           source = Source.from_url(listing_source_url)
           return [] unless source&.provider == "github"
+
           source = T.must(source)
           return [] if source.hostname == "github.com" && github_dot_com_api_endpoint_overridden?
 
