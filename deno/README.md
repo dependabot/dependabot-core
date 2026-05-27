@@ -19,20 +19,36 @@ Deno support for [`dependabot-core`][core-repo].
 
 ### Implementation Status
 
-This ecosystem is currently under development. See [NEW_ECOSYSTEMS.md](../NEW_ECOSYSTEMS.md) for implementation guidelines.
-
 #### Required Classes
-- [ ] FileFetcher
-- [ ] FileParser
-- [ ] UpdateChecker
-- [ ] FileUpdater
+- [x] FileFetcher
+- [x] FileParser
+- [x] UpdateChecker
+- [x] FileUpdater (manifest + `deno.lock` regeneration)
 
 #### Optional Classes
-- [ ] MetadataFinder
-- [ ] Version
-- [ ] Requirement
+- [x] MetadataFinder (npm sources; jsr returns nil)
+- [x] Version
+- [x] Requirement
 
 #### Supporting Infrastructure
-- [ ] Comprehensive unit tests
-- [ ] CI/CD integration
-- [ ] Documentation
+- [x] Comprehensive unit tests
+- [x] CI/CD integration
+- [x] Documentation
+
+### Supported
+
+- `deno.json` and `deno.jsonc` import maps
+- `jsr:` and `npm:` specifiers (scoped, unscoped, versionless, sub-path)
+- `deno.lock` regeneration when the manifest changes
+- Cooldown for direct dependencies
+
+### Not yet supported (planned)
+
+- HTTPS imports (`https://deno.land/x/...`)
+- `scopes` field overrides
+- `vendor/` directory regeneration
+- Workspaces (nested `deno.json`)
+- `links` field (local package overrides)
+- `DENO_AUTH_TOKENS` / private registries
+- Frozen-lockfile UX (we pass `--frozen=false` and may overwrite a frozen lockfile)
+- Custom lockfile path (`"lock": { "path": "..." }`)
