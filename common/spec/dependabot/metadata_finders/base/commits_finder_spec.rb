@@ -259,7 +259,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       let(:dependency_name) { "github.com/opentdf/platform/protocol/go" }
       let(:dependency_version) { "0.31.0" }
       let(:dependency_previous_version) { "0.30.0" }
-      let(:package_manager) { "go_modules" }
+      let(:package_manager) { "dummy" }
       let(:source) do
         Dependabot::Source.new(
           provider: "github",

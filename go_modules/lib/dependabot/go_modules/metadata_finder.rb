@@ -22,7 +22,7 @@ module Dependabot
         source = Source.from_url(url)
         return unless source
 
-        repo_import_path = url.gsub(%r{^https?://}, "").chomp("/").chomp(".git")
+        repo_import_path = source.url.gsub(%r{^https?://}, "").chomp("/").chomp(".git")
         if dependency.name.start_with?("#{repo_import_path}/")
           source.directory = dependency.name.delete_prefix("#{repo_import_path}/")
         end

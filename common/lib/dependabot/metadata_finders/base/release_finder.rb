@@ -110,7 +110,7 @@ module Dependabot
 
           return releases_with_dependency_name if releases_with_dependency_name.any?
 
-          if source&.directory && ![".", "/"].include?(source.directory)
+          if source&.directory && ![".", "/"].include?(T.must(source).directory)
             releases_with_dir_prefix =
               releases
               .reject { |r| r.tag_name.nil? }

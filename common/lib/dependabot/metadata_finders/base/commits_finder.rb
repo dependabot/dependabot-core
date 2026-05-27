@@ -85,9 +85,7 @@ module Dependabot
                  .select { |tag| tag_matches_version?(tag, new_version) }
                  .sort_by(&:length)
 
-          tags.find { |t| t.include?(dependency.name) } ||
-            preferred_tag_by_directory(tags) ||
-            tags.first
+          pick_preferred_tag(tags)
         end
 
         private
@@ -107,9 +105,7 @@ module Dependabot
                    .select { |tag| tag_matches_version?(tag, previous_version) }
                    .sort_by(&:length)
 
-            tags.find { |t| t.include?(dependency.name) } ||
-              preferred_tag_by_directory(tags) ||
-              tags.first
+            pick_preferred_tag(tags)
           elsif !git_source?(dependency.previous_requirements)
             lowest_tag_satisfying_previous_requirements
           end
@@ -124,17 +120,15 @@ module Dependabot
                  .select { |t| satisfies_previous_reqs?(version_from_tag(t)) }
                  .sort_by { |t| [version_from_tag(t), t.length] }
 
-          tags.find { |t| t.include?(dependency.name) } ||
-            preferred_tag_by_directory(tags) ||
-            tags.first
+          pick_preferred_tag(tags)
         end
 
         sig { params(tags: T::Array[String]).returns(T.nilable(String)) }
-        def preferred_tag_by_directory(tags)
-          return unless source&.directory
-          return if [".", "/"].include?(source.directory)
-
-          tags.find { |t| t.start_with?("#{T.must(source).directory}/") }
+        def pick_preferred_tag(tags)
+          dir = source&.directory
+          tags.find { |t| t.include?(dependency.name) } ||
+            (dir && ![".", "/"].include?(dir) && tags.find { |t| t.start_with?("#{dir}/") }) ||
+            tags.first
         end
 
         sig { params(tag: String).returns(T.nilable(Dependabot::Version)) }
