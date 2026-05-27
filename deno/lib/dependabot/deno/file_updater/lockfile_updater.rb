@@ -9,6 +9,7 @@ require "dependabot/dependency_file"
 require "dependabot/errors"
 require "dependabot/shared_helpers"
 require "dependabot/deno/file_updater"
+require "dependabot/deno/file_updater/manifest_updater"
 require "dependabot/deno/helpers"
 
 module Dependabot
@@ -17,8 +18,7 @@ module Dependabot
       class LockfileUpdater
         extend T::Sig
 
-        MANIFEST_FILENAMES = T.let(%w(deno.json deno.jsonc).freeze, T::Array[String])
-        LOCKFILE_FILENAME = "deno.lock"
+        LOCKFILE_FILENAME = T.let("deno.lock", String)
 
         sig do
           params(
@@ -30,6 +30,8 @@ module Dependabot
         def initialize(dependencies:, dependency_files:, credentials:)
           @dependencies = dependencies
           @dependency_files = dependency_files
+          # Reserved for DENO_AUTH_TOKENS / private registry support — accepted now
+          # so callers don't need a signature change when that lands.
           @credentials = credentials
         end
 
@@ -73,7 +75,7 @@ module Dependabot
                 Helpers.run_deno_command("install", "--frozen=false", dir: dir.to_s)
                 File.read(File.join(dir.to_s, LOCKFILE_FILENAME))
               end
-            rescue Helpers::DenoCommandError => e
+            rescue Helpers::DenoCommandError, Errno::ENOENT => e
               raise Dependabot::DependencyFileNotResolvable, e.message
             end
 
@@ -93,35 +95,13 @@ module Dependabot
 
         sig { returns(String) }
         def updated_manifest_content
-          # Re-apply the same gsub FileUpdater uses. Duplicates ~20 lines but
-          # avoids exposing FileUpdater's private method; if the manifest
-          # update logic grows, extract a shared ManifestUpdater class.
-          content = T.must(manifest.content).dup
-          dependencies.each do |dep|
-            prev_reqs = dep.previous_requirements || []
-            new_reqs = dep.requirements
-            prev_reqs.zip(new_reqs).each do |prev_req, new_req|
-              next unless prev_req && new_req
-              next unless prev_req[:file] == manifest.name
-
-              source_type = prev_req[:source][:type]
-              prev_req_str = prev_req[:requirement]
-              new_req_str = new_req[:requirement]
-
-              base = "#{source_type}:#{dep.name}"
-              old_specifier = prev_req_str ? "#{base}@#{prev_req_str}" : base
-              new_specifier = "#{base}@#{new_req_str}"
-
-              content = content.gsub(%r{#{Regexp.escape(old_specifier)}(?=["/])}, new_specifier)
-            end
-          end
-          content
+          ManifestUpdater.new(dependencies: dependencies, manifest: manifest).updated_manifest_content
         end
 
         sig { returns(Dependabot::DependencyFile) }
         def manifest
           @manifest ||= T.let(
-            T.must(dependency_files.find { |f| MANIFEST_FILENAMES.include?(f.name) }),
+            T.must(dependency_files.find { |f| FileUpdater::MANIFEST_FILENAMES.include?(f.name) }),
             T.nilable(Dependabot::DependencyFile)
           )
         end

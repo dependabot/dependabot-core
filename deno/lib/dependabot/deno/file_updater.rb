@@ -9,6 +9,7 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
+      require_relative "file_updater/manifest_updater"
       require_relative "file_updater/lockfile_updater"
 
       MANIFEST_FILENAMES = T.let(%w(deno.json deno.jsonc).freeze, T::Array[String])
@@ -67,26 +68,7 @@ module Dependabot
 
       sig { params(file: Dependabot::DependencyFile).returns(String) }
       def update_manifest_content(file)
-        content = T.must(file.content)
-
-        dependencies.each do |dep|
-          prev_reqs = dep.previous_requirements&.select { |r| r[:file] == file.name } || []
-          new_reqs = dep.requirements.select { |r| r[:file] == file.name }
-
-          prev_reqs.zip(new_reqs).each do |prev_req, new_req|
-            source_type = prev_req[:source][:type]
-            prev_req_str = prev_req[:requirement]
-            new_req_str = T.must(new_req)[:requirement]
-
-            base = "#{source_type}:#{dep.name}"
-            old_specifier = prev_req_str ? "#{base}@#{prev_req_str}" : base
-            new_specifier = "#{base}@#{new_req_str}"
-
-            content = content.gsub(%r{#{Regexp.escape(old_specifier)}(?=["/])}, new_specifier)
-          end
-        end
-
-        content
+        ManifestUpdater.new(dependencies: dependencies, manifest: file).updated_manifest_content
       end
     end
   end
