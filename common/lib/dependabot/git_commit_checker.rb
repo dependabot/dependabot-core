@@ -680,6 +680,7 @@ module Dependabot
       @github_releases ||= T.let(
         begin
           return [] unless listing_source_url
+          return [] if github_dot_com_api_endpoint_overridden?
 
           source = Source.from_url(listing_source_url)
           return [] unless source&.provider == "github"
@@ -689,11 +690,26 @@ module Dependabot
             credentials: credentials
           )
           T.unsafe(client).releases(T.must(source).repo, per_page: 100)
-        rescue Octokit::Error
+        rescue Octokit::Error, Faraday::SSLError
           []
         end,
         T.nilable(T::Array[T.untyped])
       )
+    end
+
+    sig { returns(T::Boolean) }
+    def github_dot_com_api_endpoint_overridden?
+      github_dot_com_credentials = credentials.select do |credential|
+        credential["type"] == "git_source" && credential["host"] == "github.com"
+      end
+      return false if github_dot_com_credentials.empty?
+
+      github_dot_com_credentials.any? do |credential|
+        api_endpoint = credential["api-endpoint"] || credential["api_endpoint"]
+        next false if api_endpoint.nil?
+
+        api_endpoint.delete_suffix("/") != "https://api.github.com"
+      end
     end
 
     sig { params(tag: Dependabot::GitRef).returns(Gem::Version) }

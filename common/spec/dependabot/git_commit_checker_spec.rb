@@ -2130,6 +2130,41 @@ RSpec.describe Dependabot::GitCommitChecker do
           expect(checker.send(:github_releases)).to eq([])
         end
       end
+
+      context "when Faraday raises an SSL error" do
+        before do
+          mock_client = double("GithubWithRetries")
+          allow(Dependabot::Clients::GithubWithRetries)
+            .to receive(:for_source)
+            .and_return(mock_client)
+          allow(mock_client)
+            .to receive(:releases)
+            .and_raise(Faraday::SSLError.new("x509: certificate signed by unknown authority"))
+        end
+
+        it "returns an empty array" do
+          expect(checker.send(:github_releases)).to eq([])
+        end
+      end
+
+      context "when github.com credentials use a custom API endpoint" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token",
+            "api-endpoint" => "https://ghe.example.com/api/v3/"
+          }]
+        end
+
+        it "returns an empty array without calling releases API" do
+          expect(Dependabot::Clients::GithubWithRetries)
+            .not_to receive(:for_source)
+
+          expect(checker.send(:github_releases)).to eq([])
+        end
+      end
     end
 
     context "when dependency is not from GitHub" do
