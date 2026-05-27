@@ -683,13 +683,14 @@ module Dependabot
 
           source = Source.from_url(listing_source_url)
           return [] unless source&.provider == "github"
+          source = T.must(source)
           return [] if source.hostname == "github.com" && github_dot_com_api_endpoint_overridden?
 
           client = Dependabot::Clients::GithubWithRetries.for_source(
-            source: T.must(source),
+            source: source,
             credentials: credentials
           )
-          T.unsafe(client).releases(T.must(source).repo, per_page: 100)
+          T.unsafe(client).releases(source.repo, per_page: 100)
         rescue Octokit::Error, Faraday::SSLError
           []
         end,
