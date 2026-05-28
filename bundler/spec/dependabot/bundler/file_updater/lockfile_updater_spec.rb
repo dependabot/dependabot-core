@@ -9,6 +9,88 @@ require "dependabot/bundler/file_updater/lockfile_updater"
 RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
   include_context "when stubbing rubygems compact index"
 
+  describe "#post_process_lockfile" do
+    subject(:post_processed_lockfile) { updater.send(:post_process_lockfile, generated_lockfile) }
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        version: "1.5.0",
+        previous_version: "1.4.0",
+        requirements: [],
+        previous_requirements: [],
+        package_manager: "bundler"
+      )
+    end
+    let(:files) { [gemfile, lockfile] }
+    let(:gemfile) do
+      Dependabot::DependencyFile.new(
+        name: "Gemfile",
+        content: "source 'https://rubygems.org'\n"
+      )
+    end
+    let(:generated_lockfile) do
+      <<~LOCKFILE
+        GEM
+          specs:
+            business (1.5.0)
+
+        CHECKSUMS
+          business (1.5.0) sha256=123
+          bundler (4.0.11) sha256=abc
+
+        BUNDLED WITH
+           4.0.11
+      LOCKFILE
+    end
+
+    context "when original lockfile uses Bundler 4.0.10" do
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: <<~LOCKFILE
+            GEM
+              specs:
+                business (1.4.0)
+
+            CHECKSUMS
+              business (1.4.0) sha256=456
+
+            BUNDLED WITH
+               4.0.10
+          LOCKFILE
+        )
+      end
+
+      it "removes newly added bundler checksums" do
+        expect(post_processed_lockfile).not_to include("bundler (4.0.11)")
+      end
+    end
+
+    context "when original lockfile uses Bundler 4.0.11" do
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: <<~LOCKFILE
+            GEM
+              specs:
+                business (1.4.0)
+
+            CHECKSUMS
+              business (1.4.0) sha256=456
+
+            BUNDLED WITH
+               4.0.11
+          LOCKFILE
+        )
+      end
+
+      it "keeps bundler checksums" do
+        expect(post_processed_lockfile).to include("bundler (4.0.11)")
+      end
+    end
+  end
+
   let(:updater) do
     described_class.new(
       dependencies: [dependency],
