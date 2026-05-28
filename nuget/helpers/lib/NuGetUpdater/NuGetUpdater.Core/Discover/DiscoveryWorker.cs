@@ -16,6 +16,8 @@ using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Updater;
 using NuGetUpdater.Core.Utilities;
 
+using static NuGetUpdater.Core.Utilities.GitSubmoduleParser;
+
 namespace NuGetUpdater.Core.Discover;
 
 public partial class DiscoveryWorker : IDiscoveryWorker
@@ -110,6 +112,33 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         var repoRoot = new DirectoryInfo(repoRootPath);
         projectResults = [.. projectResults.Where(p => PathHelper.IsFileUnderDirectory(repoRoot, new FileInfo(Path.Join(workspacePath, p.FilePath))))];
 
+        // filter out projects that are in submodules
+        var submodulePaths = GetSubmodulePaths(repoRootPath);
+        if (submodulePaths.Length > 0)
+        {
+            projectResults = FilterProjectsInSubmodules(projectResults, initialWorkspacePath, submodulePaths);
+
+            if (dotNetToolsJsonDiscovery is not null)
+            {
+                var fullRelativePath = PathHelper.JoinPath(initialWorkspacePath, dotNetToolsJsonDiscovery.FilePath).NormalizePathToUnix();
+                if (IsPathInSubmodule(fullRelativePath, submodulePaths))
+                {
+                    _logger.Info($"  Excluding file [{dotNetToolsJsonDiscovery.FilePath}] because it is in a submodule.");
+                    dotNetToolsJsonDiscovery = null;
+                }
+            }
+
+            if (globalJsonDiscovery is not null)
+            {
+                var fullRelativePath = PathHelper.JoinPath(initialWorkspacePath, globalJsonDiscovery.FilePath).NormalizePathToUnix();
+                if (IsPathInSubmodule(fullRelativePath, submodulePaths))
+                {
+                    _logger.Info($"  Excluding file [{globalJsonDiscovery.FilePath}] because it is in a submodule.");
+                    globalJsonDiscovery = null;
+                }
+            }
+        }
+
         // if any projectResults are not successful, return a failed result
         if (projectResults.Any(p => p.IsSuccess == false))
         {
@@ -175,7 +204,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         ImmutableArray<string> projects;
         try
         {
-            projects = await ExpandEntryPointsIntoProjectsAsync(entryPoints, _experimentsManager, _logger);
+            projects = await ExpandEntryPointsIntoProjectsAsync(entryPoints, _experimentsManager, _logger, repoRootPath);
         }
         catch (InvalidProjectFileException e)
         {
@@ -223,7 +252,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             .ToImmutableArray();
     }
 
-    internal async static Task<ImmutableArray<string>> ExpandEntryPointsIntoProjectsAsync(IEnumerable<string> entryPoints, ExperimentsManager experimentsManager, ILogger logger)
+    internal async static Task<ImmutableArray<string>> ExpandEntryPointsIntoProjectsAsync(IEnumerable<string> entryPoints, ExperimentsManager experimentsManager, ILogger logger, string repoRootPath)
     {
         HashSet<string> expandedProjects = new(PathComparer.Instance);
         HashSet<string> seenProjects = new(PathComparer.Instance);
@@ -284,6 +313,24 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         }
 
         var result = expandedProjects.OrderBy(p => p).ToImmutableArray();
+
+        // pre-filter projects that are in submodules to avoid unnecessary restore operations
+        var submodulePaths = GetSubmodulePaths(repoRootPath);
+        if (submodulePaths.Length > 0)
+        {
+            result = [.. result.Where(p =>
+            {
+                var relativePath = Path.GetRelativePath(repoRootPath, p).NormalizePathToUnix();
+                if (IsPathInSubmodule(relativePath, submodulePaths))
+                {
+                    logger.Info($"    Excluding project [{relativePath}] because it is in a submodule.");
+                    return false;
+                }
+
+                return true;
+            })];
+        }
+
         return result;
     }
 
@@ -344,13 +391,20 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         try
         {
             // get all packages.config results first
-            var expandedProjects = await ExpandEntryPointsIntoProjectsAsync(normalizedProjectPaths, _experimentsManager, _logger);
+            var expandedProjects = await ExpandEntryPointsIntoProjectsAsync(normalizedProjectPaths, _experimentsManager, _logger, repoRootPath);
             foreach (var expandedProject in expandedProjects)
             {
                 var packagesConfigResult = await PackagesConfigDiscovery.Discover(repoRootPath, workspacePath, expandedProject, _logger);
                 if (packagesConfigResult is not null)
                 {
                     var relativeProjectPath = Path.GetRelativePath(workspacePath, expandedProject).NormalizePathToUnix();
+                    var dependencyGraph = packagesConfigResult.Dependencies
+                        .Where(d => !string.IsNullOrEmpty(d.Version))
+                        .OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
+                        .ToImmutableDictionary(
+                            d => $"{d.Name}/{d.Version}",
+                            _ => ImmutableArray<string>.Empty,
+                            StringComparer.OrdinalIgnoreCase);
                     results[relativeProjectPath] = new ProjectDiscoveryResult()
                     {
                         FilePath = relativeProjectPath,
@@ -358,6 +412,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                         TargetFrameworks = packagesConfigResult.TargetFrameworks,
                         ImportedFiles = [], // no imported files resolved for packages.config scenarios
                         AdditionalFiles = packagesConfigResult.AdditionalFiles,
+                        DependencyGraph = dependencyGraph,
                     };
                 }
             }
@@ -472,8 +527,55 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             AdditionalFiles = mergedAdditionalFiles,
             PackageManagementKind = (PackageManagementKind)Math.Max((int)result1.PackageManagementKind, (int)result2.PackageManagementKind),
             PackageManagementSpecialFileRelativePath = result1.PackageManagementSpecialFileRelativePath ?? result2.PackageManagementSpecialFileRelativePath,
+            HasNoWarnNU1701 = result1.HasNoWarnNU1701 || result2.HasNoWarnNU1701,
+            DependencyGraph = MergeDependencyGraphs(result1.DependencyGraph, result2.DependencyGraph),
         };
         return mergedResult;
+    }
+
+    internal ImmutableArray<ProjectDiscoveryResult> FilterProjectsInSubmodules(
+        ImmutableArray<ProjectDiscoveryResult> projectResults,
+        string workspacePath,
+        ImmutableArray<string> submodulePaths)
+    {
+        var filtered = new List<ProjectDiscoveryResult>();
+        foreach (var project in projectResults)
+        {
+            var fullRelativePath = PathHelper.JoinPath(workspacePath, project.FilePath).NormalizePathToUnix();
+            if (IsPathInSubmodule(fullRelativePath, submodulePaths))
+            {
+                _logger.Info($"  Excluding project [{project.FilePath}] because it is in a submodule.");
+            }
+            else
+            {
+                filtered.Add(project);
+            }
+        }
+
+        return [.. filtered];
+    }
+
+    private static ImmutableDictionary<string, ImmutableArray<string>> MergeDependencyGraphs(
+        ImmutableDictionary<string, ImmutableArray<string>> graph1,
+        ImmutableDictionary<string, ImmutableArray<string>> graph2)
+    {
+        var merged = graph1.ToDictionary(kvp => kvp.Key, kvp => kvp.Value, StringComparer.OrdinalIgnoreCase);
+        foreach (var kvp in graph2)
+        {
+            if (merged.TryGetValue(kvp.Key, out var existing))
+            {
+                merged[kvp.Key] = existing
+                    .Union(kvp.Value, StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                    .ToImmutableArray();
+            }
+            else
+            {
+                merged[kvp.Key] = kvp.Value;
+            }
+        }
+
+        return merged.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase);
     }
 
     internal static async Task WriteResultsAsync(string repoRootPath, string outputPath, WorkspaceDiscoveryResult result)

@@ -154,6 +154,7 @@ RSpec.describe Dependabot::Gradle::Package::ReleaseDateExtractor do
             <body>
               <a href="1.0.0/" title="1.0.0/"></a>       2019-11-01 10:00    -
               <a href="1.2.0/" title="1.2.0/"></a>       2019-12-01 14:30    -
+              <a href="1.3.0/" title="1.3.0/"></a>       <!-- no date -->
             </body>
           </html>
         HTML
@@ -163,9 +164,9 @@ RSpec.describe Dependabot::Gradle::Package::ReleaseDateExtractor do
 
       it "combines data from both sources without duplicates" do
         result = extract_release_dates
-        # Version 1.2.0 should be found from Gradle Plugin Portal first, not overwritten by Maven
         expect(result["1.2.0"]).to eq({ release_date: Time.utc(2019, 12, 1, 19, 14, 59) })
         expect(result["1.0.0"][:release_date]).to be_a(Time)
+        expect(result["1.3.0"]).to eq({ release_date: nil })
       end
     end
 

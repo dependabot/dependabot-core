@@ -230,8 +230,8 @@ module Dependabot
               original_content = File.read(lockfile_name)
 
               Helpers.run_pnpm_command(
-                "update #{dependency.name} --lockfile-only",
-                fingerprint: "update <dependency_name> --lockfile-only"
+                pnpm_update_command,
+                fingerprint: pnpm_update_fingerprint
               )
 
               updated_content = File.read(lockfile_name)
@@ -247,6 +247,24 @@ module Dependabot
 
               { lockfile_name => updated_content }
             end
+          end
+        end
+
+        sig { returns(String) }
+        def pnpm_update_command
+          if latest_allowable_version
+            "update #{dependency.name}@#{latest_allowable_version} --lockfile-only --no-save -r"
+          else
+            "update #{dependency.name} --lockfile-only"
+          end
+        end
+
+        sig { returns(String) }
+        def pnpm_update_fingerprint
+          if latest_allowable_version
+            "update <dependency_name>@<latest_allowable_version> --lockfile-only --no-save -r"
+          else
+            "update <dependency_name> --lockfile-only"
           end
         end
 

@@ -1,0 +1,6 @@
+// this is a leading comment
+{
+    "sdk": {
+        "version": "1.2.3-leading-comment"
+    }
+}

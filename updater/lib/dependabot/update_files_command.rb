@@ -69,11 +69,20 @@ module Dependabot
     sig { override.returns(Dependabot::Job) }
     def job
       @job ||= T.let(
-        Job.new_update_job(
-          job_id: job_id,
-          job_definition: Environment.job_definition,
-          repo_contents_path: Environment.repo_contents_path
-        ),
+        begin
+          update_job = Job.new_update_job(
+            job_id: job_id,
+            job_definition: Environment.job_definition,
+            repo_contents_path: Environment.repo_contents_path
+          )
+
+          if Experiments.enabled?(:blocked_versions)
+            blocked = service.fetch_blocked_versions(update_job.package_manager)
+            update_job.blocked_versions = blocked
+          end
+
+          update_job
+        end,
         T.nilable(Dependabot::Job)
       )
     end
