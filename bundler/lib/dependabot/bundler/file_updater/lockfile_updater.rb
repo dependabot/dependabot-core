@@ -236,7 +236,7 @@ module Dependabot
           checksums_section = lockfile_body.match(CHECKSUMS_SECTION)
           return lockfile_body unless checksums_section
 
-          entries = checksums_section[:entries]
+          entries = T.must(checksums_section[:entries])
           stripped_entries = entries.lines.reject { |line| line.match?(BUNDLER_CHECKSUM_ENTRY_REGEX) }.join
 
           lockfile_body.sub(CHECKSUMS_SECTION, "\\1#{stripped_entries}")
