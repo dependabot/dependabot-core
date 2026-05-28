@@ -215,6 +215,11 @@ internal static class SdkProjectDiscovery
 
                 if (!File.Exists(binLogPath))
                 {
+                    if (stdErr.Contains("A compatible .NET SDK was not found."))
+                    {
+                        throw new Exception("Missing SDK, check global.json locations vs. job directories.");
+                    }
+
                     throw new FileNotFoundException("Dependency discovery didn't produce a log file.");
                 }
 
