@@ -518,6 +518,11 @@ internal static class SdkProjectDiscovery
             {
                 if (propertiesForProject.TryGetValue("ProjectAssetsFile", out var assetsFilePath))
                 {
+                    if (!File.Exists(assetsFilePath))
+                    {
+                        throw new FileNotFoundException("The file specified at $(ProjectAssetsFile) does not exist.");
+                    }
+
                     var assetsContent = File.ReadAllText(assetsFilePath);
                     var assets = JsonDocument.Parse(assetsContent).RootElement;
                     return assets;

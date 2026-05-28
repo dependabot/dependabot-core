@@ -134,6 +134,10 @@ module Dependabot
         # Unparsable package.json file
         ERR_PNPM_INVALID_PACKAGE_JSON = /Invalid package.json in package/
 
+        # Invalid dependency name in package.json
+        ERR_PNPM_INVALID_DEPENDENCY_NAME =
+          /ERR_PNPM_INVALID_DEPENDENCY_NAME.*invalid name: "(?<dep>[^"]+)"/m
+
         # Unparsable lockfile
         ERR_PNPM_UNEXPECTED_PKG_CONTENT_IN_STORE = /ERR_PNPM_UNEXPECTED_PKG_CONTENT_IN_STORE/
         ERR_PNPM_OUTDATED_LOCKFILE = /ERR_PNPM_OUTDATED_LOCKFILE/
@@ -415,6 +419,12 @@ module Dependabot
             msg = "Error while resolving package.json."
             Dependabot.logger.warn(error_message)
             raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if (match = error_message.match(ERR_PNPM_INVALID_DEPENDENCY_NAME))
+            invalid_dep = match.named_captures["dep"]
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyNotFound, T.must(invalid_dep)
           end
 
           [ERR_PNPM_UNEXPECTED_PKG_CONTENT_IN_STORE, ERR_PNPM_OUTDATED_LOCKFILE]
