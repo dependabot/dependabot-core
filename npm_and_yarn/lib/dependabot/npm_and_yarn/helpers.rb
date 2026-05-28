@@ -51,13 +51,12 @@ module Dependabot
       NPM_DEFAULT_VERSION = NPM_V11
 
       # PNPM Version Constants
-      PNPM_V11 = 11
       PNPM_V10 = 10
       PNPM_V9 = 9
       PNPM_V8 = 8
       PNPM_V7 = 7
       PNPM_V6 = 6
-      PNPM_DEFAULT_VERSION = PNPM_V11
+      PNPM_DEFAULT_VERSION = PNPM_V10
       PNPM_FALLBACK_VERSION = PNPM_V6
 
       # YARN Version Constants
@@ -134,7 +133,7 @@ module Dependabot
 
         pnpm_lockfile_version = pnpm_lockfile_version_str.to_f
 
-        return PNPM_V11 if pnpm_lockfile_version >= 9.0
+        return PNPM_V10 if pnpm_lockfile_version >= 9.0
         return PNPM_V8 if pnpm_lockfile_version >= 6.0
         return PNPM_V7 if pnpm_lockfile_version >= 5.4
 
