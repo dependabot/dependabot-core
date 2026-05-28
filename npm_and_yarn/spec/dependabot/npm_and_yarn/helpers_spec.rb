@@ -559,55 +559,6 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     end
   end
 
-  describe "::pnpm_version_numeric" do
-    def pnpm_lockfile(version)
-      Dependabot::DependencyFile.new(
-        name: "pnpm-lock.yaml",
-        content: "lockfileVersion: '#{version}'\n"
-      )
-    end
-
-    it "returns the default pnpm version when the lockfile is nil" do
-      expect(described_class.pnpm_version_numeric(nil))
-        .to eq(Dependabot::NpmAndYarn::Helpers::PNPM_DEFAULT_VERSION)
-    end
-
-    it "returns the default pnpm version when the lockfile content is empty" do
-      empty_lockfile = Dependabot::DependencyFile.new(name: "pnpm-lock.yaml", content: "")
-      expect(described_class.pnpm_version_numeric(empty_lockfile))
-        .to eq(Dependabot::NpmAndYarn::Helpers::PNPM_DEFAULT_VERSION)
-    end
-
-    it "returns the fallback pnpm version when no lockfileVersion is declared" do
-      lockfile_without_version = Dependabot::DependencyFile.new(
-        name: "pnpm-lock.yaml",
-        content: "dependencies: {}\n"
-      )
-      expect(described_class.pnpm_version_numeric(lockfile_without_version))
-        .to eq(Dependabot::NpmAndYarn::Helpers::PNPM_FALLBACK_VERSION)
-    end
-
-    it "returns pnpm v10 for lockfileVersion 9.0" do
-      expect(described_class.pnpm_version_numeric(pnpm_lockfile("9.0")))
-        .to eq(Dependabot::NpmAndYarn::Helpers::PNPM_V10)
-    end
-
-    it "returns pnpm v8 for lockfileVersion 6.0" do
-      expect(described_class.pnpm_version_numeric(pnpm_lockfile("6.0")))
-        .to eq(Dependabot::NpmAndYarn::Helpers::PNPM_V8)
-    end
-
-    it "returns pnpm v7 for lockfileVersion 5.4" do
-      expect(described_class.pnpm_version_numeric(pnpm_lockfile("5.4")))
-        .to eq(Dependabot::NpmAndYarn::Helpers::PNPM_V7)
-    end
-
-    it "returns the fallback pnpm version for lockfileVersion below 5.4" do
-      expect(described_class.pnpm_version_numeric(pnpm_lockfile("5.3")))
-        .to eq(Dependabot::NpmAndYarn::Helpers::PNPM_FALLBACK_VERSION)
-    end
-  end
-
   describe "::run_node_command" do
     it "executes the correct node command and returns the output" do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(

@@ -352,6 +352,30 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    context "when pnpm returns ERR_PNPM_INVALID_DEPENDENCY_NAME" do
+      let(:project_name) { "pnpm/simple" }
+
+      let(:invalid_dependency_name_error_message) do
+        "ERR_PNPM_INVALID_DEPENDENCY_NAME  Invalid dependency name \"foo bar\": " \
+          "invalid name: \"foo bar\""
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: invalid_dependency_name_error_message,
+              error_context: {}
+            )
+          )
+      end
+
+      it "raises a DependencyNotFound error with the captured invalid dep name" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyNotFound, /foo bar/)
+      end
+    end
+
     context "with a registry resolution that returns err_pnpm_unsupported_platform response" do
       let(:dependency_name) { "@swc/core-linux-arm-gnueabihf" }
       let(:version) { "1.7.11" }
