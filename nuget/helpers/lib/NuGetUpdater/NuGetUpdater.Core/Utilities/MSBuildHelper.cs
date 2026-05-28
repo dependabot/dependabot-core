@@ -346,7 +346,7 @@ internal static partial class MSBuildHelper
                 // empty `Version` attributes will cause the temporary project to not build
                 .Where(p => (p.EvaluationResult is null || p.EvaluationResult.ResultType == EvaluationResultType.Success) && !string.IsNullOrWhiteSpace(p.Version))
                 // If all PackageReferences for a package are update-only mark it as such, otherwise it can cause package incoherence errors which do not exist in the repo.
-                .Select(p => $"<{(usePackageDownload ? "PackageDownload" : "PackageReference")} {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"{(p.Version!.Contains("*") ? p.Version : $"[{p.Version}]")}\" />"));
+                .Select(p => $"<{(usePackageDownload ? "PackageDownload" : "PackageReference")} {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"{GetExactVersionConstraint(p.Version!)}\" />"));
 
         var dependencyTargetsImport = importDependencyTargets
             ? $"""<Import Project="{GetFileFromRuntimeDirectory("DependencyDiscovery.targets")}" />"""
@@ -398,6 +398,29 @@ internal static partial class MSBuildHelper
         await File.WriteAllTextAsync(Path.Combine(tempDir.FullName, "Directory.Build.targets"), "<Project />");
 
         return tempProjectPath;
+    }
+
+    /// <summary>
+    /// Returns a NuGet version constraint string suitable for use in a temporary project file.
+    /// If the version is a single version (e.g., "1.0.0"), it is wrapped in square brackets to
+    /// pin to that exact version (e.g., "[1.0.0]").
+    /// If the version is already a valid version range (e.g., "[1.0.0,2.0.0)" or "1.*"), it is
+    /// returned as-is.
+    /// Throws if the string is neither a valid version nor a valid version range.
+    /// </summary>
+    internal static string GetExactVersionConstraint(string version)
+    {
+        if (NuGetVersion.TryParse(version, out _))
+        {
+            return $"[{version}]";
+        }
+
+        if (VersionRange.TryParse(version, out _))
+        {
+            return version;
+        }
+
+        throw new ArgumentException($"Invalid NuGet version or version range: '{version}'", nameof(version));
     }
 
     internal static async Task<ImmutableArray<string>> GetTargetFrameworkValuesFromProject(string repoRoot, string projectPath, ILogger logger)
