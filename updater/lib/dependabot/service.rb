@@ -267,7 +267,9 @@ module Dependabot
     def dependency_error_summary
       if Dependabot::Experiments.enabled?(:enable_enhanced_error_details_for_updater)
         dependency_errors = errors.filter_map do |error_type, error_details, dependency|
-          [dependency.name, error_type, JSON.pretty_generate(error_details)] unless dependency.nil?
+          next if dependency.nil?
+
+          [dependency.name, error_type, summarize_error_details(error_type, error_details)]
         end
         return if dependency_errors.none?
 
@@ -293,6 +295,29 @@ module Dependabot
     def truncate(string, max: 120)
       snip = max - 3
       string.length > max ? "#{string[0...snip]}..." : string
+    end
+
+    # Render a compact, single-line summary for the end-of-run error table.
+    # The full structured payload is still sent to the backend via
+    # `client.record_update_job_error` — this only affects local console output.
+    sig do
+      params(
+        error_type: String,
+        error_details: T.nilable(T::Hash[T.untyped, T.untyped])
+      ).returns(String)
+    end
+    def summarize_error_details(error_type, error_details)
+      return "" if error_details.nil?
+
+      if error_type == "no_change_error"
+        reason = error_details[:reason] || error_details["reason"] || "unknown"
+        pm     = error_details[:package_manager] || error_details["package_manager"]
+        traces = error_details[:command_traces] || error_details["command_traces"] || []
+        "package_manager=#{pm} reason=#{reason} command_traces=#{traces.length} " \
+          "(full details sent to service)"
+      else
+        JSON.pretty_generate(error_details)
+      end
     end
   end
 end
