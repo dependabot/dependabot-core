@@ -175,7 +175,9 @@ module Dependabot
           new_tag = T.must(latest_version_finder).latest_version_tag_respecting_cooldown
           new_tag&.fetch(:commit_sha)
         else
-          latest_commit_for_pinned_ref
+          # Keep SHA rewrites aligned with the checker decision (including cooldown filtering).
+          latest = latest_version
+          latest.is_a?(String) ? latest : latest_commit_for_pinned_ref
         end
       end
 

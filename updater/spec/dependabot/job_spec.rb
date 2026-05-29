@@ -1292,7 +1292,7 @@ RSpec.describe Dependabot::Job do
           blocked_versions: [
             {
               "dependency-name" => "event-stream",
-              "version" => "= 3.3.6",
+              "version-requirement" => "= 3.3.6",
               "reason" => "malware - flatmap-stream injection"
             }
           ]
@@ -1308,8 +1308,8 @@ RSpec.describe Dependabot::Job do
       let(:attributes) do
         super().merge(
           blocked_versions: [
-            { "dependency-name" => "event-stream", "version" => "= 3.3.6", "reason" => "malware" },
-            { "dependency-name" => "event-stream", "version" => "= 4.0.0", "reason" => "malware" }
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" },
+            { "dependency-name" => "event-stream", "version-requirement" => "= 4.0.0", "reason" => "malware" }
           ]
         )
       end
@@ -1323,7 +1323,7 @@ RSpec.describe Dependabot::Job do
       let(:attributes) do
         super().merge(
           blocked_versions: [
-            { "dependency-name" => "event-stream", "version" => "> 2.10", "reason" => "compromised" }
+            { "dependency-name" => "event-stream", "version-requirement" => "> 2.10", "reason" => "compromised" }
           ]
         )
       end
@@ -1337,7 +1337,11 @@ RSpec.describe Dependabot::Job do
       let(:attributes) do
         super().merge(
           blocked_versions: [
-            { "dependency-name" => "event-stream", "version" => ">= 3.0, < 4.0", "reason" => "compromised series" }
+            {
+              "dependency-name" => "event-stream",
+              "version-requirement" => ">= 3.0, < 4.0",
+              "reason" => "compromised series"
+            }
           ]
         )
       end
@@ -1351,7 +1355,7 @@ RSpec.describe Dependabot::Job do
       let(:attributes) do
         super().merge(
           blocked_versions: [
-            { "dependency-name" => "event-stream", "version" => "< 2.0", "reason" => "deprecated" }
+            { "dependency-name" => "event-stream", "version-requirement" => "< 2.0", "reason" => "deprecated" }
           ]
         )
       end
@@ -1365,7 +1369,11 @@ RSpec.describe Dependabot::Job do
       let(:attributes) do
         super().merge(
           blocked_versions: [
-            { "dependency-name" => "event-stream", "version" => "~> 3.3.0", "reason" => "vulnerable patch line" }
+            {
+              "dependency-name" => "event-stream",
+              "version-requirement" => "~> 3.3.0",
+              "reason" => "vulnerable patch line"
+            }
           ]
         )
       end
@@ -1379,8 +1387,8 @@ RSpec.describe Dependabot::Job do
       let(:attributes) do
         super().merge(
           blocked_versions: [
-            { "dependency-name" => "event-stream", "version" => "= 3.3.6", "reason" => "malware" },
-            { "dependency-name" => "event-stream", "version" => ">= 5.0", "reason" => "hijacked major" }
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" },
+            { "dependency-name" => "event-stream", "version-requirement" => ">= 5.0", "reason" => "hijacked major" }
           ]
         )
       end
@@ -1394,7 +1402,7 @@ RSpec.describe Dependabot::Job do
       let(:attributes) do
         super().merge(
           blocked_versions: [
-            { "dependency-name" => "other-package", "version" => "= 1.0.0", "reason" => "malware" }
+            { "dependency-name" => "other-package", "version-requirement" => "= 1.0.0", "reason" => "malware" }
           ]
         )
       end
@@ -1408,7 +1416,7 @@ RSpec.describe Dependabot::Job do
       let(:attributes) do
         super().merge(
           blocked_versions: [
-            { "dependency-name" => "event-stream*", "version" => "= 3.3.6", "reason" => "malware" }
+            { "dependency-name" => "event-stream*", "version-requirement" => "= 3.3.6", "reason" => "malware" }
           ]
         )
       end
@@ -1425,7 +1433,7 @@ RSpec.describe Dependabot::Job do
       let(:attributes) do
         super().merge(
           blocked_versions: [
-            { "dependency-name" => "event-stream", "version" => "= 3.3.6", "reason" => "malware" }
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" }
           ]
         )
       end
@@ -1450,14 +1458,14 @@ RSpec.describe Dependabot::Job do
         super().merge(
           blocked_versions: [
             { "dependency-name" => "event-stream" },
-            { "version" => "= 3.3.6" },
+            { "version-requirement" => "= 3.3.6" },
             {},
-            { "dependency-name" => "event-stream", "version" => "= 3.3.6", "reason" => "malware" }
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" }
           ]
         )
       end
 
-      it "ignores entries missing dependency-name or version" do
+      it "ignores entries missing dependency-name or version-requirement" do
         expect(ignored).to eq(["= 3.3.6"])
       end
     end
@@ -1466,15 +1474,15 @@ RSpec.describe Dependabot::Job do
       let(:attributes) do
         super().merge(
           blocked_versions: [
-            { "dependency-name" => 123, "version" => "= 1.0.0" },
-            { "dependency-name" => "event-stream", "version" => nil },
-            { "dependency-name" => "event-stream", "version" => ["= 1.0"] },
-            { "dependency-name" => "event-stream", "version" => "= 3.3.6", "reason" => "malware" }
+            { "dependency-name" => 123, "version-requirement" => "= 1.0.0" },
+            { "dependency-name" => "event-stream", "version-requirement" => nil },
+            { "dependency-name" => "event-stream", "version-requirement" => ["= 1.0"] },
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" }
           ]
         )
       end
 
-      it "ignores entries with non-string dependency-name or version" do
+      it "ignores entries with non-string dependency-name or version-requirement" do
         expect(ignored).to eq(["= 3.3.6"])
       end
     end
@@ -1483,14 +1491,14 @@ RSpec.describe Dependabot::Job do
       let(:attributes) do
         super().merge(
           blocked_versions: [
-            { "dependency-name" => "event-stream", "version" => "", "reason" => "empty" },
-            { "dependency-name" => "event-stream", "version" => "  ", "reason" => "whitespace" },
-            { "dependency-name" => "event-stream", "version" => "= 3.3.6", "reason" => "malware" }
+            { "dependency-name" => "event-stream", "version-requirement" => "", "reason" => "empty" },
+            { "dependency-name" => "event-stream", "version-requirement" => "  ", "reason" => "whitespace" },
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" }
           ]
         )
       end
 
-      it "ignores entries with empty or whitespace-only version" do
+      it "ignores entries with empty or whitespace-only version-requirement" do
         expect(ignored).to eq(["= 3.3.6"])
       end
     end
@@ -1512,7 +1520,7 @@ RSpec.describe Dependabot::Job do
           blocked_versions: [
             {
               "dependency-name" => "event-stream",
-              "version" => "= 3.3.6",
+              "version-requirement" => "= 3.3.6",
               "reason" => "malware - flatmap-stream injection"
             }
           ]
@@ -1531,7 +1539,7 @@ RSpec.describe Dependabot::Job do
       let(:attributes) do
         super().merge(
           blocked_versions: [
-            { "dependency-name" => "event-stream", "version" => "= 3.3.6" }
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6" }
           ]
         )
       end
@@ -1547,7 +1555,11 @@ RSpec.describe Dependabot::Job do
       let(:attributes) do
         super().merge(
           blocked_versions: [
-            { "dependency-name" => "event-stream", "version" => "> 2.10, < 4.0", "reason" => "compromised range" }
+            {
+              "dependency-name" => "event-stream",
+              "version-requirement" => "> 2.10, < 4.0",
+              "reason" => "compromised range"
+            }
           ]
         )
       end
@@ -1564,7 +1576,7 @@ RSpec.describe Dependabot::Job do
       let(:attributes) do
         super().merge(
           blocked_versions: [
-            { "dependency-name" => "other-pkg", "version" => "= 1.0.0", "reason" => "malware" }
+            { "dependency-name" => "other-pkg", "version-requirement" => "= 1.0.0", "reason" => "malware" }
           ]
         )
       end

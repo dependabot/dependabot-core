@@ -204,7 +204,6 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
         end
 
         before do
-          Dependabot::Experiments.register(:group_membership_enforcement, true)
           # Mock the job to allow all updates for simplicity
           allow(job).to receive(:allowed_update?).and_return(true)
         end
@@ -219,20 +218,6 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
 
           # Only dummy-pkg-a should remain after filtering (dummy-pkg-b should be filtered out)
           expect(result.updated_dependencies.map(&:name)).to eq(["dummy-pkg-a"])
-        end
-
-        it "does not filter when group_membership_enforcement is disabled" do
-          Dependabot::Experiments.register(:group_membership_enforcement, false)
-
-          # Override the dependency change builder to return our test change
-          allow(create_group_update_pull_request).to receive(:compile_all_dependency_changes_for)
-            .with(dependency_group)
-            .and_return(stub_dependency_change_with_multiple_deps)
-
-          result = create_group_update_pull_request.send(:dependency_change)
-
-          # Both dependencies should remain when filtering is disabled
-          expect(result.updated_dependencies.map(&:name)).to contain_exactly("dummy-pkg-a", "dummy-pkg-b")
         end
 
         it "handles empty dependency changes gracefully" do

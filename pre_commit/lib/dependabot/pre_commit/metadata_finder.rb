@@ -20,7 +20,7 @@ module Dependabot
           if info.nil?
             dependency.name
           else
-            info[:url] || info.fetch("url")
+            info[:url] || info[:repo_url] || info["url"] || dependency.name
           end
         Source.from_url(url)
       end
