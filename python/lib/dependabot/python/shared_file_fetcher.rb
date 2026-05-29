@@ -303,6 +303,7 @@ module Dependabot
           project_files += fetch_project_file(path)
         rescue Dependabot::DependencyFileNotFound
           next if sdist_or_wheel?(T.must(path))
+          next if self_referential_path_dependency?(T.must(path))
 
           unfetchable_deps << "\"#{dep[:name]}\" at #{clean_path(File.join(directory, dep[:file]))}"
         end
@@ -321,6 +322,11 @@ module Dependabot
       sig { params(path: String).returns(T::Boolean) }
       def sdist_or_wheel?(path)
         path.end_with?(".tar.gz", ".whl", ".zip")
+      end
+
+      sig { params(path: String).returns(T::Boolean) }
+      def self_referential_path_dependency?(path)
+        clean_path(path.delete_prefix("file:")) == "."
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }

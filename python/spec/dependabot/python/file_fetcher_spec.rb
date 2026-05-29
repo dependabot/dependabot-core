@@ -908,14 +908,60 @@ RSpec.describe Dependabot::Python::FileFetcher do
           .with(headers: { "Authorization" => "token token" })
           .to_return(
             status: 200,
-            body: fixture("github", "contents_directory_with_outside_reference_in_file.json"),
+            body: fixture("github", "contents_directory_with_missing_path_in_file.json"),
             headers: { "content-type" => "application/json" }
           )
         stub_request(:get, File.join(url_with_directory, "base.txt?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
           .to_return(
             status: 200,
-            body: fixture("github", "contents_directory_with_outside_reference_txt_file.json"),
+            body: fixture("github", "contents_directory_with_missing_path_in_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, File.join(url_with_directory, "missing/setup.py?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, File.join(url_with_directory, "missing/pyproject.toml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+      end
+
+      it "raises DependencyFileNotFound error with details" do
+        expect { file_fetcher_instance.files }
+          .to raise_error(
+            Dependabot::PathDependenciesNotReachable,
+            "The following path based dependencies could not be retrieved: \"-e ./missing\" at /requirements/base.in"
+          )
+      end
+    end
+
+    context "with an editable self-reference that isn't fetchable" do
+      let(:directory) { "/requirements" }
+
+      let(:repo_contents) do
+        fixture("github", "contents_directory_with_outside_reference_root.json")
+      end
+
+      before do
+        stub_request(:get, url_with_directory + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_directory_with_outside_reference.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, File.join(url_with_directory, "base.in?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_directory_with_self_reference_in_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, File.join(url_with_directory, "base.txt?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_directory_with_self_reference_in_file.json"),
             headers: { "content-type" => "application/json" }
           )
         stub_request(:get, File.join(url_with_directory, "setup.py?ref=sha"))
@@ -926,12 +972,9 @@ RSpec.describe Dependabot::Python::FileFetcher do
           .to_return(status: 404)
       end
 
-      it "raises DependencyFileNotFound error with details" do
-        expect { file_fetcher_instance.files }
-          .to raise_error(
-            Dependabot::PathDependenciesNotReachable,
-            "The following path based dependencies could not be retrieved: \"-e file:.\" at /requirements/base.in"
-          )
+      it "ignores the current-project reference" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(%w(base.in base.txt))
       end
     end
 
