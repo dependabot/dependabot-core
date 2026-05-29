@@ -23,13 +23,6 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        unless allow_beta_ecosystems?
-          raise Dependabot::DependencyFileNotFound.new(
-            nil,
-            "Deno ecosystem support is in beta. Set enable-beta-ecosystems to use it."
-          )
-        end
-
         fetched_files = []
         fetched_files << manifest_file
         fetched_files << lockfile if lockfile
