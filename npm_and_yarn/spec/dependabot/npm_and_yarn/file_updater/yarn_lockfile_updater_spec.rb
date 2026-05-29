@@ -391,5 +391,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
       # simulates a no-op so the updater should fall back to yarn audit fix.
       updated_yarn_lock_content
     end
+
+    it "records command traces for both the initial update and the audit-fix fallback" do
+      updated_yarn_lock_content
+
+      traces = updater.command_traces
+      expect(traces.length).to be >= 2
+      expect(traces.first.package_manager).to eq("yarn")
+      expect(traces.map(&:success)).to all(be(true))
+      # The trace whose command mentions "audit" represents the fallback.
+      audit_trace = traces.find { |t| t.command.include?("audit") }
+      expect(audit_trace).not_to be_nil
+    end
   end
 end

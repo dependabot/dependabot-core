@@ -70,6 +70,8 @@ module Dependabot
           log_unknown_error_with_backtrace(error)
         end
 
+        maybe_emit_no_change_metric(error_details)
+
         log_dependency_error(
           dependency: dependency,
           error: error,
@@ -97,6 +99,7 @@ module Dependabot
           Dependabot.logger.info(
             "Handled error whilst updating #{dependency_name}: #{error_type} #{error_detail}"
           )
+          log_no_change_diagnostics(error_detail) if error_type == "no_change_error"
         end
       end
 
@@ -124,6 +127,8 @@ module Dependabot
           log_unknown_error_with_backtrace(error)
         end
 
+        maybe_emit_no_change_metric(error_details)
+
         log_job_error(
           error: error,
           error_type: error_details.fetch(:"error-type"),
@@ -148,6 +153,7 @@ module Dependabot
           Dependabot.logger.info(
             "Handled error whilst processing job: #{error_type} #{error_detail}"
           )
+          log_no_change_diagnostics(error_detail) if error_type == "no_change_error"
         end
       end
 
@@ -158,6 +164,97 @@ module Dependabot
 
       sig { returns(Job) }
       attr_reader :job
+
+      # Surface ecosystem-defined NoChangeError classes as a structured
+      # `no_change_error` payload. These classes live in ecosystem gems
+      # (npm_and_yarn, bun) and expose an `error_context` Hash that we
+      # want to forward to the backend. Matching is done by class name to
+      # keep the updater from taking a hard dependency on each ecosystem.
+      sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def no_change_error_details(error)
+        return nil unless error.class.name&.end_with?("::FileUpdater::NoChangeError")
+        return nil unless error.respond_to?(:error_context)
+
+        {
+          "error-type": "no_change_error",
+          "error-detail": T.unsafe(error).error_context
+        }
+      end
+
+      # Emit a structured metric when a NoChangeError surfaces, so we can
+      # observe how often npm/yarn/pnpm lockfile updates produce no changes
+      # and whether fallbacks helped.
+      sig { params(error_details: T::Hash[Symbol, T.untyped]).void }
+      def maybe_emit_no_change_metric(error_details)
+        return unless error_details.fetch(:"error-type", nil) == "no_change_error"
+
+        detail = error_details[:"error-detail"]
+        detail = {} unless detail.is_a?(Hash)
+
+        service.increment_metric(
+          "updater.no_change",
+          tags: {
+            package_manager: job.package_manager,
+            reason: detail[:reason]&.to_s || "unknown",
+            commands_succeeded: bool_tag(detail[:commands_succeeded]),
+            fallback_attempted: bool_tag(detail[:fallback_attempted]),
+            fallback_succeeded: bool_tag(detail[:fallback_succeeded])
+          }
+        )
+      end
+
+      # Convert a tri-state boolean (true / false / nil) into a low-
+      # cardinality string suitable for a metric tag value. Empty strings
+      # are treated as invalid tag values by many backends, so we surface
+      # `"unknown"` instead of the default `nil.to_s == ""`.
+      sig { params(value: T.untyped).returns(String) }
+      def bool_tag(value)
+        case value
+        when true then "true"
+        when false then "false"
+        else "unknown"
+        end
+      end
+
+      # Emit one info line per command trace + truncated stdout/stderr at
+      # debug level. Stays a no-op if the error detail does not include
+      # trace data (e.g. older payloads).
+      sig { params(error_detail: T.nilable(T.any(T::Hash[Symbol, T.untyped], String))).void }
+      def log_no_change_diagnostics(error_detail)
+        return unless error_detail.is_a?(Hash)
+
+        traces = error_detail[:command_traces]
+        traces = [] unless traces.is_a?(Array)
+
+        Dependabot.logger.info(
+          "No-change diagnostics: package_manager=#{error_detail[:package_manager]} " \
+          "reason=#{error_detail[:reason]} commands_succeeded=#{error_detail[:commands_succeeded]} " \
+          "fallback_attempted=#{error_detail[:fallback_attempted]} " \
+          "fallback_succeeded=#{error_detail[:fallback_succeeded]} traces=#{traces.length}"
+        )
+
+        traces.each_with_index do |trace, index|
+          log_single_trace(trace, index) if trace.is_a?(Hash)
+        end
+      end
+
+      sig { params(trace: T::Hash[Symbol, T.untyped], index: Integer).void }
+      def log_single_trace(trace, index)
+        fingerprint = trace[:fingerprint] || trace[:command]
+        status = trace[:success] ? "ok" : "fail"
+        changed = trace[:content_changed_after].nil? ? "?" : trace[:content_changed_after].to_s
+        error_suffix = trace[:error_class] ? " error_class=#{trace[:error_class]}" : ""
+        Dependabot.logger.info(
+          "  trace[#{index}] [#{trace[:package_manager]}] #{fingerprint.inspect} " \
+          "status=#{status} duration_ms=#{trace[:duration_ms]} " \
+          "content_changed=#{changed}#{error_suffix}"
+        )
+        Dependabot.logger.debug("  trace[#{index}] stdout: #{trace[:stdout]}") if trace[:stdout]
+        Dependabot.logger.debug("  trace[#{index}] stderr: #{trace[:stderr]}") if trace[:stderr]
+        return unless trace[:error_message]
+
+        Dependabot.logger.debug("  trace[#{index}] error_message: #{trace[:error_message]}")
+      end
 
       # This method accepts an error class and returns an appropriate `error_details` hash
       # to be reported to the backend service.
@@ -175,6 +272,9 @@ module Dependabot
       def error_details_for(error, dependency: nil, dependency_group: nil)
         error_details = Dependabot.updater_error_details(error)
         return error_details if error_details
+
+        no_change_details = no_change_error_details(error)
+        return no_change_details if no_change_details
 
         case error
         when Dependabot::SharedHelpers::HelperSubprocessFailed

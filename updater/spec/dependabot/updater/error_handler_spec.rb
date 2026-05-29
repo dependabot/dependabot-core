@@ -159,6 +159,91 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
       end
     end
 
+    context "with a NoChangeError surfaced from npm_and_yarn" do
+      before do
+        stub_const(
+          "Dependabot::NpmAndYarn::FileUpdater::NoChangeError",
+          Class.new(StandardError) do
+            attr_reader :error_context
+
+            def initialize(message:, error_context:)
+              super(message)
+              @error_context = error_context
+            end
+          end
+        )
+        allow(mock_job).to receive(:package_manager).and_return("npm_and_yarn")
+      end
+
+      let(:error_context_hash) do
+        {
+          reason: "files_unchanged",
+          commands_succeeded: true,
+          fallback_attempted: true,
+          fallback_succeeded: false,
+          package_manager: "npm",
+          command_traces: [
+            {
+              package_manager: "npm",
+              command: "install --package-lock-only",
+              fingerprint: "install --package-lock-only",
+              duration_ms: 12,
+              success: true,
+              content_changed_after: false
+            },
+            {
+              package_manager: "npm",
+              command: "audit fix",
+              fingerprint: "audit fix",
+              duration_ms: 7,
+              success: true,
+              content_changed_after: false
+            }
+          ]
+        }
+      end
+
+      let(:error) do
+        Dependabot::NpmAndYarn::FileUpdater::NoChangeError.new(
+          message: "No files were updated", error_context: error_context_hash
+        )
+      end
+
+      it "records a structured error and emits the updater.no_change metric" do
+        expect(mock_service).to receive(:record_update_job_error).with(
+          error_type: "no_change_error",
+          error_details: error_context_hash,
+          dependency: dependency
+        )
+
+        expect(mock_service).to receive(:increment_metric).with(
+          "updater.no_change",
+          tags: {
+            package_manager: "npm_and_yarn",
+            reason: "files_unchanged",
+            commands_succeeded: "true",
+            fallback_attempted: "true",
+            fallback_succeeded: "false"
+          }
+        )
+
+        allow(Dependabot.logger).to receive(:info)
+        allow(Dependabot.logger).to receive(:debug)
+
+        handle_dependency_error
+
+        expect(Dependabot.logger).to have_received(:info)
+          .with(a_string_starting_with("Handled error whilst updating"))
+        expect(Dependabot.logger).to have_received(:info)
+          .with(a_string_starting_with("No-change diagnostics:"))
+        # One info line per trace entry
+        expect(Dependabot.logger).to have_received(:info)
+          .with(a_string_matching(/trace\[0\].*install --package-lock-only/))
+        expect(Dependabot.logger).to have_received(:info)
+          .with(a_string_matching(/trace\[1\].*audit fix/))
+      end
+    end
+
     context "with a subprocess failure error (cloud)" do
       let(:error_context) do
         { bumblebees: "many", honeybees: "few", wasps: "none", fingerprint: "123456789" }

@@ -6,6 +6,7 @@ require "uri"
 
 require "dependabot/npm_and_yarn"
 require "dependabot/npm_and_yarn/file_updater"
+require "dependabot/shared_helpers/command_trace"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package/registry_finder"
@@ -39,6 +40,7 @@ module Dependabot
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
+          @command_traces = T.let([], T::Array[CommandTrace])
           @error_handler = T.let(
             YarnErrorHandler.new(
               dependencies: dependencies,
@@ -60,6 +62,9 @@ module Dependabot
           @updated_yarn_lock_content[yarn_lock.name] =
             post_process_yarn_lockfile(new_content)
         end
+
+        sig { returns(T::Array[CommandTrace]) }
+        attr_reader :command_traces
 
         private
 
@@ -222,7 +227,15 @@ module Dependabot
           # the lockfile.
 
           if top_level_dependency_updates.all? { |dep| requirements_changed?(dep[:name]) }
-            Helpers.run_yarn_command("install #{yarn_berry_args}".strip)
+            cmd = "install #{yarn_berry_args}".strip
+            CommandTrace.record(
+              traces: @command_traces,
+              package_manager: "yarn",
+              command: cmd,
+              fingerprint: cmd
+            ) do
+              Helpers.run_yarn_command(cmd)
+            end
 
             # Yarn berry resolves ranges to the latest matching version, which
             # may differ from Dependabot's target. If the lockfile resolved to a
@@ -235,10 +248,16 @@ module Dependabot
               dep[:name]
             end
 
-            Helpers.run_yarn_command(
-              "up -R #{updates.join(' ')} #{yarn_berry_args}".strip,
-              fingerprint: "up -R <dependency_names> #{yarn_berry_args}".strip
-            )
+            cmd = "up -R #{updates.join(' ')} #{yarn_berry_args}".strip
+            fingerprint = "up -R <dependency_names> #{yarn_berry_args}".strip
+            CommandTrace.record(
+              traces: @command_traces,
+              package_manager: "yarn",
+              command: cmd,
+              fingerprint: fingerprint
+            ) do
+              Helpers.run_yarn_command(cmd, fingerprint: fingerprint)
+            end
           end
           { yarn_lock.name => File.read(yarn_lock.name) }
         end
@@ -326,31 +345,66 @@ module Dependabot
         sig { params(yarn_lock: Dependabot::DependencyFile).returns(T::Hash[String, String]) }
         def run_yarn_berry_subdependency_updater(yarn_lock:)
           dep = T.must(sub_dependencies.first)
-          update = "#{dep.name}@#{dep.version}"
+          original_content = File.read(yarn_lock.name)
 
+          run_yarn_berry_subdep_commands(dep)
+
+          updated_content = File.read(yarn_lock.name)
+          @command_traces.last&.content_changed_after = updated_content != original_content
+
+          if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+            updated_content = run_yarn_berry_audit_fix_fallback(yarn_lock, dep, original_content)
+          end
+
+          { yarn_lock.name => updated_content }
+        end
+
+        sig { params(dep: Dependabot::Dependency).void }
+        def run_yarn_berry_subdep_commands(dep)
+          update = "#{dep.name}@#{dep.version}"
           commands = [
             ["add #{update} #{yarn_berry_args}".strip, "add <update> #{yarn_berry_args}".strip],
             ["dedupe #{dep.name} #{yarn_berry_args}".strip, "dedupe <dep_name> #{yarn_berry_args}".strip],
             ["remove #{dep.name} #{yarn_berry_args}".strip, "remove <dep_name> #{yarn_berry_args}".strip]
           ]
 
-          original_content = File.read(yarn_lock.name)
-          Helpers.run_yarn_commands(*commands)
-
-          updated_content = File.read(yarn_lock.name)
-          if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
-            begin
-              NativeHelpers.run_yarn_audit_fix_command
-              dep.metadata[:audit_fix_used] = true
-            rescue SharedHelpers::HelperSubprocessFailed
-              Dependabot.logger.info(
-                "yarn npm audit --fix failed or partially fixed — continuing with any changes made"
-              )
-            end
-            updated_content = File.read(yarn_lock.name)
+          fingerprint_batch = commands.map { |_cmd, fp| fp }.join(" && ")
+          CommandTrace.record(
+            traces: @command_traces,
+            package_manager: "yarn",
+            command: commands.map { |cmd, _fp| cmd }.join(" && "),
+            fingerprint: fingerprint_batch
+          ) do
+            Helpers.run_yarn_commands(*commands)
           end
+        end
 
-          { yarn_lock.name => updated_content }
+        sig do
+          params(
+            yarn_lock: Dependabot::DependencyFile,
+            dep: Dependabot::Dependency,
+            original_content: String
+          ).returns(String)
+        end
+        def run_yarn_berry_audit_fix_fallback(yarn_lock, dep, original_content)
+          begin
+            CommandTrace.record(
+              traces: @command_traces,
+              package_manager: "yarn",
+              command: "npm audit --fix --mode update-lockfile",
+              fingerprint: "npm audit --fix --mode update-lockfile"
+            ) do
+              NativeHelpers.run_yarn_audit_fix_command
+            end
+            dep.metadata[:audit_fix_used] = true
+          rescue SharedHelpers::HelperSubprocessFailed
+            Dependabot.logger.info(
+              "yarn npm audit --fix failed or partially fixed — continuing with any changes made"
+            )
+          end
+          updated_content = File.read(yarn_lock.name)
+          @command_traces.last&.content_changed_after = updated_content != original_content
+          updated_content
         end
 
         sig { returns(String) }
@@ -368,19 +422,26 @@ module Dependabot
             .returns(T::Hash[String, String])
         end
         def run_yarn_top_level_updater(top_level_dependency_updates:)
-          T.cast(
-            SharedHelpers.run_helper_subprocess(
-              command: NativeHelpers.helper_path,
-              function: "yarn:update",
-              args: T.unsafe(
-                [
-                  Dir.pwd,
-                  top_level_dependency_updates
-                ]
-              )
-            ),
-            T::Hash[String, String]
-          )
+          CommandTrace.record(
+            traces: @command_traces,
+            package_manager: "yarn",
+            command: "yarn:update <top_level_dependency_updates>",
+            fingerprint: "yarn:update <top_level_dependency_updates>"
+          ) do
+            T.cast(
+              SharedHelpers.run_helper_subprocess(
+                command: NativeHelpers.helper_path,
+                function: "yarn:update",
+                args: T.unsafe(
+                  [
+                    Dir.pwd,
+                    top_level_dependency_updates
+                  ]
+                )
+              ),
+              T::Hash[String, String]
+            )
+          end
         end
 
         sig do
@@ -391,14 +452,21 @@ module Dependabot
         end
         def run_yarn_subdependency_updater(yarn_lock:)
           lockfile_name = Pathname.new(yarn_lock.name).basename.to_s
-          T.cast(
-            SharedHelpers.run_helper_subprocess(
-              command: NativeHelpers.helper_path,
-              function: "yarn:updateSubdependency",
-              args: [Dir.pwd, lockfile_name, sub_dependencies.map(&:to_h)]
-            ),
-            T::Hash[String, String]
-          )
+          CommandTrace.record(
+            traces: @command_traces,
+            package_manager: "yarn",
+            command: "yarn:updateSubdependency #{lockfile_name}",
+            fingerprint: "yarn:updateSubdependency <lockfile>"
+          ) do
+            T.cast(
+              SharedHelpers.run_helper_subprocess(
+                command: NativeHelpers.helper_path,
+                function: "yarn:updateSubdependency",
+                args: [Dir.pwd, lockfile_name, sub_dependencies.map(&:to_h)]
+              ),
+              T::Hash[String, String]
+            )
+          end
         end
 
         sig do

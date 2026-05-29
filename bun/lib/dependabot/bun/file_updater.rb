@@ -20,6 +20,9 @@ module Dependabot
       class NoChangeError < StandardError
         extend T::Sig
 
+        sig { returns(T::Hash[Symbol, T.untyped]) }
+        attr_reader :error_context
+
         sig { params(message: String, error_context: T::Hash[Symbol, T.untyped]).void }
         def initialize(message:, error_context:)
           super(message)
