@@ -512,6 +512,32 @@ RSpec.describe namespace::PoetryVersionResolver do
       end
     end
 
+    context "with private registry authentication error containing credentials" do
+      let(:response) do
+        "Creating virtualenv non-package-mode-r7N_A6Jx-py3.11 in /home/dependabot/.cache/pypoetry/virtualenvs
+        Updating dependencies
+        Resolving dependencies...
+        401 Client Error: Unauthorized for url: https://user%40example.com:secret-token@fp-pypi.sm00p.com/simple/"
+      end
+
+      it "redacts credentials from logs and errors" do
+        expect(Dependabot.logger).to receive(:warn) do |message|
+          expect(message).to include("https://fp-pypi.sm00p.com")
+          expect(message).not_to include("secret-token")
+          expect(message).not_to include("user%40example.com")
+        end
+
+        expect { poetry_error_handler }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message)
+            .to include("https://fp-pypi.sm00p.com")
+          expect(error.message)
+            .not_to include("secret-token")
+          expect(error.message)
+            .not_to include("user%40example.com")
+        end
+      end
+    end
+
     context "with private registry authentication 403 Client Error" do
       let(:response) do
         "Creating virtualenv reimbursement-coverage-api-fKdRenE--py3.12 in /home/dependabot/.cache/pypoetry/virtualenvs

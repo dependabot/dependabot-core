@@ -508,7 +508,24 @@ module Dependabot
         ).returns(String)
       end
       def sanitize_url(url)
-        T.must(url&.match(%r{^(?:https?://)?(?:[^@\n])?([^:/\n?]+)})).to_s
+        return "" if url.nil?
+
+        uri = URI.parse(url)
+        host = uri.host || uri.path&.split("/")&.first
+        return "" unless host
+
+        scheme = uri.scheme ? "#{uri.scheme}://" : ""
+        port = uri.port && ![80, 443].include?(uri.port) ? ":#{uri.port}" : ""
+        "#{scheme}#{host}#{port}"
+      rescue URI::InvalidURIError
+        url.gsub(%r{(?<=://)[^/\s@]+@}, "redacted@")
+      end
+
+      sig { params(message: String).returns(String) }
+      def sanitize_error_message(message)
+        URI.extract(message.to_s).reduce(message.to_s) do |sanitized_message, url|
+          sanitized_message.gsub(url, sanitize_url(url))
+        end
       end
 
       public
@@ -518,7 +535,7 @@ module Dependabot
       # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(error: Exception).void }
       def handle_poetry_error(error)
-        Dependabot.logger.warn(error.message)
+        Dependabot.logger.warn(sanitize_error_message(error.message))
 
         if (msg = error.message.match(PoetryVersionResolver::INCOMPATIBLE_CONSTRAINTS) ||
             error.message.match(INVALID_CONFIGURATION) || error.message.match(INVALID_VERSION) ||
