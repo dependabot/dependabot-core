@@ -8,7 +8,7 @@
 # Used by both `run.rb` (for activation via `gem`) and the helper specs so
 # the rollback/staged-rollout behavior is exercised by real code.
 module BundlerVersionConstraint
-  DEFAULT_ACTIVATION_CONSTRAINT = ">= 2.4, < 3"
+  DEFAULT_ACTIVATION_CONSTRAINT = ">= 4, < 5"
 
   def self.resolve(env: ENV, default: DEFAULT_ACTIVATION_CONSTRAINT)
     env.fetch(
