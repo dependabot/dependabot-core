@@ -234,7 +234,9 @@ module Dependabot
         sig { params(message: String).returns(String) }
         def clean_error_message(message)
           # Redact any URLs, as they may include credentials
-          message.gsub(/http.*?(?=\s)/, "<redacted>")
+          URI.extract(message).reduce(message) do |cleaned_message, url|
+            cleaned_message.gsub(url, "<redacted>")
+          end
         end
 
         sig do
@@ -508,7 +510,22 @@ module Dependabot
         ).returns(String)
       end
       def sanitize_url(url)
-        T.must(url&.match(%r{^(?:https?://)?(?:[^@\n])?([^:/\n?]+)})).to_s
+        return "" unless url
+
+        uri = URI.parse(url)
+        host = uri.host
+        return "#{uri.scheme}://#{host}" if uri.scheme && host
+        return host if host
+
+        fallback_sanitize_url(url)
+      rescue URI::InvalidURIError
+        fallback_sanitize_url(url)
+      end
+
+      sig { params(url: String).returns(String) }
+      def fallback_sanitize_url(url)
+        sanitized_url = url.sub(%r{\A((?:https?://)?)[^/@\s]+@}, "\\1")
+        T.must(sanitized_url.match(%r{\A(?:https?://)?[^:/\s?]+})).to_s
       end
 
       public

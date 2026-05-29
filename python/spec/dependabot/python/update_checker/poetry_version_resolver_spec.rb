@@ -418,6 +418,20 @@ RSpec.describe namespace::PoetryVersionResolver do
     end
   end
 
+  describe "#clean_error_message" do
+    subject(:clean_error_message) { resolver.send(:clean_error_message, message) }
+
+    let(:message) do
+      "SolverProblemError: failed to access https://user:secret-token@private.example.com/simple/"
+    end
+
+    it "redacts URLs at the end of the message" do
+      expect(clean_error_message).to include("<redacted>")
+      expect(clean_error_message).not_to include("secret-token")
+      expect(clean_error_message).not_to include("private.example.com")
+    end
+  end
+
   describe "handles SharedHelpers::HelperSubprocessFailed errors raised by version resolver" do
     subject(:poetry_error_handler) { error_handler.handle_poetry_error(exception) }
 
@@ -512,6 +526,35 @@ RSpec.describe namespace::PoetryVersionResolver do
       end
     end
 
+    context "with private registry authentication error containing basic auth" do
+      let(:response) do
+        "401 Client Error: Unauthorized for url: " \
+          "https://user:secret-token@private.example.com/simple/"
+      end
+
+      it "raises a helpful error without leaking credentials" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message).to include("https://private.example.com")
+          expect(error.message).not_to include("user")
+          expect(error.message).not_to include("secret-token")
+        end
+      end
+    end
+
+    context "with private registry authentication error containing token-only userinfo" do
+      let(:response) do
+        "403 Client Error: Forbidden for url: " \
+          "https://pypi-token@example-private.com/simple/"
+      end
+
+      it "raises a helpful error without leaking the token" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message).to include("https://example-private.com")
+          expect(error.message).not_to include("pypi-token")
+        end
+      end
+    end
+
     context "with private registry authentication 403 Client Error" do
       let(:response) do
         "Creating virtualenv reimbursement-coverage-api-fKdRenE--py3.12 in /home/dependabot/.cache/pypoetry/virtualenvs
@@ -555,6 +598,21 @@ RSpec.describe namespace::PoetryVersionResolver do
         expect { poetry_error_handler }.to raise_error(Dependabot::InconsistentRegistryResponse) do |error|
           expect(error.message)
             .to include("https://pypi.com")
+        end
+      end
+    end
+
+    context "with private registry server error containing credentials" do
+      let(:response) do
+        "504 Server Error: Gateway Timeout for url: " \
+          "https://user:secret-token@pypi.example.com:8443/simple/"
+      end
+
+      it "raises a registry error without leaking credentials" do
+        expect { poetry_error_handler }.to raise_error(Dependabot::InconsistentRegistryResponse) do |error|
+          expect(error.message).to include("https://pypi.example.com")
+          expect(error.message).not_to include("user")
+          expect(error.message).not_to include("secret-token")
         end
       end
     end
