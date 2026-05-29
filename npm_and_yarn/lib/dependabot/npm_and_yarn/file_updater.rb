@@ -453,7 +453,8 @@ module Dependabot
             dependencies: dependencies,
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
-            credentials: credentials
+            credentials: credentials,
+            security_updates_only: options.fetch(:security_updates_only, false)
           ),
           T.nilable(Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater)
         )
