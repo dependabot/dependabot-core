@@ -3,7 +3,7 @@ multi-ecosystem-groups:
   uv-ecosystem:
     schedule:
       interval: "weekly"
-      day: "sunday"
+      day: "monday"
       time: "16:00"
 
 updates:
@@ -13,7 +13,7 @@ updates:
       - "/"
     schedule:
       interval: "weekly"
-      day: "sunday"
+      day: "monday"
       time: "16:00"
     groups:
       sorbet:
@@ -42,7 +42,7 @@ updates:
       - "/composer/helpers/v2"
     schedule:
       interval: "weekly"
-      day: "sunday"
+      day: "monday"
       time: "16:00"
     groups:
       prod-dependencies:
@@ -59,7 +59,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "sunday"
+      day: "monday"
       time: "16:00"
   - package-ecosystem: "docker"
     directories:
@@ -68,13 +68,13 @@ updates:
       - "/cargo"
     schedule:
       interval: "weekly"
-      day: "sunday"
+      day: "monday"
       time: "16:00"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "sunday"
+      day: "monday"
       time: "16:00"
     groups:
       all-actions:
@@ -83,19 +83,19 @@ updates:
     directory: "/go_modules/helpers"
     schedule:
       interval: "weekly"
-      day: "sunday"
+      day: "monday"
       time: "16:00"
   - package-ecosystem: "mix"
     directory: "/hex/helpers"
     schedule:
       interval: "weekly"
-      day: "sunday"
+      day: "monday"
       time: "16:00"
   - package-ecosystem: "npm"
     directory: "/npm_and_yarn/helpers"
     schedule:
       interval: "weekly"
-      day: "sunday"
+      day: "monday"
       time: "16:00"
     groups:
       npm-dependencies:
@@ -125,7 +125,7 @@ updates:
     directory: "/python/helpers"
     schedule:
       interval: "weekly"
-      day: "sunday"
+      day: "monday"
       time: "16:00"
     groups:
       common:
@@ -153,37 +153,37 @@ updates:
     directory: "/pub/helpers"
     schedule:
       interval: "weekly"
-      day: "sunday"
+      day: "monday"
       time: "16:00"
   - package-ecosystem: "nuget"
     directory: "/nuget/helpers/lib/NuGetUpdater"
     schedule:
       interval: "weekly"
-      day: "sunday"
+      day: "monday"
       time: "16:00"
   - package-ecosystem: "dotnet-sdk"
     directory: "/nuget/helpers/lib/NuGetUpdater"
     schedule:
       interval: "weekly"
-      day: "sunday"
+      day: "monday"
       time: "16:00"
   - package-ecosystem: "gitsubmodule"
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "sunday"
+      day: "monday"
       time: "16:00"
   - package-ecosystem: "maven"
     directory: "/maven/lib/dependabot/maven/"
     schedule:
       interval: "weekly"
-      day: "sunday"
+      day: "monday"
       time: "16:00"
   - package-ecosystem: "docker"
     directory: "/maven"
     schedule:
       interval: "weekly"
-      day: "sunday"
+      day: "monday"
       time: "16:00"
   - package-ecosystem: "docker"
     directory: "/uv"
@@ -201,7 +201,7 @@ updates:
     directory: "/docker"
     schedule:
       interval: "weekly"
-      day: "sunday"
+      day: "monday"
       time: "16:00"
     groups:
       regclient:
@@ -212,5 +212,5 @@ updates:
     directory: "/gradle"
     schedule:
       interval: "weekly"
-      day: "sunday"
+      day: "monday"
       time: "16:00"
