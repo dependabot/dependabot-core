@@ -63,6 +63,22 @@ RSpec.describe Dependabot::DependabotError do
       it { is_expected.to eq("git://github.com error") }
     end
 
+    context "with escaped characters in http basic auth" do
+      let(:message) do
+        "git://user:tok%23en@github.com error"
+      end
+
+      it { is_expected.to eq("git://github.com error") }
+    end
+
+    context "with an at-sign in the http basic auth username" do
+      let(:message) do
+        "git://user@example.com:token@github.com error"
+      end
+
+      it { is_expected.to eq("git://github.com error") }
+    end
+
     context "with escaped basic auth uri" do
       let(:message) do
         "git://user:token%40github.com error"

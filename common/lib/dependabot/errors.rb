@@ -396,7 +396,7 @@ module Dependabot
   class DependabotError < StandardError
     extend T::Sig
 
-    BASIC_AUTH_REGEX = %r{://(?<auth>[^:@]*:[^@%\s/]+(@|%40))}
+    BASIC_AUTH_REGEX = %r{://(?<auth>[^:\s/]*:[^\s/]*(?:@|%40))}
     # Remove any path segment from fury.io sources
     FURY_IO_PATH_REGEX = %r{fury\.io/(?<path>.+)}
 
