@@ -29,15 +29,17 @@ module Dependabot
             lockfile: Dependabot::DependencyFile,
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
-            credentials: T::Array[Credential]
+            credentials: T::Array[Credential],
+            security_updates_only: T::Boolean
           )
             .void
         end
-        def initialize(lockfile:, dependencies:, dependency_files:, credentials:)
+        def initialize(lockfile:, dependencies:, dependency_files:, credentials:, security_updates_only: false)
           @lockfile = lockfile
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
+          @security_updates_only = T.let(security_updates_only, T::Boolean)
         end
 
         sig { returns(Dependabot::DependencyFile) }
@@ -71,6 +73,11 @@ module Dependabot
 
         sig { returns(T::Array[Credential]) }
         attr_reader :credentials
+
+        sig { returns(T::Boolean) }
+        def security_updates_only?
+          @security_updates_only
+        end
 
         UNREACHABLE_GIT = /fatal: repository '(?<url>.*)' not found/
         FORBIDDEN_GIT = /fatal: Authentication failed for '(?<url>.*)'/
@@ -394,6 +401,9 @@ module Dependabot
           ]
 
           command_args << "--save-optional" if has_optional_dependencies
+          # Override any min-release-age set in .npmrc: security fixes must not be
+          # blocked by a release-age gate the user configured for regular updates.
+          command_args << "--min-release-age=0" if security_updates_only?
 
           command = command_args.join(" ")
 
@@ -406,6 +416,7 @@ module Dependabot
           ]
 
           fingerprint_args << "--save-optional" if has_optional_dependencies
+          fingerprint_args << "--min-release-age=0" if security_updates_only?
 
           fingerprint = fingerprint_args.join(" ")
 

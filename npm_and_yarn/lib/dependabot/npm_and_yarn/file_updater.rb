@@ -469,7 +469,8 @@ module Dependabot
           lockfile: file,
           dependencies: dependencies,
           dependency_files: dependency_files,
-          credentials: credentials
+          credentials: credentials,
+          security_updates_only: options.fetch(:security_updates_only, false)
         )
       end
 
