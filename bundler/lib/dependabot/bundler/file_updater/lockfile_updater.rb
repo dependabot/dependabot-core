@@ -26,6 +26,10 @@ module Dependabot
         LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
         GIT_DEPENDENCIES_SECTION = /GIT\n.*?\n\n(?!GIT)/m
         GIT_DEPENDENCY_DETAILS = /GIT\n.*?\n\n/m
+        CHECKSUMS_SECTION = /(^CHECKSUMS\n)(?<entries>(?:^  .*\n)+)/m
+        BUNDLED_WITH_VERSION_REGEX = /BUNDLED WITH\s+(?<version>\d+\.\d+\.\d+)/m
+        BUNDLER_CHECKSUM_ENTRY_REGEX = /^  bundler \([^)]+\).*\n?$/
+        MIN_BUNDLER_CHECKSUM_VERSION = Gem::Version.new("4.0.11")
 
         sig do
           params(
@@ -221,7 +225,34 @@ module Dependabot
         sig { params(lockfile_body: String).returns(String) }
         def post_process_lockfile(lockfile_body)
           lockfile_body = reorder_git_dependencies(lockfile_body)
+          lockfile_body = strip_new_bundler_checksum(lockfile_body)
           replace_lockfile_ending(lockfile_body)
+        end
+
+        sig { params(lockfile_body: String).returns(String) }
+        def strip_new_bundler_checksum(lockfile_body)
+          return lockfile_body unless should_strip_bundler_checksum?
+
+          checksums_section = lockfile_body.match(CHECKSUMS_SECTION)
+          return lockfile_body unless checksums_section
+
+          entries = T.must(checksums_section[:entries])
+          stripped_entries = entries.lines.reject { |line| line.match?(BUNDLER_CHECKSUM_ENTRY_REGEX) }.join
+
+          lockfile_body.sub(CHECKSUMS_SECTION, "\\1#{stripped_entries}")
+        end
+
+        sig { returns(T::Boolean) }
+        def should_strip_bundler_checksum?
+          lockfile_content = T.must(lockfile).content
+          return false unless lockfile_content&.include?("CHECKSUMS\n")
+          return false if lockfile_content.match?(BUNDLER_CHECKSUM_ENTRY_REGEX)
+
+          bundled_with = lockfile_content.match(BUNDLED_WITH_VERSION_REGEX)&.[](:version)
+          return false unless bundled_with
+
+          bundled_with_version = Gem::Version.new(bundled_with)
+          bundled_with_version >= Gem::Version.new("4.0.0") && bundled_with_version < MIN_BUNDLER_CHECKSUM_VERSION
         end
 
         sig { params(lockfile_body: String).returns(String) }
