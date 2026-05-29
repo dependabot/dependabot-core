@@ -31,10 +31,6 @@ RSpec.describe Dependabot::Deno::FileFetcher do
     )
   end
 
-  before do
-    allow(file_fetcher_instance).to receive(:allow_beta_ecosystems?).and_return(true)
-  end
-
   describe ".required_files_in?" do
     it "returns true when deno.json is present" do
       expect(described_class.required_files_in?(%w(deno.json))).to be true
