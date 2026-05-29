@@ -7,6 +7,7 @@ require "dependabot/dependency_file"
 require "dependabot/errors"
 require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/helpers"
+require "dependabot/npm_and_yarn/error_sanitizer"
 require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
 
@@ -206,7 +207,8 @@ module Dependabot
         sig { params(error: SharedHelpers::HelperSubprocessFailed).void }
         def handle_generation_error(error)
           Dependabot.logger.error(
-            "Failed to generate lockfile with #{package_manager}: #{error.message}"
+            "Failed to generate lockfile with #{package_manager}: " \
+            "#{ErrorSanitizer.redact_credentials(error.message)}"
           )
 
           if error.message.include?("ERESOLVE")
@@ -241,7 +243,7 @@ module Dependabot
         sig { params(message: String).returns(String) }
         def extract_url(message)
           match = message.match(GENERIC_URL_REGEX)
-          match ? T.must(match[1]).chomp(":") : FALLBACK_SOURCE
+          match ? ErrorSanitizer.redacted_url(T.must(match[1]).chomp(":")) : FALLBACK_SOURCE
         end
 
         sig { params(message: String).returns(String) }

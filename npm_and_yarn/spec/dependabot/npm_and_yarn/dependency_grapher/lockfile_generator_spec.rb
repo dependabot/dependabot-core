@@ -273,6 +273,31 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
           expect(error.message).to include("npm.pkg.github.com/@scope%2fpkg")
         end
       end
+
+      it "redacts credentials before logging authentication errors" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: "npm error code E401\n" \
+                                "npm error 401 Unauthorized - GET " \
+                                "https://user:secret-token@npm.pkg.github.com/@scope%2fpkg",
+                       error_context: {}
+                     ))
+
+        expect(Dependabot.logger).to receive(:error) do |message|
+          expect(message).to include("Failed to generate lockfile with npm")
+          expect(message).to include("https://<redacted>@npm.pkg.github.com")
+          expect(message).not_to include("secret-token")
+          expect(message).not_to include("user:")
+        end
+        expect(Dependabot.logger).to receive(:error)
+          .with("Authentication error. Check that credentials are configured correctly.")
+
+        expect { generator.generate }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message).to include("npm.pkg.github.com/@scope%2fpkg")
+          expect(error.message).not_to include("secret-token")
+          expect(error.message).not_to include("user:")
+        end
+      end
     end
 
     context "with authentication error (403)" do

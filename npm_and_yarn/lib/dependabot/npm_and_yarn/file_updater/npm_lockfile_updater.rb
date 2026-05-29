@@ -11,6 +11,7 @@ require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_updater"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
+require "dependabot/npm_and_yarn/error_sanitizer"
 require "dependabot/npm_and_yarn/package/registry_finder"
 require "dependabot/shared_helpers"
 
@@ -505,7 +506,7 @@ module Dependabot
         # rubocop:disable Metrics/MethodLength
         sig { params(error: Exception).returns(T.noreturn) }
         def handle_npm_updater_error(error)
-          Dependabot.logger.warn("NPM : " + error.message)
+          Dependabot.logger.warn("NPM : " + ErrorSanitizer.redact_credentials(error.message))
 
           error_message = error.message
 
@@ -519,12 +520,12 @@ module Dependabot
           end
 
           if error_message.match?(ERROR_E401) || error_message.match?(ERROR_E403) || error_message.match?(REQUEST_ERROR_E403) || error_message.match?(AUTH_REQUIRED_ERROR) # rubocop:disable Layout/LineLength
-            url = T.must(URI.decode_www_form_component(error_message).split("https://").last).split("/").first
+            url = ErrorSanitizer.host_from_url_or_message(error_message)
             raise Dependabot::PrivateSourceAuthenticationFailure, url
           end
 
           if error_message.match?(SERVER_ERROR_500)
-            url = T.must(URI.decode_www_form_component(error_message).split("https://").last).split("/").first
+            url = ErrorSanitizer.host_from_url_or_message(error_message)
             msg = "Server error (500) while accessing #{url}."
             raise Dependabot::DependencyFileNotResolvable, msg
           end

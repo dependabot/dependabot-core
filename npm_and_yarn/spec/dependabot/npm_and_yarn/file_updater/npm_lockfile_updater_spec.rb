@@ -754,6 +754,29 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
 
+    context "with a dependency with no access and basic auth in the registry URL" do
+      let(:response) do
+        "npm ERR! code E401\n" \
+          "npm ERR! 401 Unauthorized - GET " \
+          "https://user%40example.com:secret-token@npm.pkg.github.com/@scope%2fpkg\n" \
+          "npm ERR! authentication token not provided"
+      end
+
+      it "redacts credentials before logging and raising the auth failure" do
+        expect(Dependabot.logger).to receive(:warn) do |message|
+          expect(message).to include("https://<redacted>@npm.pkg.github.com")
+          expect(message).not_to include("secret-token")
+          expect(message).not_to include("user%40example.com")
+        end
+
+        expect { updated_npm_lock }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.source).to eq("npm.pkg.github.com")
+          expect(error.message).not_to include("secret-token")
+          expect(error.message).not_to include("user%40example.com")
+        end
+      end
+    end
+
     context "with a registry with access that results in eai access code failure" do
       let(:response) do
         "\n. request to https://registry.npmjs.org/next failed, reason: " \
