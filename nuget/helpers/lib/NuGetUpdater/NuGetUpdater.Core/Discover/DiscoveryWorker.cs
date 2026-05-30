@@ -233,13 +233,17 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 Error = new DependencyFileNotParseable(invalidProjectFile),
             }];
         }
-        if (projects.IsEmpty)
+        var fileBasedAppResults = CSharpFileBasedAppDiscovery.Discover(repoRootPath, workspacePath, _logger);
+        if (projects.IsEmpty && fileBasedAppResults.IsEmpty)
         {
             _logger.Info("    No project files found.");
             return [];
         }
 
-        return await RunForProjectPathsAsync(repoRootPath, workspacePath, projects, solutionDir);
+        var projectResults = projects.IsEmpty
+            ? []
+            : await RunForProjectPathsAsync(repoRootPath, workspacePath, projects, solutionDir);
+        return [.. projectResults.Concat(fileBasedAppResults)];
     }
 
     private static bool DirectoryContainsSolutionFile(string directoryPath)
