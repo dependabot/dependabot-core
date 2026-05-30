@@ -1,3 +1,8 @@
+using NuGetUpdater.Core.Analyze;
+using NuGetUpdater.Core.Discover;
+using NuGetUpdater.Core.Run.ApiModel;
+using NuGetUpdater.Core.Updater;
+
 using NuGetUpdater.Core.Run;
 
 using Xunit;
@@ -6,6 +11,52 @@ namespace NuGetUpdater.Core.Test.Run;
 
 public class RunWorkerTests
 {
+    [Fact]
+    public async Task RunAsync_DisablesFileBasedAppsFromJobFile()
+    {
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("app.cs", """
+                #:package Some.Package@1.0.0
+                Console.WriteLine("Hello");
+                """),
+            ("job.json", """
+                {
+                  "job": {
+                    "package-manager": "nuget",
+                    "allowed-updates": [
+                      {
+                        "update-type": "all"
+                      }
+                    ],
+                    "source": {
+                      "provider": "github",
+                      "repo": "test/repo",
+                      "directory": "/"
+                    },
+                    "update-file-based-apps": false
+                  }
+                }
+                """));
+        var jobFilePath = Path.Combine(tempDirectory.DirectoryPath, "job.json");
+        var jobId = "TEST-JOB-ID";
+        var (experimentsManager, error) = await ExperimentsManager.FromJobFileAsync(jobId, jobFilePath);
+
+        Assert.Null(error);
+        Assert.False(experimentsManager.UpdateFileBasedApps);
+
+        var logger = new TestLogger();
+        var apiHandler = new TestApiHandler();
+        var discoveryWorker = new DiscoveryWorker(jobId, experimentsManager, logger);
+        var analyzeWorker = new TestAnalyzeWorker(_ => throw new InvalidOperationException("File-based app dependencies should not be analyzed when disabled."));
+        var updaterWorker = new TestUpdaterWorker(_ => throw new InvalidOperationException("File-based app dependencies should not be updated when disabled."));
+        var worker = new RunWorker(jobId, apiHandler, discoveryWorker, analyzeWorker, updaterWorker, logger);
+
+        var result = await worker.RunAsync(new FileInfo(jobFilePath), new DirectoryInfo(tempDirectory.DirectoryPath), null, "TEST-COMMIT-SHA");
+
+        Assert.Equal(0, result);
+        Assert.Equal([typeof(IncrementMetric), typeof(MarkAsProcessed)], apiHandler.ReceivedMessages.Select(m => m.Type));
+    }
+
     public class AddInsecureConnectionsAttribute
     {
         [Theory]
@@ -302,4 +353,3 @@ public class RunWorkerTests
         };
     }
 }
-
