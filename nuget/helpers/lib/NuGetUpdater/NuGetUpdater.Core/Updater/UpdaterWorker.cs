@@ -78,7 +78,7 @@ public class UpdaterWorker : IUpdaterWorker
         var worker = new FileWriterWorker(
             new DiscoveryWorker(_jobId, _experimentsManager, _logger),
             new MSBuildDependencySolver(new DirectoryInfo(repoRootPath), new FileInfo(workspacePath), _logger),
-            new XmlFileWriter(_logger),
+            new NuGetFileWriter(_logger),
             _logger
         );
         var updateOperations = await worker.RunAsync(
