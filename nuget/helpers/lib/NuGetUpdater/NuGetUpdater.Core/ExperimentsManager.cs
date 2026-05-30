@@ -33,6 +33,15 @@ public record ExperimentsManager
         };
     }
 
+    public static ExperimentsManager FromJob(Job job)
+    {
+        var experimentsManager = GetExperimentsManager(job.Experiments);
+        return experimentsManager with
+        {
+            UpdateFileBasedApps = job.UpdateFileBasedApps && experimentsManager.UpdateFileBasedApps,
+        };
+    }
+
     public static async Task<(ExperimentsManager ExperimentsManager, JobErrorBase? Error)> FromJobFileAsync(string jobId, string jobFilePath)
     {
         var experimentsManager = new ExperimentsManager();
@@ -42,7 +51,7 @@ public record ExperimentsManager
         {
             jobFileContent = await File.ReadAllTextAsync(jobFilePath);
             var jobWrapper = RunWorker.Deserialize(jobFileContent);
-            experimentsManager = GetExperimentsManager(jobWrapper.Job.Experiments);
+            experimentsManager = FromJob(jobWrapper.Job);
         }
         catch (JsonException ex)
         {

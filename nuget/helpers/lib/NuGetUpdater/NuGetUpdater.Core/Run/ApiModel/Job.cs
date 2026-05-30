@@ -32,6 +32,7 @@ public sealed record Job
     public ImmutableArray<Advisory> SecurityAdvisories { get; init; } = [];
     public bool SecurityUpdatesOnly { get; init; } = false;
     public required JobSource Source { get; init; }
+    public bool UpdateFileBasedApps { get; init; } = true;
     public bool UpdateSubdependencies { get; init; } = false;
     public bool UpdatingAPullRequest { get; init; } = false;
     public bool VendorDependencies { get; init; } = false;

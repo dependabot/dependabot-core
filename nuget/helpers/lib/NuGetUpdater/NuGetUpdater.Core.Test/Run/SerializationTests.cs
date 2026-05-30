@@ -307,6 +307,31 @@ public class SerializationTests : TestBase
         Assert.False(experimentsManager.UpdateFileBasedApps);
     }
 
+    [Fact]
+    public void DeserializeExperimentsManager_DisablesFileBasedAppsFromJobOption()
+    {
+        var jobWrapper = RunWorker.Deserialize("""
+            {
+              "job": {
+                "package-manager": "nuget",
+                "allowed-updates": [
+                  {
+                    "update-type": "all"
+                  }
+                ],
+                "source": {
+                  "provider": "github",
+                  "repo": "some-org/some-repo",
+                  "directory": "some-dir"
+                },
+                "update-file-based-apps": false
+              }
+            }
+            """);
+        var experimentsManager = ExperimentsManager.FromJob(jobWrapper.Job);
+        Assert.False(experimentsManager.UpdateFileBasedApps);
+    }
+
     [Theory]
     [MemberData(nameof(SerializeErrorTypesData))]
     public void SerializeError(JobErrorBase error, string expectedSerialization)
