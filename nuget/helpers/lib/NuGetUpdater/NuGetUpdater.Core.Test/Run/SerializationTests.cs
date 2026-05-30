@@ -195,6 +195,7 @@ public class SerializationTests : TestBase
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
         Assert.True(experimentsManager.GenerateSimplePrBody);
+        Assert.True(experimentsManager.UpdateFileBasedApps);
     }
 
     [Fact]
@@ -221,6 +222,7 @@ public class SerializationTests : TestBase
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
         Assert.False(experimentsManager.GenerateSimplePrBody);
+        Assert.True(experimentsManager.UpdateFileBasedApps);
     }
 
     [Fact]
@@ -245,6 +247,7 @@ public class SerializationTests : TestBase
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
         Assert.False(experimentsManager.GenerateSimplePrBody);
+        Assert.True(experimentsManager.UpdateFileBasedApps);
     }
 
     [Fact]
@@ -273,6 +276,35 @@ public class SerializationTests : TestBase
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
         Assert.True(experimentsManager.GenerateSimplePrBody);
+    }
+
+    [Theory]
+    [InlineData("nuget_update_file_based_apps")]
+    [InlineData("nuget-update-file-based-apps")]
+    public void DeserializeExperimentsManager_DisablesFileBasedApps(string experimentName)
+    {
+        var jobWrapper = RunWorker.Deserialize($$"""
+            {
+              "job": {
+                "package-manager": "nuget",
+                "allowed-updates": [
+                  {
+                    "update-type": "all"
+                  }
+                ],
+                "source": {
+                  "provider": "github",
+                  "repo": "some-org/some-repo",
+                  "directory": "some-dir"
+                },
+                "experiments": {
+                  "{{experimentName}}": false
+                }
+              }
+            }
+            """);
+        var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
+        Assert.False(experimentsManager.UpdateFileBasedApps);
     }
 
     [Theory]

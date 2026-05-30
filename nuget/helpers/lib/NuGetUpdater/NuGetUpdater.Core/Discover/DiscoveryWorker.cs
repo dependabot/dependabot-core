@@ -220,7 +220,14 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 Error = new DependencyFileNotParseable(invalidProjectFile),
             }];
         }
-        var fileBasedAppResults = CSharpFileBasedAppDiscovery.Discover(repoRootPath, workspacePath, _logger);
+        var fileBasedAppResults = _experimentsManager.UpdateFileBasedApps
+            ? CSharpFileBasedAppDiscovery.Discover(repoRootPath, workspacePath, _logger)
+            : [];
+        if (!_experimentsManager.UpdateFileBasedApps)
+        {
+            _logger.Info("    C# file-based app discovery disabled by nuget_update_file_based_apps.");
+        }
+
         if (projects.IsEmpty && fileBasedAppResults.IsEmpty)
         {
             _logger.Info("    No project files found.");
