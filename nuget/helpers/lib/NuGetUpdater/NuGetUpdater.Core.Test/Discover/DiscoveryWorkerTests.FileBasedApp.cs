@@ -132,5 +132,26 @@ public partial class DiscoveryWorkerTests
                     ],
                 });
         }
+
+        [Fact]
+        public async Task SkipsCSharpFileBasedAppsWhenDisabled()
+        {
+            await TestDiscoveryAsync(
+                workspacePath: "",
+                files:
+                [
+                    ("app.cs", """
+                        #:package Humanizer@2.14.1
+
+                        Console.WriteLine("Hello");
+                        """),
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects = [],
+                },
+                experimentsManager: new() { UpdateFileBasedApps = false });
+        }
     }
 }
