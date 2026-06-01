@@ -38,10 +38,17 @@ RSpec.describe Dependabot::Bundler::Helpers do
     LOCKFILE
   end
 
-  let(:lockfile_bundled_with_future_version) do
+  let(:lockfile_bundled_with_v3) do
     Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
       BUNDLED WITH
         3.9.99
+    LOCKFILE
+  end
+
+  let(:lockfile_bundled_with_v4) do
+    Dependabot::DependencyFile.new(name: "Gemfile.lock", content: <<~LOCKFILE)
+      BUNDLED WITH
+        4.0.1
     LOCKFILE
   end
 
@@ -76,8 +83,12 @@ RSpec.describe Dependabot::Bundler::Helpers do
       expect(described_method(lockfile_bundled_with_v2)).to eq("2")
     end
 
-    it "is 2 if it was bundled with a future version" do
-      expect(described_method(lockfile_bundled_with_future_version)).to eq("2")
+    it "is 2 if it was bundled with the skipped v3.x major" do
+      expect(described_method(lockfile_bundled_with_v3)).to eq("2")
+    end
+
+    it "is 4 if it was bundled with a v4.x version" do
+      expect(described_method(lockfile_bundled_with_v4)).to eq("4")
     end
   end
 
@@ -102,8 +113,12 @@ RSpec.describe Dependabot::Bundler::Helpers do
       expect(described_method(lockfile_bundled_with_v2)).to eq("2")
     end
 
-    it "reports the version if it was bundled with a future version" do
-      expect(described_method(lockfile_bundled_with_future_version)).to eq("3")
+    it "reports the version if it was bundled with a v3.x version" do
+      expect(described_method(lockfile_bundled_with_v3)).to eq("3")
+    end
+
+    it "is 4 if it was bundled with a v4.x version" do
+      expect(described_method(lockfile_bundled_with_v4)).to eq("4")
     end
   end
 
