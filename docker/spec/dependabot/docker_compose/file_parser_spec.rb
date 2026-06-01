@@ -492,6 +492,12 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
 
     context "with a compose lock file containing YAML symbols" do
       let(:composefile_fixture_name) { "lock_with_symbols" }
+      let(:composefile) do
+        Dependabot::DependencyFile.new(
+          name: "compose.lock.yml",
+          content: composefile_body
+        )
+      end
 
       its(:length) { is_expected.to eq(1) }
 
@@ -502,7 +508,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
           [{
             requirement: nil,
             groups: [],
-            file: "docker-compose.yml",
+            file: "compose.lock.yml",
             source: {
               registry: "quay.io",
               digest: "ed9be66eb5f2636c18289c34c3b725ddf57815f2777c77b5938543b78a44f144",
@@ -517,6 +523,27 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
           expect(dependency.version).to eq("RELEASE.2025-01-20T14-49-07Z")
           expect(dependency.requirements).to eq(expected_requirements)
         end
+      end
+    end
+
+    context "when the YAML does not parse to a mapping" do
+      let(:composefile) do
+        Dependabot::DependencyFile.new(
+          name: "docker-compose.yml",
+          content: content
+        )
+      end
+
+      context "when the file is empty" do
+        let(:content) { "" }
+
+        its(:length) { is_expected.to eq(0) }
+      end
+
+      context "when the file is a YAML sequence" do
+        let(:content) { "- foo\n- bar\n" }
+
+        its(:length) { is_expected.to eq(0) }
       end
     end
   end

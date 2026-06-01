@@ -38,6 +38,7 @@ module Dependabot
 
         composefiles.each do |composefile|
           yaml = YAML.safe_load(T.must(composefile.content), permitted_classes: [Symbol], aliases: true)
+          next unless yaml.is_a?(Hash)
           next unless yaml["services"].is_a?(Hash)
 
           yaml["services"].each do |_, service|
