@@ -426,7 +426,7 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def npm_supports_min_release_age?
-          return @npm_supports_min_release_age unless @npm_supports_min_release_age.nil?
+          return @npm_supports_min_release_age if defined?(@npm_supports_min_release_age)
 
           raw_npm_version = SharedHelpers.run_shell_command("npm --version").to_s.strip
           @npm_supports_min_release_age = T.let(
