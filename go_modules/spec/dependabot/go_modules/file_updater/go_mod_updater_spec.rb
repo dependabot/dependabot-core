@@ -321,6 +321,53 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             end
           end
 
+          context "when the updated go.sum already has the module's go.mod hash" do
+            let(:gonum_old_gomod_line) do
+              "gonum.org/v1/gonum v0.16.0/go.mod h1:OLDoldOLDoldOLDoldOLDoldOLDoldOLDoldOLDold==="
+            end
+            let(:gonum_new_gomod_line) do
+              "gonum.org/v1/gonum v0.16.0/go.mod h1:fef3am4MQ93R2HHpKnLk4/Tbh/s0+wqD5nfa6Pnwy4E="
+            end
+
+            before do
+              # Original has the OLD hash; updated keeps the SAME module@version
+              # but with a recalculated hash. Reconciliation must not re-add the
+              # old line, which would duplicate the module@version/go.mod entry.
+              original_sum = fixture("projects", project_name, "go.sum") +
+                             "#{gonum_old_gomod_line}\n"
+              updated_sum = fixture("projects", project_name, "go.sum") +
+                            "#{gonum_new_gomod_line}\n"
+
+              read_count = 0
+              allow(File).to receive(:read).and_call_original
+              allow(File).to receive(:read).with("go.sum") do
+                read_count += 1
+                read_count == 1 ? original_sum : updated_sum
+              end
+
+              graph = Dependabot::GoModules::FileUpdater::GoModGraph.new(
+                modules: Set[
+                  "rsc.io/quote@v1.5.2",
+                  "gonum.org/v1/gonum@v0.16.0"
+                ]
+              )
+
+              allow(Dependabot::GoModules::FileUpdater::GoModGraph)
+                .to receive(:capture)
+                .and_return(graph, graph)
+            end
+
+            it "does not restore the stale hash" do
+              expect(updated_go_mod_content).not_to include(gonum_old_gomod_line)
+            end
+
+            it "keeps a single go.mod checksum for the module" do
+              matches = updated_go_mod_content.lines
+                                              .count { |l| l.start_with?("gonum.org/v1/gonum v0.16.0/go.mod ") }
+              expect(matches).to eq(1)
+            end
+          end
+
           context "when a module version changes legitimately" do
             before do
               # Graph shows rsc.io/quote changed version (it's being updated)

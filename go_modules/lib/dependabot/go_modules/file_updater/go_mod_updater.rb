@@ -442,11 +442,17 @@ module Dependabot
         end
         def reconcile_go_sum(original, updated, changed_modules)
           updated_lines = updated.lines(chomp: true).reject(&:empty?)
-          updated_set = updated_lines.to_set
+
+          # Track existing "module version/go.mod" keys so we never restore a
+          # checksum for a module@version the updated go.sum already covers,
+          # even if Go recalculated the hash (avoids duplicate entries).
+          updated_gomod_keys = updated_lines.each_with_object(Set.new) do |line, set|
+            set.add(go_sum_module_key(line)) if line.include?("/go.mod h1:")
+          end
 
           restored = original.lines(chomp: true).reject(&:empty?).select do |line|
-            next false if updated_set.include?(line)
             next false unless line.include?("/go.mod h1:")
+            next false if updated_gomod_keys.include?(go_sum_module_key(line))
 
             module_path = line.split(/\s+/, 2).first
             next false unless module_path
@@ -458,6 +464,14 @@ module Dependabot
 
           Dependabot.logger.info "Restoring #{restored.size} over-pruned go.sum checksum(s)"
           (updated_lines + restored).sort.join("\n") + "\n"
+        end
+
+        # Builds a "module version/go.mod" identity key for a go.sum line,
+        # ignoring the trailing hash so the same module@version dedups
+        # regardless of the recorded checksum value.
+        sig { params(line: String).returns(String) }
+        def go_sum_module_key(line)
+          line.split(/\s+/, 3).first(2).join(" ")
         end
 
         sig { params(stub_paths: T::Array[String]).void }
