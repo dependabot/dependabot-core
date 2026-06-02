@@ -590,10 +590,11 @@ module Dependabot
         sig { params(content: String).returns(T::Array[String]) }
         def unsafe_package_options_from_compiled_file(content)
           header = content.lines.take_while { |line| line.start_with?("#") }.join(" ")
-          header.scan(UNSAFE_PACKAGE_OPTION_REGEX)
-                .flatten
-                .uniq
-                .map { |name| "--unsafe-package=#{name}" }
+          header
+            .scan(UNSAFE_PACKAGE_OPTION_REGEX)
+            .flatten
+            .uniq
+            .map { |name| "--unsafe-package=#{name}" }
         end
 
         sig { params(options: T::Array[String]).returns(T::Array[String]) }
@@ -657,7 +658,7 @@ module Dependabot
           pip_tools_config = parsed["pip-tools"]
           return unless pip_tools_config.is_a?(Hash)
 
-          T.cast(pip_tools_config, T::Hash[String, T.untyped])
+          pip_tools_config
         rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
           nil
         end
