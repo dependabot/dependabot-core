@@ -329,9 +329,15 @@ module Dependabot
         end
       end
 
-      sig { returns(String) }
-      def dependabot_email
-        "support@dependabot.com"
+      # Identify Dependabot's own commits by the bot author name rather than a
+      # hardcoded email. The previously used `support@dependabot.com` address is
+      # a pre-acquisition leftover that is no longer used for commits, and the
+      # author email is configurable for self-hosted setups, so matching on it
+      # is unreliable. This mirrors the author-name check already used for
+      # GitHub commits.
+      sig { params(author_name: T.nilable(String)).returns(T::Boolean) }
+      def dependabot_author?(author_name)
+        !!author_name&.include?("dependabot")
       end
 
       sig { returns(T::Array[String]) }
@@ -350,7 +356,7 @@ module Dependabot
           gitlab_client_for_source.commits(source.repo)
 
         @recent_gitlab_commit_messages
-          .reject { |c| c.author_email == dependabot_email }
+          .reject { |c| dependabot_author?(c.author_name) }
           .reject { |c| c.message&.start_with?("merge !") }
           .filter_map(&:message)
           .map(&:strip)
@@ -362,7 +368,7 @@ module Dependabot
           azure_client_for_source.commits
 
         @recent_azure_commit_messages
-          .reject { |c| azure_commit_author_email(c) == dependabot_email }
+          .reject { |c| dependabot_author?(azure_commit_author_name(c)) }
           .reject { |c| c.fetch("comment")&.start_with?("Merge") }
           .filter_map { |c| c.fetch("comment") }
           .map(&:strip)
@@ -374,7 +380,7 @@ module Dependabot
           bitbucket_client_for_source.commits(source.repo)
 
         @recent_bitbucket_commit_messages
-          .reject { |c| bitbucket_commit_author_email(c) == dependabot_email }
+          .reject { |c| dependabot_author?(bitbucket_commit_author_name(c)) }
           .filter_map { |c| c.fetch("message", nil) }
           .reject { |m| m.start_with?("Merge") }
           .map(&:strip)
@@ -385,7 +391,7 @@ module Dependabot
         @recent_codecommit_commit_messages ||=
           T.unsafe(codecommit_client_for_source).commits
         @recent_codecommit_commit_messages.commits
-                                          .reject { |c| c.author.email == dependabot_email }
+                                          .reject { |c| dependabot_author?(c.author.name) }
                                           .reject { |c| c.message&.start_with?("Merge") }
                                           .filter_map(&:message)
                                           .map(&:strip)
@@ -447,7 +453,7 @@ module Dependabot
           )
 
         @recent_gitlab_commit_messages
-          .find { |c| c.author_email == dependabot_email }
+          .find { |c| dependabot_author?(c.author_name) }
           &.message
           &.strip
       end
@@ -461,7 +467,7 @@ module Dependabot
           )
 
         @recent_azure_commit_messages
-          .find { |c| azure_commit_author_email(c) == dependabot_email }
+          .find { |c| dependabot_author?(azure_commit_author_name(c)) }
           &.message
           &.strip
       end
@@ -475,7 +481,7 @@ module Dependabot
           )
 
         @recent_bitbucket_commit_messages
-          .find { |c| bitbucket_commit_author_email(c) == dependabot_email }
+          .find { |c| dependabot_author?(bitbucket_commit_author_name(c)) }
           &.fetch("message", nil)
           &.strip
       end
@@ -489,20 +495,20 @@ module Dependabot
           )
 
         @recent_codecommit_commit_messages.commits
-                                          .find { |c| c.author.email == dependabot_email }
+                                          .find { |c| dependabot_author?(c.author.name) }
                                           &.message
                                           &.strip
       end
 
       sig { params(commit: T::Hash[String, T::Hash[String, String]]).returns(String) }
-      def azure_commit_author_email(commit)
-        commit.fetch("author").fetch("email", "")
+      def azure_commit_author_name(commit)
+        commit.fetch("author").fetch("name", "")
       end
 
       sig { params(commit: T::Hash[String, T::Hash[String, String]]).returns(String) }
-      def bitbucket_commit_author_email(commit)
-        matches = commit.fetch("author").fetch("raw").match(/<(.*)>/)
-        matches ? T.must(matches[1]) : ""
+      def bitbucket_commit_author_name(commit)
+        # The raw author is a "Name <email>" string; keep the part before "<email>".
+        commit.fetch("author").fetch("raw").split("<", 2).first.to_s.strip
       end
 
       sig { returns(Dependabot::Clients::GithubWithRetries) }
