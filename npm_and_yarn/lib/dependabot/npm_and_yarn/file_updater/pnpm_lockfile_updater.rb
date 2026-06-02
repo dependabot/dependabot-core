@@ -207,7 +207,7 @@ module Dependabot
 
           cmd = "update #{dependency_updates}  --lockfile-only --no-save -r"
           fingerprint = "update <dependency_updates>  --lockfile-only --no-save -r"
-          if security_updates_only? && Helpers.pnpm_supports_minimum_release_age?
+          if security_updates_only?
             # Override any minimumReleaseAge set in pnpm-workspace.yaml: security fixes must not be
             # blocked by a release-age gate the user configured for regular updates.
             cmd += " --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false"
@@ -219,7 +219,7 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def run_pnpm_install
           cmd = "install --lockfile-only"
-          if security_updates_only? && Helpers.pnpm_supports_minimum_release_age?
+          if security_updates_only?
             # Override any minimumReleaseAge set in pnpm-workspace.yaml: security fixes must not be
             # blocked by a release-age gate the user configured for regular updates.
             cmd += " --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false"

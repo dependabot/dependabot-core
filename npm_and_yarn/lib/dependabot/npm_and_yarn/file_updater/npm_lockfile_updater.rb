@@ -109,7 +109,6 @@ module Dependabot
         ERROR_E403 = /code E403/
         REQUEST_ERROR_E403 = /Request "(?<pkg>.*)" returned a 403/
         ERROR_EAI_AGAIN = /request to (?<url>.*) failed, reason: getaddrinfo EAI_AGAIN/
-        MIN_RELEASE_AGE_NPM_VERSION = T.let(Gem::Version.new("11.10.0"), Gem::Version)
 
         NPM_PACKAGE_NOT_FOUND_CODES = T.let(
           [
@@ -404,7 +403,7 @@ module Dependabot
           command_args << "--save-optional" if has_optional_dependencies
           # Override any min-release-age set in .npmrc: security fixes must not be
           # blocked by a release-age gate the user configured for regular updates.
-          command_args << "--min-release-age=0" if security_updates_only? && npm_supports_min_release_age?
+          command_args << "--min-release-age=0" if security_updates_only?
 
           command = command_args.join(" ")
 
@@ -417,25 +416,11 @@ module Dependabot
           ]
 
           fingerprint_args << "--save-optional" if has_optional_dependencies
-          fingerprint_args << "--min-release-age=0" if security_updates_only? && npm_supports_min_release_age?
+          fingerprint_args << "--min-release-age=0" if security_updates_only?
 
           fingerprint = fingerprint_args.join(" ")
 
           Helpers.run_npm_command(command, fingerprint: fingerprint)
-        end
-
-        sig { returns(T::Boolean) }
-        def npm_supports_min_release_age?
-          return @npm_supports_min_release_age if defined?(@npm_supports_min_release_age)
-
-          raw_npm_version = SharedHelpers.run_shell_command("npm --version").to_s.strip
-          @npm_supports_min_release_age = T.let(
-            Gem::Version.new(raw_npm_version) >= MIN_RELEASE_AGE_NPM_VERSION,
-            T.nilable(T::Boolean)
-          )
-        rescue StandardError => e
-          Dependabot.logger.warn("Failed to detect npm version for --min-release-age gating: #{e.message}")
-          @npm_supports_min_release_age = false
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(String) }

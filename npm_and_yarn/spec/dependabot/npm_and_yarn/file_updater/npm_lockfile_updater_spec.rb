@@ -1375,10 +1375,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           )
         end
 
-        before do
-          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with("npm --version").and_return("11.10.0")
-        end
-
         it "passes --min-release-age=0 to override the .npmrc setting" do
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
             expect(command).to include("--min-release-age=0")
@@ -1391,72 +1387,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         end
       end
 
-      context "when security_updates_only is true and npm is below 11.10.0" do
-        let(:updater) do
-          described_class.new(
-            lockfile: package_lock,
-            dependency_files: files,
-            dependencies: dependencies,
-            credentials: credentials,
-            security_updates_only: true
-          )
-        end
-
-        before do
-          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with("npm --version").and_return("11.8.0")
-        end
-
-        it "does not pass --min-release-age=0" do
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
-            expect(command).not_to include("--min-release-age=0")
-            expect(command).to include("--package-lock-only")
-            ""
-          end
-
-          updater.send(:run_npm_install_lockfile_only, install_args)
-        end
-
-        it "memoizes npm version detection" do
-          expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with("npm --version").once.and_return("11.8.0")
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command).twice.and_return("")
-
-          updater.send(:run_npm_install_lockfile_only, install_args)
-          updater.send(:run_npm_install_lockfile_only, install_args)
-        end
-      end
-
-      context "when security_updates_only is true and npm version detection fails" do
-        let(:updater) do
-          described_class.new(
-            lockfile: package_lock,
-            dependency_files: files,
-            dependencies: dependencies,
-            credentials: credentials,
-            security_updates_only: true
-          )
-        end
-
-        it "logs a warning and does not pass --min-release-age=0" do
-          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with("npm --version")
-            .and_raise(StandardError, "npm unavailable")
-          allow(Dependabot.logger).to receive(:warn)
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
-            expect(command).not_to include("--min-release-age=0")
-            ""
-          end
-
-          updater.send(:run_npm_install_lockfile_only, install_args)
-
-          expect(Dependabot.logger).to have_received(:warn)
-            .with("Failed to detect npm version for --min-release-age gating: npm unavailable")
-        end
-      end
-
       context "when security_updates_only is false (default)" do
-        before do
-          allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with("npm --version").and_return("11.10.0")
-        end
-
         it "does not pass --min-release-age=0" do
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
             expect(command).not_to include("--min-release-age=0")

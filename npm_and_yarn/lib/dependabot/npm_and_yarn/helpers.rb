@@ -259,16 +259,6 @@ module Dependabot
         false
       end
 
-      # `minimumReleaseAge` was introduced in pnpm 10.16. Passing `--config.minimumReleaseAge`
-      # to older pnpm releases is ignored on most versions but errors out on some, and is
-      # never effective, so we only pass it when the running pnpm understands the setting.
-      sig { returns(T::Boolean) }
-      def self.pnpm_supports_minimum_release_age?
-        Version.new(run_pnpm_command("--version")) >= Version.new("10.16.0")
-      rescue StandardError
-        false
-      end
-
       sig { returns(T.nilable(String)) }
       def self.setup_yarn_berry
         # Always disable immutable installs so yarn's CI detection doesn't prevent updates.
