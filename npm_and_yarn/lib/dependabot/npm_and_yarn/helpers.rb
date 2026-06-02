@@ -248,6 +248,17 @@ module Dependabot
         yarn_major_version >= 4
       end
 
+      # `npmMinimalAgeGate` was introduced in Yarn 4.10.0. Setting the corresponding
+      # `YARN_NPM_MINIMAL_AGE_GATE` env var on older Yarn Berry releases (or Yarn classic)
+      # raises "Unrecognized or legacy configuration settings" and aborts the install,
+      # so we must only export it when the running Yarn understands the setting.
+      sig { returns(T::Boolean) }
+      def self.yarn_berry_supports_minimal_age_gate?
+        Version.new(run_single_yarn_command("--version")) >= Version.new("4.10.0")
+      rescue StandardError
+        false
+      end
+
       sig { returns(T.nilable(String)) }
       def self.setup_yarn_berry
         # Always disable immutable installs so yarn's CI detection doesn't prevent updates.

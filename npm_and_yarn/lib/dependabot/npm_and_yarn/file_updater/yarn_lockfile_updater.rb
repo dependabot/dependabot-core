@@ -376,6 +376,7 @@ module Dependabot
         sig { returns(T.nilable(T::Hash[String, String])) }
         def yarn_time_gate_env
           return nil unless security_updates_only?
+          return nil unless Helpers.yarn_berry_supports_minimal_age_gate?
 
           { "YARN_NPM_MINIMAL_AGE_GATE" => "0" }
         end

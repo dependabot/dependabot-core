@@ -412,30 +412,50 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
         )
       end
 
-      it "sets YARN_NPM_MINIMAL_AGE_GATE=0 in yarn_time_gate_env" do
-        # Override any npmMinimalAgeGate set in .yarnrc.yml: security fixes must not be
-        # blocked by a release-age gate the user configured for regular updates.
-        expect(updater.send(:yarn_time_gate_env)).to eq({ "YARN_NPM_MINIMAL_AGE_GATE" => "0" })
-      end
-
-      it "passes YARN_NPM_MINIMAL_AGE_GATE=0 to yarn up in run_yarn_berry_top_level_updater" do
-        allow(updater).to receive(:write_temporary_dependency_files)
-        allow(updater).to receive(:pin_berry_versions_if_needed)
-        allow(updater).to receive(:requirements_changed?).and_return(false)
-        allow(File).to receive(:read).and_return("")
-
-        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command) do |_cmd, **kwargs|
-          expect(kwargs[:env]).to include("YARN_NPM_MINIMAL_AGE_GATE" => "0")
-          ""
+      context "and Yarn supports npmMinimalAgeGate" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:yarn_berry_supports_minimal_age_gate?).and_return(true)
         end
 
-        dep = { name: dependency_name, version: version, requirements: requirements }
-        yarn_lock_file = files.find { |f| f.name == "yarn.lock" }
-        updater.send(
-          :run_yarn_berry_top_level_updater,
-          top_level_dependency_updates: [dep],
-          yarn_lock: yarn_lock_file
-        )
+        it "sets YARN_NPM_MINIMAL_AGE_GATE=0 in yarn_time_gate_env" do
+          # Override any npmMinimalAgeGate set in .yarnrc.yml: security fixes must not be
+          # blocked by a release-age gate the user configured for regular updates.
+          expect(updater.send(:yarn_time_gate_env)).to eq({ "YARN_NPM_MINIMAL_AGE_GATE" => "0" })
+        end
+
+        it "passes YARN_NPM_MINIMAL_AGE_GATE=0 to yarn up in run_yarn_berry_top_level_updater" do
+          allow(updater).to receive(:write_temporary_dependency_files)
+          allow(updater).to receive(:pin_berry_versions_if_needed)
+          allow(updater).to receive(:requirements_changed?).and_return(false)
+          allow(File).to receive(:read).and_return("")
+
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command) do |_cmd, **kwargs|
+            expect(kwargs[:env]).to include("YARN_NPM_MINIMAL_AGE_GATE" => "0")
+            ""
+          end
+
+          dep = { name: dependency_name, version: version, requirements: requirements }
+          yarn_lock_file = files.find { |f| f.name == "yarn.lock" }
+          updater.send(
+            :run_yarn_berry_top_level_updater,
+            top_level_dependency_updates: [dep],
+            yarn_lock: yarn_lock_file
+          )
+        end
+      end
+
+      context "and Yarn does not support npmMinimalAgeGate" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:yarn_berry_supports_minimal_age_gate?).and_return(false)
+        end
+
+        it "returns nil from yarn_time_gate_env to avoid 'Unrecognized configuration' errors" do
+          # Older Yarn Berry versions (and Yarn classic) abort when YARN_NPM_MINIMAL_AGE_GATE
+          # is set, so we must not export it on those versions.
+          expect(updater.send(:yarn_time_gate_env)).to be_nil
+        end
       end
     end
 
