@@ -163,6 +163,7 @@ module Dependabot
             return new_version
           end
           return nil if ignore_requirements.any? { |r| r.satisfied_by?(new_version) }
+          return nil if version_disallowed?(new_version)
 
           new_version
         end
@@ -218,6 +219,14 @@ module Dependabot
           resolve_requirements_update_strategy,
           T.nilable(Dependabot::RequirementsUpdateStrategy)
         )
+      end
+
+      sig { params(version: Dependabot::Version).returns(T::Boolean) }
+      def version_disallowed?(version)
+        return false if allowed_versions.empty?
+
+        groups = allowed_versions.map { |entry| requirement_class.requirements_array(entry) }
+        groups.none? { |group| group.all? { |req| req.satisfied_by?(version) } }
       end
 
       sig { params(version_string: String).returns(T::Boolean) }

@@ -371,6 +371,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         credentials: credentials,
         dependency_files: dependency_files,
         ignored_versions: ignored_versions,
+        allowed_versions: [],
         raise_on_ignored: false,
         security_advisories: security_advisories,
         cooldown_options: nil
@@ -632,6 +633,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             credentials: credentials,
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
+            allowed_versions: [],
             latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
             repo_contents_path: nil
           ).and_return(dummy_version_resolver)
@@ -697,6 +699,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               credentials: credentials,
               dependency_files: dependency_files,
               ignored_versions: ignored_versions,
+              allowed_versions: [],
               latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
               repo_contents_path: nil
             ).and_return(dummy_version_resolver)
@@ -832,6 +835,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           credentials: credentials,
           dependency_files: dependency_files,
           ignored_versions: ignored_versions,
+          allowed_versions: [],
           raise_on_ignored: false,
           security_advisories: security_advisories,
           cooldown_options: nil
@@ -865,6 +869,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             credentials: credentials,
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
+            allowed_versions: [],
             latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
             repo_contents_path: nil
           ).and_return(dummy_version_resolver)

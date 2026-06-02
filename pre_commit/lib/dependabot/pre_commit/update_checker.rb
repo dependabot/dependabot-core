@@ -81,6 +81,7 @@ module Dependabot
               credentials: credentials,
               dependency_files: dependency_files,
               ignored_versions: ignored_versions,
+              allowed_versions: allowed_versions,
               raise_on_ignored: raise_on_ignored,
               cooldown_options: update_cooldown
             ),

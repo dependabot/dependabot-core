@@ -20,6 +20,7 @@ module Dependabot
           credentials: T::Array[Dependabot::Credential],
           repo_contents_path: T.nilable(String),
           ignored_versions: T::Array[String],
+          allowed_versions: T::Array[String],
           raise_on_ignored: T::Boolean,
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
           requirements_update_strategy: T.nilable(Dependabot::RequirementsUpdateStrategy),
@@ -35,6 +36,7 @@ module Dependabot
         credentials:,
         repo_contents_path: nil,
         ignored_versions: [],
+        allowed_versions: [],
         raise_on_ignored: false,
         security_advisories: [],
         requirements_update_strategy: nil,
@@ -125,6 +127,7 @@ module Dependabot
             dependency_files: dependency_files,
             credentials: credentials,
             ignored_versions: ignored_versions,
+            allowed_versions: allowed_versions,
             raise_on_ignored: @raise_on_ignored,
             cooldown_options: @update_cooldown,
             security_advisories: security_advisories

@@ -32,6 +32,7 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential],
             ignored_versions: T::Array[String],
             security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            allowed_versions: T::Array[String],
             update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
             raise_on_ignored: T::Boolean
           ).void
@@ -42,6 +43,7 @@ module Dependabot
           credentials:,
           ignored_versions:,
           security_advisories:,
+          allowed_versions: [],
           update_cooldown: nil,
           raise_on_ignored: false
         )
@@ -49,6 +51,7 @@ module Dependabot
           @dependency_files = dependency_files
           @credentials = credentials
           @ignored_versions = ignored_versions
+          @allowed_versions = T.let(allowed_versions, T::Array[String])
           @security_advisories = security_advisories
           @update_cooldown = update_cooldown
           @raise_on_ignored = raise_on_ignored
@@ -104,6 +107,9 @@ module Dependabot
         sig { returns(T::Array[String]) }
         attr_reader :ignored_versions
 
+        sig { returns(T::Array[String]) }
+        attr_reader :allowed_versions
+
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
 
@@ -114,6 +120,7 @@ module Dependabot
             dependency_files: dependency_files,
             credentials: credentials,
             ignored_versions: ignored_versions,
+            allowed_versions: allowed_versions,
             raise_on_ignored: @raise_on_ignored,
             cooldown_options: @update_cooldown,
             security_advisories: security_advisories

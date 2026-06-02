@@ -124,6 +124,7 @@ module Dependabot
             dependency_files: dependency_files,
             credentials: credentials,
             ignored_versions: ignored_versions,
+            allowed_versions: allowed_versions,
             raise_on_ignored: raise_on_ignored,
             security_advisories: security_advisories,
             cooldown_options: update_cooldown

@@ -18,7 +18,8 @@ class StubPackageLatestVersionFinder < Dependabot::Package::PackageLatestVersion
     security_advisories:,
     package_name:,
     cooldown_options:,
-    releases:
+    releases:,
+    allowed_versions: []
   )
     super(
       dependency: dependency,
@@ -27,7 +28,8 @@ class StubPackageLatestVersionFinder < Dependabot::Package::PackageLatestVersion
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories,
-      cooldown_options: cooldown_options
+      cooldown_options: cooldown_options,
+      allowed_versions: allowed_versions
     )
     @package_name = package_name
     @releases = releases
@@ -607,6 +609,138 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
         expect(Dependabot.logger).not_to receive(:info)
           .with(/falling back to current version/)
         finder.latest_version
+      end
+    end
+  end
+
+  describe "#latest_version with allowed_versions" do
+    subject(:latest_version) { finder.latest_version }
+
+    let(:cooldown_options) { nil }
+
+    context "when allowed_versions is empty" do
+      let(:finder) do
+        StubPackageLatestVersionFinder.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          ignored_versions: [],
+          raise_on_ignored: false,
+          security_advisories: [],
+          package_name: dependency_name,
+          releases: available_releases,
+          cooldown_options: cooldown_options,
+          allowed_versions: []
+        )
+      end
+
+      it "returns the latest version (no filtering)" do
+        expect(latest_version).to eq(TestVersion.new("7.0.0"))
+      end
+    end
+
+    context "when allowed_versions restricts to a single band (comma-separated entry)" do
+      let(:finder) do
+        StubPackageLatestVersionFinder.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          ignored_versions: [],
+          raise_on_ignored: false,
+          security_advisories: [],
+          package_name: dependency_name,
+          releases: available_releases,
+          cooldown_options: cooldown_options,
+          allowed_versions: [">= 6.0.0, < 7.0.0"]
+        )
+      end
+
+      it "returns the latest version within the allowed band" do
+        expect(latest_version).to eq(TestVersion.new("6.1.4"))
+      end
+    end
+
+    context "when allowed_versions uses OR-ed entries (disjoint skip-a-middle)" do
+      let(:finder) do
+        StubPackageLatestVersionFinder.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          ignored_versions: [],
+          raise_on_ignored: false,
+          security_advisories: [],
+          package_name: dependency_name,
+          releases: available_releases,
+          cooldown_options: cooldown_options,
+          allowed_versions: [">= 6.0.0, < 7.0.0", ">= 7.0.0, < 8.0.0"]
+        )
+      end
+
+      it "includes versions from both bands and picks the overall latest" do
+        expect(latest_version).to eq(TestVersion.new("7.0.0"))
+      end
+    end
+
+    context "when allowed_versions excludes all candidates" do
+      let(:finder) do
+        StubPackageLatestVersionFinder.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          ignored_versions: [],
+          raise_on_ignored: false,
+          security_advisories: [],
+          package_name: dependency_name,
+          releases: available_releases,
+          cooldown_options: cooldown_options,
+          allowed_versions: [">= 100.0.0"]
+        )
+      end
+
+      it "returns nil" do
+        expect(latest_version).to be_nil
+      end
+    end
+
+    context "when raise_on_ignored is true but only allow filter empties the set" do
+      let(:finder) do
+        StubPackageLatestVersionFinder.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          ignored_versions: [],
+          raise_on_ignored: true,
+          security_advisories: [],
+          package_name: dependency_name,
+          releases: available_releases,
+          cooldown_options: cooldown_options,
+          allowed_versions: [">= 100.0.0"]
+        )
+      end
+
+      it "does not raise AllVersionsIgnored (only ignore filter triggers that error)" do
+        expect { latest_version }.not_to raise_error
+      end
+    end
+
+    context "when allowed_versions and ignored_versions both apply (intersection)" do
+      let(:finder) do
+        StubPackageLatestVersionFinder.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          ignored_versions: [">= 6.1.0"],
+          raise_on_ignored: false,
+          security_advisories: [],
+          package_name: dependency_name,
+          releases: available_releases,
+          cooldown_options: cooldown_options,
+          allowed_versions: [">= 6.0.0, < 7.0.0"]
+        )
+      end
+
+      it "applies both filters: ignore wins over allow, picks highest surviving version" do
+        expect(latest_version).to eq(TestVersion.new("6.0.2"))
       end
     end
   end

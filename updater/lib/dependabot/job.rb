@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 require "wildcard_matcher"
 
+require "dependabot/config/allow_condition"
 require "dependabot/config/ignore_condition"
 require "dependabot/config/update_config"
 require "dependabot/credential"
@@ -458,6 +459,14 @@ module Dependabot
       conditions + ignored_versions_from_allowed_update_types(dependency) + blocked_versions_for(dependency)
     end
 
+    sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+    def allowed_versions_for(dependency)
+      update_config.allowed_versions_for(
+        dependency,
+        security_updates_only: security_updates_only?
+      )
+    end
+
     # TODO: Present Dependabot::Config::IgnoreCondition in calling code
     #
     # This is a workaround for our existing logging using the 'raw'
@@ -728,7 +737,7 @@ module Dependabot
     #
     # At present we only use this for ignore rules.
     sig { returns(Dependabot::Config::UpdateConfig) }
-    def calculate_update_config
+    def calculate_update_config # rubocop:disable Metrics/AbcSize
       update_config_ignore_conditions = ignore_conditions.map do |ic|
         Dependabot::Config::IgnoreCondition.new(
           dependency_name: T.let(ic["dependency-name"], String),
@@ -737,8 +746,22 @@ module Dependabot
         )
       end
 
+      update_config_allow_conditions = allowed_updates.filter_map do |au|
+        versions = au["versions"]
+        next unless versions.is_a?(Array) && !versions.empty?
+
+        dep_name = T.let(au.fetch("dependency-name", "*"), String)
+        dep_type = T.let(au["dependency-type"].is_a?(String) ? au["dependency-type"] : nil, T.nilable(String))
+        Dependabot::Config::AllowCondition.new(
+          dependency_name: dep_name,
+          versions: T.let(versions.grep(String), T::Array[String]),
+          dependency_type: dep_type
+        )
+      end
+
       update_config = Dependabot::Config::UpdateConfig.new(
         ignore_conditions: T.let(update_config_ignore_conditions, T::Array[Dependabot::Config::IgnoreCondition]),
+        allow_conditions: T.let(update_config_allow_conditions, T::Array[Dependabot::Config::AllowCondition]),
         exclude_paths: T.let(exclude_paths, T.nilable(T::Array[String]))
       )
       T.let(update_config, Dependabot::Config::UpdateConfig)

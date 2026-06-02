@@ -32,6 +32,7 @@ module Dependabot
             ignored_versions: T::Array[String],
             security_advisories: T::Array[Dependabot::SecurityAdvisory],
             raise_on_ignored: T::Boolean,
+            allowed_versions: T::Array[String],
             options: T::Hash[Symbol, T.untyped],
             cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
@@ -43,6 +44,7 @@ module Dependabot
           ignored_versions:,
           security_advisories:,
           raise_on_ignored:,
+          allowed_versions: [],
           options: {},
           cooldown_options: nil
         )
@@ -50,6 +52,7 @@ module Dependabot
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
+          @allowed_versions    = T.let(allowed_versions, T::Array[String])
           @security_advisories = security_advisories
           @raise_on_ignored    = raise_on_ignored
           @options             = options
@@ -68,6 +71,9 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         attr_reader :ignored_versions
+
+        sig { returns(T::Array[String]) }
+        attr_reader :allowed_versions
 
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
@@ -125,6 +131,7 @@ module Dependabot
           @dependency = dependency
           @dependency_files = dependency_files
           @ignored_versions = ignored_versions
+          @allowed_versions = T.let([], T::Array[String])
           @cooldown_options = cooldown_options
 
           @install_metadata = T.let(nil, T.nilable(T::Hash[String, Dependabot::Elm::Version]))

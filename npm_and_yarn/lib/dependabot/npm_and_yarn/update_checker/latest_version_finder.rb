@@ -26,6 +26,7 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential],
             ignored_versions: T::Array[String],
             security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            allowed_versions: T::Array[String],
             raise_on_ignored: T::Boolean,
             cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
@@ -36,6 +37,7 @@ module Dependabot
           credentials:,
           ignored_versions:,
           security_advisories:,
+          allowed_versions: [],
           raise_on_ignored: false,
           cooldown_options: nil
         )

@@ -87,6 +87,7 @@ module Dependabot
         end
         versions.reject!(&:prerelease?) unless wants_prerelease?
         versions.reject! { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
+        versions = filter_allowed_versions(versions)
         @latest_version_for_registry_dependency = T.let(
           versions.max,
           T.nilable(Dependabot::Terraform::Version)
@@ -129,11 +130,19 @@ module Dependabot
         end
         versions.reject!(&:prerelease?) unless wants_prerelease?
         versions.reject! { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
-
+        versions = filter_allowed_versions(versions)
         @latest_version_for_provider_dependency = T.let(
           versions.max,
           T.nilable(Dependabot::Terraform::Version)
         )
+      end
+
+      sig { params(versions: T::Array[Dependabot::Terraform::Version]).returns(T::Array[Dependabot::Terraform::Version]) }
+      def filter_allowed_versions(versions)
+        return versions if allowed_versions.empty?
+
+        groups = allowed_versions.map { |entry| requirement_class.requirements_array(entry) }
+        versions.select { |v| groups.any? { |group| group.all? { |req| req.satisfied_by?(v) } } }
       end
 
       sig { returns(T::Boolean) }

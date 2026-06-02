@@ -30,6 +30,7 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential],
             ignored_versions: T::Array[String],
             options: T::Hash[Symbol, T.untyped],
+            allowed_versions: T::Array[String],
             repo_contents_path: T.nilable(String),
             raise_on_ignored: T::Boolean,
             replacement_git_pin: T.nilable(String),
@@ -45,6 +46,7 @@ module Dependabot
           credentials:,
           ignored_versions:,
           options:,
+          allowed_versions: [],
           repo_contents_path: nil,
           raise_on_ignored: false,
           replacement_git_pin: nil,
@@ -58,6 +60,7 @@ module Dependabot
           @credentials                 = credentials
           @repo_contents_path          = repo_contents_path
           @ignored_versions            = ignored_versions
+          @allowed_versions            = T.let(allowed_versions, T::Array[String])
           @raise_on_ignored            = raise_on_ignored
           @replacement_git_pin         = replacement_git_pin
           @remove_git_source           = remove_git_source
@@ -118,6 +121,9 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         attr_reader :ignored_versions
+
+        sig { returns(T::Array[String]) }
+        attr_reader :allowed_versions
 
         sig { returns(T.nilable(String)) }
         attr_reader :replacement_git_pin
@@ -246,6 +252,7 @@ module Dependabot
               dependency_files: dependency_files,
               credentials: credentials,
               ignored_versions: ignored_versions,
+              allowed_versions: allowed_versions,
               raise_on_ignored: @raise_on_ignored,
               security_advisories: [],
               cooldown_options: @cooldown_options,

@@ -16,7 +16,7 @@ require "dependabot/package/release_cooldown_options"
 
 module Dependabot
   module Package
-    class PackageLatestVersionFinder
+    class PackageLatestVersionFinder # rubocop:disable Metrics/ClassLength
       extend T::Sig
       extend T::Helpers
 
@@ -34,6 +34,9 @@ module Dependabot
       sig { returns(T::Array[String]) }
       attr_reader :ignored_versions
 
+      sig { returns(T::Array[String]) }
+      attr_reader :allowed_versions
+
       sig { returns(T::Array[SecurityAdvisory]) }
       attr_reader :security_advisories
 
@@ -50,6 +53,7 @@ module Dependabot
           credentials: T::Array[Dependabot::Credential],
           ignored_versions: T::Array[String],
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
+          allowed_versions: T::Array[String],
           cooldown_options: T.nilable(ReleaseCooldownOptions),
           raise_on_ignored: T::Boolean,
           options: T::Hash[Symbol, T.untyped]
@@ -61,6 +65,7 @@ module Dependabot
         credentials:,
         ignored_versions:,
         security_advisories:,
+        allowed_versions: [],
         cooldown_options: nil,
         raise_on_ignored: false,
         options: {}
@@ -69,6 +74,7 @@ module Dependabot
         @dependency_files    = dependency_files
         @credentials         = credentials
         @ignored_versions    = ignored_versions
+        @allowed_versions    = T.let(allowed_versions, T::Array[String])
         @security_advisories = security_advisories
         @cooldown_options = cooldown_options
         @raise_on_ignored    = raise_on_ignored
@@ -259,15 +265,17 @@ module Dependabot
           .returns(T::Array[Dependabot::Package::PackageRelease])
       end
       def filter_ignored_versions(releases)
-        filtered = releases
-                   .reject do |release|
-          ignore_requirements.any? do |r|
-            r.satisfied_by?(release.version)
-          end
+        after_ignore = releases.reject do |release|
+          ignore_requirements.any? { |r| r.satisfied_by?(release.version) }
         end
-        if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(releases).any?
+
+        # AllVersionsIgnored must only fire when the *ignore* filter emptied the
+        # candidates, not when the allow filter does — they are separate signals.
+        if @raise_on_ignored && filter_lower_versions(after_ignore).empty? && filter_lower_versions(releases).any?
           raise Dependabot::AllVersionsIgnored
         end
+
+        filtered = filter_allowed_versions(after_ignore)
 
         if releases.count > filtered.count
           Dependabot.logger.info("Filtered out #{releases.count - filtered.count} ignored versions")
@@ -334,6 +342,27 @@ module Dependabot
       sig { returns(T::Array[T.untyped]) }
       def ignore_requirements
         ignored_versions.flat_map { |req| requirement_class.requirements_array(req) }
+      end
+
+      # Each entry in allowed_versions is one band. Commas within an entry are
+      # AND-ed (a single compound Requirement). Separate entries are OR-ed: a
+      # release passes if it satisfies ALL constraints in ANY single entry.
+      sig { returns(T::Array[T::Array[T.untyped]]) }
+      def allow_requirement_groups
+        allowed_versions.map { |entry| requirement_class.requirements_array(entry) }
+      end
+
+      sig do
+        params(releases: T::Array[Dependabot::Package::PackageRelease])
+          .returns(T::Array[Dependabot::Package::PackageRelease])
+      end
+      def filter_allowed_versions(releases)
+        return releases if allowed_versions.empty?
+
+        groups = allow_requirement_groups
+        releases.select do |release|
+          groups.any? { |group| group.all? { |req| req.satisfied_by?(release.version) } }
+        end
       end
 
       sig { returns(T.class_of(Dependabot::Version)) }

@@ -24,7 +24,8 @@ module Dependabot
             ignored_versions: T::Array[String],
             raise_on_ignored: T::Boolean,
             security_advisories: T::Array[Dependabot::SecurityAdvisory],
-            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
+            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
+            allowed_versions: T::Array[String]
           ).void
         end
         def initialize(
@@ -34,7 +35,8 @@ module Dependabot
           ignored_versions:,
           raise_on_ignored:,
           security_advisories:,
-          cooldown_options:
+          cooldown_options:,
+          allowed_versions: []
         )
           @raise_on_ignored = T.let(raise_on_ignored, T::Boolean)
           @cooldown_options = T.let(cooldown_options, T.nilable(Dependabot::Package::ReleaseCooldownOptions))

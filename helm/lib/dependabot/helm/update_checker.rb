@@ -117,10 +117,10 @@ module Dependabot
       sig { params(releases: T::Array[T::Hash[String, T.untyped]]).returns(T::Array[T::Hash[String, T.untyped]]) }
       def filter_valid_releases(releases)
         releases.reject do |release|
-          version_class.new(release["version"]) <= version_class.new(dependency.version) ||
-            ignore_requirements.any? do |r|
-              r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(version_class.new(release["version"]))
-            end
+          v = version_class.new(release["version"])
+          v <= version_class.new(dependency.version) ||
+            ignore_requirements.any? { |r| r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(v) } ||
+            !version_allowed?(v)
         end
       end
 
@@ -295,11 +295,19 @@ module Dependabot
       sig { params(all_versions: T::Array[String]).returns(T::Array[String]) }
       def filter_valid_versions(all_versions)
         all_versions.reject do |version|
-          version_class.new(version) <= version_class.new(dependency.version) ||
-            ignore_requirements.any? do |r|
-              r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(version_class.new(version))
-            end
+          v = version_class.new(version)
+          v <= version_class.new(dependency.version) ||
+            ignore_requirements.any? { |r| r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(v) } ||
+            !version_allowed?(v)
         end
+      end
+
+      sig { params(version: T.untyped).returns(T::Boolean) }
+      def version_allowed?(version)
+        return true if allowed_versions.empty?
+
+        groups = allowed_versions.map { |e| requirement_class.requirements_array(e) }
+        groups.any? { |group| group.all? { |req| req.satisfied_by?(version) } }
       end
 
       sig { returns(T.nilable(Gem::Version)) }
@@ -314,6 +322,7 @@ module Dependabot
                              dependency_files: dependency_files,
                              credentials: credentials,
                              ignored_versions: ignored_versions,
+                             allowed_versions: allowed_versions,
                              security_advisories: security_advisories,
                              raise_on_ignored: raise_on_ignored,
                              update_cooldown: update_cooldown
@@ -324,6 +333,7 @@ module Dependabot
                              dependency_files: dependency_files,
                              credentials: credentials,
                              ignored_versions: ignored_versions,
+                             allowed_versions: allowed_versions,
                              security_advisories: security_advisories,
                              raise_on_ignored: raise_on_ignored
                            )

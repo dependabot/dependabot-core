@@ -297,6 +297,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
         credentials: credentials,
         dependency_files: dependency_files,
         ignored_versions: ignored_versions,
+        allowed_versions: [],
         raise_on_ignored: false,
         security_advisories: security_advisories,
         cooldown_options: nil
@@ -752,6 +753,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
           credentials: credentials,
           dependency_files: dependency_files,
           ignored_versions: ignored_versions,
+          allowed_versions: [],
           raise_on_ignored: false,
           security_advisories: security_advisories,
           cooldown_options: nil

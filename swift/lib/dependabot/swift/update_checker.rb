@@ -187,7 +187,8 @@ module Dependabot
           dependency: dependency,
           credentials: credentials,
           cooldown_options: update_cooldown,
-          git_commit_checker: git_commit_checker
+          git_commit_checker: git_commit_checker,
+          allowed_versions: allowed_versions
         )
       end
 
@@ -269,7 +270,16 @@ module Dependabot
       sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def lowest_security_fix_version_tag
         tags = git_commit_checker.local_tags_for_allowed_versions
+        tags = filter_tags_by_allowed_versions(tags)
         find_lowest_secure_version(tags)
+      end
+
+      sig { params(tags: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      def filter_tags_by_allowed_versions(tags)
+        return tags if allowed_versions.empty?
+
+        groups = allowed_versions.map { |entry| requirement_class.requirements_array(entry) }
+        tags.select { |tag| groups.any? { |group| group.all? { |req| req.satisfied_by?(tag.fetch(:version)) } } }
       end
 
       sig { params(tags: T::Array[T::Hash[Symbol, T.untyped]]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }

@@ -38,6 +38,9 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
 
+        sig { returns(T::Array[String]) }
+        attr_reader :allowed_versions
+
         sig do
           params(
             dependency: Dependency,
@@ -45,7 +48,8 @@ module Dependabot
             dependency_files: T::Array[Dependabot::DependencyFile],
             ignored_versions: T::Array[String],
             latest_allowable_version: T.nilable(T.any(String, Gem::Version)),
-            repo_contents_path: T.nilable(String)
+            repo_contents_path: T.nilable(String),
+            allowed_versions: T::Array[String]
           ).void
         end
         def initialize(
@@ -54,12 +58,14 @@ module Dependabot
           dependency_files:,
           ignored_versions:,
           latest_allowable_version:,
-          repo_contents_path:
+          repo_contents_path:,
+          allowed_versions: []
         )
           @dependency = dependency
           @credentials = credentials
           @dependency_files = dependency_files
           @ignored_versions = ignored_versions
+          @allowed_versions = T.let(allowed_versions, T::Array[String])
           @latest_allowable_version = latest_allowable_version
           @repo_contents_path = repo_contents_path
         end

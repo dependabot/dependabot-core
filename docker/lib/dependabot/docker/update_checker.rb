@@ -264,6 +264,7 @@ module Dependabot
         candidate_tags = remove_version_downgrades(candidate_tags, version_tag)
         candidate_tags = remove_prereleases(candidate_tags, version_tag)
         candidate_tags = filter_ignored(candidate_tags)
+        candidate_tags = filter_allowed_versions_tags(candidate_tags)
         candidate_tags = sort_tags(candidate_tags, version_tag)
         candidate_tags = apply_cooldown(candidate_tags)
 
@@ -826,6 +827,17 @@ module Dependabot
         return -1 if b_match && !a_match
 
         0
+      end
+
+      sig { params(candidate_tags: T::Array[Dependabot::Docker::Tag]).returns(T::Array[Dependabot::Docker::Tag]) }
+      def filter_allowed_versions_tags(candidate_tags)
+        return candidate_tags if allowed_versions.empty?
+
+        groups = allowed_versions.map { |entry| requirement_class.requirements_array(entry) }
+        candidate_tags.select do |tag|
+          version = comparable_version_from(tag)
+          groups.any? { |group| group.all? { |req| req.satisfied_by?(version) } }
+        end
       end
 
       sig { params(candidate_tags: T::Array[Dependabot::Docker::Tag]).returns(T::Array[Dependabot::Docker::Tag]) }

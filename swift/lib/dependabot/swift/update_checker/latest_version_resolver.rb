@@ -21,13 +21,15 @@ module Dependabot
             dependency: Dependabot::Dependency,
             credentials: T::Array[Dependabot::Credential],
             cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
-            git_commit_checker: Dependabot::GitCommitChecker
+            git_commit_checker: Dependabot::GitCommitChecker,
+            allowed_versions: T::Array[String]
           ).void
         end
-        def initialize(dependency:, credentials:, cooldown_options:, git_commit_checker:)
+        def initialize(dependency:, credentials:, cooldown_options:, git_commit_checker:, allowed_versions: [])
           @dependency = dependency
           @credentials = credentials
           @cooldown_options = cooldown_options
+          @allowed_versions = T.let(allowed_versions, T::Array[String])
           @git_commit_checker = T.let(
             git_commit_checker,
             Dependabot::GitCommitChecker
@@ -52,14 +54,13 @@ module Dependabot
         # it will return the latest version tag from the git_commit_checker, as before.
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_version_tag
-          # step one fetch allowed version tags and
-          return git_commit_checker.local_tag_for_latest_version unless cooldown_enabled?
+          return git_commit_checker.local_tag_for_latest_version if !cooldown_enabled? && @allowed_versions.empty?
 
           allowed_version_tags = git_commit_checker.allowed_version_tags
-          select_version_tags_in_cooldown_period&.each do |tag_name|
-            # filter out if name is in cooldown period
-            allowed_version_tags.reject! do |gitref_filtered|
-              gitref_filtered.name == tag_name
+          allowed_version_tags = filter_allowed_versions_refs(allowed_version_tags)
+          if cooldown_enabled?
+            select_version_tags_in_cooldown_period&.each do |tag_name|
+              allowed_version_tags.reject! { |gitref_filtered| gitref_filtered.name == tag_name }
             end
           end
 
@@ -153,6 +154,25 @@ module Dependabot
             ),
             T.nilable(Package::PackageDetailsFetcher)
           )
+        end
+
+        sig { params(version_refs: T::Array[Dependabot::GitRef]).returns(T::Array[Dependabot::GitRef]) }
+        def filter_allowed_versions_refs(version_refs)
+          return version_refs if @allowed_versions.empty?
+
+          groups = @allowed_versions.map { |entry| requirement_class.requirements_array(entry) }
+          version_refs.select do |ref|
+            version_str = ref.name.delete("v")
+            next false unless version_class.correct?(version_str)
+
+            version = version_class.new(version_str)
+            groups.any? { |group| group.all? { |req| req.satisfied_by?(version) } }
+          end
+        end
+
+        sig { returns(T.class_of(Dependabot::Requirement)) }
+        def requirement_class
+          dependency.requirement_class
         end
 
         sig { returns(T::Boolean) }

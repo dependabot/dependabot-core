@@ -1587,4 +1587,140 @@ RSpec.describe Dependabot::Job do
       end
     end
   end
+
+  describe "#allowed_versions_for" do
+    subject(:allowed) { job.allowed_versions_for(dependency) }
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        package_manager: "bundler",
+        version: "1.8.0",
+        requirements: [{ file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }]
+      )
+    end
+
+    context "with no versions in allowed_updates" do
+      let(:allowed_updates) do
+        [{ "dependency-type" => "direct", "update-type" => "all" }]
+      end
+
+      it "returns an empty array" do
+        expect(allowed).to eq([])
+      end
+    end
+
+    context "with a matching rule that has versions" do
+      let(:allowed_updates) do
+        [{ "dependency-name" => "business", "versions" => [">= 2.0.0", "< 3.0.0"] }]
+      end
+
+      it "returns the version requirements" do
+        expect(allowed).to eq([">= 2.0.0", "< 3.0.0"])
+      end
+    end
+
+    context "with a rule that has versions but does not match the dependency" do
+      let(:allowed_updates) do
+        [{ "dependency-name" => "other-gem", "versions" => [">= 2.0.0"] }]
+      end
+
+      it "returns an empty array" do
+        expect(allowed).to eq([])
+      end
+    end
+
+    context "with a wildcard dependency-name and versions" do
+      let(:allowed_updates) do
+        [{ "dependency-name" => "*", "versions" => [">= 2.0.0"] }]
+      end
+
+      it "returns the version requirements" do
+        expect(allowed).to eq([">= 2.0.0"])
+      end
+    end
+
+    context "with multiple matching rules" do
+      let(:allowed_updates) do
+        [
+          { "dependency-name" => "business", "versions" => [">= 2.0.0"] },
+          { "dependency-name" => "business", "versions" => ["< 3.0.0"] }
+        ]
+      end
+
+      it "returns the union of all version requirements" do
+        expect(allowed).to eq([">= 2.0.0", "< 3.0.0"])
+      end
+    end
+
+    context "when security_updates_only is true" do
+      let(:security_updates_only) { true }
+      let(:allowed_updates) do
+        [{ "dependency-name" => "business", "versions" => [">= 2.0.0"] }]
+      end
+
+      it "returns an empty array (security updates bypass allowed_versions)" do
+        expect(allowed).to eq([])
+      end
+    end
+
+    context "with dependency-type scoping" do
+      context "when rule has dependency-type: production and dependency is direct/production" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            package_manager: "bundler",
+            version: "1.8.0",
+            requirements: [{ file: "Gemfile", requirement: "~> 1.8.0", groups: ["default"], source: nil }]
+          )
+        end
+
+        let(:allowed_updates) do
+          [{ "dependency-name" => "business", "dependency-type" => "production", "versions" => [">= 2.0.0"] }]
+        end
+
+        it "returns the version requirements" do
+          expect(allowed).to eq([">= 2.0.0"])
+        end
+      end
+
+      context "when rule has dependency-type: development but dependency is production" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            package_manager: "bundler",
+            version: "1.8.0",
+            requirements: [{ file: "Gemfile", requirement: "~> 1.8.0", groups: ["default"], source: nil }]
+          )
+        end
+
+        let(:allowed_updates) do
+          [{ "dependency-name" => "business", "dependency-type" => "development", "versions" => [">= 2.0.0"] }]
+        end
+
+        it "returns empty (type mismatch)" do
+          expect(allowed).to eq([])
+        end
+      end
+
+      context "when rule has dependency-type: indirect but dependency is direct" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "business",
+            package_manager: "bundler",
+            version: "1.8.0",
+            requirements: [{ file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }]
+          )
+        end
+
+        let(:allowed_updates) do
+          [{ "dependency-name" => "business", "dependency-type" => "indirect", "versions" => [">= 2.0.0"] }]
+        end
+
+        it "returns empty (direct dep doesn't match indirect rule)" do
+          expect(allowed).to eq([])
+        end
+      end
+    end
+  end
 end

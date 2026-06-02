@@ -19,6 +19,7 @@ module Dependabot
           ignored_versions: T::Array[String],
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
           raise_on_ignored: T::Boolean,
+          allowed_versions: T::Array[String],
           cooldown_config: T.nilable(T::Hash[Symbol, T.untyped]),
           custom_registries: T::Array[T::Hash[Symbol, String]]
         ).void
@@ -30,6 +31,7 @@ module Dependabot
         ignored_versions:,
         security_advisories:,
         raise_on_ignored:,
+        allowed_versions: [],
         cooldown_config: nil,
         custom_registries: []
       )
@@ -37,6 +39,7 @@ module Dependabot
         @dependency_files = dependency_files
         @credentials = credentials
         @ignored_versions = ignored_versions
+        @allowed_versions = T.let(allowed_versions, T::Array[String])
         @security_advisories = security_advisories
         @raise_on_ignored = raise_on_ignored
         @cooldown_config = cooldown_config
@@ -61,6 +64,9 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       attr_reader :ignored_versions
+
+      sig { returns(T::Array[String]) }
+      attr_reader :allowed_versions
 
       sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
       attr_reader :security_advisories
@@ -128,20 +134,37 @@ module Dependabot
 
       sig { params(versions: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
       def filter_ignored_versions(versions)
-        filtered = versions.reject do |version|
+        after_ignore = versions.reject do |version|
           ignore_requirements.any? { |req| req.satisfied_by?(version) }
         end
+
+        # AllVersionsIgnored must only fire when the ignore filter (not the allow
+        # filter) emptied the candidates.
+        if raise_on_ignored && filter_lower_versions(after_ignore).empty? && filter_lower_versions(versions).any?
+          Dependabot.logger.info("All updates for #{dependency.name} were ignored")
+          raise Dependabot::AllVersionsIgnored
+        end
+
+        filtered = filter_allowed_versions(after_ignore)
 
         if versions.count > filtered.count
           Dependabot.logger.info("Filtered out #{versions.count - filtered.count} ignored versions")
         end
 
-        if raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions).any?
-          Dependabot.logger.info("All updates for #{dependency.name} were ignored")
-          raise Dependabot::AllVersionsIgnored
-        end
-
         filtered
+      end
+
+      # Each entry in allowed_versions is OR-ed; commas within one entry are AND-ed.
+      sig { params(versions: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
+      def filter_allowed_versions(versions)
+        return versions if allowed_versions.empty?
+
+        groups = allowed_versions.map do |entry|
+          Dependabot::Julia::Requirement.requirements_array(entry)
+        end
+        versions.select do |version|
+          groups.any? { |group| group.all? { |req| req.satisfied_by?(version) } }
+        end
       end
 
       sig { params(versions: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }

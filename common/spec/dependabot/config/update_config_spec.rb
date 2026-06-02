@@ -465,4 +465,206 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       end
     end
   end
+
+  describe "#allowed_versions_for" do
+    subject(:allowed_versions) { config.allowed_versions_for(dependency, security_updates_only: security_updates_only) }
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "@types/node",
+        requirements: [],
+        version: "12.12.6",
+        package_manager: "dummy"
+      )
+    end
+    let(:allow_conditions) { [] }
+    let(:config) { described_class.new(ignore_conditions: [], allow_conditions: allow_conditions) }
+    let(:security_updates_only) { false }
+
+    it "returns empty when no allow conditions are defined" do
+      expect(allowed_versions).to eq([])
+    end
+
+    context "with a matching allow condition that has versions" do
+      let(:allow_conditions) do
+        [Dependabot::Config::AllowCondition.new(
+          dependency_name: "@types/node",
+          versions: [">= 14.0.0", "< 15.0.0"]
+        )]
+      end
+
+      it "returns the versions" do
+        expect(allowed_versions).to eq([">= 14.0.0", "< 15.0.0"])
+      end
+
+      context "with security_updates_only: true" do
+        let(:security_updates_only) { true }
+
+        it "returns empty (security updates bypass allowed_versions)" do
+          expect(allowed_versions).to eq([])
+        end
+      end
+    end
+
+    context "with a matching allow condition that has no versions" do
+      let(:allow_conditions) do
+        [Dependabot::Config::AllowCondition.new(dependency_name: "@types/node")]
+      end
+
+      it "returns empty" do
+        expect(allowed_versions).to eq([])
+      end
+    end
+
+    context "with a wildcard dependency name" do
+      let(:allow_conditions) do
+        [
+          Dependabot::Config::AllowCondition.new(
+            dependency_name: "@types/*",
+            versions: [">= 14.0.0", "< 15.0.0"]
+          ),
+          Dependabot::Config::AllowCondition.new(
+            dependency_name: "eslint",
+            versions: [">= 8.0.0"]
+          )
+        ]
+      end
+
+      it "returns only versions from matching conditions" do
+        expect(allowed_versions).to eq([">= 14.0.0", "< 15.0.0"])
+      end
+    end
+
+    context "with multiple matching conditions" do
+      let(:allow_conditions) do
+        [
+          Dependabot::Config::AllowCondition.new(
+            dependency_name: "@types/*",
+            versions: [">= 14.0.0"]
+          ),
+          Dependabot::Config::AllowCondition.new(
+            dependency_name: "@types/node",
+            versions: ["< 15.0.0"]
+          )
+        ]
+      end
+
+      it "returns the union of all matching versions" do
+        expect(allowed_versions).to eq([">= 14.0.0", "< 15.0.0"])
+      end
+    end
+
+    context "with no matching conditions" do
+      let(:allow_conditions) do
+        [Dependabot::Config::AllowCondition.new(
+          dependency_name: "eslint",
+          versions: [">= 8.0.0"]
+        )]
+      end
+
+      it "returns empty" do
+        expect(allowed_versions).to eq([])
+      end
+    end
+
+    context "with dependency_type scoping" do
+      let(:production_dep) do
+        Dependabot::Dependency.new(
+          name: "@types/node",
+          requirements: [{ requirement: ">= 12", file: "Gemfile", groups: ["default"], source: nil }],
+          version: "12.12.6",
+          package_manager: "dummy"
+        )
+      end
+
+      let(:dev_dep) do
+        Dependabot::Dependency.new(
+          name: "@types/node",
+          requirements: [{ requirement: ">= 12", file: "Gemfile", groups: ["development"], source: nil }],
+          version: "12.12.6",
+          package_manager: "dummy"
+        )
+      end
+
+      let(:indirect_dep) do
+        Dependabot::Dependency.new(
+          name: "@types/node",
+          requirements: [],
+          version: "12.12.6",
+          package_manager: "dummy"
+        )
+      end
+
+      context "when rule has dependency_type: production" do
+        let(:allow_conditions) do
+          [Dependabot::Config::AllowCondition.new(
+            dependency_name: "@types/node",
+            versions: [">= 14.0.0"],
+            dependency_type: "production"
+          )]
+        end
+
+        it "applies to a production dependency" do
+          expect(config.allowed_versions_for(production_dep)).to eq([">= 14.0.0"])
+        end
+
+        it "does not apply to a dev dependency" do
+          expect(config.allowed_versions_for(dev_dep)).to eq([])
+        end
+
+        it "does not apply to an indirect dependency" do
+          expect(config.allowed_versions_for(indirect_dep)).to eq([])
+        end
+      end
+
+      context "when rule has dependency_type: development" do
+        let(:allow_conditions) do
+          [Dependabot::Config::AllowCondition.new(
+            dependency_name: "@types/node",
+            versions: [">= 14.0.0"],
+            dependency_type: "development"
+          )]
+        end
+
+        it "does not apply to a production dependency" do
+          expect(config.allowed_versions_for(production_dep)).to eq([])
+        end
+
+        it "applies to a dev dependency" do
+          expect(config.allowed_versions_for(dev_dep)).to eq([">= 14.0.0"])
+        end
+      end
+
+      context "when rule has dependency_type: all" do
+        let(:allow_conditions) do
+          [Dependabot::Config::AllowCondition.new(
+            dependency_name: "@types/node",
+            versions: [">= 14.0.0"],
+            dependency_type: "all"
+          )]
+        end
+
+        it "applies to any dependency type" do
+          expect(config.allowed_versions_for(production_dep)).to eq([">= 14.0.0"])
+          expect(config.allowed_versions_for(dev_dep)).to eq([">= 14.0.0"])
+          expect(config.allowed_versions_for(indirect_dep)).to eq([">= 14.0.0"])
+        end
+      end
+
+      context "when rule has no dependency_type (defaults to all)" do
+        let(:allow_conditions) do
+          [Dependabot::Config::AllowCondition.new(
+            dependency_name: "@types/node",
+            versions: [">= 14.0.0"]
+          )]
+        end
+
+        it "applies to any dependency type" do
+          expect(config.allowed_versions_for(production_dep)).to eq([">= 14.0.0"])
+          expect(config.allowed_versions_for(dev_dep)).to eq([">= 14.0.0"])
+          expect(config.allowed_versions_for(indirect_dep)).to eq([">= 14.0.0"])
+        end
+      end
+    end
+  end
 end

@@ -237,6 +237,7 @@ module Dependabot
             repo_contents_path: job.repo_contents_path,
             credentials: job.credentials,
             ignored_versions: job.ignore_conditions_for(dependency),
+            allowed_versions: job.allowed_versions_for(dependency),
             security_advisories: job.security_advisories_for(dependency),
             raise_on_ignored: true, # always true for security updates
             requirements_update_strategy: job.requirements_update_strategy,
