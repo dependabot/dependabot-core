@@ -162,6 +162,54 @@ RSpec.describe Dependabot::Python::FileFetcher do
         expect(file_fetcher_instance.files.map(&:name))
           .to eq(["requirements.in"])
       end
+
+      context "when .pip-tools.toml exists" do
+        let(:repo_contents) do
+          <<~JSON
+            [
+              {
+                "name": "requirements.in",
+                "path": "requirements.in",
+                "sha": "abc",
+                "size": 29,
+                "type": "file"
+              },
+              {
+                "name": ".pip-tools.toml",
+                "path": ".pip-tools.toml",
+                "sha": "def",
+                "size": 90,
+                "type": "file"
+              }
+            ]
+          JSON
+        end
+
+        before do
+          stub_request(:get, url + ".pip-tools.toml?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: <<~JSON,
+                {
+                  "name": ".pip-tools.toml",
+                  "path": ".pip-tools.toml",
+                  "sha": "def",
+                  "size": 90,
+                  "type": "file",
+                  "content": "W3BpcC10b29sc10KdW5zYWZlLXBhY2thZ2UgPSAiYWlvaHR0cCIK",
+                  "encoding": "base64"
+                }
+              JSON
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches the pip-tools config as a support file" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to contain_exactly("requirements.in", ".pip-tools.toml")
+        end
+      end
     end
 
     context "with only a requirements.txt" do
