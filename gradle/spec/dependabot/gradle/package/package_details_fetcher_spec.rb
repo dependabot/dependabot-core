@@ -534,5 +534,30 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
         end
       end
     end
+
+    context "when fetching from Maven Central raises EOF" do
+      context "when EOF is transient" do
+        before do
+          stub_request(:get, maven_central_metadata_url)
+            .to_raise(Excon::Error::Socket.new(EOFError.new)).then
+            .to_return(status: 200, body: maven_central_releases)
+        end
+
+        it "retries and returns available versions" do
+          expect(versions.count).to eq(70)
+        end
+      end
+
+      context "when EOF is persistent" do
+        before do
+          stub_request(:get, maven_central_metadata_url)
+            .to_raise(Excon::Error::Socket.new(EOFError.new))
+        end
+
+        it "raises after exhausting retries" do
+          expect { versions }.to raise_error(Excon::Error::Socket)
+        end
+      end
+    end
   end
 end
