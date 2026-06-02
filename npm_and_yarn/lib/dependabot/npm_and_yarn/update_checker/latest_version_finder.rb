@@ -262,8 +262,9 @@ module Dependabot
         rescue Excon::Error::Socket, Excon::Error::Timeout, RegistryError => e
           raise unless package_fetcher.custom_registry? || eof_socket_error?(e)
 
-          # Custom registries can be flaky. We don't want to make that
-          # our problem, so quietly return `nil` here.
+          # Custom registries can be flaky, and the global npm registry can
+          # occasionally terminate connections (EOFError). Don't abort the update
+          # flow for these transient failures; quietly return `nil` here.
           nil
         end
 
