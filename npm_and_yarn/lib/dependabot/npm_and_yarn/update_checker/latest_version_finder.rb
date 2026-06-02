@@ -259,12 +259,17 @@ module Dependabot
         sig { params(_block: T.untyped).returns(T.nilable(Dependabot::Version)) }
         def with_custom_registry_rescue(&_block)
           yield
-        rescue Excon::Error::Socket, Excon::Error::Timeout, RegistryError
-          raise unless package_fetcher.custom_registry?
+        rescue Excon::Error::Socket, Excon::Error::Timeout, RegistryError => e
+          raise unless package_fetcher.custom_registry? || eof_socket_error?(e)
 
           # Custom registries can be flaky. We don't want to make that
           # our problem, so quietly return `nil` here.
           nil
+        end
+
+        sig { params(error: StandardError).returns(T::Boolean) }
+        def eof_socket_error?(error)
+          error.is_a?(Excon::Error::Socket) && error.socket_error.is_a?(EOFError)
         end
 
         sig { returns(T::Boolean) }
