@@ -18,9 +18,9 @@ module Dependabot
         sig { returns(T::Set[String]) }
         attr_reader :modules
 
-        sig { params(modules: T::Set[String]).void }
-        def initialize(modules: Set.new)
-          @modules = modules
+        sig { params(modules: T.nilable(T::Set[String])).void }
+        def initialize(modules: nil)
+          @modules = T.let(modules || Set.new, T::Set[String])
         end
 
         # Captures the current module graph by running `go mod graph`.
@@ -90,7 +90,10 @@ module Dependabot
         # Returns { "module/path" => Set["v1.0.0", "v2.0.0"] }
         sig { params(entries: T::Set[String]).returns(T::Hash[String, T::Set[String]]) }
         def group_by_path(entries)
-          result = T.let(Hash.new { |h, k| h[k] = Set.new }, T::Hash[String, T::Set[String]])
+          result = T.let(
+            Hash.new { |h, k| h[k] = T.let(Set.new, T::Set[String]) },
+            T::Hash[String, T::Set[String]]
+          )
 
           entries.each do |entry|
             at_index = entry.rindex("@")

@@ -207,8 +207,9 @@ module Dependabot
             # Capture the module graph with stubs/substitutions in place, so
             # `go mod graph` runs in the same "safe" state as the go commands
             # below. Capturing before this point fails for repos with local
-            # replace directives, leaving the graph empty.
-            graph_before = GoModGraph.capture
+            # replace directives, leaving the graph empty. Skip entirely when
+            # there is no go.sum, since reconciliation can never run.
+            graph_before = capture_module_graph(original_go_sum)
 
             # Bump the deps we want to upgrade using `go get lib@version`
             run_go_get(dependencies)
@@ -228,8 +229,9 @@ module Dependabot
             end
 
             # Capture the post-update graph while stubs/substitutions are still
-            # active, before reverting them below, for the same reason.
-            graph_after = GoModGraph.capture
+            # active, before reverting them below, for the same reason. Skip
+            # when there is no go.sum to reconcile.
+            graph_after = capture_module_graph(original_go_sum)
 
             substitute_all(substitutions.invert) unless substitutions.empty?
 
@@ -418,6 +420,14 @@ module Dependabot
           SharedHelpers.in_a_temporary_repo_directory(directory, repo_contents_path) do
             SharedHelpers.with_git_configured(credentials: credentials, &block)
           end
+        end
+
+        # Captures the current module graph, but only when the project has a
+        # go.sum to reconcile. Returns an empty graph otherwise, avoiding an
+        # unnecessary `go mod graph` subprocess call.
+        sig { params(original_go_sum: T.nilable(String)).returns(GoModGraph) }
+        def capture_module_graph(original_go_sum)
+          original_go_sum ? GoModGraph.capture : GoModGraph.new
         end
 
         # Diffs the pre- and post-update module graphs and restores
