@@ -830,26 +830,58 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         )
       end
 
-      it "passes --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false to pnpm update" do
-        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-          # Override any minimumReleaseAge set in pnpm-workspace.yaml: security fixes must not be
-          # blocked by a release-age gate the user configured for regular updates.
-          expect(cmd).to include("--config.minimumReleaseAge=0")
-          expect(cmd).to include("--config.minimumReleaseAgeStrict=false")
-          ""
-        end.at_least(:once)
-
-        updater.send(:run_pnpm_update_packages)
-      end
-
-      it "passes --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false to pnpm install" do
-        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-          expect(cmd).to include("--config.minimumReleaseAge=0")
-          expect(cmd).to include("--config.minimumReleaseAgeStrict=false")
-          ""
+      context "and pnpm supports minimumReleaseAge" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:pnpm_supports_minimum_release_age?).and_return(true)
         end
 
-        updater.send(:run_pnpm_install)
+        it "passes --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false to pnpm update" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            # Override any minimumReleaseAge set in pnpm-workspace.yaml: security fixes must not be
+            # blocked by a release-age gate the user configured for regular updates.
+            expect(cmd).to include("--config.minimumReleaseAge=0")
+            expect(cmd).to include("--config.minimumReleaseAgeStrict=false")
+            ""
+          end.at_least(:once)
+
+          updater.send(:run_pnpm_update_packages)
+        end
+
+        it "passes --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false to pnpm install" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            expect(cmd).to include("--config.minimumReleaseAge=0")
+            expect(cmd).to include("--config.minimumReleaseAgeStrict=false")
+            ""
+          end
+
+          updater.send(:run_pnpm_install)
+        end
+      end
+
+      context "and pnpm does not support minimumReleaseAge" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:pnpm_supports_minimum_release_age?).and_return(false)
+        end
+
+        it "does not pass --config.minimumReleaseAge to pnpm update" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            expect(cmd).not_to include("--config.minimumReleaseAge")
+            ""
+          end.at_least(:once)
+
+          updater.send(:run_pnpm_update_packages)
+        end
+
+        it "does not pass --config.minimumReleaseAge to pnpm install" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            expect(cmd).not_to include("--config.minimumReleaseAge")
+            ""
+          end
+
+          updater.send(:run_pnpm_install)
+        end
       end
     end
 
