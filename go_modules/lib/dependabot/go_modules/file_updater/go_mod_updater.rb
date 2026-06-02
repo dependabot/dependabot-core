@@ -198,15 +198,17 @@ module Dependabot
             original_manifest = parse_manifest
             original_go_sum = File.read("go.sum") if File.exist?("go.sum")
 
-            # Capture module graph before updating to detect which modules
-            # actually change, so we can scope go.sum modifications.
-            graph_before = GoModGraph.capture
-
             substitutions = replace_directive_substitutions(original_manifest)
             build_module_stubs(substitutions.values)
 
             # Replace full paths with path hashes in the go.mod
             substitute_all(substitutions)
+
+            # Capture the module graph with stubs/substitutions in place, so
+            # `go mod graph` runs in the same "safe" state as the go commands
+            # below. Capturing before this point fails for repos with local
+            # replace directives, leaving the graph empty.
+            graph_before = GoModGraph.capture
 
             # Bump the deps we want to upgrade using `go get lib@version`
             run_go_get(dependencies)
@@ -223,15 +225,19 @@ module Dependabot
               # dependencies removed by go mod tidy are also removed from vendors.
               run_go_mod_tidy
               run_go_vendor
-            else
-              substitute_all(substitutions.invert)
             end
+
+            # Capture the post-update graph while stubs/substitutions are still
+            # active, before reverting them below, for the same reason.
+            graph_after = GoModGraph.capture
+
+            substitute_all(substitutions.invert) unless substitutions.empty?
 
             updated_go_sum = original_go_sum ? File.read("go.sum") : nil
             updated_go_mod = File.read("go.mod")
 
             if original_go_sum && updated_go_sum
-              updated_go_sum = reconcile_updated_go_sum(original_go_sum, updated_go_sum, graph_before)
+              updated_go_sum = reconcile_updated_go_sum(original_go_sum, updated_go_sum, graph_before, graph_after)
             end
 
             { go_mod: updated_go_mod, go_sum: updated_go_sum }
@@ -414,17 +420,19 @@ module Dependabot
           end
         end
 
-        # Captures the post-update module graph, diffs it against the
-        # pre-update graph, and restores over-pruned go.sum lines.
+        # Diffs the pre- and post-update module graphs and restores
+        # over-pruned go.sum lines. Both graphs are captured by the caller
+        # while stubs/substitutions are active so `go mod graph` succeeds
+        # even for repos with local replace directives.
         sig do
           params(
             original_go_sum: String,
             updated_go_sum: String,
-            graph_before: GoModGraph
+            graph_before: GoModGraph,
+            graph_after: GoModGraph
           ).returns(String)
         end
-        def reconcile_updated_go_sum(original_go_sum, updated_go_sum, graph_before)
-          graph_after = GoModGraph.capture
+        def reconcile_updated_go_sum(original_go_sum, updated_go_sum, graph_before, graph_after)
           return updated_go_sum if graph_before.empty? || graph_after.empty?
 
           reconcile_go_sum(original_go_sum, updated_go_sum, graph_before.changed_modules(graph_after))
