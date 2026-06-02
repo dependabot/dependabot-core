@@ -27,6 +27,11 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModGraph do
         expect(graph.modules).to include("github.com/onsi/gomega@v1.39.0")
       end
 
+      it "excludes the unversioned root module from parsed entries" do
+        graph = described_class.capture
+        expect(graph.modules).not_to include("github.com/test/app")
+      end
+
       it "is not empty" do
         expect(described_class.capture).not_to be_empty
       end
@@ -112,6 +117,17 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModGraph do
       )
 
       expect(graph.changed_modules(graph)).to be_empty
+    end
+  end
+
+  describe "#empty?" do
+    it "returns true when initialized without modules" do
+      expect(described_class.new).to be_empty
+    end
+
+    it "returns false when initialized with modules" do
+      graph = described_class.new(modules: Set["github.com/foo/bar@v1.0.0"])
+      expect(graph).not_to be_empty
     end
   end
 end

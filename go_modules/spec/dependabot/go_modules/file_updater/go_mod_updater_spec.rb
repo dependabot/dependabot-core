@@ -389,6 +389,34 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             end
           end
 
+          context "when graph capture fails" do
+            let(:gonum_gomod_line) do
+              "gonum.org/v1/gonum v0.16.0/go.mod h1:fef3am4MQ93R2HHpKnLk4/Tbh/s0+wqD5nfa6Pnwy4E="
+            end
+
+            before do
+              original_sum = fixture("projects", project_name, "go.sum") +
+                             "#{gonum_gomod_line}\n"
+              pruned_sum = original_sum.lines.reject { |l| l.chomp == gonum_gomod_line }.join
+
+              read_count = 0
+              allow(File).to receive(:read).and_call_original
+              allow(File).to receive(:read).with("go.sum") do
+                read_count += 1
+                read_count == 1 ? original_sum : pruned_sum
+              end
+
+              # Simulate capture failure — returns empty graphs
+              allow(Dependabot::GoModules::FileUpdater::GoModGraph)
+                .to receive(:capture)
+                .and_return(Dependabot::GoModules::FileUpdater::GoModGraph.new)
+            end
+
+            it "skips reconciliation and returns go.sum unchanged" do
+              expect(updated_go_mod_content).not_to include(gonum_gomod_line)
+            end
+          end
+
           describe "a non-existent dependency with a pseudo-version" do
             let(:project_name) { "non_existent_dependency" }
 
@@ -487,6 +515,16 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
           it "doesn't return a go.sum" do
             expect(updater.updated_go_sum_content).to be_nil
+          end
+
+          it "does not invoke go mod graph" do
+            allow(Dependabot::GoModules::FileUpdater::GoModGraph)
+              .to receive(:capture)
+
+            updater.updated_go_sum_content
+
+            expect(Dependabot::GoModules::FileUpdater::GoModGraph)
+              .not_to have_received(:capture)
           end
         end
       end
