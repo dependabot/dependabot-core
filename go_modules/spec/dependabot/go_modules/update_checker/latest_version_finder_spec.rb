@@ -554,5 +554,27 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
         expect(finder.lowest_security_fix_version).not_to eq(Dependabot::GoModules::Version.new("1.2.0-pre2"))
       end
     end
+
+    context "when the advisory boundary is a pseudo-version not listed by the Go proxy" do
+      # The Go proxy only indexes tagged releases. When an advisory references a pseudo-version
+      # as the fix boundary (e.g. "< 1.2.1-0.20260320110106-0b84568fffcc"), the pseudo-version
+      # will not appear in the proxy's version list. In this case all proxy versions are still
+      # vulnerable, and Dependabot must surface the pseudo-version from the advisory itself.
+      let(:fix_pseudo_version) { "1.2.1-0.20260320110106-0b84568fffcc" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "go_modules",
+            vulnerable_versions: ["< #{fix_pseudo_version}"]
+          )
+        ]
+      end
+
+      it "returns the pseudo-version from the advisory boundary as the fix version" do
+        expect(finder.lowest_security_fix_version)
+          .to eq(Dependabot::GoModules::Version.new(fix_pseudo_version))
+      end
+    end
   end
 end
