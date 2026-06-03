@@ -279,22 +279,25 @@ module Dependabot
           current = dependency.numeric_version
 
           security_advisories.flat_map do |advisory|
-            advisory.vulnerable_version_strings.filter_map do |req_string|
-              # Parse requirement strings like "< 2.3.1-0.20260320110106-0b84568fffcc"
-              # to extract the version that represents the fix boundary.
-              version_str = req_string.to_s.gsub(/\A\s*[<>=!]+\s*v?/, "").strip
-              next unless PSEUDO_VERSION_REGEX.match?(version_str)
-              next unless version_class.correct?(version_str)
+            advisory.vulnerable_version_strings.flat_map do |req_string|
+              # Parse each constraint in requirement strings like
+              # ">= 1.1.0, < 2.3.1-0.20260320110106-0b84568fffcc" and extract
+              # any pseudo-version boundary that represents a possible fix.
+              req_string.to_s.split(",").filter_map do |constraint|
+                version_str = constraint.gsub(/\A\s*[<>=!~^]+\s*v?/, "").strip
+                next unless PSEUDO_VERSION_REGEX.match?(version_str)
+                next unless version_class.correct?(version_str)
 
-              candidate = version_class.new(version_str)
-              next if current && candidate <= current
+                candidate = version_class.new(version_str)
+                next if current && candidate <= current
 
-              Dependabot::Package::PackageRelease.new(
-                version: candidate,
-                details: { "version_string" => version_str }
-              )
+                Dependabot::Package::PackageRelease.new(
+                  version: candidate,
+                  details: { "version_string" => version_str }
+                )
+              end
             end
-          end
+          end.uniq(&:version)
         end
 
         sig { returns(T::Boolean) }

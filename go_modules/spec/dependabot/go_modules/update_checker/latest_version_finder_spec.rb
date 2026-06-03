@@ -576,5 +576,23 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
           .to eq(Dependabot::GoModules::Version.new(fix_pseudo_version))
       end
     end
+
+    context "when the advisory boundary is a pseudo-version in a multi-constraint range" do
+      let(:fix_pseudo_version) { "1.2.1-0.20260320110106-0b84568fffcc" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "go_modules",
+            vulnerable_versions: [">= 0, < #{fix_pseudo_version}"]
+          )
+        ]
+      end
+
+      it "returns the pseudo-version from the upper bound as the fix version" do
+        expect(finder.lowest_security_fix_version)
+          .to eq(Dependabot::GoModules::Version.new(fix_pseudo_version))
+      end
+    end
   end
 end
