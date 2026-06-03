@@ -491,8 +491,7 @@ module Dependabot
 
             unless index_name
               Dependabot.logger.debug(
-                "python_index credential did not match any [[tool.uv.index]] entry in pyproject.toml — " \
-                "authentication will rely on the proxy if available"
+                "python_index credential did not match a [[tool.uv.index]] entry; relying on proxy auth"
               )
               next
             end
@@ -501,11 +500,8 @@ module Dependabot
 
             env_vars["UV_INDEX_#{env_name}_USERNAME"] = cred["username"] if cred["username"]
 
-            if cred["password"]
-              env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["password"]
-              Dependabot.logger.info("Configured uv auth env vars for index '#{index_name}'")
-            elsif cred["token"]
-              env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["token"]
+            if cred["password"] || cred["token"]
+              env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["password"] || cred["token"]
               Dependabot.logger.info("Configured uv auth env vars for index '#{index_name}'")
             end
           end
