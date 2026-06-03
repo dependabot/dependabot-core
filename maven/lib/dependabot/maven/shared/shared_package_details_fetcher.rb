@@ -77,11 +77,11 @@ module Dependabot
           type = dependency.requirements.first&.dig(:metadata, :packaging_type) || "jar"
           classifier = dependency.requirements.first&.dig(:metadata, :classifier)
 
-          # Maven's test-jar type is actually published with classifier "tests" and extension "jar"
+          # Maven's test-jar type is published as a normal .jar with the "tests" classifier.
           # See: https://maven.apache.org/guides/mini/guide-attached-tests.html
-          if type == "test-jar" && classifier.nil?
-            classifier = "tests"
+          if type == "test-jar"
             type = "jar"
+            classifier ||= "tests"
           end
 
           actual_classifier = classifier.nil? ? "" : "-#{classifier}"
