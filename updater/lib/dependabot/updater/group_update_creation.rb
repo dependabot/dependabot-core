@@ -134,7 +134,20 @@ module Dependabot
 
           next unless lead_dependency
 
-          dependency_change = create_change_for(lead_dependency, updated_dependencies, dependency_files, group)
+          # Filter updated_dependencies to only include those that match the group.
+          # This prevents file contamination where lockfiles include transitive dependencies
+          # that don't match the group pattern. We filter before file generation rather than
+          # after to ensure the FileUpdater only sees group-eligible dependencies.
+          group_eligible_dependencies = filter_dependencies_for_group(
+            updated_dependencies,
+            group,
+            job.source.directory || "."
+          )
+
+          # Skip if no group-eligible dependencies remain
+          next if group_eligible_dependencies.empty?
+
+          dependency_change = create_change_for(lead_dependency, group_eligible_dependencies, dependency_files, group)
 
           # Move on to the next dependency using the existing files if we
           # could not create a change for any reason
@@ -699,6 +712,56 @@ module Dependabot
           "All versions ignored for #{dependency.name} in group #{group.name} but security advisories exist"
         )
         record_security_update_ignored(checker)
+      end
+
+      # Filters dependencies to only include those eligible for the given group.
+      # Uses the same logic as GroupDependencySelector to ensure consistency.
+      sig do
+        params(
+          dependencies: T::Array[Dependabot::Dependency],
+          group: Dependabot::DependencyGroup,
+          directory: String
+        ).returns(T::Array[Dependabot::Dependency])
+      end
+      def filter_dependencies_for_group(dependencies, group, directory)
+        group_eligible = T.let([], T::Array[Dependabot::Dependency])
+        filtered_out = T.let([], T::Array[Dependabot::Dependency])
+
+        dependencies.each do |dep|
+          if group_contains_dependency?(dep, directory, group) && allowed_by_job_config?(dep)
+            group_eligible << dep
+          else
+            filtered_out << dep
+          end
+        end
+
+        # Log if we filtered out any dependencies
+        if filtered_out.any?
+          Dependabot.logger.info(
+            "[group=#{group.name}, directory=#{directory}] " \
+            "Filtered out #{filtered_out.length} non-group dependencies before file generation: " \
+            "#{filtered_out.map(&:name).join(', ')}"
+          )
+        end
+
+        group_eligible
+      end
+
+      sig { params(dep: Dependabot::Dependency, directory: String, group: Dependabot::DependencyGroup).returns(T::Boolean) }
+      def group_contains_dependency?(dep, directory, group)
+        if group.respond_to?(:contains_dependency?)
+          T.unsafe(group).contains_dependency?(dep, directory: directory)
+        else
+          group.contains?(dep)
+        end
+      end
+
+      sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
+      def allowed_by_job_config?(dep)
+        ignore_conditions = job.ignore_conditions_for(dep)
+        return false if ignore_conditions.any?(Dependabot::Config::IgnoreCondition::ALL_VERSIONS)
+
+        job.allowed_update?(dep, check_previous_version: true)
       end
     end
     # rubocop:enable Metrics/ModuleLength
