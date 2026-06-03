@@ -490,6 +490,7 @@ module Dependabot
           env_vars
         end
 
+        sig { params(cred: Dependabot::Credential, env_vars: T::Hash[String, String]).void }
         def add_index_auth_env_vars(cred, env_vars)
           index_name = find_index_name_for_credential(cred)
 
@@ -501,12 +502,13 @@ module Dependabot
           end
 
           env_name = index_name.upcase.gsub(/[^A-Z0-9]/, "_")
+          username = cred["username"]
           password = cred["password"] || cred["token"]
 
-          env_vars["UV_INDEX_#{env_name}_USERNAME"] = cred["username"] if cred["username"]
+          env_vars["UV_INDEX_#{env_name}_USERNAME"] = username if username
           env_vars["UV_INDEX_#{env_name}_PASSWORD"] = password if password
 
-          return unless cred["username"] || password
+          return unless username || password
 
           Dependabot.logger.info("Configured uv auth env vars for a matched [[tool.uv.index]] entry")
         end
