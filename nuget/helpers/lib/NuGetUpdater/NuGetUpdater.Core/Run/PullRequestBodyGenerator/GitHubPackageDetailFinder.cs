@@ -28,9 +28,11 @@ internal class GitHubPackageDetailFinder : IPackageDetailFinder
         return "commits";
     }
 
-    public async Task<Dictionary<NuGetVersion, (string TagName, string? Details)>> GetReleaseDataForVersionsAsync(string repoName, NuGetVersion oldVersion, NuGetVersion newVersion)
+    public async Task<Dictionary<NuGetVersion, (string TagName, string? Details)>> GetReleaseDataForVersionsAsync(string repoName, string dependencyName, NuGetVersion oldVersion, NuGetVersion newVersion)
     {
         var result = new Dictionary<NuGetVersion, (string TagName, string? Details)>();
+        var packageScopedResult = new Dictionary<NuGetVersion, (string TagName, string? Details)>();
+        var otherPackageScopedResult = new Dictionary<NuGetVersion, (string TagName, string? Details)>();
         var url = $"https://api.github.com/repos/{repoName}/releases?per_page=100";
         var jsonOption = await _httpFetcher.GetJsonElementAsync(url);
         if (jsonOption is null)
@@ -75,7 +77,10 @@ internal class GitHubPackageDetailFinder : IPackageDetailFinder
             var tagName = tagNameElement.GetString()!;
 
             // find matching version
-            var correspondingVersion = IPackageDetailFinder.GetVersionFromNames(releaseName, tagName);
+            var packageScopedVersion = IPackageDetailFinder.GetPackageScopedVersionFromNames(releaseName, tagName, dependencyName);
+            var correspondingVersion = packageScopedVersion ?? IPackageDetailFinder.GetVersionFromNames(releaseName, tagName);
+            var isOtherPackageScopedVersion = packageScopedVersion is null &&
+                IPackageDetailFinder.HasPackageScopedVersionForOtherDependency(releaseName, tagName, dependencyName);
             if (correspondingVersion is null)
             {
                 continue;
@@ -90,8 +95,34 @@ internal class GitHubPackageDetailFinder : IPackageDetailFinder
                 }
 
                 var body = bodyElement.GetString()!;
-                result[correspondingVersion] = (tagName, body);
+                if (packageScopedVersion is not null)
+                {
+                    packageScopedResult[correspondingVersion] = (tagName, body);
+                }
+                else if (isOtherPackageScopedVersion)
+                {
+                    otherPackageScopedResult[correspondingVersion] = (tagName, body);
+                }
+                else
+                {
+                    result[correspondingVersion] = (tagName, body);
+                }
             }
+        }
+
+        if (packageScopedResult.Count > 0)
+        {
+            foreach (var packageScopedDetails in packageScopedResult)
+            {
+                result[packageScopedDetails.Key] = packageScopedDetails.Value;
+            }
+
+            return result;
+        }
+
+        foreach (var otherPackageScopedDetails in otherPackageScopedResult)
+        {
+            result[otherPackageScopedDetails.Key] = otherPackageScopedDetails.Value;
         }
 
         return result;

@@ -28,9 +28,11 @@ internal class GitLabPackageDetailFinder : IPackageDetailFinder
         return "-/commits";
     }
 
-    public async Task<Dictionary<NuGetVersion, (string TagName, string? Details)>> GetReleaseDataForVersionsAsync(string repoName, NuGetVersion oldVersion, NuGetVersion newVersion)
+    public async Task<Dictionary<NuGetVersion, (string TagName, string? Details)>> GetReleaseDataForVersionsAsync(string repoName, string dependencyName, NuGetVersion oldVersion, NuGetVersion newVersion)
     {
         var result = new Dictionary<NuGetVersion, (string TagName, string? Details)>();
+        var packageScopedResult = new Dictionary<NuGetVersion, (string TagName, string? Details)>();
+        var otherPackageScopedResult = new Dictionary<NuGetVersion, (string TagName, string? Details)>();
         var url = $"https://gitlab.com/api/v4/projects/{Uri.EscapeDataString(repoName)}/repository/tags";
         var jsonOption = await _httpFetcher.GetJsonElementAsync(url);
         if (jsonOption is null)
@@ -85,7 +87,10 @@ internal class GitLabPackageDetailFinder : IPackageDetailFinder
             }
 
             // find matching version
-            var correspondingVersion = IPackageDetailFinder.GetVersionFromNames(releaseName, tagName);
+            var packageScopedVersion = IPackageDetailFinder.GetPackageScopedVersionFromNames(releaseName, tagName, dependencyName);
+            var correspondingVersion = packageScopedVersion ?? IPackageDetailFinder.GetVersionFromNames(releaseName, tagName);
+            var isOtherPackageScopedVersion = packageScopedVersion is null &&
+                IPackageDetailFinder.HasPackageScopedVersionForOtherDependency(releaseName, tagName, dependencyName);
             if (correspondingVersion is null)
             {
                 continue;
@@ -96,8 +101,34 @@ internal class GitLabPackageDetailFinder : IPackageDetailFinder
                 correspondingVersion >= oldVersion &&
                 correspondingVersion <= newVersion)
             {
-                result[correspondingVersion] = (resultTag, description);
+                if (packageScopedVersion is not null)
+                {
+                    packageScopedResult[correspondingVersion] = (resultTag, description);
+                }
+                else if (isOtherPackageScopedVersion)
+                {
+                    otherPackageScopedResult[correspondingVersion] = (resultTag, description);
+                }
+                else
+                {
+                    result[correspondingVersion] = (resultTag, description);
+                }
             }
+        }
+
+        if (packageScopedResult.Count > 0)
+        {
+            foreach (var packageScopedDetails in packageScopedResult)
+            {
+                result[packageScopedDetails.Key] = packageScopedDetails.Value;
+            }
+
+            return result;
+        }
+
+        foreach (var otherPackageScopedDetails in otherPackageScopedResult)
+        {
+            result[otherPackageScopedDetails.Key] = otherPackageScopedDetails.Value;
         }
 
         return result;

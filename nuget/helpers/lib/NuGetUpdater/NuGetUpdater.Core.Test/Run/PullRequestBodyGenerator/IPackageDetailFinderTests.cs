@@ -27,4 +27,28 @@ public class IPackageDetailFinderTests
             Assert.Equal(expectedVersion, actualVersion.ToString());
         }
     }
+
+    [Theory]
+    [InlineData("some.package", "some.package v1.0.0", "other.package v2.0.0", "1.0.0")]
+    [InlineData("some.package", "other.package v2.0.0", "some.package-v1.0.0", "1.0.0")]
+    [InlineData("some.package", "packages/some.package/1.0.0", "other.package v2.0.0", "1.0.0")]
+    [InlineData("some.package", "other.package v2.0.0", "v1.0.0", "2.0.0")]
+    public void GetVersionFromNames_WithDependencyName(string dependencyName, string releaseName, string tagName, string expectedVersion)
+    {
+        var actualVersion = IPackageDetailFinder.GetVersionFromNames(releaseName, tagName, dependencyName);
+
+        Assert.NotNull(actualVersion);
+        Assert.Equal(expectedVersion, actualVersion.ToString());
+    }
+
+    [Theory]
+    [InlineData("some.package", "other.package v1.0.0", "v1.0.0", true)]
+    [InlineData("some.package", "some.package v1.0.0", "v1.0.0", false)]
+    [InlineData("some.package", "release 1.0.0", "v1.0.0", false)]
+    public void HasPackageScopedVersionForOtherDependency(string dependencyName, string releaseName, string tagName, bool expectedResult)
+    {
+        var actualResult = IPackageDetailFinder.HasPackageScopedVersionForOtherDependency(releaseName, tagName, dependencyName);
+
+        Assert.Equal(expectedResult, actualResult);
+    }
 }
