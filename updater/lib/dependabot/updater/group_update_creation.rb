@@ -845,7 +845,7 @@ module Dependabot
 
         # Helper to check if a group contains a dependency
         contains_checker = T.let(
-          proc { |g, dependency, dir|
+          Kernel.proc { |g, dependency, dir|
             if g.respond_to?(:contains_dependency?)
               T.unsafe(g).contains_dependency?(dependency, directory: dir)
             else
