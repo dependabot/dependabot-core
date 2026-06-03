@@ -491,7 +491,7 @@ module Dependabot
 
             unless index_name
               Dependabot.logger.debug(
-                "python_index credential did not match a [[tool.uv.index]] entry; relying on proxy auth"
+                "python_index credential did not match a [[tool.uv.index]] entry; skipping UV_INDEX_* env vars"
               )
               next
             end
@@ -502,7 +502,10 @@ module Dependabot
 
             if cred["password"] || cred["token"]
               env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["password"] || cred["token"]
-              Dependabot.logger.info("Configured uv auth env vars for index '#{index_name}'")
+            end
+
+            if cred["username"] || cred["password"] || cred["token"]
+              Dependabot.logger.info("Configured uv auth env vars for a matched [[tool.uv.index]] entry")
             end
           end
 
