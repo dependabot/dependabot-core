@@ -485,31 +485,30 @@ module Dependabot
           env_vars = {}
 
           python_index_creds = credentials.select { |cred| cred["type"] == "python_index" }
-
-          python_index_creds.each do |cred|
-            index_name = find_index_name_for_credential(cred)
-
-            unless index_name
-              Dependabot.logger.debug(
-                "python_index credential did not match a [[tool.uv.index]] entry; skipping UV_INDEX_* env vars"
-              )
-              next
-            end
-
-            env_name = index_name.upcase.gsub(/[^A-Z0-9]/, "_")
-
-            env_vars["UV_INDEX_#{env_name}_USERNAME"] = cred["username"] if cred["username"]
-
-            if cred["password"] || cred["token"]
-              env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["password"] || cred["token"]
-            end
-
-            if cred["username"] || cred["password"] || cred["token"]
-              Dependabot.logger.info("Configured uv auth env vars for a matched [[tool.uv.index]] entry")
-            end
-          end
+          python_index_creds.each { |cred| add_index_auth_env_vars(cred, env_vars) }
 
           env_vars
+        end
+
+        def add_index_auth_env_vars(cred, env_vars)
+          index_name = find_index_name_for_credential(cred)
+
+          unless index_name
+            Dependabot.logger.debug(
+              "python_index credential did not match a [[tool.uv.index]] entry; skipping UV_INDEX_* env vars"
+            )
+            return
+          end
+
+          env_name = index_name.upcase.gsub(/[^A-Z0-9]/, "_")
+          password = cred["password"] || cred["token"]
+
+          env_vars["UV_INDEX_#{env_name}_USERNAME"] = cred["username"] if cred["username"]
+          env_vars["UV_INDEX_#{env_name}_PASSWORD"] = password if password
+
+          return unless cred["username"] || password
+
+          Dependabot.logger.info("Configured uv auth env vars for a matched [[tool.uv.index]] entry")
         end
 
         sig { params(credential: Dependabot::Credential).returns(T.nilable(String)) }
