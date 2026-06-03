@@ -17,10 +17,9 @@ module Dependabot
       class PyprojectPreparer
         extend T::Sig
 
-        sig { params(pyproject_content: String, lockfile: T.nilable(Dependabot::DependencyFile)).void }
-        def initialize(pyproject_content:, lockfile: nil)
+        sig { params(pyproject_content: String).void }
+        def initialize(pyproject_content:)
           @pyproject_content = pyproject_content
-          @lockfile = lockfile
           @lines = T.let(pyproject_content.split("\n"), T::Array[String])
         end
 
@@ -47,11 +46,6 @@ module Dependabot
           # No special sanitization needed for UV files at this point
           @pyproject_content
         end
-
-        private
-
-        sig { returns(T.nilable(Dependabot::DependencyFile)) }
-        attr_reader :lockfile
       end
     end
   end

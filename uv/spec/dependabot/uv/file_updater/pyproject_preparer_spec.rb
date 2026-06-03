@@ -8,39 +8,10 @@ require "dependabot/uv/file_updater/pyproject_preparer"
 
 RSpec.describe Dependabot::Uv::FileUpdater::PyprojectPreparer do
   let(:preparer) do
-    described_class.new(pyproject_content: pyproject_content, lockfile: lockfile)
+    described_class.new(pyproject_content: pyproject_content)
   end
 
   let(:pyproject_content) { fixture("pyproject_files", "uv_simple.toml") }
-  let(:lockfile_content) { fixture("uv_locks", "simple.lock") }
-
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(
-      name: "uv.lock",
-      content: lockfile_content
-    )
-  end
-
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: "requests",
-      version: "2.26.0",
-      requirements: [{
-        file: "pyproject.toml",
-        requirement: ">=2.26.0",
-        groups: [],
-        source: nil
-      }],
-      previous_version: "2.32.3",
-      previous_requirements: [{
-        file: "pyproject.toml",
-        requirement: ">=2.31.0",
-        groups: [],
-        source: nil
-      }],
-      package_manager: "uv"
-    )
-  end
 
   describe "#sanitize" do
     subject(:sanitized_content) { preparer.sanitize }

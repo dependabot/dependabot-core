@@ -482,7 +482,7 @@ module Dependabot
         # themselves and for dry-run.
         sig { returns(T::Hash[String, String]) }
         def pyproject_index_env_vars
-          env_vars = {}
+          env_vars = T.let({}, T::Hash[String, String])
 
           python_index_creds = credentials.select { |cred| cred["type"] == "python_index" }
           python_index_creds.each { |cred| add_index_auth_env_vars(cred, env_vars) }
