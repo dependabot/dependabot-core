@@ -138,27 +138,15 @@ module Dependabot
 
           next unless lead_dependency
 
-          # Filter updated_dependencies to only include those that match the group.
-          # This prevents file contamination where lockfiles include transitive dependencies
-          # that don't match the group pattern. We filter before file generation rather than
-          # after to ensure the FileUpdater only sees group-eligible dependencies.
-          group_eligible_dependencies = filter_dependencies_for_group(
+          # Filter and validate dependencies for the group
+          group_eligible_dependencies = filter_and_validate_dependencies(
             updated_dependencies,
+            lead_dependency,
             group,
             job.source.directory || "."
           )
 
-          # Skip if no group-eligible dependencies remain
-          next if group_eligible_dependencies.empty?
-
-          # Validate that the lead dependency wasn't filtered out
-          # If it was, we can't proceed since create_change_for requires a valid lead
-          unless group_eligible_dependencies.include?(lead_dependency)
-            Dependabot.logger.info(
-              "Skipping update for #{dependency.name}: lead dependency was filtered out"
-            )
-            next
-          end
+          next unless group_eligible_dependencies
 
           dependency_change = create_change_for(lead_dependency, group_eligible_dependencies, dependency_files, group)
 
@@ -727,6 +715,38 @@ module Dependabot
         record_security_update_ignored(checker)
       end
 
+      # Filters dependencies and validates the lead dependency is present.
+      # Returns nil if filtering fails or lead dependency is filtered out.
+      sig do
+        params(
+          dependencies: T::Array[Dependabot::Dependency],
+          lead_dependency: Dependabot::Dependency,
+          group: Dependabot::DependencyGroup,
+          directory: String
+        ).returns(T.nilable(T::Array[Dependabot::Dependency]))
+      end
+      def filter_and_validate_dependencies(dependencies, lead_dependency, group, directory)
+        # Filter updated_dependencies to only include those that match the group.
+        # This prevents file contamination where lockfiles include transitive dependencies
+        # that don't match the group pattern. We filter before file generation rather than
+        # after to ensure the FileUpdater only sees group-eligible dependencies.
+        group_eligible = filter_dependencies_for_group(dependencies, group, directory)
+
+        # Skip if no group-eligible dependencies remain
+        return nil if group_eligible.empty?
+
+        # Validate that the lead dependency wasn't filtered out
+        # If it was, we can't proceed since create_change_for requires a valid lead
+        unless group_eligible.include?(lead_dependency)
+          Dependabot.logger.info(
+            "Skipping update for #{lead_dependency.name}: lead dependency was filtered out"
+          )
+          return nil
+        end
+
+        group_eligible
+      end
+
       # Filters dependencies to only include those eligible for the given group.
       # Applies the same filtering logic as GroupDependencySelector:
       # 1. Group membership check (contains_dependency? or contains?)
@@ -743,39 +763,63 @@ module Dependabot
         ).returns(T::Array[Dependabot::Dependency])
       end
       def filter_dependencies_for_group(dependencies, group, directory)
+        group_eligible, filtered_out = partition_dependencies_by_group(dependencies, group, directory)
+        log_filtered_dependencies(filtered_out, group, directory) if filtered_out.any?
+        group_eligible
+      end
+
+      sig do
+        params(
+          dependencies: T::Array[Dependabot::Dependency],
+          group: Dependabot::DependencyGroup,
+          directory: String
+        ).returns([T::Array[Dependabot::Dependency], T::Array[Dependabot::Dependency]])
+      end
+      def partition_dependencies_by_group(dependencies, group, directory)
         group_eligible = T.let([], T::Array[Dependabot::Dependency])
         filtered_out = T.let([], T::Array[Dependabot::Dependency])
 
         dependencies.each do |dep|
-          if group_contains_dependency?(dep, directory, group) && allowed_by_job_config?(dep)
-            if dependency_belongs_to_more_specific_group?(dep, directory, group)
-              filtered_out << dep
-            else
-              group_eligible << dep
-            end
+          if dependency_eligible_for_group?(dep, directory, group)
+            group_eligible << dep
           else
             filtered_out << dep
           end
         end
 
-        # Log if we filtered out any dependencies (limit names to avoid log bloat)
-        if filtered_out.any?
-          names = filtered_out.map(&:name)
-          display_names = if names.length > MAX_DEPENDENCIES_TO_LOG
-                            "#{names.first(MAX_DEPENDENCIES_TO_LOG).join(', ')} " \
-                              "(and #{names.length - MAX_DEPENDENCIES_TO_LOG} more)"
-                          else
-                            names.join(', ')
-                          end
+        [group_eligible, filtered_out]
+      end
 
-          Dependabot.logger.info(
-            "[group=#{group.name}, directory=#{directory}] " \
-            "Filtered out #{filtered_out.length} non-group dependencies before file generation: " \
-            "#{display_names}"
-          )
-        end
+      sig { params(dep: Dependabot::Dependency, directory: String, group: Dependabot::DependencyGroup).returns(T::Boolean) }
+      def dependency_eligible_for_group?(dep, directory, group)
+        return false unless group_contains_dependency?(dep, directory, group)
+        return false unless allowed_by_job_config?(dep)
+        return false if dependency_belongs_to_more_specific_group?(dep, directory, group)
 
-        group_eligible
+        true
+      end
+
+      sig do
+        params(
+          filtered_out: T::Array[Dependabot::Dependency],
+          group: Dependabot::DependencyGroup,
+          directory: String
+        ).void
+      end
+      def log_filtered_dependencies(filtered_out, group, directory)
+        names = filtered_out.map(&:name)
+        display_names = if names.length > MAX_DEPENDENCIES_TO_LOG
+                          "#{names.first(MAX_DEPENDENCIES_TO_LOG).join(', ')} " \
+                            "(and #{names.length - MAX_DEPENDENCIES_TO_LOG} more)"
+                        else
+                          names.join(", ")
+                        end
+
+        Dependabot.logger.info(
+          "[group=#{group.name}, directory=#{directory}] " \
+          "Filtered out #{filtered_out.length} non-group dependencies before file generation: " \
+          "#{display_names}"
+        )
       end
 
       sig { params(dep: Dependabot::Dependency, directory: String, group: Dependabot::DependencyGroup).returns(T::Boolean) }
@@ -798,7 +842,7 @@ module Dependabot
       sig { params(dep: Dependabot::Dependency, directory: String, group: Dependabot::DependencyGroup).returns(T::Boolean) }
       def dependency_belongs_to_more_specific_group?(dep, directory, group)
         specificity_calculator = PatternSpecificityCalculator.new
-        
+
         # Helper to check if a group contains a dependency
         contains_checker = T.let(
           proc { |g, dependency, dir|
@@ -815,7 +859,7 @@ module Dependabot
           ).returns(T::Boolean)
         )
 
-        # Note: This doesn't include update_type or applies_to filtering like GroupDependencySelector
+        # NOTE: This doesn't include update_type or applies_to filtering like GroupDependencySelector
         # because we don't have access to the full update context here. This is a simplified version
         # that only checks group pattern specificity.
         specificity_calculator.dependency_belongs_to_more_specific_group?(
