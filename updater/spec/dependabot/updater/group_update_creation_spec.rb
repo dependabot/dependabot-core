@@ -911,6 +911,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
     before do
       allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
+      allow(dependency_snapshot).to receive(:groups).and_return([group])
     end
 
     it "filters out dependencies that don't match the group pattern" do
