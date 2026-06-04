@@ -70,9 +70,10 @@ RSpec.describe Dependabot::WorkflowSummary do
 
       markdown = grouped_summary.build_markdown(command: "graph", package_manager: "go_modules")
 
-      expect(markdown).to include("| `/lib` | ⚠️ Warning | missing credentials for registry X |")
+      # Sorted by [directory, status]: Failed comes before Warning alphabetically
+      expect(markdown).to include("| `/lib` | ❌ Failed | dependency_file_not_resolvable |")
+      expect(markdown).to include("|  | ⚠️ Warning | missing credentials for registry X |")
       expect(markdown).to include("|  |  | stale lockfile detected |")
-      expect(markdown).to include("|  | ❌ Failed | dependency_file_not_resolvable |")
       expect(markdown).to include("| `/src` | ✅ Success | 10 dependencies |")
     end
   end

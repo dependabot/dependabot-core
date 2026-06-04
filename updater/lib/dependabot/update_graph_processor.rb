@@ -163,10 +163,11 @@ module Dependabot
       return unless Dependabot::Environment.github_actions?
 
       error_details = Dependabot.updater_error_details(e) || { "error-type": "unknown_error" }
+      detail_message = error_details.dig(:"error-detail", :message)
       record_workflow_result(
         directory,
         GithubApi::DependencySubmission::SnapshotStatus::FAILED,
-        error_details.dig(:"error-detail", "message") || "An unknown error occurred, please check the logs for details."
+        detail_message.is_a?(String) ? detail_message : "An unknown error occurred, please check the logs for details."
       )
 
       # Send an empty submission so the snapshot service has a record that the job id has been completed.
