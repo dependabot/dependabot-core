@@ -28,12 +28,8 @@ internal partial interface IPackageDetailFinder
     {
         foreach (var candidateName in new[] { releaseName, tagName }.Where(n => n is not null).Cast<string>())
         {
-            var trimmedCandidateName = candidateName.Trim();
-            var match = Regex.Match(
-                trimmedCandidateName,
-                $@"(?:^|[\s/_-]){Regex.Escape(dependencyName)}[\s/_-]+v?(?<version>[0-9][A-Za-z0-9.+-]*)$",
-                RegexOptions.IgnoreCase);
-            if (!match.Success)
+            var match = GetPackageScopedNameMatch(candidateName, dependencyName);
+            if (match is null)
             {
                 continue;
             }
@@ -72,6 +68,18 @@ internal partial interface IPackageDetailFinder
         }
 
         return false;
+    }
+
+    private static Match? GetPackageScopedNameMatch(string candidateName, string dependencyName)
+    {
+        var match = PackageScopedNamePattern.Match(candidateName.Trim());
+        if (!match.Success ||
+            !match.Groups["dependency"].Value.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return match;
     }
 
     private static NuGetVersion? GetRepoScopedVersionFromNames(string? releaseName, string? tagName)

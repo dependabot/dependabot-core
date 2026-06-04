@@ -30,25 +30,25 @@ internal class GitHubPackageDetailFinder : IPackageDetailFinder
 
     public async Task<Dictionary<NuGetVersion, (string TagName, string? Details)>> GetReleaseDataForVersionsAsync(string repoName, string dependencyName, NuGetVersion oldVersion, NuGetVersion newVersion)
     {
-        var result = new Dictionary<NuGetVersion, (string TagName, string? Details)>();
-        var packageScopedResult = new Dictionary<NuGetVersion, (string TagName, string? Details)>();
-        var otherPackageScopedResult = new Dictionary<NuGetVersion, (string TagName, string? Details)>();
+        var versionReleaseData = new Dictionary<NuGetVersion, (string TagName, string? Details)>();
+        var packageScopedVersionReleaseData = new Dictionary<NuGetVersion, (string TagName, string? Details)>();
+        var otherPackageScopedVersionReleaseData = new Dictionary<NuGetVersion, (string TagName, string? Details)>();
         var url = $"https://api.github.com/repos/{repoName}/releases?per_page=100";
         var jsonOption = await _httpFetcher.GetJsonElementAsync(url);
         if (jsonOption is null)
         {
-            return result;
+            return versionReleaseData;
         }
 
         var json = jsonOption.Value;
         if (json.ValueKind != JsonValueKind.Array)
         {
-            return result;
+            return versionReleaseData;
         }
 
         if (json.GetArrayLength() == 0)
         {
-            return result;
+            return versionReleaseData;
         }
 
         foreach (var releaseObject in json.EnumerateArray())
@@ -97,35 +97,35 @@ internal class GitHubPackageDetailFinder : IPackageDetailFinder
                 var body = bodyElement.GetString()!;
                 if (packageScopedVersion is not null)
                 {
-                    packageScopedResult[correspondingVersion] = (tagName, body);
+                    packageScopedVersionReleaseData[correspondingVersion] = (tagName, body);
                 }
                 else if (isOtherPackageScopedVersion)
                 {
-                    otherPackageScopedResult[correspondingVersion] = (tagName, body);
+                    otherPackageScopedVersionReleaseData[correspondingVersion] = (tagName, body);
                 }
                 else
                 {
-                    result[correspondingVersion] = (tagName, body);
+                    versionReleaseData[correspondingVersion] = (tagName, body);
                 }
             }
         }
 
-        if (packageScopedResult.Count > 0)
+        if (packageScopedVersionReleaseData.Count > 0)
         {
-            foreach (var packageScopedDetails in packageScopedResult)
+            foreach (var packageScopedDetails in packageScopedVersionReleaseData)
             {
-                result[packageScopedDetails.Key] = packageScopedDetails.Value;
+                versionReleaseData[packageScopedDetails.Key] = packageScopedDetails.Value;
             }
 
-            return result;
+            return versionReleaseData;
         }
 
-        foreach (var otherPackageScopedDetails in otherPackageScopedResult)
+        foreach (var otherPackageScopedDetails in otherPackageScopedVersionReleaseData)
         {
-            result[otherPackageScopedDetails.Key] = otherPackageScopedDetails.Value;
+            versionReleaseData[otherPackageScopedDetails.Key] = otherPackageScopedDetails.Value;
         }
 
-        return result;
+        return versionReleaseData;
     }
 
     public string GetReleasesUrlPath() => "releases";
