@@ -109,7 +109,11 @@ module Dependabot
       Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
       service.create_dependency_submission(dependency_submission: submission)
 
-      record_workflow_result(directory, submission.status, submission.reason || submission.resolved_dependencies.size)
+      record_workflow_result(
+        directory,
+        submission.status,
+        "Found #{submission.resolved_dependencies.size} dependencies"
+      )
     rescue Dependabot::UnexpectedExternalCode
       # If this has been raised, then the directory is trying to use a private registry with an ecosystem
       # that requires the `insecure-external-code-execution: allow` flag.
@@ -146,6 +150,7 @@ module Dependabot
           "Unable to submit data to the Dependency Snapshot API"
         )
       )
+
       record_workflow_result(
         directory,
         GithubApi::DependencySubmission::SnapshotStatus::FAILED,
@@ -264,6 +269,14 @@ module Dependabot
         warn_title: "dependency graph incomplete",
         warn_description: "The dependency graph may be incomplete. #{error_message}"
       )
+
+      service.record_workflow_result(
+        directory: T.must(source.directory),
+        status: GithubApi::DependencySubmission::SnapshotStatus::DEGRADED.to_s,
+        details: <<~MSG
+          The dependency graph may be incomplete: #{error_message}
+        MSG
+      )
     end
 
     sig { params(error: T.nilable(StandardError), source: Dependabot::Source).void }
@@ -296,20 +309,14 @@ module Dependabot
       params(
         directory: String,
         status: GithubApi::DependencySubmission::SnapshotStatus,
-        details: T.any(String, Integer)
+        details: String
       ).void
     end
     def record_workflow_result(directory, status, details)
-      detail_str = if details.is_a?(Integer)
-                     "#{details} dependencies"
-                   else
-                     details
-                   end
-
       service.record_workflow_result(
         directory: directory,
         status: status_label(status),
-        details: detail_str
+        details: details
       )
     end
 
