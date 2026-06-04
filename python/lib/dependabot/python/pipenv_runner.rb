@@ -117,9 +117,8 @@ module Dependabot
         return nil unless lockfile_content
 
         parsed_lockfile = JSON.parse(lockfile_content)
-        section = lockfile_section
-        section_data = parsed_lockfile[section]
-        return nil unless section_data.is_a?(Hash)
+        section_data = parsed_lockfile_section(parsed_lockfile, lockfile_section)
+        return nil unless section_data
 
         dependency_data = section_data[dependency_name]
         return nil unless dependency_data
@@ -129,8 +128,8 @@ module Dependabot
 
       sig { params(updated_lockfile: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
       def fetch_version_from_parsed_lockfile(updated_lockfile)
-        section_data = updated_lockfile[lockfile_section]
-        return nil unless section_data.is_a?(Hash)
+        section_data = parsed_lockfile_section(updated_lockfile, lockfile_section)
+        return nil unless section_data
 
         section_data.dig(dependency_name, "version")
                     &.gsub(/^==/, "")
@@ -141,19 +140,35 @@ module Dependabot
         SharedHelpers.run_shell_command(command, env: pipenv_env_variables, fingerprint: fingerprint)
       end
 
-      sig { returns(String) }
+      sig { returns(T.nilable(String)) }
       def lockfile_section
         if current_dependency.requirements.any?
           T.must(current_dependency.requirements.first)[:groups].first
         else
+          parsed_lockfile = JSON.parse(T.must(T.must(lockfile).content))
           Python::FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|
             section = keys.fetch(:lockfile)
-            section_data = JSON.parse(T.must(T.must(lockfile).content))[section]
-            next unless section_data.is_a?(Hash)
+            section_data = parsed_lockfile_section(parsed_lockfile, section)
+            next unless section_data
 
-            return section if section_data.keys.any?(dependency_name)
+            return section if section_data.key?(dependency_name)
           end
         end
+      end
+
+      sig do
+        params(
+          parsed_lockfile: T::Hash[String, T.untyped],
+          section: T.nilable(String)
+        ).returns(T.nilable(T::Hash[String, T.untyped]))
+      end
+      def parsed_lockfile_section(parsed_lockfile, section)
+        return nil unless section
+
+        section_data = parsed_lockfile[section]
+        return section_data if section_data.is_a?(Hash)
+
+        nil
       end
 
       sig { returns(String) }

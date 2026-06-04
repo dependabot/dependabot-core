@@ -28,14 +28,18 @@ RSpec.describe Dependabot::Python::PipenvRunner do
     Dependabot::Dependency.new(
       name: "requests",
       version: "2.18.0",
-      requirements: [{
-        file: "Pipfile",
-        requirement: "==2.18.0",
-        groups: ["default"],
-        source: nil
-      }],
+      requirements: requirements,
       package_manager: "pip"
     )
+  end
+
+  let(:requirements) do
+    [{
+      file: "Pipfile",
+      requirement: "==2.18.0",
+      groups: ["default"],
+      source: nil
+    }]
   end
 
   let(:lockfile) do
@@ -99,6 +103,87 @@ RSpec.describe Dependabot::Python::PipenvRunner do
         JSON.generate(
           {
             "develop" => {}
+          }
+        )
+      end
+
+      it "returns nil" do
+        expect(runner.run_upgrade_and_fetch_version(">=2.19.0")).to be_nil
+      end
+    end
+
+    context "when the original lockfile section contains a String instead of a Hash" do
+      let(:lockfile_content) do
+        JSON.generate(
+          {
+            "default" => "some-string-value",
+            "develop" => {}
+          }
+        )
+      end
+
+      let(:updated_lockfile_content) do
+        JSON.generate(
+          {
+            "default" => {
+              "requests" => { "version" => "==2.19.0" }
+            }
+          }
+        )
+      end
+
+      it "returns the version without trying to read dependency extras from the malformed section" do
+        expect(runner.run_upgrade_and_fetch_version(">=2.19.0")).to eq("2.19.0")
+      end
+    end
+
+    context "when the dependency has no requirements and the original default section is malformed" do
+      let(:requirements) { [] }
+
+      let(:lockfile_content) do
+        JSON.generate(
+          {
+            "default" => "some-string-value",
+            "develop" => {
+              "requests" => { "version" => "==2.18.0" }
+            }
+          }
+        )
+      end
+
+      let(:updated_lockfile_content) do
+        JSON.generate(
+          {
+            "default" => "some-string-value",
+            "develop" => {
+              "requests" => { "version" => "==2.19.0" }
+            }
+          }
+        )
+      end
+
+      it "finds the dependency in the valid section" do
+        expect(runner.run_upgrade_and_fetch_version(">=2.19.0")).to eq("2.19.0")
+      end
+    end
+
+    context "when the dependency has no requirements and no valid section contains it" do
+      let(:requirements) { [] }
+
+      let(:lockfile_content) do
+        JSON.generate(
+          {
+            "default" => "some-string-value",
+            "develop" => []
+          }
+        )
+      end
+
+      let(:updated_lockfile_content) do
+        JSON.generate(
+          {
+            "default" => "some-string-value",
+            "develop" => []
           }
         )
       end
