@@ -282,9 +282,7 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
         )]
       end
 
-      it "uses the rc file registry" do
-        expect(subject).to eq("http://npmrc-registry.example.com")
-      end
+      it { is_expected.to eq("http://npmrc-registry.example.com") }
     end
   end
 

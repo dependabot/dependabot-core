@@ -351,6 +351,15 @@ module Dependabot
           )
         end
 
+        sig { params(registry: String).returns(T.nilable(T::Array[String])) }
+        def credential_scopes_for(registry)
+          cred = registry_credentials.find { |c| c["registry"] == registry }
+          return unless cred&.scope
+
+          registry_url = registry.start_with?("http") ? registry : "https://#{registry}"
+          T.must(cred.scope).map { |s| "#{s}:registry=#{registry_url}" }
+        end
+
         # rubocop:disable Metrics/PerceivedComplexity
         sig { params(registry: String).returns(T.nilable(T::Array[String])) }
         def registry_scopes(registry)
@@ -358,11 +367,8 @@ module Dependabot
           return if CENTRAL_REGISTRIES.include?(registry)
 
           # Use explicit scope from credential if available
-          cred = registry_credentials.find { |c| c["registry"] == registry }
-          if cred&.scope
-            registry_url = registry.start_with?("http") ? registry : "https://#{registry}"
-            return T.must(cred.scope).map { |s| "#{s}:registry=#{registry_url}" }
-          end
+          explicit = credential_scopes_for(registry)
+          return explicit if explicit
 
           return unless dependency_urls
 
