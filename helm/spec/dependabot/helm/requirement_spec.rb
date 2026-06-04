@@ -58,5 +58,12 @@ RSpec.describe Dependabot::Helm::Requirement do
     context "with a wildcard" do
       it { expect(satisfied?("*", "9.9.9")).to be(true) }
     end
+
+    context "with a nil requirement" do
+      it "matches anything (does not raise)" do
+        req = described_class.requirements_array(nil).first
+        expect(req.satisfied_by?(Dependabot::Helm::Version.new("9.9.9"))).to be(true)
+      end
+    end
   end
 end

@@ -89,7 +89,7 @@ module Dependabot
           begin
             version_class.new(dependency.version)
           rescue StandardError
-            named = dependency.version.to_s.scan(/\d+(?:\.\d+)+/).filter_map do |v|
+            named = dependency.version.to_s.scan(/\d+(?:\.\d+)*/).filter_map do |v|
               version_class.new(v) if version_class.correct?(v)
             end
             named.min || version_class.new("0")

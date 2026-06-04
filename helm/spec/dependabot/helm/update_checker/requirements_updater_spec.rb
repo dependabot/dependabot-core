@@ -167,6 +167,18 @@ RSpec.describe Dependabot::Helm::UpdateChecker::RequirementsUpdater do
       end
     end
 
+    context "with an OR range where a later alternative permits the version (BumpVersions)" do
+      # Exercises the any?-over-alternatives check: the first alternative (<1.0.0)
+      # does not permit 2.5.0, but the second (>=2.0.0) does, so no change.
+      let(:chart_req) { "<1.0.0 || >=2.0.0" }
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
+      let(:latest_resolvable_version) { "2.5.0" }
+
+      it "leaves it unchanged" do
+        expect(updated_req).to eq("<1.0.0 || >=2.0.0")
+      end
+    end
+
     context "when there is no resolvable version" do
       let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
       let(:latest_resolvable_version) { nil }

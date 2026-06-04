@@ -65,8 +65,14 @@ module Dependabot
 
       sig { params(requirements: T.nilable(T.any(String, T::Array[String]))).void }
       def initialize(*requirements)
-        requirements = requirements.flatten
-                                   .flat_map { |req_string| T.must(req_string).split(",").map(&:strip) }
+        requirements = requirements.flatten.compact
+        # `new(nil)` (from `requirements_array(nil)`) means "match anything".
+        # Use a literal ">= 0" so it flows through our `parse` and is backed by a
+        # Helm::Version — Gem's DefaultRequirement uses a plain Gem::Version, which
+        # Helm::Version#<=>'s strict sig would reject.
+        requirements = [">= 0"] if requirements.empty?
+
+        requirements = requirements.flat_map { |req_string| req_string.split(",").map(&:strip) }
                                    .flat_map { |req_string| convert_helm_constraint_to_ruby_constraint(req_string) }
 
         super

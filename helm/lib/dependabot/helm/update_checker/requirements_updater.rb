@@ -97,8 +97,9 @@ module Dependabot
           current_requirement = req[:requirement]
 
           if current_requirement.match?(/(<|-\s)/i)
-            ruby_req = ruby_requirements(current_requirement).first
-            return req if ruby_req&.satisfied_by?(latest_resolvable_version)
+            # Check every OR alternative, not just the first — a later branch may
+            # already permit the latest version.
+            return req if ruby_requirements(current_requirement).any? { |r| r.satisfied_by?(latest_resolvable_version) }
 
             updated_req = update_range_requirement(current_requirement)
             return req.merge(requirement: updated_req)
