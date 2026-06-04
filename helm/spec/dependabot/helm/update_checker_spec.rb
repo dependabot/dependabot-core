@@ -258,6 +258,20 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
         expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
       end
     end
+
+    context "with an explicit comparator-range constraint" do
+      # dependency.version holds the Chart.yaml constraint; a multi-comparator
+      # range can't parse as a single version, so the checker anchors on its
+      # lowest version instead of crashing.
+      let(:version) { ">=1.0.0 <2.0.0" }
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+      let(:latest) { Dependabot::Helm::Version.new("2.5.0") }
+
+      it "does not raise and widens the range" do
+        expect { checker.can_update?(requirements_to_unlock: :own) }.not_to raise_error
+        expect(checker.updated_requirements.first[:requirement]).to eq(">=1.0.0 <3.0.0")
+      end
+    end
   end
 
   describe "#filter_valid_releases" do

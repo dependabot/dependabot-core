@@ -53,7 +53,7 @@ module Dependabot
               next unless dep["name"] == dependency.name
 
               old_version = dep["version"].to_s
-              new_version = updated_requirement_string(file) || dependency.version
+              new_version = yaml_safe_value(updated_requirement_string(file) || dependency.version.to_s)
 
               pattern = /
               (\s+-\s+name:\s+#{Regexp.escape(dependency.name)}.*?\n\s+)
@@ -66,6 +66,17 @@ module Dependabot
             end
           end
           content
+        end
+
+        # Wrap a requirement in double quotes when it would otherwise be invalid
+        # or ambiguous as a YAML plain scalar (ranges contain spaces and start
+        # with ">"/"<"; tilde starts with the YAML "~" indicator). Simple values
+        # (exact, caret) are left bare, preserving the previous output.
+        sig { params(value: String).returns(String) }
+        def yaml_safe_value(value)
+          return "\"#{value}\"" if value.match?(/\s/) || value.match?(/\A[>~<|&*!%@?:#,\[\]{}]/)
+
+          value
         end
 
         # The strategy-updated requirement string for this chart file, if any.

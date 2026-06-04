@@ -94,6 +94,79 @@ RSpec.describe Dependabot::Helm::UpdateChecker::RequirementsUpdater do
       end
     end
 
+    context "with a tilde requirement" do
+      let(:chart_req) { "~1.2.0" }
+
+      context "with BumpVersionsIfNecessary, in range" do
+        let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
+        let(:latest_resolvable_version) { "1.2.9" }
+
+        it "leaves it unchanged" do
+          expect(updated_req).to eq("~1.2.0")
+        end
+      end
+
+      context "with BumpVersionsIfNecessary, out of range" do
+        let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
+        let(:latest_resolvable_version) { "1.3.0" }
+
+        it "bumps the tilde" do
+          expect(updated_req).to eq("~1.3.0")
+        end
+      end
+
+      context "with WidenRanges, out of range" do
+        let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+        let(:latest_resolvable_version) { "1.3.0" }
+
+        it "bumps the tilde (npm widen semantics)" do
+          expect(updated_req).to eq("~1.3.0")
+        end
+      end
+    end
+
+    context "with an explicit comparator range" do
+      let(:chart_req) { ">=1.0.0 <2.0.0" }
+
+      context "with BumpVersionsIfNecessary, in range" do
+        let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
+        let(:latest_resolvable_version) { "1.5.0" }
+
+        it "leaves it unchanged" do
+          expect(updated_req).to eq(">=1.0.0 <2.0.0")
+        end
+      end
+
+      context "with WidenRanges, out of range" do
+        let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+        let(:latest_resolvable_version) { "2.5.0" }
+
+        it "widens the upper bound in place" do
+          expect(updated_req).to eq(">=1.0.0 <3.0.0")
+        end
+      end
+
+      context "with a comma-separated range (Masterminds comma-AND)" do
+        let(:chart_req) { ">=1.0.0,<2.0.0" }
+        let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+        let(:latest_resolvable_version) { "2.5.0" }
+
+        it "widens while preserving the comma form" do
+          expect(updated_req).to eq(">=1.0.0,<3.0.0")
+        end
+      end
+    end
+
+    context "with an OR range that is already satisfied" do
+      let(:chart_req) { "^1.0.0 || ^2.0.0" }
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+      let(:latest_resolvable_version) { "2.5.0" }
+
+      it "leaves it unchanged" do
+        expect(updated_req).to eq("^1.0.0 || ^2.0.0")
+      end
+    end
+
     context "when there is no resolvable version" do
       let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
       let(:latest_resolvable_version) { nil }

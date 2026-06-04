@@ -170,5 +170,25 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
         expect(updated_content).not_to include("version: ^1.0.0")
       end
     end
+
+    context "when widening an explicit range requirement" do
+      let(:fixture_name) { "chart_with_explicit_range.yaml" }
+      let(:dependency_version) { "2.5.0" }
+      let(:dependency_previous_version) { "1.0.0" }
+      let(:dependency_requirements) do
+        [{ file: "Chart.yaml", requirement: ">=1.0.0 <3.0.0", groups: [],
+           source: { tag: "2.5.0" }, metadata: { type: :helm_chart } }]
+      end
+      let(:dependency_previous_requirements) do
+        [{ file: "Chart.yaml", requirement: ">=1.0.0 <2.0.0", groups: [],
+           source: { tag: "1.0.0" }, metadata: { type: :helm_chart } }]
+      end
+
+      it "quotes the range so the YAML stays valid" do
+        updated_content = updater.updated_chart_yaml_content(chart_yaml_file)
+        expect(updated_content).to include('version: ">=1.0.0 <3.0.0"')
+        expect(YAML.safe_load(updated_content)).to be_a(Hash)
+      end
+    end
   end
 end

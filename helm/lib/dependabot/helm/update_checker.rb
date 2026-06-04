@@ -78,6 +78,26 @@ module Dependabot
         requirements_update_strategy || RequirementsUpdateStrategy::BumpVersions
       end
 
+      # Helm stores the Chart.yaml constraint in dependency.version. For single
+      # versions and lenient forms (^1.0.0, ~1.2.0, 1.0.0) this parses directly.
+      # For multi-comparator ranges (">=1.0.0 <2.0.0", "a || b") it can't, so we
+      # anchor candidate filtering on the lowest version named in the constraint
+      # (or 0 for wildcards), letting the RequirementsUpdater decide the rewrite.
+      sig { returns(Dependabot::Version) }
+      def current_version
+        @current_version ||= T.let(
+          begin
+            version_class.new(dependency.version)
+          rescue StandardError
+            named = dependency.version.to_s.scan(/\d+(?:\.\d+)+/).filter_map do |v|
+              version_class.new(v) if version_class.correct?(v)
+            end
+            named.min || version_class.new("0")
+          end,
+          T.nilable(Dependabot::Version)
+        )
+      end
+
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def updated_dependencies_after_full_unlock
         raise NotImplementedError
@@ -144,7 +164,7 @@ module Dependabot
       sig { params(releases: T::Array[T::Hash[String, T.untyped]]).returns(T::Array[T::Hash[String, T.untyped]]) }
       def filter_valid_releases(releases)
         releases.reject do |release|
-          version_class.new(release["version"]) <= version_class.new(dependency.version) ||
+          version_class.new(release["version"]) <= current_version ||
             ignore_requirements.any? do |r|
               r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(version_class.new(release["version"]))
             end
@@ -167,7 +187,7 @@ module Dependabot
       sig { params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Boolean) }
       def version_can_update?(requirements_to_unlock:) # rubocop:disable Lint/UnusedMethodArgument
         return false unless latest_version
-        return false unless version_class.new(latest_version.to_s) > version_class.new(dependency.version)
+        return false unless version_class.new(latest_version.to_s) > current_version
 
         # Under range-preserving strategies, don't open a PR when the resolved
         # version already satisfies the authored Chart.yaml constraint.
@@ -346,7 +366,7 @@ module Dependabot
       sig { params(all_versions: T::Array[String]).returns(T::Array[String]) }
       def filter_valid_versions(all_versions)
         all_versions.reject do |version|
-          version_class.new(version) <= version_class.new(dependency.version) ||
+          version_class.new(version) <= current_version ||
             ignore_requirements.any? do |r|
               r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(version_class.new(version))
             end
