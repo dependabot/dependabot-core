@@ -50,7 +50,7 @@ module Dependabot
 
           @latest_resolvable_version = T.let(
             version_class.new(latest_resolvable_version),
-            Helm::Version
+            Dependabot::Version
           )
         end
 
@@ -82,7 +82,7 @@ module Dependabot
         sig { returns(Dependabot::RequirementsUpdateStrategy) }
         attr_reader :update_strategy
 
-        sig { returns(T.nilable(Helm::Version)) }
+        sig { returns(T.nilable(Dependabot::Version)) }
         attr_reader :latest_resolvable_version
 
         sig { void }
@@ -175,15 +175,15 @@ module Dependabot
 
         sig { params(req_string: String).returns(String) }
         def update_version_string(req_string)
+          latest = T.must(latest_resolvable_version).to_s
           req_string
             .sub(VERSION_REGEX) do |old_version|
-              if old_version.match?(/\d-/) ||
-                 T.must(latest_resolvable_version).to_s.match?(/\d-/)
-                T.must(latest_resolvable_version).to_s
+              if old_version.match?(/\d-/) || latest.match?(/\d-/)
+                latest
               else
                 old_parts = old_version.split(".")
-                new_parts = T.must(latest_resolvable_version).to_s.split(".")
-                             .first(old_parts.count)
+                new_parts = latest.split(".")
+                                  .first(old_parts.count)
                 new_parts.map.with_index do |part, i|
                   old_parts[i]&.match?(/^x\b/) ? "x" : part
                 end.join(".")
@@ -191,7 +191,7 @@ module Dependabot
             end
         end
 
-        sig { params(old_version: String, version_to_be_permitted: Helm::Version).returns(String) }
+        sig { params(old_version: String, version_to_be_permitted: Dependabot::Version).returns(String) }
         def update_greatest_version(old_version, version_to_be_permitted)
           version = version_class.new(old_version)
           version = version.release if version.prerelease?

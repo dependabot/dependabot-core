@@ -38,7 +38,7 @@ module Dependabot
       # Gem::Version operands.
       sig do
         params(obj: T.any(String, Gem::Version))
-          .returns(T::Array[T.any(String, Helm::Version)])
+          .returns(T::Array[T.any(String, Dependabot::Version)])
       end
       def self.parse(obj)
         return ["=", Helm::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)

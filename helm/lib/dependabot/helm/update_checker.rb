@@ -66,11 +66,13 @@ module Dependabot
         current_constraint = req[:requirement] || dependency.version
         synthetic = req.merge(requirement: current_constraint)
 
-        RequirementsUpdater.new(
-          requirements: [synthetic],
-          update_strategy: resolved_update_strategy,
-          latest_resolvable_version: T.must(latest_version).to_s
-        ).updated_requirements.first
+        T.must(
+          RequirementsUpdater.new(
+            requirements: [synthetic],
+            update_strategy: resolved_update_strategy,
+            latest_resolvable_version: T.must(latest_version).to_s
+          ).updated_requirements.first
+        )
       end
 
       sig { returns(Dependabot::RequirementsUpdateStrategy) }
@@ -90,7 +92,8 @@ module Dependabot
             version_class.new(dependency.version)
           rescue StandardError
             named = dependency.version.to_s.scan(/\d+(?:\.\d+)*/).filter_map do |v|
-              version_class.new(v) if version_class.correct?(v)
+              s = T.cast(v, String)
+              version_class.new(s) if version_class.correct?(s)
             end
             named.min || version_class.new("0")
           end,
