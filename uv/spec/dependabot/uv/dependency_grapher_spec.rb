@@ -49,14 +49,23 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
     context "when uv.lock is missing" do
       let(:dependency_files) { [pyproject_toml] }
 
-      it "raises a DependabotError on prepare!" do
-        expect { grapher.resolved_dependencies }
+      it "raises a DependabotError" do
+        expect { grapher.relevant_dependency_file }
           .to raise_error(Dependabot::DependabotError, /No uv.lock present/)
       end
     end
   end
 
   describe "#resolved_dependencies" do
+    context "when uv.lock is missing" do
+      let(:dependency_files) { [pyproject_toml] }
+
+      it "raises a DependabotError" do
+        expect { grapher.resolved_dependencies }
+          .to raise_error(Dependabot::DependabotError, /No uv.lock present/)
+      end
+    end
+
     it "extracts relationships from uv.lock without shelling out" do
       expect(parser).not_to receive(:run_in_parsed_context)
 

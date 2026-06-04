@@ -17,7 +17,7 @@ module Dependabot
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
-        T.must(uv_lock)
+        uv_lock || raise(DependabotError, "No uv.lock present; uv graphing requires a lockfile.")
       end
 
       # uv.lock is guaranteed to be present when graphing runs - the
