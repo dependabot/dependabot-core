@@ -21,8 +21,11 @@ module Dependabot
       class RequirementsUpdater
         extend T::Sig
 
-        VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
-        SEPARATOR = /(?<=[a-zA-Z0-9*])[\s|]+(?![\s|-])/
+        # Possessive quantifiers (++) keep these linear on pathological input
+        # (no catastrophic/polynomial backtracking) while matching identically
+        # to the greedy forms for real version constraints.
+        VERSION_REGEX = /[0-9]++(?:\.[A-Za-z0-9\-_]++)*/
+        SEPARATOR = /(?<=[a-zA-Z0-9*])[\s|]++(?![\s|-])/
         ALLOWED_UPDATE_STRATEGIES = T.let(
           [
             RequirementsUpdateStrategy::LockfileOnly,
@@ -152,7 +155,7 @@ module Dependabot
         sig { params(req_string: String).returns(String) }
         def update_range_requirement(req_string)
           range_requirements =
-            req_string.split(SEPARATOR).select { |r| r.match?(/<|(\s+-\s+)/) }
+            req_string.split(SEPARATOR).select { |r| r.match?(/<|(\s++-\s++)/) }
 
           if range_requirements.one?
             range_requirement = T.must(range_requirements.first)
