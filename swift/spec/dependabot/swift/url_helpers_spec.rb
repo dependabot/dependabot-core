@@ -31,11 +31,13 @@ RSpec.describe Dependabot::Swift::UrlHelpers do
     end
 
     it "handles URLs without a trailing slash or .git" do
-      expect(described_class.normalize_name("https://github.com/getsentry/sentry-cocoa")).to eq("github.com/getsentry/sentry-cocoa")
+      expect(described_class.normalize_name("https://github.com/getsentry/sentry-cocoa"))
+        .to eq("github.com/getsentry/sentry-cocoa")
     end
 
     it "strips the trailing slash from sentry-cocoa URL (the reported bug)" do
-      expect(described_class.normalize_name("https://github.com/getsentry/sentry-cocoa/")).to eq("github.com/getsentry/sentry-cocoa")
+      expect(described_class.normalize_name("https://github.com/getsentry/sentry-cocoa/"))
+        .to eq("github.com/getsentry/sentry-cocoa")
     end
   end
 end
