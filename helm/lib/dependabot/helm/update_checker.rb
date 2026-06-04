@@ -59,8 +59,10 @@ module Dependabot
 
       # Helm stores the Chart.yaml constraint in dependency.version, not in the
       # requirement field (the shared parser leaves it nil). Feed that constraint
-      # through the RequirementsUpdater so versioning-strategy is honored. The
-      # default (BumpVersions) reproduces the previous exact-pin behavior.
+      # through the RequirementsUpdater so versioning-strategy is honored. When no
+      # strategy is set we default to BumpVersions, which preserves the authored
+      # operator and bumps the floor (e.g. `^1.0.0` -> `^1.0.5`); exact pins stay
+      # exact (`1.0.0` -> `1.5.0`).
       sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
       def updated_chart_requirement(req)
         current_constraint = req[:requirement] || dependency.version
