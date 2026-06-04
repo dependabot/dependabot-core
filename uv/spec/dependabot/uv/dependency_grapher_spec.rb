@@ -106,11 +106,19 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
       expect(markupsafe.dependencies).to eq([])
     end
 
-    it "excludes the root project package from the graph" do
+    it "includes the root project package as an indirect entry (preserving prior behaviour)" do
       # The fixture's root package is `name = "test"` with `source = { virtual = "." }`.
       resolved_dependencies = grapher.resolved_dependencies
 
-      expect(resolved_dependencies.keys).not_to include(a_string_matching(%r{^pkg:pypi/test@}))
+      root = resolved_dependencies.fetch("pkg:pypi/test@0.1.0")
+      expect(root.direct).to be(false)
+      expect(root.runtime).to be(true)
+      expect(root.dependencies).to eq(
+        [
+          "pkg:pypi/flask@3.1.3",
+          "pkg:pypi/requests@2.32.5"
+        ]
+      )
     end
 
     context "when uv.lock is invalid TOML" do

@@ -190,9 +190,11 @@ module Dependabot
         name = pkg["name"]
         version = pkg["version"]
         return unless name.is_a?(String) && version.is_a?(String)
-        return if root_names.include?(name)
 
-        groups = direct_groups_for(name, direct_runtime, direct_dev)
+        # Root project packages get requirements: [] (indirect, runtime) to
+        # match the prior FileParser-derived behaviour where uv.lock packages
+        # without a pyproject entry surfaced as indirect.
+        groups = root_names.include?(name) ? [] : direct_groups_for(name, direct_runtime, direct_dev)
         requirements = groups.empty? ? [] : [{ requirement: nil, file: "uv.lock", source: nil, groups: groups }]
 
         Dependabot::Dependency.new(
