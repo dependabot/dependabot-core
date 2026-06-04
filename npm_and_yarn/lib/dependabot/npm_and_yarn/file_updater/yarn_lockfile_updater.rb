@@ -30,15 +30,23 @@ module Dependabot
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
             repo_contents_path: T.nilable(String),
-            credentials: T::Array[Dependabot::Credential]
+            credentials: T::Array[Dependabot::Credential],
+            security_updates_only: T::Boolean
           )
             .void
         end
-        def initialize(dependencies:, dependency_files:, repo_contents_path:, credentials:)
+        def initialize(
+          dependencies:,
+          dependency_files:,
+          repo_contents_path:,
+          credentials:,
+          security_updates_only: false
+        )
           @dependencies = dependencies
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
+          @security_updates_only = T.let(security_updates_only, T::Boolean)
           @error_handler = T.let(
             YarnErrorHandler.new(
               dependencies: dependencies,
@@ -222,7 +230,7 @@ module Dependabot
           # the lockfile.
 
           if top_level_dependency_updates.all? { |dep| requirements_changed?(dep[:name]) }
-            Helpers.run_yarn_command("install #{yarn_berry_args}".strip)
+            Helpers.run_yarn_command("install #{yarn_berry_args}".strip, env: yarn_time_gate_env)
 
             # Yarn berry resolves ranges to the latest matching version, which
             # may differ from Dependabot's target. If the lockfile resolved to a
@@ -237,7 +245,8 @@ module Dependabot
 
             Helpers.run_yarn_command(
               "up -R #{updates.join(' ')} #{yarn_berry_args}".strip,
-              fingerprint: "up -R <dependency_names> #{yarn_berry_args}".strip
+              fingerprint: "up -R <dependency_names> #{yarn_berry_args}".strip,
+              env: yarn_time_gate_env
             )
           end
           { yarn_lock.name => File.read(yarn_lock.name) }
@@ -291,7 +300,8 @@ module Dependabot
 
           Helpers.run_yarn_command(
             "up #{dep_name}@#{version} #{yarn_berry_args}".strip,
-            fingerprint: "up <dep>@<version> #{yarn_berry_args}".strip
+            fingerprint: "up <dep>@<version> #{yarn_berry_args}".strip,
+            env: yarn_time_gate_env
           )
 
           reqs.each do |req|
@@ -304,7 +314,7 @@ module Dependabot
           # Restore package.json and re-install to normalize lockfile descriptors,
           # same as yarn classic's replaceLockfileDeclaration flow.
           restore_package_jsons(saved_package_jsons)
-          Helpers.run_yarn_command("install #{yarn_berry_args}".strip)
+          Helpers.run_yarn_command("install #{yarn_berry_args}".strip, env: yarn_time_gate_env)
         end
 
         sig { returns(T::Hash[String, String]) }
@@ -351,6 +361,23 @@ module Dependabot
           end
 
           { yarn_lock.name => updated_content }
+        end
+
+        sig { returns(T::Boolean) }
+        def security_updates_only?
+          @security_updates_only
+        end
+
+        # Returns an env hash that disables Yarn Berry's npmMinimalAgeGate for security updates.
+        # While `yarn up --no-time-gate` achieves the same effect, that flag was only introduced
+        # in Yarn 4.15.x and would leave users on older Berry releases unprotected. The env var
+        # approach covers all Yarn Berry versions that support the feature and applies uniformly
+        # to every subcommand (install, up, add) without requiring per-command flag changes.
+        sig { returns(T.nilable(T::Hash[String, String])) }
+        def yarn_time_gate_env
+          return nil unless security_updates_only?
+
+          { "YARN_NPM_MINIMAL_AGE_GATE" => "0" }
         end
 
         sig { returns(String) }

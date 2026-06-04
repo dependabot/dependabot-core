@@ -7,7 +7,7 @@ helpers_dir=$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
   install_dir="$helpers_dir"
 else
-  install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/bundler/v2"
+  install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/bundler/v4"
   mkdir -p "$install_dir"
 
   cp -r \
@@ -19,8 +19,8 @@ fi
 
 cd "$install_dir"
 
-# Default to Bundler 2, with an override for controlled testing/rollouts.
-bundler_constraint="${DEPENDABOT_BUNDLER_VERSION_CONSTRAINT:-${BUNDLER_VERSION_CONSTRAINT:-~> 2}}"
+# Default to Bundler 4, with an override for controlled testing/rollouts.
+bundler_constraint="${DEPENDABOT_BUNDLER_VERSION_CONSTRAINT:-${BUNDLER_VERSION_CONSTRAINT:-~> 4.0}}"
 
 export GEM_HOME=$install_dir/.bundle
 

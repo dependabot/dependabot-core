@@ -362,10 +362,16 @@ module Dependabot
       end
 
       # Setup yarn and run a single yarn command returning stdout/stderr
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
-      def self.run_yarn_command(command, fingerprint: nil)
+      sig do
+        params(
+          command: String,
+          fingerprint: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_yarn_command(command, fingerprint: nil, env: nil)
         setup_yarn_berry
-        run_single_yarn_command(command, fingerprint: fingerprint)
+        run_single_yarn_command(command, fingerprint: fingerprint, env: env)
       end
 
       # Run single pnpm command returning stdout/stderr
@@ -382,14 +388,21 @@ module Dependabot
       end
 
       # Run single yarn command returning stdout/stderr
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
-      def self.run_single_yarn_command(command, fingerprint: nil)
+      sig do
+        params(
+          command: String,
+          fingerprint: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_single_yarn_command(command, fingerprint: nil, env: nil)
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          package_manager_run_command(YarnPackageManager::NAME, command, fingerprint: fingerprint)
+          package_manager_run_command(YarnPackageManager::NAME, command, fingerprint: fingerprint, env: env)
         else
           Dependabot::SharedHelpers.run_shell_command(
             "yarn #{command}",
-            fingerprint: "yarn #{fingerprint || command}"
+            fingerprint: "yarn #{fingerprint || command}",
+            env: env
           )
         end
       end

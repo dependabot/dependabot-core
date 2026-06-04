@@ -3,11 +3,10 @@
 
 require_relative "lib/bundler_version_constraint"
 
-# Activate Bundler 2 by default with an upper bound to prevent unintended
-# future major versions (Bundler 4 lives in the v4 helper tree). Honor
-# DEPENDABOT_BUNDLER_VERSION_CONSTRAINT (or its BUNDLER_VERSION_CONSTRAINT
-# fallback) so staged rollouts and emergency rollbacks performed by the build
-# script are respected at activation time.
+# Activate Bundler 4 by default with an upper bound to prevent unintended
+# future major versions. Honor DEPENDABOT_BUNDLER_VERSION_CONSTRAINT (or its
+# BUNDLER_VERSION_CONSTRAINT fallback) so staged rollouts and emergency
+# rollbacks performed by the build script are respected at activation time.
 bundler_constraint = BundlerVersionConstraint.resolve
 gem "bundler", *BundlerVersionConstraint.activation_clauses(bundler_constraint)
 require "bundler"

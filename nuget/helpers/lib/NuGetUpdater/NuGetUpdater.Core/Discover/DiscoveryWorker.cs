@@ -276,7 +276,16 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 else if (extension == ".slnx")
                 {
                     logger.Info($"    Expanding solution: {candidateEntryPoint}:");
-                    SolutionModel solution = await SolutionSerializers.SlnXml.OpenAsync(candidateEntryPoint, CancellationToken.None);
+                    SolutionModel solution;
+                    try
+                    {
+                        solution = await SolutionSerializers.SlnXml.OpenAsync(candidateEntryPoint, CancellationToken.None);
+                    }
+                    catch (SolutionException ex)
+                    {
+                        throw new UnparseableFileException(ex.Message, candidateEntryPoint);
+                    }
+
                     string solutionPath = Path.GetDirectoryName(candidateEntryPoint) ?? string.Empty;
 
                     foreach (SolutionProjectModel project in solution.SolutionProjects)
