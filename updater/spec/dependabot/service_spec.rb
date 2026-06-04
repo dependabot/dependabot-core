@@ -771,4 +771,24 @@ RSpec.describe Dependabot::Service do
       end
     end
   end
+
+  describe "#record_workflow_result" do
+    it "delegates to the workflow_summary instance" do
+      service.record_workflow_result(directory: "/app", status: "Success", details: "5 dependencies")
+
+      markdown = service.workflow_summary.build_markdown
+      expect(markdown).to include("| `/app` | ✅ Success | 5 dependencies |")
+    end
+  end
+
+  describe "#write_workflow_summary" do
+    before do
+      allow(Dependabot::Environment).to receive(:github_actions?).and_return(false)
+    end
+
+    it "delegates to workflow_summary#write with command and package_manager" do
+      expect(service.workflow_summary).to receive(:write).with(command: "graph", package_manager: "bundler")
+      service.write_workflow_summary(command: "graph", package_manager: "bundler")
+    end
+  end
 end

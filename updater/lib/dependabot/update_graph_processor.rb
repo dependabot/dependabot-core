@@ -56,6 +56,13 @@ module Dependabot
         # block the overall job.
         process_directory(branch:, directory:)
       end
+    rescue StandardError => e
+      service.record_workflow_result(
+        directory: "(unknown)",
+        status: "Failed",
+        details: "unexpected error: #{e.class}"
+      )
+      raise
     end
 
     private
@@ -76,7 +83,7 @@ module Dependabot
     attr_reader :error_handler
 
     sig { params(branch: String, directory: String).void }
-    def process_directory(branch:, directory:) # rubocop:disable Metrics/MethodLength
+    def process_directory(branch:, directory:) # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
       directory_source = create_source_for(directory)
       directory_dependency_files = dependency_files_for(directory)
 
@@ -93,6 +100,8 @@ module Dependabot
 
       Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
       service.create_dependency_submission(dependency_submission: submission)
+
+      record_workflow_result(directory, submission.status, submission.reason || submission.resolved_dependencies.size)
     rescue Dependabot::UnexpectedExternalCode
       # If this has been raised, then the directory is trying to use a private registry with an ecosystem
       # that requires the `insecure-external-code-execution: allow` flag.
@@ -123,6 +132,20 @@ module Dependabot
           "unexpected_external_code"
         )
       )
+
+      # TODO: DRY out error message/logging
+      record_workflow_result(
+        directory,
+        GithubApi::DependencySubmission::SnapshotStatus::FAILED,
+        <<~ERR
+            Dependabot refused to execute external code
+
+            This directory is configured to use a private registry but does not allow insecure code execution via your Dependabot configuration.
+
+            Please set `insecure-external-code-execution: allow` in the config if you trust your dependencies'
+          supply chain or remove the private registry from this directory.
+        ERR
+      )
     rescue Dependabot::ApiError, Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
       # If the submission API is down, we should raise this as a specific error type for visibility.
       error_handler.handle_job_error(
@@ -130,14 +153,25 @@ module Dependabot
           "Unable to submit data to the Dependency Snapshot API"
         )
       )
+      record_workflow_result(
+        directory,
+        GithubApi::DependencySubmission::SnapshotStatus::FAILED,
+        "Unable to submit data to the Dependency Snapshot API"
+      )
     rescue Dependabot::DependabotError => e
       error_handler.handle_job_error(error: e)
+
+      error_details = Dependabot.updater_error_details(e) || { "error-type": "unknown_error" }
+      record_workflow_result(
+        directory,
+        GithubApi::DependencySubmission::SnapshotStatus::FAILED,
+        error_details.fetch(:"error-type")
+      )
 
       # If we are not running in Actions, there's nothing more to do.
       return unless Dependabot::Environment.github_actions?
 
       # Send an empty submission so the snapshot service has a record that the job id has been completed.
-      error_details = Dependabot.updater_error_details(e) || { "error-type": "unknown_error" }
       empty_submission = empty_submission(
         branch,
         T.must(directory_source),
@@ -262,6 +296,38 @@ module Dependabot
           )
           branch.strip.sub("origin/", "refs/heads/")
         end
+      end
+    end
+
+    sig do
+      params(
+        directory: String,
+        status: GithubApi::DependencySubmission::SnapshotStatus,
+        details: T.any(String, Integer)
+      ).void
+    end
+    def record_workflow_result(directory, status, details)
+      detail_str = if details.is_a?(Integer)
+                     "#{details} dependencies"
+                   else
+                     details
+                   end
+
+      service.record_workflow_result(
+        directory: directory,
+        status: status_label(status),
+        details: detail_str
+      )
+    end
+
+    sig { params(status: GithubApi::DependencySubmission::SnapshotStatus).returns(String) }
+    def status_label(status)
+      case status.serialize
+      when "ok" then "Success"
+      when "degraded" then "Degraded"
+      when "failed" then "Failed"
+      when "skipped" then "Skipped"
+      else status.serialize
       end
     end
   end
