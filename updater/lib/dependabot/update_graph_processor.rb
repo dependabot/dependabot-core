@@ -19,6 +19,14 @@ module Dependabot
   class UpdateGraphProcessor
     extend T::Sig
 
+    UNEXPECTED_EXTERNAL_CODE_MESSAGE = <<~MSG
+      Dependabot refused to execute external code
+
+      This directory is configured to use a private registry but does not allow insecure code execution via your Dependabot configuration.
+
+      Please set `insecure-external-code-execution: allow` in the config if you trust your dependencies' supply chain or remove the private registry from this directory.
+    MSG
+
     # To do work, this class needs three arguments:
     # - The Dependabot::Service to send events and outcomes to
     # - The Dependabot::Job that describes the work to be done
@@ -109,14 +117,7 @@ module Dependabot
       # The default policy is denied, so this outcome represents a misconfiguration for the directory.
       # We should record this failure and allow other directories in the job to continue, as they may
       # not be misconfigured.
-      Dependabot.logger.info(<<~LOG)
-        Skipping directory #{directory} — Dependabot refused to execute external code
-
-        This directory is configured to use a private registry but does not allow insecure code execution via your Dependabot configuration.
-
-        Please set `insecure-external-code-execution: allow` in the config if you trust your dependencies'
-        supply chain or remove the private registry from this directory.
-      LOG
+      Dependabot.logger.info("Skipping directory #{directory} — #{UNEXPECTED_EXTERNAL_CODE_MESSAGE}")
       service.record_update_job_error(
         error_type: "unexpected_external_code",
         error_details: { message: "Cannot process directory #{directory} without external code execution" }
@@ -133,18 +134,10 @@ module Dependabot
         )
       )
 
-      # TODO: DRY out error message/logging
       record_workflow_result(
         directory,
         GithubApi::DependencySubmission::SnapshotStatus::FAILED,
-        <<~ERR
-            Dependabot refused to execute external code
-
-            This directory is configured to use a private registry but does not allow insecure code execution via your Dependabot configuration.
-
-            Please set `insecure-external-code-execution: allow` in the config if you trust your dependencies'
-          supply chain or remove the private registry from this directory.
-        ERR
+        UNEXPECTED_EXTERNAL_CODE_MESSAGE
       )
     rescue Dependabot::ApiError, Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
       # If the submission API is down, we should raise this as a specific error type for visibility.
@@ -161,15 +154,15 @@ module Dependabot
     rescue Dependabot::DependabotError => e
       error_handler.handle_job_error(error: e)
 
+      # If we are not running in Actions, there's nothing more to do.
+      return unless Dependabot::Environment.github_actions?
+
       error_details = Dependabot.updater_error_details(e) || { "error-type": "unknown_error" }
       record_workflow_result(
         directory,
         GithubApi::DependencySubmission::SnapshotStatus::FAILED,
-        error_details.fetch(:"error-type")
+        error_details.dig(:"error-detail", "message") || "An unknown error occurred, please check the logs for details."
       )
-
-      # If we are not running in Actions, there's nothing more to do.
-      return unless Dependabot::Environment.github_actions?
 
       # Send an empty submission so the snapshot service has a record that the job id has been completed.
       empty_submission = empty_submission(
