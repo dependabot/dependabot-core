@@ -345,12 +345,12 @@ module Dependabot
         sig { params(scope: String).returns(T.nilable(String)) }
         def scoped_credential_registry(scope)
           cred = credentials.find do |c|
-            c["type"] == "npm_registry" && c.scope&.include?(scope)
+            c["type"] == "npm_registry" && c["registry"] && c.scope&.include?(scope)
           end
           return unless cred
 
-          registry = cred["registry"]
-          registry = "https://#{registry}" unless registry&.start_with?("http")
+          registry = T.must(cred["registry"])
+          registry = "https://#{registry}" unless registry.start_with?("http")
           prepare_registry_url(registry)
         end
 

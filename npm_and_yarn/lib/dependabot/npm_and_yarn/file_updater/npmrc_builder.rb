@@ -105,9 +105,10 @@ module Dependabot
 
           lines = T.let([], T::Array[String])
           scoped_credentials.each do |cred|
-            registry = cred["registry"]
+            registry = cred.fetch("registry")
+            registry_url = registry.start_with?("http") ? registry : "https://#{registry}"
             T.must(cred.scope).each do |s|
-              lines << "#{s}:registry=https://#{registry}"
+              lines << "#{s}:registry=#{registry_url}"
             end
           end
 
@@ -358,7 +359,10 @@ module Dependabot
 
           # Use explicit scope from credential if available
           cred = registry_credentials.find { |c| c["registry"] == registry }
-          return T.must(cred.scope).map { |s| "#{s}:registry=https://#{registry}" } if cred&.scope
+          if cred&.scope
+            registry_url = registry.start_with?("http") ? registry : "https://#{registry}"
+            return T.must(cred.scope).map { |s| "#{s}:registry=#{registry_url}" }
+          end
 
           return unless dependency_urls
 
