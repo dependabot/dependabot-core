@@ -31,8 +31,9 @@ module Dependabot
 
         parsed = TomlRB.parse(T.must(T.must(uv_lock).content))
         packages = T.cast(parsed.fetch("package", []), T::Array[T.untyped])
+        manifest = parsed.fetch("manifest", {})
 
-        root_names = root_package_names(packages)
+        root_names = root_package_names(packages, manifest)
         direct_runtime, direct_dev = direct_dependency_names(packages, root_names)
 
         @dependencies = packages.filter_map do |pkg|
@@ -128,20 +129,43 @@ module Dependabot
         nil
       end
 
-      # Local project packages (the repo root and any uv workspace members)
-      # appear in uv.lock with a non-registry source: { virtual = "..." },
-      # { editable = "..." }, or { workspace = "..." }. We treat them all as
-      # roots so their declared dependencies can be marked direct.
-      sig { params(packages: T::Array[T.untyped]).returns(T::Set[String]) }
-      def root_package_names(packages)
+      # Identifies the workspace member packages whose `dependencies` and
+      # `dev-dependencies` arrays describe the project's direct deps.
+      #
+      # Authoritative signal: the `[manifest] members = [...]` array, which uv
+      # writes for multi-member workspaces. See
+      # https://github.com/astral-sh/uv/blob/main/crates/uv-resolver/src/lock/mod.rs
+      # ("manifest_table.insert(\"members\", ...)" and the workspace-member
+      # lookup `self.members().contains(&package.id.name)`).
+      #
+      # Fallback for single-member workspaces (which omit `[manifest] members`):
+      # match packages whose `source` is a local variant — `virtual`, `editable`,
+      # or `directory` — per the `SourceWire` enum in the same file.
+      sig { params(packages: T::Array[T.untyped], manifest: T.untyped).returns(T::Set[String]) }
+      def root_package_names(packages, manifest)
+        declared = declared_workspace_members(manifest)
+        return declared unless declared.empty?
+
         packages.each_with_object(Set.new) do |pkg, set|
           next unless pkg.is_a?(Hash)
 
           source = pkg["source"]
           next unless source.is_a?(Hash)
-          next unless source.key?("virtual") || source.key?("editable") || source.key?("workspace")
+          next unless source.key?("virtual") || source.key?("editable") || source.key?("directory")
 
           name = pkg["name"]
+          set << name if name.is_a?(String)
+        end
+      end
+
+      sig { params(manifest: T.untyped).returns(T::Set[String]) }
+      def declared_workspace_members(manifest)
+        return Set.new unless manifest.is_a?(Hash)
+
+        members = manifest["members"]
+        return Set.new unless members.is_a?(Array)
+
+        members.each_with_object(Set.new) do |name, set|
           set << name if name.is_a?(String)
         end
       end

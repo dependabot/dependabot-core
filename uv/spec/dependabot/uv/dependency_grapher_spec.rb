@@ -130,6 +130,59 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
       )
     end
 
+    context "when [manifest] members lists workspace members explicitly" do
+      let(:uv_lock_content) do
+        <<~LOCK
+          version = 1
+          requires-python = ">=3.12"
+
+          [manifest]
+          members = ["alpha", "beta"]
+
+          [[package]]
+          name = "alpha"
+          version = "0.1.0"
+          source = { editable = "packages/alpha" }
+          dependencies = [
+              { name = "requests" },
+          ]
+
+          [[package]]
+          name = "beta"
+          version = "0.2.0"
+          source = { editable = "packages/beta" }
+          dependencies = [
+              { name = "requests" },
+          ]
+
+          [[package]]
+          name = "requests"
+          version = "2.32.5"
+          source = { registry = "https://pypi.org/simple" }
+
+          [[package]]
+          name = "not-a-member"
+          version = "0.3.0"
+          source = { virtual = "." }
+          dependencies = [
+              { name = "requests" },
+          ]
+        LOCK
+      end
+
+      it "treats only the declared members as roots (ignoring local-source heuristic)" do
+        resolved = grapher.resolved_dependencies
+
+        # `requests` is a direct dep of both alpha and beta — it's direct/runtime.
+        expect(resolved.fetch("pkg:pypi/requests@2.32.5").direct).to be(true)
+        expect(resolved.fetch("pkg:pypi/requests@2.32.5").runtime).to be(true)
+
+        # `not-a-member` has a virtual source but isn't in `[manifest] members`,
+        # so it's treated as an ordinary (indirect) package rather than a root.
+        expect(resolved.fetch("pkg:pypi/not-a-member@0.3.0").direct).to be(false)
+      end
+    end
+
     context "when uv.lock is invalid TOML" do
       let(:uv_lock_content) { "not valid toml {{{" }
 
