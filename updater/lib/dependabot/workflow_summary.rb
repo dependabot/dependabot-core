@@ -60,11 +60,20 @@ module Dependabot
       lines << "| Directory | Status | Details |"
       lines << "|-----------|--------|---------|"
 
-      @results.sort_by(&:directory).each do |result|
-        status_icon = status_emoji(result.status)
-        # Ensure we render any line breaks in longer detail messages.
-        sanitized_details = result.details.strip.gsub(/\s*\n\s*/, "<br>")
-        lines << "| `#{result.directory}` | #{status_icon} #{result.status} | #{sanitized_details} |"
+      last_directory = T.let("", String)
+      @results.sort_by { |r| [r.directory, r.status] }
+              .group_by { |r| [r.directory, r.status] }
+              .each_value do |results|
+        results.each_with_index do |result, index|
+          sanitized_details = result.details.strip.gsub(/\s*\n\s*/, "<br>")
+          status_icon = status_emoji(result.status)
+
+          dir_cell = result.directory == last_directory ? "" : "`#{result.directory}`"
+          status_cell = index.zero? ? "#{status_icon} #{result.status}" : ""
+
+          lines << "| #{dir_cell} | #{status_cell} | #{sanitized_details} |"
+          last_directory = result.directory
+        end
       end
 
       lines << ""

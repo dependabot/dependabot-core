@@ -54,11 +54,26 @@ RSpec.describe Dependabot::WorkflowSummary do
     end
 
     it "replaces newlines in details with br tags to preserve readability" do
-      markdown = described_class.new.tap { |s|
+      markdown = described_class.new.tap do |s|
         s.record_result(directory: "/app", status: "Failed", details: "line one\nline two\n  line three")
-      }.build_markdown(command: "graph", package_manager: "bundler")
+      end.build_markdown(command: "graph", package_manager: "bundler")
 
       expect(markdown).to include("| `/app` | ❌ Failed | line one<br>line two<br>line three |")
+    end
+
+    it "groups multiple results for the same directory and status" do
+      grouped_summary = described_class.new
+      grouped_summary.record_result(directory: "/lib", status: "Warning", details: "missing credentials for registry X")
+      grouped_summary.record_result(directory: "/lib", status: "Warning", details: "stale lockfile detected")
+      grouped_summary.record_result(directory: "/lib", status: "Failed", details: "dependency_file_not_resolvable")
+      grouped_summary.record_result(directory: "/src", status: "Success", details: "10 dependencies")
+
+      markdown = grouped_summary.build_markdown(command: "graph", package_manager: "go_modules")
+
+      expect(markdown).to include("| `/lib` | ⚠️ Warning | missing credentials for registry X |")
+      expect(markdown).to include("|  |  | stale lockfile detected |")
+      expect(markdown).to include("|  | ❌ Failed | dependency_file_not_resolvable |")
+      expect(markdown).to include("| `/src` | ✅ Success | 10 dependencies |")
     end
   end
 
