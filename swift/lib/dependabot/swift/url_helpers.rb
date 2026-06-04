@@ -15,9 +15,9 @@ module Dependabot
       sig { params(source: String).returns(String) }
       def self.normalize_name(source)
         uri = URI.parse(source.downcase)
-        "#{uri.host}#{uri.path}".delete_prefix("www.").delete_suffix(".git")
+        "#{uri.host}#{uri.path}".delete_prefix("www.").delete_suffix("/").delete_suffix(".git")
       rescue URI::InvalidURIError
-        source.downcase.delete_suffix(".git")
+        source.downcase.delete_suffix("/").delete_suffix(".git")
       end
     end
   end
