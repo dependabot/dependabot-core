@@ -22,7 +22,7 @@ RSpec.describe Dependabot::Swift::UrlHelpers do
       expect(described_class.normalize_name("https://github.com/user/repo/")).to eq("github.com/user/repo")
     end
 
-    it "strips a trailing slash followed by .git" do
+    it "strips a .git/ suffix" do
       expect(described_class.normalize_name("https://github.com/user/repo.git/")).to eq("github.com/user/repo")
     end
 
