@@ -8,7 +8,7 @@ module Dependabot
   module Swift
     # Shared URL normalization utilities used by multiple parsers.
     # Produces a canonical dependency name from a git repository URL
-    # by stripping the scheme, "www." prefix, and ".git" suffix.
+    # by stripping the scheme, "www." prefix, trailing "/", and ".git" suffix.
     module UrlHelpers
       extend T::Sig
 
