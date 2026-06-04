@@ -43,5 +43,9 @@ RSpec.describe Dependabot::Swift::UrlHelpers do
     it "strips trailing slash and .git in fallback path when URI parsing fails" do
       expect(described_class.normalize_name("not a uri.git/")).to eq("not a uri")
     end
+
+    it "strips a trailing slash in fallback path when URI parsing fails" do
+      expect(described_class.normalize_name("not a uri/")).to eq("not a uri")
+    end
   end
 end
