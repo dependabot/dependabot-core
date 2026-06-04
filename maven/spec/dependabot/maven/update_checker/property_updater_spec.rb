@@ -202,6 +202,44 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
       )
     end
 
+    context "when parsed dependency versions are stale for a property dependency" do
+      let(:stale_dependencies_using_property) do
+        %w(
+          org.springframework:spring-beans
+          org.springframework:spring-context
+        ).map do |name|
+          Dependabot::Dependency.new(
+            name: name,
+            version: "4.3.11.RELEASE",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "4.3.12.RELEASE",
+              groups: [],
+              source: nil,
+              metadata: {
+                property_name: "springframework.version",
+                property_source: "pom.xml",
+                packaging_type: "jar"
+              }
+            }],
+            package_manager: "maven"
+          )
+        end
+      end
+
+      before do
+        allow(Dependabot::Maven::FileParser)
+          .to receive(:new)
+          .and_return(instance_double(Dependabot::Maven::FileParser, parse: stale_dependencies_using_property))
+      end
+
+      it "uses the current property value as the previous version" do
+        expect(updated_dependencies.map(&:previous_version)).to eq(
+          ["4.3.12.RELEASE", "4.3.12.RELEASE"]
+        )
+      end
+    end
+
     context "when one dependency is missing the target version" do
       before do
         body = fixture("maven_central_metadata", "missing_latest.xml")
