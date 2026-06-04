@@ -135,11 +135,13 @@ module Dependabot
       client.create_dependency_submission(dependency_submission.payload)
     end
 
+    # This method writes the information into a collection we can use to generate a summary markdown file in actions
     sig { params(directory: String, status: String, details: String).void }
     def record_workflow_result(directory:, status:, details:)
       workflow_summary.record_result(directory: directory, status: status, details: details)
     end
 
+    # This method finalises the workflow summary and stores it in an output file
     sig { params(command: String, package_manager: String).void }
     def write_workflow_summary(command:, package_manager:)
       workflow_summary.write(command: command, package_manager: package_manager)

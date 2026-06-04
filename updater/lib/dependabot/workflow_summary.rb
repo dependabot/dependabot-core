@@ -60,7 +60,7 @@ module Dependabot
       lines << "| Directory | Status | Details |"
       lines << "|-----------|--------|---------|"
 
-      @results.each do |result|
+      @results.sort_by(&:directory).each do |result|
         status_icon = status_emoji(result.status)
         # Ensure we render any line breaks in longer detail messages.
         sanitized_details = result.details.strip.gsub(/\s*\n\s*/, "<br>")
@@ -91,7 +91,7 @@ module Dependabot
     def status_emoji(status)
       case status.downcase
       when "success" then "✅"
-      when "degraded" then "⚠️"
+      when "degraded", "warning" then "⚠️"
       when "failed" then "❌"
       when "skipped" then "⏭️"
       else "❓"
