@@ -138,6 +138,8 @@ module Dependabot
     # This method writes the information into a collection we can use to generate a summary markdown file in actions
     sig { params(directory: String, status: String, details: String).void }
     def record_workflow_result(directory:, status:, details:)
+      return unless Experiments.enabled?(:workflow_job_summaries)
+
       workflow_summary.record_result(directory: directory, status: status, details: details)
     end
 

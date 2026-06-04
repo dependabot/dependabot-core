@@ -773,11 +773,30 @@ RSpec.describe Dependabot::Service do
   end
 
   describe "#record_workflow_result" do
-    it "delegates to the workflow_summary instance" do
-      service.record_workflow_result(directory: "/app", status: "Success", details: "5 dependencies")
+    context "when workflow_job_summaries experiment is enabled" do
+      before do
+        Dependabot::Experiments.register(:workflow_job_summaries, true)
+      end
 
-      markdown = service.workflow_summary.build_markdown
-      expect(markdown).to include("| `/app` | ✅ Success | 5 dependencies |")
+      it "delegates to the workflow_summary instance" do
+        service.record_workflow_result(directory: "/app", status: "Success", details: "5 dependencies")
+
+        markdown = service.workflow_summary.build_markdown(command: "graph", package_manager: "bundler")
+        expect(markdown).to include("| `/app` | ✅ Success | 5 dependencies |")
+      end
+    end
+
+    context "when workflow_job_summaries experiment is disabled" do
+      before do
+        Dependabot::Experiments.register(:workflow_job_summaries, false)
+      end
+
+      it "does not record results" do
+        service.record_workflow_result(directory: "/app", status: "Success", details: "5 dependencies")
+
+        markdown = service.workflow_summary.build_markdown(command: "graph", package_manager: "bundler")
+        expect(markdown).not_to include("/app")
+      end
     end
   end
 
