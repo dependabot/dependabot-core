@@ -782,7 +782,7 @@ RSpec.describe Dependabot::Service do
         service.record_workflow_result(directory: "/app", status: "ok", details: "5 dependencies")
 
         markdown = service.workflow_summary.build_markdown(command: "graph", package_manager: "bundler")
-        expect(markdown).to include("| `/app` | ✅ Success | 5 dependencies |")
+        expect(markdown).to include("| `/app` | ✅ Ok | 5 dependencies |")
       end
     end
 

@@ -83,8 +83,7 @@ RSpec.describe Dependabot::WorkflowSummary do
 
     before do
       FileUtils.mkdir_p(File.dirname(output_path))
-      allow(Dependabot::Environment).to receive(:github_actions?).and_return(github_actions)
-      allow(Dependabot::Environment).to receive(:output_path).and_return(output_path)
+      allow(Dependabot::Environment).to receive_messages(github_actions?: github_actions, output_path: output_path)
     end
 
     after do
