@@ -39,7 +39,6 @@ module Dependabot
       return unless Dependabot::Environment.github_actions?
 
       path = summary_path
-      return unless path
 
       if @results.empty?
         # Ensure we write an empty file even if no summary is required
