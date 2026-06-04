@@ -88,12 +88,10 @@ module Dependabot
       "#{job_type} — #{package_manager}"
     end
 
-    sig { returns(T.nilable(String)) }
+    sig { returns(String) }
     def summary_path
       output_path = Dependabot::Environment.output_path
       File.join(File.dirname(output_path), SUMMARY_FILENAME)
-    rescue StandardError
-      nil
     end
 
     sig { params(status: String).returns(String) }
