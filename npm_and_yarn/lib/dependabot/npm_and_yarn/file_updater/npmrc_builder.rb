@@ -44,7 +44,7 @@ module Dependabot
             if npmrc_file then complete_npmrc_from_credentials
             elsif yarnrc_file then build_npmrc_from_yarnrc
             else
-              build_npmrc_content_from_lockfile
+              build_npmrc_content_from_lockfile || build_npmrc_content_from_credential_scopes
             end
 
           final_content = initial_content || ""
@@ -96,6 +96,22 @@ module Dependabot
           "registry = #{registry}\n" \
             "#{npmrc_global_registry_auth_line}" \
             "always-auth = true"
+        end
+
+        sig { returns(T.nilable(String)) }
+        def build_npmrc_content_from_credential_scopes
+          scoped_credentials = registry_credentials.select(&:scope)
+          return if scoped_credentials.empty?
+
+          lines = T.let([], T::Array[String])
+          scoped_credentials.each do |cred|
+            registry = cred["registry"]
+            T.must(cred.scope).each do |s|
+              lines << "#{s}:registry=https://#{registry}"
+            end
+          end
+
+          lines.join("\n")
         end
 
         sig { returns(T.nilable(String)) }
@@ -339,6 +355,11 @@ module Dependabot
         def registry_scopes(registry)
           # Central registries don't just apply to scopes
           return if CENTRAL_REGISTRIES.include?(registry)
+
+          # Use explicit scope from credential if available
+          cred = registry_credentials.find { |c| c["registry"] == registry }
+          return T.must(cred.scope).map { |s| "#{s}:registry=https://#{registry}" } if cred&.scope
+
           return unless dependency_urls
 
           other_regs =

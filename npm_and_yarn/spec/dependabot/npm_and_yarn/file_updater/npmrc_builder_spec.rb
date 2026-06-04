@@ -1246,6 +1246,67 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
             NPMRC
         end
       end
+
+      context "when credentials have an explicit scope and lockfile inference fails" do
+        let(:dependency_files) { project_dependency_files("generic/simple") }
+
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ), Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "npm.pkg.github.com",
+              "token" => "my_token",
+              "scope" => "@my-company"
+            }
+          )]
+        end
+
+        it "generates scoped registry lines from the credential scope" do
+          expect(npmrc_content)
+            .to eq(<<~NPMRC.chomp)
+              @my-company:registry=https://npm.pkg.github.com
+              //npm.pkg.github.com/:_authToken=my_token
+            NPMRC
+        end
+      end
+
+      context "when credentials have multiple scopes" do
+        let(:dependency_files) { project_dependency_files("generic/simple") }
+
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          ), Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "npm.pkg.github.com",
+              "token" => "my_token",
+              "scope" => ["@org1", "@org2"]
+            }
+          )]
+        end
+
+        it "generates scoped registry lines for each scope" do
+          expect(npmrc_content)
+            .to eq(<<~NPMRC.chomp)
+              @org1:registry=https://npm.pkg.github.com
+              @org2:registry=https://npm.pkg.github.com
+              //npm.pkg.github.com/:_authToken=my_token
+            NPMRC
+        end
+      end
     end
   end
 end
