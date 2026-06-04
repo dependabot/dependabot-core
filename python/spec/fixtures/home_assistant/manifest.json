@@ -1,0 +1,16 @@
+{
+  "domain": "kia_uvo",
+  "name": "Kia Uvo",
+  "documentation": "https://www.home-assistant.io/integrations/kia_uvo",
+  "codeowners": [
+    "@balloob"
+  ],
+  "dependencies": [
+    "mqtt"
+  ],
+  "iot_class": "local_polling",
+  "requirements": [
+    "aiohue==1.9.1",
+    "voluptuous==0.13.1"
+  ]
+}

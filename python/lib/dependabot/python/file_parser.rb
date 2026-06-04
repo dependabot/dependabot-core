@@ -21,7 +21,13 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
+      HOME_ASSISTANT_MANIFEST_PATTERN = T.let(
+        %r{\A(?:custom_components|homeassistant/components)/[^/]+/manifest\.json\z},
+        Regexp
+      )
+
       require_relative "file_parser/pipfile_files_parser"
+      require_relative "file_parser/home_assistant_manifest_parser"
       require_relative "file_parser/pyproject_files_parser"
       require_relative "file_parser/setup_file_parser"
       require_relative "file_parser/python_requirement_parser"
@@ -58,6 +64,7 @@ module Dependabot
 
         dependency_set += pipenv_dependencies if pipfile
         dependency_set += pyproject_file_dependencies if pyproject
+        dependency_set += home_assistant_manifest_dependencies if home_assistant_manifest_files.any?
         dependency_set += requirement_dependencies if requirement_files.any?
         dependency_set += setup_file_dependencies if setup_file || setup_cfg_file
 
@@ -260,6 +267,21 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def requirement_files
         dependency_files.select { |f| f.name.end_with?(".txt", ".in") }
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def home_assistant_manifest_files
+        dependency_files.select { |f| f.name.match?(HOME_ASSISTANT_MANIFEST_PATTERN) }
+      end
+
+      sig { returns(DependencySet) }
+      def home_assistant_manifest_dependencies
+        @home_assistant_manifest_dependencies ||= T.let(
+          HomeAssistantManifestParser.new(
+            dependency_files: home_assistant_manifest_files
+          ).dependency_set,
+          T.nilable(DependencySet)
+        )
       end
 
       sig { returns(DependencySet) }
@@ -499,6 +521,7 @@ module Dependabot
       def check_required_files
         filenames = dependency_files.map(&:name)
         return if filenames.any? { |name| name.end_with?(".txt", ".in") }
+        return if filenames.any? { |name| name.match?(HOME_ASSISTANT_MANIFEST_PATTERN) }
         return if pipfile
         return if pyproject
         return if setup_file
