@@ -153,6 +153,8 @@ module Dependabot
 
             return section if section_data.key?(dependency_name)
           end
+
+          nil
         end
       end
 
