@@ -399,6 +399,22 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
       end
     end
 
+    context "with a non-Hash default lockfile section" do
+      let(:lockfile_fixture_name) { "malformed_default_section.lock" }
+
+      it "ignores the malformed production section" do
+        expect(dependencies.map(&:name)).to contain_exactly("py", "pytest")
+      end
+    end
+
+    context "with a non-Hash develop lockfile section" do
+      let(:lockfile_fixture_name) { "malformed_develop_section.lock" }
+
+      it "ignores the malformed development section" do
+        expect(dependencies.map(&:name)).to contain_exactly("certifi", "chardet", "idna", "requests", "urllib3")
+      end
+    end
+
     context "without a lockfile" do
       let(:files) { [pipfile] }
 
