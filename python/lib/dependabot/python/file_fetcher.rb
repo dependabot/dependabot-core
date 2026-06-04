@@ -37,6 +37,7 @@ module Dependabot
         files << setup_file if setup_file
         files << setup_cfg_file if setup_cfg_file
         files << pip_conf if pip_conf
+        files << pip_tools_config if pip_tools_config
         files
       end
 
@@ -117,6 +118,14 @@ module Dependabot
       def pip_conf
         @pip_conf ||= T.let(
           fetch_support_file("pip.conf"),
+          T.nilable(Dependabot::DependencyFile)
+        )
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def pip_tools_config
+        @pip_tools_config ||= T.let(
+          fetch_support_file(".pip-tools.toml"),
           T.nilable(Dependabot::DependencyFile)
         )
       end
