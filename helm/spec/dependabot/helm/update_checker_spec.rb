@@ -48,13 +48,15 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
   end
   let(:raise_on_ignored) { false }
   let(:ignored_versions) { [] }
+  let(:requirements_update_strategy) { nil }
   let(:checker) do
     described_class.new(
       dependency: dependency,
       dependency_files: [],
       credentials: credentials,
       ignored_versions: ignored_versions,
-      raise_on_ignored: raise_on_ignored
+      raise_on_ignored: raise_on_ignored,
+      requirements_update_strategy: requirements_update_strategy
     )
   end
 
@@ -197,6 +199,63 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
             }]
           )
         end
+      end
+    end
+  end
+
+  describe "versioning-strategy (range-preserving updates)" do
+    # The Chart.yaml constraint lives in dependency.version for helm chart deps.
+    let(:version) { "^1.0.0" }
+
+    before { allow(checker).to receive(:latest_version).and_return(latest) }
+
+    context "with increase-if-necessary" do
+      let(:requirements_update_strategy) do
+        Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary
+      end
+
+      context "when the latest version is already in range" do
+        let(:latest) { Dependabot::Helm::Version.new("1.0.5") }
+
+        it "does not report an update" do
+          expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+        end
+      end
+
+      context "when the latest version is out of range" do
+        let(:latest) { Dependabot::Helm::Version.new("2.0.0") }
+
+        it "reports an update" do
+          expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        end
+
+        it "bumps the constraint to ^2.0.0" do
+          expect(checker.updated_requirements.first[:requirement]).to eq("^2.0.0")
+        end
+      end
+    end
+
+    context "with widen" do
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+
+      context "when in range" do
+        let(:latest) { Dependabot::Helm::Version.new("1.0.5") }
+
+        it "does not report an update" do
+          expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+        end
+      end
+    end
+
+    context "with the default strategy (increase)" do
+      let(:latest) { Dependabot::Helm::Version.new("1.0.5") }
+
+      it "bumps the caret floor" do
+        expect(checker.updated_requirements.first[:requirement]).to eq("^1.0.5")
+      end
+
+      it "reports an update even though it is in range" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
       end
     end
   end

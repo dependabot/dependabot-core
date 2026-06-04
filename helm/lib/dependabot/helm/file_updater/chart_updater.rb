@@ -53,7 +53,7 @@ module Dependabot
               next unless dep["name"] == dependency.name
 
               old_version = dep["version"].to_s
-              new_version = dependency.version
+              new_version = updated_requirement_string(file) || dependency.version
 
               pattern = /
               (\s+-\s+name:\s+#{Regexp.escape(dependency.name)}.*?\n\s+)
@@ -66,6 +66,17 @@ module Dependabot
             end
           end
           content
+        end
+
+        # The strategy-updated requirement string for this chart file, if any.
+        # Falls back to the resolved version (exact pin) when unset, preserving
+        # the previous behavior.
+        sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
+        def updated_requirement_string(file)
+          req = dependency.requirements.find do |r|
+            r[:file] == file.name && r.dig(:metadata, :type) == :helm_chart
+          end
+          req && req[:requirement]
         end
 
         sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }

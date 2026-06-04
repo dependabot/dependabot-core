@@ -5,7 +5,9 @@ require "sorbet-runtime"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/errors"
+require "dependabot/requirements_update_strategy"
 require "dependabot/helm/version"
+require "dependabot/helm/requirement"
 require "dependabot/docker/requirement"
 require "dependabot/shared/utils/credentials_finder"
 require "dependabot/shared_helpers"
@@ -16,10 +18,11 @@ require "dependabot/helm/helpers"
 
 module Dependabot
   module Helm
-    class UpdateChecker < Dependabot::UpdateCheckers::Base
+    class UpdateChecker < Dependabot::UpdateCheckers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
       require_relative "update_checker/latest_version_resolver"
+      require_relative "update_checker/requirements_updater"
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
@@ -41,15 +44,39 @@ module Dependabot
         return dependency.requirements unless latest_version
 
         dependency.requirements.map do |req|
-          updated_metadata = req.fetch(:metadata).dup
-          updated_req = req.dup
-          updated_req[:requirement] = latest_version.to_s if updated_metadata.key?(:type)
+          next req unless req.fetch(:metadata, {}).key?(:type)
 
-          updated_req
+          if req.dig(:metadata, :type) == :helm_chart
+            updated_chart_requirement(req)
+          else
+            # Image deps keep the exact-overwrite behavior.
+            req.merge(requirement: latest_version.to_s)
+          end
         end
       end
 
       private
+
+      # Helm stores the Chart.yaml constraint in dependency.version, not in the
+      # requirement field (the shared parser leaves it nil). Feed that constraint
+      # through the RequirementsUpdater so versioning-strategy is honored. The
+      # default (BumpVersions) reproduces the previous exact-pin behavior.
+      sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+      def updated_chart_requirement(req)
+        current_constraint = req[:requirement] || dependency.version
+        synthetic = req.merge(requirement: current_constraint)
+
+        RequirementsUpdater.new(
+          requirements: [synthetic],
+          update_strategy: resolved_update_strategy,
+          latest_resolvable_version: T.must(latest_version).to_s
+        ).updated_requirements.first
+      end
+
+      sig { returns(Dependabot::RequirementsUpdateStrategy) }
+      def resolved_update_strategy
+        requirements_update_strategy || RequirementsUpdateStrategy::BumpVersions
+      end
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def updated_dependencies_after_full_unlock
@@ -140,8 +167,32 @@ module Dependabot
       sig { params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Boolean) }
       def version_can_update?(requirements_to_unlock:) # rubocop:disable Lint/UnusedMethodArgument
         return false unless latest_version
+        return false unless version_class.new(latest_version.to_s) > version_class.new(dependency.version)
 
-        version_class.new(latest_version.to_s) > version_class.new(dependency.version)
+        # Under range-preserving strategies, don't open a PR when the resolved
+        # version already satisfies the authored Chart.yaml constraint.
+        return true unless range_preserving_strategy?
+
+        !chart_requirement_satisfied_by_latest?
+      end
+
+      sig { returns(T::Boolean) }
+      def range_preserving_strategy?
+        [
+          RequirementsUpdateStrategy::BumpVersionsIfNecessary,
+          RequirementsUpdateStrategy::WidenRanges
+        ].include?(resolved_update_strategy)
+      end
+
+      sig { returns(T::Boolean) }
+      def chart_requirement_satisfied_by_latest?
+        return false unless dependency_type == :helm_chart
+
+        constraint = dependency.requirements.first&.dig(:requirement) || dependency.version
+        return false if constraint.nil? || constraint.to_s.strip.empty?
+
+        version = version_class.new(T.must(latest_version).to_s)
+        Helm::Requirement.requirements_array(constraint).any? { |r| r.satisfied_by?(version) }
       end
 
       sig { returns(T.nilable(T.any(String, Gem::Version))) }
