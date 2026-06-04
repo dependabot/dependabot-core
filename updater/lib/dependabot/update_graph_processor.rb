@@ -67,7 +67,7 @@ module Dependabot
     rescue StandardError => e
       service.record_workflow_result(
         directory: "(unknown)",
-        status: "Failed",
+        status: GithubApi::DependencySubmission::SnapshotStatus::FAILED.serialize,
         details: "unexpected error: #{e.class}"
       )
       raise
@@ -273,7 +273,7 @@ module Dependabot
 
       service.record_workflow_result(
         directory: T.must(source.directory),
-        status: GithubApi::DependencySubmission::SnapshotStatus::DEGRADED.to_s,
+        status: GithubApi::DependencySubmission::SnapshotStatus::DEGRADED.serialize,
         details: <<~MSG
           The dependency graph may be incomplete: #{error_message}
         MSG
@@ -316,20 +316,9 @@ module Dependabot
     def record_workflow_result(directory, status, details)
       service.record_workflow_result(
         directory: directory,
-        status: status_label(status),
+        status: status.serialize,
         details: details
       )
-    end
-
-    sig { params(status: GithubApi::DependencySubmission::SnapshotStatus).returns(String) }
-    def status_label(status)
-      case status.serialize
-      when "ok" then "Success"
-      when "degraded" then "Degraded"
-      when "failed" then "Failed"
-      when "skipped" then "Skipped"
-      else status.serialize
-      end
     end
   end
 end

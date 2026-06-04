@@ -127,7 +127,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     it "records a workflow result for the directory" do
       expect(service).to receive(:record_workflow_result).with(
         directory: "/",
-        status: "Success",
+        status: "ok",
         details: "Found 2 dependencies"
       )
 
@@ -805,7 +805,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     it "records a failed workflow result" do
       expect(service).to receive(:record_workflow_result).with(
         directory: "/",
-        status: "Failed",
+        status: "failed",
         details: "Unable to submit data to the Dependency Snapshot API"
       )
 
@@ -915,12 +915,12 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       it "records a failed workflow result for each directory" do
         expect(service).to receive(:record_workflow_result).with(
           directory: "/",
-          status: "Failed",
+          status: "failed",
           details: a_string_including("Dependabot refused to execute external code")
         )
         expect(service).to receive(:record_workflow_result).with(
           directory: "/subproject",
-          status: "Failed",
+          status: "failed",
           details: a_string_including("Dependabot refused to execute external code")
         )
 

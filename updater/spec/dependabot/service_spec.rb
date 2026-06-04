@@ -779,7 +779,7 @@ RSpec.describe Dependabot::Service do
       end
 
       it "delegates to the workflow_summary instance" do
-        service.record_workflow_result(directory: "/app", status: "Success", details: "5 dependencies")
+        service.record_workflow_result(directory: "/app", status: "ok", details: "5 dependencies")
 
         markdown = service.workflow_summary.build_markdown(command: "graph", package_manager: "bundler")
         expect(markdown).to include("| `/app` | ✅ Success | 5 dependencies |")
@@ -792,7 +792,7 @@ RSpec.describe Dependabot::Service do
       end
 
       it "does not record results" do
-        service.record_workflow_result(directory: "/app", status: "Success", details: "5 dependencies")
+        service.record_workflow_result(directory: "/app", status: "ok", details: "5 dependencies")
 
         markdown = service.workflow_summary.build_markdown(command: "graph", package_manager: "bundler")
         expect(markdown).not_to include("/app")

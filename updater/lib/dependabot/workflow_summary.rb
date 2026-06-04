@@ -69,7 +69,7 @@ module Dependabot
           status_icon = status_emoji(result.status)
 
           dir_cell = result.directory == last_directory ? "" : "`#{result.directory}`"
-          status_cell = index.zero? ? "#{status_icon} #{result.status}" : ""
+          status_cell = index.zero? ? "#{status_icon} #{result.status.capitalize}" : ""
 
           lines << "| #{dir_cell} | #{status_cell} | #{sanitized_details} |"
           last_directory = result.directory
@@ -99,7 +99,7 @@ module Dependabot
     sig { params(status: String).returns(String) }
     def status_emoji(status)
       case status.downcase
-      when "success" then "✅"
+      when "ok" then "✅"
       when "degraded", "warning" then "⚠️"
       when "failed" then "❌"
       when "skipped" then "⏭️"

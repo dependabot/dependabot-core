@@ -10,22 +10,22 @@ RSpec.describe Dependabot::WorkflowSummary do
 
   describe "#record_result" do
     it "accumulates results" do
-      summary.record_result(directory: "/src", status: "Success", details: "42 dependencies")
-      summary.record_result(directory: "/lib", status: "Failed", details: "timeout")
+      summary.record_result(directory: "/src", status: "ok", details: "42 dependencies")
+      summary.record_result(directory: "/lib", status: "failed", details: "timeout")
 
       markdown = summary.build_markdown(command: "graph", package_manager: "bundler")
 
-      expect(markdown).to include("| `/src` | ✅ Success | 42 dependencies |")
+      expect(markdown).to include("| `/src` | ✅ Ok | 42 dependencies |")
       expect(markdown).to include("| `/lib` | ❌ Failed | timeout |")
     end
   end
 
   describe "#build_markdown" do
     before do
-      summary.record_result(directory: "/src", status: "Success", details: "42 dependencies")
-      summary.record_result(directory: "/lib", status: "Degraded", details: "error fetching sub-dependencies")
-      summary.record_result(directory: "/tools", status: "Failed", details: "dependency_file_not_resolvable")
-      summary.record_result(directory: "/docs", status: "Skipped", details: "missing manifest files")
+      summary.record_result(directory: "/src", status: "ok", details: "42 dependencies")
+      summary.record_result(directory: "/lib", status: "degraded", details: "error fetching sub-dependencies")
+      summary.record_result(directory: "/tools", status: "failed", details: "dependency_file_not_resolvable")
+      summary.record_result(directory: "/docs", status: "skipped", details: "missing manifest files")
     end
 
     it "uses 'Dependency Graph Snapshot' heading for graph commands" do
@@ -33,7 +33,7 @@ RSpec.describe Dependabot::WorkflowSummary do
 
       expect(markdown).to include("## Dependency Graph Snapshot — go_modules")
       expect(markdown).to include("| Directory | Status | Details |")
-      expect(markdown).to include("| `/src` | ✅ Success | 42 dependencies |")
+      expect(markdown).to include("| `/src` | ✅ Ok | 42 dependencies |")
       expect(markdown).to include("| `/lib` | ⚠️ Degraded | error fetching sub-dependencies |")
       expect(markdown).to include("| `/tools` | ❌ Failed | dependency_file_not_resolvable |")
       expect(markdown).to include("| `/docs` | ⏭️ Skipped | missing manifest files |")
@@ -55,7 +55,7 @@ RSpec.describe Dependabot::WorkflowSummary do
 
     it "replaces newlines in details with br tags to preserve readability" do
       markdown = described_class.new.tap do |s|
-        s.record_result(directory: "/app", status: "Failed", details: "line one\nline two\n  line three")
+        s.record_result(directory: "/app", status: "failed", details: "line one\nline two\n  line three")
       end.build_markdown(command: "graph", package_manager: "bundler")
 
       expect(markdown).to include("| `/app` | ❌ Failed | line one<br>line two<br>line three |")
@@ -63,10 +63,10 @@ RSpec.describe Dependabot::WorkflowSummary do
 
     it "groups multiple results for the same directory and status" do
       grouped_summary = described_class.new
-      grouped_summary.record_result(directory: "/lib", status: "Warning", details: "missing credentials for registry X")
-      grouped_summary.record_result(directory: "/lib", status: "Warning", details: "stale lockfile detected")
-      grouped_summary.record_result(directory: "/lib", status: "Failed", details: "dependency_file_not_resolvable")
-      grouped_summary.record_result(directory: "/src", status: "Success", details: "10 dependencies")
+      grouped_summary.record_result(directory: "/lib", status: "warning", details: "missing credentials for registry X")
+      grouped_summary.record_result(directory: "/lib", status: "warning", details: "stale lockfile detected")
+      grouped_summary.record_result(directory: "/lib", status: "failed", details: "dependency_file_not_resolvable")
+      grouped_summary.record_result(directory: "/src", status: "ok", details: "10 dependencies")
 
       markdown = grouped_summary.build_markdown(command: "graph", package_manager: "go_modules")
 
@@ -74,7 +74,7 @@ RSpec.describe Dependabot::WorkflowSummary do
       expect(markdown).to include("| `/lib` | ❌ Failed | dependency_file_not_resolvable |")
       expect(markdown).to include("|  | ⚠️ Warning | missing credentials for registry X |")
       expect(markdown).to include("|  |  | stale lockfile detected |")
-      expect(markdown).to include("| `/src` | ✅ Success | 10 dependencies |")
+      expect(markdown).to include("| `/src` | ✅ Ok | 10 dependencies |")
     end
   end
 
@@ -95,7 +95,7 @@ RSpec.describe Dependabot::WorkflowSummary do
       let(:github_actions) { true }
 
       it "writes the summary markdown file with the correct heading" do
-        summary.record_result(directory: "/", status: "Success", details: "10 dependencies")
+        summary.record_result(directory: "/", status: "ok", details: "10 dependencies")
 
         summary.write(command: "graph", package_manager: "go_modules")
 
@@ -104,7 +104,7 @@ RSpec.describe Dependabot::WorkflowSummary do
 
         content = File.read(summary_path)
         expect(content).to include("## Dependency Graph Snapshot — go_modules")
-        expect(content).to include("| `/` | ✅ Success | 10 dependencies |")
+        expect(content).to include("| `/` | ✅ Ok | 10 dependencies |")
       end
 
       it "writes an empty file when there are no results" do
@@ -120,7 +120,7 @@ RSpec.describe Dependabot::WorkflowSummary do
       let(:github_actions) { false }
 
       it "does not write a file" do
-        summary.record_result(directory: "/", status: "Success", details: "10 dependencies")
+        summary.record_result(directory: "/", status: "ok", details: "10 dependencies")
 
         summary.write(command: "graph", package_manager: "bundler")
 
