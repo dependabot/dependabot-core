@@ -21,6 +21,7 @@ module Dependabot
         case new_source_type
         when "git" then find_source_from_git_url
         when "registry", "provider" then find_source_from_registry_details
+        when "oci" then find_source_from_oci_details
         else raise "Unexpected source type: #{new_source_type}"
         end
       end
@@ -36,6 +37,23 @@ module Dependabot
 
         url = info[:url] || info.fetch("url")
         Source.from_url(url)
+      end
+
+      sig { returns(T.nilable(Dependabot::Source)) }
+      def find_source_from_oci_details
+        info = dependency.requirements.filter_map { |r| r[:source] }.first
+        artifact_identifier = info[:artifact_identifier] || info["artifact_identifier"]
+        return unless artifact_identifier
+
+        hostname, repo = artifact_identifier.split("/", 2)
+        return unless repo
+
+        Source.new(
+          provider: "oci",
+          repo: repo,
+          hostname: hostname,
+          api_endpoint: "https://#{hostname}/"
+        )
       end
 
       sig { returns(T.nilable(Dependabot::Source)) }
