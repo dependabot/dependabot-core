@@ -63,6 +63,27 @@ function get_dockerfile_path() {
     esac
 }
 
+function _build_cmd_and_cache_args() {
+  # Outputs (via stdout) the build command followed by cache-related flags for
+  # the given cache scope. When BUILDX_GHA_CACHE=1, uses `docker buildx build`
+  # with the GitHub Actions cache backend (https://docs.docker.com/build/cache/backends/gha/).
+  # Otherwise falls back to the legacy `docker build` with registry inline cache.
+  local scope="$1"
+  local image="$2"
+  if [[ -n "$BUILDX_GHA_CACHE" ]]; then
+    # --load is required so the resulting image is available to the local
+    # docker daemon for subsequent tag/push/cosign steps.
+    echo "docker buildx build --load" \
+         "--cache-from type=gha,scope=${scope}" \
+         "--cache-to type=gha,mode=max,scope=${scope}" \
+         "--cache-from ${image}"
+  else
+    echo "docker build" \
+         "--build-arg BUILDKIT_INLINE_CACHE=1" \
+         "--cache-from ${image}"
+  fi
+}
+
 function docker_build() {
   [[ -n "$SKIP_BUILD" ]] && return
   ensure_compatible_docker_api_version
@@ -80,14 +101,14 @@ function docker_build() {
   # shellcheck disable=SC2034 # Used implicitly in docker build
   DOCKER_CONTENT_TRUST=1
 
-  # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
-  docker build \
+  CORE_BUILD=$(_build_cmd_and_cache_args "updater-core" "$UPDATER_CORE_IMAGE")
+
+  # shellcheck disable=SC2086  # word-splitting is intentional for build args
+  $CORE_BUILD \
     $DOCKER_BUILD_ARGS \
-    --build-arg BUILDKIT_INLINE_CACHE=1 \
     --build-arg USER_UID=$DEPENDABOT_USER_UID \
     --build-arg USER_GID=$DEPENDABOT_USER_GID \
     --build-arg DEPENDABOT_UPDATER_VERSION=$DEPENDABOT_UPDATER_VERSION \
-    --cache-from "$UPDATER_CORE_IMAGE" \
     -t "$UPDATER_CORE_IMAGE" \
     -f Dockerfile.updater-core \
     .
@@ -110,11 +131,11 @@ function docker_build() {
 
   DOCKERFILE_PATH=$(get_dockerfile_path)
 
-  # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
-  docker build \
+  ECOSYSTEM_BUILD=$(_build_cmd_and_cache_args "$ECOSYSTEM" "$UPDATER_IMAGE_NAME")
+
+  # shellcheck disable=SC2086  # word-splitting is intentional for build args
+  $ECOSYSTEM_BUILD \
     $DOCKER_BUILD_ARGS \
-    --build-arg BUILDKIT_INLINE_CACHE=1 \
-    --cache-from "$UPDATER_IMAGE_NAME" \
     -t "$UPDATER_IMAGE_NAME" \
     -f "$DOCKERFILE_PATH" \
     .

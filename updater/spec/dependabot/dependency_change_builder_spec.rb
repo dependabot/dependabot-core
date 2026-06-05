@@ -23,6 +23,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         }
       ],
       experiments: {},
+      security_updates_only?: false,
       source: source
     )
   end
@@ -123,6 +124,40 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
 
     def dependency_group_source
       Dependabot::DependencyGroup.new(name: "dummy-pkg-*", rules: { patterns: ["dummy-pkg-*"] })
+    end
+
+    context "when the job is a security update" do
+      let(:change_source) { lead_dependency_change_source }
+
+      before do
+        allow(job).to receive(:security_updates_only?).and_return(true)
+        stub_file_updater(updated_dependency_files: dependency_files.reject(&:support_file?))
+      end
+
+      it "passes security_updates_only: true in options to the file updater" do
+        create_change
+
+        expect(file_updater_class).to have_received(:new).with(
+          hash_including(options: hash_including(security_updates_only: true))
+        )
+      end
+    end
+
+    context "when the job is not a security update" do
+      let(:change_source) { lead_dependency_change_source }
+
+      before do
+        allow(job).to receive(:security_updates_only?).and_return(false)
+        stub_file_updater(updated_dependency_files: dependency_files.reject(&:support_file?))
+      end
+
+      it "passes security_updates_only: false in options to the file updater" do
+        create_change
+
+        expect(file_updater_class).to have_received(:new).with(
+          hash_including(options: hash_including(security_updates_only: false))
+        )
+      end
     end
 
     context "when the source is a lead dependency" do

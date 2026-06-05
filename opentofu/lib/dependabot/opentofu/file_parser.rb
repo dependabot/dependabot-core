@@ -29,6 +29,7 @@ module Dependabot
       DEFAULT_NAMESPACE = "hashicorp"
       # https://opentofu.org/docs/language/providers/requirements/#source-addresses
       PROVIDER_SOURCE_ADDRESS = %r{\A((?<hostname>.+)/)?(?<namespace>.+)/(?<name>.+)\z}
+      LOCAL_REFERENCE_REGEX = /\A\$\{local\.(?<var_name>[^}]+)\}\z/
 
       # Namespaces reserved for providers bundled with the OpenTofu/Terraform
       # binary. Providers in these namespaces cannot be updated independently
@@ -67,6 +68,39 @@ module Dependabot
       end
 
       private
+
+      sig { returns(T::Hash[String, T::Hash[Symbol, String]]) }
+      def locals_lookup
+        @locals_lookup ||= T.let(
+          begin
+            lookup = T.let({}, T::Hash[String, T::Hash[Symbol, String]])
+            opentofu_files.each do |file|
+              parsed_file(file).fetch("locals", []).each do |locals_block|
+                locals_block.each do |var_name, value|
+                  next unless value.is_a?(String)
+                  next if value.include?("${")
+
+                  lookup[var_name] = { value: value, file: file.name }
+                end
+              end
+            end
+            lookup
+          end,
+          T.nilable(T::Hash[String, T::Hash[Symbol, String]])
+        )
+      end
+
+      sig { params(version_string: String).returns(T.nilable(T::Hash[Symbol, String])) }
+      def resolve_local_reference(version_string)
+        match = version_string.match(LOCAL_REFERENCE_REGEX)
+        return nil unless match
+
+        var_name = T.must(match[:var_name])
+        local_entry = locals_lookup[var_name]
+        return nil unless local_entry
+
+        { value: T.must(local_entry[:value]), variable: var_name, file: T.must(local_entry[:file]) }
+      end
 
       sig { params(details: T.any(String, T::Hash[String, T.untyped])).returns(T::Boolean) }
       def builtin_provider?(details)
@@ -163,6 +197,15 @@ module Dependabot
                    else name
                    end
         version_req = details["version"]&.strip
+
+        req_file = file.name
+        resolved = version_req ? resolve_local_reference(version_req) : nil
+        if resolved
+          version_req = resolved[:value]
+          req_file = T.must(resolved[:file])
+          source[:local_variable] = resolved[:variable]
+        end
+
         version =
           if source[:type] == "git" then version_from_ref(source[:ref])
           elsif source[:type] == "oci" then source[:version]
@@ -176,7 +219,7 @@ module Dependabot
           requirements: [
             { requirement: version_req,
               groups: [],
-              file: file.name,
+              file: req_file,
               source: source }
           ]
         )

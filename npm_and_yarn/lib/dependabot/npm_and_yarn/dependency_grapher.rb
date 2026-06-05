@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "json"
-require "yaml"
 require "sorbet-runtime"
 
 require "dependabot/dependency_graphers"
@@ -17,6 +16,9 @@ module Dependabot
       extend T::Sig
 
       require_relative "dependency_grapher/lockfile_generator"
+      require_relative "dependency_grapher/npm_relationship_resolver"
+      require_relative "dependency_grapher/yarn_relationship_resolver"
+      require_relative "dependency_grapher/pnpm_relationship_resolver"
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
@@ -27,8 +29,37 @@ module Dependabot
         lockfile || package_json
       end
 
+      # Override to expand multi-version dependencies into separate resolved
+      # dependency entries. When the same package exists at multiple versions
+      # (e.g., is-number@6.0.0 direct + is-number@7.0.0 transitive), each
+      # version gets its own entry with correct subdependency edges.
+      sig { override.returns(T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency]) }
+      def resolved_dependencies
+        prepare! unless prepared
+
+        @dependencies.each_with_object({}) do |dep, resolved|
+          all_versions = dep.metadata[:all_versions] || [dep]
+
+          all_versions.each do |version_dep|
+            purl = build_purl(version_dep)
+            next if resolved.key?(purl)
+
+            resolved[purl] = Dependabot::DependencyGraphers::ResolvedDependency.new(
+              package_url: purl,
+              direct: version_dep.top_level? || !version_dep.metadata[:alias].nil?,
+              runtime: version_dep.production?,
+              dependencies: subdependency_purls_for(version_dep)
+            )
+          end
+        end
+      end
+
       sig { override.void }
       def prepare!
+        # Enable alias extraction for graph jobs so aliased packages appear
+        # in the dependency graph for security scanning.
+        file_parser.dealias_packages!
+
         if lockfile.nil?
           Dependabot.logger.info("No lockfile found, generating ephemeral lockfile for dependency graphing")
           generate_ephemeral_lockfile!
@@ -79,11 +110,14 @@ module Dependabot
 
       sig { returns(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)]) }
       def lockfiles_hash
-        {
-          npm: dependency_files.find { |f| f.name.end_with?(NpmPackageManager::LOCKFILE_NAME) },
-          yarn: dependency_files.find { |f| f.name.end_with?(YarnPackageManager::LOCKFILE_NAME) },
-          pnpm: dependency_files.find { |f| f.name.end_with?(PNPMPackageManager::LOCKFILE_NAME) }
-        }
+        @lockfiles_hash ||= T.let(
+          {
+            npm: dependency_files.find { |f| f.name.end_with?(NpmPackageManager::LOCKFILE_NAME) },
+            yarn: dependency_files.find { |f| f.name.end_with?(YarnPackageManager::LOCKFILE_NAME) },
+            pnpm: dependency_files.find { |f| f.name.end_with?(PNPMPackageManager::LOCKFILE_NAME) }
+          },
+          T.nilable(T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)])
+        )
       end
 
       sig { returns(String) }
@@ -130,6 +164,7 @@ module Dependabot
 
         # Clear our cached lockfile reference so it picks up the new one
         remove_instance_variable(:@lockfile) if instance_variable_defined?(:@lockfile)
+        remove_instance_variable(:@lockfiles_hash) if instance_variable_defined?(:@lockfiles_hash)
 
         # Clear the FileParser's memoized lockfile references so it will
         # find the newly injected lockfile when parse is called
@@ -156,7 +191,48 @@ module Dependabot
 
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def fetch_subdependencies(dependency)
-        package_relationships.fetch(dependency.name, [])
+        key = "#{dependency.name}@#{dependency.version}"
+        package_relationships.fetch(key, [])
+      end
+
+      # Builds purl strings for subdependencies directly from the name@version
+      # entries in package_relationships, without going through dependencies_by_name
+      # which only holds one combined dep per package name.
+      sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+      def subdependency_purls_for(dependency)
+        return [] if errored_fetching_subdependencies
+
+        key = "#{dependency.name}@#{dependency.version}"
+        children = package_relationships.fetch(key, [])
+
+        children.filter_map do |child_key|
+          child_name, child_version = split_name_version(child_key)
+          next unless child_name && child_version
+
+          purl_name = child_name.sub(/^@/, "%40")
+          format(PURL_TEMPLATE, type: "npm", name: purl_name, version: "@#{child_version}")
+        end
+      rescue StandardError => e
+        errored_fetching_subdependencies!
+        @subdependency_error = T.let(e, T.nilable(StandardError))
+        Dependabot.logger.error("Error fetching subdependencies: #{e.message}")
+        []
+      end
+
+      # Splits a "name@version" string, handling scoped packages like "@scope/pkg@1.0.0"
+      sig { params(name_version: String).returns([T.nilable(String), T.nilable(String)]) }
+      def split_name_version(name_version)
+        # For scoped packages (@scope/name@version), find the second @
+        at_index = if name_version.start_with?("@")
+                     name_version.index("@", 1)
+                   else
+                     name_version.index("@")
+                   end
+        return [name_version, nil] unless at_index
+
+        version = name_version[(at_index + 1)..]
+        version = nil if version.nil? || version.empty?
+        [name_version[0...at_index], version]
       end
 
       sig { returns(T::Hash[String, T::Array[String]]) }
@@ -165,126 +241,24 @@ module Dependabot
           fetch_package_relationships,
           T.nilable(T::Hash[String, T::Array[String]])
         )
+      rescue StandardError => e
+        errored_fetching_subdependencies!
+        @subdependency_error = T.let(e, T.nilable(StandardError))
+        Dependabot.logger.error("Error fetching subdependencies: #{e.message}")
+        @package_relationships = {}
       end
 
       sig { returns(T::Hash[String, T::Array[String]]) }
       def fetch_package_relationships
         case detected_package_manager
         when NpmPackageManager::NAME
-          fetch_npm_lock_relationships
+          NpmRelationshipResolver.new(T.must(lockfiles_hash[:npm])).relationships
         when YarnPackageManager::NAME
-          fetch_yarn_lock_relationships
+          YarnRelationshipResolver.new(T.must(lockfiles_hash[:yarn])).relationships
         when PNPMPackageManager::NAME
-          fetch_pnpm_lock_relationships
+          PnpmRelationshipResolver.new(T.must(lockfiles_hash[:pnpm])).relationships
         else
           {}
-        end
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def npm_lockfile
-        return @npm_lockfile if defined?(@npm_lockfile)
-
-        @npm_lockfile = T.let(
-          dependency_files.find { |f| f.name.end_with?(NpmPackageManager::LOCKFILE_NAME) },
-          T.nilable(Dependabot::DependencyFile)
-        )
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def yarn_lockfile
-        return @yarn_lockfile if defined?(@yarn_lockfile)
-
-        @yarn_lockfile = T.let(
-          dependency_files.find { |f| f.name.end_with?(YarnPackageManager::LOCKFILE_NAME) },
-          T.nilable(Dependabot::DependencyFile)
-        )
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def pnpm_lockfile
-        return @pnpm_lockfile if defined?(@pnpm_lockfile)
-
-        @pnpm_lockfile = T.let(
-          dependency_files.find { |f| f.name.end_with?(PNPMPackageManager::LOCKFILE_NAME) },
-          T.nilable(Dependabot::DependencyFile)
-        )
-      end
-
-      sig { returns(T::Hash[String, T::Array[String]]) }
-      def fetch_npm_lock_relationships
-        parsed = JSON.parse(T.must(T.must(npm_lockfile).content))
-        packages = parsed.fetch("packages", {})
-
-        # v3/v2 lockfiles use a flat "packages" section
-        if packages.is_a?(Hash) && !packages.empty?
-          return packages.each_with_object({}) do |(path, details), rels|
-            next if path.empty? # skip root package entry
-            next unless details.is_a?(Hash)
-
-            children = details.fetch("dependencies", {}).keys
-            next if children.empty?
-
-            rels[path.split("node_modules/").last] = children
-          end
-        end
-
-        # if packages isn't present, attempt a v1 fallback
-        fetch_npm_v1_lock_relationships(parsed)
-      end
-
-      sig { params(parsed: T::Hash[String, T.untyped]).returns(T::Hash[String, T::Array[String]]) }
-      def fetch_npm_v1_lock_relationships(parsed)
-        dependencies = parsed.fetch("dependencies", {})
-        return {} unless dependencies.is_a?(Hash)
-
-        dependencies.each_with_object({}) do |(name, details), rels|
-          next unless details.is_a?(Hash)
-
-          nested = details.fetch("dependencies", nil)
-          next unless nested.is_a?(Hash)
-
-          children = nested.keys
-          rels[name] = children unless children.empty?
-          rels.merge!(fetch_npm_v1_lock_relationships(details))
-        end
-      end
-
-      sig { returns(T::Hash[String, T::Array[String]]) }
-      def fetch_yarn_lock_relationships
-        parsed = FileParser::YarnLock.new(T.must(yarn_lockfile)).parsed
-
-        parsed.each_with_object({}) do |(req, details), rels|
-          next unless details.is_a?(Hash)
-
-          parent_name = T.must(req.split(/(?<=\w)\@/).first)
-          children = details.fetch("dependencies", {})&.keys || []
-
-          next if children.empty?
-
-          rels[parent_name] ||= []
-          rels[parent_name].concat(children).uniq!
-        end
-      end
-
-      sig { returns(T::Hash[String, T::Array[String]]) }
-      def fetch_pnpm_lock_relationships
-        parsed = YAML.safe_load(T.must(T.must(pnpm_lockfile).content)) || {}
-
-        # v9+ uses "snapshots" for resolved dependency details; v6 uses "packages"
-        entries = parsed.fetch("snapshots", nil) || parsed.fetch("packages", {})
-
-        entries.each_with_object({}) do |(key, details), rels|
-          next unless details.is_a?(Hash)
-
-          # Keys are "/name@version" (v6) or "name@version" (v9)
-          parent_name = key.sub(%r{^/}, "").split(/(?<=\w)\@/).first
-          children = details.fetch("dependencies", {})&.keys || []
-
-          next if children.empty?
-
-          rels[parent_name] ||= []
-          rels[parent_name].concat(children).uniq!
         end
       end
 

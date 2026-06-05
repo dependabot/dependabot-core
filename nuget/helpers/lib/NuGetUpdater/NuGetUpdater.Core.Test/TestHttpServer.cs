@@ -189,6 +189,88 @@ namespace NuGetUpdater.Core.Test
             return server;
         }
 
+        public static TestHttpServer CreateTestNuGetV2Feed(params MockNuGetPackage[] packages)
+        {
+            var packagesByNameVersion = packages.ToDictionary(
+                p => (p.Id.ToLowerInvariant(), p.Version.ToLowerInvariant()),
+                p => p);
+            var packagesByName = packages
+                .GroupBy(p => p.Id, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key.ToLowerInvariant(), g => g.ToArray());
+
+            (int, byte[]) HttpHandler(string uriString)
+            {
+                var uri = new Uri(uriString, UriKind.Absolute);
+                var baseUrl = $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+
+                // FindPackagesById
+                if (uri.AbsolutePath.TrimEnd('/').Equals("/FindPackagesById()", StringComparison.OrdinalIgnoreCase) ||
+                    uri.AbsolutePath.TrimEnd('/').Equals("/FindPackagesById", StringComparison.OrdinalIgnoreCase))
+                {
+                    // parse "id" from query string like "?id='Package.Name'"
+                    var queryString = uri.Query.TrimStart('?');
+                    var id = "";
+                    foreach (var part in queryString.Split('&'))
+                    {
+                        var kvp = part.Split('=', 2);
+                        if (kvp.Length == 2 && kvp[0].Equals("id", StringComparison.OrdinalIgnoreCase))
+                        {
+                            id = Uri.UnescapeDataString(kvp[1]).Trim('\'');
+                            break;
+                        }
+                    }
+
+                    var key = id.ToLowerInvariant();
+                    var matchedPackages = packagesByName.GetValueOrDefault(key) ?? [];
+
+                    var entries = string.Join("\n", matchedPackages.Select(p => $$"""
+                        <entry>
+                          <id>{{baseUrl}}/Packages(Id='{{p.Id}}',Version='{{p.Version}}')</id>
+                          <title type="text">{{p.Id}}</title>
+                          <content type="application/zip" src="{{baseUrl}}/package/{{p.Id.ToLowerInvariant()}}/{{p.Version.ToLowerInvariant()}}" />
+                          <m:properties>
+                            <d:Id>{{p.Id}}</d:Id>
+                            <d:Version>{{p.Version}}</d:Version>
+                            <d:IsPrerelease m:type="Edm.Boolean">false</d:IsPrerelease>
+                            <d:Listed m:type="Edm.Boolean">true</d:Listed>
+                          </m:properties>
+                        </entry>
+                        """));
+
+                    var atomFeed = $$"""
+                        <?xml version="1.0" encoding="utf-8"?>
+                        <feed xml:base="{{baseUrl}}" xmlns="http://www.w3.org/2005/Atom" xmlns:d="http://schemas.microsoft.com/ado/2007/08/dataservices" xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata">
+                          <id>{{baseUrl}}/FindPackagesById</id>
+                          <title type="text">FindPackagesById</title>
+                          {{entries}}
+                        </feed>
+                        """;
+                    return (200, Encoding.UTF8.GetBytes(atomFeed));
+                }
+
+                // Package download
+                if (uri.AbsolutePath.StartsWith("/package/", StringComparison.OrdinalIgnoreCase))
+                {
+                    var parts = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length >= 3)
+                    {
+                        var pkgKey = (parts[1].ToLowerInvariant(), parts[2].ToLowerInvariant());
+                        if (packagesByNameVersion.TryGetValue(pkgKey, out var package))
+                        {
+                            return (200, package.GetZipStream().ReadAllBytes());
+                        }
+                    }
+                }
+
+                return (404, Encoding.UTF8.GetBytes("Not Found"));
+            }
+
+            var server = CreateTestServer((method, url) => HttpHandler(url));
+            return server;
+        }
+
+        public string GetV2FeedUrl() => BaseUrl.TrimEnd('/');
+
         private static int FindFreePort()
         {
             var tcpListener = new TcpListener(IPAddress.Loopback, 0);

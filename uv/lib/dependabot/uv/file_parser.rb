@@ -8,6 +8,7 @@ require "dependabot/file_parsers/base"
 require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/shared_helpers"
 require "dependabot/uv/requirement"
+require "dependabot/uv/requirement_parser"
 require "dependabot/errors"
 require "dependabot/uv/language"
 require "dependabot/uv/native_helpers"
@@ -382,11 +383,34 @@ module Dependabot
       def write_temporary_dependency_files
         dependency_files
           .reject { |f| f.name == ".python-version" }
+          .reject { |f| skip_for_requirements_parsing?(f) }
           .each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, remove_imports(file))
           end
+      end
+
+      # The `parse_requirements` Python helper globs every `*.txt` and `*.in`
+      # file in the working directory and asks pip to parse each one. Skip
+      # writing `.txt`/`.in` support files (e.g. a `LICENSE.txt` pulled in via
+      # PEP 621 `project.license.file`) whose contents don't look like a pip
+      # requirements file, so they aren't misparsed as requirements.
+      sig { params(file: DependencyFile).returns(T::Boolean) }
+      def skip_for_requirements_parsing?(file)
+        return false unless file.support_file?
+        return false unless file.name.end_with?(".txt", ".in")
+
+        content = file.content
+        return false unless content&.valid_encoding?
+        return false if File.basename(file.name).match?(/requirements/i)
+
+        !content.lines.all? do |line|
+          stripped = line.strip
+          stripped.empty? ||
+            stripped.start_with?("#", "-r ", "-c ", "-e ", "--") ||
+            line.match?(RequirementParser::VALID_REQ_TXT_REQUIREMENT)
+        end
       end
 
       sig { params(file: T.untyped).returns(T.untyped) }

@@ -18,15 +18,27 @@ public class ModifiedFilesTracker
     private readonly Dictionary<string, EOLType> _originalDependencyFileEOFs = [];
     private readonly Dictionary<string, bool> _originalDependencyFileBOMs = [];
     private string[] _nonProjectFiles = [];
+    private readonly HashSet<string> _initiallyExistingLockFiles;
 
     public IReadOnlyDictionary<string, string> OriginalDependencyFileContents => _originalDependencyFileContents;
     //public IReadOnlyDictionary<string, EOLType> OriginalDependencyFileEOFs => _originalDependencyFileEOFs;
     public IReadOnlyDictionary<string, bool> OriginalDependencyFileBOMs => _originalDependencyFileBOMs;
 
-    public ModifiedFilesTracker(DirectoryInfo repoContentsPath, ILogger logger)
+    public ModifiedFilesTracker(DirectoryInfo repoContentsPath, HashSet<string> initiallyExistingLockFiles, ILogger logger)
     {
         RepoContentsPath = repoContentsPath;
+        _initiallyExistingLockFiles = initiallyExistingLockFiles;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Returns the set of lock file paths (relative to repo root, unix-style) that currently exist on disk.
+    /// </summary>
+    public static HashSet<string> GetExistingLockFiles(DirectoryInfo repoContentsPath)
+    {
+        return Directory.EnumerateFiles(repoContentsPath.FullName, ProjectHelper.PackagesLockJsonFileName, SearchOption.AllDirectories)
+            .Select(f => Path.GetRelativePath(repoContentsPath.FullName, f).NormalizePathToUnix())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
     public async Task StartTrackingAsync(WorkspaceDiscoveryResult discoveryResult)
@@ -57,6 +69,11 @@ public class ModifiedFilesTracker
             foreach (var extraFile in project.ImportedFiles.Concat(project.AdditionalFiles))
             {
                 var extraFilePath = Path.Join(projectDirectory, extraFile);
+                if (IsLockFileNotInitiallyPresent(Path.Join(_currentDiscoveryResult.Path, extraFilePath).NormalizePathToUnix()))
+                {
+                    continue;
+                }
+
                 await TrackOriginalContentsAsync(_currentDiscoveryResult.Path, extraFilePath);
             }
         }
@@ -126,6 +143,11 @@ public class ModifiedFilesTracker
             foreach (var extraFile in project.ImportedFiles.Concat(project.AdditionalFiles))
             {
                 var extraFilePath = Path.Join(projectDirectory, extraFile);
+                if (IsLockFileNotInitiallyPresent(Path.Join(_currentDiscoveryResult.Path, extraFilePath).NormalizePathToUnix()))
+                {
+                    continue;
+                }
+
                 await AddUpdatedFileIfDifferentAsync(_currentDiscoveryResult.Path, extraFilePath);
             }
         }
@@ -149,6 +171,22 @@ public class ModifiedFilesTracker
         var repoFullPath = Path.Join(directory, fileName).FullyNormalizedRootedPath();
         var correctedRepoFullPath = RunWorker.EnsureCorrectFileCasing(repoFullPath, RepoContentsPath.FullName, _logger);
         return correctedRepoFullPath;
+    }
+
+    private bool IsLockFileNotInitiallyPresent(string repoRelativePath)
+    {
+        return IsLockFileNotInitiallyPresent(repoRelativePath, _initiallyExistingLockFiles);
+    }
+
+    public static bool IsLockFileNotInitiallyPresent(string repoRelativePath, HashSet<string> initiallyExistingLockFiles)
+    {
+        var normalizedPath = repoRelativePath.NormalizePathToUnix().NormalizeUnixPathParts().TrimStart('/');
+        if (!Path.GetFileName(normalizedPath).Equals(ProjectHelper.PackagesLockJsonFileName, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return !initiallyExistingLockFiles.Contains(normalizedPath);
     }
 
     public static ImmutableArray<DependencyFile> MergeUpdatedFileSet(ImmutableArray<DependencyFile> setA, ImmutableArray<DependencyFile> setB)

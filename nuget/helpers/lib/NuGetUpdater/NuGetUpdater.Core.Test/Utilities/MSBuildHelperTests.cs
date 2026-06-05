@@ -646,5 +646,13 @@ public class MSBuildHelperTests : TestBase
             // expectedError
             new DependencyFileNotParseable("/path/to/packages.config", "Unexpected XML declaration. The XML declaration must be the first node in the document, and no whitespace characters are allowed to appear before it. Line 1, position 5.")
         ];
+
+        yield return
+        [
+            // output
+            "Circular dependency detected 'ReactiveProperty 3.6.0 => System.Reactive 3.1.1 => System.Reactive.PlatformServices 6.1.0 => System.Reactive 3.1.1'.",
+            // expectedError
+            new UnknownError(new Exception("Circular dependency detected"), "TEST-JOB-ID"),
+        ];
     }
 }

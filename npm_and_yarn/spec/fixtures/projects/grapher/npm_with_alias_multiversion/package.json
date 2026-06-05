@@ -1,0 +1,9 @@
+{
+  "name": "alias-three-versions",
+  "version": "1.0.0",
+  "dependencies": {
+    "is-number": "^7.0.0",
+    "is-number-legacy": "npm:is-number@^3.0.0",
+    "micromatch": "2.3.11"
+  }
+}

@@ -29,7 +29,18 @@ module Dependabot
 
       sig { override.params(escaped_declaration: String).returns(Regexp) }
       def build_old_declaration_regex(escaped_declaration)
-        %r{#{IMAGE_REGEX}\s+["']?(?:\$\{[^\}:]+:-)?(docker\.io/)?#{escaped_declaration}(?:\})?["']?(?=\s|$)}
+        %r{
+          #{IMAGE_REGEX}
+          (?:[>|][-+]?\s*)?              # optional YAML block scalar indicator (folded/literal)
+          \s+
+          ["']?
+          (?:\$\{[^\}:]+:-)?
+          (docker\.io/)?
+          #{escaped_declaration}
+          (?:\})?
+          ["']?
+          (?=\s|$)
+        }x
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }

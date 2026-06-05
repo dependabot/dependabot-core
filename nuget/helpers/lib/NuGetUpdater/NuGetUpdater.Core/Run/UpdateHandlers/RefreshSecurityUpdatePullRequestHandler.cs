@@ -30,6 +30,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
     {
         var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
         var jobDependencies = job.Dependencies.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var initialLockFiles = ModifiedFilesTracker.GetExistingLockFiles(repoContentsPath);
         foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
         {
             var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
@@ -41,7 +42,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 return;
             }
 
-            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger);
+            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger, initialLockFiles);
             await apiHandler.UpdateDependencyList(updatedDependencyList);
             await this.ReportUpdaterStarted(apiHandler);
 
@@ -75,7 +76,7 @@ internal class RefreshSecurityUpdatePullRequestHandler : IUpdateHandler
                 continue;
             }
 
-            var tracker = new ModifiedFilesTracker(originalRepoContentsPath, logger);
+            var tracker = new ModifiedFilesTracker(originalRepoContentsPath, initialLockFiles, logger);
             await tracker.StartTrackingAsync(discoveryResult);
             foreach (var dependencyGroupToUpdate in groupedUpdateOperationsToPerform)
             {

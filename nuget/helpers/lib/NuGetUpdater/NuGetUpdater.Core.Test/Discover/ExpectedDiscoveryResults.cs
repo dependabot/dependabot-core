@@ -24,6 +24,7 @@ public record ExpectedSdkProjectDiscoveryResult : ExpectedDependencyDiscoveryRes
     public string? ErrorDetails { get; init; }
     public PackageManagementKind? ExpectedPackageManagementKind { get; init; } = null;
     public string? ExpectedPackageManagementSpecialFileRelativePath { get; init; } = null;
+    public ImmutableDictionary<string, ImmutableArray<string>>? ExpectedDependencyGraph { get; init; }
 }
 
 public record ExpectedDependencyDiscoveryResult : IDiscoveryResultWithDependencies

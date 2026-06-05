@@ -52,6 +52,7 @@ Sentry.init do |config|
     pub|
     python|
     rust_toolchain|
+    sbt|
     silent|
     swift|
     terraform|
@@ -76,6 +77,7 @@ require "dependabot/bundler"
 require "dependabot/cargo"
 require "dependabot/composer"
 require "dependabot/conda"
+require "dependabot/deno"
 require "dependabot/devcontainers"
 require "dependabot/docker"
 require "dependabot/docker_compose"
@@ -96,6 +98,7 @@ require "dependabot/pre_commit"
 require "dependabot/pub"
 require "dependabot/python"
 require "dependabot/rust_toolchain"
+require "dependabot/sbt"
 require "dependabot/silent"
 require "dependabot/swift"
 require "dependabot/terraform"

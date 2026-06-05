@@ -45,19 +45,12 @@ module Dependabot
           release_date_info = T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
 
           begin
-            repositories.each do |repository_details|
-              parse_gradle_plugin_portal_release(
-                repository_details,
-                release_date_info,
-                dependency_metadata_fetcher
-              )
-
-              parse_maven_central_releases(
-                repository_details,
-                release_date_info,
-                release_info_metadata_fetcher
-              )
-            end
+            parse_repository_release_dates(
+              repositories: repositories,
+              release_date_info: release_date_info,
+              dependency_metadata_fetcher: dependency_metadata_fetcher,
+              release_info_metadata_fetcher: release_info_metadata_fetcher
+            )
 
             release_date_info
           rescue StandardError => e
@@ -76,6 +69,39 @@ module Dependabot
 
         sig { returns(T.class_of(Dependabot::Version)) }
         attr_reader :version_class
+
+        sig do
+          params(
+            repositories: T::Array[T::Hash[String, T.untyped]],
+            release_date_info: T::Hash[String, T::Hash[Symbol, T.untyped]],
+            dependency_metadata_fetcher: T.proc.params(
+              repo: T::Hash[String, T.untyped]
+            ).returns(Nokogiri::XML::Document),
+            release_info_metadata_fetcher: T.proc.params(
+              repo: T::Hash[String, T.untyped]
+            ).returns(Nokogiri::HTML::Document)
+          ).void
+        end
+        def parse_repository_release_dates(
+          repositories:,
+          release_date_info:,
+          dependency_metadata_fetcher:,
+          release_info_metadata_fetcher:
+        )
+          repositories.each do |repository_details|
+            parse_gradle_plugin_portal_release(
+              repository_details,
+              release_date_info,
+              dependency_metadata_fetcher
+            )
+
+            parse_maven_central_releases(
+              repository_details,
+              release_date_info,
+              release_info_metadata_fetcher
+            )
+          end
+        end
 
         # Parses Maven-style HTML directory listings to extract release dates.
         sig do

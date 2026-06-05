@@ -74,9 +74,9 @@ module Dependabot
 
           # sort the allowed version tags by name in descending order
           select_tags_which_in_cooldown_from_provider&.each do |tag_name|
-            # Iterate through versions and filter out those matching the tag_name
+            normalized_tag = tag_name.sub(/^v/, "")
             versions.reject! do |version|
-              version.to_s == tag_name
+              version.to_s == normalized_tag
             end
           end
           Dependabot.logger.info(
@@ -100,9 +100,9 @@ module Dependabot
 
           # sort the allowed version tags by name in descending order
           select_tags_which_in_cooldown_from_module&.each do |tag_name|
-            # Iterate through versions and filter out those matching the tag_name
+            normalized_tag = tag_name.sub(/^v/, "")
             versions.reject! do |version|
-              version.to_s == tag_name
+              version.to_s == normalized_tag
             end
           end
           Dependabot.logger.info(

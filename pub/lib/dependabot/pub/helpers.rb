@@ -295,7 +295,7 @@ module Dependabot
 
       sig { params(stderr: String).returns(T.noreturn) }
       def raise_error(stderr)
-        if stderr.include?("Failed parsing lock file") || stderr.include?("Unsupported operation")
+        if stderr.match?(/Failed parsing lock file|Unsupported operation|Duplicate mapping key|"name" field/)
           raise DependencyFileNotEvaluatable, "dependency_services failed: #{stderr}"
         elsif stderr.include?("Git error")
           raise Dependabot::InvalidGitAuthToken, "dependency_services failed: #{stderr}"

@@ -107,6 +107,8 @@ module Dependabot
         set_goenv_variable
         set_goproxy_variable
         set_goprivate_variable
+        set_gonoproxy_variable
+        set_gonosumdb_variable
       end
 
       sig { void }
@@ -114,8 +116,28 @@ module Dependabot
         return unless go_env
 
         env_file = T.must(go_env)
-        File.write(env_file.name, env_file.content)
+        File.write(env_file.name, sanitize_go_env_content(T.must(env_file.content)))
         ENV["GOENV"] = Pathname.new(env_file.name).realpath.to_s
+      end
+
+      # Go's GOENV file format does not support shell-style quoting, but users
+      # commonly write values like GOPROXY="https://..." which Go reads literally
+      # (including the quotes), causing URL parse failures. Strip surrounding
+      # matching " or ' from each value.
+      sig { params(content: String).returns(String) }
+      def sanitize_go_env_content(content)
+        content.gsub(
+          /
+            ^          # start of line
+            ([^=\n]+)  # key: one or more chars that are not = or newline
+            =          # separator
+            (["'])     # opening quote, captured for backreference
+            (.*)       # value
+            \2         # closing quote must match opening
+            $          # end of line
+          /x,
+          '\1=\3'
+        )
       end
 
       sig { void }
@@ -126,6 +148,39 @@ module Dependabot
 
         goprivate = options.fetch(:goprivate, "*")
         ENV["GOPRIVATE"] = goprivate if goprivate
+      end
+
+      # GONOPROXY explicitly controls which module paths skip the proxy.
+      # Setting this overrides GOPRIVATE's default for proxy decisions, letting
+      # us keep GOPRIVATE=* (to skip sumdb for unknown enterprise orgs) while
+      # still routing public modules through proxy.golang.org. The literal
+      # value "none" matches no module paths — see Go's mod_gonoproxy.txt test.
+      sig { void }
+      def set_gonoproxy_variable
+        return if go_env_includes_any?(%w(GONOPROXY GOPRIVATE GOPROXY))
+        return if goproxy_credentials.any?
+
+        gonoproxy = options.fetch(:gonoproxy, nil)
+        ENV["GONOPROXY"] = gonoproxy if gonoproxy
+      end
+
+      # GONOSUMDB explicitly controls which module paths skip checksum DB
+      # verification. Setting this overrides GOPRIVATE's default for sumdb,
+      # letting us narrow the scope independently of proxy routing.
+      sig { void }
+      def set_gonosumdb_variable
+        return if go_env_includes_any?(%w(GONOSUMDB GOPRIVATE))
+
+        gonosumdb = options.fetch(:gonosumdb, nil)
+        ENV["GONOSUMDB"] = gonosumdb if gonosumdb
+      end
+
+      sig { params(keys: T::Array[String]).returns(T::Boolean) }
+      def go_env_includes_any?(keys)
+        content = go_env&.content
+        return false unless content
+
+        keys.any? { |key| content.include?(key) }
       end
 
       sig { void }

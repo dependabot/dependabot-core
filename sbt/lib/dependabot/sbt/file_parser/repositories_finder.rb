@@ -56,10 +56,11 @@ module Dependabot
             urls += repository_urls_from(file)
           end
 
-          urls = urls.uniq
-          return urls unless urls.empty?
+          # SBT always includes Maven Central as a default resolver.
+          # Custom resolvers supplement but don't replace it.
+          urls << central_repo_url unless urls.include?(central_repo_url)
 
-          [central_repo_url]
+          urls.uniq
         end
 
         private

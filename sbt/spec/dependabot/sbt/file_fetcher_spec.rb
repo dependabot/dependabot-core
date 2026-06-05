@@ -34,7 +34,6 @@ RSpec.describe Dependabot::Sbt::FileFetcher do
 
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-    Dependabot::Experiments.register(:enable_beta_ecosystems, true)
   end
 
   it_behaves_like "a dependency file fetcher"
@@ -71,6 +70,13 @@ RSpec.describe Dependabot::Sbt::FileFetcher do
           body: fixture("github", "contents_sbt_build_file.json"),
           headers: { "content-type" => "application/json" }
         )
+      stub_request(:get, url + "project?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_sbt_project_dir_empty.json"),
+          headers: { "content-type" => "application/json" }
+        )
       stub_request(:get, url + "project/plugins.sbt?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(status: 404)
@@ -99,6 +105,13 @@ RSpec.describe Dependabot::Sbt::FileFetcher do
         .to_return(
           status: 200,
           body: fixture("github", "contents_sbt_build_file.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, url + "project?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_sbt_project_dir.json"),
           headers: { "content-type" => "application/json" }
         )
       stub_request(:get, url + "project/plugins.sbt?ref=sha")
@@ -148,6 +161,13 @@ RSpec.describe Dependabot::Sbt::FileFetcher do
           body: fixture("github", "contents_sbt_build_file.json"),
           headers: { "content-type" => "application/json" }
         )
+      stub_request(:get, url + "project?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_sbt_project_dir_no_plugins.json"),
+          headers: { "content-type" => "application/json" }
+        )
       stub_request(:get, url + "project/plugins.sbt?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(status: 404)
@@ -158,6 +178,13 @@ RSpec.describe Dependabot::Sbt::FileFetcher do
           body: fixture("github", "contents_sbt_build_properties.json"),
           headers: { "content-type" => "application/json" }
         )
+      stub_request(:get, url + "core?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_sbt_core_subproject_dir.json"),
+          headers: { "content-type" => "application/json" }
+        )
       stub_request(:get, url + "core/build.sbt?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(
@@ -165,7 +192,7 @@ RSpec.describe Dependabot::Sbt::FileFetcher do
           body: fixture("github", "contents_sbt_subproject_build_file.json"),
           headers: { "content-type" => "application/json" }
         )
-      stub_request(:get, url + "web/build.sbt?ref=sha")
+      stub_request(:get, url + "web?ref=sha")
         .with(headers: { "Authorization" => "token token" })
         .to_return(status: 404)
     end
@@ -174,17 +201,6 @@ RSpec.describe Dependabot::Sbt::FileFetcher do
       expect(file_fetcher_instance.files.count).to eq(3)
       expect(file_fetcher_instance.files.map(&:name))
         .to match_array(%w(build.sbt project/build.properties core/build.sbt))
-    end
-  end
-
-  context "when beta ecosystems are not enabled" do
-    before do
-      Dependabot::Experiments.register(:enable_beta_ecosystems, false)
-    end
-
-    it "raises a DependencyFileNotFound error" do
-      expect { file_fetcher_instance.files }
-        .to raise_error(Dependabot::DependencyFileNotFound)
     end
   end
 end

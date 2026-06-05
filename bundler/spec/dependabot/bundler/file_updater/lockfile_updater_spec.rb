@@ -20,6 +20,63 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
 
   let(:updated_lockfile_content) { updater.updated_lockfile_content }
 
+  describe "with lockfiles that include checksums" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        version: "1.5.0",
+        previous_version: "1.4.0",
+        requirements: [],
+        previous_requirements: [],
+        package_manager: "bundler"
+      )
+    end
+    let(:files) { bundler_project_dependency_files(project_name) }
+    let(:generated_lockfile) do
+      <<~LOCKFILE
+        GEM
+          remote: https://rubygems.org/
+          specs:
+            business (1.5.0)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          business (~> 1.5)
+
+        CHECKSUMS
+          business (1.5.0) sha256=123
+          bundler (4.0.11) sha256=abc
+
+        BUNDLED WITH
+           4.0.11
+      LOCKFILE
+    end
+
+    before do
+      allow(Dependabot::Bundler::NativeHelpers)
+        .to receive(:run_bundler_subprocess)
+        .and_return(generated_lockfile)
+    end
+
+    context "when original lockfile uses Bundler 4.0.10" do
+      let(:project_name) { "checksums_bundler_4_0_10" }
+
+      it "removes newly added bundler checksums" do
+        expect(updated_lockfile_content).not_to include("bundler (4.0.11)")
+      end
+    end
+
+    context "when original lockfile uses Bundler 4.0.11" do
+      let(:project_name) { "checksums_bundler_4_0_11" }
+
+      it "keeps bundler checksums" do
+        expect(updated_lockfile_content).to include("bundler (4.0.11)")
+      end
+    end
+  end
+
   describe "with multiple path gems" do
     let(:dependency) do
       Dependabot::Dependency.new(

@@ -101,6 +101,11 @@ RSpec.describe Dependabot::Sbt::UpdateChecker::VersionFinder do
         stub_request(
           :head,
           "https://repo.maven.apache.org/maven2/" \
+          "com/google/guava/guava/33.4.0-jre/guava-33.4.0-jre.pom"
+        ).to_return(status: 404)
+        stub_request(
+          :head,
+          "https://repo.maven.apache.org/maven2/" \
           "com/google/guava/guava/33.3.0-jre/guava-33.3.0-jre.jar"
         ).to_return(status: 200)
       end
@@ -204,6 +209,30 @@ RSpec.describe Dependabot::Sbt::UpdateChecker::VersionFinder do
           .to_return(status: 404)
         stub_request(:get, "https://repo.artima.com/releases/com/google/guava/guava/maven-metadata.xml")
           .to_return(status: 404)
+        stub_request(:get, "https://oss.sonatype.org/content/repositories/releases/com/google/guava/guava")
+          .to_return(status: 404)
+        stub_request(:get, "https://repo.artima.com/releases/com/google/guava/guava")
+          .to_return(status: 404)
+        stub_request(
+          :head,
+          "https://oss.sonatype.org/content/repositories/releases/" \
+          "com/google/guava/guava/33.4.0-jre/guava-33.4.0-jre.jar"
+        ).to_return(status: 404)
+        stub_request(
+          :head,
+          "https://oss.sonatype.org/content/repositories/releases/" \
+          "com/google/guava/guava/33.4.0-jre/guava-33.4.0-jre.pom"
+        ).to_return(status: 404)
+        stub_request(
+          :head,
+          "https://repo.artima.com/releases/" \
+          "com/google/guava/guava/33.4.0-jre/guava-33.4.0-jre.jar"
+        ).to_return(status: 404)
+        stub_request(
+          :head,
+          "https://repo.artima.com/releases/" \
+          "com/google/guava/guava/33.4.0-jre/guava-33.4.0-jre.pom"
+        ).to_return(status: 404)
       end
 
       its([:version]) { is_expected.to eq(version_class.new("33.4.0-jre")) }

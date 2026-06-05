@@ -65,6 +65,7 @@ module Dependabot
         @package_json = T.let(nil, T.nilable(Dependabot::DependencyFile))
         @git_commit_checker = T.let(nil, T.nilable(Dependabot::GitCommitChecker))
         super
+        apply_npmrc_min_release_age
       end
 
       sig { returns(T::Boolean) }
@@ -570,6 +571,115 @@ module Dependabot
           end
 
         sources.first
+      end
+
+      # Reads `min-release-age` from .npmrc and applies it as a floor for every
+      # cooldown field. npm enforces this constraint at install time, so any version
+      # younger than the threshold will cause `npm install` to fail. When a
+      # dependabot.yml cooldown is also present, the npmrc value raises any field
+      # that is below it and leaves higher values unchanged. Include/exclude patterns
+      # are always dropped because npm applies min-release-age globally with no
+      # per-package filtering.
+      sig { void }
+      def apply_npmrc_min_release_age
+        npmrc_days = npmrc_min_release_age_days
+        return unless npmrc_days&.positive?
+
+        if @update_cooldown.nil?
+          @update_cooldown = Dependabot::Package::ReleaseCooldownOptions.new(default_days: npmrc_days)
+        else
+          existing = @update_cooldown
+          log_npmrc_cooldown_conflicts(existing, npmrc_days)
+          @update_cooldown = merge_cooldown_with_npmrc_floor(existing, npmrc_days)
+        end
+      end
+
+      sig do
+        params(
+          existing: Dependabot::Package::ReleaseCooldownOptions,
+          npmrc_days: Integer
+        ).void
+      end
+      def log_npmrc_cooldown_conflicts(existing, npmrc_days)
+        if existing.include.any? || existing.exclude.any?
+          Dependabot.logger.warn(
+            ".npmrc min-release-age does not support include/exclude patterns; " \
+            "dropping dependabot.yml update_cooldown include/exclude configuration."
+          )
+        end
+
+        all_days = [existing.default_days, existing.semver_major_days,
+                    existing.semver_minor_days, existing.semver_patch_days]
+        unless all_days.any? { |days| days < npmrc_days }
+          Dependabot.logger.debug(
+            ".npmrc min-release-age (#{npmrc_days} days) is already satisfied by all " \
+            "dependabot.yml update_cooldown values; no adjustment needed."
+          )
+          return
+        end
+
+        Dependabot.logger.warn(
+          ".npmrc min-release-age (#{npmrc_days} days) conflicts with dependabot.yml update_cooldown " \
+          "(default_days: #{existing.default_days}); it acts as a minimum floor for all cooldown values."
+        )
+        { semver_major_days: existing.semver_major_days,
+          semver_minor_days: existing.semver_minor_days,
+          semver_patch_days: existing.semver_patch_days }.each do |field, configured_days|
+          next unless configured_days < npmrc_days
+
+          Dependabot.logger.warn(
+            ".npmrc min-release-age (#{npmrc_days} days) overrides dependabot.yml #{field} " \
+            "(#{configured_days} days) because it would cause npm install to fail."
+          )
+        end
+      end
+
+      sig do
+        params(
+          existing: Dependabot::Package::ReleaseCooldownOptions,
+          npmrc_days: Integer
+        ).returns(Dependabot::Package::ReleaseCooldownOptions)
+      end
+      def merge_cooldown_with_npmrc_floor(existing, npmrc_days)
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: [existing.default_days, npmrc_days].max,
+          semver_major_days: [existing.semver_major_days, npmrc_days].max,
+          semver_minor_days: [existing.semver_minor_days, npmrc_days].max,
+          semver_patch_days: [existing.semver_patch_days, npmrc_days].max,
+          include: [],
+          exclude: []
+        )
+      end
+
+      sig { returns(T.nilable(Integer)) }
+      def npmrc_min_release_age_days
+        npmrc_file = dependency_files.find { |f| File.basename(f.name) == ".npmrc" }
+        unless npmrc_file&.content
+          Dependabot.logger.debug("No .npmrc file found; skipping min-release-age check.")
+          return nil
+        end
+
+        T.must(npmrc_file.content).split("\n").each do |line|
+          days = parse_min_release_age_line(line, npmrc_file.name)
+          return days if days
+        end
+        Dependabot.logger.debug("No min-release-age key found in #{npmrc_file.name}.")
+        nil
+      end
+
+      sig { params(line: String, filename: String).returns(T.nilable(Integer)) }
+      def parse_min_release_age_line(line, filename)
+        key, value = line.strip.split("=", 2)
+        return nil unless key&.strip == "min-release-age" && value
+
+        parsed = T.let(Integer(value.strip, 10, exception: false), T.nilable(Integer))
+        if parsed&.positive?
+          Dependabot.logger.debug("Found min-release-age=#{parsed} days in #{filename}.")
+          parsed
+        else
+          Dependabot.logger.debug("Ignoring invalid min-release-age value '#{value.strip}' in #{filename}.")
+          nil
+        end
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

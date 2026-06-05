@@ -11,6 +11,10 @@ module Dependabot
 
       V1 = "1"
       V2 = "2"
+      # Bundler 3 was intentionally skipped upstream — Bundler jumped from 2.7
+      # directly to 4.0 to align its major version with RubyGems — so there is
+      # no V3 helper tree.
+      V4 = "4"
       DEFAULT = V2
       BUNDLER_MAJOR_VERSION_REGEX = /BUNDLED WITH\s+(?<version>\d+)\./m
       RUBY_GEMFILE_REGEX = /^ruby\s+['"]([^'"]+)['"]/
@@ -26,7 +30,14 @@ module Dependabot
         return DEFAULT unless lockfile
 
         if (matches = T.let(lockfile.content, T.nilable(String))&.match(BUNDLER_MAJOR_VERSION_REGEX))
-          matches[:version].to_i >= 2 ? V2 : V1
+          major = matches[:version].to_i
+          if major >= 4
+            V4
+          elsif major >= 2
+            V2
+          else
+            V1
+          end
         else
           DEFAULT
         end

@@ -909,6 +909,75 @@ RSpec.describe Dependabot::Opentofu::FileParser do
       end
     end
 
+    context "with a module version using interpolated local syntax" do
+      let(:files) { project_dependency_files("module_with_interpolated_local_version") }
+
+      it "resolves the interpolated local reference" do
+        dependency = dependencies.find { |d| d.name == "hashicorp/consul/aws" }
+
+        expect(dependency.version).to eq("0.1.0")
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: "0.1.0",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "registry",
+              registry_hostname: "registry.opentofu.org",
+              module_identifier: "hashicorp/consul/aws",
+              local_variable: "module_version"
+            }
+          }]
+        )
+      end
+    end
+
+    context "with a module version referencing a local in the same file" do
+      let(:files) { project_dependency_files("module_with_local_version") }
+
+      it "resolves the local and has the right details" do
+        dependency = dependencies.find { |d| d.name == "hashicorp/consul/aws" }
+
+        expect(dependency.version).to eq("0.1.0")
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: "0.1.0",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "registry",
+              registry_hostname: "registry.opentofu.org",
+              module_identifier: "hashicorp/consul/aws",
+              local_variable: "module_version"
+            }
+          }]
+        )
+      end
+    end
+
+    context "with a module version referencing a local in a different file" do
+      let(:files) { project_dependency_files("module_with_cross_file_local_version") }
+
+      it "resolves the local and points to the locals file" do
+        dependency = dependencies.find { |d| d.name == "hashicorp/consul/aws" }
+
+        expect(dependency.version).to eq("0.1.0")
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: "0.1.0",
+            groups: [],
+            file: "locals.tf",
+            source: {
+              type: "registry",
+              registry_hostname: "registry.opentofu.org",
+              module_identifier: "hashicorp/consul/aws",
+              local_variable: "module_version"
+            }
+          }]
+        )
+      end
+    end
+
     context "with a required provider block with multiple versions" do
       let(:files) { project_dependency_files("registry_provider_compound_local_name") }
 

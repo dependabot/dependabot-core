@@ -35,6 +35,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           expect(dependencies.count).to eq(10)
           expect(dependencies.map(&:name)).not_to include("my-fetch-factory")
         end
+
+        context "with dealias_packages enabled" do
+          subject(:lockfile_parser) do
+            described_class.new(dependency_files: dependency_files, dealias_packages: true)
+          end
+
+          it "includes the real aliased package" do
+            expect(dependencies.map(&:name)).to include("fetch-factory")
+            expect(dependencies.count).to eq(11)
+          end
+        end
       end
 
       context "when there are multiple dependencies" do
@@ -136,6 +147,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           # Lockfile contains 11 dependencies but one is an alias
           expect(dependencies.count).to eq(10)
           expect(dependencies.map(&:name)).not_to include("my-fetch-factory")
+        end
+
+        context "with dealias_packages enabled" do
+          subject(:lockfile_parser) do
+            described_class.new(dependency_files: dependency_files, dealias_packages: true)
+          end
+
+          it "includes the real aliased package" do
+            expect(dependencies.map(&:name)).to include("fetch-factory")
+            expect(dependencies.count).to eq(11)
+          end
         end
       end
 
@@ -278,6 +300,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           bad_names = dependencies.filter_map { |dep| dep.name if dep.name.include?("node_modules/") }
 
           expect(bad_names).to be_empty
+        end
+      end
+
+      context "when there is an aliased dependency" do
+        let(:dependency_files) { project_dependency_files("grapher/npm_with_alias") }
+
+        it "excludes the real package name by default" do
+          expect(dependencies.map(&:name)).not_to include("is-number")
+          expect(dependencies.map(&:name)).to include("my-is-number")
+        end
+
+        context "with dealias_packages enabled" do
+          subject(:lockfile_parser) do
+            described_class.new(dependency_files: dependency_files, dealias_packages: true)
+          end
+
+          it "includes the real aliased package" do
+            expect(dependencies.map(&:name)).to include("is-number")
+            expect(dependencies.map(&:name)).not_to include("my-is-number")
+          end
         end
       end
     end

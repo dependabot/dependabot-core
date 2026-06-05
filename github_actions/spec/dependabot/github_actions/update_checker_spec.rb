@@ -742,6 +742,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     end
     let(:local_tag_for_pinned_sha) { false }
     let(:latest_version_tag) { nil }
+    let(:latest_version) { nil }
 
     before do
       allow(checker).to receive_messages(
@@ -749,6 +750,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           Dependabot::GithubActions::UpdateChecker::LatestVersionFinder,
           latest_version_tag: latest_version_tag
         ),
+        latest_version: latest_version,
         latest_commit_for_pinned_ref: "branch-head-sha"
       )
     end
@@ -763,9 +765,10 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       let(:latest_version_tag) do
         { tag: "v2.7.0", commit_sha: "ee0669bd1cc54295c223e0bb666b733df41de1c5" }
       end
+      let(:latest_version) { "cooldown-filtered-sha" }
 
-      it "falls back to branch head commit behavior" do
-        expect(checker.send(:latest_commit_sha, source_checker)).to eq("branch-head-sha")
+      it "uses the checker latest_version SHA to keep updates aligned" do
+        expect(checker.send(:latest_commit_sha, source_checker)).to eq("cooldown-filtered-sha")
       end
     end
   end

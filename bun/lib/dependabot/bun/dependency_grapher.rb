@@ -14,16 +14,20 @@ module Dependabot
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
       extend T::Sig
 
+      require_relative "dependency_grapher/lockfile_generator"
+
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
+        return package_json if @ephemeral_lockfile_generated
+
         lockfile || package_json
       end
 
       sig { override.void }
       def prepare!
         if lockfile.nil?
-          Dependabot.logger.warn("No bun.lock found; dependency graph will be incomplete.")
-          errored_fetching_subdependencies!
+          Dependabot.logger.info("No bun.lock found, generating ephemeral lockfile for dependency graphing")
+          generate_ephemeral_lockfile!
         end
         super
       end
@@ -43,6 +47,33 @@ module Dependabot
       sig { override.params(dependency: Dependabot::Dependency).returns(String) }
       def purl_name_for(dependency)
         dependency.name.sub(/^@/, "%40")
+      end
+
+      sig { void }
+      def generate_ephemeral_lockfile!
+        generator = LockfileGenerator.new(
+          dependency_files: dependency_files,
+          credentials: file_parser.credentials
+        )
+
+        ephemeral_lockfile = generator.generate
+        inject_ephemeral_lockfile(ephemeral_lockfile)
+        @ephemeral_lockfile_generated = T.let(true, T.nilable(T::Boolean))
+
+        Dependabot.logger.info("Successfully generated ephemeral bun.lock for dependency graphing")
+      rescue StandardError => e
+        errored_fetching_subdependencies!
+        @subdependency_error = e
+        Dependabot.logger.warn(
+          "Failed to generate ephemeral bun.lock: #{e.message}. " \
+          "Dependency versions may not be resolved."
+        )
+      end
+
+      sig { params(ephemeral_lockfile: Dependabot::DependencyFile).void }
+      def inject_ephemeral_lockfile(ephemeral_lockfile)
+        dependency_files << ephemeral_lockfile
+        remove_instance_variable(:@lockfile) if instance_variable_defined?(:@lockfile)
       end
 
       sig { returns(Dependabot::DependencyFile) }

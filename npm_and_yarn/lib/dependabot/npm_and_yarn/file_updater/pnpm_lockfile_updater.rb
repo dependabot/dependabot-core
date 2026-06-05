@@ -21,14 +21,22 @@ module Dependabot
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
             repo_contents_path: T.nilable(String),
-            credentials: T::Array[Dependabot::Credential]
+            credentials: T::Array[Dependabot::Credential],
+            security_updates_only: T::Boolean
           ).void
         end
-        def initialize(dependencies:, dependency_files:, repo_contents_path:, credentials:)
+        def initialize(
+          dependencies:,
+          dependency_files:,
+          repo_contents_path:,
+          credentials:,
+          security_updates_only: false
+        )
           @dependencies = dependencies
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
+          @security_updates_only = T.let(security_updates_only, T::Boolean)
           @error_handler = T.let(
             PnpmErrorHandler.new(
               dependencies: dependencies,
@@ -73,6 +81,11 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
+        sig { returns(T::Boolean) }
+        def security_updates_only?
+          @security_updates_only
+        end
 
         sig { returns(PnpmErrorHandler) }
         attr_reader :error_handler
@@ -127,6 +140,10 @@ module Dependabot
 
         # Unparsable package.json file
         ERR_PNPM_INVALID_PACKAGE_JSON = /Invalid package.json in package/
+
+        # Invalid dependency name in package.json
+        ERR_PNPM_INVALID_DEPENDENCY_NAME =
+          /ERR_PNPM_INVALID_DEPENDENCY_NAME.*invalid name: "(?<dep>[^"]+)"/m
 
         # Unparsable lockfile
         ERR_PNPM_UNEXPECTED_PKG_CONTENT_IN_STORE = /ERR_PNPM_UNEXPECTED_PKG_CONTENT_IN_STORE/
@@ -188,17 +205,26 @@ module Dependabot
             "#{d.name}@#{d.version}"
           end.join(" ")
 
-          Helpers.run_pnpm_command(
-            "update #{dependency_updates}  --lockfile-only --no-save -r",
-            fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r"
-          )
+          cmd = "update #{dependency_updates}  --lockfile-only --no-save -r"
+          fingerprint = "update <dependency_updates>  --lockfile-only --no-save -r"
+          if security_updates_only?
+            # Override any minimumReleaseAge set in pnpm-workspace.yaml: security fixes must not be
+            # blocked by a release-age gate the user configured for regular updates.
+            cmd += " --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false"
+            fingerprint += " --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false"
+          end
+          Helpers.run_pnpm_command(cmd, fingerprint: fingerprint)
         end
 
         sig { returns(T.nilable(String)) }
         def run_pnpm_install
-          Helpers.run_pnpm_command(
-            "install --lockfile-only"
-          )
+          cmd = "install --lockfile-only"
+          if security_updates_only?
+            # Override any minimumReleaseAge set in pnpm-workspace.yaml: security fixes must not be
+            # blocked by a release-age gate the user configured for regular updates.
+            cmd += " --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false"
+          end
+          Helpers.run_pnpm_command(cmd)
         end
 
         # Tries `pnpm update --depth Infinity <dep>` for each dependency as a
@@ -350,6 +376,12 @@ module Dependabot
             msg = "Error while resolving package.json."
             Dependabot.logger.warn(error_message)
             raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if (match = error_message.match(ERR_PNPM_INVALID_DEPENDENCY_NAME))
+            invalid_dep = match.named_captures["dep"]
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyNotFound, T.must(invalid_dep)
           end
 
           [ERR_PNPM_UNEXPECTED_PKG_CONTENT_IN_STORE, ERR_PNPM_OUTDATED_LOCKFILE]

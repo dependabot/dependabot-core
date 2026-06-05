@@ -5,7 +5,7 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 ARG BUN_VERSION=1.3.5
 
 # See https://github.com/nodesource/distributions#installation-instructions
-ARG NODEJS_VERSION=20
+ARG NODEJS_VERSION=24
 
 # Install Node and bun
 RUN mkdir -p /etc/apt/keyrings \

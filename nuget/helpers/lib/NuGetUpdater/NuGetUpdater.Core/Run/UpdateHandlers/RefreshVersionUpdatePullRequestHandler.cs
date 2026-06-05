@@ -30,6 +30,7 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
     {
         var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
         var jobDependencies = job.Dependencies.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var initialLockFiles = ModifiedFilesTracker.GetExistingLockFiles(repoContentsPath);
         foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
         {
             var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
@@ -40,7 +41,7 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
                 return;
             }
 
-            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger);
+            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger, initialLockFiles);
             await apiHandler.UpdateDependencyList(updatedDependencyList);
             await this.ReportUpdaterStarted(apiHandler);
 
@@ -74,7 +75,7 @@ internal class RefreshVersionUpdatePullRequestHandler : IUpdateHandler
 
             logger.Info($"Updating dependencies: {string.Join(", ", relevantUpdateOperationsToPerform.Select(g => g.Key).Distinct().OrderBy(d => d, StringComparer.OrdinalIgnoreCase))}");
 
-            var tracker = new ModifiedFilesTracker(originalRepoContentsPath, logger);
+            var tracker = new ModifiedFilesTracker(originalRepoContentsPath, initialLockFiles, logger);
             await tracker.StartTrackingAsync(discoveryResult);
             foreach (var dependencyUpdatesToPerform in relevantUpdateOperationsToPerform)
             {

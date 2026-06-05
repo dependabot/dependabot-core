@@ -248,6 +248,31 @@ module Dependabot
         yarn_major_version >= 4
       end
 
+      sig { returns(T::Boolean) }
+      def self.yarn_berry_supports_minimal_age_gate?
+        version = Version.new(run_single_yarn_command("--version"))
+        supported = version >= Version.new("4.10.0")
+        if supported
+          Dependabot.logger.info(
+            "Yarn #{version} supports npmMinimalAgeGate. " \
+            "Setting YARN_NPM_MINIMAL_AGE_GATE=0 to bypass the release-age gate for security updates."
+          )
+        else
+          Dependabot.logger.info(
+            "Yarn #{version} does not support npmMinimalAgeGate (requires 4.10.0+). " \
+            "YARN_NPM_MINIMAL_AGE_GATE will not be set."
+          )
+        end
+        supported
+      rescue StandardError => e
+        Dependabot.logger.warn(
+          "Could not determine Yarn version to check npmMinimalAgeGate support: #{e.message}. " \
+          "Assuming unsupported (returning false). YARN_NPM_MINIMAL_AGE_GATE will not be set, " \
+          "so the registry's release-age gate may still block security updates."
+        )
+        false
+      end
+
       sig { returns(T.nilable(String)) }
       def self.setup_yarn_berry
         # Always disable immutable installs so yarn's CI detection doesn't prevent updates.
@@ -334,7 +359,9 @@ module Dependabot
 
         # Validate the output format (e.g., "v20.18.1" or "20.18.1")
         if version.match?(/^v?\d+(\.\d+){2}$/)
-          version.strip.delete_prefix("v") # Remove the "v" prefix if present
+          parsed_version = version.strip.delete_prefix("v") # Remove the "v" prefix if present
+          Dependabot.logger.info("Using node version: #{parsed_version}")
+          parsed_version
         end
       rescue StandardError => e
         Dependabot.logger.error("Error retrieving Node.js version: #{e.message}")
@@ -360,10 +387,16 @@ module Dependabot
       end
 
       # Setup yarn and run a single yarn command returning stdout/stderr
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
-      def self.run_yarn_command(command, fingerprint: nil)
+      sig do
+        params(
+          command: String,
+          fingerprint: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_yarn_command(command, fingerprint: nil, env: nil)
         setup_yarn_berry
-        run_single_yarn_command(command, fingerprint: fingerprint)
+        run_single_yarn_command(command, fingerprint: fingerprint, env: env)
       end
 
       # Run single pnpm command returning stdout/stderr
@@ -380,14 +413,21 @@ module Dependabot
       end
 
       # Run single yarn command returning stdout/stderr
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
-      def self.run_single_yarn_command(command, fingerprint: nil)
+      sig do
+        params(
+          command: String,
+          fingerprint: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_single_yarn_command(command, fingerprint: nil, env: nil)
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          package_manager_run_command(YarnPackageManager::NAME, command, fingerprint: fingerprint)
+          package_manager_run_command(YarnPackageManager::NAME, command, fingerprint: fingerprint, env: env)
         else
           Dependabot::SharedHelpers.run_shell_command(
             "yarn #{command}",
-            fingerprint: "yarn #{fingerprint || command}"
+            fingerprint: "yarn #{fingerprint || command}",
+            env: env
           )
         end
       end
