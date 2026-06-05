@@ -191,7 +191,7 @@ module Dependabot
         credentials: job.credentials,
         options: job.experiments.merge(
           security_updates_only: job.security_updates_only?,
-          update_cooldown: job.cooldown
+          update_cooldown: job.security_updates_only? ? nil : job.cooldown
         )
       )
     end
