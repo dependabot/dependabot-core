@@ -1121,9 +1121,9 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           stub_request(:any, /.*/).to_raise(SocketError)
         end
 
-        it "has a blank message" do
+        it "still builds the pr_message without the metadata cascade" do
           expect(pr_message)
-            .to eq("")
+            .to include("Bumps [business](https://github.com/gocardless/business) from 1.4.0 to 1.5.0.")
         end
       end
 
@@ -1152,6 +1152,20 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "#{commits}" \
               "<br />\n"
             )
+        end
+      end
+
+      context "when github.com is unreachable while fetching metadata" do
+        before do
+          allow_any_instance_of(Dependabot::PullRequestCreator::MessageBuilder::MetadataPresenter)
+            .to receive(:to_s)
+            .and_raise(SocketError, "Connection refused - connect(2) for \"api.github.com\" port 443")
+        end
+
+        it "still builds the pr_message without the metadata cascade" do
+          expect(pr_message).to include(
+            "Bumps [business](https://github.com/gocardless/business) from 1.4.0 to 1.5.0."
+          )
         end
       end
 
@@ -1934,6 +1948,27 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "</details>\n" \
               "<br />\n"
             )
+        end
+
+        context "when one dependency's metadata cascade raises" do
+          before do
+            stub_request(
+              :get,
+              "https://api.github.com/repos/gocardless/statesman/contents/CHANGELOG.md?ref=master"
+            ).to_raise(SocketError, "Connection refused - connect(2) for \"api.github.com\" port 443")
+          end
+
+          it "still renders the PR message with the unaffected dependency's metadata" do
+            expect(pr_message).to include(
+              "Bumps [business](https://github.com/gocardless/business) " \
+              "and [statesman](https://github.com/gocardless/statesman). " \
+              "These dependencies needed to be updated together."
+            )
+            expect(pr_message).to include("Updates `business` from 1.4.0 to 1.5.0")
+            expect(pr_message).to include("business's changelog")
+            expect(pr_message).to include("Updates `statesman` from 1.6.0 to 1.7.0")
+            expect(pr_message).not_to include("statesman's changelog")
+          end
         end
 
         context "when dealing with a property dependency (e.g., with Maven)" do
