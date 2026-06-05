@@ -271,5 +271,85 @@ public partial class DiscoveryWorkerTests
                 }
             );
         }
+        [Fact]
+        public async Task LegacyProjectWithIncompatibleCPMPackagesDoesNotCrash()
+        {
+            // A legacy packages.config project in a repo with CPM enabled.
+            // The CPM Directory.Packages.props defines a package that only supports net8.0,
+            // which is incompatible with the project's net48 TFM. This previously caused
+            // RebuildPackagesPerProject to crash with "Sequence contains no elements" when
+            // the temp project restore failed and DiscoverAsync returned empty results.
+            await TestDiscoveryAsync(
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("PackageReferencedThroughLegacyMechanism", "1.0.0", "net48"),
+                    MockNuGetPackage.CreateSimplePackage("PackageOnlyCompatibleWithNet8", "2.0.0", "net8.0"),
+                ],
+                workspacePath: "src",
+                files: [
+                    ("Directory.Build.props", """
+                        <Project>
+                          <ItemGroup>
+                            <PackageReference Include="PackageOnlyCompatibleWithNet8" />
+                          </ItemGroup>
+                        </Project>
+                    """),
+                    ("Directory.Build.targets", "<Project />"),
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="PackageOnlyCompatibleWithNet8" Version="2.0.0" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("src/myproj.csproj", """
+                        <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                          <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                          <PropertyGroup>
+                            <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <None Include="packages.config" />
+                          </ItemGroup>
+                          <ItemGroup>
+                            <Reference Include="PackageReferencedThroughLegacyMechanism">
+                              <HintPath>packages\PackageReferencedThroughLegacyMechanism.1.0.0\lib\net48\PackageReferencedThroughLegacyMechanism.dll</HintPath>
+                              <Private>True</Private>
+                            </Reference>
+                          </ItemGroup>
+                          <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                        </Project>
+                        """),
+                    ("src/packages.config", """
+                        <?xml version="1.0" encoding="utf-8"?>
+                        <packages>
+                          <package id="PackageReferencedThroughLegacyMechanism" version="1.0.0" targetFramework="net48" />
+                        </packages>
+                        """),
+                ],
+                expectedResult: new()
+                {
+                    Path = "src",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "myproj.csproj",
+                            TargetFrameworks = ["net48"],
+                            Dependencies = [
+                                new("PackageReferencedThroughLegacyMechanism", "1.0.0", DependencyType.PackagesConfig, TargetFrameworks: ["net48"]),
+                            ],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [
+                                "packages.config"
+                            ],
+                        }
+                    ],
+                }
+            );
+        }
     }
 }
