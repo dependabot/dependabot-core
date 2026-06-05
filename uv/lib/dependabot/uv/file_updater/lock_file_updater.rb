@@ -510,7 +510,7 @@ module Dependabot
 
           return unless username || password
 
-          Dependabot.logger.info("Configured uv auth env vars for a matched [[tool.uv.index]] entry")
+          Dependabot.logger.debug("Configured uv auth env vars for a matched [[tool.uv.index]] entry")
         end
 
         sig { params(credential: Dependabot::Credential).returns(T.nilable(String)) }
