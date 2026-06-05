@@ -278,9 +278,9 @@ module Dependabot
           available_release.is_a?(String)
         end
 
-        # Returns true when the dependency is pinned to a commit SHA but has a
-        # frozen version comment (e.g. "# frozen: v5.0.0"), indicating the
-        # available release is a Version rather than a raw SHA string.
+        # Returns true when the dependency's stored ref isn't a semantic version (e.g., a commit SHA)
+        # but a frozen version comment (e.g. "# frozen: v5.0.0") provides a semantic
+        # version we can use for version ordering and tag selection.
         sig { returns(T::Boolean) }
         def sha_pinned_with_version_comment?
           return false if release_type_sha?

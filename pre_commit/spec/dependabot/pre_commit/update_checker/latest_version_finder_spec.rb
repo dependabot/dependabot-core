@@ -350,8 +350,11 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
         }
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
-          .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
+          .to receive(:local_tags_for_allowed_versions)
           .and_return([v6_tag, v5_tag, v4_tag])
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
+          .and_raise("unexpected precision filtering")
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
           .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
@@ -393,8 +396,11 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
         }
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
-          .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
+          .to receive(:local_tags_for_allowed_versions)
           .and_return([v6_tag, v5_1_tag, v5_tag])
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
+          .and_raise("unexpected precision filtering")
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
           .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
