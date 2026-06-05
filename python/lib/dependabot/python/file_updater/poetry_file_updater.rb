@@ -14,6 +14,7 @@ require "dependabot/python/file_updater"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/poetry_plugin_installer"
+require "dependabot/package/release_cooldown_options"
 
 module Dependabot
   module Python
@@ -36,13 +37,15 @@ module Dependabot
           params(
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
-            credentials: T::Array[Dependabot::Credential]
+            credentials: T::Array[Dependabot::Credential],
+            cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize(dependencies:, dependency_files:, credentials:)
+        def initialize(dependencies:, dependency_files:, credentials:, cooldown: nil)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
+          @cooldown = T.let(cooldown, T.nilable(Dependabot::Package::ReleaseCooldownOptions))
           @updated_dependency_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
           @prepared_pyproject = T.let(nil, T.nilable(String))
           @pyproject = T.let(nil, T.nilable(Dependabot::DependencyFile))
@@ -252,29 +255,49 @@ module Dependabot
                            .update_python_requirement(language_version_manager.python_version)
         end
 
-        sig { params(poetry_object: T::Hash[String, T.untyped], dep: Dependabot::Dependency).returns(T::Array[String]) }
+        sig { params(poetry_object: T::Hash[String, T.untyped], dep: Dependabot::Dependency).void }
         def lock_declaration_to_new_version!(poetry_object, dep)
-          Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |type|
-            names = poetry_object[type]&.keys || []
-            pkg_name = names.find { |nm| normalise(nm) == dep.name }
+          pinned_version = exact_poetry_requirement(dep.version)
+          return unless pinned_version
+
+          poetry_dependency_tables(poetry_object).each do |deps_hash|
+            pkg_name = deps_hash.keys.find { |nm| normalise(nm) == dep.name }
             next unless pkg_name
 
-            if poetry_object[type][pkg_name].is_a?(Hash)
-              next unless poetry_object[type][pkg_name].key?("version") # skip enrichment-only entries
-
-              poetry_object[type][pkg_name]["version"] = dep.version
+            entry = deps_hash[pkg_name]
+            if entry.is_a?(Hash)
+              entry["version"] = pinned_version if entry.key?("version") # skip enrichment-only entries
             else
-              poetry_object[type][pkg_name] = dep.version
+              deps_hash[pkg_name] = pinned_version
             end
           end
         end
 
         sig { params(poetry_object: T::Hash[String, T.untyped], dep: Dependabot::Dependency).void }
         def create_declaration_at_new_version!(poetry_object, dep)
-          subdep_type = dep.production? ? "dependencies" : "dev-dependencies"
+          pinned_version = exact_poetry_requirement(dep.version)
+          return unless pinned_version
 
+          subdep_type = dep.production? ? "dependencies" : "dev-dependencies"
           poetry_object[subdep_type] ||= {}
-          poetry_object[subdep_type][dep.name] = dep.version
+          poetry_object[subdep_type][dep.name] = pinned_version
+        end
+
+        sig { params(version: T.nilable(String)).returns(T.nilable(String)) }
+        def exact_poetry_requirement(version)
+          return nil unless version
+
+          # Pin with ==version only when cooldown is set so Poetry can't pick a newer excluded release.
+          @cooldown ? "==#{version}" : version
+        end
+
+        sig { params(poetry_object: T::Hash[String, T.untyped]).returns(T::Array[T::Hash[String, T.untyped]]) }
+        def poetry_dependency_tables(poetry_object)
+          types = Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES
+          groups = poetry_object["group"].is_a?(Hash) ? poetry_object["group"].values : []
+          candidates = types.map { |type| poetry_object[type] } +
+                       groups.map { |group_spec| group_spec["dependencies"] if group_spec.is_a?(Hash) }
+          candidates.grep(Hash)
         end
 
         sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
