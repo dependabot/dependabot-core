@@ -189,7 +189,10 @@ module Dependabot
         dependency_files: dependency_files,
         repo_contents_path: job.repo_contents_path,
         credentials: job.credentials,
-        options: job.experiments.merge(security_updates_only: job.security_updates_only?)
+        options: job.experiments.merge(
+          security_updates_only: job.security_updates_only?,
+          update_cooldown: job.security_updates_only? ? nil : job.cooldown
+        )
       )
     end
   end
