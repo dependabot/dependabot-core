@@ -1,11 +1,15 @@
 # typed: false
 # frozen_string_literal: true
 
+require "base64"
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/rust_toolchain/package/package_details_fetcher"
 
 RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
-  subject(:finder) { described_class.new(dependency: dependency) }
+  subject(:finder) { described_class.new(dependency: dependency, credentials: credentials) }
+
+  let(:credentials) { [] }
 
   let(:manifests_url_with_timestamp) { /\A#{Regexp.escape(described_class::MANIFESTS_URL)}(\?t=\d+)?\z/o }
 
@@ -37,7 +41,7 @@ RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
     before do
       # Stub any cache-busted URL variant without assertions inside the hook
       allow(Dependabot::RegistryClient).to receive(:get)
-        .with(url: manifests_url_with_timestamp)
+        .with(url: manifests_url_with_timestamp, headers: {})
         .and_return(instance_double(Excon::Response, body: manifests_response))
     end
 
@@ -111,10 +115,101 @@ RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
 
     it "handles network errors gracefully" do
       allow(Dependabot::RegistryClient).to receive(:get)
-        .with(url: manifests_url_with_timestamp)
+        .with(url: manifests_url_with_timestamp, headers: {})
         .and_raise(Excon::Error::Timeout, "Request timeout")
 
       expect { finder.fetch }.to raise_error(Excon::Error::Timeout)
+    end
+
+    context "with a replaces-base rust_registry credential" do
+      let(:mirror_base_url) { "https://my-mirror.example.com" }
+      let(:mirror_manifests_url) { "#{mirror_base_url}/manifests.txt" }
+      let(:mirror_manifests_url_with_timestamp) { /\A#{Regexp.escape(mirror_manifests_url)}(\?t=\d+)?\z/ }
+      let(:credentials) do
+        [Dependabot::Credential.new({ "type" => "rust_registry", "url" => mirror_base_url, "replaces-base" => true })]
+      end
+
+      before do
+        allow(Dependabot::RegistryClient).to receive(:get)
+          .with(url: mirror_manifests_url_with_timestamp, headers: {})
+          .and_return(instance_double(Excon::Response, body: manifests_response))
+      end
+
+      it "fetches from the mirror URL instead of the default" do
+        finder.fetch
+
+        expect(Dependabot::RegistryClient).to have_received(:get)
+          .with(url: mirror_manifests_url_with_timestamp, headers: {})
+      end
+
+      it "still parses manifests correctly" do
+        package_details = finder.fetch
+
+        expect(package_details.releases.length).to eq(8)
+      end
+    end
+
+    context "with a replaces-base credential with a token" do
+      let(:mirror_base_url) { "https://my-mirror.example.com" }
+      let(:mirror_manifests_url_with_timestamp) do
+        /\A#{Regexp.escape("#{mirror_base_url}/manifests.txt")}(\?t=\d+)?\z/
+      end
+      let(:credentials) do
+        [Dependabot::Credential.new(
+          {
+            "type" => "rust_registry",
+            "url" => mirror_base_url,
+            "replaces-base" => true,
+            "token" => "mytoken"
+          }
+        )]
+      end
+
+      before do
+        allow(Dependabot::RegistryClient).to receive(:get)
+          .with(url: mirror_manifests_url_with_timestamp, headers: { "Authorization" => "Bearer mytoken" })
+          .and_return(instance_double(Excon::Response, body: manifests_response))
+      end
+
+      it "sends a Bearer Authorization header" do
+        finder.fetch
+
+        expect(Dependabot::RegistryClient).to have_received(:get)
+          .with(url: mirror_manifests_url_with_timestamp, headers: { "Authorization" => "Bearer mytoken" })
+      end
+    end
+
+    context "with a replaces-base credential with username and password" do
+      let(:mirror_base_url) { "https://my-mirror.example.com" }
+      let(:mirror_manifests_url_with_timestamp) do
+        /\A#{Regexp.escape("#{mirror_base_url}/manifests.txt")}(\?t=\d+)?\z/
+      end
+      let(:credentials) do
+        [Dependabot::Credential.new(
+          {
+            "type" => "rust_registry",
+            "url" => mirror_base_url,
+            "replaces-base" => true,
+            "username" => "user",
+            "password" => "pass"
+          }
+        )]
+      end
+
+      before do
+        encoded = Base64.strict_encode64("user:pass")
+        allow(Dependabot::RegistryClient).to receive(:get)
+          .with(url: mirror_manifests_url_with_timestamp, headers: { "Authorization" => "Basic #{encoded}" })
+          .and_return(instance_double(Excon::Response, body: manifests_response))
+      end
+
+      it "sends a Basic Authorization header" do
+        encoded = Base64.strict_encode64("user:pass")
+        finder.fetch
+
+        expect(Dependabot::RegistryClient).to have_received(:get)
+          .with(url: mirror_manifests_url_with_timestamp, headers: { "Authorization" => "Basic #{encoded}" })
+      end
     end
   end
 
