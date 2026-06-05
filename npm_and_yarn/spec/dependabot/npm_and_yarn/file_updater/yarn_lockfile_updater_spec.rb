@@ -393,6 +393,35 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     end
   end
 
+  context "when updating a yarn berry lockfile without packageManager or .yarnrc.yml" do
+    let(:files) { project_dependency_files("yarn_berry/simple_without_package_manager") }
+    let(:temporary_config_files) { [] }
+    let(:requirements) do
+      [{
+        file: "package.json",
+        requirement: "^0.0.1",
+        groups: ["dependencies"],
+        source: nil
+      }]
+    end
+    let(:previous_requirements) { requirements }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command) do
+        temporary_config_files << Dir.children(".")
+      end
+    end
+
+    it "does not write classic yarn configuration" do
+      expect(updated_yarn_lock_content).to include("fetch-factory@npm:^0.0.1")
+      expect(temporary_config_files).to all(
+        satisfy do |files|
+          files.include?(".npmrc") && !files.include?(".yarnrc") && !files.include?(".yarnrc.yml")
+        end
+      )
+    end
+  end
+
   describe "security_updates_only flag" do
     let(:files) { project_dependency_files("yarn_berry/workspace_subdependency_update") }
     let(:dependency_name) { "lodash" }
