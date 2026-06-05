@@ -670,6 +670,7 @@ internal static partial class MSBuildHelper
         ThrowOnUnparseableFile(output);
         ThrowOnMultipleProjectsForPackagesConfig(output);
         ThrowOnCircularDependency(output);
+        ThrowOnInvalidIcuPackage(output);
     }
 
     private static void ThrowOnUnauthenticatedFeed(string stdout)
@@ -818,6 +819,14 @@ internal static partial class MSBuildHelper
         if (pattern.IsMatch(output))
         {
             throw new Exception("Circular dependency detected");
+        }
+    }
+
+    private static void ThrowOnInvalidIcuPackage(string output)
+    {
+        if (output.Contains("Couldn't find a valid ICU package installed on the system."))
+        {
+            throw new Exception("Couldn't find a valid ICU package installed on the system. Likely EOL SDK.");
         }
     }
 
