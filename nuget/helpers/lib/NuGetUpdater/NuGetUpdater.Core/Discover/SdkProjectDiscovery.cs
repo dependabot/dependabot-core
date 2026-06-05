@@ -207,6 +207,7 @@ internal static class SdkProjectDiscovery
                 }
 
                 MSBuildHelper.ThrowOnError(stdOut);
+                MSBuildHelper.ThrowOnError(stdErr);
                 if (exitCode != 0)
                 {
                     // log error, but still try to resolve what we can
