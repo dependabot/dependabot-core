@@ -160,13 +160,9 @@ module Dependabot
 
         sig { params(dep: Dependabot::Dependency).returns(T.nilable(String)) }
         def version_string(dep)
-          declaring_requirement =
-            dep.requirements
-               .find { |r| r.dig(:metadata, :property_name) == property_name }
-
           Maven::FileUpdater::DeclarationFinder.new(
             dependency: dep,
-            declaring_requirement: T.must(declaring_requirement),
+            declaring_requirement: declaring_property_requirement(dep),
             dependency_files: dependency_files
           ).declaration_nodes.first&.at_css("version")&.content
         end
@@ -193,19 +189,36 @@ module Dependabot
 
         sig { params(dep: Dependabot::Dependency).returns(String) }
         def current_property_value(dep)
-          declaring_requirement =
-            dep.requirements
-               .find { |r| r.dig(:metadata, :property_name) == property_name }
+          declaring_requirement = declaring_property_requirement(dep)
+          callsite_pom = dependency_files.find { |f| f.name == declaring_requirement.fetch(:file) }
+          unless callsite_pom
+            raise DependencyFileNotEvaluatable,
+                  "POM not found: #{declaring_requirement.fetch(:file)} for property #{property_name}"
+          end
 
-          callsite_pom = dependency_files.find { |f| f.name == declaring_requirement&.fetch(:file) }
           property_value =
             property_value_finder
-            .property_details(property_name: property_name, callsite_pom: T.must(callsite_pom))
+            .property_details(property_name: property_name, callsite_pom: callsite_pom)
             &.fetch(:value)
 
           return property_value if property_value.is_a?(String)
 
-          raise "Property not found: #{property_name}"
+          raise DependencyFileNotEvaluatable, "Property not found: #{property_name}"
+        end
+
+        sig { params(dep: Dependabot::Dependency).returns(T::Hash[Symbol, T.untyped]) }
+        def declaring_property_requirement(dep)
+          declaring_requirement =
+            dep.requirements.find do |r|
+              next false unless r.dig(:metadata, :property_name) == property_name
+
+              r.dig(:metadata, :property_source) == property_source
+            end
+
+          return declaring_requirement if declaring_requirement
+
+          raise DependencyFileNotEvaluatable,
+                "Requirement not found for property #{property_name} from #{property_source || 'unknown source'}"
         end
 
         sig { params(dep: Dependabot::Dependency).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
