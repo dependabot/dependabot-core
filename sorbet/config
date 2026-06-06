@@ -31,6 +31,7 @@
 --ignore=npm_and_yarn/spec/
 --ignore=nuget/spec/
 --ignore=pre_commit/spec/
+--ignore=prek/spec/
 --ignore=pub/spec/
 --ignore=python/spec/
 --ignore=rust_toolchain/spec/

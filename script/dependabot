@@ -6,6 +6,7 @@ dependabot \
   -v "$(pwd)"/.core-bash_history:/home/dependabot/.bash_history \
   -v "$(pwd)"/deno:/home/dependabot/deno \
   -v "$(pwd)"/nix:/home/dependabot/nix \
+  -v "$(pwd)"/prek:/home/dependabot/prek \
   -v "$(pwd)"/sbt:/home/dependabot/sbt \
   -v "$(pwd)"/updater/bin:/home/dependabot/dependabot-updater/bin \
   -v "$(pwd)"/updater/lib:/home/dependabot/dependabot-updater/lib \

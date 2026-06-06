@@ -39,6 +39,7 @@
 # - nuget
 # - pip (includes pipenv)
 # - pre_commit
+# - prek
 # - pub
 # - rust_toolchain
 # - submodules
@@ -83,6 +84,7 @@ $LOAD_PATH << "./nix/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
 $LOAD_PATH << "./pre_commit/lib"
+$LOAD_PATH << "./prek/lib"
 $LOAD_PATH << "./pub/lib"
 $LOAD_PATH << "./python/lib"
 $LOAD_PATH << "./rust_toolchain/lib"
@@ -141,6 +143,7 @@ require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
 require "dependabot/pre_commit"
+require "dependabot/prek"
 require "dependabot/pub"
 require "dependabot/python"
 require "dependabot/sbt"
@@ -394,6 +397,7 @@ valid_package_managers = %w(
   nuget
   pip
   pre_commit
+  prek
   pub
   python
   rust_toolchain

@@ -62,6 +62,9 @@ nuget:
 pre_commit:
   - *common
   - 'pre_commit/**'
+prek:
+  - *common
+  - 'prek/**'
 python:
   - *common
   - 'python/**'

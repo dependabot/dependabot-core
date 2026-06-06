@@ -115,6 +115,11 @@
     "ecosystem": "pre-commit"
   },
   {
+    "core": "prek",
+    "test": "prek",
+    "ecosystem": "prek"
+  },
+  {
     "core": "pub",
     "test": "pub",
     "ecosystem": "pub"

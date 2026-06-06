@@ -89,6 +89,9 @@ nuget:
 pre_commit:
   - *shared
   - 'pre_commit/**'
+prek:
+  - *shared
+  - 'prek/**'
 pub:
   - *shared
   - 'pub/**'

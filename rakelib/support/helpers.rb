@@ -47,6 +47,7 @@ class RakeHelpers
       omnibus/dependabot-omnibus.gemspec
       opentofu/dependabot-opentofu.gemspec
       pre_commit/dependabot-pre_commit.gemspec
+      prek/dependabot-prek.gemspec
       pub/dependabot-pub.gemspec
       python/dependabot-python.gemspec
       rust_toolchain/dependabot-rust_toolchain.gemspec

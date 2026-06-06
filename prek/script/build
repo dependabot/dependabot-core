@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -e
+
+# prek has no native helpers to build; it reuses pre-commit's Ruby logic.
+echo "No native helpers to build for prek"

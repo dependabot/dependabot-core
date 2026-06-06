@@ -93,3 +93,6 @@
 
 "L: sbt":
     - '(sbt)'
+
+"L: prek":
+    - '(prek)'
