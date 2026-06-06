@@ -44,7 +44,7 @@ module Dependabot
       def ecosystem
         @ecosystem ||= T.let(
           Ecosystem.new(
-            name: ECOSYSTEM,
+            name: package_manager_name,
             package_manager: package_manager
           ),
           T.nilable(Ecosystem)
@@ -69,14 +69,37 @@ module Dependabot
         @package_manager ||= T.let(PackageManager.new, T.nilable(Dependabot::PreCommit::PackageManager))
       end
 
+      # The package manager / ecosystem name recorded on parsed dependencies.
+      # Overridden by subclasses (e.g. prek) that reuse this parser.
+      sig { returns(String) }
+      def package_manager_name
+        ECOSYSTEM
+      end
+
+      # The pattern used to select configuration files from the dependency
+      # files. Overridden by subclasses that use a different file format.
+      sig { returns(Regexp) }
+      def config_file_pattern
+        CONFIG_FILE_PATTERN
+      end
+
+      # Parses a config file's raw content into a Hash. Overridden by subclasses
+      # that support other serialization formats (e.g. prek's TOML).
+      sig { params(file: Dependabot::DependencyFile).returns(T.untyped) }
+      def load_config(file)
+        YAML.safe_load(T.must(file.content), aliases: true)
+      rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias => e
+        raise Dependabot::DependencyFileNotParseable.new(file.path, e.message)
+      end
+
       sig { params(file: Dependabot::DependencyFile).returns(DependencySet) }
       def parse_config_file(file)
         dependency_set = DependencySet.new
 
-        yaml = YAML.safe_load(T.must(file.content), aliases: true)
-        return dependency_set unless yaml.is_a?(Hash)
+        config = load_config(file)
+        return dependency_set unless config.is_a?(Hash)
 
-        repos = yaml.fetch("repos", [])
+        repos = config.fetch("repos", [])
         repos.each do |repo|
           next unless repo.is_a?(Hash)
 
@@ -88,8 +111,6 @@ module Dependabot
         end
 
         dependency_set
-      rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias => e
-        raise Dependabot::DependencyFileNotParseable.new(file.path, e.message)
       end
 
       sig do
@@ -122,7 +143,7 @@ module Dependabot
             },
             metadata: { comment: comment }
           }],
-          package_manager: ECOSYSTEM
+          package_manager: package_manager_name
         )
       end
 
@@ -198,7 +219,7 @@ module Dependabot
                 original_string: dep_string
               }
             }],
-            package_manager: ECOSYSTEM
+            package_manager: package_manager_name
           )
         end
 
@@ -260,7 +281,7 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def pre_commit_config_files
-        dependency_files.select { |f| f.name.match?(CONFIG_FILE_PATTERN) }
+        dependency_files.select { |f| f.name.match?(config_file_pattern) }
       end
 
       sig { override.void }
