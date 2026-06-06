@@ -182,6 +182,13 @@ PATH
       dependabot-python (= 0.380.0)
 
 PATH
+  remote: ../prek
+  specs:
+    dependabot-prek (0.380.0)
+      dependabot-common (= 0.380.0)
+      dependabot-pre_commit (= 0.380.0)
+
+PATH
   remote: ../pub
   specs:
     dependabot-pub (0.380.0)
@@ -631,6 +638,7 @@ DEPENDENCIES
   dependabot-nuget!
   dependabot-opentofu!
   dependabot-pre_commit!
+  dependabot-prek!
   dependabot-pub!
   dependabot-python!
   dependabot-rust_toolchain!
@@ -723,6 +731,7 @@ CHECKSUMS
   dependabot-nuget (0.380.0)
   dependabot-opentofu (0.380.0)
   dependabot-pre_commit (0.380.0)
+  dependabot-prek (0.380.0)
   dependabot-pub (0.380.0)
   dependabot-python (0.380.0)
   dependabot-rust_toolchain (0.380.0)
