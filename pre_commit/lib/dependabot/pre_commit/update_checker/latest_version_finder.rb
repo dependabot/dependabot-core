@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/errors"
+require "dependabot/pre_commit/comment_version_helper"
 require "dependabot/pre_commit/file_parser"
 require "dependabot/pre_commit/package/package_details_fetcher"
 require "dependabot/pre_commit/requirement"
@@ -225,7 +226,14 @@ module Dependabot
         # This ensures we evaluate from the newest candidate downward.
         sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def version_candidates_descending
-          all_tags = @git_helper.git_commit_checker.local_tags_for_allowed_versions_matching_existing_precision
+          # When pinned to a SHA, precision matching against the SHA is meaningless
+          # (a SHA has no dots, so precision=1 matches nothing useful).
+          # Use the unfiltered allowed version tags instead.
+          all_tags = if sha_pinned_with_version_comment?
+                       @git_helper.git_commit_checker.local_tags_for_allowed_versions
+                     else
+                       @git_helper.git_commit_checker.local_tags_for_allowed_versions_matching_existing_precision
+                     end
           cur_version = current_version
 
           all_tags
@@ -260,7 +268,7 @@ module Dependabot
           return nil unless version_str
 
           stripped = version_str.sub(/\Av/i, "")
-          return nil unless Dependabot::PreCommit::Version.correct?(stripped)
+          return version_from_frozen_comment unless Dependabot::PreCommit::Version.correct?(stripped)
 
           Dependabot::PreCommit::Version.new(stripped)
         end
@@ -268,6 +276,35 @@ module Dependabot
         sig { returns(T::Boolean) }
         def release_type_sha?
           available_release.is_a?(String)
+        end
+
+        # Returns true when the dependency's stored ref isn't a semantic version (e.g., a commit SHA)
+        # but a frozen version comment (e.g. "# frozen: v5.0.0") provides a semantic
+        # version we can use for version ordering and tag selection.
+        sig { returns(T::Boolean) }
+        def sha_pinned_with_version_comment?
+          return false if release_type_sha?
+
+          version_str = dependency.version
+          return false unless version_str
+
+          !Dependabot::PreCommit::Version.correct?(version_str) && !version_from_frozen_comment.nil?
+        end
+
+        # Extracts the semantic version from a frozen comment (e.g. "# frozen: v5.0.0")
+        # when the dependency's stored version is a commit SHA.
+        sig { returns(T.nilable(Dependabot::Version)) }
+        def version_from_frozen_comment
+          comment = dependency.requirements.first&.dig(:metadata, :comment)
+          return nil unless comment
+
+          match = comment.match(CommentVersionHelper::FROZEN_COMMENT_REF_PATTERN)
+          return nil unless match
+
+          version_str = match[1].sub(/\Av/i, "")
+          return nil unless Dependabot::PreCommit::Version.correct?(version_str)
+
+          Dependabot::PreCommit::Version.new(version_str)
         end
 
         sig { returns(Dependabot::PreCommit::Helpers::Githelper) }
