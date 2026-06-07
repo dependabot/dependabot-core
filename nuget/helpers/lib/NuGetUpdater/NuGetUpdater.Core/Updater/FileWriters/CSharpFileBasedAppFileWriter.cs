@@ -29,14 +29,12 @@ public sealed partial class CSharpFileBasedAppFileWriter : IFileWriter
         ImmutableArray<Dependency> requiredPackageVersions,
         PackageManagementKind packageManagementKind)
     {
-        var originalDependencyVersions = originalDependencies
-            .Where(d => d.Version is not null && NuGetVersion.TryParse(d.Version, out _))
+        var originalDependencyVersions = GetParsedDependencyVersions(originalDependencies)
             .GroupBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => NuGetVersion.Parse(g.First().Version!), StringComparer.OrdinalIgnoreCase);
-        var requiredDependencyVersions = requiredPackageVersions
-            .Where(d => d.Version is not null)
+            .ToDictionary(g => g.Key, g => g.First().Version, StringComparer.OrdinalIgnoreCase);
+        var requiredDependencyVersions = GetParsedDependencyVersions(requiredPackageVersions)
             .GroupBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => NuGetVersion.Parse(g.First().Version!), StringComparer.OrdinalIgnoreCase);
+            .ToDictionary(g => g.Key, g => g.First().Version, StringComparer.OrdinalIgnoreCase);
 
         var foundVersionedDirective = false;
         var allMatchedDirectivesUpdated = true;
@@ -70,6 +68,8 @@ public sealed partial class CSharpFileBasedAppFileWriter : IFileWriter
         ref bool allMatchedDirectivesUpdated)
     {
         var updatedContents = new StringBuilder(contents.Length);
+        var inDirectiveBlock = true;
+        var inBlockComment = false;
         foreach (Match lineMatch in LineRegex().Matches(contents))
         {
             if (lineMatch.Length == 0)
@@ -79,6 +79,17 @@ public sealed partial class CSharpFileBasedAppFileWriter : IFileWriter
 
             var line = lineMatch.Groups["Line"].Value;
             var eol = lineMatch.Groups["EndOfLine"].Value;
+            if (inDirectiveBlock && !CSharpFileBasedAppDiscovery.IsDirectiveBlockLine(line, ref inBlockComment))
+            {
+                inDirectiveBlock = false;
+            }
+
+            if (!inDirectiveBlock)
+            {
+                updatedContents.Append(line).Append(eol);
+                continue;
+            }
+
             var directiveMatch = PackageDirectiveRegex().Match(line);
             if (!directiveMatch.Success)
             {
@@ -114,6 +125,17 @@ public sealed partial class CSharpFileBasedAppFileWriter : IFileWriter
         }
 
         return updatedContents.ToString();
+    }
+
+    private static IEnumerable<(string Name, NuGetVersion Version)> GetParsedDependencyVersions(ImmutableArray<Dependency> dependencies)
+    {
+        foreach (var dependency in dependencies)
+        {
+            if (dependency.Version is not null && NuGetVersion.TryParse(dependency.Version, out var version))
+            {
+                yield return (dependency.Name, version);
+            }
+        }
     }
 
     private static bool TryGetUpdatedVersion(string versionText, NuGetVersion oldVersion, NuGetVersion requiredVersion, out string updatedVersion)
