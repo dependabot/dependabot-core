@@ -76,7 +76,11 @@ internal static partial class CSharpFileBasedAppDiscovery
         var inBlockComment = false;
         foreach (var line in File.ReadLines(csharpFilePath))
         {
-            var uncommentedLine = RemoveComments(line.TrimStart('\uFEFF'), ref inBlockComment);
+            if (!TryGetDirectiveBlockLine(line, ref inBlockComment, out var uncommentedLine))
+            {
+                break;
+            }
+
             var match = PackageDirectiveRegex().Match(uncommentedLine);
             if (!match.Success)
             {
@@ -96,6 +100,9 @@ internal static partial class CSharpFileBasedAppDiscovery
 
         return [.. dependencies.Values.OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase)];
     }
+
+    internal static bool IsDirectiveBlockLine(string line, ref bool inBlockComment)
+        => TryGetDirectiveBlockLine(line, ref inBlockComment, out _);
 
     private static bool IsInProjectCone(string csharpFilePath, ImmutableArray<DirectoryInfo> projectDirectories)
     {
@@ -119,6 +126,15 @@ internal static partial class CSharpFileBasedAppDiscovery
         return bytesRead >= 2 &&
             buffer[0] == (byte)'#' &&
             buffer[1] == (byte)'!';
+    }
+
+    private static bool TryGetDirectiveBlockLine(string line, ref bool inBlockComment, out string uncommentedLine)
+    {
+        uncommentedLine = RemoveComments(line.TrimStart('\uFEFF'), ref inBlockComment);
+        var trimmedLine = uncommentedLine.TrimStart();
+        return trimmedLine.Length == 0 ||
+            trimmedLine.StartsWith("#!", StringComparison.Ordinal) ||
+            trimmedLine.StartsWith("#:", StringComparison.Ordinal);
     }
 
     private static string RemoveComments(string line, ref bool inBlockComment)

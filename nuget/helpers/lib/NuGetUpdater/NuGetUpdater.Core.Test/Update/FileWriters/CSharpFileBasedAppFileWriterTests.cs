@@ -38,6 +38,34 @@ public class CSharpFileBasedAppFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
+    public async Task UpdatesOnlyPackageDirectivesBeforeCSharpCode()
+    {
+        await TestAsync(
+            files:
+            [
+                ("app.cs", """"
+                    #:package Some.Dependency@1.0.0
+
+                    var text = """
+                    #:package Some.Dependency@1.0.0
+                    """;
+                    """"),
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
+            expectedFiles:
+            [
+                ("app.cs", """"
+                    #:package Some.Dependency@2.0.0
+
+                    var text = """
+                    #:package Some.Dependency@1.0.0
+                    """;
+                    """"),
+            ]);
+    }
+
+    [Fact]
     public async Task UpdatesVersionedPackageDirectiveWithTrailingComment()
     {
         await TestAsync(
@@ -182,5 +210,21 @@ public class CSharpFileBasedAppFileWriterTests : FileWriterTestsBase
             ],
             initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
             requiredDependencyStrings: ["Some.Dependency/2.0.0"]);
+    }
+
+    [Fact]
+    public async Task SkipsUnparseableRequiredDependencyVersions()
+    {
+        await TestNoChangeAsync(
+            files:
+            [
+                 ("app.cs", """
+                    #:package Some.Dependency@1.0.0
+
+                    Console.WriteLine("Hello");
+                    """),
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/not-a-version"]);
     }
 }

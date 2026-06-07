@@ -45,6 +45,42 @@ public partial class DiscoveryWorkerTests
         }
 
         [Fact]
+        public async Task IgnoresPackageDirectivesAfterCSharpCode()
+        {
+            await TestDiscoveryAsync(
+                workspacePath: "",
+                files:
+                [
+                    ("app.cs", """"
+                        #:package Real.Package@1.0.0
+
+                        var text = """
+                        #:package Phantom.Package@9.9.9
+                        """;
+                        """"),
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects =
+                    [
+                        new()
+                        {
+                            FilePath = "app.cs",
+                            Dependencies =
+                            [
+                                new("Real.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net10.0"]),
+                            ],
+                            TargetFrameworks = ["net10.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
+                        },
+                    ],
+                });
+        }
+
+        [Fact]
         public async Task IgnoresCSharpFilesUnderCSharpProjectCones()
         {
             await TestDiscoveryAsync(
