@@ -100,6 +100,20 @@ RSpec.describe Dependabot::Prek::FileParser do
       end
     end
 
+    context "with a frozen comment on an inline-table repo" do
+      let(:prek_config) do
+        Dependabot::DependencyFile.new(
+          name: "prek.toml",
+          content: fixture("prek_configs", "inline_frozen.toml")
+        )
+      end
+
+      it "extracts the comment from the inline-table form" do
+        dep = dependencies.find { |d| d.name.include?("pre-commit-hooks") }
+        expect(dep.requirements.first[:metadata][:comment]).to eq("# frozen: v4.4.0")
+      end
+    end
+
     context "with a local repo" do
       let(:prek_config) do
         Dependabot::DependencyFile.new(

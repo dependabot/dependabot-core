@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -53,10 +53,12 @@ module Dependabot
         raise "No prek configuration file found!"
       end
 
-      # Extracts the trailing comment on a repo's `rev = "..."` line (TOML
-      # syntax), e.g. `rev = "<sha>"  # frozen: v4.4.0`. TOML comments are
-      # discarded by the parser, so we scan the raw content like pre-commit does
-      # for YAML, but match TOML's `repo =` / `rev =` assignments.
+      # Extracts the trailing comment on a repo's `rev = "..."` line, e.g.
+      # `rev = "<sha>"  # frozen: v4.4.0`. TOML comments are discarded by the
+      # parser, so we scan the raw content like pre-commit does for YAML. The
+      # `repo =` / `rev =` assignments are matched with a leading boundary so
+      # both the `[[repos]]` table form and the inline-table array form
+      # (`repos = [{ repo = "...", rev = "..." }]`) are handled.
       sig do
         override.params(
           file: Dependabot::DependencyFile,
@@ -67,12 +69,12 @@ module Dependabot
         current_repo = T.let(nil, T.nilable(String))
 
         T.must(file.content).each_line do |line|
-          repo_match = line.match(/^\s*repo\s*=\s*["']([^"']+)["']/)
+          repo_match = line.match(/(?:^|[\s{,])repo\s*=\s*["']([^"']+)["']/)
           current_repo = repo_match[1] if repo_match
 
           next unless current_repo == repo_url
 
-          rev_match = line.match(/^\s*rev\s*=\s*\S+\s*(#.*)$/)
+          rev_match = line.match(/(?:^|[\s{,])rev\s*=\s*\S+.*?(#.*)$/)
           return T.must(rev_match[1]).rstrip if rev_match
         end
 
