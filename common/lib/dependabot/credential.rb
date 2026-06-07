@@ -19,8 +19,8 @@ module Dependabot
       raw_scope = credential.delete("scope")
       @scope = T.let(
         case raw_scope
-        when String then [raw_scope]
-        when Array then raw_scope
+        when String then [normalize_scope(raw_scope)]
+        when Array then raw_scope.map { |s| normalize_scope(s) }
         end,
         T.nilable(T::Array[String])
       )
@@ -49,6 +49,13 @@ module Dependabot
     sig { returns(T::Hash[String, String]) }
     def to_h
       @credential
+    end
+
+    private
+
+    sig { params(scope: String).returns(String) }
+    def normalize_scope(scope)
+      scope.start_with?("@") ? scope : "@#{scope}"
     end
   end
 end

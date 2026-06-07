@@ -60,7 +60,8 @@ module Dependabot
         def registry
           return @registry if @registry
 
-          @registry = configured_registry || locked_registry || first_registry_with_dependency_details
+          @registry = configured_registry || locked_registry || scoped_credential_registry_for_dependency ||
+                      first_registry_with_dependency_details
           T.must(@registry)
         end
 
@@ -339,7 +340,20 @@ module Dependabot
             return prepare_registry_url(yarn_berry_registry) if yarn_berry_registry
           end
 
-          scoped_credential_registry(scope)
+          nil
+        end
+
+        sig { returns(T.nilable(String)) }
+        def scoped_credential_registry_for_dependency
+          dep_name = dependency&.name
+          return unless dep_name
+          return unless dep_name.start_with?("@") && dep_name.include?("/")
+
+          scope = T.must(dep_name.split("/").first)
+          registry = scoped_credential_registry(scope)
+          return unless registry
+
+          normalize_configured_registry(registry)
         end
 
         sig { params(scope: String).returns(T.nilable(String)) }
@@ -352,6 +366,16 @@ module Dependabot
           registry = T.must(cred["registry"])
           registry = "https://#{registry}" unless registry.start_with?("http")
           prepare_registry_url(registry)
+        end
+
+        sig { params(dependency_name: String).returns(String) }
+        def registry_from_credential_scope(dependency_name)
+          if dependency_name.start_with?("@") && dependency_name.include?("/")
+            scope = T.must(dependency_name.split("/").first)
+            scoped_credential_registry(scope) || global_registry
+          else
+            global_registry
+          end
         end
 
         sig do

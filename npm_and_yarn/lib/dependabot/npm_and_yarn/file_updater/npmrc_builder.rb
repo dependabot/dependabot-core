@@ -100,7 +100,7 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def build_npmrc_content_from_credential_scopes
-          scoped_credentials = registry_credentials.select(&:scope)
+          scoped_credentials = registry_credentials.select { |cred| cred.scope && cred["registry"] }
           return if scoped_credentials.empty?
 
           lines = T.let([], T::Array[String])

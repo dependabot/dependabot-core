@@ -224,66 +224,6 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
 
       it { is_expected.to eq("https://example.com/registry%20with%20spaces") }
     end
-
-    context "with a scoped dependency and credential scope fallback" do
-      let(:dependency_name) { "@my-company/some_dep" }
-      let(:credentials) do
-        [Dependabot::Credential.new(
-          {
-            "type" => "npm_registry",
-            "registry" => "https://npm.pkg.github.com",
-            "token" => "secret_token",
-            "scope" => "@my-company"
-          }
-        )]
-      end
-
-      it { is_expected.to eq("https://npm.pkg.github.com") }
-
-      context "when the dependency is under a different scope" do
-        let(:dependency_name) { "@other-org/some_dep" }
-
-        it { is_expected.to eq("https://registry.npmjs.org") }
-      end
-    end
-
-    context "with a scoped dependency and credential with multiple scopes" do
-      let(:dependency_name) { "@org2/some_dep" }
-      let(:credentials) do
-        [Dependabot::Credential.new(
-          {
-            "type" => "npm_registry",
-            "registry" => "https://npm.pkg.github.com",
-            "token" => "secret_token",
-            "scope" => ["@org1", "@org2"]
-          }
-        )]
-      end
-
-      it { is_expected.to eq("https://npm.pkg.github.com") }
-    end
-
-    context "with a scoped dependency where rc file takes priority over credential scope" do
-      let(:dependency_name) { "@my-company/some_dep" }
-      let(:npmrc_file) do
-        Dependabot::DependencyFile.new(
-          name: ".npmrc",
-          content: "@my-company:registry=http://npmrc-registry.example.com"
-        )
-      end
-      let(:credentials) do
-        [Dependabot::Credential.new(
-          {
-            "type" => "npm_registry",
-            "registry" => "https://npm.pkg.github.com",
-            "token" => "secret_token",
-            "scope" => "@my-company"
-          }
-        )]
-      end
-
-      it { is_expected.to eq("http://npmrc-registry.example.com") }
-    end
   end
 
   describe "registry" do
@@ -607,6 +547,85 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
       end
 
       it { is_expected.to eq("registry.npmrc.org/dependabot") }
+    end
+
+    context "with a scoped dependency and credential scope fallback" do
+      let(:dependency_name) { "@my-company/some_dep" }
+      let(:credentials) do
+        [Dependabot::Credential.new(
+          {
+            "type" => "npm_registry",
+            "registry" => "https://npm.pkg.github.com",
+            "token" => "secret_token",
+            "scope" => "@my-company"
+          }
+        )]
+      end
+
+      it { is_expected.to eq("npm.pkg.github.com") }
+
+      context "when the dependency is under a different scope" do
+        let(:dependency_name) { "@other-org/some_dep" }
+
+        it { is_expected.to eq("registry.npmjs.org") }
+      end
+    end
+
+    context "with a scoped dependency and credential with multiple scopes" do
+      let(:dependency_name) { "@org2/some_dep" }
+      let(:credentials) do
+        [Dependabot::Credential.new(
+          {
+            "type" => "npm_registry",
+            "registry" => "https://npm.pkg.github.com",
+            "token" => "secret_token",
+            "scope" => ["@org1", "@org2"]
+          }
+        )]
+      end
+
+      it { is_expected.to eq("npm.pkg.github.com") }
+    end
+
+    context "with a scoped dependency where rc file takes priority over credential scope" do
+      let(:dependency_name) { "@my-company/some_dep" }
+      let(:npmrc_file) do
+        Dependabot::DependencyFile.new(
+          name: ".npmrc",
+          content: "@my-company:registry=http://npmrc-registry.example.com"
+        )
+      end
+      let(:credentials) do
+        [Dependabot::Credential.new(
+          {
+            "type" => "npm_registry",
+            "registry" => "https://npm.pkg.github.com",
+            "token" => "secret_token",
+            "scope" => "@my-company"
+          }
+        )]
+      end
+
+      it { is_expected.to eq("npmrc-registry.example.com") }
+    end
+
+    context "with a scoped dependency where lockfile source takes priority over credential scope" do
+      let(:dependency_name) { "@my-company/some_dep" }
+      let(:source) do
+        { type: "registry", url: "https://locked-registry.example.com" }
+      end
+      let(:credentials) do
+        [Dependabot::Credential.new(
+          {
+            "type" => "npm_registry",
+            "registry" => "https://npm.pkg.github.com",
+            "token" => "secret_token",
+            "scope" => "@my-company"
+          }
+        )]
+      end
+
+      it { is_expected.to eq("locked-registry.example.com") }
     end
   end
 
