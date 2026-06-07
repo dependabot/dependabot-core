@@ -464,6 +464,182 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
     end
   end
 
+  describe "#wants_prerelease?" do
+    subject(:wants_prerelease) { finder.send(:wants_prerelease?) }
+
+    # Minimal PEP 440 stub: post-releases are stable, a/b/rc/dev are pre-release.
+    # Avoids coupling common specs to the Python ecosystem gem.
+    let(:pep440_version_class) do
+      Class.new(Dependabot::Version) do
+        def self.correct?(version)
+          version.to_s.match?(/\A[\d]+(?:\.[\d]+)*(?:\.?(?:a|b|rc|dev|post|rev|r)\d*)?\z/)
+        end
+
+        def prerelease?
+          to_s.match?(/(?:a|b|rc|dev)\d*/)
+        end
+      end
+    end
+
+    let(:available_releases) { [] }
+    let(:dependency_files) { [requirements_file] }
+    let(:requirements_file) do
+      Dependabot::DependencyFile.new(
+        name: "requirements.txt",
+        content: "dummy"
+      )
+    end
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: dependency_version,
+        requirements: dependency_requirements,
+        package_manager: "pep440_stub"
+      )
+    end
+
+    before do
+      allow(Dependabot::Utils).to receive(:version_class_for_package_manager).and_call_original
+      allow(Dependabot::Utils).to receive(:requirement_class_for_package_manager).and_call_original
+
+      allow(Dependabot::Utils).to receive(:version_class_for_package_manager)
+        .with("pep440_stub")
+        .and_return(pep440_version_class)
+      allow(Dependabot::Utils).to receive(:requirement_class_for_package_manager)
+        .with("pep440_stub")
+        .and_return(Gem::Requirement)
+    end
+
+    context "when the current version is a stable release" do
+      let(:dependency_version) { "2.0.0" }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: "==2.0.0", groups: [], source: nil }]
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when the current version is a pre-release" do
+      let(:dependency_version) { "2.0.0a1" }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: "==2.0.0a1", groups: [], source: nil }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the current version is a post-release (stable)" do
+      let(:dependency_version) { "2.0.0.post1" }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: ">=2.0.0.post1", groups: [], source: nil }]
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when the current version is a rev-release (stable)" do
+      let(:dependency_version) { "2.0.0.rev1" }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: ">=2.0.0.rev1", groups: [], source: nil }]
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when requirements reference a pre-release version" do
+      let(:dependency_version) { "1.9.0" }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: ">=1.9.0,<2.0.0rc1", groups: [], source: nil }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when requirements reference a dev version" do
+      let(:dependency_version) { "1.0.0" }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: ">=1.0.0.dev0", groups: [], source: nil }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when requirements are stable with no pre-release markers" do
+      let(:dependency_version) { "1.0.0" }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: ">=1.0.0,<2.0.0", groups: [], source: nil }]
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when the requirement is empty" do
+      let(:dependency_version) { "1.0.0" }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: nil, groups: [], source: nil }]
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when the dependency has no pinned version but requirements reference a pre-release" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: ">=2.0.0b1", groups: [], source: nil }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the dependency has no pinned version and requirements are stable" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{ file: "requirements.txt", requirement: ">=1.0.0", groups: [], source: nil }]
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "with Gem::Version style (default version class)" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: dependency_version,
+          requirements: dependency_requirements,
+          package_manager: "dummy"
+        )
+      end
+
+      context "when the current version has an alpha pre-release suffix" do
+        let(:dependency_version) { "1.0.0.alpha" }
+        let(:dependency_requirements) do
+          [{ file: "Gemfile", requirement: "~> 1.0.0.alpha", groups: [], source: nil }]
+        end
+
+        it { is_expected.to be true }
+      end
+
+      context "when the current version is stable" do
+        let(:dependency_version) { "1.0.0" }
+        let(:dependency_requirements) do
+          [{ file: "Gemfile", requirement: "~> 1.0", groups: [], source: nil }]
+        end
+
+        it { is_expected.to be false }
+      end
+
+      context "when requirement references a beta version" do
+        let(:dependency_version) { nil }
+        let(:dependency_requirements) do
+          [{ file: "Gemfile", requirement: ">= 2.0.0.beta1", groups: [], source: nil }]
+        end
+
+        it { is_expected.to be true }
+      end
+    end
+  end
+
   describe "cooldown fallback to current version" do
     let(:dependency_version) { "6.0.0" }
 

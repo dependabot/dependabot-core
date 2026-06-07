@@ -24,6 +24,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       ],
       experiments: {},
       security_updates_only?: false,
+      cooldown: nil,
       source: source
     )
   end
