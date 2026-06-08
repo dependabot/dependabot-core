@@ -78,9 +78,15 @@ module Dependabot
         # malformed string if it ran.
         return reg if reg.include?("://")
 
-        # Trim the resolved URL so that it ends at the same point as the
-        # credential registry
-        resolved_url.gsub(/#{Regexp.quote(reg)}.*/, "") + reg
+        build_registry_url(registry: reg, resolved_uri: resolved_uri)
+      end
+
+      sig { params(registry: String, resolved_uri: URI::Generic).returns(String) }
+      def build_registry_url(registry:, resolved_uri:)
+        credential_uri = URI("https://#{registry}")
+        normalized_path = credential_uri.path.to_s.chomp("/")
+
+        "#{resolved_uri.scheme}://#{resolved_uri.authority}#{normalized_path}"
       end
 
       sig { params(details: Dependabot::Credential, resolved_uri: URI::Generic).returns(T::Boolean) }

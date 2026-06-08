@@ -49,6 +49,15 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryParser do
       end
     end
 
+    context "when the resolved URL includes an explicit non-default port" do
+      let(:resolved_url) { "https://example.com:8443/victim-npm/my-package" }
+
+      it "returns a well-formed registry URL and preserves the port" do
+        result = parser.registry_source_for("my-package")
+        expect(result[:url]).to eq("https://example.com:8443/victim-npm")
+      end
+    end
+
     context "when the resolved URL is under a completely different path" do
       let(:resolved_url) { "https://example.com/other-path/my-package" }
 
