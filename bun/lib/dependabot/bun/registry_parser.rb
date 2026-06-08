@@ -82,8 +82,8 @@ module Dependabot
             # Use path-segment-aware matching to prevent credentials configured
             # for one path-scoped registry from being applied to sibling paths
             # on the same host (e.g., /victim-npm should not match /victim-npm-evil).
-            registry_path = uri.path.chomp("/")
-            req_path = URI(resolved_url).path
+            registry_path = uri.path.to_s.chomp("/")
+            req_path = URI(resolved_url).path.to_s
             registry_path.empty? ||
               req_path.start_with?("#{registry_path}/") ||
               req_path == registry_path
