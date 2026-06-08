@@ -60,39 +60,50 @@ module Dependabot
       sig { returns(T::Array[Dependabot::Credential]) }
       attr_reader :credentials
 
-      # rubocop:disable Metrics/PerceivedComplexity
       sig { returns(T.nilable(String)) }
       def url_for_relevant_cred
         resolved_uri = URI(resolved_url)
-        resolved_url_host = resolved_uri.host
-        resolved_url_path = resolved_uri.path.to_s
 
         credential_matching_url =
           credentials
           .select { |cred| cred["type"] == "npm_registry" && cred["registry"] }
           .sort_by { |cred| cred.fetch("registry").length }
-          .find do |details|
-            next true if resolved_url_host == details["registry"]
-
-            uri = if details["registry"]&.include?("://")
-                    URI(details.fetch("registry"))
-                  else
-                    URI("https://#{details['registry']}")
-                  end
-            next false unless resolved_url_host == uri.host
-
-            # Use path-segment-aware matching to prevent credentials configured
-            # for one path-scoped registry from being applied to sibling paths
-            # on the same host (e.g., /victim-npm should not match /victim-npm-evil).
-            credential_path_match?(uri: uri, resolved_url_path: resolved_url_path)
-          end
+          .find { |details| credential_matches?(details, resolved_uri: resolved_uri) }
 
         return unless credential_matching_url
 
+        reg = credential_matching_url.fetch("registry")
+        # When the credential registry already includes an explicit scheme, return
+        # it directly — the gsub pattern would not match and would produce a
+        # malformed string if it ran.
+        return reg if reg.include?("://")
+
         # Trim the resolved URL so that it ends at the same point as the
         # credential registry
-        reg = credential_matching_url.fetch("registry")
         resolved_url.gsub(/#{Regexp.quote(reg)}.*/, "") + reg
+      end
+
+      sig { params(details: Dependabot::Credential, resolved_uri: URI::Generic).returns(T::Boolean) }
+      def credential_matches?(details, resolved_uri:)
+        resolved_url_host = resolved_uri.host
+        return true if resolved_url_host == details["registry"]
+
+        registry_has_scheme = details["registry"]&.include?("://")
+        uri = if registry_has_scheme
+                URI(details.fetch("registry"))
+              else
+                URI("https://#{details['registry']}")
+              end
+        return false unless resolved_url_host == uri.host
+        # When the credential includes an explicit scheme, require scheme
+        # equality so that a mismatched scheme does not produce a malformed
+        # return value from the gsub below (e.g. "http://...pkghttps://...").
+        return false if registry_has_scheme && resolved_uri.scheme != uri.scheme
+
+        # Use path-segment-aware matching to prevent credentials configured
+        # for one path-scoped registry from being applied to sibling paths
+        # on the same host (e.g., /victim-npm should not match /victim-npm-evil).
+        credential_path_match?(uri: uri, resolved_url_path: resolved_uri.path.to_s)
       end
 
       sig { params(uri: URI::Generic, resolved_url_path: String).returns(T::Boolean) }
@@ -102,7 +113,6 @@ module Dependabot
           resolved_url_path.start_with?("#{registry_path}/") ||
           resolved_url_path == registry_path
       end
-      # rubocop:enable Metrics/PerceivedComplexity
     end
   end
 end

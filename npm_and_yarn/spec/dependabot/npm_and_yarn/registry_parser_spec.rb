@@ -113,6 +113,16 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryParser do
           expect(result[:url]).not_to eq("https://host.example.com/team-a/npm")
         end
       end
+
+      context "when the resolved URL has a different scheme than the credential registry" do
+        let(:resolved_url) { "http://host.example.com/team-a/npm/my-pkg" }
+
+        it "does not match the https credential and returns a well-formed URL" do
+          result = parser.registry_source_for("my-pkg")
+          expect(result[:url]).not_to eq("https://host.example.com/team-a/npm")
+          expect(result[:url]).not_to include("https://host.example.com/team-a/npm")
+        end
+      end
     end
   end
 end
