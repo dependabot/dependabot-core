@@ -77,7 +77,16 @@ module Dependabot
                   else
                     URI("https://#{details['registry']}")
                   end
-            resolved_url_host == uri.host && resolved_url.include?(details.fetch("registry"))
+            next false unless resolved_url_host == uri.host
+
+            # Use path-segment-aware matching to prevent credentials configured
+            # for one path-scoped registry from being applied to sibling paths
+            # on the same host (e.g., /victim-npm should not match /victim-npm-evil).
+            registry_path = uri.path.chomp("/")
+            req_path = URI(resolved_url).path
+            registry_path.empty? ||
+              req_path.start_with?("#{registry_path}/") ||
+              req_path == registry_path
           end
 
         return unless credential_matching_url
