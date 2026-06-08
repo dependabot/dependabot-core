@@ -282,13 +282,15 @@ module Dependabot
 
               args = { sha: previous_tag, path: path }.compact
               previous_commit_shas =
-                T.unsafe(github_client).commits(repo, **args).map(&:sha)
+                T.unsafe(github_client.commits(repo, **args)).map(&:sha)
 
               # NOTE: We reverse this so it's consistent with the array we get
               # from `github_client.compare(...)`
               args = { sha: new_tag, path: path }.compact
-              T.unsafe(github_client)
-               .commits(repo, **args)
+              T.unsafe(
+                github_client
+                               .commits(repo, **args)
+              )
                .reject { |c| previous_commit_shas.include?(c.sha) }.reverse
             end
           return [] unless commits
@@ -306,9 +308,9 @@ module Dependabot
 
         sig { returns(T::Array[T::Hash[Symbol, String]]) }
         def fetch_bitbucket_commits
-          T.unsafe(bitbucket_client)
-           .compare(T.must(source).repo, previous_tag, new_tag)
-           .map do |commit|
+          bitbucket_client
+            .compare(T.must(source).repo, T.must(previous_tag), T.must(new_tag))
+            .map do |commit|
             {
               message: commit.dig("summary", "raw"),
               sha: commit["hash"],
@@ -326,8 +328,10 @@ module Dependabot
 
         sig { returns(T::Array[T::Hash[Symbol, String]]) }
         def fetch_gitlab_commits
-          T.unsafe(gitlab_client)
-           .compare(T.must(source).repo, previous_tag, new_tag)
+          T.unsafe(
+            gitlab_client
+                       .compare(T.must(source).repo, T.must(previous_tag), T.must(new_tag))
+          )
            .commits
            .map do |commit|
             {
