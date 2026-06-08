@@ -89,10 +89,10 @@ module Dependabot
         "#{resolved_uri.scheme}://#{resolved_uri.authority}#{normalized_path}"
       end
 
-      sig { params(details: Dependabot::Credential, resolved_uri: URI::Generic).returns(T::Boolean) }
       # Enforce npm registry credential boundaries by matching on host, optional
       # explicit scheme, and full path segments so sibling paths on the same host
       # cannot inherit credentials configured for a different registry scope.
+      sig { params(details: Dependabot::Credential, resolved_uri: URI::Generic).returns(T::Boolean) }
       def credential_matches?(details, resolved_uri:)
         resolved_url_host = resolved_uri.host
         return true if resolved_url_host == details["registry"]
