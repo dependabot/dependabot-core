@@ -44,6 +44,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryParser do
 
       it "does not attribute the URL to the victim-npm registry" do
         result = parser.registry_source_for("my-package")
+        expect(result[:url]).to eq("https://example.com")
         # Must NOT return the credential registry — that would mean credentials leaked
         expect(result[:url]).not_to eq("https://example.com/victim-npm")
       end
