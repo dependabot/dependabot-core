@@ -16,9 +16,11 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       mark_job_as_processed: nil,
       record_update_job_error: nil,
       record_update_job_unknown_error: nil,
+      record_workflow_result: nil,
       update_dependency_list: nil,
       increment_metric: nil,
-      wait_for_calls_to_finish: nil
+      wait_for_calls_to_finish: nil,
+      write_workflow_summary: nil
     )
   end
   let(:job_definition) do

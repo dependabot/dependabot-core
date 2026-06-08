@@ -654,5 +654,13 @@ public class MSBuildHelperTests : TestBase
             // expectedError
             new UnknownError(new Exception("Circular dependency detected"), "TEST-JOB-ID"),
         ];
+
+        yield return
+        [
+            // output
+            "Couldn't find a valid ICU package installed on the system. Set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support.",
+            // expectedError
+            new UnknownError(new Exception("Couldn't find a valid ICU package installed on the system. Likely EOL SDK."), "TEST-JOB-ID"),
+        ];
     }
 }
