@@ -48,7 +48,10 @@ module Dependabot
       # Ensure that we shut down the open telemetry exporter.
       ::Dependabot::OpenTelemetry.shutdown
       Dependabot.logger.formatter = Dependabot::Logger::BasicFormatter.new
+      # Append summary to logs
       Dependabot.logger.info(service.summary) unless service.noop?
+      # Write a summary.md file if we are running in Actions
+      service.write_workflow_summary(command: job.command, package_manager: job.package_manager)
       raise Dependabot::RunFailure if Dependabot::Environment.github_actions? && service.failure?
     end
 
