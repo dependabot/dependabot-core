@@ -8,9 +8,8 @@ namespace NuGetUpdater.Core.Discover;
 internal static partial class CSharpFileBasedAppDiscovery
 {
     internal const string FileExtension = ".cs";
-    internal const string DefaultTargetFramework = "net10.0";
 
-    public static ImmutableArray<ProjectDiscoveryResult> Discover(string repoRootPath, string workspacePath, ILogger logger)
+    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, ILogger logger)
     {
         if (!Directory.Exists(workspacePath))
         {
@@ -29,13 +28,21 @@ internal static partial class CSharpFileBasedAppDiscovery
             .Select(path => new DirectoryInfo(path))
             .ToImmutableArray();
 
-        var fileBasedApps = new List<ProjectDiscoveryResult>();
-        foreach (var csharpFilePath in Directory.EnumerateFiles(workspacePath, "*.cs", new EnumerationOptions
+        var csharpFilePaths = Directory.EnumerateFiles(workspacePath, "*.cs", new EnumerationOptions
         {
             RecurseSubdirectories = true,
             IgnoreInaccessible = true,
             AttributesToSkip = FileAttributes.ReparsePoint,
-        }).OrderBy(path => path, PathComparer.Instance))
+        }).OrderBy(path => path, PathComparer.Instance).ToImmutableArray();
+        if (csharpFilePaths.IsEmpty)
+        {
+            return [];
+        }
+
+        var targetFramework = await GetDefaultTargetFrameworkAsync(workspacePath, logger);
+
+        var fileBasedApps = new List<ProjectDiscoveryResult>();
+        foreach (var csharpFilePath in csharpFilePaths)
         {
             if (IsInProjectCone(csharpFilePath, projectDirectories))
             {
@@ -44,20 +51,21 @@ internal static partial class CSharpFileBasedAppDiscovery
             }
 
             var relativeFilePath = Path.GetRelativePath(workspacePath, csharpFilePath).NormalizePathToUnix();
-            var packageDependencies = GetPackageDependencies(csharpFilePath);
+            var packageDependencies = GetPackageDependencies(csharpFilePath, targetFramework);
             if (packageDependencies.IsEmpty && !StartsWithShebang(csharpFilePath))
             {
                 continue;
             }
 
+            var additionalFiles = ProjectHelper.GetAdditionalFilesFromProjectLocation(csharpFilePath, ProjectHelper.PathFormat.Relative);
             logger.Info($"    Discovered C# file-based app: {relativeFilePath}");
             fileBasedApps.Add(new ProjectDiscoveryResult
             {
                 FilePath = relativeFilePath,
-                TargetFrameworks = [DefaultTargetFramework],
+                TargetFrameworks = [targetFramework],
                 Dependencies = packageDependencies,
                 ImportedFiles = [],
-                AdditionalFiles = [],
+                AdditionalFiles = additionalFiles,
                 DependencyGraph = packageDependencies
                     .Where(d => d.Version is not null)
                     .ToImmutableDictionary(
@@ -70,7 +78,7 @@ internal static partial class CSharpFileBasedAppDiscovery
         return [.. fileBasedApps];
     }
 
-    internal static ImmutableArray<Dependency> GetPackageDependencies(string csharpFilePath)
+    internal static ImmutableArray<Dependency> GetPackageDependencies(string csharpFilePath, string targetFramework)
     {
         var dependencies = new Dictionary<string, Dependency>(StringComparer.OrdinalIgnoreCase);
         var inBlockComment = false;
@@ -95,7 +103,7 @@ internal static partial class CSharpFileBasedAppDiscovery
                 Name: packageName,
                 Version: string.IsNullOrWhiteSpace(version) ? null : version,
                 Type: DependencyType.PackageReference,
-                TargetFrameworks: [DefaultTargetFramework]));
+                TargetFrameworks: [targetFramework]));
         }
 
         return [.. dependencies.Values.OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase)];
@@ -108,6 +116,53 @@ internal static partial class CSharpFileBasedAppDiscovery
     {
         var fileInfo = new FileInfo(csharpFilePath);
         return projectDirectories.Any(projectDirectory => PathHelper.IsFileUnderDirectory(projectDirectory, fileInfo));
+    }
+
+    internal static async Task<string> GetDefaultTargetFrameworkAsync(string workspacePath, ILogger logger)
+    {
+        var tempFilePath = Path.Combine(workspacePath, $".dependabot-target-framework-{Guid.NewGuid():N}.cs");
+        await File.WriteAllTextAsync(tempFilePath, "Console.WriteLine();");
+        try
+        {
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(
+                ["build", tempFilePath, "-getProperty:TargetFramework"],
+                workspacePath);
+            var targetFramework = GetTargetFrameworkFromOutput(stdOut);
+            if (exitCode == 0 && targetFramework is not null)
+            {
+                return targetFramework;
+            }
+
+            logger.Warn($"Unable to determine the default target framework for C# file-based apps.\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
+        }
+        finally
+        {
+            File.Delete(tempFilePath);
+        }
+
+        return await GetDefaultTargetFrameworkFromSdkVersionAsync(workspacePath, logger);
+    }
+
+    private static string? GetTargetFrameworkFromOutput(string stdOut)
+        => stdOut
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .LastOrDefault(line => line.StartsWith("net", StringComparison.OrdinalIgnoreCase));
+
+    private static async Task<string> GetDefaultTargetFrameworkFromSdkVersionAsync(string workspacePath, ILogger logger)
+    {
+        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["--version"], workspacePath);
+        var match = SdkMajorVersionRegex().Match(stdOut);
+        if (exitCode == 0 && match.Success)
+        {
+            var targetFramework = $"net{match.Groups["Major"].Value}.0";
+            logger.Warn($"Falling back to default target framework {targetFramework} based on the .NET SDK version.");
+            return targetFramework;
+        }
+
+        logger.Warn($"Unable to determine the .NET SDK version for C# file-based app target framework fallback.\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
+        var runtimeTargetFramework = $"net{Environment.Version.Major}.0";
+        logger.Warn($"Falling back to default target framework {runtimeTargetFramework} based on the current runtime version.");
+        return runtimeTargetFramework;
     }
 
     private static bool StartsWithShebang(string csharpFilePath)
@@ -177,6 +232,9 @@ internal static partial class CSharpFileBasedAppDiscovery
         return result;
     }
 
-    [GeneratedRegex(@"^\s*#:package\s+(?<PackageName>[^\s@]+)(?:@(?<Version>[^\s]+))?\s*$")]
+    [GeneratedRegex(@"^\s*#:package\s+(?<PackageName>[^\s@]+)(?:@(?<Version>[^\s]+))?(?:\s+.*)?$")]
     private static partial Regex PackageDirectiveRegex();
+
+    [GeneratedRegex(@"^(?<Major>\d+)\.")]
+    private static partial Regex SdkMajorVersionRegex();
 }

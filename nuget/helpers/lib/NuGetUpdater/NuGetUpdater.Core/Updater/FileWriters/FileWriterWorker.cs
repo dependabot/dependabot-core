@@ -276,9 +276,15 @@ public class FileWriterWorker
                 else
                 {
                     _logger.Info($"  Successfully updated the following files: {string.Join(", ", updatedFiles)}");
+                    allUpdatedFiles.AddRange(updatedFiles);
+                    var updatedLockFiles = await TryUpdateFileBasedAppLockFilesAsync(
+                        repoContentsPath,
+                        projectFullPath,
+                        projectDiscovery,
+                        originalFileContents,
+                        _logger);
+                    allUpdatedFiles.AddRange(updatedLockFiles);
                 }
-
-                allUpdatedFiles.AddRange(updatedFiles);
             }
 
             if (allUpdatedFiles.Count == 0)
@@ -480,5 +486,49 @@ public class FileWriterWorker
 
         var sortedUpdatedFiles = updatedFiles.OrderBy(p => p, StringComparer.Ordinal).ToImmutableArray();
         return sortedUpdatedFiles;
+    }
+
+    private static async Task<ImmutableArray<string>> TryUpdateFileBasedAppLockFilesAsync(
+        DirectoryInfo repoContentsPath,
+        string projectFullPath,
+        ProjectDiscoveryResult projectDiscovery,
+        IReadOnlyDictionary<string, string> originalFileContents,
+        ILogger logger)
+    {
+        if (!CSharpFileBasedAppFileWriter.IsSupportedFilePath(projectFullPath))
+        {
+            return [];
+        }
+
+        var lockFileRelativePaths = projectDiscovery.AdditionalFiles
+            .Where(path => Path.GetFileName(path).Equals(ProjectHelper.PackagesLockJsonFileName, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .ToImmutableArray();
+        if (lockFileRelativePaths.IsEmpty)
+        {
+            return [];
+        }
+
+        await LockFileUpdater.UpdateLockFileAsync(repoContentsPath.FullName, projectFullPath, logger);
+
+        var projectDirectory = Path.GetDirectoryName(projectFullPath)!;
+        var updatedLockFiles = new List<string>();
+        foreach (var lockFileRelativePath in lockFileRelativePaths)
+        {
+            var lockFileFullPath = Path.Join(projectDirectory, lockFileRelativePath).FullyNormalizedRootedPath();
+            if (!originalFileContents.TryGetValue(lockFileFullPath, out var originalContents))
+            {
+                logger.Warn($"  Unable to compare lock file {lockFileRelativePath} because its original contents were not tracked.");
+                continue;
+            }
+
+            var currentContents = await File.ReadAllTextAsync(lockFileFullPath);
+            if (currentContents.Replace("\r", "") != originalContents.Replace("\r", ""))
+            {
+                updatedLockFiles.Add(Path.GetRelativePath(repoContentsPath.FullName, lockFileFullPath).FullyNormalizedRootedPath());
+            }
+        }
+
+        return [.. updatedLockFiles.OrderBy(path => path, StringComparer.Ordinal)];
     }
 }

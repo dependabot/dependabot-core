@@ -7,7 +7,7 @@ namespace NuGetUpdater.Core;
 
 public record ExperimentsManager
 {
-    private const string UpdateFileBasedAppsExperimentName = "nuget_update_file_based_apps";
+    internal const string UpdateFileBasedAppsExperimentName = "nuget_update_file_based_apps";
 
     public bool GenerateSimplePrBody { get; init; } = false;
     public bool FindRootDirectory { get; init; } = false;
