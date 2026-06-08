@@ -102,8 +102,8 @@ module Dependabot
               end
         return false unless resolved_url_host == uri.host
         # When the credential includes an explicit scheme, require scheme
-        # equality so that a mismatched scheme does not produce a malformed
-        # return value from the gsub below (e.g. "http://...pkghttps://...").
+        # equality so we do not attribute a URL to credentials configured for
+        # a different transport protocol.
         return false if registry_has_scheme && resolved_uri.scheme != uri.scheme
 
         # Use path-segment-aware matching to prevent credentials configured
