@@ -91,6 +91,84 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           end
       end
 
+      context "with a crates.io sparse index transport failure" do
+        let(:cargo_output) do
+          <<~OUTPUT
+            Updating crates.io index
+            error: failed to get `dirs` as a dependency of package `hub v0.1.0 (dependabot_tmp_dir/native/hub)`
+
+            Caused by:
+              download of di/rs/dirs failed
+
+            Caused by:
+              failed to download from `https://index.crates.io/di/rs/dirs`
+
+            Caused by:
+              [8] Weird server reply (Invalid status line)
+          OUTPUT
+        end
+
+        before do
+          allow(Open3).to receive(:capture2e)
+            .and_return([cargo_output, instance_double(Process::Status, success?: false)])
+        end
+
+        it "adds sanitized sparse index context to the helper failure" do
+          expect { updater.updated_lockfile_content }
+            .to raise_error do |error|
+              expect(error).to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
+              expect(error.error_context).to include(
+                cargo_error_type: "crates_io_sparse_index_download",
+                cargo_registry: "crates-io",
+                cargo_index_url_host: "index.crates.io",
+                cargo_index_path: "di/rs/dirs",
+                cargo_download_path: "di/rs/dirs",
+                cargo_failed_package: "dirs",
+                cargo_curl_code: "8",
+                cargo_curl_message: "Weird server reply (Invalid status line)"
+              )
+            end
+        end
+      end
+
+      context "with an arbitrary registry transport failure" do
+        let(:cargo_output) do
+          <<~OUTPUT
+            Updating `private-registry` index
+            error: failed to get `private-package` as a dependency of package `hub v0.1.0`
+
+            Caused by:
+              failed to download from `https://user:secret@example.com/private-package`
+
+            Caused by:
+              [8] Weird server reply (Invalid status line)
+          OUTPUT
+        end
+
+        before do
+          allow(Open3).to receive(:capture2e)
+            .and_return([cargo_output, instance_double(Process::Status, success?: false)])
+        end
+
+        it "does not add registry details that could contain credentials" do
+          expect { updater.updated_lockfile_content }
+            .to raise_error do |error|
+              expect(error).to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
+              expect(error.error_context.keys).not_to include(
+                :cargo_error_type,
+                :cargo_registry,
+                :cargo_index_url_host,
+                :cargo_index_path,
+                :cargo_download_path,
+                :cargo_failed_package,
+                :cargo_curl_code,
+                :cargo_curl_message
+              )
+              expect(error.error_context.values.join(" ")).not_to include("user:secret", "example.com")
+            end
+        end
+      end
+
       context "when an existing requirement is not sufficient" do
         let(:dependency_version) { "0.1.38" }
         let(:requirements) do

@@ -23,6 +23,10 @@ module Dependabot
         /mx
 
         LOCKFILE_CHECKSUM_REGEX = /^"checksum .*$/
+        CARGO_CRATES_IO_INDEX_URL_REGEX = %r{https://index\.crates\.io/(?<path>[a-z0-9_+.-]+(?:/[a-z0-9_+.-]+)+)}
+        CARGO_DOWNLOAD_PATH_REGEX = %r{download of (?<path>[a-z0-9_+.-]+(?:/[a-z0-9_+.-]+)+) failed}
+        CARGO_FAILED_PACKAGE_REGEX = /error: failed to get `(?<package>[A-Za-z0-9_-]+)`/
+        CARGO_CURL_ERROR_REGEX = /\[(?<code>\d+)\] (?<message>[^\n]+)/
 
         sig do
           params(
@@ -246,8 +250,45 @@ module Dependabot
               fingerprint: fingerprint,
               time_taken: time_taken,
               process_exit_value: "non-zero"
-            }
+            }.merge(crates_io_sparse_index_error_context(stdout))
           )
+        end
+
+        sig { params(stdout: String).returns(T::Hash[Symbol, T.untyped]) }
+        def crates_io_sparse_index_error_context(stdout)
+          index_url_match = stdout.match(CARGO_CRATES_IO_INDEX_URL_REGEX)
+          return {} unless index_url_match
+          return {} unless stdout.include?("curl failed") || stdout.match?(CARGO_CURL_ERROR_REGEX)
+
+          context = T.let(
+            {
+              cargo_error_type: "crates_io_sparse_index_download",
+              cargo_registry: "crates-io",
+              cargo_index_url_host: "index.crates.io",
+              cargo_index_path: T.must(index_url_match[:path])
+            },
+            T::Hash[Symbol, T.untyped]
+          )
+
+          context[:cargo_download_path] = stdout.match(CARGO_DOWNLOAD_PATH_REGEX)&.[](:path)
+          context[:cargo_failed_package] = stdout.match(CARGO_FAILED_PACKAGE_REGEX)&.[](:package)
+
+          if (curl_error = stdout.match(CARGO_CURL_ERROR_REGEX))
+            context[:cargo_curl_code] = curl_error[:code]
+            context[:cargo_curl_message] = sanitized_cargo_curl_message(T.must(curl_error[:message]))
+          end
+
+          registry_protocol = ENV.fetch("CARGO_REGISTRIES_CRATES_IO_PROTOCOL", nil)
+          context[:cargo_registry_protocol] = registry_protocol if %w(git sparse).include?(registry_protocol)
+
+          context.compact
+        end
+
+        sig { params(message: String).returns(T.nilable(String)) }
+        def sanitized_cargo_curl_message(message)
+          return nil if message.match?(%r{https?://|@})
+
+          message.strip
         end
 
         sig { params(stdout: String).void }
