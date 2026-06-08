@@ -184,7 +184,7 @@ public sealed partial class CSharpFileBasedAppFileWriter : IFileWriter
     [GeneratedRegex(@"(?<Line>[^\r\n]*)(?<EndOfLine>\r\n|\n|\r|$)")]
     private static partial Regex LineRegex();
 
-    [GeneratedRegex(@"^(?<Prefix>\s*#:package\s+)(?<PackageName>[^\s@]+)@(?<Version>[^\s/]+)(?<Suffix>\s*(?://.*|/\*.*\*/\s*)?)$")]
+    [GeneratedRegex(@"^(?<Prefix>\s*#:package\s+)(?<PackageName>[^\s@]+)@(?<Version>[^\s/]+)(?<Suffix>.*)$")]
     private static partial Regex PackageDirectiveRegex();
 
     private readonly record struct TextFileContents(string Contents, Encoding Encoding);

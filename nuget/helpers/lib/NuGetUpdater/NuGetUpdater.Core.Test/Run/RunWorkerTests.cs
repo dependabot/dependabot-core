@@ -1,9 +1,8 @@
 using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Discover;
+using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Updater;
-
-using NuGetUpdater.Core.Run;
 
 using Xunit;
 

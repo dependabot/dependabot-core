@@ -221,11 +221,11 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             }];
         }
         var fileBasedAppResults = _experimentsManager.UpdateFileBasedApps
-            ? CSharpFileBasedAppDiscovery.Discover(repoRootPath, workspacePath, _logger)
+            ? await CSharpFileBasedAppDiscovery.DiscoverAsync(repoRootPath, workspacePath, _logger)
             : [];
         if (!_experimentsManager.UpdateFileBasedApps)
         {
-            _logger.Info("    C# file-based app discovery disabled by nuget_update_file_based_apps.");
+            _logger.Info($"    C# file-based app discovery disabled by {ExperimentsManager.UpdateFileBasedAppsExperimentName}.");
         }
 
         if (projects.IsEmpty && fileBasedAppResults.IsEmpty)

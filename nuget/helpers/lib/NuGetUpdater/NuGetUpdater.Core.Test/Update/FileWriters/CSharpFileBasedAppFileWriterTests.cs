@@ -66,13 +66,13 @@ public class CSharpFileBasedAppFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
-    public async Task UpdatesVersionedPackageDirectiveWithTrailingComment()
+    public async Task UpdatesVersionedPackageDirectiveWithTrailingSuffix()
     {
         await TestAsync(
             files:
             [
                 ("app.cs", """
-                    #:package Some.Dependency@1.0.0 // existing comment
+                    #:package Some.Dependency@1.0.0 PrivateAssets=all OutputItemType=analyzer // existing comment
 
                     Console.WriteLine("Hello");
                     """),
@@ -82,7 +82,31 @@ public class CSharpFileBasedAppFileWriterTests : FileWriterTestsBase
             expectedFiles:
             [
                 ("app.cs", """
-                    #:package Some.Dependency@2.0.0 // existing comment
+                    #:package Some.Dependency@2.0.0 PrivateAssets=all OutputItemType=analyzer // existing comment
+
+                    Console.WriteLine("Hello");
+                    """),
+            ]);
+    }
+
+    [Fact]
+    public async Task UpdatesVersionedPackageDirectiveWithTrailingCommentWithoutWhitespace()
+    {
+        await TestAsync(
+            files:
+            [
+                ("app.cs", """
+                    #:package Some.Dependency@1.0.0// existing comment
+
+                    Console.WriteLine("Hello");
+                    """),
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
+            expectedFiles:
+            [
+                ("app.cs", """
+                    #:package Some.Dependency@2.0.0// existing comment
 
                     Console.WriteLine("Hello");
                     """),

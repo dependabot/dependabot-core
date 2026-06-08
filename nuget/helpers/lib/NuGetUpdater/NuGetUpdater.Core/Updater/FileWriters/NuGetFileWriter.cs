@@ -26,7 +26,13 @@ public sealed class NuGetFileWriter : IFileWriter
             .Where(CSharpFileBasedAppFileWriter.IsSupportedFilePath)
             .ToImmutableArray();
         var xmlFilePaths = relativeFilePaths
-            .Where(path => !CSharpFileBasedAppFileWriter.IsSupportedFilePath(path))
+            .Where(path =>
+            {
+                var extension = Path.GetExtension(path);
+                return !CSharpFileBasedAppFileWriter.IsSupportedFilePath(path) &&
+                    (XmlFileWriter.SupportedProjectFileExtensions.Contains(extension) ||
+                     XmlFileWriter.SupportedAdditionalFileExtensions.Contains(extension));
+            })
             .ToImmutableArray();
 
         var succeeded = true;

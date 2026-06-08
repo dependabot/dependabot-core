@@ -1031,6 +1031,57 @@ public class FileWriterWorkerTests : TestBase
         );
     }
 
+    [Fact]
+    public async Task EndToEnd_CSharpFileBasedAppWithPackageLockJson()
+    {
+        var targetFramework = await GetFileBasedAppDefaultTargetFrameworkAsync();
+
+        await TestAsync(
+            dependencyName: "Some.Dependency",
+            oldDependencyVersion: "1.0.0",
+            newDependencyVersion: "2.0.0",
+            projectName: "app.cs",
+            projectContents: """
+                #:property RestorePackagesWithLockFile=true
+                #:package Some.Dependency@1.0.0
+
+                Console.WriteLine("Hello");
+                """,
+            additionalFiles: [
+                ("packages.lock.json", "{}")
+            ],
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "1.0.0", targetFramework),
+                MockNuGetPackage.CreateSimplePackage("Some.Dependency", "2.0.0", targetFramework),
+            ],
+            discoveryWorker: null,
+            dependencySolver: null,
+            fileWriter: null,
+            expectedProjectContents: """
+                #:property RestorePackagesWithLockFile=true
+                #:package Some.Dependency@2.0.0
+
+                Console.WriteLine("Hello");
+                """,
+            expectedAdditionalFiles: [],
+            expectedOperations: [
+                new DirectUpdate() { DependencyName = "Some.Dependency", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/app.cs", "/packages.lock.json"] }
+            ],
+            additionalChecks: (repoContentsPath) =>
+            {
+                var lockFilePath = Path.Join(repoContentsPath.FullName, "packages.lock.json");
+                var lockFileContent = File.ReadAllText(lockFilePath);
+                Assert.Contains("\"resolved\": \"2.0.0\"", lockFileContent);
+            }
+        );
+    }
+
+    private static async Task<string> GetFileBasedAppDefaultTargetFrameworkAsync()
+    {
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync();
+        return await CSharpFileBasedAppDiscovery.GetDefaultTargetFrameworkAsync(tempDirectory.DirectoryPath, new TestLogger());
+    }
+
     private static async Task TestAsync(
         string dependencyName,
         string oldDependencyVersion,

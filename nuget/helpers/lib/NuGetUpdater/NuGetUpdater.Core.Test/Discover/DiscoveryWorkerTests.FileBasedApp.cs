@@ -1,3 +1,6 @@
+using NuGetUpdater.Core.Discover;
+using NuGetUpdater.Core.Test.Utilities;
+
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Discover;
@@ -9,13 +12,16 @@ public partial class DiscoveryWorkerTests
         [Fact]
         public async Task DiscoversCSharpFileBasedAppPackageDirectives()
         {
+            var targetFramework = await GetFileBasedAppDefaultTargetFrameworkAsync();
+
             await TestDiscoveryAsync(
                 workspacePath: "",
                 files:
                 [
                     ("app.cs", """
+                        #:sdk Microsoft.NET.Sdk
                         #:package Humanizer@2.14.1
-                        #:package Microsoft.Extensions.Configuration@*
+                        #:package Microsoft.Extensions.Configuration@* PrivateAssets=all
                         #:package Newtonsoft.Json
 
                         Console.WriteLine("Hello");
@@ -31,11 +37,11 @@ public partial class DiscoveryWorkerTests
                             FilePath = "app.cs",
                             Dependencies =
                             [
-                                new("Humanizer", "2.14.1", DependencyType.PackageReference, TargetFrameworks: ["net10.0"]),
-                                new("Microsoft.Extensions.Configuration", "*", DependencyType.PackageReference, TargetFrameworks: ["net10.0"]),
-                                new("Newtonsoft.Json", null, DependencyType.PackageReference, TargetFrameworks: ["net10.0"]),
+                                new("Humanizer", "2.14.1", DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
+                                new("Microsoft.Extensions.Configuration", "*", DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
+                                new("Newtonsoft.Json", null, DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
                             ],
-                            TargetFrameworks = ["net10.0"],
+                            TargetFrameworks = [targetFramework],
                             ReferencedProjectPaths = [],
                             ImportedFiles = [],
                             AdditionalFiles = [],
@@ -47,6 +53,8 @@ public partial class DiscoveryWorkerTests
         [Fact]
         public async Task IgnoresPackageDirectivesAfterCSharpCode()
         {
+            var targetFramework = await GetFileBasedAppDefaultTargetFrameworkAsync();
+
             await TestDiscoveryAsync(
                 workspacePath: "",
                 files:
@@ -69,9 +77,9 @@ public partial class DiscoveryWorkerTests
                             FilePath = "app.cs",
                             Dependencies =
                             [
-                                new("Real.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net10.0"]),
+                                new("Real.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
                             ],
-                            TargetFrameworks = ["net10.0"],
+                            TargetFrameworks = [targetFramework],
                             ReferencedProjectPaths = [],
                             ImportedFiles = [],
                             AdditionalFiles = [],
@@ -83,6 +91,8 @@ public partial class DiscoveryWorkerTests
         [Fact]
         public async Task IgnoresCSharpFilesUnderCSharpProjectCones()
         {
+            var targetFramework = await GetFileBasedAppDefaultTargetFrameworkAsync();
+
             await TestDiscoveryAsync(
                 workspacePath: "",
                 files:
@@ -108,9 +118,9 @@ public partial class DiscoveryWorkerTests
                             FilePath = "tools/app.cs",
                             Dependencies =
                             [
-                                new("Discovered.Package", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net10.0"]),
+                                new("Discovered.Package", "2.0.0", DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
                             ],
-                            TargetFrameworks = ["net10.0"],
+                            TargetFrameworks = [targetFramework],
                             ReferencedProjectPaths = [],
                             ImportedFiles = [],
                             AdditionalFiles = [],
@@ -145,6 +155,8 @@ public partial class DiscoveryWorkerTests
         [Fact]
         public async Task DiscoversBomShebangCSharpFileBasedAppWithoutPackages()
         {
+            var targetFramework = await GetFileBasedAppDefaultTargetFrameworkAsync();
+
             await TestDiscoveryAsync(
                 workspacePath: "",
                 files:
@@ -160,7 +172,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "app.cs",
                             Dependencies = [],
-                            TargetFrameworks = ["net10.0"],
+                            TargetFrameworks = [targetFramework],
                             ReferencedProjectPaths = [],
                             ImportedFiles = [],
                             AdditionalFiles = [],
@@ -188,6 +200,50 @@ public partial class DiscoveryWorkerTests
                     Projects = [],
                 },
                 experimentsManager: new() { UpdateFileBasedApps = false });
+        }
+
+        [Fact]
+        public async Task DiscoversCSharpFileBasedAppPackageLockFile()
+        {
+            var targetFramework = await GetFileBasedAppDefaultTargetFrameworkAsync();
+
+            await TestDiscoveryAsync(
+                workspacePath: "",
+                files:
+                [
+                    ("app.cs", """
+                        #:property RestorePackagesWithLockFile=true
+                        #:package Humanizer@2.14.1
+
+                        Console.WriteLine("Hello");
+                        """),
+                    ("packages.lock.json", "{}"),
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects =
+                    [
+                        new()
+                        {
+                            FilePath = "app.cs",
+                            Dependencies =
+                            [
+                                new("Humanizer", "2.14.1", DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
+                            ],
+                            TargetFrameworks = [targetFramework],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = ["packages.lock.json"],
+                        },
+                    ],
+                });
+        }
+
+        private static async Task<string> GetFileBasedAppDefaultTargetFrameworkAsync()
+        {
+            using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync();
+            return await CSharpFileBasedAppDiscovery.GetDefaultTargetFrameworkAsync(tempDirectory.DirectoryPath, new TestLogger());
         }
     }
 }
