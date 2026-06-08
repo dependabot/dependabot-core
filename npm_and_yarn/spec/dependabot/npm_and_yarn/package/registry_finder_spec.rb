@@ -567,6 +567,12 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
       context "when the dependency is under a different scope" do
         let(:dependency_name) { "@other-org/some_dep" }
 
+        before do
+          stub_request(:get, "https://npm.pkg.github.com/@other-org%2Fsome_dep")
+            .with(headers: { "Authorization" => "Bearer secret_token" })
+            .to_return(status: 404)
+        end
+
         it { is_expected.to eq("registry.npmjs.org") }
       end
     end

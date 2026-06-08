@@ -198,19 +198,12 @@ module Dependabot
         def locked_registry
           return unless registry_source_url
 
-          lockfile_registry =
-            registry_source_url
-            &.gsub("https://", "")
-            &.gsub("http://", "")
+          lockfile_registry = registry_source_url&.gsub("https://", "")&.gsub("http://", "")
+          return unless lockfile_registry
 
-          if lockfile_registry
-            detailed_registry =
-              known_registries
-              .find { |h| h["registry"]&.include?(lockfile_registry) }
-              &.fetch("registry")
-          end
-
-          detailed_registry || lockfile_registry
+          known_registries
+            .find { |h| h["registry"]&.include?(lockfile_registry) }
+            &.fetch("registry") || lockfile_registry
         end
 
         sig { returns(T.nilable(String)) }
@@ -289,10 +282,7 @@ module Dependabot
 
         sig { returns(String) }
         def global_registry
-          return @global_registry if @global_registry
-
-          @global_registry = configured_global_registry || GLOBAL_NPM_REGISTRY
-          @global_registry
+          @global_registry ||= configured_global_registry || GLOBAL_NPM_REGISTRY
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -366,16 +356,6 @@ module Dependabot
           registry = T.must(cred["registry"])
           registry = "https://#{registry}" unless registry.start_with?("http")
           prepare_registry_url(registry)
-        end
-
-        sig { params(dependency_name: String).returns(String) }
-        def registry_from_credential_scope(dependency_name)
-          if dependency_name.start_with?("@") && dependency_name.include?("/")
-            scope = T.must(dependency_name.split("/").first)
-            scoped_credential_registry(scope) || global_registry
-          else
-            global_registry
-          end
         end
 
         sig do
