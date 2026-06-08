@@ -77,7 +77,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater::WrapperUpdater do
 
     let(:build_file) do
       Dependabot::DependencyFile.new(
-        name: "build.gradle",
+        name: "gradle/wrapper/gradle-wrapper.properties",
         content: "",
         directory: "/test-project"
       )
@@ -100,6 +100,11 @@ RSpec.describe Dependabot::Gradle::FileUpdater::WrapperUpdater do
           content: Base64.encode64("included build jar"),
           directory: "/test-project",
           content_encoding: Dependabot::DependencyFile::ContentEncoding::BASE64
+        ),
+        Dependabot::DependencyFile.new(
+          name: "../buildLogic/gradle/wrapper/gradle-wrapper.properties",
+          content: "",
+          directory: "/test-project"
         )
       ]
     end
@@ -114,14 +119,17 @@ RSpec.describe Dependabot::Gradle::FileUpdater::WrapperUpdater do
     context "when updating an included build" do
       let(:build_file) do
         Dependabot::DependencyFile.new(
-          name: "../buildLogic/build.gradle",
+          name: "../buildLogic/gradle/wrapper/gradle-wrapper.properties",
           content: "",
           directory: "/test-project"
         )
       end
 
       it "only includes wrapper files from the included build root" do
-        expect(local_wrapper_file_names).to contain_exactly("../buildLogic/gradle/wrapper/gradle-wrapper.jar")
+        expect(local_wrapper_file_names).to contain_exactly(
+          "../buildLogic/gradle/wrapper/gradle-wrapper.jar",
+          "../buildLogic/gradle/wrapper/gradle-wrapper.properties"
+        )
       end
     end
   end
