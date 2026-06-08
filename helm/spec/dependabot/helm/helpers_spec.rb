@@ -25,6 +25,12 @@ RSpec.describe Dependabot::Helm::Helpers do
       end.to raise_error(ArgumentError, "Invalid name")
     end
 
+    it "rejects tab-separated name flags" do
+      expect do
+        described_class.search_releases("mychart\t--devel")
+      end.to raise_error(ArgumentError, "Invalid name")
+    end
+
     it "rejects leading hyphen names" do
       expect do
         described_class.search_releases("--devel")
@@ -50,6 +56,12 @@ RSpec.describe Dependabot::Helm::Helpers do
       expect do
         described_class.add_repo("test-repo", "https://example.com/charts --pass-credentials")
       end.to raise_error(ArgumentError, "Invalid repository_url")
+    end
+
+    it "rejects injected repository name flags" do
+      expect do
+        described_class.add_repo("-test-repo", "https://example.com/charts")
+      end.to raise_error(ArgumentError, "Invalid repo_name")
     end
   end
 
