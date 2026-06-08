@@ -63,7 +63,9 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       sig { returns(T.nilable(String)) }
       def url_for_relevant_cred
-        resolved_url_host = URI(resolved_url).host
+        resolved_uri = URI(resolved_url)
+        resolved_url_host = resolved_uri.host
+        resolved_url_path = resolved_uri.path.to_s
 
         credential_matching_url =
           credentials
@@ -82,11 +84,7 @@ module Dependabot
             # Use path-segment-aware matching to prevent credentials configured
             # for one path-scoped registry from being applied to sibling paths
             # on the same host (e.g., /victim-npm should not match /victim-npm-evil).
-            registry_path = uri.path.to_s.chomp("/")
-            req_path = URI(resolved_url).path.to_s
-            registry_path.empty? ||
-              req_path.start_with?("#{registry_path}/") ||
-              req_path == registry_path
+            credential_path_match?(uri: uri, resolved_url_path: resolved_url_path)
           end
 
         return unless credential_matching_url
@@ -95,6 +93,14 @@ module Dependabot
         # credential registry
         reg = credential_matching_url.fetch("registry")
         resolved_url.gsub(/#{Regexp.quote(reg)}.*/, "") + reg
+      end
+
+      sig { params(uri: URI::Generic, resolved_url_path: String).returns(T::Boolean) }
+      def credential_path_match?(uri:, resolved_url_path:)
+        registry_path = uri.path.to_s.chomp("/")
+        registry_path.empty? ||
+          resolved_url_path.start_with?("#{registry_path}/") ||
+          resolved_url_path == registry_path
       end
       # rubocop:enable Metrics/PerceivedComplexity
     end
