@@ -369,13 +369,14 @@ module Dependabot
         end
 
         # Returns an env hash that disables Yarn Berry's npmMinimalAgeGate for security updates.
-        # While `yarn up --no-time-gate` achieves the same effect, that flag was only introduced
-        # in Yarn 4.15.x and would leave users on older Berry releases unprotected. The env var
-        # approach covers all Yarn Berry versions that support the feature and applies uniformly
-        # to every subcommand (install, up, add) without requiring per-command flag changes.
+        # npmMinimalAgeGate was introduced in Yarn 4.10.0. Setting the corresponding
+        # YARN_NPM_MINIMAL_AGE_GATE env var on older Yarn Berry releases (or Yarn classic) raises
+        # "Unrecognized or legacy configuration settings found: npmMinimalAgeGate" and aborts the
+        # install, so we gate on a version check.
         sig { returns(T.nilable(T::Hash[String, String])) }
         def yarn_time_gate_env
           return nil unless security_updates_only?
+          return nil unless Helpers.yarn_berry_supports_minimal_age_gate?
 
           { "YARN_NPM_MINIMAL_AGE_GATE" => "0" }
         end
@@ -562,13 +563,15 @@ module Dependabot
         def write_temporary_dependency_files(yarn_lock, update_package_json: true)
           write_lockfiles
 
-          if Helpers.yarn_berry?(yarn_lock) && yarnrc_yml_file
-            yarnrc_yml_sanitize_content = sanitize_yarnrc_content(yarnrc_yml_content)
-            File.write(".yarnrc.yml", yarnrc_yml_sanitize_content)
-          else
-            File.write(".npmrc", npmrc_content)
-            File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
+          if Helpers.yarn_berry?(yarn_lock)
+            if yarnrc_yml_file
+              yarnrc_yml_sanitize_content = sanitize_yarnrc_content(yarnrc_yml_content)
+              File.write(".yarnrc.yml", yarnrc_yml_sanitize_content)
+            end
+          elsif yarnrc_specifies_private_reg?
+            File.write(".yarnrc", yarnrc_content)
           end
+          File.write(".npmrc", npmrc_content)
 
           package_files.each do |file|
             path = file.name

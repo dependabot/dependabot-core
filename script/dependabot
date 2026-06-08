@@ -37,6 +37,7 @@ dependabot \
   -v "$(pwd)"/swift:/home/dependabot/swift \
   -v "$(pwd)"/terraform:/home/dependabot/terraform \
   -v "$(pwd)"/opentofu:/home/dependabot/opentofu \
+  -v "$(pwd)"/pre_commit:/home/dependabot/pre_commit \
   -v "$(pwd)"/uv:/home/dependabot/uv \
   -v "$(pwd)"/vcpkg:/home/dependabot/vcpkg \
   "$@"
