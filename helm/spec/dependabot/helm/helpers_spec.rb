@@ -24,6 +24,12 @@ RSpec.describe Dependabot::Helm::Helpers do
         described_class.search_releases("mychart --devel")
       end.to raise_error(ArgumentError, "Invalid name")
     end
+
+    it "rejects leading hyphen names" do
+      expect do
+        described_class.search_releases("--devel")
+      end.to raise_error(ArgumentError, "Invalid name")
+    end
   end
 
   describe ".add_repo" do
@@ -63,6 +69,10 @@ RSpec.describe Dependabot::Helm::Helpers do
 
     it "rejects injected flags" do
       expect { described_class.fetch_oci_tags("--format json") }.to raise_error(ArgumentError, "Invalid name")
+    end
+
+    it "rejects leading hyphen names" do
+      expect { described_class.fetch_oci_tags("-debug") }.to raise_error(ArgumentError, "Invalid name")
     end
   end
 
