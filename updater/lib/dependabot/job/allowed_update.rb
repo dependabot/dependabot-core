@@ -22,8 +22,8 @@ module Dependabot
       def self.from_hash(hash)
         new(
           dependency_name: hash["dependency-name"],
-          dependency_type: hash.fetch("dependency-type", "all"),
-          update_type: hash.fetch("update-type", "all"),
+          dependency_type: hash.fetch("dependency-type", "all") || "all",
+          update_type: hash.fetch("update-type", "all") || "all",
           update_types: hash.fetch("update-types", []) || []
         )
       end
