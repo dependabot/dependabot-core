@@ -14,11 +14,12 @@ module Dependabot
 
       sig { params(name: String).returns(String) }
       def self.search_releases(name)
+        validate_cli_arg!("name", name)
         Dependabot.logger.info("Searching Helm repository for: #{name}")
 
         Dependabot::SharedHelpers.run_shell_command(
-          "helm search repo #{name} --versions --output=json",
-          fingerprint: "helm search repo <name> --versions --output=json"
+          "helm search repo -- #{name} --versions --output=json",
+          fingerprint: "helm search repo -- <name> --versions --output=json"
         ).strip
       end
 

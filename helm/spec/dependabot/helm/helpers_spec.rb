@@ -5,6 +5,27 @@ require "spec_helper"
 require "dependabot/helm/helpers"
 
 RSpec.describe Dependabot::Helm::Helpers do
+  describe ".search_releases" do
+    it "uses '--' to terminate flags" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "helm search repo -- myrepo/mychart --versions --output=json",
+        fingerprint: "helm search repo -- <name> --versions --output=json"
+      ).and_return("[]")
+
+      described_class.search_releases("myrepo/mychart")
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+        "helm search repo -- myrepo/mychart --versions --output=json",
+        fingerprint: "helm search repo -- <name> --versions --output=json"
+      )
+    end
+
+    it "rejects injected name flags" do
+      expect do
+        described_class.search_releases("mychart --devel")
+      end.to raise_error(ArgumentError, "Invalid name")
+    end
+  end
+
   describe ".add_repo" do
     it "uses '--' to terminate flags" do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
