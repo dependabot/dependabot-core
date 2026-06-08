@@ -20,9 +20,12 @@ RSpec.describe Dependabot::Helm::Helpers do
     end
 
     it "rejects injected name flags" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+
       expect do
         described_class.search_releases("mychart --devel")
       end.to raise_error(ArgumentError, "Invalid name")
+      expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
     end
 
     it "rejects tab-separated name flags" do
