@@ -9,6 +9,7 @@ require "dependabot/api_client"
 require "dependabot/errors"
 require "dependabot/opentelemetry"
 require "dependabot/experiments"
+require "dependabot/workflow_summary"
 
 # This class provides an output adapter for the Dependabot Service which manages
 # communication with the private API as well as consolidated error handling.
@@ -27,12 +28,16 @@ module Dependabot
     sig { returns(T::Array[T::Array[T.untyped]]) }
     attr_reader :errors
 
+    sig { returns(Dependabot::WorkflowSummary) }
+    attr_reader :workflow_summary
+
     sig { params(client: Dependabot::ApiClient).void }
     def initialize(client:)
       @client = client
       @pull_requests = T.let([], T::Array[T.untyped])
       @errors = T.let([], T::Array[T.untyped])
       @threads = T.let([], T::Array[T.untyped])
+      @workflow_summary = T.let(Dependabot::WorkflowSummary.new, Dependabot::WorkflowSummary)
     end
 
     def_delegators :client,
@@ -128,6 +133,20 @@ module Dependabot
     sig { params(dependency_submission: GithubApi::DependencySubmission).void }
     def create_dependency_submission(dependency_submission:)
       client.create_dependency_submission(dependency_submission.payload)
+    end
+
+    # This method writes the information into a collection we can use to generate a summary markdown file in actions
+    sig { params(directory: String, status: String, details: String).void }
+    def record_workflow_result(directory:, status:, details:)
+      return unless Experiments.enabled?(:workflow_job_summaries)
+
+      workflow_summary.record_result(directory: directory, status: status, details: details)
+    end
+
+    # This method finalises the workflow summary and stores it in an output file
+    sig { params(command: String, package_manager: String).void }
+    def write_workflow_summary(command:, package_manager:)
+      workflow_summary.write(command: command, package_manager: package_manager)
     end
 
     # This method wraps the Sentry client as the Application error tracker
