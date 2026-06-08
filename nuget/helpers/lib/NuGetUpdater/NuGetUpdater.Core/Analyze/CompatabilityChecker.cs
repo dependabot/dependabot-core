@@ -172,15 +172,13 @@ internal static class CompatibilityChecker
 
         foreach (var source in sources)
         {
-            var sourceRepository = Repository.Factory.GetCoreV3(source);
-            var feed = await sourceRepository.GetResourceAsync<FindPackageByIdResource>();
-            if (feed is null)
-            {
-                throw new NotSupportedException($"Failed to get FindPackageByIdResource for {source.SourceUri}");
-            }
-
+            FindPackageByIdResource feed;
             try
             {
+                var sourceRepository = Repository.Factory.GetCoreV3(source);
+                feed = await sourceRepository.GetResourceAsync<FindPackageByIdResource>()
+                    ?? throw new NotSupportedException($"Failed to get FindPackageByIdResource for {source.SourceUri}");
+
                 // a non-compliant v2 API returning 404 can cause this to throw
                 var exists = await feed.DoesPackageExistAsync(
                     package.Id,

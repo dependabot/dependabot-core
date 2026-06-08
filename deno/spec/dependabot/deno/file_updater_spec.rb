@@ -223,5 +223,32 @@ RSpec.describe Dependabot::Deno::FileUpdater do
         expect(updated_content).to include('"jsr:@std/path@^1.1.4" // trailing comment')
       end
     end
+
+    context "when a deno.lock is present" do
+      let(:files) do
+        project_dependency_files("deno/with_lockfile")
+      end
+
+      it "emits both the manifest and the lockfile" do
+        updated_files = updater.updated_dependency_files
+        expect(updated_files.map(&:name)).to contain_exactly("deno.json", "deno.lock")
+      end
+
+      it "updates the lockfile to a version satisfying the new constraint" do
+        lockfile = updater.updated_dependency_files.find { |f| f.name == "deno.lock" }
+        lock = JSON.parse(lockfile.content)
+        resolved = Gem::Version.new(lock.dig("specifiers", "jsr:@std/path@^1.1.4"))
+        expect(resolved).to be >= Gem::Version.new("1.1.4")
+        expect(resolved).to be < Gem::Version.new("2.0.0")
+      end
+    end
+
+    context "when no deno.lock is present" do
+      # files defaults to the top-level inline manifest only (no lockfile)
+      it "emits only the manifest" do
+        updated_files = updater.updated_dependency_files
+        expect(updated_files.map(&:name)).to eq(["deno.json"])
+      end
+    end
   end
 end

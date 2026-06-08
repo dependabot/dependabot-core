@@ -1,0 +1,8 @@
+{
+  "name": "alias-no-lockfile-test",
+  "version": "1.0.0",
+  "dependencies": {
+    "my-is-number": "npm:is-number@^7.0.0",
+    "etag": "^1.8.1"
+  }
+}

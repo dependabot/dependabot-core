@@ -660,7 +660,7 @@ RSpec.describe Dependabot::Updater do
           dependency_files: default_dependency_files,
           repo_contents_path: nil,
           credentials: anything,
-          options: { cloning: true }
+          options: hash_including(cloning: true)
         ).and_call_original
 
         expect(service).to receive(:create_pull_request).once
@@ -2165,7 +2165,7 @@ RSpec.describe Dependabot::Updater do
           ],
           repo_contents_path: nil,
           credentials: anything,
-          options: { large_hadron_collider: true }
+          options: hash_including(large_hadron_collider: true)
         ).and_call_original
 
         updater.run

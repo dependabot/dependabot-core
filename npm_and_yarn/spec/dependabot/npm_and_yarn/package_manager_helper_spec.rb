@@ -161,6 +161,16 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
     end
 
+    context "with OR constraints where the lower branch is on the right" do
+      let(:lockfiles) { {} }
+      let(:package_json) { { "engines" => { "pnpm" => ">=10 || >=7 <9" } } }
+
+      it "selects the highest matching supported pnpm version" do
+        expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::PNPMPackageManager)
+        expect(helper.package_manager.detected_version).to eq("10")
+      end
+    end
+
     context "when neither lockfile, packageManager, nor engines field exists" do
       let(:lockfiles) { {} }
       let(:package_json) { {} }
@@ -519,6 +529,129 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
         requirement = helper.find_engine_constraints_as_requirement("npm")
         npm_version_ten = Dependabot::Version.new("10.9.3")
         expect(requirement.satisfied_by?(npm_version_ten)).to be(false)
+      end
+    end
+
+    context "when the engines field contains a caret OR constraint" do
+      let(:package_json) do
+        {
+          "name" => "example",
+          "version" => "1.0.0",
+          "engines" => {
+            "node" => "^22 || >=24"
+          }
+        }
+      end
+
+      it "expands caret constraints into separate comparators" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:node_version).and_return("22.6.0")
+
+        requirement = helper.find_engine_constraints_as_requirement("node")
+
+        expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
+        expect(requirement.constraints).to eq([">= 22.0.0", "< 23.0.0"])
+      end
+
+      it "selects the matching OR branch for current node version" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:node_version).and_return("24.2.0")
+
+        requirement = helper.find_engine_constraints_as_requirement("node")
+
+        expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
+        expect(requirement.constraints).to eq([">= 24"])
+      end
+
+      it "falls back to the first OR branch when current node version is unavailable" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:node_version).and_return(nil)
+
+        requirement = helper.find_engine_constraints_as_requirement("node")
+
+        expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
+        expect(requirement.constraints).to eq([">= 22.0.0", "< 23.0.0"])
+      end
+
+      context "when one OR branch is invalid" do
+        let(:package_json) do
+          {
+            "name" => "example",
+            "version" => "1.0.0",
+            "engines" => {
+              "node" => "^22 || invalid"
+            }
+          }
+        end
+
+        it "logs a warning and returns nil" do
+          expect(Dependabot.logger).to receive(:warn).with(/Unrecognized constraint format for node: \^22 \|\| invalid/)
+
+          requirement = helper.find_engine_constraints_as_requirement("node")
+
+          expect(requirement).to be_nil
+        end
+      end
+
+      context "when one OR branch is a wildcard" do
+        let(:package_json) do
+          {
+            "name" => "example",
+            "version" => "1.0.0",
+            "engines" => {
+              "node" => "* || >=24"
+            }
+          }
+        end
+
+        it "returns nil without logging an unrecognized warning" do
+          allow(Dependabot.logger).to receive(:warn)
+
+          requirement = helper.find_engine_constraints_as_requirement("node")
+
+          expect(requirement).to be_nil
+          expect(Dependabot.logger).not_to have_received(:warn)
+            .with(/Unrecognized constraint format for node/)
+        end
+      end
+    end
+
+    context "when the engines field contains an explicit comparator OR constraint" do
+      let(:package_json) do
+        {
+          "name" => "example",
+          "version" => "1.0.0",
+          "engines" => {
+            "node" => ">=22.0.0 <23.0.0 || >=24"
+          }
+        }
+      end
+
+      it "splits the first OR branch into separate comparators" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:node_version).and_return("22.6.0")
+
+        requirement = helper.find_engine_constraints_as_requirement("node")
+
+        expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
+        expect(requirement.constraints).to eq([">= 22.0.0", "< 23.0.0"])
+      end
+
+      context "when the lower branch appears on the right" do
+        let(:package_json) do
+          {
+            "name" => "example",
+            "version" => "1.0.0",
+            "engines" => {
+              "node" => ">=24 || >=22.0.0 <23.0.0"
+            }
+          }
+        end
+
+        it "selects the higher matching branch" do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:node_version).and_return("24.2.0")
+
+          requirement = helper.find_engine_constraints_as_requirement("node")
+
+          expect(requirement).to be_a(Dependabot::NpmAndYarn::Requirement)
+          expect(requirement.constraints).to eq([">= 24"])
+        end
       end
     end
 

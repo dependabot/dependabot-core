@@ -22,7 +22,7 @@ RSpec.describe Dependabot::Python::Language do
     end
 
     context "when detected version is deprecated but not unsupported" do
-      let(:detected_version) { "3.8.1" }
+      let(:detected_version) { "3.9.1" }
 
       before do
         allow(language).to receive(:unsupported?).and_return(false)

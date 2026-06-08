@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.IO.Enumeration;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Xml.Linq;
 
 using NuGet.Versioning;
 
@@ -51,8 +52,29 @@ public class RunWorker
 
     public async Task<int> RunAsync(Job job, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
     {
+        if (experimentsManager.FindRootDirectory)
+        {
+            _logger.Info("FindRootDirectory experiment is enabled; resolving root directories...");
+            MSBuildHelper.RegisterMSBuild(repoContentsPath.FullName, repoContentsPath.FullName, _logger);
+            job = await ResolveRootDirectoriesAsync(job, repoContentsPath.FullName);
+        }
+
         var result = await RunScenarioHandlersWithErrorHandlingAsync(job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, experimentsManager);
         return result;
+    }
+
+    internal async Task<Job> ResolveRootDirectoriesAsync(Job job, string repoRootPath)
+    {
+        var originalDirectories = job.GetAllDirectories(repoRootPath);
+        var rootDirectories = await EntryPointFinder.FindRootDirectoriesAsync(originalDirectories, repoRootPath, _logger);
+        if (rootDirectories.SequenceEqual(originalDirectories))
+        {
+            return job;
+        }
+
+        _logger.Info($"  Updated job directories from [{string.Join(", ", originalDirectories)}] to [{string.Join(", ", rootDirectories)}]");
+        var updatedSource = job.Source with { Directory = null, Directories = rootDirectories.ToArray() };
+        return job with { Source = updatedSource };
     }
 
     private static readonly ImmutableArray<IUpdateHandler> UpdateHandlers =
@@ -74,6 +96,7 @@ public class RunWorker
 
         try
         {
+            await PatchNuGetConfigFilesAsync(repoContentsPath);
             var handler = GetUpdateHandler(job);
             _logger.Info($"Starting update job of type {handler.TagName}");
             await handler.HandleAsync(job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, _discoveryWorker, _analyzeWorker, _updaterWorker, _apiHandler, experimentsManager, _logger);
@@ -358,5 +381,77 @@ public class RunWorker
         }
 
         return jobFile;
+    }
+
+    internal static string AddInsecureConnectionsAttribute(string nugetConfigContents)
+    {
+        try
+        {
+            var doc = XDocument.Parse(nugetConfigContents, LoadOptions.PreserveWhitespace);
+            var ns = doc.Root?.Name.Namespace ?? XNamespace.None;
+            var packageSources = doc.Root?.Element(ns + "packageSources");
+            if (packageSources is null)
+            {
+                return nugetConfigContents;
+            }
+
+            foreach (var addElement in packageSources.Elements(ns + "add"))
+            {
+                if (addElement.Attribute("allowInsecureConnections") is not null)
+                {
+                    continue;
+                }
+
+                var valueAttr = addElement.Attribute("value");
+                if (valueAttr is null)
+                {
+                    continue;
+                }
+
+                if (valueAttr.Value.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+                {
+                    addElement.SetAttributeValue("allowInsecureConnections", "true");
+                }
+            }
+
+            var result = doc.ToString(SaveOptions.DisableFormatting);
+            if (doc.Declaration is not null)
+            {
+                result = doc.Declaration.ToString() + result;
+            }
+
+            return result;
+        }
+        catch
+        {
+            return nugetConfigContents;
+        }
+    }
+
+    /// <summary>
+    /// Scans the repo for all NuGet.Config files (case-insensitive) and adds
+    /// <c>allowInsecureConnections="true"</c> to any package source using an <c>http://</c> URL.
+    /// This allows NuGet to restore from insecure feeds without requiring the attribute to be
+    /// present in the original config file.
+    /// </summary>
+    private static async Task PatchNuGetConfigFilesAsync(DirectoryInfo repoContentsPath)
+    {
+        var options = new EnumerationOptions
+        {
+            RecurseSubdirectories = true,
+            MatchCasing = MatchCasing.CaseInsensitive,
+            IgnoreInaccessible = true,
+        };
+        var configFiles = Directory.EnumerateFiles(repoContentsPath.FullName, "nuget.config", options);
+
+        foreach (var configFile in configFiles)
+        {
+            var contents = await File.ReadAllTextAsync(configFile);
+            var patched = AddInsecureConnectionsAttribute(contents);
+            if (patched != contents)
+            {
+                await File.WriteAllTextAsync(configFile, patched);
+            }
+        }
     }
 }

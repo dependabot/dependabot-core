@@ -3038,6 +3038,74 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             .to include(%("acorn@npm:^5.0.0, acorn@npm:^5.1.2":\n  version: 5.7.3))
         end
       end
+
+      context "when the target version differs from latest in range (security update)" do
+        let(:project_name) { "yarn_berry/security_update" }
+        let(:files) { project_dependency_files(project_name) }
+        let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+        let(:dependency_name) { "axios" }
+        let(:version) { "1.15.2" }
+        let(:previous_version) { "1.15.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^1.15.2",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "^1.15.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "pins to the exact target version with the caret range descriptor" do
+          parsed_lockfile = YAML.safe_load(updated_yarn_lock.content)
+          axios_entry = parsed_lockfile.find { |k, _| k.is_a?(String) && k.include?("axios") }
+
+          expect(axios_entry&.first).to include("^1.15.2")
+          expect(axios_entry&.last&.dig("version")).to eq("1.15.2")
+        end
+      end
+
+      context "when the target version differs from latest in range (version update with ignore)" do
+        let(:project_name) { "yarn_berry/security_update" }
+        let(:files) { project_dependency_files(project_name) }
+        let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+        let(:dependency_name) { "lodash" }
+        let(:version) { "4.17.10" }
+        let(:previous_version) { "4.17.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "~4.17.10",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "~4.17.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "pins to the exact target version with the tilde range descriptor" do
+          parsed_lockfile = YAML.safe_load(updated_yarn_lock.content)
+          lodash_entry = parsed_lockfile.find { |k, _| k.is_a?(String) && k.include?("lodash") }
+
+          expect(lodash_entry&.first).to include("~4.17.10")
+          expect(lodash_entry&.last&.dig("version")).to eq("4.17.10")
+        end
+      end
     end
 
     #######################

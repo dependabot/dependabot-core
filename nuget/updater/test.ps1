@@ -3,6 +3,9 @@ $ErrorActionPreference = "Stop"
 
 . $PSScriptRoot\common.ps1
 
+# uncomment line to enable detailed test logging
+#$env:DEPENDABOT_LOG_MESSAGES = "true"
+
 function Assert-ArraysEqual([string[]]$expected, [string[]]$actual) {
     $expectedText = $expected -join ", "
     $actualText = $actual -join ", "
@@ -45,6 +48,12 @@ try {
     Test-GlobalJsonVersions `
         -testDirectory "global-json-discovery-root-with-file" `
         -directories @("/") `
+        -installedSdks @("8.0.404", "9.0.101") `
+        -expectedSdksToInstall @("1.2.3")
+
+    Test-GlobalJsonVersions `
+        -testDirectory "global-json-discovery-root-with-file" `
+        -directories @("/.") `
         -installedSdks @("8.0.404", "9.0.101") `
         -expectedSdksToInstall @("1.2.3")
 
@@ -101,6 +110,12 @@ try {
         -directories @("/") `
         -installedSdks @("8.0.404") `
         -expectedSdksToInstall @("9.0")
+
+    Test-GlobalJsonVersions `
+        -testDirectory "global-json-whitespace" `
+        -directories @("/leading-comment", "/leading-newline", "/leading-whitespace") `
+        -installedSdks @("8.0.404") `
+        -expectedSdksToInstall @("1.2.3-leading-comment", "1.2.3-leading-newline", "1.2.3-leading-whitespace")
 
     Test-RequiredTargetingPacks `
         -testDirectory "targeting-packs" `

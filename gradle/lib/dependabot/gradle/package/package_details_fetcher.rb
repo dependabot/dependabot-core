@@ -19,13 +19,37 @@ require "dependabot/gradle/package/version_release_date_fallback_fetcher"
 module Dependabot
   module Gradle
     module Package
+      module EofRetry
+        extend T::Sig
+
+        EOF_RETRY_COUNT = 2
+
+        sig do
+          params(
+            url: String,
+            headers: T::Hash[T.any(String, Symbol), T.untyped]
+          ).returns(Excon::Response)
+        end
+        def self.get(url:, headers:)
+          retries_remaining = EOF_RETRY_COUNT
+
+          begin
+            Dependabot::RegistryClient.get(url: url, headers: headers)
+          rescue Excon::Error::Socket => e
+            raise e unless e.socket_error.is_a?(EOFError) && retries_remaining.positive?
+
+            retries_remaining -= 1
+            retry
+          end
+        end
+      end
+
       class PackageDetailsFetcher
         extend T::Sig
 
         CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
         KOTLIN_PLUGIN_REPO_PREFIX = "org.jetbrains.kotlin"
         TYPE_SUFFICES = %w(jre android java native_mt agp).freeze
-
         sig do
           params(
             dependency: Dependabot::Dependency,
@@ -225,7 +249,7 @@ module Dependabot
           @dependency_metadata ||= T.let({}, T.nilable(T::Hash[T.untyped, T.untyped]))
           @dependency_metadata[repository_details.hash] ||=
             begin
-              response = Dependabot::RegistryClient.get(
+              response = EofRetry.get(
                 url: dependency_metadata_url(repository_details.fetch("url")),
                 headers: repository_details.fetch("auth_headers")
               )
@@ -247,7 +271,7 @@ module Dependabot
           @release_info_metadata ||= T.let({}, T.nilable(T::Hash[Integer, T.untyped]))
           @release_info_metadata[repository_details.hash] ||=
             begin
-              response = Dependabot::RegistryClient.get(
+              response = EofRetry.get(
                 url: dependency_metadata_url(repository_details.fetch("url")).gsub("maven-metadata.xml", ""),
                 headers: repository_details.fetch("auth_headers")
               )

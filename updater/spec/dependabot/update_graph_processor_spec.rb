@@ -791,4 +791,99 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       update_graph_processor.run
     end
   end
+
+  context "when external code execution is rejected" do
+    let(:directories) { [dir1, dir2] }
+    let(:dir1) { "/" }
+    let(:dir2) { "/subproject" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: dir1
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler/original/Gemfile.lock"),
+          directory: dir1
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: dir2
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler/original/Gemfile.lock"),
+          directory: dir2
+        )
+      ]
+    end
+
+    before do
+      allow(Dependabot::FileParsers).to receive(:for_package_manager)
+        .and_raise(Dependabot::UnexpectedExternalCode)
+    end
+
+    context "when executing standalone" do
+      before do
+        allow(Dependabot::Environment).to receive(:github_actions?).and_return(false)
+      end
+
+      it "records an error for each directory" do
+        expect(service).to receive(:record_update_job_error).with(
+          error_type: "unexpected_external_code",
+          error_details: { message: "Cannot process directory / without external code execution" }
+        )
+        expect(service).to receive(:record_update_job_error).with(
+          error_type: "unexpected_external_code",
+          error_details: { message: "Cannot process directory /subproject without external code execution" }
+        )
+
+        update_graph_processor.run
+      end
+
+      it "does not send any dependency submissions" do
+        expect(service).not_to receive(:create_dependency_submission)
+
+        update_graph_processor.run
+      end
+
+      it "does not halt processing of remaining directories" do
+        call_count = 0
+        allow(service).to receive(:record_update_job_error) { call_count += 1 }
+
+        update_graph_processor.run
+
+        expect(call_count).to eq(2)
+      end
+    end
+
+    context "when executing in GitHub Actions" do
+      before do
+        allow(Dependabot::Environment).to receive(:github_actions?).and_return(true)
+      end
+
+      it "sends a FAILED empty submission for each directory" do
+        expect(service).to receive(:create_dependency_submission).twice do |args|
+          payload = args[:dependency_submission].payload
+          expect(payload[:metadata][:status]).to eql(
+            GithubApi::DependencySubmission::SnapshotStatus::FAILED.serialize
+          )
+          expect(payload[:metadata][:reason]).to eql("unexpected_external_code")
+        end
+
+        update_graph_processor.run
+      end
+
+      it "records an error for each directory" do
+        expect(service).to receive(:record_update_job_error).twice
+
+        update_graph_processor.run
+      end
+    end
+  end
 end

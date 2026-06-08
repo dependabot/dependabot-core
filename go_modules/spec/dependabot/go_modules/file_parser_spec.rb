@@ -36,6 +36,8 @@ RSpec.describe Dependabot::GoModules::FileParser do
     ENV.delete("GOENV")
     ENV.delete("GOPROXY")
     ENV.delete("GOPRIVATE")
+    ENV.delete("GONOPROXY")
+    ENV.delete("GONOSUMDB")
   end
 
   it_behaves_like "a dependency file parser"
@@ -138,6 +140,132 @@ RSpec.describe Dependabot::GoModules::FileParser do
         options: { goprivate: "*" }
       )
       expect(`go env GOPRIVATE`.strip).to be_empty
+    end
+
+    it "sets GONOPROXY from the gonoproxy option" do
+      described_class.new(
+        dependency_files: [go_mod],
+        source: source,
+        repo_contents_path: repo_contents_path,
+        options: { goprivate: "*", gonoproxy: "none" }
+      )
+      expect(`go env GOPRIVATE`.strip).to eq("*")
+      expect(`go env GONOPROXY`.strip).to eq("none")
+    end
+
+    it "sets GONOSUMDB from the gonosumdb option" do
+      described_class.new(
+        dependency_files: [go_mod],
+        source: source,
+        repo_contents_path: repo_contents_path,
+        options: { goprivate: "*", gonosumdb: "*" }
+      )
+      expect(`go env GOPRIVATE`.strip).to eq("*")
+      expect(`go env GONOSUMDB`.strip).to eq("*")
+    end
+
+    it "does not set GONOPROXY when the option is omitted" do
+      ENV.delete("GONOPROXY")
+      described_class.new(
+        dependency_files: [go_mod],
+        source: source,
+        repo_contents_path: repo_contents_path,
+        options: { goprivate: "*" }
+      )
+      expect(ENV.fetch("GONOPROXY", nil)).to be_nil
+    end
+
+    it "does not set GONOSUMDB when the option is omitted" do
+      ENV.delete("GONOSUMDB")
+      described_class.new(
+        dependency_files: [go_mod],
+        source: source,
+        repo_contents_path: repo_contents_path,
+        options: { goprivate: "*" }
+      )
+      expect(ENV.fetch("GONOSUMDB", nil)).to be_nil
+    end
+
+    it "does not override GONOPROXY if it is already set in the go.env file" do
+      go_env = Dependabot::DependencyFile.new(
+        name: "go.env",
+        content: "GONOPROXY=*.company.com",
+        directory: directory
+      )
+      described_class.new(
+        dependency_files: [go_mod, go_env],
+        source: source,
+        repo_contents_path: repo_contents_path,
+        options: { gonoproxy: "none" }
+      )
+      expect(`go env GONOPROXY`.strip).to eq("*.company.com")
+    end
+
+    it "does not override GONOSUMDB if it is already set in the go.env file" do
+      go_env = Dependabot::DependencyFile.new(
+        name: "go.env",
+        content: "GONOSUMDB=*.company.com",
+        directory: directory
+      )
+      described_class.new(
+        dependency_files: [go_mod, go_env],
+        source: source,
+        repo_contents_path: repo_contents_path,
+        options: { gonosumdb: "*" }
+      )
+      expect(`go env GONOSUMDB`.strip).to eq("*.company.com")
+    end
+
+    it "does not set GONOPROXY if GOPRIVATE is set in the go.env file" do
+      ENV.delete("GONOPROXY")
+      go_env = Dependabot::DependencyFile.new(
+        name: "go.env",
+        content: "GOPRIVATE=github.com/dependabot-fixtures",
+        directory: directory
+      )
+      described_class.new(
+        dependency_files: [go_mod, go_env],
+        source: source,
+        repo_contents_path: repo_contents_path,
+        options: { gonoproxy: "none" }
+      )
+      expect(ENV.fetch("GONOPROXY", nil)).to be_nil
+    end
+
+    it "does not set GONOSUMDB if GOPRIVATE is set in the go.env file" do
+      ENV.delete("GONOSUMDB")
+      go_env = Dependabot::DependencyFile.new(
+        name: "go.env",
+        content: "GOPRIVATE=github.com/dependabot-fixtures",
+        directory: directory
+      )
+      described_class.new(
+        dependency_files: [go_mod, go_env],
+        source: source,
+        repo_contents_path: repo_contents_path,
+        options: { gonosumdb: "*" }
+      )
+      expect(ENV.fetch("GONOSUMDB", nil)).to be_nil
+    end
+
+    it "does not set GONOPROXY if a goproxy_server credential is passed" do
+      ENV.delete("GONOPROXY")
+      credentials = [
+        Dependabot::Credential.new(
+          {
+            "type" => "goproxy_server",
+            "url" => "https://proxy.example.com"
+          }
+        )
+      ]
+      described_class.new(
+        dependency_files: [go_mod],
+        source: source,
+        credentials: credentials,
+        repo_contents_path: repo_contents_path,
+        options: { gonoproxy: "none" }
+      )
+      expect(ENV.fetch("GONOPROXY", nil)).to be_nil
     end
   end
 
