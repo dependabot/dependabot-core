@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/errors"
+require "dependabot/experiments"
 require "dependabot/pull_request_creator/message_builder"
 
 # This class describes a change to the project's Dependencies which has been
@@ -96,7 +97,8 @@ module Dependabot
         pr_message_max_length: pr_message_max_length,
         pr_message_encoding: pr_message_encoding,
         ignore_conditions: job.ignore_conditions,
-        notices: notices
+        notices: notices,
+        vulnerabilities_fixed: vulnerabilities_fixed
       ).message
 
       @pr_message = message
@@ -192,6 +194,42 @@ module Dependabot
     end
 
     private
+
+    # Maps each updated dependency whose update resolves a security advisory to
+    # the advisories it fixes, in the shape MessageBuilder expects:
+    # `{ name => [advisory_hash, ...] }`. A non-empty entry is what flips on the
+    # `[security]` PR-title prefix and the "includes a security fix" body line.
+    #
+    # That signposting machinery has existed since 2018 (PrNamePrefixer /
+    # MessageBuilder) but was never wired up from the updater — MessageBuilder
+    # defaulted `vulnerabilities_fixed: {}`, so security PRs raised by the
+    # updater went unmarked. See dependabot-core#4761.
+    #
+    # Gated behind the `add_security_pr_prefix` experiment (default off): a
+    # public `[security]` PR can disclose that a repo is currently vulnerable
+    # before the fix merges, so consumers opt in rather than getting it by
+    # default. With the flag off this returns `{}` — i.e. today's behaviour.
+    sig { returns(T::Hash[String, T::Array[T::Hash[String, T.untyped]]]) }
+    def vulnerabilities_fixed
+      return {} unless Dependabot::Experiments.enabled?(:add_security_pr_prefix)
+
+      updated_dependencies.each_with_object({}) do |dep, fixed|
+        next unless job.security_fix?(dep)
+
+        advisories =
+          job.security_advisories
+             .select { |adv| adv.fetch("dependency-name", nil)&.casecmp(dep.name)&.zero? }
+             .map do |adv|
+               {
+                 "patched_versions" => Array(adv["patched-versions"]),
+                 "unaffected_versions" => Array(adv["unaffected-versions"]),
+                 "affected_versions" => Array(adv["affected-versions"])
+               }
+             end
+
+        fixed[dep.name] = advisories if advisories.any?
+      end
+    end
 
     # Older PRs will not have a directory key, in that case do not consider directory in the comparison. This will
     # allow rebases to continue working for those, but for multi-directory configs we do compare with the directory.

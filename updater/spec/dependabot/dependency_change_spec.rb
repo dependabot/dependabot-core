@@ -102,7 +102,8 @@ RSpec.describe Dependabot::DependencyChange do
       allow(job).to receive_messages(
         source: github_source,
         credentials: job_credentials,
-        commit_message_options: commit_message_options
+        commit_message_options: commit_message_options,
+        security_fix?: false
       )
       allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder_mock)
     end
@@ -119,7 +120,8 @@ RSpec.describe Dependabot::DependencyChange do
           pr_message_encoding: nil,
           pr_message_max_length: 65_535,
           ignore_conditions: [],
-          notices: []
+          notices: [],
+          vulnerabilities_fixed: {}
         )
 
       expect(dependency_change.pr_message.pr_message).to eql("Hello World!")
@@ -147,10 +149,64 @@ RSpec.describe Dependabot::DependencyChange do
             pr_message_encoding: nil,
             pr_message_max_length: 65_535,
             ignore_conditions: [],
-            notices: []
+            notices: [],
+            vulnerabilities_fixed: {}
           )
 
         expect(dependency_change.pr_message&.pr_message).to eql("Hello World!")
+      end
+    end
+
+    context "when an update resolves a security advisory" do
+      let(:security_advisories) do
+        [
+          {
+            "dependency-name" => "business",
+            "affected-versions" => ["< 1.8.0"],
+            "patched-versions" => ["1.8.0"],
+            "unaffected-versions" => []
+          }
+        ]
+      end
+
+      before do
+        allow(job).to receive_messages(
+          security_fix?: true,
+          security_advisories: security_advisories
+        )
+      end
+
+      context "when the add_security_pr_prefix experiment is enabled" do
+        before { Dependabot::Experiments.register(:add_security_pr_prefix, true) }
+        after { Dependabot::Experiments.reset! }
+
+        it "passes the fixed advisories to the MessageBuilder, marking the PR as a security fix" do
+          expect(Dependabot::PullRequestCreator::MessageBuilder)
+            .to receive(:new).with(
+              hash_including(
+                vulnerabilities_fixed: {
+                  "business" => [
+                    {
+                      "patched_versions" => ["1.8.0"],
+                      "unaffected_versions" => [],
+                      "affected_versions" => ["< 1.8.0"]
+                    }
+                  ]
+                }
+              )
+            )
+
+          expect(dependency_change.pr_message.pr_message).to eql("Hello World!")
+        end
+      end
+
+      context "when the experiment is disabled (the default)" do
+        it "leaves vulnerabilities_fixed empty so the PR is not marked" do
+          expect(Dependabot::PullRequestCreator::MessageBuilder)
+            .to receive(:new).with(hash_including(vulnerabilities_fixed: {}))
+
+          expect(dependency_change.pr_message.pr_message).to eql("Hello World!")
+        end
       end
     end
   end
