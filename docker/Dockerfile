@@ -1,10 +1,11 @@
 # syntax=docker.io/docker/dockerfile:1.20
+ARG UPDATER_CORE_IMAGE=ghcr.io/dependabot/dependabot-updater-core
 # From https://github.com/sigstore/cosign/releases
 FROM ghcr.io/sigstore/cosign/cosign:v3.0.5 AS cosign
 # From https://github.com/regclient/regclient/releases
 FROM ghcr.io/regclient/regctl:v0.11.2 AS regctl
 
-FROM ghcr.io/dependabot/dependabot-updater-core
+FROM ${UPDATER_CORE_IMAGE}
 
 ENV PATH=/opt/bin:$PATH
 COPY --from=regctl /regctl /opt/bin/regctl

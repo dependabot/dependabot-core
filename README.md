@@ -168,7 +168,11 @@ flowchart LR
 Changes to the docker files for any of these images requires building one or more of the images locally in order to be reflected in the development shell.
 
 The simple but slow way is to delete any existing images and then run `bin/docker-dev-shell` which automatically builds
-missing images.
+missing images. On ARM, pass `DOCKER_BUILD_ARGS="--no-cache"` for the first build to avoid reusing cached AMD64 layers:
+
+```shell
+$ DOCKER_BUILD_ARGS="--no-cache" bin/docker-dev-shell go_modules --rebuild
+```
 
 The faster way is to pull all the pre-built images that are dependencies of the image you actually need to build.
 To (re)build a specific one:
@@ -177,7 +181,7 @@ To (re)build a specific one:
 
   ```shell
   $ docker pull ghcr.io/dependabot/dependabot-updater-core # OR
-  $ docker build -f Dockerfile.updater-core . --tag=dependabot-manual-build/updater-core # recommended on ARM
+  $ docker build --no-cache -f Dockerfile.updater-core --tag ghcr.io/dependabot/dependabot-updater-core . # recommended on ARM
   ```
 
 Each language/ecosystem sits on top of the core image. You need to rebuild whichever one you’re working on so it picks up your new core bits. For instance, if you’re working on **Go Modules**:
@@ -185,18 +189,7 @@ Each language/ecosystem sits on top of the core image. You need to rebuild which
 - The Updater ecosystem image:
 
   ```shell
-  $ docker pull ghcr.io/dependabot/dependabot-updater-gomod # OR
-  $ script/build go_modules # recommended on ARM
-  ```
-
-  Or explicitly:
-  ```shell
-  $ docker build \
-  --platform linux/amd64 \
-  --file go_modules/Dockerfile \
-  --build-arg UPDATER_CORE_IMAGE=dependabot-manual-build/updater-core \
-  --tag dependabot-manual-build/updater-gomod \
-  .
+  $ script/build go_modules
   ```
 
 - Spin-up the development container using the `--rebuild` flag:
