@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/registry_client"
 require "sorbet-runtime"
@@ -336,25 +337,24 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def scoped_credential_registry_for_dependency
           dep_name = dependency&.name
-          return unless dep_name
-          return unless dep_name.start_with?("@") && dep_name.include?("/")
+          return unless dep_name&.start_with?("@") && dep_name.include?("/")
 
           scope = T.must(dep_name.split("/").first)
           registry = scoped_credential_registry(scope)
-          return unless registry
-
-          normalize_configured_registry(registry)
+          normalize_configured_registry(registry) if registry
         end
 
         sig { params(scope: String).returns(T.nilable(String)) }
         def scoped_credential_registry(scope)
           cred = credentials.find do |c|
-            c["type"] == "npm_registry" && c["registry"] && c.scope&.include?(scope)
+            c["type"] == "npm_registry" && c["registry"] && c.scope&.any? do |s|
+              Helpers.normalize_npm_scope(s) == scope
+            end
           end
           return unless cred
 
-          registry = T.must(cred["registry"])
-          registry = "https://#{registry}" unless registry.start_with?("http")
+          reg = T.must(cred["registry"])
+          registry = reg.start_with?("http") ? reg : "https://#{reg}"
           prepare_registry_url(registry)
         end
 

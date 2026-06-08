@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/npm_and_yarn/file_updater"
+require "dependabot/npm_and_yarn/helpers"
 
 module Dependabot
   module NpmAndYarn
@@ -108,7 +109,7 @@ module Dependabot
             registry = cred.fetch("registry")
             registry_url = registry.start_with?("http") ? registry : "https://#{registry}"
             T.must(cred.scope).each do |s|
-              lines << "#{s}:registry=#{registry_url}"
+              lines << "#{Helpers.normalize_npm_scope(s)}:registry=#{registry_url}"
             end
           end
 
@@ -357,7 +358,7 @@ module Dependabot
           return unless cred&.scope
 
           registry_url = registry.start_with?("http") ? registry : "https://#{registry}"
-          T.must(cred.scope).map { |s| "#{s}:registry=#{registry_url}" }
+          T.must(cred.scope).map { |s| "#{Helpers.normalize_npm_scope(s)}:registry=#{registry_url}" }
         end
 
         # rubocop:disable Metrics/PerceivedComplexity

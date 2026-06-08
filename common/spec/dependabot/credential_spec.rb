@@ -45,7 +45,7 @@ RSpec.describe Dependabot::Credential do
       expect(cred.scope).to eq(["@org1", "@org2"])
     end
 
-    it "normalizes scope without @ prefix" do
+    it "preserves scope without @ prefix as-is" do
       cred = described_class.new(
         {
           "type" => "npm_registry",
@@ -53,10 +53,10 @@ RSpec.describe Dependabot::Credential do
           "scope" => "my-company"
         }
       )
-      expect(cred.scope).to eq(["@my-company"])
+      expect(cred.scope).to eq(["my-company"])
     end
 
-    it "normalizes array scopes without @ prefix" do
+    it "preserves array scopes without @ prefix as-is" do
       cred = described_class.new(
         {
           "type" => "npm_registry",
@@ -64,7 +64,7 @@ RSpec.describe Dependabot::Credential do
           "scope" => ["org1", "@org2"]
         }
       )
-      expect(cred.scope).to eq(["@org1", "@org2"])
+      expect(cred.scope).to eq(["org1", "@org2"])
     end
 
     it "does not expose scope in the underlying hash" do
