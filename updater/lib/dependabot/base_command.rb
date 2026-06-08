@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -48,7 +48,10 @@ module Dependabot
       # Ensure that we shut down the open telemetry exporter.
       ::Dependabot::OpenTelemetry.shutdown
       Dependabot.logger.formatter = Dependabot::Logger::BasicFormatter.new
+      # Append summary to logs
       Dependabot.logger.info(service.summary) unless service.noop?
+      # Write a summary.md file if we are running in Actions
+      service.write_workflow_summary(command: job.command, package_manager: job.package_manager)
       raise Dependabot::RunFailure if Dependabot::Environment.github_actions? && service.failure?
     end
 
@@ -64,7 +67,12 @@ module Dependabot
 
     sig { params(err: StandardError).void }
     def handle_unknown_error(err)
-      fingerprint = (T.unsafe(err).sentry_context[:fingerprint] if err.respond_to?(:sentry_context))
+      fingerprint = (if err.respond_to?(:sentry_context)
+                       T.cast(
+                         err,
+                         Dependabot::HasSentryContext
+                       ).sentry_context[:fingerprint]
+                     end)
 
       error_details = {
         ErrorAttributes::CLASS => err.class.to_s,
