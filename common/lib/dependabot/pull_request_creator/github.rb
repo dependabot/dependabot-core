@@ -3,6 +3,7 @@
 
 require "octokit"
 require "securerandom"
+require "set"
 require "sorbet-runtime"
 
 require "dependabot/clients/github_with_retries"
@@ -333,11 +334,46 @@ module Dependabot
           end
         end
 
+        file_trees = filter_conflicting_entries(file_trees)
+
         T.unsafe(github_client_for_source).create_tree(
           source.repo,
           file_trees,
           base_tree: base_commit
         )
+      end
+
+      sig do
+        params(file_trees: T::Array[T::Hash[Symbol, T.untyped]])
+          .returns(T::Array[T::Hash[Symbol, T.untyped]])
+      end
+      def filter_conflicting_entries(file_trees)
+        commit = T.unsafe(github_client_for_source).git_commit(source.repo, base_commit)
+        base_tree = T.unsafe(github_client_for_source).tree(source.repo, commit.tree.sha)
+        special_paths = T.let(Set.new, T::Set[String])
+        base_tree.tree.each do |entry|
+          # Submodules have type "commit"; symlinks have mode "120000"
+          special_paths.add(entry.path) if entry.type == "commit" || entry.mode == "120000"
+        end
+
+        return file_trees if special_paths.empty?
+
+        file_trees.reject do |entry|
+          path = T.must(entry[:path])
+          first_component = T.must(path.split("/").first)
+          if path.include?("/") && special_paths.include?(first_component)
+            Dependabot.logger.warn(
+              "Excluding #{path} from create_tree — " \
+              "conflicts with submodule/symlink '#{first_component}' in base tree"
+            )
+            true
+          else
+            false
+          end
+        end
+      rescue Octokit::Error => e
+        Dependabot.logger.warn("Unable to check base tree for conflicts: #{e.message}")
+        file_trees
       end
 
       sig { params(commit: T.untyped).returns(T.untyped) }
