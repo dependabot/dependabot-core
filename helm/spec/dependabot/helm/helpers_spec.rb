@@ -8,14 +8,14 @@ RSpec.describe Dependabot::Helm::Helpers do
   describe ".search_releases" do
     it "uses '--' to terminate flags" do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-        "helm search repo -- myrepo/mychart --versions --output=json",
-        fingerprint: "helm search repo -- <name> --versions --output=json"
+        "helm search repo --versions --output=json -- myrepo/mychart",
+        fingerprint: "helm search repo --versions --output=json -- <name>"
       ).and_return("[]")
 
       described_class.search_releases("myrepo/mychart")
       expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
-        "helm search repo -- myrepo/mychart --versions --output=json",
-        fingerprint: "helm search repo -- <name> --versions --output=json"
+        "helm search repo --versions --output=json -- myrepo/mychart",
+        fingerprint: "helm search repo --versions --output=json -- <name>"
       )
     end
 

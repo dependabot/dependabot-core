@@ -18,8 +18,8 @@ module Dependabot
         Dependabot.logger.info("Searching Helm repository for: #{name}")
 
         Dependabot::SharedHelpers.run_shell_command(
-          "helm search repo -- #{name} --versions --output=json",
-          fingerprint: "helm search repo -- <name> --versions --output=json"
+          "helm search repo --versions --output=json -- #{name}",
+          fingerprint: "helm search repo --versions --output=json -- <name>"
         ).strip
       end
 
