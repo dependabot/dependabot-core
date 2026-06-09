@@ -39,6 +39,10 @@ RSpec.describe Dependabot::DependencySnapshot do
     )
   end
 
+  let(:group_definitions) do
+    dependency_groups.map { |group| Dependabot::Job::DependencyGroupDefinition.from_hash(group) }
+  end
+
   let(:job) do
     instance_double(
       Dependabot::Job,
@@ -48,7 +52,7 @@ RSpec.describe Dependabot::DependencySnapshot do
       credentials: [],
       reject_external_code?: false,
       source: source,
-      dependency_groups: dependency_groups,
+      dependency_groups: group_definitions,
       allowed_update?: true,
       dependency_group_to_refresh: nil,
       dependencies: nil,
@@ -274,7 +278,7 @@ RSpec.describe Dependabot::DependencySnapshot do
           credentials: [],
           reject_external_code?: false,
           source: source,
-          dependency_groups: dependency_groups,
+          dependency_groups: group_definitions,
           allowed_update?: true,
           dependency_group_to_refresh: "monorepo-deps/dummy-pkg-a",
           dependencies: nil,
@@ -309,7 +313,7 @@ RSpec.describe Dependabot::DependencySnapshot do
           credentials: [],
           reject_external_code?: false,
           source: source,
-          dependency_groups: dependency_groups,
+          dependency_groups: group_definitions,
           dependencies: ["dummy-pkg-a"],
           allowed_update?: false,
           dependency_group_to_refresh: nil,
@@ -361,12 +365,14 @@ RSpec.describe Dependabot::DependencySnapshot do
         credentials: [],
         reject_external_code?: false,
         source: source,
-        dependency_groups: dependency_groups,
+        dependency_groups: group_definitions,
         allowed_update?: true,
         dependency_group_to_refresh: nil,
         dependencies: nil,
         experiments: { large_hadron_collider: true },
-        existing_group_pull_requests: existing_group_pull_requests
+        existing_group_pull_requests: existing_group_pull_requests.map do |pr|
+          Dependabot::Job::ExistingGroupPullRequest.from_hash(pr)
+        end
       )
     end
 

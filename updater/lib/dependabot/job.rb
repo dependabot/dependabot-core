@@ -16,6 +16,9 @@ require "dependabot/package/release_cooldown_options"
 require "dependabot/updater/update_type_helper"
 
 require "dependabot/job/allowed_update"
+require "dependabot/job/blocked_version"
+require "dependabot/job/dependency_group_definition"
+require "dependabot/job/existing_group_pull_request"
 require "dependabot/job/ignore_condition"
 require "dependabot/job/security_advisory_entry"
 
@@ -81,7 +84,7 @@ module Dependabot
     sig { returns(T::Array[PullRequest]) }
     attr_reader :existing_pull_requests
 
-    sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+    sig { returns(T::Array[Dependabot::Job::ExistingGroupPullRequest]) }
     attr_reader :existing_group_pull_requests
 
     sig { returns(String) }
@@ -114,7 +117,7 @@ module Dependabot
     sig { returns(T::Boolean) }
     attr_reader :vendor_dependencies
 
-    sig { returns(T::Array[T.untyped]) }
+    sig { returns(T::Array[Dependabot::Job::DependencyGroupDefinition]) }
     attr_reader :dependency_groups
 
     sig { returns(T.nilable(String)) }
@@ -123,11 +126,13 @@ module Dependabot
     sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
     attr_reader :cooldown
 
-    sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+    sig { returns(T::Array[Dependabot::Job::BlockedVersion]) }
     attr_reader :blocked_versions
 
     sig { params(blocked_versions: T::Array[T::Hash[String, T.untyped]]).void }
-    attr_writer :blocked_versions
+    def blocked_versions=(blocked_versions)
+      @blocked_versions = self.class.parse_blocked_versions(blocked_versions)
+    end
 
     sig { returns(Dependabot::Config::UpdateConfig) }
     attr_reader :update_config
@@ -161,14 +166,21 @@ module Dependabot
       new(attrs.merge(id: job_id, repo_contents_path: repo_contents_path))
     end
 
-    sig { params(hash: T::Hash[T.untyped, T.untyped]).returns(T::Hash[T.untyped, T.untyped]) }
+    sig { params(hash: T::Hash[String, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
     def self.standardise_keys(hash)
       hash.transform_keys { |key| key.tr("-", "_").to_sym }
     end
 
+    # Non-hash entries are dropped rather than raising so that malformed
+    # entries are ignored, matching the previous hash-based filtering.
+    sig { params(blocked_versions: T::Array[T::Hash[String, T.untyped]]).returns(T::Array[BlockedVersion]) }
+    def self.parse_blocked_versions(blocked_versions)
+      blocked_versions.grep(Hash).map { |bv| BlockedVersion.from_hash(bv) }
+    end
+
     # NOTE: "attributes" are fetched and injected at run time from
     # dependabot-api using the UpdateJobPrivateSerializer
-    sig { params(attributes: T.untyped).void }
+    sig { params(attributes: T::Hash[Symbol, T.untyped]).void }
     def initialize(attributes) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
       @id                             = T.let(attributes.fetch(:id), String)
       @command                        = T.let(attributes.fetch(:command, ""), String)
@@ -178,7 +190,7 @@ module Dependabot
       )
       @commit_message_options = T.let(
         attributes.fetch(:commit_message_options, {}),
-        T.nilable(T::Hash[T.untyped, T.untyped])
+        T.nilable(T::Hash[String, T.untyped])
       )
       @credentials = T.let(
         attributes.fetch(:credentials, []).map do |data|
@@ -186,7 +198,7 @@ module Dependabot
         end,
         T::Array[Dependabot::Credential]
       )
-      @dependencies                   = T.let(attributes.fetch(:dependencies), T.nilable(T::Array[T.untyped]))
+      @dependencies                   = T.let(attributes.fetch(:dependencies), T.nilable(T::Array[String]))
       @exclude_paths                  = T.let(attributes.fetch(:exclude_paths, []), T.nilable(T::Array[String]))
       @existing_pull_requests         = T.let(PullRequest.create_from_job_definition(attributes), T::Array[PullRequest])
       # TODO: Make this hash required
@@ -195,12 +207,14 @@ module Dependabot
       # so let's consider it optional for now. If we get a nil value, let's force it to be
       # an array.
       @existing_group_pull_requests = T.let(
-        attributes.fetch(:existing_group_pull_requests, []) || [],
-        T::Array[T::Hash[String, T.untyped]]
+        (attributes.fetch(:existing_group_pull_requests, []) || []).grep(Hash).map do |pr|
+          ExistingGroupPullRequest.from_hash(pr)
+        end,
+        T::Array[ExistingGroupPullRequest]
       )
       @experiments = T.let(
         attributes.fetch(:experiments, {}),
-        T.nilable(T::Hash[T.untyped, T.untyped])
+        T.nilable(T::Hash[String, T.untyped])
       )
       @ignore_conditions = T.let(
         attributes.fetch(:ignore_conditions).map { |h| Job::IgnoreCondition.from_hash(h) },
@@ -212,7 +226,8 @@ module Dependabot
 
       @requirements_update_strategy   = T.let(
         build_update_strategy(
-          **attributes.slice(:requirements_update_strategy, :lockfile_only)
+          requirements_update_strategy: attributes.fetch(:requirements_update_strategy),
+          lockfile_only: attributes.fetch(:lockfile_only)
         ),
         T.nilable(Dependabot::RequirementsUpdateStrategy)
       )
@@ -231,18 +246,23 @@ module Dependabot
         build_cooldown(attributes.fetch(:cooldown, nil)),
         T.nilable(Dependabot::Package::ReleaseCooldownOptions)
       )
-      @multi_ecosystem_update         = T.let(attributes.fetch(:multi_ecosystem_update, false), T::Boolean)
+      @multi_ecosystem_update = T.let(attributes.fetch(:multi_ecosystem_update, false), T::Boolean)
       # TODO: Make this hash required
       #
       # We will need to do a pass updating the CLI and smoke tests before this is possible,
       # so let's consider it optional for now. If we get a nil value, let's force it to be
       # an array.
-      @dependency_groups              = T.let(attributes.fetch(:dependency_groups, []) || [], T::Array[T.untyped])
+      @dependency_groups = T.let(
+        (attributes.fetch(:dependency_groups, []) || []).grep(Hash).map do |group|
+          DependencyGroupDefinition.from_hash(group)
+        end,
+        T::Array[DependencyGroupDefinition]
+      )
       @dependency_group_to_refresh    = T.let(attributes.fetch(:dependency_group_to_refresh, nil), T.nilable(String))
       @repo_private                   = T.let(attributes.fetch(:repo_private, nil), T.nilable(T::Boolean))
       @blocked_versions               = T.let(
-        attributes.fetch(:blocked_versions, []) || [],
-        T::Array[T::Hash[String, T.untyped]]
+        self.class.parse_blocked_versions(attributes.fetch(:blocked_versions, []) || []),
+        T::Array[BlockedVersion]
       )
 
       @update_config = T.let(calculate_update_config, Dependabot::Config::UpdateConfig)
@@ -502,7 +522,7 @@ module Dependabot
     sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
     def blocked_versions_for(dependency)
       matching_blocked_entries(dependency).filter_map do |bv|
-        req = bv["version-requirement"].strip
+        req = T.must(bv.version_requirement).strip
         req.empty? ? nil : req
       end
     end
@@ -510,10 +530,10 @@ module Dependabot
     sig { params(dependency: Dependabot::Dependency).void }
     def log_blocked_versions_for(dependency)
       entries = matching_blocked_entries(dependency).filter_map do |bv|
-        req = bv["version-requirement"].strip
+        req = T.must(bv.version_requirement).strip
         next if req.empty?
 
-        reason = bv["reason"].is_a?(String) ? bv["reason"].strip : nil
+        reason = bv.reason&.strip
         { version_requirement: req, reason: reason&.empty? ? nil : reason }
       end
       return if entries.empty?
@@ -528,15 +548,15 @@ module Dependabot
 
     sig do
       params(dependency: Dependabot::Dependency)
-        .returns(T::Array[T::Hash[String, T.untyped]])
+        .returns(T::Array[BlockedVersion])
     end
     def matching_blocked_entries(dependency)
       normaliser = name_normaliser
       normalized_dep_name = T.must(normaliser).call(dependency.name)
 
       blocked_versions
-        .select { |bv| bv["dependency-name"].is_a?(String) && bv["version-requirement"].is_a?(String) }
-        .select { |bv| T.must(normaliser).call(bv["dependency-name"]) == normalized_dep_name }
+        .select { |bv| bv.dependency_name && bv.version_requirement }
+        .select { |bv| T.must(normaliser).call(T.must(bv.dependency_name)) == normalized_dep_name }
     end
 
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
