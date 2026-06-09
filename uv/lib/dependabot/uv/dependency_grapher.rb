@@ -102,19 +102,18 @@ module Dependabot
         normalised_dependency_name(package_name)
       end
 
+      # Mirrors uv's `create_dependencies` (crates/uv-resolver/src/lock/export/cyclonedx_json.rs),
+      # which chains a package's `dependencies`, `optional-dependencies`, and
+      # `dev-dependencies` when building the SBOM dependency graph.
       sig { params(package_data: T.untyped).returns(T::Array[String]) }
       def lockfile_child_names(package_data)
-        dependencies =
-          if package_data.is_a?(Hash)
-            T.cast(package_data["dependencies"], T.nilable(T::Array[T.untyped])) || []
-          else
-            []
-          end
+        return [] unless package_data.is_a?(Hash)
 
-        dependencies.filter_map do |dependency|
-          dependency_name = lockfile_dependency_name(dependency)
-          normalised_dependency_name(dependency_name) if dependency_name
-        end
+        names = T.let([], T::Array[String])
+        collect_dep_names(package_data["dependencies"], names)
+        collect_dep_names_from_groups(package_data["optional-dependencies"], names)
+        collect_dep_names_from_groups(package_data["dev-dependencies"], names)
+        names.map { |name| normalised_dependency_name(name) }.uniq
       end
 
       sig { params(dependency_data: T.untyped).returns(T.nilable(String)) }
@@ -129,8 +128,9 @@ module Dependabot
         nil
       end
 
-      # Identifies the workspace member packages whose `dependencies` and
-      # `dev-dependencies` arrays describe the project's direct deps.
+      # Identifies the workspace member packages whose `dependencies`,
+      # `optional-dependencies`, and `dev-dependencies` arrays describe the
+      # project's direct deps.
       #
       # Authoritative signal: the `[manifest] members = [...]` array, which uv
       # writes for multi-member workspaces. See
@@ -170,6 +170,12 @@ module Dependabot
         end
       end
 
+      # Mirrors uv's `ExportableRequirements::from_lock` (crates/uv-resolver/src/lock/export/mod.rs)
+      # when invoked with `--all-extras --all-groups`: each workspace root contributes its
+      # `dependencies` as direct runtime, `optional-dependencies` (all extras) as direct runtime,
+      # and `dev-dependencies` (all groups) as direct dev. We use --all-extras/--all-groups
+      # semantics because the dependency graph reports what *could* be installed, not what was
+      # selected for a particular sync.
       sig do
         params(packages: T::Array[T.untyped], root_names: T::Set[String])
           .returns([T::Set[String], T::Set[String]])
@@ -182,22 +188,28 @@ module Dependabot
           next unless pkg.is_a?(Hash) && root_names.include?(pkg["name"])
 
           collect_dep_names(pkg["dependencies"], runtime)
-
-          dev_dep_groups = pkg["dev-dependencies"]
-          dev_dep_groups.each_value { |group_deps| collect_dep_names(group_deps, dev) } if dev_dep_groups.is_a?(Hash)
+          collect_dep_names_from_groups(pkg["optional-dependencies"], runtime)
+          collect_dep_names_from_groups(pkg["dev-dependencies"], dev)
         end
 
         [runtime, dev]
       end
 
-      sig { params(entries: T.untyped, set: T::Set[String]).void }
-      def collect_dep_names(entries, set)
+      sig { params(entries: T.untyped, collection: T.any(T::Set[String], T::Array[String])).void }
+      def collect_dep_names(entries, collection)
         return unless entries.is_a?(Array)
 
         entries.each do |entry|
           name = lockfile_dependency_name(entry)
-          set << name if name.is_a?(String)
+          collection << name if name.is_a?(String)
         end
+      end
+
+      sig { params(groups: T.untyped, collection: T.any(T::Set[String], T::Array[String])).void }
+      def collect_dep_names_from_groups(groups, collection)
+        return unless groups.is_a?(Hash)
+
+        groups.each_value { |entries| collect_dep_names(entries, collection) }
       end
 
       sig do

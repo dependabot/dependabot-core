@@ -122,12 +122,135 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
       root = resolved_dependencies.fetch("pkg:pypi/test@0.1.0")
       expect(root.direct).to be(false)
       expect(root.runtime).to be(true)
-      expect(root.dependencies).to eq(
-        [
-          "pkg:pypi/flask@3.1.3",
-          "pkg:pypi/requests@2.32.5"
-        ]
+      # Mirrors uv's `create_dependencies` in cyclonedx_json.rs (chains
+      # `dependencies` + `optional-dependencies` + `dev-dependencies` into one
+      # edge list).
+      expect(root.dependencies).to contain_exactly(
+        "pkg:pypi/flask@3.1.3",
+        "pkg:pypi/requests@2.32.5",
+        "pkg:pypi/ruff@0.15.4",
+        "pkg:pypi/ty@0.0.19"
       )
+    end
+
+    context "when the root has `[package.optional-dependencies]` (extras)" do
+      # Mirrors uv's `ExportableRequirements::from_lock` --all-extras behaviour:
+      # extras-declared deps are direct-from-root, since `uv sync --all-extras`
+      # would install them. The dependency graph reports what *could* be
+      # installed, not what's selected for a particular sync.
+      let(:uv_lock_content) do
+        <<~LOCK
+          version = 1
+          requires-python = ">=3.12"
+
+          [[package]]
+          name = "project"
+          version = "0.1.0"
+          source = { virtual = "." }
+          dependencies = [
+              { name = "requests" },
+          ]
+
+          [package.optional-dependencies]
+          aws = [
+              { name = "boto3" },
+          ]
+          vertex = [
+              { name = "google-auth" },
+          ]
+
+          [[package]]
+          name = "requests"
+          version = "2.32.5"
+          source = { registry = "https://pypi.org/simple" }
+
+          [[package]]
+          name = "boto3"
+          version = "1.42.69"
+          source = { registry = "https://pypi.org/simple" }
+
+          [[package]]
+          name = "google-auth"
+          version = "2.49.1"
+          source = { registry = "https://pypi.org/simple" }
+        LOCK
+      end
+
+      it "treats optional-dependencies on the root as direct/runtime" do
+        resolved = grapher.resolved_dependencies
+
+        boto3 = resolved.fetch("pkg:pypi/boto3@1.42.69")
+        expect(boto3.direct).to be(true)
+        expect(boto3.runtime).to be(true)
+
+        google_auth = resolved.fetch("pkg:pypi/google-auth@2.49.1")
+        expect(google_auth.direct).to be(true)
+        expect(google_auth.runtime).to be(true)
+      end
+    end
+
+    context "when a transitive package has optional-dependencies or dev-dependencies" do
+      # Mirrors uv's `create_dependencies` which chains a package's
+      # `dependencies`, `optional-dependencies`, and `dev-dependencies` when
+      # building the SBOM dependency graph edges.
+      let(:uv_lock_content) do
+        <<~LOCK
+          version = 1
+          requires-python = ">=3.12"
+
+          [[package]]
+          name = "project"
+          version = "0.1.0"
+          source = { virtual = "." }
+          dependencies = [
+              { name = "django" },
+          ]
+
+          [[package]]
+          name = "django"
+          version = "5.0.0"
+          source = { registry = "https://pypi.org/simple" }
+          dependencies = [
+              { name = "sqlparse" },
+          ]
+
+          [package.optional-dependencies]
+          argon2 = [
+              { name = "argon2-cffi" },
+          ]
+
+          [package.dev-dependencies]
+          test = [
+              { name = "pytest" },
+          ]
+
+          [[package]]
+          name = "sqlparse"
+          version = "0.5.0"
+          source = { registry = "https://pypi.org/simple" }
+
+          [[package]]
+          name = "argon2-cffi"
+          version = "23.1.0"
+          source = { registry = "https://pypi.org/simple" }
+
+          [[package]]
+          name = "pytest"
+          version = "8.0.0"
+          source = { registry = "https://pypi.org/simple" }
+        LOCK
+      end
+
+      it "records optional and dev edges from the transitive package" do
+        resolved = grapher.resolved_dependencies
+
+        django = resolved.fetch("pkg:pypi/django@5.0.0")
+        expect(django.dependencies).to contain_exactly(
+          "pkg:pypi/sqlparse@0.5.0",
+          "pkg:pypi/argon2-cffi@23.1.0",
+          "pkg:pypi/pytest@8.0.0"
+        )
+      end
     end
 
     context "when [manifest] members lists workspace members explicitly" do
