@@ -100,6 +100,8 @@ Sorbet/ForbidTAnyWithNil:
   Enabled: true
 Sorbet/ForbidTUnsafe:
   Enabled: true
+Sorbet/ForbidTUntyped:
+  Enabled: true
 Sorbet/TrueSigil:
   Enabled: true
   Exclude:
