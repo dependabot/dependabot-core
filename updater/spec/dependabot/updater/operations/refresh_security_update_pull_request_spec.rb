@@ -227,7 +227,9 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
         allow(job).to receive_messages(
           allowed_update?: true,
           dependencies: ["dummy-pkg-a"],
-          security_advisories: [{ "dependency-name" => "dummy-pkg-a" }]
+          security_advisories: [
+            Dependabot::Job::SecurityAdvisoryEntry.from_hash({ "dependency-name" => "dummy-pkg-a" })
+          ]
         )
       end
 
@@ -302,7 +304,9 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
         )
         allow(job).to receive_messages(
           allowed_update?: true,
-          security_advisories: [{ "dependency-name" => "dummy-pkg-a" }]
+          security_advisories: [
+            Dependabot::Job::SecurityAdvisoryEntry.from_hash({ "dependency-name" => "dummy-pkg-a" })
+          ]
         )
       end
 
@@ -332,7 +336,9 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
         )
         allow(job).to receive_messages(
           allowed_update?: true,
-          security_advisories: [{ "dependency-name" => "dummy-pkg-a" }]
+          security_advisories: [
+            Dependabot::Job::SecurityAdvisoryEntry.from_hash({ "dependency-name" => "dummy-pkg-a" })
+          ]
         )
       end
 
@@ -362,7 +368,9 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
         )
         allow(job).to receive_messages(
           allowed_update?: true,
-          security_advisories: [{ "dependency-name" => "Dummy-Pkg-A" }]
+          security_advisories: [
+            Dependabot::Job::SecurityAdvisoryEntry.from_hash({ "dependency-name" => "Dummy-Pkg-A" })
+          ]
         )
       end
 
