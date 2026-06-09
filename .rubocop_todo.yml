@@ -228,11 +228,6 @@ RSpec/VerifiedDoubles:
     - "updater/spec/dependabot/sentry/sentry_context_processor_spec.rb"
     - "updater/spec/dependabot/update_files_command_spec.rb"
 
-# Offense count: 102
-# This cop supports unsafe autocorrection (--autocorrect-all).
-Sorbet/BlockMethodDefinition:
-  Enabled: false
-
 # Offense count: 2
 # This cop supports unsafe autocorrection (--autocorrect-all).
 Style/HashSlice:
