@@ -92,6 +92,12 @@ RSpec:
 RSpec/IndexedLet:
   Enabled: false
 
+Sorbet/BlockMethodDefinition:
+  Enabled: true
+  Exclude:
+    - "**/spec/**/*"
+Sorbet/ForbidTAnyWithNil:
+  Enabled: true
 Sorbet/ForbidTUnsafe:
   Enabled: true
 Sorbet/TrueSigil:
