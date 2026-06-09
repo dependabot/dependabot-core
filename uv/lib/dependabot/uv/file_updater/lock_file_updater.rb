@@ -482,27 +482,34 @@ module Dependabot
         # themselves and for dry-run.
         sig { returns(T::Hash[String, String]) }
         def pyproject_index_env_vars
-          env_vars = {}
+          python_index_creds = credentials.select { |cred| cred["type"] == "python_index" }
+          python_index_creds.each_with_object(T.let({}, T::Hash[String, String])) do |cred, env_vars|
+            env_vars.merge!(index_auth_env_vars_for(cred))
+          end
+        end
 
-          matched_credentials = credentials
-                                .select { |cred| cred["type"] == "python_index" }
-                                .filter_map do |cred|
-                                  index_name = find_index_name_for_credential(cred)
-                                  [cred, index_name] if index_name
-                                end
+        sig { params(cred: Dependabot::Credential).returns(T::Hash[String, String]) }
+        def index_auth_env_vars_for(cred)
+          env_vars = T.let({}, T::Hash[String, String])
+          index_name = find_index_name_for_credential(cred)
 
-          matched_credentials.each do |cred, index_name|
-            env_name = index_name.upcase.gsub(/[^A-Z0-9]/, "_")
-
-            env_vars["UV_INDEX_#{env_name}_USERNAME"] = cred["username"] if cred["username"]
-
-            if cred["password"]
-              env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["password"]
-            elsif cred["token"]
-              env_vars["UV_INDEX_#{env_name}_PASSWORD"] = cred["token"]
-            end
+          unless index_name
+            Dependabot.logger.debug(
+              "python_index credential did not match a [[tool.uv.index]] entry; skipping UV_INDEX_* env vars"
+            )
+            return env_vars
           end
 
+          env_name = index_name.upcase.gsub(/[^A-Z0-9]/, "_")
+          username = cred["username"]
+          password = cred["password"] || cred["token"]
+
+          env_vars["UV_INDEX_#{env_name}_USERNAME"] = username if username
+          env_vars["UV_INDEX_#{env_name}_PASSWORD"] = password if password
+
+          return env_vars unless username || password
+
+          Dependabot.logger.debug("Configured uv auth env vars for a matched [[tool.uv.index]] entry")
           env_vars
         end
 
