@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "base64"
 require "shellwords"
 require "pathname"
 
