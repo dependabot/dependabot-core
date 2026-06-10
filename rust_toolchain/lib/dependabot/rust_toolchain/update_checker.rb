@@ -34,7 +34,7 @@ module Dependabot
         updated_reqs = dependency.requirements.map do |requirement|
           {
             file: requirement[:file],
-            requirement: latest_version,
+            requirement: latest_version&.to_s,
             groups: requirement[:groups],
             source: requirement[:source]
           }

@@ -66,7 +66,7 @@ module SilentPackageManager
     sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
     def updated_requirements
       updated = dependency.requirements.map do |req|
-        req.merge(requirement: preferred_resolvable_version)
+        req.merge(requirement: preferred_resolvable_version&.to_s)
       end
       wrap_requirements(updated)
     end

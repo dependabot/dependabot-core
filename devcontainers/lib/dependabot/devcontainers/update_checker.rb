@@ -41,7 +41,7 @@ module Dependabot
           ).last
           {
             file: requirement[:file],
-            requirement: updated_requirement,
+            requirement: updated_requirement&.to_s,
             groups: requirement[:groups],
             source: requirement[:source]
           }
