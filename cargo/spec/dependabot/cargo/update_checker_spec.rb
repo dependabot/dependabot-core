@@ -450,14 +450,15 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           requirements: requirements,
           updated_source: nil,
           target_version: "0.1.40",
-          update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
+          update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary
         )
         .and_call_original
+      # "0.1.12" (caret) already allows 0.1.40, so the requirement is left as-is.
       expect(checker.updated_requirements)
         .to eq(
           [{
             file: "Cargo.toml",
-            requirement: "0.1.40",
+            requirement: "0.1.12",
             groups: [],
             source: nil
           }]
@@ -483,14 +484,15 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
             requirements: requirements,
             updated_source: nil,
             target_version: "0.1.39",
-            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary
           )
           .and_call_original
+        # "0.1.12" already allows the 0.1.39 fix, so only the lockfile changes.
         expect(checker.updated_requirements)
           .to eq(
             [{
               file: "Cargo.toml",
-              requirement: "0.1.39",
+              requirement: "0.1.12",
               groups: [],
               source: nil
             }]
@@ -508,6 +510,39 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
       let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
       it { is_expected.to be(false) }
+    end
+  end
+
+  describe "#requirements_update_strategy" do
+    subject(:strategy) { checker.requirements_update_strategy }
+
+    context "with no explicit strategy and a lockfile present" do
+      it "defaults to BumpVersionsIfNecessary" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary)
+      end
+    end
+
+    context "with no explicit strategy and no lockfile" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "Cargo.toml",
+            content: fixture("manifests", manifest_fixture_name)
+          )
+        ]
+      end
+
+      it "defaults to BumpVersionsIfNecessary" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary)
+      end
+    end
+
+    context "when an explicit strategy is passed" do
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+
+      it "honours the explicit strategy" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::LockfileOnly)
+      end
     end
   end
 
