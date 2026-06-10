@@ -44,7 +44,12 @@ module Dependabot
         fetched_files = []
         fetched_files += correctly_encoded_workflow_files
 
-        return fetched_files if fetched_files.any?
+        if fetched_files.any?
+          # The lockfile is additive: it is only fetched alongside workflow files
+          # and never activates the ecosystem on its own.
+          fetched_files += [actions_lockfile].compact
+          return fetched_files
+        end
 
         if incorrectly_encoded_workflow_files.none?
           expected_paths =
@@ -67,6 +72,15 @@ module Dependabot
       end
 
       private
+
+      # Fetches `.github/workflows/actions.lock` when present. Path is relative to the
+      # configured directory: under .github/workflows at repo root, or a sibling when
+      # the directory is already a workflows folder.
+      sig { returns(T.nilable(DependencyFile)) }
+      def actions_lockfile
+        path = directory == "/" ? LOCKFILE_PATH : LOCKFILE_NAME
+        fetch_file_if_present(path)
+      end
 
       sig { returns(T::Array[DependencyFile]) }
       def workflow_files

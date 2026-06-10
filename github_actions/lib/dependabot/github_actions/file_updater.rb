@@ -7,6 +7,7 @@ require "dependabot/errors"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/github_actions/constants"
+require "dependabot/github_actions/lockfile"
 
 module Dependabot
   module GithubActions
@@ -15,18 +16,17 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
-        updated_files = []
+        # Deduplicate by file name so an engine-rewritten workflow supersedes the
+        # regex-rewritten one rather than producing two entries for the same path.
+        by_name = T.let({}, T::Hash[String, Dependabot::DependencyFile])
 
-        dependency_files.each do |file|
-          next unless requirement_changed?(file, dependency)
-
-          updated_files <<
-            updated_file(
-              file: file,
-              content: updated_workflow_file_content(file)
-            )
+        changed_workflow_files.each do |file|
+          by_name[file.name] = updated_file(file: file, content: updated_workflow_file_content(file))
         end
 
+        relocked_files.each { |file| by_name[file.name] = file }
+
+        updated_files = by_name.values
         updated_files.reject! { |f| dependency_files.include?(f) }
         raise "No files changed!" if updated_files.none?
 
@@ -47,6 +47,97 @@ module Dependabot
         return if dependency_files.any?
 
         raise "No workflow files!"
+      end
+
+      # Workflow files (everything except the lockfile) whose requirement changed.
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def changed_workflow_files
+        dependency_files
+          .reject { |f| lockfile?(f) }
+          .select { |f| requirement_changed?(f, dependency) }
+      end
+
+      # When the repo has an `actions.lock` authoritative for one or more changed
+      # workflows, regenerate it through the gh-actions-pin engine. Lock keys and
+      # onboarding comparisons are repo-relative paths, independent of the Dependabot
+      # `directory`. Workflows absent from the lock (and lockless repos) never reach
+      # here, preserving today's regex-only behavior.
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def relocked_files
+        lock = lockfile
+        reader = lockfile_reader
+        return [] unless lock && reader
+
+        changed_onboarded = changed_workflow_files.select { |f| reader.onboarded?(repo_relative_path(f)) }
+        return [] if changed_onboarded.empty?
+
+        # Gate only once the lock is authoritative for a workflow we're changing, so an
+        # incompatible/malformed lock over untouched workflows never blocks a legacy update.
+        Lockfile::VersionGate.assert_supported!(reader.version)
+        reader.validate_dependency_entries!
+
+        # Feed the engine the full onboarded closure with Dependabot's chosen refs
+        # written in; `check` re-pins the lock to match. The lock is the engine's sole
+        # output; Dependabot owns the workflow YAML (the regex path).
+        result = Lockfile::Engine.build(credentials).relock(
+          workflow_files: rewritten_onboarded_workflow_files(reader),
+          lockfile: lock
+        )
+
+        [updated_file(file: lock, content: result.lockfile_content)]
+      end
+
+      # The onboarded closure as the engine should see it: every workflow the lock
+      # tracks, with bumped refs applied to changed ones and the rest left verbatim.
+      sig { params(reader: Lockfile::Reader).returns(T::Array[Dependabot::DependencyFile]) }
+      def rewritten_onboarded_workflow_files(reader)
+        changed = changed_workflow_files
+        onboarded_workflow_files(reader).map do |file|
+          next file unless changed.include?(file)
+
+          DependencyFile.new(
+            name: file.name,
+            content: updated_workflow_file_content(file),
+            directory: file.directory,
+            type: file.type,
+            support_file: file.support_file?
+          )
+        end
+      end
+
+      # All workflow files the lock is authoritative for (changed or not).
+      sig { params(reader: Lockfile::Reader).returns(T::Array[Dependabot::DependencyFile]) }
+      def onboarded_workflow_files(reader)
+        dependency_files
+          .reject { |f| lockfile?(f) }
+          .select { |f| reader.onboarded?(repo_relative_path(f)) }
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def lockfile
+        dependency_files.find { |f| lockfile?(f) }
+      end
+
+      sig { returns(T.nilable(Lockfile::Reader)) }
+      def lockfile_reader
+        return @lockfile_reader if defined?(@lockfile_reader)
+
+        @lockfile_reader = T.let(
+          Lockfile::Reader.from_files(dependency_files),
+          T.nilable(Lockfile::Reader)
+        )
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
+      def lockfile?(file)
+        repo_relative_path(file) == LOCKFILE_PATH
+      end
+
+      # Repo-relative path (no leading slash), independent of the configured
+      # Dependabot directory. This is the canonical form lock keys use.
+      sig { params(file: Dependabot::DependencyFile).returns(String) }
+      def repo_relative_path(file)
+        file.path.delete_prefix("/")
       end
 
       # rubocop:disable Metrics/AbcSize
