@@ -43,6 +43,7 @@ module Dependabot
       if @results.empty?
         # Ensure we write an empty file even if no summary is required
         File.write(path, "")
+        Dependabot.logger.debug("Workflow summary blank, empty file written to #{path}")
         return
       end
 
