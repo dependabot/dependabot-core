@@ -320,6 +320,9 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def fetch_requirement_files_from_dirs
+        workspace_paths = workspace_fetcher.workspace_member_paths
+        return workspace_paths.uniq.flat_map { |path| fetch_requirement_files_from_path(path) } unless workspace_paths.empty?
+
         repo_contents
           .select { |f| T.unsafe(f).type == "dir" }
           .flat_map { |dir| req_files_for_dir(dir) }

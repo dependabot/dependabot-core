@@ -1117,6 +1117,44 @@ RSpec.describe Dependabot::Uv::FileFetcher do
         workspace_file = file_fetcher_instance.files.find { |f| f.name == "packages/my-package/pyproject.toml" }
         expect(workspace_file&.support_file?).to be(true)
       end
+
+      context "when a non-workspace top-level requirements file exists" do
+        before do
+          stub_request(:get, url + "?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: [
+                { name: "pyproject.toml", path: "pyproject.toml", type: "file", size: 100 },
+                { name: "packages", path: "packages", type: "dir", size: 0 },
+                { name: "academy", path: "academy", type: "dir", size: 0 }
+              ].to_json,
+              headers: { "content-type" => "application/json" }
+            )
+
+          stub_request(:get, url + "academy?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: [
+                { name: "requirements.txt", path: "academy/requirements.txt", type: "file", size: 16 }
+              ].to_json,
+              headers: { "content-type" => "application/json" }
+            )
+
+          stub_request(:get, url + "academy/requirements.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "requirements_content.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "does not fetch requirements files from non-workspace directories" do
+          expect(file_fetcher_instance.files.map(&:name)).not_to include("academy/requirements.txt")
+        end
+      end
     end
 
     context "with hatch version source path" do

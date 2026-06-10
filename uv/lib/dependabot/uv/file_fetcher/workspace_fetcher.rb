@@ -40,6 +40,16 @@ module Dependabot
           end
         end
 
+        sig { returns(T::Array[String]) }
+        def workspace_member_paths
+          return [] unless @pyproject
+
+          members = parsed_pyproject.dig("tool", "uv", "workspace", "members")
+          return [] unless members.is_a?(Array)
+
+          members.grep(String).flat_map { |pattern| expand_workspace_pattern(pattern) }
+        end
+
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def version_source_files
           return [] unless @pyproject
@@ -244,16 +254,6 @@ module Dependabot
         def path_within_repo?(path)
           cleaned = clean_path(path)
           !cleaned.start_with?("../", "/")
-        end
-
-        sig { returns(T::Array[String]) }
-        def workspace_member_paths
-          return [] unless @pyproject
-
-          members = parsed_pyproject.dig("tool", "uv", "workspace", "members")
-          return [] unless members.is_a?(Array)
-
-          members.grep(String).flat_map { |pattern| expand_workspace_pattern(pattern) }
         end
 
         sig { params(pattern: String).returns(T::Array[String]) }
