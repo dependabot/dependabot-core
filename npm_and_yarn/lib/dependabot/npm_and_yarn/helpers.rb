@@ -634,6 +634,11 @@ module Dependabot
       def self.corepack_supported_package_manager?(name)
         SUPPORTED_COREPACK_PACKAGE_MANAGERS.include?(name)
       end
+
+      sig { params(scope: String).returns(String) }
+      def self.normalize_npm_scope(scope)
+        scope.start_with?("@") ? scope : "@#{scope}"
+      end
     end
   end
 end

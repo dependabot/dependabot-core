@@ -469,7 +469,13 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       perform_job
 
       job_instance = job.send(:job)
-      expect(job_instance.blocked_versions).to eq(blocked_versions)
+      expect(job_instance.blocked_versions).to contain_exactly(
+        an_object_having_attributes(
+          dependency_name: "rails",
+          version_requirement: "= 7.0.0",
+          reason: "vulnerability"
+        )
+      )
     end
 
     context "when the experiment is enabled via the job definition" do
@@ -496,7 +502,13 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         perform_job
 
         job_instance = job.send(:job)
-        expect(job_instance.blocked_versions).to eq(blocked_versions)
+        expect(job_instance.blocked_versions).to contain_exactly(
+          an_object_having_attributes(
+            dependency_name: "rails",
+            version_requirement: "= 7.0.0",
+            reason: "vulnerability"
+          )
+        )
       end
     end
 

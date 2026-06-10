@@ -138,7 +138,7 @@ module Dependabot
     # This method writes the information into a collection we can use to generate a summary markdown file in actions
     sig { params(directory: String, status: String, details: String).void }
     def record_workflow_result(directory:, status:, details:)
-      return unless Experiments.enabled?(:workflow_job_summaries)
+      return unless Experiments.enabled?(:workflow_job_summary)
 
       workflow_summary.record_result(directory: directory, status: status, details: details)
     end
@@ -173,11 +173,11 @@ module Dependabot
         ErrorAttributes::CLASS => error.class.to_s,
         ErrorAttributes::MESSAGE => error.message,
         ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
-        ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? T.unsafe(error).sentry_context[:fingerprint] : nil, # rubocop:disable Layout/LineLength
+        ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? T.cast(error, Dependabot::HasSentryContext).sentry_context[:fingerprint] : nil, # rubocop:disable Layout/LineLength
         ErrorAttributes::PACKAGE_MANAGER => job&.package_manager,
         ErrorAttributes::JOB_ID => job&.id,
         ErrorAttributes::DEPENDENCIES => dependency&.name || job&.dependencies,
-        ErrorAttributes::DEPENDENCY_GROUPS => dependency_group&.name || job&.dependency_groups,
+        ErrorAttributes::DEPENDENCY_GROUPS => dependency_group&.name || job_dependency_groups(job),
         ErrorAttributes::SECURITY_UPDATE => job&.security_updates_only?
       }.compact
       record_update_job_unknown_error(error_type: "unknown_error", error_details: error_details)
@@ -221,11 +221,16 @@ module Dependabot
     sig { returns(Dependabot::ApiClient) }
     attr_reader :client
 
+    sig { params(job: T.untyped).returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+    def job_dependency_groups(job)
+      job&.dependency_groups&.map(&:to_h)
+    end
+
     sig { returns(T.nilable(Terminal::Table)) }
     def pull_request_summary
       return unless pull_requests.any?
 
-      T.unsafe(Terminal::Table).new do |t|
+      Terminal::Table.new do |t|
         t.title = "Changes to Dependabot Pull Requests"
         t.rows = pull_requests.map { |deps, action| [action, truncate(deps)] }
       end
@@ -255,7 +260,7 @@ module Dependabot
         end
         return if job_errors.none?
 
-        T.unsafe(Terminal::Table).new do |t|
+        Terminal::Table.new do |t|
           t.title = "Errors"
           t.headings = %w(Type Details)
           t.rows = job_errors
@@ -266,7 +271,7 @@ module Dependabot
         end
         return if job_error_types.none?
 
-        T.unsafe(Terminal::Table).new do |t|
+        Terminal::Table.new do |t|
           t.title = "Errors"
           t.rows = job_error_types
         end
@@ -290,7 +295,7 @@ module Dependabot
         end
         return if dependency_errors.none?
 
-        T.unsafe(Terminal::Table).new do |t|
+        Terminal::Table.new do |t|
           t.title = "Dependencies failed to update"
           t.headings = ["Dependency", "Error Type", "Error Details"]
           t.rows = dependency_errors
@@ -301,7 +306,7 @@ module Dependabot
         end
         return if dependency_errors.none?
 
-        T.unsafe(Terminal::Table).new do |t|
+        Terminal::Table.new do |t|
           t.title = "Dependencies failed to update"
           t.rows = dependency_errors
         end

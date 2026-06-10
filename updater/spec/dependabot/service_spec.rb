@@ -773,9 +773,9 @@ RSpec.describe Dependabot::Service do
   end
 
   describe "#record_workflow_result" do
-    context "when workflow_job_summaries experiment is enabled" do
+    context "when workflow_job_summary experiment is enabled" do
       before do
-        Dependabot::Experiments.register(:workflow_job_summaries, true)
+        Dependabot::Experiments.register(:workflow_job_summary, true)
       end
 
       it "delegates to the workflow_summary instance" do
@@ -786,9 +786,9 @@ RSpec.describe Dependabot::Service do
       end
     end
 
-    context "when workflow_job_summaries experiment is disabled" do
+    context "when workflow_job_summary experiment is disabled" do
       before do
-        Dependabot::Experiments.register(:workflow_job_summaries, false)
+        Dependabot::Experiments.register(:workflow_job_summary, false)
       end
 
       it "does not record results" do
