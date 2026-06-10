@@ -854,7 +854,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         allow(Dependabot::Environment).to receive(:github_actions?).and_return(false)
       end
 
-      it "records an error for each directory" do
+      it "records a warning for each directory" do
         expect(service).to receive(:record_update_job_warning).with(
           warn_type: "unexpected_external_code",
           warn_title: "Refusing to execute external code",
@@ -908,7 +908,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         update_graph_processor.run
       end
 
-      it "records an error for each directory" do
+      it "records a warning for each directory" do
         expect(service).to receive(:record_update_job_warning).twice
 
         update_graph_processor.run

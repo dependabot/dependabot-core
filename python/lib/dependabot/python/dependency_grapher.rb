@@ -65,8 +65,8 @@ module Dependabot
       sig { override.void }
       def prepare!
         if poetry_project_without_lockfile?
-          # Generating an ephemeral lockfile requires executing poetry lock, strictly this violates our policy
-          # on refusing to run Python tooling without external code execution so let's fail fast
+          # Generating an ephemeral lockfile requires executing `poetry lock`. Strictly speaking, that violates our
+          # policy of refusing to run Python tooling when external code execution is disallowed, so fail fast.
           raise Dependabot::UnexpectedExternalCode if file_parser.reject_external_code?
 
           Dependabot.logger.info("No poetry.lock found, generating ephemeral lockfile for dependency graphing")
