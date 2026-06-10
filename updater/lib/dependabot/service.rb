@@ -177,7 +177,7 @@ module Dependabot
         ErrorAttributes::PACKAGE_MANAGER => job&.package_manager,
         ErrorAttributes::JOB_ID => job&.id,
         ErrorAttributes::DEPENDENCIES => dependency&.name || job&.dependencies,
-        ErrorAttributes::DEPENDENCY_GROUPS => dependency_group&.name || job&.dependency_groups,
+        ErrorAttributes::DEPENDENCY_GROUPS => dependency_group&.name || job_dependency_groups(job),
         ErrorAttributes::SECURITY_UPDATE => job&.security_updates_only?
       }.compact
       record_update_job_unknown_error(error_type: "unknown_error", error_details: error_details)
@@ -220,6 +220,11 @@ module Dependabot
 
     sig { returns(Dependabot::ApiClient) }
     attr_reader :client
+
+    sig { params(job: T.untyped).returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+    def job_dependency_groups(job)
+      job&.dependency_groups&.map(&:to_h)
+    end
 
     sig { returns(T.nilable(Terminal::Table)) }
     def pull_request_summary
