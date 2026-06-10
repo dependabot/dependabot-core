@@ -6,6 +6,8 @@ require "sorbet-runtime"
 module Dependabot
   module NpmAndYarn
     class RegistryParser
+      # NOTE: Bun has an equivalent implementation in bun/registry_parser.rb.
+      # Keep credential-matching behavior in sync across both ecosystems.
       extend T::Sig
 
       sig { params(resolved_url: String, credentials: T::Array[Dependabot::Credential]).void }

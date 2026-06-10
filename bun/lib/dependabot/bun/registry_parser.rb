@@ -6,6 +6,8 @@ require "sorbet-runtime"
 module Dependabot
   module Bun
     class RegistryParser
+      # NOTE: npm_and_yarn has an equivalent implementation in
+      # npm_and_yarn/registry_parser.rb. Keep both in sync.
       extend T::Sig
 
       sig { params(resolved_url: String, credentials: T::Array[Dependabot::Credential]).void }
