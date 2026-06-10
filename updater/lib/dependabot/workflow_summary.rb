@@ -60,20 +60,15 @@ module Dependabot
       lines << "| Directory | Status | Details |"
       lines << "|-----------|--------|---------|"
 
-      last_directory = T.let("", String)
       @results.sort_by { |r| [r.directory, r.status] }
               .group_by { |r| [r.directory, r.status] }
               .each_value do |results|
-        results.each_with_index do |result, index|
-          sanitized_details = result.details.strip.gsub(/\s*\n\s*/, "<br>")
-          status_icon = status_emoji(result.status)
+        first = T.must(results.first)
+        status_icon = status_emoji(first.status)
+        combined_details = results.map { |r| r.details.strip.gsub(/\s*\n\s*/, "<br>") }
+                                  .join("<br><br>")
 
-          dir_cell = result.directory == last_directory ? "" : "`#{result.directory}`"
-          status_cell = index.zero? ? "#{status_icon} #{result.status.capitalize}" : ""
-
-          lines << "| #{dir_cell} | #{status_cell} | #{sanitized_details} |"
-          last_directory = result.directory
-        end
+        lines << "| `#{first.directory}` | #{status_icon} #{first.status.capitalize} | #{combined_details} |"
       end
 
       lines << ""

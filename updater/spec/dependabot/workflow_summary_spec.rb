@@ -61,7 +61,7 @@ RSpec.describe Dependabot::WorkflowSummary do
       expect(markdown).to include("| `/app` | ❌ Failed | line one<br>line two<br>line three |")
     end
 
-    it "groups multiple results for the same directory and status" do
+    it "groups multiple results for the same directory and status into one row" do
       grouped_summary = described_class.new
       grouped_summary.record_result(directory: "/lib", status: "warning", details: "missing credentials for registry X")
       grouped_summary.record_result(directory: "/lib", status: "warning", details: "stale lockfile detected")
@@ -72,8 +72,9 @@ RSpec.describe Dependabot::WorkflowSummary do
 
       # Sorted by [directory, status]: Failed comes before Warning alphabetically
       expect(markdown).to include("| `/lib` | ❌ Failed | dependency_file_not_resolvable |")
-      expect(markdown).to include("|  | ⚠️ Warning | missing credentials for registry X |")
-      expect(markdown).to include("|  |  | stale lockfile detected |")
+      expect(markdown).to include(
+        "| `/lib` | ⚠️ Warning | missing credentials for registry X<br><br>stale lockfile detected |"
+      )
       expect(markdown).to include("| `/src` | ✅ Ok | 10 dependencies |")
     end
   end
