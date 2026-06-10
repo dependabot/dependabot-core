@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "yaml"
+require "toml-rb"
 require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
@@ -25,7 +26,9 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/hook_language_fetcher"
 
-      CONFIG_FILE_PATTERN = /\.pre-commit(-config)?\.ya?ml$/i
+      # Matches pre-commit's YAML configs as well as prek's TOML config, which
+      # is configuration-compatible once parsed.
+      CONFIG_FILE_PATTERN = %r{\.pre-commit(-config)?\.ya?ml$|(?:^|/)\.?prek\.toml$}i
       ECOSYSTEM = "pre_commit"
 
       LANGUAGE_PARSERS = T.let(
@@ -44,7 +47,7 @@ module Dependabot
       def ecosystem
         @ecosystem ||= T.let(
           Ecosystem.new(
-            name: package_manager_name,
+            name: ECOSYSTEM,
             package_manager: package_manager
           ),
           T.nilable(Ecosystem)
@@ -69,27 +72,40 @@ module Dependabot
         @package_manager ||= T.let(PackageManager.new, T.nilable(Dependabot::PreCommit::PackageManager))
       end
 
-      # The package manager / ecosystem name recorded on parsed dependencies.
-      # Overridden by subclasses (e.g. prek) that reuse this parser.
-      sig { returns(String) }
-      def package_manager_name
-        ECOSYSTEM
-      end
-
-      # The pattern used to select configuration files from the dependency
-      # files. Overridden by subclasses that use a different file format.
-      sig { returns(Regexp) }
-      def config_file_pattern
-        CONFIG_FILE_PATTERN
-      end
-
-      # Parses a config file's raw content into a Hash. Overridden by subclasses
-      # that support other serialization formats (e.g. prek's TOML).
+      # Parses a config file's raw content into a Hash. prek.toml is parsed as
+      # TOML; pre-commit's configs are parsed as YAML. Both produce the same
+      # repo/hook structure.
       sig { params(file: Dependabot::DependencyFile).returns(T.untyped) }
       def load_config(file)
+        if toml?(file)
+          load_toml_config(file)
+        else
+          load_yaml_config(file)
+        end
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T.untyped) }
+      def load_yaml_config(file)
         YAML.safe_load(T.must(file.content), aliases: true)
       rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias => e
         raise Dependabot::DependencyFileNotParseable.new(file.path, e.message)
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T.untyped) }
+      def load_toml_config(file)
+        TomlRB.parse(T.must(file.content))
+      rescue TomlRB::Error => e
+        # TomlRB::Error covers both syntax errors (ParseError) and semantic
+        # errors such as duplicate keys (ValueOverwriteError).
+        raise Dependabot::DependencyFileNotParseable.new(file.path, e.message)
+      end
+
+      # Any .toml dependency file is parsed as TOML; everything else as YAML.
+      # In practice the fetcher's CONFIG_FILE_PATTERN only yields prek.toml /
+      # .prek.toml, which is the sole TOML config format pre-commit supports.
+      sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
+      def toml?(file)
+        file.name.end_with?(".toml")
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(DependencySet) }
@@ -143,7 +159,7 @@ module Dependabot
             },
             metadata: { comment: comment }
           }],
-          package_manager: package_manager_name
+          package_manager: ECOSYSTEM
         )
       end
 
@@ -219,7 +235,7 @@ module Dependabot
                 original_string: dep_string
               }
             }],
-            package_manager: package_manager_name
+            package_manager: ECOSYSTEM
           )
         end
 
@@ -264,6 +280,20 @@ module Dependabot
         ).returns(T.nilable(String))
       end
       def rev_line_comment(file, repo_url)
+        if toml?(file)
+          toml_rev_line_comment(file, repo_url)
+        else
+          yaml_rev_line_comment(file, repo_url)
+        end
+      end
+
+      sig do
+        params(
+          file: Dependabot::DependencyFile,
+          repo_url: String
+        ).returns(T.nilable(String))
+      end
+      def yaml_rev_line_comment(file, repo_url)
         current_repo = T.let(nil, T.nilable(String))
 
         T.must(file.content).each_line do |line|
@@ -279,9 +309,42 @@ module Dependabot
         nil
       end
 
+      # Extracts the trailing comment on a repo's `rev = "..."` line, e.g.
+      # `rev = "<sha>"  # frozen: v4.4.0`. TOML comments are discarded by the
+      # parser, so we scan the raw content like pre-commit does for YAML. The
+      # `repo =` / `rev =` assignments are matched with a leading boundary so
+      # both the `[[repos]]` table form and the inline-table array form
+      # (`repos = [{ repo = "...", rev = "..." }]`) are handled.
+      sig do
+        params(
+          file: Dependabot::DependencyFile,
+          repo_url: String
+        ).returns(T.nilable(String))
+      end
+      def toml_rev_line_comment(file, repo_url)
+        current_repo = T.let(nil, T.nilable(String))
+
+        T.must(file.content).each_line do |line|
+          # A new `[[repos]]` table starts a fresh repo scope; reset so a stray
+          # `rev =` appearing before this table's `repo =` can't be attributed
+          # to the previous table's repo.
+          current_repo = nil if line.match?(/^\s*\[\[\s*repos\s*\]\]/)
+
+          repo_match = line.match(/(?:^|[\s{,])repo\s*=\s*["']([^"']+)["']/)
+          current_repo = repo_match[1] if repo_match
+
+          next unless current_repo == repo_url
+
+          rev_match = line.match(/(?:^|[\s{,])rev\s*=\s*\S+.*?(#.*)$/)
+          return T.must(rev_match[1]).rstrip if rev_match
+        end
+
+        nil
+      end
+
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def pre_commit_config_files
-        dependency_files.select { |f| f.name.match?(config_file_pattern) }
+        dependency_files.select { |f| f.name.match?(CONFIG_FILE_PATTERN) }
       end
 
       sig { override.void }

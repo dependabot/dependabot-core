@@ -49,7 +49,6 @@ Sentry.init do |config|
     npm_and_yarn|
     nuget|
     pre_commit|
-    prek|
     pub|
     python|
     rust_toolchain|
@@ -96,7 +95,6 @@ require "dependabot/nix"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
 require "dependabot/pre_commit"
-require "dependabot/prek"
 require "dependabot/pub"
 require "dependabot/python"
 require "dependabot/rust_toolchain"

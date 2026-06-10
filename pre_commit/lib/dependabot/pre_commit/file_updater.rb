@@ -52,7 +52,7 @@ module Dependabot
         updated_content = T.must(file.content)
 
         updated_requirement_pairs.each do |new_req, old_req|
-          updated_content = apply_requirement_update(updated_content, new_req, old_req)
+          updated_content = apply_requirement_update(updated_content, new_req, old_req, file)
         end
 
         updated_content
@@ -82,16 +82,17 @@ module Dependabot
         params(
           content: String,
           new_req: T::Hash[Symbol, T.untyped],
-          old_req: T::Hash[Symbol, T.untyped]
+          old_req: T::Hash[Symbol, T.untyped],
+          file: Dependabot::DependencyFile
         ).returns(String)
       end
-      def apply_requirement_update(content, new_req, old_req)
+      def apply_requirement_update(content, new_req, old_req, file)
         new_source = T.cast(new_req.fetch(:source), T::Hash[Symbol, T.untyped])
         source_type = T.cast(new_source.fetch(:type), String)
 
         case source_type
         when "git"
-          apply_git_requirement_update(content, new_req, old_req)
+          apply_git_requirement_update(content, new_req, old_req, file)
         when "additional_dependency"
           apply_additional_dependency_update(content, new_req, old_req)
         else
@@ -103,10 +104,11 @@ module Dependabot
         params(
           content: String,
           new_req: T::Hash[Symbol, T.untyped],
-          old_req: T::Hash[Symbol, T.untyped]
+          old_req: T::Hash[Symbol, T.untyped],
+          file: Dependabot::DependencyFile
         ).returns(String)
       end
-      def apply_git_requirement_update(content, new_req, old_req)
+      def apply_git_requirement_update(content, new_req, old_req, file)
         new_source = T.cast(new_req.fetch(:source), T::Hash[Symbol, T.untyped])
         old_source = T.cast(old_req.fetch(:source), T::Hash[Symbol, T.untyped])
         repo_url = T.cast(old_source.fetch(:url), String)
@@ -122,6 +124,7 @@ module Dependabot
           repo_url,
           old_ref,
           new_ref,
+          file,
           old_version: old_version,
           new_version: new_version
         )
@@ -144,6 +147,33 @@ module Dependabot
         replace_additional_dependency_in_content(content, old_string, new_string)
       end
 
+      # Any .toml dependency file is rewritten as TOML; everything else as YAML.
+      # In practice only prek.toml / .prek.toml reach here (the fetcher gates on
+      # CONFIG_FILE_PATTERN), which is the sole TOML config pre-commit supports.
+      sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
+      def toml?(file)
+        file.name.end_with?(".toml")
+      end
+
+      sig do
+        params(
+          content: String,
+          repo_url: String,
+          old_ref: String,
+          new_ref: String,
+          file: Dependabot::DependencyFile,
+          old_version: T.nilable(String),
+          new_version: T.nilable(String)
+        ).returns(String)
+      end
+      def replace_ref_in_content(content, repo_url, old_ref, new_ref, file, old_version: nil, new_version: nil)
+        if toml?(file)
+          replace_ref_in_toml(content, repo_url, old_ref, new_ref, old_version: old_version, new_version: new_version)
+        else
+          replace_ref_in_yaml(content, repo_url, old_ref, new_ref, old_version: old_version, new_version: new_version)
+        end
+      end
+
       sig do
         params(
           content: String,
@@ -154,7 +184,7 @@ module Dependabot
           new_version: T.nilable(String)
         ).returns(String)
       end
-      def replace_ref_in_content(content, repo_url, old_ref, new_ref, old_version: nil, new_version: nil)
+      def replace_ref_in_yaml(content, repo_url, old_ref, new_ref, old_version: nil, new_version: nil)
         current_repo = T.let(nil, T.nilable(String))
 
         updated_lines = content.lines.map do |line|
@@ -172,6 +202,68 @@ module Dependabot
         end
 
         updated_lines.join
+      end
+
+      # Matches a `repo = "..."` assignment anywhere a TOML key can begin: at the
+      # start of a line (the `[[repos]]` table form) or after a `{`/`,`/space (the
+      # inline-table array form). The leading boundary prevents matching the
+      # `repos = [` array key.
+      REPO_LINE_PATTERN = /(?:^|[\s{,])repo\s*=\s*["']([^"']+)["']/
+
+      # A `[[repos]]` array-of-tables header. Used to reset the current-repo
+      # scope so a stray `rev =` before this table's `repo =` is not attributed
+      # to the previous table.
+      REPOS_TABLE_HEADER = /^\s*\[\[\s*repos\s*\]\]/
+
+      # Tracks the current repo (handling both the multi-line `[[repos]]` table
+      # form and the single-line inline-table form) and rewrites the matching
+      # `rev = "..."` value.
+      sig do
+        params(
+          content: String,
+          repo_url: String,
+          old_ref: String,
+          new_ref: String,
+          old_version: T.nilable(String),
+          new_version: T.nilable(String)
+        ).returns(String)
+      end
+      def replace_ref_in_toml(content, repo_url, old_ref, new_ref, old_version: nil, new_version: nil)
+        current_repo = T.let(nil, T.nilable(String))
+        rev_pattern = rev_value_pattern(old_ref)
+
+        updated_lines = content.lines.map do |line|
+          current_repo = nil if line.match?(REPOS_TABLE_HEADER)
+
+          repo_match = line.match(REPO_LINE_PATTERN)
+          current_repo = repo_match[1] if repo_match
+
+          next line unless current_repo == repo_url
+          next line unless line.match?(rev_pattern)
+
+          updated_line = line.sub(rev_pattern) do
+            m = T.must(Regexp.last_match)
+            "#{m[:lead]}#{m[:open]}#{new_ref}#{m[:close]}"
+          end
+          update_version_comment(updated_line, old_version, new_version)
+        end
+
+        updated_lines.join
+      end
+
+      # Builds a regex matching exactly the `rev = "<old_ref>"` value for the
+      # given old_ref. The trailing lookahead anchors the value so an old_ref
+      # that is a prefix of a longer on-file rev (e.g. "v4.4" vs "v4.4.0") does
+      # not partially rewrite it.
+      sig { params(old_ref: String).returns(Regexp) }
+      def rev_value_pattern(old_ref)
+        /
+          (?<lead>(?:^|[\s{,])rev\s*=\s*)  # the rev key, with its preceding boundary
+          (?<open>["']?)                   # optional opening quote
+          #{Regexp.escape(old_ref)}        # the exact old ref
+          (?<close>["']?)                  # optional closing quote
+          (?=[\s,}\#]|$)                   # must terminate the value
+        /x
       end
 
       sig do

@@ -86,7 +86,6 @@ module Dependabot
           "opentofu" => "opentofu",
           "pip" => "pip",
           "pre-commit" => "pre_commit",
-          "prek" => "prek",
           "pub" => "pub",
           "rust-toolchain" => "rust_toolchain",
           "sbt" => "sbt",

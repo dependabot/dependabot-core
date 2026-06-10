@@ -1,4 +1,0 @@
-/.bundle/*
-!.bundle/config
-/tmp
-/dependabot-*.gem
