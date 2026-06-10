@@ -60,9 +60,9 @@ module Dependabot
       lines << "| Directory | Status | Details |"
       lines << "|-----------|--------|---------|"
 
-      @results.sort_by { |r| [r.directory, r.status] }
-              .group_by { |r| [r.directory, r.status] }
-              .each_value do |results|
+      @results.group_by { |r| [r.directory, r.status] }
+              .sort_by { |key, _| key }
+              .each do |_, results|
         first = T.must(results.first)
         status_icon = status_emoji(first.status)
         combined_details = results.map { |r| r.details.strip.gsub(/\s*\n\s*/, "<br>") }
