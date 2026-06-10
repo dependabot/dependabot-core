@@ -47,11 +47,12 @@ module Dependabot
         nil
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        dependency.requirements.map do |req|
+        updated = dependency.requirements.map do |req|
           req.merge(requirement: latest_version)
         end
+        wrap_requirements(updated)
       end
 
       private

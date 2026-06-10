@@ -63,11 +63,12 @@ module SilentPackageManager
       latest_version
     end
 
-    sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+    sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
     def updated_requirements
-      dependency.requirements.map do |req|
+      updated = dependency.requirements.map do |req|
         req.merge(requirement: preferred_resolvable_version)
       end
+      wrap_requirements(updated)
     end
 
     private

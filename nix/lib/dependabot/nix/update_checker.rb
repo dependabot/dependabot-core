@@ -36,12 +36,12 @@ module Dependabot
         latest_version
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         if ref_pinned_to_version_tag?
-          updated_requirements_for_tag
+          wrap_requirements(updated_requirements_for_tag)
         elsif ref_is_versioned_branch?
-          updated_requirements_for_versioned_branch
+          wrap_requirements(updated_requirements_for_versioned_branch)
         else
           dependency.requirements
         end
