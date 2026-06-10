@@ -2,7 +2,9 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "base64"
 require "shellwords"
+require "pathname"
 
 require "dependabot/gradle/distributions"
 
@@ -39,15 +41,12 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/MethodLength
-        # rubocop:disable Metrics/PerceivedComplexity
         sig { params(build_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
         def update_files(build_file)
           # We only run this updater if it's a distribution dependency
           return [] unless Distributions.distribution_requirements?(dependency.requirements)
 
-          local_files = dependency_files.select do |file|
-            file.directory == build_file.directory && target_file?(file)
-          end
+          local_files = local_wrapper_files(build_file)
 
           # If we don't have any files in the build files don't generate one
           return [] unless local_files.any?
@@ -107,13 +106,47 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/MethodLength
-        # rubocop:enable Metrics/PerceivedComplexity
 
         private
 
         sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
         def target_file?(file)
           @target_files.any? { |r| "/#{file.name}".end_with?(r) }
+        end
+
+        sig { params(build_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
+        def local_wrapper_files(build_file)
+          wrapper_root = wrapper_root_for(build_file)
+
+          dependency_files.select do |file|
+            file.directory == build_file.directory && target_file_for_wrapper_root?(file, wrapper_root)
+          end
+        end
+
+        sig { params(file: Dependabot::DependencyFile, wrapper_root: String).returns(T::Boolean) }
+        def target_file_for_wrapper_root?(file, wrapper_root)
+          @target_files.any? do |target_file|
+            target_path = target_file.delete_prefix("/")
+            expected_path = wrapper_root.empty? ? target_path : File.join(wrapper_root, target_path)
+            file_path(file) == Pathname.new(expected_path).cleanpath.to_path
+          end
+        end
+
+        sig { params(build_file: Dependabot::DependencyFile).returns(String) }
+        def wrapper_root_for(build_file)
+          path = file_path(build_file)
+          root = if target_file?(build_file)
+                   File.dirname(path, 3)
+                 else
+                   File.dirname(path)
+                 end
+
+          root == "." ? "" : root
+        end
+
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
+        def file_path(file)
+          Pathname.new(file.name).cleanpath.to_path
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -191,7 +224,11 @@ module Dependabot
         end
         def update_files_content(temp_dir, local_files, updated_files)
           local_files.each do |file|
-            f_content = File.read(File.join(temp_dir, file.directory, file.name))
+            f_content = if file.binary?
+                          File.binread(File.join(temp_dir, file.directory, file.name))
+                        else
+                          File.read(File.join(temp_dir, file.directory, file.name))
+                        end
             tmp_file = file.dup
             tmp_file.content = tmp_file.binary? ? Base64.encode64(f_content) : f_content
             updated_files[T.must(updated_files.index(file))] = tmp_file
@@ -203,7 +240,7 @@ module Dependabot
           files_to_populate.each do |file|
             in_path_name = File.join(temp_dir, file.directory, file.name)
             FileUtils.mkdir_p(File.dirname(in_path_name))
-            File.write(in_path_name, file.content)
+            File.binwrite(in_path_name, file.decoded_content)
           end
         end
 
