@@ -117,8 +117,10 @@ RSpec.describe Dependabot::Maven::FileUpdater do
 
       it "returns the updated .target file" do
         expect(updated_files.map(&:name)).to include("releng/myproject.target")
-        expect(updated_files.find { |f| f.name == "releng/myproject.target" }&.content)
-          .to include("<version>2.22.0</version>")
+        updated_target_file = updated_files.find { |f| f.name == "releng/myproject.target" }
+
+        expect(updated_target_file&.content).to include("<version>2.22.0</version>")
+        expect(updated_target_file&.content).not_to include("<version>2.11.0</version>")
       end
     end
 

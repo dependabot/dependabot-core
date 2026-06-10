@@ -20,8 +20,8 @@ module Dependabot
         updated_files = T.let(dependency_files.dup, T::Array[Dependabot::DependencyFile])
 
         # Loop through each of the changed requirements, applying changes to
-        # all pom and extensions files for that change. Note that the logic
-        # is different here to other package managers because Maven has property
+        # all Maven dependency files for that change. Note that the logic is
+        # different here to other package managers because Maven has property
         # inheritance across files
         dependencies.each do |dependency|
           updated_files = update_files_for_dependency(
