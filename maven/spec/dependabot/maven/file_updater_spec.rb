@@ -87,6 +87,43 @@ RSpec.describe Dependabot::Maven::FileUpdater do
 
     its(:length) { is_expected.to eq(1) }
 
+    context "when updating a dependency declared in a .target file" do
+      let(:target_body) { fixture("target-files", "example.target") }
+      let(:target_file) do
+        Dependabot::DependencyFile.new(content: target_body, name: "releng/myproject.target")
+      end
+      let(:dependency_files) { [pom, target_file] }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "commons-io:commons-io",
+          version: "2.22.0",
+          requirements: [{
+            file: "releng/myproject.target",
+            requirement: "2.22.0",
+            groups: [],
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          previous_requirements: [{
+            file: "releng/myproject.target",
+            requirement: "2.11.0",
+            groups: [],
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          package_manager: "maven"
+        )
+      end
+
+      it "returns the updated .target file" do
+        expect(updated_files.map(&:name)).to include("releng/myproject.target")
+        updated_target_file = updated_files.find { |f| f.name == "releng/myproject.target" }
+
+        expect(updated_target_file&.content).to include("<version>2.22.0</version>")
+        expect(updated_target_file&.content).not_to include("<version>2.11.0</version>")
+      end
+    end
+
     describe "the updated pom file" do
       subject(:updated_pom_file) do
         updated_files.find { |f| f.name == "pom.xml" }

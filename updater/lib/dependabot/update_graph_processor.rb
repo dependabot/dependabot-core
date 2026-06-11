@@ -122,9 +122,12 @@ module Dependabot
       # We should record this failure and allow other directories in the job to continue, as they may
       # not be misconfigured.
       Dependabot.logger.info("Skipping directory #{directory} — #{UNEXPECTED_EXTERNAL_CODE_MESSAGE}")
-      service.record_update_job_error(
-        error_type: "unexpected_external_code",
-        error_details: { message: "Cannot process directory #{directory} without external code execution" }
+
+      # Emit a warning rather than an error since this is a misconfiguration the user needs to fix.
+      service.record_update_job_warning(
+        warn_type: "unexpected_external_code",
+        warn_title: "Refusing to execute external code",
+        warn_description: "Cannot process directory #{directory} without external code execution"
       )
 
       return unless Dependabot::Environment.github_actions?
