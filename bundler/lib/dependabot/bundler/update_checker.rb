@@ -75,18 +75,20 @@ module Dependabot
         end
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         latest_version_for_req_updater = latest_version_details&.fetch(:version)&.to_s
         latest_resolvable_version_for_req_updater = preferred_resolvable_version_details&.fetch(:version)&.to_s
 
-        RequirementsUpdater.new(
-          requirements: dependency.requirements,
-          update_strategy: T.must(requirements_update_strategy),
-          updated_source: updated_source,
-          latest_version: latest_version_for_req_updater,
-          latest_resolvable_version: latest_resolvable_version_for_req_updater
-        ).updated_requirements
+        wrap_requirements(
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            update_strategy: T.must(requirements_update_strategy),
+            updated_source: updated_source,
+            latest_version: latest_version_for_req_updater,
+            latest_resolvable_version: latest_resolvable_version_for_req_updater
+          ).updated_requirements
+        )
       end
 
       sig { returns(T::Boolean) }

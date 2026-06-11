@@ -37,12 +37,14 @@ module Dependabot
         nil
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        RequirementsUpdater.new(
-          requirements: dependency.requirements,
-          latest_resolvable_version: latest_resolvable_version
-        ).updated_requirements
+        wrap_requirements(
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            latest_resolvable_version: latest_resolvable_version
+          ).updated_requirements
+        )
       end
 
       # Overwrite the base class to allow multi-dependency update PRs for
