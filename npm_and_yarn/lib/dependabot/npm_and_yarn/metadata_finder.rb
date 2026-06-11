@@ -9,12 +9,14 @@ require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/registry_client"
 require "dependabot/npm_and_yarn/package/registry_finder"
+require "dependabot/npm_and_yarn/package/registry_credential_helpers"
 require "dependabot/npm_and_yarn/version"
 
 module Dependabot
   module NpmAndYarn
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
+      include Package::RegistryCredentialHelpers
 
       # Lifecycle scripts that run automatically during package installation.
       # These are security-relevant because they execute with user privileges.
@@ -334,22 +336,7 @@ module Dependabot
         { "Authorization" => "Bearer #{auth_token}" }
       end
 
-      sig { returns(T.nilable(String)) }
-      def configured_registry_from_credentials
-        # Look for a credential that replaces the base registry (global registry replacement)
-        replaces_base_cred = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
-        return normalize_registry_url(replaces_base_cred["registry"]) if replaces_base_cred
 
-        nil
-      end
-
-      sig { params(registry: T.nilable(String)).returns(T.nilable(String)) }
-      def normalize_registry_url(registry)
-        return nil unless registry
-        return registry if registry.start_with?("http")
-
-        "https://#{registry}"
-      end
 
       sig { returns(String) }
       def dependency_registry
