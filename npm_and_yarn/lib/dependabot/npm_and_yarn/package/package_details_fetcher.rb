@@ -3,7 +3,9 @@
 
 require "json"
 require "excon"
+require "base64"
 require "time"
+require "uri"
 require "dependabot/package/package_release"
 require "dependabot/package/package_details"
 require "dependabot/npm_and_yarn/package/registry_finder"
@@ -96,6 +98,11 @@ module Dependabot
 
         sig { returns(String) }
         def dependency_url
+          if (configured_registry = configured_registry_from_credentials)
+            escaped_dependency_name = dependency.name.gsub("/", "%2F")
+            return "#{configured_registry}/#{escaped_dependency_name}"
+          end
+
           registry_finder.dependency_url
         end
 
@@ -381,12 +388,61 @@ module Dependabot
 
         sig { returns(T::Hash[String, String]) }
         def registry_auth_headers
+          if (configured_registry = configured_registry_from_credentials)
+            return auth_headers_for_registry(configured_registry)
+          end
+
           registry_finder.auth_headers
         end
 
         sig { returns(String) }
         def dependency_registry
+          if (configured_registry = configured_registry_from_credentials)
+            return configured_registry.sub(%r{^https?://}, "")
+          end
+
           registry_finder.registry
+        end
+
+        sig { returns(T.nilable(String)) }
+        def configured_registry_from_credentials
+          replaces_base_cred = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
+          return unless replaces_base_cred&.fetch("registry", nil)
+
+          normalize_registry_url(T.must(replaces_base_cred["registry"]))
+        end
+
+        sig { params(registry: T.nilable(String)).returns(T.nilable(String)) }
+        def normalize_registry_url(registry)
+          return nil unless registry
+
+          normalized_registry = registry.start_with?("http") ? registry : "https://#{registry}"
+          URI::DEFAULT_PARSER.escape(normalized_registry)&.gsub(%r{/+$}, "")
+        end
+
+        sig { params(registry: String).returns(T::Hash[String, String]) }
+        def auth_headers_for_registry(registry)
+          token = credentials
+                  .select { |cred| cred["type"] == "npm_registry" }
+                  .find { |cred| normalize_registry_url(T.must(cred["registry"])) == registry }
+                  &.fetch("token", nil)
+
+          return {} unless token
+
+          auth_header_for(token)
+        end
+
+        sig { params(token: String).returns(T::Hash[String, String]) }
+        def auth_header_for(token)
+          if token.include?(":")
+            encoded_token = Base64.encode64(token).delete("\n")
+            { "Authorization" => "Basic #{encoded_token}" }
+          elsif Base64.decode64(token).ascii_only? &&
+                Base64.decode64(token).include?(":")
+            { "Authorization" => "Basic #{token.delete("\n")}" }
+          else
+            { "Authorization" => "Bearer #{token}" }
+          end
         end
 
         sig { returns(Package::RegistryFinder) }

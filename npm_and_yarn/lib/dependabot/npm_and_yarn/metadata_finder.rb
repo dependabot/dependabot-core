@@ -310,9 +310,11 @@ module Dependabot
       sig { returns(String) }
       def dependency_url
         registry_url =
-          if new_source.nil?
-            # Check credentials for a configured registry before falling back to public registry
-            configured_registry_from_credentials || "https://registry.npmjs.org"
+          if (configured_registry = configured_registry_from_credentials)
+            # Prioritize replaces-base credential over lockfile source
+            configured_registry
+          elsif new_source.nil?
+            "https://registry.npmjs.org"
           else
             new_source&.fetch(:url)
           end
@@ -351,6 +353,11 @@ module Dependabot
 
       sig { returns(String) }
       def dependency_registry
+        # Prioritize replaces-base credential over lockfile source
+        if (configured_registry = configured_registry_from_credentials)
+          return configured_registry.sub(%r{^https?://}, "")
+        end
+
         if new_source.nil? then "registry.npmjs.org"
         else
           new_source&.fetch(:url)&.gsub("https://", "")&.gsub("http://", "")
