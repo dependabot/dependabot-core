@@ -336,8 +336,6 @@ module Dependabot
         { "Authorization" => "Bearer #{auth_token}" }
       end
 
-
-
       sig { returns(String) }
       def dependency_registry
         # Prioritize replaces-base credential over lockfile source
