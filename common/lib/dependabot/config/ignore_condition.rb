@@ -52,7 +52,7 @@ module Dependabot
         update_types.map(&:downcase).filter_map(&:strip)
       end
 
-      sig { params(dependency: Dependency).returns(T::Array[T.untyped]) }
+      sig { params(dependency: Dependency).returns(T::Array[String]) }
       def versions_by_type(dependency)
         version = correct_version_for(dependency)
         return [] unless version
