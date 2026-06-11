@@ -16,6 +16,8 @@ module Dependabot
         sig { abstract.returns(T::Array[Dependabot::Credential]) }
         def credentials; end
 
+        private
+
         sig { returns(T.nilable(String)) }
         def configured_registry_from_credentials
           replaces_base_cred = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
