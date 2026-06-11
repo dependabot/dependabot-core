@@ -464,6 +464,49 @@ public class JobTests
     }
 
     [Fact]
+    public void CommandDeserialization_NullValue_DefaultsToNone()
+    {
+        var json = """
+            {
+              "job": {
+                "package-manager": "nuget",
+                "command": null,
+                "source": {
+                  "provider": "github",
+                  "repo": "test/repo",
+                  "directory": "/"
+                }
+              }
+            }
+            """;
+        var jobFile = RunWorker.Deserialize(json);
+        Assert.Equal(JobCommand.None, jobFile.Job.Command);
+    }
+
+    [Fact]
+    public void CommandDeserialization_NonStringToken_DefaultsToNoneAndLogsWarning()
+    {
+        var json = """
+            {
+              "job": {
+                "package-manager": "nuget",
+                "command": 42,
+                "source": {
+                  "provider": "github",
+                  "repo": "test/repo",
+                  "directory": "/"
+                }
+              }
+            }
+            """;
+
+        var logger = new StringLogger();
+        var jobFile = RunWorker.Deserialize(json, logger);
+        Assert.Equal(JobCommand.None, jobFile.Job.Command);
+        Assert.Contains(logger.Messages, m => m.Contains("Unexpected JSON token type"));
+    }
+
+    [Fact]
     public void CommandDeserialization_UnknownValue_DefaultsToNoneAndLogsWarning()
     {
         var json = """

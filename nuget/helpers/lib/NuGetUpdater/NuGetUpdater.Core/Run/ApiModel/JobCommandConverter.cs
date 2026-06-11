@@ -19,6 +19,13 @@ public class JobCommandConverter : JsonConverter<JobCommand>
             return JobCommand.None;
         }
 
+        if (reader.TokenType != JsonTokenType.String)
+        {
+            _logger.Warn($"Unexpected JSON token type for job command: {reader.TokenType}; defaulting to None.");
+            reader.Skip();
+            return JobCommand.None;
+        }
+
         var value = reader.GetString();
         return value switch
         {
