@@ -182,7 +182,7 @@ module Dependabot
         dependency.version
       end
 
-      sig { overridable.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { overridable.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         raise NotImplementedError
       end
@@ -225,6 +225,20 @@ module Dependabot
       end
 
       private
+
+      # Wraps an array of raw requirement hashes (e.g. the output of an
+      # ecosystem RequirementsUpdater) into typed DependencyRequirement
+      # objects, so updated_requirements overrides can satisfy the typed
+      # return contract. Entries that are already DependencyRequirement
+      # instances are returned as-is; plain hashes are wrapped. Re-wrapping
+      # would produce a value-equal copy, so skipping it avoids needless
+      # allocations.
+      sig { params(requirements: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Array[Dependabot::DependencyRequirement]) }
+      def wrap_requirements(requirements)
+        requirements.map do |requirement|
+          requirement.is_a?(Dependabot::DependencyRequirement) ? requirement : Dependabot::DependencyRequirement.create(requirement)
+        end
+      end
 
       sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
       def active_advisories
