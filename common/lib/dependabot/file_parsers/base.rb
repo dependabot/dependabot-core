@@ -28,6 +28,11 @@ module Dependabot
       sig { returns(T::Hash[Symbol, T.untyped]) }
       attr_reader :options
 
+      sig { returns(T::Boolean) }
+      def reject_external_code?
+        @reject_external_code
+      end
+
       sig do
         params(
           dependency_files: T::Array[Dependabot::DependencyFile],
