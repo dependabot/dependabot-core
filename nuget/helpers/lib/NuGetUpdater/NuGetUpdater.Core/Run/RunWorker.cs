@@ -28,7 +28,7 @@ public class RunWorker
     {
         PropertyNamingPolicy = JsonNamingPolicy.KebabCaseLower,
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter(), new PullRequestConverter(), new RequirementConverter(), new VersionConverter() },
+        Converters = { new JobCommandConverter(new ConsoleLogger()), new JsonStringEnumConverter(), new PullRequestConverter(), new RequirementConverter(), new VersionConverter() },
     };
 
     public RunWorker(string jobId, IApiHandler apiHandler, IDiscoveryWorker discoverWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updateWorker, ILogger logger)
