@@ -71,15 +71,15 @@ module Dependabot
       # see https://github.com/golang/mod/blob/fa1ba4269bda724bb9f01ec381fbbaf031e45833/semver/semver.go#L333
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
-      sig { params(left: T.untyped, right: T.untyped).returns(Integer) }
+      sig { params(left: String, right: String).returns(Integer) }
       def compare_prerelease(left, right)
         return 0 if left == right
         return 1 if left == ""
         return -1 if right == ""
 
         while left != "" && right != ""
-          left = left[1..-1] if left.start_with?(".", "-")
-          right = right[1..-1] if right.start_with?(".", "-")
+          left = T.must(left[1..-1]) if left.start_with?(".", "-")
+          right = T.must(right[1..-1]) if right.start_with?(".", "-")
 
           dx, left = next_ident(left)
           dy, right = next_ident(right)
@@ -108,17 +108,17 @@ module Dependabot
       # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
 
-      sig { params(data: String).returns(T.untyped) }
+      sig { params(data: String).returns([String, String]) }
       def next_ident(data)
         i = 0
         i += 1 while i < data.length && data[i] != "."
-        [data[0..i], data[i..-1]]
+        [T.must(data[0..i]), T.must(data[i..-1])]
       end
 
-      sig { params(data: T.untyped).returns(T::Boolean) }
+      sig { params(data: String).returns(T::Boolean) }
       def num?(data)
         i = 0
-        i += 1 while i < data.length && data[i] >= "0" && data[i] <= "9"
+        i += 1 while i < data.length && T.must(data[i]) >= "0" && T.must(data[i]) <= "9"
         i == data.length
       end
     end
