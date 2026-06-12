@@ -102,6 +102,18 @@ Sorbet/ForbidTUnsafe:
   Enabled: true
 Sorbet/ForbidTUntyped:
   Enabled: true
+Sorbet/ForbidIncludeConstLiteral:
+  Enabled: true
+Sorbet/ForbidSuperclassConstLiteral:
+  Enabled: true
+Sorbet/HasSigil:
+  Enabled: true
+Sorbet/Refinement:
+  Enabled: true
+Sorbet/SingleLineRbiClassModuleDefinitions:
+  Enabled: true
+Sorbet/VoidCheckedTests:
+  Enabled: true
 Sorbet/TrueSigil:
   Enabled: true
   Exclude:
