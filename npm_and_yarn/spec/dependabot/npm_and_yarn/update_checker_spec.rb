@@ -2047,12 +2047,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           .to eq(
             "dependency_name" => "@dependabot-fixtures/npm-transitive-dependency",
             "explanation" =>
-              "Dependabot found a patched release for " \
-              "@dependabot-fixtures/npm-transitive-dependency, but npm " \
-              "could not update the lockfile to install it. A parent " \
-              "dependency still resolves " \
+              "Dependabot could not find a lockfile update that resolves " \
               "@dependabot-fixtures/npm-transitive-dependency to a " \
-              "vulnerable version.",
+              "non-vulnerable version.",
             "fix_available" => false,
             "fix_updates" => [],
             "top_level_ancestors" => []
