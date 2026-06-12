@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 1868
+# Offense count: 1859
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bazel/lib/dependabot/bazel/file_fetcher.rb"
@@ -269,13 +269,7 @@ Sorbet/ForbidTUntyped:
     - "bun/lib/dependabot/bun/update_checker/version_resolver.rb"
     - "bun/lib/dependabot/bun/update_checker/vulnerability_auditor.rb"
     - "bun/lib/dependabot/bun/version_selector.rb"
-    - "bundler/lib/dependabot/bundler/file_fetcher/child_gemfile_finder.rb"
-    - "bundler/lib/dependabot/bundler/file_fetcher/gemspec_finder.rb"
-    - "bundler/lib/dependabot/bundler/file_fetcher/included_path_finder.rb"
-    - "bundler/lib/dependabot/bundler/file_fetcher/path_gemspec_finder.rb"
     - "bundler/lib/dependabot/bundler/file_parser.rb"
-    - "bundler/lib/dependabot/bundler/file_parser/gemfile_declaration_finder.rb"
-    - "bundler/lib/dependabot/bundler/file_parser/gemspec_declaration_finder.rb"
     - "bundler/lib/dependabot/bundler/file_updater/lockfile_updater.rb"
     - "bundler/lib/dependabot/bundler/file_updater/requirement_replacer.rb"
     - "bundler/lib/dependabot/bundler/file_updater/ruby_requirement_setter.rb"
