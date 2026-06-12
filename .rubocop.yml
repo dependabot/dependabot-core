@@ -108,6 +108,8 @@ Sorbet/ForbidSuperclassConstLiteral:
   Enabled: true
 Sorbet/HasSigil:
   Enabled: true
+Sorbet/ImplicitConversionMethod:
+  Enabled: true
 Sorbet/Refinement:
   Enabled: true
 Sorbet/SingleLineRbiClassModuleDefinitions:
