@@ -302,7 +302,7 @@ module Dependabot
             ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
             ErrorAttributes::JOB_ID => job.id,
             ErrorAttributes::DEPENDENCIES => job.dependencies,
-            ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
+            ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups.map(&:to_h)
           }.compact,
           T::Hash[Symbol, T.untyped]
         )

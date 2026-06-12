@@ -90,18 +90,20 @@ module Dependabot
         nil
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         property_names =
           declarations_using_a_property
           .map { |req| req.dig(:metadata, :property_name) }
 
-        RequirementsUpdater.new(
-          requirements: dependency.requirements,
-          latest_version: preferred_resolvable_version&.to_s,
-          source_url: preferred_version_details&.fetch(:source_url),
-          properties_to_update: property_names
-        ).updated_requirements
+        wrap_requirements(
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            latest_version: preferred_resolvable_version&.to_s,
+            source_url: preferred_version_details&.fetch(:source_url),
+            properties_to_update: property_names
+          ).updated_requirements
+        )
       end
 
       sig { override.returns(T::Boolean) }

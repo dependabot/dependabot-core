@@ -30,11 +30,11 @@ module Dependabot
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_resolvable_version_with_no_unlock = latest_version
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         return dependency.requirements unless latest_version
 
-        dependency.requirements.filter_map do |requirement|
+        updated = dependency.requirements.filter_map do |requirement|
           source = T.cast(requirement[:source], T.nilable(T::Hash[Symbol, T.untyped]))
           requirement_constraint = requirement[:requirement]
 
@@ -50,6 +50,7 @@ module Dependabot
             requirement
           end
         end
+        wrap_requirements(updated)
       end
 
       private

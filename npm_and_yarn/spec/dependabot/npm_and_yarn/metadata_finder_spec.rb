@@ -961,8 +961,8 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         )]
       end
 
-      it "uses source from lockfile, not credentials" do
-        expect(dependency_url).to eq("https://npm.fury.io/dependabot/etag")
+      it "uses replaces-base credentials, not source from lockfile" do
+        expect(dependency_url).to eq("https://different.registry.com/etag")
       end
     end
   end

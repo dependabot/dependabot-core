@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 1888
+# Offense count: 1879
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bazel/lib/dependabot/bazel/file_fetcher.rb"
@@ -311,7 +311,6 @@ Sorbet/ForbidTUntyped:
     - "common/lib/dependabot/clients/gitlab_with_retries.rb"
     - "common/lib/dependabot/command_helpers.rb"
     - "common/lib/dependabot/config/file.rb"
-    - "common/lib/dependabot/config/ignore_condition.rb"
     - "common/lib/dependabot/dependency.rb"
     - "common/lib/dependabot/dependency_file.rb"
     - "common/lib/dependabot/dependency_group.rb"
@@ -319,20 +318,15 @@ Sorbet/ForbidTUntyped:
     - "common/lib/dependabot/experiments.rb"
     - "common/lib/dependabot/file_fetchers/base.rb"
     - "common/lib/dependabot/file_parsers/base.rb"
-    - "common/lib/dependabot/file_parsers/base/dependency_set.rb"
-    - "common/lib/dependabot/file_updaters/artifact_updater.rb"
     - "common/lib/dependabot/file_updaters/base.rb"
-    - "common/lib/dependabot/file_updaters/vendor_updater.rb"
     - "common/lib/dependabot/git_commit_checker.rb"
     - "common/lib/dependabot/git_metadata_fetcher.rb"
     - "common/lib/dependabot/metadata_finders/base/changelog_finder.rb"
-    - "common/lib/dependabot/metadata_finders/base/commits_finder.rb"
     - "common/lib/dependabot/metadata_finders/base/release_finder.rb"
     - "common/lib/dependabot/notices.rb"
     - "common/lib/dependabot/package/package_latest_version_finder.rb"
     - "common/lib/dependabot/package/package_release.rb"
     - "common/lib/dependabot/pull_request_creator.rb"
-    - "common/lib/dependabot/pull_request_creator/branch_namer/solo_strategy.rb"
     - "common/lib/dependabot/pull_request_creator/github.rb"
     - "common/lib/dependabot/pull_request_creator/message_builder.rb"
     - "common/lib/dependabot/pull_request_creator/message_builder/metadata_presenter.rb"
@@ -588,7 +582,6 @@ Sorbet/ForbidTUntyped:
     - "updater/lib/dependabot/api_client.rb"
     - "updater/lib/dependabot/dependency_attribution.rb"
     - "updater/lib/dependabot/dependency_change.rb"
-    - "updater/lib/dependabot/dependency_snapshot.rb"
     - "updater/lib/dependabot/environment.rb"
     - "updater/lib/dependabot/file_fetcher_command.rb"
     - "updater/lib/dependabot/job.rb"
@@ -606,8 +599,6 @@ Sorbet/ForbidTUntyped:
     - "updater/lib/dependabot/updater/error_handler.rb"
     - "updater/lib/dependabot/updater/errors.rb"
     - "updater/lib/dependabot/updater/group_dependency_selector.rb"
-    - "updater/lib/dependabot/updater/group_update_creation.rb"
-    - "updater/lib/dependabot/updater/operations/update_all_versions.rb"
     - "updater/lib/dependabot/updater/pattern_specificity_calculator.rb"
     - "updater/lib/dependabot/updater/update_type_helper.rb"
     - "updater/lib/github_api/dependency_submission.rb"
