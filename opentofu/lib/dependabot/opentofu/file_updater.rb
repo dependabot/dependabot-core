@@ -333,10 +333,9 @@ module Dependabot
       sig { returns(T::Array[Symbol]) }
       def architecture_type
         @architecture_type ||= T.let(
-          if lookup_hash_architecture.nil? || lookup_hash_architecture&.empty?
-            [:linux_amd64]
-          else
-            T.must(lookup_hash_architecture)
+          begin
+            detected = lookup_hash_architecture
+            detected.nil? || detected.empty? ? [:linux_amd64] : detected
           end,
           T.nilable(T::Array[Symbol])
         )
