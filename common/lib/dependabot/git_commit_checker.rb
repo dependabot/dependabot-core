@@ -14,6 +14,7 @@ require "dependabot/source"
 require "dependabot/dependency"
 require "dependabot/credential"
 require "dependabot/git_metadata_fetcher"
+require "dependabot/git_tag_details"
 module Dependabot
   # rubocop:disable Metrics/ClassLength
   class GitCommitChecker
@@ -159,31 +160,31 @@ module Dependabot
       local_repo_git_metadata_fetcher.head_commit_for_ref(name)
     end
 
-    sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+    sig { returns(T.nilable(Dependabot::GitTagDetails)) }
     def local_ref_for_latest_version_matching_existing_precision
       allowed_refs = local_tag_for_pinned_sha ? allowed_version_tags : allowed_version_refs
 
       max_local_tag_for_current_precision(allowed_refs)
     end
 
-    sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+    sig { returns(T.nilable(Dependabot::GitTagDetails)) }
     def local_ref_for_latest_version_lower_precision
       allowed_refs = local_tag_for_pinned_sha ? allowed_version_tags : allowed_version_refs
 
       max_local_tag_for_lower_precision(allowed_refs)
     end
 
-    sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+    sig { returns(T.nilable(Dependabot::GitTagDetails)) }
     def local_tag_for_latest_version
       max_local_tag(allowed_version_tags)
     end
 
-    sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+    sig { returns(T::Array[Dependabot::GitTagDetails]) }
     def local_tags_for_allowed_versions_matching_existing_precision
       select_matching_existing_precision(allowed_version_tags).filter_map { |t| to_local_tag(t) }
     end
 
-    sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+    sig { returns(T::Array[Dependabot::GitTagDetails]) }
     def local_tags_for_allowed_versions
       allowed_version_tags.filter_map { |t| to_local_tag(t) }
     end
@@ -272,7 +273,7 @@ module Dependabot
       local_tags_matching_sha(commit_sha).map(&:name)
     end
 
-    sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+    sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(Dependabot::GitTagDetails)) }
     def max_local_tag(tags)
       max_version_tag = tags.max_by { |t| version_from_tag(t) }
 
@@ -295,12 +296,12 @@ module Dependabot
     sig { returns(T::Array[String]) }
     attr_reader :ignored_versions
 
-    sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+    sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(Dependabot::GitTagDetails)) }
     def max_local_tag_for_current_precision(tags)
       max_local_tag(select_matching_existing_precision(tags))
     end
 
-    sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+    sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(Dependabot::GitTagDetails)) }
     def max_local_tag_for_lower_precision(tags)
       max_local_tag(select_lower_precision(tags))
     end
@@ -553,17 +554,17 @@ module Dependabot
       prefix.length > 1 ? prefix.gsub(/v$/i, "") : prefix.gsub(/^v$/i, "")
     end
 
-    sig { params(tag: T.nilable(Dependabot::GitRef)).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+    sig { params(tag: T.nilable(Dependabot::GitRef)).returns(T.nilable(Dependabot::GitTagDetails)) }
     def to_local_tag(tag)
       return unless tag
 
       version = version_from_tag(tag)
-      {
+      GitTagDetails.new(
         tag: tag.name,
         version: version,
         commit_sha: tag.commit_sha,
         tag_sha: tag.ref_sha
-      }
+      )
     end
 
     sig { returns(T.nilable(String)) }
