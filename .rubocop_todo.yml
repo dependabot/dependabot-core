@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 1850
+# Offense count: 1847
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bazel/lib/dependabot/bazel/file_fetcher.rb"
@@ -287,7 +287,6 @@ Sorbet/ForbidTUntyped:
     - "cargo/lib/dependabot/cargo/file_fetcher.rb"
     - "cargo/lib/dependabot/cargo/file_parser.rb"
     - "cargo/lib/dependabot/cargo/file_updater/lockfile_updater.rb"
-    - "cargo/lib/dependabot/cargo/file_updater/workspace_manifest_updater.rb"
     - "cargo/lib/dependabot/cargo/metadata_finder.rb"
     - "cargo/lib/dependabot/cargo/package/package_details_fetcher.rb"
     - "cargo/lib/dependabot/cargo/update_checker.rb"
@@ -381,10 +380,8 @@ Sorbet/ForbidTUntyped:
     - "go_modules/lib/dependabot/go_modules/version.rb"
     - "gradle/lib/dependabot/gradle/distributions.rb"
     - "gradle/lib/dependabot/gradle/file_parser.rb"
-    - "gradle/lib/dependabot/gradle/file_parser/distributions_finder.rb"
     - "gradle/lib/dependabot/gradle/file_parser/repositories_finder.rb"
     - "gradle/lib/dependabot/gradle/file_updater.rb"
-    - "gradle/lib/dependabot/gradle/file_updater/wrapper_updater.rb"
     - "gradle/lib/dependabot/gradle/package/distributions_fetcher.rb"
     - "gradle/lib/dependabot/gradle/package/package_details_fetcher.rb"
     - "gradle/lib/dependabot/gradle/package/release_date_extractor.rb"
