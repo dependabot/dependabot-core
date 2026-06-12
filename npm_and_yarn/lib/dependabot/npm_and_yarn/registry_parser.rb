@@ -16,7 +16,7 @@ module Dependabot
         @credentials = credentials
       end
 
-      sig { params(name: String).returns(T::Hash[Symbol, T.untyped]) }
+      sig { params(name: String).returns(T::Hash[Symbol, T.nilable(String)]) }
       def registry_source_for(name)
         url =
           if resolved_url.include?("/~/")
