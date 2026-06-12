@@ -549,5 +549,91 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         expect(job_instance.blocked_versions).to eq([])
       end
     end
+
+    context "when the API returns no blocked versions but the job definition provides some" do
+      let(:blocked_versions) { [] }
+      let(:job_definition) do
+        definition = JSON.parse(fixture("jobs/job_without_credentials.json"))
+        definition["job"]["blocked-versions"] = [
+          { "dependency-name" => "minimist", "version-requirement" => "1.2.8", "reason" => "malware" }
+        ]
+        definition
+      end
+
+      it "honours the blocked versions from the job definition" do
+        dummy_runner = double(run: nil)
+        allow(Dependabot::Updater).to receive(:new).and_return(dummy_runner)
+        allow(dummy_runner).to receive(:run)
+        allow(service).to receive(:mark_job_as_processed)
+        allow(service).to receive(:update_dependency_list)
+
+        perform_job
+
+        job_instance = job.send(:job)
+        expect(job_instance.blocked_versions).to contain_exactly(
+          an_object_having_attributes(
+            dependency_name: "minimist",
+            version_requirement: "1.2.8",
+            reason: "malware"
+          )
+        )
+      end
+    end
+
+    context "when the API returns no blocked versions but DEPENDABOT_BLOCKED_VERSIONS is set" do
+      let(:blocked_versions) { [] }
+
+      around do |example|
+        ENV["DEPENDABOT_BLOCKED_VERSIONS"] =
+          '[{"dependency-name":"minimist","version-requirement":"1.2.8","reason":"malware"}]'
+        example.run
+      ensure
+        ENV.delete("DEPENDABOT_BLOCKED_VERSIONS")
+      end
+
+      it "honours the blocked versions from the environment variable" do
+        dummy_runner = double(run: nil)
+        allow(Dependabot::Updater).to receive(:new).and_return(dummy_runner)
+        allow(dummy_runner).to receive(:run)
+        allow(service).to receive(:mark_job_as_processed)
+        allow(service).to receive(:update_dependency_list)
+
+        perform_job
+
+        job_instance = job.send(:job)
+        expect(job_instance.blocked_versions).to contain_exactly(
+          an_object_having_attributes(
+            dependency_name: "minimist",
+            version_requirement: "1.2.8",
+            reason: "malware"
+          )
+        )
+      end
+    end
+
+    context "when DEPENDABOT_BLOCKED_VERSIONS contains invalid JSON" do
+      let(:blocked_versions) { [] }
+
+      around do |example|
+        ENV["DEPENDABOT_BLOCKED_VERSIONS"] = "not-json"
+        example.run
+      ensure
+        ENV.delete("DEPENDABOT_BLOCKED_VERSIONS")
+      end
+
+      it "ignores the malformed value and does not block" do
+        dummy_runner = double(run: nil)
+        allow(Dependabot::Updater).to receive(:new).and_return(dummy_runner)
+        allow(dummy_runner).to receive(:run)
+        allow(service).to receive(:mark_job_as_processed)
+        allow(service).to receive(:update_dependency_list)
+        allow(Dependabot.logger).to receive(:warn)
+
+        perform_job
+
+        job_instance = job.send(:job)
+        expect(job_instance.blocked_versions).to eq([])
+      end
+    end
   end
 end
