@@ -134,9 +134,8 @@ module Dependabot
 
       # The current version of the dependency, resolved to a comparable
       # Dependabot::Version where possible. Ecosystems that pin to a git SHA
-      # (e.g. pre-commit, github_actions) may override this to resolve the SHA
-      # to a semver via a version comment or tag.
-      # TODO: Should this return Dependabot::Version?
+      # (e.g. pre-commit) may override this to resolve the SHA to a semver via
+      # a version comment or tag.
       sig { overridable.returns(T.nilable(Dependabot::Version)) }
       def current_version
         @current_version ||=

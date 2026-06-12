@@ -732,7 +732,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       let(:checker) do
         instance_double(
           Dependabot::UpdateCheckers::Base,
-          current_version: Gem::Version.new("1.0.0"),
+          current_version: Gem::Version.new("0.1.0"),
           latest_version: "1.1.0"
         )
       end

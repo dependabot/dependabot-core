@@ -467,10 +467,10 @@ module Dependabot
       # rubocop:enable Metrics/AbcSize
 
       # Returns the dependency's current version as a comparable version object, or nil.
-      # Some ecosystems (e.g. pre-commit, github_actions) pin dependencies to a git SHA, so
-      # dependency.version is not a comparable semver. In those cases the update checker can
-      # resolve the current version from a version comment or tag, so we fall back to
-      # checker.current_version for the update-type comparison.
+      # Some ecosystems (e.g. pre-commit) pin dependencies to a git SHA, so dependency.version
+      # is not a comparable semver. In those cases the update checker may be able to resolve a
+      # semver (e.g. from a version comment or tag), so we fall back to checker.current_version
+      # for the update-type comparison.
       sig do
         params(
           version_class: T.class_of(Dependabot::Version),
