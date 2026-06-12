@@ -197,7 +197,7 @@ module Dependabot
       milestone: nil,
       branch_name_separator: "/",
       branch_name_prefix: "dependabot",
-      branch_name_max_length: nil,
+      branch_name_max_length: 100,
       label_language: false,
       automerge_candidate: false,
       github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE,
