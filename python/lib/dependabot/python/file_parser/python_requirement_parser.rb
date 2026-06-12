@@ -209,7 +209,10 @@ module Dependabot
 
         sig { returns(T::Array[DependencyFile]) }
         def pip_compile_files
-          @pip_compile_files ||= T.let(dependency_files.select { |f| f.name.end_with?(".in") }, T.untyped)
+          @pip_compile_files ||= T.let(
+            dependency_files.select { |f| f.name.end_with?(".in") },
+            T.nilable(T::Array[DependencyFile])
+          )
         end
       end
     end
