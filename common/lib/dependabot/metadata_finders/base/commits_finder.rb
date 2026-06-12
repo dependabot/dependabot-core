@@ -145,7 +145,7 @@ module Dependabot
         end
 
         # TODO: Refactor me so that Composer doesn't need to be special cased
-        sig { params(requirements: T.nilable(T::Array[T::Hash[Symbol, T.untyped]])).returns(T::Boolean) }
+        sig { params(requirements: T.nilable(T::Array[Dependabot::DependencyRequirement])).returns(T::Boolean) }
         def git_source?(requirements)
           # Special case Composer, which uses git as a source but handles tags
           # internally

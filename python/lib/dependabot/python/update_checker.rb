@@ -93,16 +93,18 @@ module Dependabot
         )
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        return updated_git_requirements if git_dependency?
+        return wrap_requirements(updated_git_requirements) if git_dependency?
 
-        RequirementsUpdater.new(
-          requirements: requirements,
-          latest_resolvable_version: preferred_resolvable_version&.to_s,
-          update_strategy: requirements_update_strategy,
-          has_lockfile: !(pipfile_lock || poetry_lock).nil?
-        ).updated_requirements
+        wrap_requirements(
+          RequirementsUpdater.new(
+            requirements: requirements,
+            latest_resolvable_version: preferred_resolvable_version&.to_s,
+            update_strategy: requirements_update_strategy,
+            has_lockfile: !(pipfile_lock || poetry_lock).nil?
+          ).updated_requirements
+        )
       end
 
       sig { override.returns(T::Boolean) }

@@ -45,11 +45,11 @@ module Dependabot
         dependency.version
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        return additional_dependency_updated_requirements if additional_dependency?
+        return wrap_requirements(additional_dependency_updated_requirements) if additional_dependency?
 
-        dependency.requirements.map do |req|
+        updated_reqs = dependency.requirements.map do |req|
           source = T.cast(req[:source], T.nilable(T::Hash[Symbol, T.untyped]))
           updated = updated_ref(source)
           next req unless updated
@@ -68,6 +68,7 @@ module Dependabot
           new_metadata = updated_comment_version_metadata(req, updated)
           req.merge(source: new_source, metadata: new_metadata)
         end
+        wrap_requirements(updated_reqs)
       end
 
       private
