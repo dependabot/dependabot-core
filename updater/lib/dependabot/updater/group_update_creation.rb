@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -476,7 +476,7 @@ module Dependabot
         }
       end
 
-      sig { params(group: T.untyped, version: Gem::Version, latest_version: Gem::Version).returns(T::Boolean) }
+      sig { params(group: Dependabot::DependencyGroup, version: Gem::Version, latest_version: Gem::Version).returns(T::Boolean) }
       def cargo_update_type_allowed?(group, version, latest_version)
         return true unless Dependabot::Cargo::Version.respond_to?(:update_type)
 
