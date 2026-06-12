@@ -84,7 +84,9 @@ module Dependabot
           rels[parent].concat(lockfile_child_names(package_data))
         end
       rescue StandardError => e
-        Dependabot.logger.warn("Failed to parse uv.lock relationships: #{e.message}")
+        errored_fetching_subdependencies!
+        @subdependency_error = e
+        Dependabot.logger.error("Failed to parse uv.lock relationships: #{e.message}")
         {}
       end
 

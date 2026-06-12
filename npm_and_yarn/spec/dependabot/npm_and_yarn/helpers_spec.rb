@@ -610,8 +610,10 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         "node -v",
         fingerprint: "node -v"
       ).and_return("v16.13.1")
+      allow(Dependabot.logger).to receive(:info)
 
       expect(described_class.node_version).to eq("16.13.1")
+      expect(Dependabot.logger).to have_received(:info).with("Using node version: 16.13.1")
     end
 
     it "raises an error if the Node.js version command fails" do
@@ -912,6 +914,36 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         expect(results[:thread1]).to eq(thread1_creds)
         expect(results[:thread2]).to eq(thread2_creds)
+      end
+    end
+  end
+
+  describe "::yarn_berry_supports_minimal_age_gate?" do
+    context "when Yarn version is >= 4.10.0" do
+      it "logs version and support decision, returns true" do
+        allow(described_class).to receive(:run_single_yarn_command).with("--version").and_return("4.10.0")
+        expect(Dependabot.logger).to receive(:info)
+          .with(a_string_including("Yarn 4.10.0").and(including("bypass the release-age gate for security updates")))
+        expect(described_class.yarn_berry_supports_minimal_age_gate?).to be(true)
+      end
+    end
+
+    context "when Yarn version is < 4.10.0" do
+      it "logs version and no-support decision, returns false" do
+        allow(described_class).to receive(:run_single_yarn_command).with("--version").and_return("4.9.2")
+        expect(Dependabot.logger).to receive(:info)
+          .with(a_string_including("Yarn 4.9.2").and(including("does not support npmMinimalAgeGate")))
+        expect(described_class.yarn_berry_supports_minimal_age_gate?).to be(false)
+      end
+    end
+
+    context "when the version command raises an error" do
+      it "logs a warning and returns false" do
+        allow(described_class).to receive(:run_single_yarn_command)
+          .with("--version")
+          .and_raise(StandardError, "command failed")
+        expect(Dependabot.logger).to receive(:warn).with(a_string_including("command failed"))
+        expect(described_class.yarn_berry_supports_minimal_age_gate?).to be(false)
       end
     end
   end

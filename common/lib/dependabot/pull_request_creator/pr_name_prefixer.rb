@@ -200,10 +200,12 @@ module Dependabot
         return unless (msg = last_dependabot_commit_title)
 
         return :gitmoji if msg.start_with?("⬆️")
-        return :conventional_prefix if msg.match?(/\A(chore|build|upgrade):/i)
-        return unless msg.match?(/\A(chore|build|upgrade)\(/i)
 
-        :conventional_prefix_with_scope
+        prefixes = (ANGULAR_PREFIXES + ESLINT_PREFIXES).uniq(&:downcase).join("|")
+        return :conventional_prefix if msg.match?(/\A(#{prefixes}):/i)
+        return :conventional_prefix_with_scope if msg.match?(/\A(#{prefixes})\(/i)
+
+        nil
       end
 
       sig { returns(T.nilable(String)) }
@@ -345,7 +347,7 @@ module Dependabot
       sig { returns(T::Array[String]) }
       def recent_gitlab_commit_messages
         @recent_gitlab_commit_messages ||=
-          T.unsafe(gitlab_client_for_source).commits(source.repo)
+          gitlab_client_for_source.commits(source.repo)
 
         @recent_gitlab_commit_messages
           .reject { |c| c.author_email == dependabot_email }
@@ -429,7 +431,7 @@ module Dependabot
       def recent_github_commits
         @recent_github_commits ||=
           T.let(
-            T.unsafe(github_client_for_source).commits(source.repo, per_page: 100),
+            github_client_for_source.commits(source.repo, per_page: 100),
             T.untyped
           )
       rescue Octokit::Conflict, Octokit::NotFound
@@ -440,7 +442,7 @@ module Dependabot
       def last_gitlab_dependabot_commit_message
         @recent_gitlab_commit_messages ||=
           T.let(
-            T.unsafe(gitlab_client_for_source).commits(source.repo),
+            gitlab_client_for_source.commits(source.repo),
             T.untyped
           )
 

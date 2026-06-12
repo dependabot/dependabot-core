@@ -9,12 +9,14 @@ require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/registry_client"
 require "dependabot/npm_and_yarn/package/registry_finder"
+require "dependabot/npm_and_yarn/package/registry_credential_helpers"
 require "dependabot/npm_and_yarn/version"
 
 module Dependabot
   module NpmAndYarn
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
+      include Package::RegistryCredentialHelpers
 
       # Lifecycle scripts that run automatically during package installation.
       # These are security-relevant because they execute with user privileges.
@@ -23,6 +25,10 @@ module Dependabot
         %w(preinstall install postinstall prepublish preprepare prepare postprepare).freeze,
         T::Array[String]
       )
+
+      # RFC 3986 unreserved ASCII characters; everything else needs percent-encoding.
+      CHARS_REQUIRING_ENCODING = T.let(/[^A-Za-z0-9._~-]/, Regexp)
+      private_constant :CHARS_REQUIRING_ENCODING
 
       sig { override.returns(T.nilable(String)) }
       def homepage_url
@@ -36,12 +42,14 @@ module Dependabot
 
       sig { override.returns(T.nilable(String)) }
       def maintainer_changes
-        return unless npm_releaser
+        releaser = npm_releaser
+        return unless releaser
         return unless npm_listing.dig("time", dependency.version)
-        return if previous_releasers&.include?(npm_releaser)
+        return if previous_releasers&.include?(releaser)
 
+        encoded_releaser = encode_npm_releaser(releaser)
         "This version was pushed to npm by " \
-          "[#{npm_releaser}](https://www.npmjs.com/~#{npm_releaser}), a new " \
+          "[#{releaser}](https://www.npmjs.com/~#{encoded_releaser}), a new " \
           "releaser for #{dependency.name} since your current version."
       end
 
@@ -95,6 +103,16 @@ module Dependabot
         script_names = scripts.map { |s| "`#{s}`" }.join(", ")
         noun = scripts.size == 1 ? "script" : "scripts"
         "#{action} #{script_names} #{noun}"
+      end
+
+      # Percent-encodes npm releaser names for safe inclusion in npmjs.com profile URLs.
+      sig { params(releaser: String).returns(String) }
+      def encode_npm_releaser(releaser)
+        return releaser unless releaser.match?(CHARS_REQUIRING_ENCODING)
+
+        releaser.gsub(CHARS_REQUIRING_ENCODING) do |char|
+          char.bytes.map { |byte| "%#{format('%02X', byte)}" }.join
+        end
       end
 
       sig { params(version: T.nilable(String)).returns(T::Hash[String, String]) }
@@ -294,9 +312,11 @@ module Dependabot
       sig { returns(String) }
       def dependency_url
         registry_url =
-          if new_source.nil?
-            # Check credentials for a configured registry before falling back to public registry
-            configured_registry_from_credentials || "https://registry.npmjs.org"
+          if (configured_registry = configured_registry_from_credentials)
+            # Prioritize replaces-base credential over lockfile source
+            configured_registry
+          elsif new_source.nil?
+            "https://registry.npmjs.org"
           else
             new_source&.fetch(:url)
           end
@@ -316,25 +336,13 @@ module Dependabot
         { "Authorization" => "Bearer #{auth_token}" }
       end
 
-      sig { returns(T.nilable(String)) }
-      def configured_registry_from_credentials
-        # Look for a credential that replaces the base registry (global registry replacement)
-        replaces_base_cred = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
-        return normalize_registry_url(replaces_base_cred["registry"]) if replaces_base_cred
-
-        nil
-      end
-
-      sig { params(registry: T.nilable(String)).returns(T.nilable(String)) }
-      def normalize_registry_url(registry)
-        return nil unless registry
-        return registry if registry.start_with?("http")
-
-        "https://#{registry}"
-      end
-
       sig { returns(String) }
       def dependency_registry
+        # Prioritize replaces-base credential over lockfile source
+        if (configured_registry = configured_registry_from_credentials)
+          return configured_registry.sub(%r{^https?://}, "")
+        end
+
         if new_source.nil? then "registry.npmjs.org"
         else
           new_source&.fetch(:url)&.gsub("https://", "")&.gsub("http://", "")

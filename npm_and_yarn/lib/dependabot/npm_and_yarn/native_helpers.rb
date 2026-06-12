@@ -45,6 +45,53 @@ module Dependabot
 
         Helpers.run_npm_command(command, fingerprint: fingerprint)
       end
+
+      sig { returns(String) }
+      def self.run_npm_audit_fix_command
+        # Fallback for transitive dependencies in workspace repos where
+        # `npm update` is a no-op because the package isn't in package.json.
+        # `npm audit fix` updates all fixable vulnerabilities in the lockfile.
+        # `--force` ignores checks for platform (os, cpu) and engines,
+        # matching the flags used by run_npm8_subdependency_update_command.
+        command = "audit fix --force --package-lock-only --ignore-scripts"
+        fingerprint = "audit fix --force --package-lock-only --ignore-scripts"
+
+        Helpers.run_npm_command(command, fingerprint: fingerprint)
+      end
+
+      sig { returns(String) }
+      def self.run_pnpm_audit_fix_command
+        # Fallback for transitive dependencies where `pnpm update` is a no-op.
+        # `pnpm audit --fix` adds overrides to the manifest for vulnerable deps.
+        Helpers.run_pnpm_command(
+          "audit --fix",
+          fingerprint: "audit --fix"
+        )
+      end
+
+      sig { params(dependency_name: String, recursive: T::Boolean).returns(String) }
+      def self.run_pnpm_deep_update_command(dependency_name, recursive: false)
+        # `pnpm update --depth Infinity <dep>` traverses the full dependency
+        # graph, allowing transitive dependencies to be updated in the lockfile
+        # without modifying any package.json (unlike `pnpm audit --fix`).
+        # `-r --include-workspace-root` is required for workspace repos so the
+        # update is applied across all packages.
+        flags = recursive ? "-r --include-workspace-root " : ""
+        Helpers.run_pnpm_command(
+          "#{flags}update #{dependency_name} --depth Infinity --lockfile-only",
+          fingerprint: "#{flags}update <dependency_name> --depth Infinity --lockfile-only"
+        )
+      end
+
+      sig { returns(String) }
+      def self.run_yarn_audit_fix_command
+        # Fallback for transitive dependencies where `yarn up -R` is a no-op.
+        # `yarn npm audit --fix` updates vulnerable deps in the lockfile.
+        Helpers.run_yarn_command(
+          "npm audit --fix --mode update-lockfile",
+          fingerprint: "npm audit --fix --mode update-lockfile"
+        )
+      end
     end
   end
 end

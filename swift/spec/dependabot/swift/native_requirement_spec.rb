@@ -36,5 +36,27 @@ RSpec.describe Dependabot::Swift::NativeRequirement do
       expect(described_class.new('"1.0.0"..<"2.0.0"').to_s).to eq(">= 1.0.0, < 2.0.0")
       expect(described_class.new('"1.0.0"..."2.0.0"').to_s).to eq(">= 1.0.0, <= 2.0.0")
     end
+
+    context "with a trailing comma (SE-0439)" do
+      it "parses every requirement form" do
+        expect(described_class.new('from: "1.0.0",').to_s).to eq(">= 1.0.0, < 2.0.0")
+        expect(described_class.new('exact: "1.0.0",').to_s).to eq("= 1.0.0")
+
+        expect(described_class.new('.upToNextMajor(from: "1.0.0",)').to_s).to eq(">= 1.0.0, < 2.0.0")
+        expect(described_class.new('.upToNextMajor(from: "1.0.0"),').to_s).to eq(">= 1.0.0, < 2.0.0")
+        expect(described_class.new('.upToNextMajor(from: "1.0.0",),').to_s).to eq(">= 1.0.0, < 2.0.0")
+
+        expect(described_class.new('.upToNextMinor(from: "1.0.0",)').to_s).to eq(">= 1.0.0, < 1.1.0")
+        expect(described_class.new('.upToNextMinor(from: "1.0.0"),').to_s).to eq(">= 1.0.0, < 1.1.0")
+        expect(described_class.new('.upToNextMinor(from: "1.0.0",),').to_s).to eq(">= 1.0.0, < 1.1.0")
+
+        expect(described_class.new('.exact("1.0.0",)').to_s).to eq("= 1.0.0")
+        expect(described_class.new('.exact("1.0.0"),').to_s).to eq("= 1.0.0")
+        expect(described_class.new('.exact("1.0.0",),').to_s).to eq("= 1.0.0")
+
+        expect(described_class.new('"1.0.0"..<"2.0.0",').to_s).to eq(">= 1.0.0, < 2.0.0")
+        expect(described_class.new('"1.0.0"..."2.0.0",').to_s).to eq(">= 1.0.0, <= 2.0.0")
+      end
+    end
   end
 end

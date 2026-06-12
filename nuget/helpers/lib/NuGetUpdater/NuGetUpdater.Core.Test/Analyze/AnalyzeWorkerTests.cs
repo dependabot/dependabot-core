@@ -53,7 +53,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = true,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [
-                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect : true),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                 ],
             }
         );
@@ -104,7 +104,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = true,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [
-                    new("Some.Package", "4.9.2", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                    new("Some.Package", "4.9.2", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                     new("Some.Transitive.Dependency", "4.9.2", DependencyType.Unknown, TargetFrameworks: ["net8.0"]),
                 ],
             }
@@ -362,7 +362,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 UpdatedVersion = "1.1.0",
                 CanUpdate = true,
                 UpdatedDependencies = [
-                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                 ],
             }
         );
@@ -409,7 +409,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = true,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [
-                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks :["net8.0"], IsDirect : true),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks :["net8.0"]),
                 ],
             }
         );
@@ -464,7 +464,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = true,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [
-                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks :["net8.0"], IsDirect : true),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks :["net8.0"]),
                 ],
             }
         );
@@ -517,7 +517,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 CanUpdate = true,
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies = [
-                    new("Some.Package", "1.0.1", DependencyType.PackageReference, TargetFrameworks: ["net9.0-windows"], IsDirect: true),
+                    new("Some.Package", "1.0.1", DependencyType.PackageReference, TargetFrameworks: ["net9.0-windows"]),
                 ],
             }
         );
@@ -739,7 +739,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies =
                 [
-                    new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks :["net8.0"], IsDirect : true),
+                    new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks :["net8.0"]),
                 ],
             }
         );
@@ -937,7 +937,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies =
                 [
-                    new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks :["net8.0"], IsDirect : true),
+                    new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks :["net8.0"]),
                 ],
             }
         );
@@ -1125,7 +1125,7 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
                 VersionComesFromMultiDependencyProperty = false,
                 UpdatedDependencies =
                 [
-                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+                    new("Some.Package", "1.1.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                 ],
             }
         );

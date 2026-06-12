@@ -31,14 +31,16 @@ module Dependabot
       require_relative "update_checker/latest_version_finder"
       require_relative "update_checker/lock_file_resolver"
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        RequirementsUpdater.new(
-          requirements: requirements,
-          latest_resolvable_version: preferred_resolvable_version&.to_s,
-          update_strategy: requirements_update_strategy,
-          has_lockfile: requirements_text_file?
-        ).updated_requirements
+        wrap_requirements(
+          RequirementsUpdater.new(
+            requirements: requirements,
+            latest_resolvable_version: preferred_resolvable_version&.to_s,
+            update_strategy: requirements_update_strategy,
+            has_lockfile: requirements_text_file?
+          ).updated_requirements
+        )
       end
 
       private
@@ -158,7 +160,7 @@ module Dependabot
         requirement = reqs.find do |r|
           file = r[:file]
 
-          file == "uv.lock" || file == "pyproject.toml" || file.end_with?(".in") || file.end_with?(".txt")
+          file == "uv.lock" || file.end_with?("pyproject.toml") || file.end_with?(".in") || file.end_with?(".txt")
         end
 
         requirement&.fetch(:requirement)
@@ -233,6 +235,11 @@ module Dependabot
         false
       rescue URI::InvalidURIError
         false
+      end
+
+      sig { returns(T::Boolean) }
+      def updating_pyproject?
+        requirement_files.any? { |file| file.end_with?("pyproject.toml") }
       end
 
       sig { returns(T::Boolean) }

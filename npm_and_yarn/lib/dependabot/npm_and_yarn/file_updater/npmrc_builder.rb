@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/npm_and_yarn/file_updater"
+require "dependabot/npm_and_yarn/helpers"
 
 module Dependabot
   module NpmAndYarn
@@ -44,7 +45,7 @@ module Dependabot
             if npmrc_file then complete_npmrc_from_credentials
             elsif yarnrc_file then build_npmrc_from_yarnrc
             else
-              build_npmrc_content_from_lockfile
+              build_npmrc_content_from_lockfile || build_npmrc_content_from_credential_scopes
             end
 
           final_content = initial_content || ""
@@ -96,6 +97,23 @@ module Dependabot
           "registry = #{registry}\n" \
             "#{npmrc_global_registry_auth_line}" \
             "always-auth = true"
+        end
+
+        sig { returns(T.nilable(String)) }
+        def build_npmrc_content_from_credential_scopes
+          scoped_credentials = registry_credentials.select { |cred| cred.scope && cred["registry"] }
+          return if scoped_credentials.empty?
+
+          lines = T.let([], T::Array[String])
+          scoped_credentials.each do |cred|
+            registry = cred.fetch("registry")
+            registry_url = registry.start_with?("http") ? registry : "https://#{registry}"
+            T.must(cred.scope).each do |s|
+              lines << "#{Helpers.normalize_npm_scope(s)}:registry=#{registry_url}"
+            end
+          end
+
+          lines.join("\n")
         end
 
         sig { returns(T.nilable(String)) }
@@ -334,11 +352,25 @@ module Dependabot
           )
         end
 
+        sig { params(registry: String).returns(T.nilable(T::Array[String])) }
+        def credential_scopes_for(registry)
+          cred = registry_credentials.find { |c| c["registry"] == registry }
+          return unless cred&.scope
+
+          registry_url = registry.start_with?("http") ? registry : "https://#{registry}"
+          T.must(cred.scope).map { |s| "#{Helpers.normalize_npm_scope(s)}:registry=#{registry_url}" }
+        end
+
         # rubocop:disable Metrics/PerceivedComplexity
         sig { params(registry: String).returns(T.nilable(T::Array[String])) }
         def registry_scopes(registry)
           # Central registries don't just apply to scopes
           return if CENTRAL_REGISTRIES.include?(registry)
+
+          # Use explicit scope from credential if available
+          explicit = credential_scopes_for(registry)
+          return explicit if explicit
+
           return unless dependency_urls
 
           other_regs =

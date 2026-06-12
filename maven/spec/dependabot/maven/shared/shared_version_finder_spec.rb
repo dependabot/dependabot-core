@@ -10,8 +10,17 @@ require "dependabot/maven/version"
 require "dependabot/package/package_release"
 
 RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
+  # SharedVersionFinder is abstract, so use a concrete subclass for testing
+  let(:concrete_class) do
+    Class.new(described_class) do
+      def package_details
+        nil
+      end
+    end
+  end
+
   let(:finder) do
-    described_class.new(
+    concrete_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
@@ -803,6 +812,156 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
       let(:dependency_version) { nil }
 
       it { is_expected.to be false }
+    end
+
+    context "when the dependency has no version but requirements reference a prerelease" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.0.0-alpha1",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the dependency is stable but requirements reference a prerelease" do
+      let(:dependency_version) { "1.0.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.0.0-beta1",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the requirement contains a numbered DEV qualifier" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.0.0-DEV5",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the requirement contains a numbered PREVIEW qualifier" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.0.0-PREVIEW1",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the requirement contains a numbered EXPERIMENTAL qualifier" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.0.0-EXPERIMENTAL2",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the requirement contains a dot-separated number qualifier" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.0.0-DEV.5",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the requirement contains a stable version" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.0.0",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when the requirement contains a RELEASE qualifier" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.0.0.RELEASE",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when the requirement is a Maven range with brackets containing a prerelease" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "[1.0.0-alpha1, 2.0.0)",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the requirement contains a SNAPSHOT qualifier" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          file: "pom.xml",
+          requirement: "1.0.0-SNAPSHOT",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar" }
+        }]
+      end
+
+      it { is_expected.to be true }
     end
   end
 

@@ -48,7 +48,7 @@ module Dependabot
           languages: {
             python: {
               "raw" => language_version_manager.user_specified_python_version || "unknown",
-              "max" => language_version_manager.python_major_minor || "unknown"
+              "max" => language_version_manager.python_major_minor
             }
           }
         }
@@ -193,7 +193,7 @@ module Dependabot
 
         repo_contents(dir: relative_reqs_dir)
           .select { |f| f.type == "file" }
-          .select { |f| f.name.end_with?(".txt", ".in") }
+          .select { |f| File.join(relative_reqs_dir, f.name).end_with?(".txt", ".in") }
           .reject { |f| f.size > MAX_FILE_SIZE }
           .map { |f| fetch_file_from_host("#{relative_reqs_dir}/#{f.name}") }
           .select { |f| requirements_file?(f) }

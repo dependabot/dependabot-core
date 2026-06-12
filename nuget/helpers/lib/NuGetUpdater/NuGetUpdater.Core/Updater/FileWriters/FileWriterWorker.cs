@@ -167,7 +167,7 @@ public class FileWriterWorker
         }
 
         var initialTopLevelDependencies = initialProjectDiscovery.Dependencies
-            .Where(d => !d.IsTransitive)
+            .Where(d => d.IsTopLevel)
             .ToImmutableArray();
         var newDependency = new Dependency(dependencyName, newDependencyVersion.ToString(), DependencyType.Unknown);
         var desiredDependencies = initialTopLevelDependencies.Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
@@ -243,7 +243,7 @@ public class FileWriterWorker
                 }
 
                 var rerunTopLevelDependencies = rerunProjectDiscovery.Dependencies
-                    .Where(d => !d.IsTransitive)
+                    .Where(d => d.IsTopLevel)
                     .ToImmutableArray();
                 var rerunDesiredDependencies = rerunTopLevelDependencies.Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
                     ? rerunTopLevelDependencies.Select(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) ? newDependency : d).ToImmutableArray()
@@ -302,13 +302,11 @@ public class FileWriterWorker
                 continue;
             }
 
-            var computedUpdateOperations = await PackageReferenceUpdater.ComputeUpdateOperations(
-                repoContentsPath.FullName,
-                projectPath.FullName,
-                targetFramework,
+            var computedUpdateOperations = PackageReferenceUpdater.ComputeUpdateOperations(
                 initialTopLevelDependencies,
                 desiredDependencies,
                 resolvedDependencies.Value,
+                finalProjectDiscovery.DependencyGraph,
                 _logger);
             var filteredUpdateOperations = computedUpdateOperations
                 .Where(op =>
@@ -408,8 +406,7 @@ public class FileWriterWorker
             .ToImmutableArray();
 
         // try update
-        var addPackageReferenceElementForPinnedPackages = !projectDiscovery.CentralPackageTransitivePinningEnabled;
-        var success = await fileWriter.UpdatePackageVersionsAsync(repoContentsPath, relativeFilePaths, projectDiscovery.Dependencies, requiredPackageVersions, addPackageReferenceElementForPinnedPackages);
+        var success = await fileWriter.UpdatePackageVersionsAsync(repoContentsPath, relativeFilePaths, projectDiscovery.Dependencies, requiredPackageVersions, projectDiscovery.PackageManagementKind);
         var updatedFiles = new List<string>();
         foreach (var (filePath, originalContents) in originalFileContents)
         {

@@ -38,7 +38,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: true),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: false),
             // expectedResult
             false,
         ];
@@ -57,7 +57,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: true,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: true),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: false),
             // expectedResult
             true,
         ];
@@ -75,7 +75,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             true,
         ];
@@ -93,7 +93,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: true),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: false),
             // expectedResult
             false,
         ];
@@ -113,7 +113,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: true),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: false),
             // expectedResult
             true,
         ];
@@ -131,7 +131,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: true,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             false,
         ];
@@ -151,7 +151,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: true,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             true,
         ];
@@ -171,7 +171,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: true,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             false,
         ];
@@ -191,7 +191,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: true,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.1", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.1", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             true,
         ];
@@ -208,7 +208,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             true,
         ];
@@ -225,7 +225,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             true,
         ];
@@ -242,7 +242,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             false,
         ];
@@ -259,7 +259,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             false,
         ];
@@ -276,7 +276,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             false,
         ];
@@ -294,7 +294,7 @@ public class JobTests
                 securityAdvisories: [],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             false,
         ];
@@ -313,7 +313,7 @@ public class JobTests
                 ],
                 securityUpdatesOnly: false,
                 updatingAPullRequest: false),
-            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTransitive: false),
+            new Dependency("Some.Package", "1.8.0", DependencyType.PackageReference, IsTopLevel: true),
             // expectedResult
             true,
         ];

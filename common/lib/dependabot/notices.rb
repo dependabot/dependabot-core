@@ -59,7 +59,7 @@ module Dependabot
 
     # Converts the Notice object to a hash.
     # @return [Hash] The hash representation of the notice.
-    sig { returns(T::Hash[Symbol, T.untyped]) }
+    sig { returns(T::Hash[Symbol, T.any(String, T::Boolean)]) }
     def to_hash
       {
         mode: @mode,

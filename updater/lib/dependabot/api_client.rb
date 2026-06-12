@@ -71,6 +71,7 @@ module Dependabot
           "dependency-names": dependency_change.updated_dependencies.map(&:name),
           "updated-dependency-files": dependency_change.updated_dependency_files_hash,
           "base-commit-sha": base_commit_sha,
+          "commit-message": dependency_change.pr_message.commit_message,
           "pr-title": dependency_change.pr_message.pr_name,
           "pr-body": dependency_change.pr_message.pr_message
         }
@@ -387,6 +388,39 @@ module Dependabot
     end
     # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/MethodLength
+
+    sig { params(package_manager: String).returns(T::Array[T::Hash[String, T.untyped]]) }
+    def fetch_blocked_versions(package_manager)
+      ::Dependabot::OpenTelemetry.tracer.in_span("fetch_blocked_versions", kind: :internal) do |span|
+        span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
+
+        api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/blocked_versions"
+        response = http_client.get(path: api_url, query: { "package-manager": package_manager })
+
+        if response.status >= 400
+          Dependabot.logger.warn("Failed to fetch blocked versions (HTTP #{response.status}), continuing without them")
+          return []
+        end
+
+        parsed = JSON.parse(response.body.to_s)
+        unless parsed.is_a?(Hash)
+          Dependabot.logger.warn("Unexpected blocked versions format, continuing without them")
+          return []
+        end
+        data = parsed.fetch("data", [])
+        unless data.is_a?(Array) && data.all?(Hash)
+          Dependabot.logger.warn("Unexpected blocked versions format, continuing without them")
+          return []
+        end
+        data
+      rescue JSON::ParserError, TypeError => e
+        Dependabot.logger.warn("Failed to parse blocked versions response: #{e.message}, continuing without them")
+        []
+      rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError => e
+        Dependabot.logger.warn("Failed to fetch blocked versions: #{e.message}, continuing without them")
+        []
+      end
+    end
 
     private
 

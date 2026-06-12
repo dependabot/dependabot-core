@@ -60,6 +60,8 @@ module Dependabot
             next req if property_name && !properties_to_update.include?(property_name)
 
             new_req = update_requirement(req[:requirement])
+            next req if new_req == req[:requirement]
+
             req.merge(requirement: new_req, source: updated_source)
           end
         end

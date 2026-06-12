@@ -4,6 +4,35 @@
 require "docker_registry2"
 require "sorbet-runtime"
 
+begin
+  require "rest-client"
+rescue LoadError
+  # Keep backwards-compatible exception constants when rest-client isn't bundled.
+  module ::RestClient
+    module Exceptions
+      class Timeout < StandardError; end
+      class OpenTimeout < Timeout; end
+      class ReadTimeout < Timeout; end
+    end
+
+    class Forbidden < StandardError; end
+    class TooManyRequests < StandardError; end
+    class ServerBrokeConnection < StandardError; end
+    class ServiceUnavailable < StandardError; end
+    class InternalServerError < StandardError; end
+    class BadGateway < StandardError; end
+
+    class Response
+      extend T::Sig
+
+      sig { returns(T::Hash[T.untyped, T.untyped]) }
+      def headers
+        {}
+      end
+    end
+  end
+end
+
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/cooldown_calculation"
@@ -101,9 +130,9 @@ module Dependabot
         dependency.version
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        dependency.requirements.map do |req|
+        updated = dependency.requirements.map do |req|
           updated_source = req.fetch(:source).dup
 
           tag = req[:source][:tag]
@@ -119,6 +148,7 @@ module Dependabot
 
           req.merge(source: updated_source)
         end
+        wrap_requirements(updated)
       end
 
       private
@@ -184,6 +214,18 @@ module Dependabot
           expected_digest =
             if source_tag
               latest_tag = latest_tag_from(source_tag)
+
+              # When digest-only updates are suppressed and the tag hasn't changed,
+              # treat the digest as up-to-date to avoid proposing a PR that only
+              # bumps the digest without a corresponding version change.
+              # Only apply to comparable (versioned) tags — non-comparable tags like
+              # "latest" or distro codenames should still get digest updates.
+              if Dependabot::Experiments.enabled?(:docker_digest_only_update_suppression) &&
+                 Tag.new(source_tag).comparable? &&
+                 latest_tag.name == source_tag
+                next true
+              end
+
               digest_of(latest_tag.name)
             else
               updated_digest
@@ -345,7 +387,9 @@ module Dependabot
         candidate_tags.reverse_each do |tag|
           details = publication_detail(tag)
 
-          next if !details || !details.released_at
+          # If we can't determine publication details, skip cooldown for this tag and use it
+          # rather than blocking the update when the registry doesn't support the required API calls
+          return [tag] if !details || !details.released_at
 
           return [tag] unless cooldown_period?(T.must(details.released_at), tag)
 
@@ -360,7 +404,7 @@ module Dependabot
         return publication_details[candidate_tag.name] if publication_details.key?(candidate_tag.name)
 
         details = get_tag_publication_details(candidate_tag)
-        publication_details[candidate_tag.name] = T.cast(details, Dependabot::Package::PackageRelease)
+        publication_details[candidate_tag.name] = details
 
         details
       end
@@ -375,12 +419,17 @@ module Dependabot
         first_digest = extract_digest_from_response(digest_info, tag)
         return nil unless first_digest
 
-        blob_info = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+        # When digest_info is an Array the registry returned a manifest list
+        # (OCI image index) and the extracted digest points at a platform-
+        # specific *manifest*, not a blob.  Use the correct endpoint so the
+        # HEAD request succeeds on registries like ghcr.io.
+        endpoint = digest_info.is_a?(Array) ? "manifests" : "blobs"
+        head_response = with_retries(max_attempts: 3, errors: transient_docker_errors) do
           client = docker_registry_client
-          client.dohead "v2/#{docker_repo_name}/blobs/#{first_digest}"
+          client.dohead "v2/#{docker_repo_name}/#{endpoint}/#{first_digest}"
         end
 
-        last_modified = blob_info.headers[:last_modified]
+        last_modified = head_response.headers[:last_modified]
         published_date = last_modified ? Time.parse(last_modified) : nil
 
         Dependabot::Package::PackageRelease.new(
@@ -391,6 +440,15 @@ module Dependabot
           url: nil,
           package_type: "docker"
         )
+      rescue *transient_docker_errors,
+             DockerRegistry2::RegistryAuthenticationException,
+             RestClient::Forbidden,
+             RestClient::TooManyRequests => e
+        Dependabot.logger.warn(
+          "Failed to fetch publication details for #{docker_repo_name}:#{tag.name}, " \
+          "skipping cooldown: #{e.class} - #{e.message}"
+        )
+        nil
       end
 
       sig do

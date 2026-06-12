@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/package/release_cooldown_options"
 
 module Dependabot
   module PreCommit
@@ -43,14 +44,16 @@ module Dependabot
             source: T::Hash[Symbol, T.untyped],
             credentials: T::Array[Dependabot::Credential],
             requirements: T::Array[T::Hash[Symbol, T.untyped]],
-            current_version: T.nilable(String)
+            current_version: T.nilable(String),
+            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize(source:, credentials:, requirements:, current_version:)
+        def initialize(source:, credentials:, requirements:, current_version:, cooldown_options: nil)
           @source = source
           @credentials = credentials
           @requirements = requirements
           @current_version = current_version
+          @cooldown_options = cooldown_options
         end
 
         # Find the latest available version for this dependency
@@ -78,6 +81,9 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         attr_reader :current_version
+
+        sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+        attr_reader :cooldown_options
 
         sig { returns(T.nilable(String)) }
         def package_name

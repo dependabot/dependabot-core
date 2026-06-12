@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Updater.FileWriters;
 
 namespace NuGetUpdater.Core.Test.Update.FileWriters;
@@ -13,7 +14,7 @@ internal class TestFileWriterReturnsConstantResult : IFileWriter
         Result = result;
     }
 
-    public Task<bool> UpdatePackageVersionsAsync(DirectoryInfo repoContentsPath, ImmutableArray<string> relativeFilePaths, ImmutableArray<Dependency> originalDependencies, ImmutableArray<Dependency> requiredPackageVersions, bool addPackageReferenceElementForPinnedPackages)
+    public Task<bool> UpdatePackageVersionsAsync(DirectoryInfo repoContentsPath, ImmutableArray<string> relativeFilePaths, ImmutableArray<Dependency> originalDependencies, ImmutableArray<Dependency> requiredPackageVersions, PackageManagementKind packageManagementKind)
     {
         return Task.FromResult(Result);
     }

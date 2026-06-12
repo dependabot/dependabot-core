@@ -29,15 +29,17 @@ module Dependabot
             lockfile: Dependabot::DependencyFile,
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
-            credentials: T::Array[Credential]
+            credentials: T::Array[Credential],
+            security_updates_only: T::Boolean
           )
             .void
         end
-        def initialize(lockfile:, dependencies:, dependency_files:, credentials:)
+        def initialize(lockfile:, dependencies:, dependency_files:, credentials:, security_updates_only: false)
           @lockfile = lockfile
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
+          @security_updates_only = T.let(security_updates_only, T::Boolean)
         end
 
         sig { returns(Dependabot::DependencyFile) }
@@ -71,6 +73,11 @@ module Dependabot
 
         sig { returns(T::Array[Credential]) }
         attr_reader :credentials
+
+        sig { returns(T::Boolean) }
+        def security_updates_only?
+          @security_updates_only
+        end
 
         UNREACHABLE_GIT = /fatal: repository '(?<url>.*)' not found/
         FORBIDDEN_GIT = /fatal: Authentication failed for '(?<url>.*)'/
@@ -332,8 +339,27 @@ module Dependabot
         sig { params(sub_dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, String]) }
         def run_npm8_subdependency_updater(sub_dependencies:)
           dependency_names = sub_dependencies.map(&:name)
+          original_content = File.read(lockfile_basename)
+
           NativeHelpers.run_npm8_subdependency_update_command(dependency_names)
-          { lockfile_basename => File.read(lockfile_basename) }
+
+          updated_content = File.read(lockfile_basename)
+          if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+            # `npm update` is a no-op for transitive dependencies not listed in
+            # any package.json (common in workspace repos). Fall back to
+            # `npm audit fix` which can update these in the lockfile.
+            # npm audit fix exits non-zero when vulnerabilities remain, so we
+            # rescue and use whatever lockfile changes it managed to make.
+            begin
+              NativeHelpers.run_npm_audit_fix_command
+              sub_dependencies.each { |dep| dep.metadata[:audit_fix_used] = true }
+            rescue SharedHelpers::HelperSubprocessFailed
+              Dependabot.logger.info("npm audit fix failed or partially fixed — continuing with any changes made")
+            end
+            updated_content = File.read(lockfile_basename)
+          end
+
+          { lockfile_basename => updated_content }
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
@@ -375,6 +401,9 @@ module Dependabot
           ]
 
           command_args << "--save-optional" if has_optional_dependencies
+          # Override any min-release-age set in .npmrc: security fixes must not be
+          # blocked by a release-age gate the user configured for regular updates.
+          command_args << "--min-release-age=0" if security_updates_only?
 
           command = command_args.join(" ")
 
@@ -387,6 +416,7 @@ module Dependabot
           ]
 
           fingerprint_args << "--save-optional" if has_optional_dependencies
+          fingerprint_args << "--min-release-age=0" if security_updates_only?
 
           fingerprint = fingerprint_args.join(" ")
 

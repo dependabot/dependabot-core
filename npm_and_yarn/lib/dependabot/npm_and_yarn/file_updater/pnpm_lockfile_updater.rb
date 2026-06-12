@@ -21,14 +21,22 @@ module Dependabot
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
             repo_contents_path: T.nilable(String),
-            credentials: T::Array[Dependabot::Credential]
+            credentials: T::Array[Dependabot::Credential],
+            security_updates_only: T::Boolean
           ).void
         end
-        def initialize(dependencies:, dependency_files:, repo_contents_path:, credentials:)
+        def initialize(
+          dependencies:,
+          dependency_files:,
+          repo_contents_path:,
+          credentials:,
+          security_updates_only: false
+        )
           @dependencies = dependencies
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
+          @security_updates_only = T.let(security_updates_only, T::Boolean)
           @error_handler = T.let(
             PnpmErrorHandler.new(
               dependencies: dependencies,
@@ -73,6 +81,11 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
+
+        sig { returns(T::Boolean) }
+        def security_updates_only?
+          @security_updates_only
+        end
 
         sig { returns(PnpmErrorHandler) }
         attr_reader :error_handler
@@ -128,6 +141,10 @@ module Dependabot
         # Unparsable package.json file
         ERR_PNPM_INVALID_PACKAGE_JSON = /Invalid package.json in package/
 
+        # Invalid dependency name in package.json
+        ERR_PNPM_INVALID_DEPENDENCY_NAME =
+          /ERR_PNPM_INVALID_DEPENDENCY_NAME.*invalid name: "(?<dep>[^"]+)"/m
+
         # Unparsable lockfile
         ERR_PNPM_UNEXPECTED_PKG_CONTENT_IN_STORE = /ERR_PNPM_UNEXPECTED_PKG_CONTENT_IN_STORE/
         ERR_PNPM_OUTDATED_LOCKFILE = /ERR_PNPM_OUTDATED_LOCKFILE/
@@ -155,6 +172,8 @@ module Dependabot
             File.write(".npmrc", npmrc_content(pnpm_lock))
 
             SharedHelpers.with_git_configured(credentials: credentials) do
+              original_content = File.read(pnpm_lock.name)
+
               if updated_pnpm_workspace_content
                 File.write("pnpm-workspace.yaml", updated_pnpm_workspace_content["pnpm-workspace.yaml"])
               else
@@ -164,7 +183,18 @@ module Dependabot
 
               run_pnpm_install
 
-              File.read(pnpm_lock.name)
+              updated_content = File.read(pnpm_lock.name)
+              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+                run_pnpm_deep_update_fallback
+                updated_content = File.read(pnpm_lock.name)
+              end
+
+              if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+                run_pnpm_audit_fix_fallback(pnpm_lock, original_content)
+                updated_content = File.read(pnpm_lock.name)
+              end
+
+              updated_content
             end
           end
         end
@@ -175,17 +205,74 @@ module Dependabot
             "#{d.name}@#{d.version}"
           end.join(" ")
 
-          Helpers.run_pnpm_command(
-            "update #{dependency_updates}  --lockfile-only --no-save -r",
-            fingerprint: "update <dependency_updates>  --lockfile-only --no-save -r"
-          )
+          cmd = "update #{dependency_updates}  --lockfile-only --no-save -r"
+          fingerprint = "update <dependency_updates>  --lockfile-only --no-save -r"
+          if security_updates_only?
+            # Override any minimumReleaseAge set in pnpm-workspace.yaml: security fixes must not be
+            # blocked by a release-age gate the user configured for regular updates.
+            cmd += " --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false"
+            fingerprint += " --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false"
+          end
+          Helpers.run_pnpm_command(cmd, fingerprint: fingerprint)
         end
 
         sig { returns(T.nilable(String)) }
         def run_pnpm_install
-          Helpers.run_pnpm_command(
-            "install --lockfile-only"
+          cmd = "install --lockfile-only"
+          if security_updates_only?
+            # Override any minimumReleaseAge set in pnpm-workspace.yaml: security fixes must not be
+            # blocked by a release-age gate the user configured for regular updates.
+            cmd += " --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false"
+          end
+          Helpers.run_pnpm_command(cmd)
+        end
+
+        # Tries `pnpm update --depth Infinity <dep>` for each dependency as a
+        # first-tier fallback when the regular update is a no-op (typically
+        # transitive deps not listed in any package.json). Unlike `audit --fix`
+        # this does not write `overrides` to package.json.
+        sig { void }
+        def run_pnpm_deep_update_fallback
+          recursive = workspace_files.any?
+          dependencies.each do |dep|
+            NativeHelpers.run_pnpm_deep_update_command(dep.name, recursive: recursive)
+            dep.metadata[:deep_update_used] = true
+          end
+        rescue SharedHelpers::HelperSubprocessFailed
+          Dependabot.logger.info(
+            "pnpm update --depth Infinity failed or partially fixed — continuing with any changes made"
           )
+        end
+
+        # Runs `pnpm audit --fix` as a fallback when the primary update is a no-op.
+        # `pnpm audit --fix` adds `overrides` to `package.json` — since we can
+        # only return lockfile content from `run_pnpm_update`, any manifest
+        # changes would produce inconsistent output. If audit-fix modifies a
+        # package.json we revert both the manifest(s) and lockfile so the
+        # overall operation behaves as a no-op.
+        sig { params(pnpm_lock: Dependabot::DependencyFile, original_content: String).void }
+        def run_pnpm_audit_fix_fallback(pnpm_lock, original_content)
+          package_json_snapshots = Dir.glob("**/package.json").to_h { |f| [f, File.read(f)] }
+
+          begin
+            NativeHelpers.run_pnpm_audit_fix_command
+            run_pnpm_install
+
+            manifest_changed = package_json_snapshots.any? { |f, c| File.read(f) != c }
+            if manifest_changed
+              Dependabot.logger.info(
+                "pnpm audit --fix modified package.json (overrides) — reverting fallback"
+              )
+              package_json_snapshots.each { |f, c| File.write(f, c) }
+              File.write(pnpm_lock.name, original_content)
+            else
+              dependencies.each { |dep| dep.metadata[:audit_fix_used] = true }
+            end
+          rescue SharedHelpers::HelperSubprocessFailed
+            Dependabot.logger.info(
+              "pnpm audit --fix failed or partially fixed — continuing with any changes made"
+            )
+          end
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -289,6 +376,12 @@ module Dependabot
             msg = "Error while resolving package.json."
             Dependabot.logger.warn(error_message)
             raise Dependabot::DependencyFileNotResolvable, msg
+          end
+
+          if (match = error_message.match(ERR_PNPM_INVALID_DEPENDENCY_NAME))
+            invalid_dep = match.named_captures["dep"]
+            Dependabot.logger.warn(error_message)
+            raise Dependabot::DependencyNotFound, T.must(invalid_dep)
           end
 
           [ERR_PNPM_UNEXPECTED_PKG_CONTENT_IN_STORE, ERR_PNPM_OUTDATED_LOCKFILE]

@@ -375,7 +375,7 @@ RSpec.describe Dependabot::ApiClient do
                 ]
               )
               expect(data["base-commit-sha"]).to eql("sha")
-              expect(data).not_to have_key("commit-message")
+              expect(data["commit-message"]).to eq("Commit message")
               expect(data["pr-title"]).to eq("PR name")
               expect(data["pr-body"]).to eq("PR message")
             end)
@@ -797,6 +797,146 @@ RSpec.describe Dependabot::ApiClient do
       it "does not send a request" do
         client.record_cooldown_meta(nil)
         expect(WebMock).not_to have_requested(:post, record_cooldown_meta_url)
+      end
+    end
+  end
+
+  describe "fetch_blocked_versions" do
+    let(:blocked_versions_url) { "http://example.com/update_jobs/1/blocked_versions" }
+
+    context "when the API returns blocked versions" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(
+            status: 200,
+            body: {
+              data: [
+                { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" },
+                { "dependency-name" => "flatmap-stream", "version-requirement" => "= 0.1.1", "reason" => "malware" }
+              ]
+            }.to_json,
+            headers: headers
+          )
+      end
+
+      it "returns the blocked versions array" do
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq(
+          [
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" },
+            { "dependency-name" => "flatmap-stream", "version-requirement" => "= 0.1.1", "reason" => "malware" }
+          ]
+        )
+      end
+    end
+
+    context "when the API returns an error" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(status: 500, body: "Internal Server Error", headers: headers)
+      end
+
+      it "returns an empty array and logs a warning" do
+        expect(Dependabot.logger).to receive(:warn).with(/Failed to fetch blocked versions/)
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq([])
+      end
+    end
+
+    context "when the API times out" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_timeout
+      end
+
+      it "returns an empty array and logs a warning" do
+        expect(Dependabot.logger).to receive(:warn).with(/Failed to fetch blocked versions/)
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq([])
+      end
+    end
+
+    context "when the API returns no blocked versions" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(
+            status: 200,
+            body: { data: [] }.to_json,
+            headers: headers
+          )
+      end
+
+      it "returns an empty array" do
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq([])
+      end
+    end
+
+    context "when the API returns invalid JSON" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(status: 200, body: "not json", headers: headers)
+      end
+
+      it "returns an empty array and logs a warning" do
+        expect(Dependabot.logger).to receive(:warn).with(/Failed to parse blocked versions/)
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq([])
+      end
+    end
+
+    context "when the API returns data that is not an array" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(
+            status: 200,
+            body: { data: "unexpected" }.to_json,
+            headers: headers
+          )
+      end
+
+      it "returns an empty array and logs a warning" do
+        expect(Dependabot.logger).to receive(:warn).with(/Unexpected blocked versions format/)
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq([])
+      end
+    end
+
+    context "when the API returns a non-object JSON body" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(status: 200, body: "[]", headers: headers)
+      end
+
+      it "returns an empty array and logs a warning" do
+        expect(Dependabot.logger).to receive(:warn).with(/Unexpected blocked versions format/)
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq([])
+      end
+    end
+
+    context "when the API returns data entries that are not hashes" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(
+            status: 200,
+            body: { data: [1, "not-a-hash"] }.to_json,
+            headers: headers
+          )
+      end
+
+      it "returns an empty array and logs a warning" do
+        expect(Dependabot.logger).to receive(:warn).with(/Unexpected blocked versions format/)
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq([])
       end
     end
   end

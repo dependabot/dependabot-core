@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "open3"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base/dependency_set"
+require "dependabot/go_modules/go_work_parser"
 require "dependabot/go_modules/path_converter"
 require "dependabot/go_modules/replace_stubber"
 require "dependabot/errors"
@@ -52,11 +53,13 @@ module Dependabot
       def parse
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
-        required_packages.each do |hsh|
-          unless skip_dependency?(hsh) # rubocop:disable Style/Next
+        if workspace?
+          parse_workspace_dependencies(dependency_set)
+        else
+          required_packages.each do |hsh|
+            next if skip_dependency?(hsh)
 
-            dep = dependency_from_details(hsh)
-            dependency_set << dep
+            dependency_set << dependency_from_details(hsh)
           end
         end
 
@@ -104,6 +107,8 @@ module Dependabot
         set_goenv_variable
         set_goproxy_variable
         set_goprivate_variable
+        set_gonoproxy_variable
+        set_gonosumdb_variable
       end
 
       sig { void }
@@ -111,8 +116,28 @@ module Dependabot
         return unless go_env
 
         env_file = T.must(go_env)
-        File.write(env_file.name, env_file.content)
+        File.write(env_file.name, sanitize_go_env_content(T.must(env_file.content)))
         ENV["GOENV"] = Pathname.new(env_file.name).realpath.to_s
+      end
+
+      # Go's GOENV file format does not support shell-style quoting, but users
+      # commonly write values like GOPROXY="https://..." which Go reads literally
+      # (including the quotes), causing URL parse failures. Strip surrounding
+      # matching " or ' from each value.
+      sig { params(content: String).returns(String) }
+      def sanitize_go_env_content(content)
+        content.gsub(
+          /
+            ^          # start of line
+            ([^=\n]+)  # key: one or more chars that are not = or newline
+            =          # separator
+            (["'])     # opening quote, captured for backreference
+            (.*)       # value
+            \2         # closing quote must match opening
+            $          # end of line
+          /x,
+          '\1=\3'
+        )
       end
 
       sig { void }
@@ -123,6 +148,39 @@ module Dependabot
 
         goprivate = options.fetch(:goprivate, "*")
         ENV["GOPRIVATE"] = goprivate if goprivate
+      end
+
+      # GONOPROXY explicitly controls which module paths skip the proxy.
+      # Setting this overrides GOPRIVATE's default for proxy decisions, letting
+      # us keep GOPRIVATE=* (to skip sumdb for unknown enterprise orgs) while
+      # still routing public modules through proxy.golang.org. The literal
+      # value "none" matches no module paths — see Go's mod_gonoproxy.txt test.
+      sig { void }
+      def set_gonoproxy_variable
+        return if go_env_includes_any?(%w(GONOPROXY GOPRIVATE GOPROXY))
+        return if goproxy_credentials.any?
+
+        gonoproxy = options.fetch(:gonoproxy, nil)
+        ENV["GONOPROXY"] = gonoproxy if gonoproxy
+      end
+
+      # GONOSUMDB explicitly controls which module paths skip checksum DB
+      # verification. Setting this overrides GOPRIVATE's default for sumdb,
+      # letting us narrow the scope independently of proxy routing.
+      sig { void }
+      def set_gonosumdb_variable
+        return if go_env_includes_any?(%w(GONOSUMDB GOPRIVATE))
+
+        gonosumdb = options.fetch(:gonosumdb, nil)
+        ENV["GONOSUMDB"] = gonosumdb if gonosumdb
+      end
+
+      sig { params(keys: T::Array[String]).returns(T::Boolean) }
+      def go_env_includes_any?(keys)
+        content = go_env&.content
+        return false unless content
+
+        keys.any? { |key| content.include?(key) }
       end
 
       sig { void }
@@ -190,9 +248,98 @@ module Dependabot
         @go_env ||= T.let(get_original_file("go.env"), T.nilable(Dependabot::DependencyFile))
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def go_work
+        @go_work ||= T.let(get_original_file("go.work"), T.nilable(Dependabot::DependencyFile))
+      end
+
+      sig { returns(T::Boolean) }
+      def workspace?
+        !go_work.nil?
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def all_go_mods
+        @all_go_mods ||= T.let(
+          if go_work
+            workspace_mod_names = GoWorkParser.use_paths(T.must(T.must(go_work).content)).map do |path|
+              path == "." ? "go.mod" : "#{path}/go.mod"
+            end
+            dependency_files.select { |f| workspace_mod_names.include?(f.name) }
+          else
+            dependency_files.select { |f| f.name.end_with?("go.mod") }
+          end,
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).void }
+      def parse_workspace_dependencies(dependency_set)
+        all_go_mods.each do |mod_file|
+          parse_single_module(mod_file).each do |dep|
+            dependency_set << dep
+          end
+        end
+      end
+
+      sig { params(mod_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }
+      def parse_single_module(mod_file)
+        SharedHelpers.in_a_temporary_directory do |path|
+          File.write("go.mod", mod_file.content)
+
+          command = "go mod edit -json"
+          stdout, stderr, status = Open3.capture3(command)
+          handle_parser_error(path, stderr, file_path: mod_file.path) unless status.success?
+
+          parsed = JSON.parse(stdout)
+          packages = parsed["Require"] || []
+
+          packages.filter_map do |hsh|
+            next if skip_dependency_in_manifest?(hsh, parsed)
+
+            source = { type: "default", source: hsh["Path"] }
+            version = hsh["Version"]&.sub(/^v?/, "")
+
+            reqs = [{
+              requirement: hsh["Version"],
+              file: mod_file.name,
+              source: source,
+              groups: []
+            }]
+
+            Dependency.new(
+              name: hsh["Path"],
+              version: version,
+              requirements: hsh["Indirect"] ? [] : reqs,
+              package_manager: "go_modules"
+            )
+          end
+        end
+      end
+
+      sig { params(dep: T::Hash[String, T.untyped], mod_manifest: T::Hash[String, T.untyped]).returns(T::Boolean) }
+      def skip_dependency_in_manifest?(dep, mod_manifest)
+        return true if dependency_is_replaced_in?(dep, mod_manifest)
+
+        path_uri = URI.parse("https://#{dep['Path']}")
+        !path_uri.host&.include?(".")
+      rescue URI::InvalidURIError
+        false
+      end
+
+      sig { params(details: T::Hash[String, T.untyped], mod_manifest: T::Hash[String, T.untyped]).returns(T::Boolean) }
+      def dependency_is_replaced_in?(details, mod_manifest)
+        return false unless mod_manifest["Replace"]
+
+        mod_manifest["Replace"].any? do |replace|
+          replace["Old"]["Path"] == details["Path"] &&
+            (!replace["Old"]["Version"] || replace["Old"]["Version"] == details["Version"])
+        end
+      end
+
       sig { override.void }
       def check_required_files
-        raise "No go.mod!" unless go_mod
+        raise "No go.mod or go.work!" unless go_mod || go_work
       end
 
       sig { params(details: T::Hash[String, T.untyped]).returns(Dependabot::Dependency) }
@@ -264,10 +411,11 @@ module Dependabot
         end
       end
 
-      sig { params(path: T.any(Pathname, String), stderr: String).returns(T.noreturn) }
-      def handle_parser_error(path, stderr)
+      sig { params(path: T.any(Pathname, String), stderr: String, file_path: T.nilable(String)).returns(T.noreturn) }
+      def handle_parser_error(path, stderr, file_path: nil)
         msg = stderr.gsub(path.to_s, "").strip
-        raise Dependabot::DependencyFileNotParseable.new(T.must(go_mod).path, msg)
+        resolved_path = file_path || go_mod&.path || go_work&.path || "go.mod"
+        raise Dependabot::DependencyFileNotParseable.new(resolved_path, msg)
       end
 
       sig { params(dep: T::Hash[String, T.untyped]).returns(T::Boolean) }

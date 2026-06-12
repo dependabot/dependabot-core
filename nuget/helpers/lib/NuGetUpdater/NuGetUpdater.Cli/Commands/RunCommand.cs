@@ -9,39 +9,28 @@ namespace NuGetUpdater.Cli.Commands;
 
 internal static class RunCommand
 {
-    internal static readonly Option<FileInfo> JobPathOption = new("--job-path") { Required = true };
-    internal static readonly Option<DirectoryInfo> RepoContentsPathOption = new("--repo-contents-path") { Required = true };
-    internal static readonly Option<DirectoryInfo?> CaseInsensitiveRepoContentsPathOption = new("--case-insensitive-repo-contents-path") { Required = false };
-    internal static readonly Option<Uri> ApiUrlOption = new("--api-url")
-    {
-        Required = true,
-        CustomParser = (argumentResult) => Uri.TryCreate(argumentResult.Tokens.Single().Value, UriKind.Absolute, out var uri) ? uri : throw new ArgumentException("Invalid API URL format.")
-    };
-    internal static readonly Option<string> JobIdOption = new("--job-id") { Required = true };
-    internal static readonly Option<string> BaseCommitShaOption = new("--base-commit-sha") { Required = true };
-
     internal static Command GetCommand(Action<int> setExitCode)
     {
         Command command = new("run", "Runs a full dependabot job.")
         {
-            JobPathOption,
-            RepoContentsPathOption,
-            CaseInsensitiveRepoContentsPathOption,
-            ApiUrlOption,
-            JobIdOption,
-            BaseCommitShaOption
+            SharedOptions.JobPathOption,
+            SharedOptions.RepoContentsPathOption,
+            SharedOptions.CaseInsensitiveRepoContentsPathOption,
+            SharedOptions.ApiUrlOption,
+            SharedOptions.JobIdOption,
+            SharedOptions.BaseCommitShaOption
         };
 
         command.TreatUnmatchedTokensAsErrors = true;
 
         command.SetAction(async (parseResult, cancellationToken) =>
         {
-            var jobPath = parseResult.GetValue(JobPathOption);
-            var repoContentsPath = parseResult.GetValue(RepoContentsPathOption);
-            var caseInsensitiveRepoContentsPath = parseResult.GetValue(CaseInsensitiveRepoContentsPathOption);
-            var apiUrl = parseResult.GetValue(ApiUrlOption);
-            var jobId = parseResult.GetValue(JobIdOption);
-            var baseCommitSha = parseResult.GetValue(BaseCommitShaOption);
+            var jobPath = parseResult.GetValue(SharedOptions.JobPathOption);
+            var repoContentsPath = parseResult.GetValue(SharedOptions.RepoContentsPathOption);
+            var caseInsensitiveRepoContentsPath = parseResult.GetValue(SharedOptions.CaseInsensitiveRepoContentsPathOption);
+            var apiUrl = parseResult.GetValue(SharedOptions.ApiUrlOption);
+            var jobId = parseResult.GetValue(SharedOptions.JobIdOption);
+            var baseCommitSha = parseResult.GetValue(SharedOptions.BaseCommitShaOption);
 
             var apiHandler = new HttpApiHandler(apiUrl!.ToString(), jobId!);
             var (experimentsManager, _errorResult) = await ExperimentsManager.FromJobFileAsync(jobId!, jobPath!.FullName);

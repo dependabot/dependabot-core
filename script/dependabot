@@ -4,7 +4,9 @@ touch .core-bash_history # allow bash history to persist across invocations
 
 dependabot \
   -v "$(pwd)"/.core-bash_history:/home/dependabot/.bash_history \
+  -v "$(pwd)"/deno:/home/dependabot/deno \
   -v "$(pwd)"/nix:/home/dependabot/nix \
+  -v "$(pwd)"/sbt:/home/dependabot/sbt \
   -v "$(pwd)"/updater/bin:/home/dependabot/dependabot-updater/bin \
   -v "$(pwd)"/updater/lib:/home/dependabot/dependabot-updater/lib \
   -v "$(pwd)"/bin:/home/dependabot/bin \
@@ -35,6 +37,7 @@ dependabot \
   -v "$(pwd)"/swift:/home/dependabot/swift \
   -v "$(pwd)"/terraform:/home/dependabot/terraform \
   -v "$(pwd)"/opentofu:/home/dependabot/opentofu \
+  -v "$(pwd)"/pre_commit:/home/dependabot/pre_commit \
   -v "$(pwd)"/uv:/home/dependabot/uv \
   -v "$(pwd)"/vcpkg:/home/dependabot/vcpkg \
   "$@"
