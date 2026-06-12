@@ -442,11 +442,10 @@ module Dependabot
         return true unless group.rules["update-types"]
 
         version_class = Dependabot::Utils.version_class_for_package_manager(job.package_manager)
-        unless version_class.correct?(dependency.version.to_s) && version_class.correct?(checker.latest_version)
-          return false
-        end
 
-        version = version_class.new(dependency.version.to_s)
+        version = comparable_current_version(version_class, dependency, checker)
+        return false unless version && version_class.correct?(checker.latest_version)
+
         latest_version = version_class.new(checker.latest_version)
 
         # For Cargo, use the package manager's specific semantic versioning rules
@@ -466,6 +465,28 @@ module Dependabot
         false
       end
       # rubocop:enable Metrics/AbcSize
+
+      # Returns the dependency's current version as a comparable version object, or nil.
+      # Some ecosystems (e.g. pre-commit, github_actions) pin dependencies to a git SHA, so
+      # dependency.version is not a comparable semver. In those cases the update checker can
+      # resolve the current version from a version comment or tag, so we fall back to
+      # checker.current_version for the update-type comparison.
+      sig do
+        params(
+          version_class: T.class_of(Dependabot::Version),
+          dependency: Dependabot::Dependency,
+          checker: Dependabot::UpdateCheckers::Base
+        )
+          .returns(T.nilable(Dependabot::Version))
+      end
+      def comparable_current_version(version_class, dependency, checker)
+        return version_class.new(dependency.version.to_s) if version_class.correct?(dependency.version.to_s)
+
+        resolved = checker.current_version&.to_s
+        return nil unless resolved && version_class.correct?(resolved)
+
+        version_class.new(resolved)
+      end
 
       sig { params(version: Gem::Version).returns(T::Hash[Symbol, Integer]) }
       def semver_segments(version)
