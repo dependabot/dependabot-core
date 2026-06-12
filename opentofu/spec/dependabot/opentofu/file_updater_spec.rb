@@ -1343,7 +1343,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
       it "preserves h1 hashes only for detected platforms" do
         actual_lockfile = updated_dependency_files.find { |file| file.name == ".terraform.lock.hcl" }
 
-        aws_block = actual_lockfile.content[%r{provider "registry\.opentofu\.org/hashicorp/aws".*?^}}m]
+        aws_block = actual_lockfile.content[%r(provider "registry\.opentofu\.org/hashicorp/aws".*?^})m]
         h1_hashes = aws_block.scan(/h1:\S+/)
 
         expect(h1_hashes.length).to eq(3)

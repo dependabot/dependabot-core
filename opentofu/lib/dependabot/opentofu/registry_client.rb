@@ -148,9 +148,18 @@ module Dependabot
         return nil unless packages.is_a?(Hash)
 
         packages.each_with_object({}) do |(platform, info), result|
-          result[platform] = Array(info["hashes"]) if info.is_a?(Hash)
+          next unless info.is_a?(Hash)
+
+          hashes = Array(info["hashes"])
+          if hashes.empty?
+            Dependabot.logger.debug(
+              "No package hashes for #{identifier} v#{version} on platform #{platform}; " \
+              "registry returned hashes=#{info['hashes'].inspect}"
+            )
+          end
+          result[platform] = hashes
         end
-      rescue Excon::Error
+      rescue Excon::Error, JSON::ParserError
         raise error("Could not fetch provider package hashes for #{identifier} v#{version}")
       end
 

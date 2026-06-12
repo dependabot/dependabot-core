@@ -400,8 +400,12 @@ module Dependabot
       def build_lockfile_declaration(provider_source:, version:, constraints:, hashes:)
         lines = []
         lines << "provider \"#{provider_source}\" {"
-        lines << "  version     = \"#{version}\""
-        lines << "  constraints = \"#{constraints}\"" if constraints
+        if constraints
+          lines << "  version     = \"#{version}\""
+          lines << "  constraints = \"#{constraints}\""
+        else
+          lines << "  version = \"#{version}\""
+        end
         lines << "  hashes = ["
         hashes.each { |h| lines << "    \"#{h}\"," }
         lines << "  ]"
