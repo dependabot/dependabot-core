@@ -12,7 +12,7 @@ require "dependabot/shared_helpers"
 
 module Dependabot
   module Opentofu
-    class FileUpdater < Dependabot::FileUpdaters::Base
+    class FileUpdater < Dependabot::FileUpdaters::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
       include FileSelector
@@ -235,7 +235,7 @@ module Dependabot
       end
 
       sig { returns(T.nilable(T::Array[Symbol])) }
-      def lookup_hash_architecture # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
+      def lookup_hash_architecture
         new_req = T.must(dependency.requirements.first)
 
         # NOTE: Only providers are included in the lockfile, modules are not
@@ -248,7 +248,7 @@ module Dependabot
       end
 
       sig { params(new_req: T::Hash[Symbol, T.untyped]).returns(T.nilable(T::Array[Symbol])) }
-      def lookup_hash_architecture_from_registry(new_req) # rubocop:disable Metrics/AbcSize
+      def lookup_hash_architecture_from_registry(new_req) # rubocop:disable Metrics/PerceivedComplexity
         content, _provider_source, declaration_regex = lockfile_details(new_req)
         existing_h1 = extract_provider_h1_hashes(content, declaration_regex)
         return nil if existing_h1.empty?
@@ -343,7 +343,7 @@ module Dependabot
       end
 
       sig { params(updated_manifest_files: T::Array[Dependabot::DependencyFile]).returns(T.nilable(String)) }
-      def update_lockfile_declaration(updated_manifest_files) # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
+      def update_lockfile_declaration(updated_manifest_files)
         return if lockfile.nil?
 
         new_req = T.must(dependency.requirements.first)
@@ -356,7 +356,7 @@ module Dependabot
       end
 
       sig { params(new_req: T::Hash[Symbol, T.untyped]).returns(T.nilable(String)) }
-      def update_lockfile_from_registry(new_req) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+      def update_lockfile_from_registry(new_req) # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
         content, provider_source, declaration_regex = lockfile_details(new_req)
         platforms = architecture_type
         return nil if platforms.empty?
@@ -373,9 +373,9 @@ module Dependabot
         platform_strings = platforms.map(&:to_s)
         return nil unless platform_strings.all? { |p| packages.key?(p) }
 
-        h1_hashes = platform_strings.flat_map { |p| packages.fetch(p).select { |h| h.start_with?("h1:") } }
-        zh_hashes = packages.values.flat_map { |hs| hs.select { |h| h.start_with?("zh:") } }
-        all_hashes = (h1_hashes + zh_hashes).sort
+        h1_hashes = platform_strings.flat_map { |p| packages.fetch(p).select { |h| h.start_with?("h1:") } }.uniq.sort
+        zh_hashes = packages.values.flat_map { |hs| hs.select { |h| h.start_with?("zh:") } }.uniq.sort
+        all_hashes = h1_hashes + zh_hashes
         return nil if all_hashes.empty?
 
         new_declaration = build_lockfile_declaration(
@@ -433,7 +433,7 @@ module Dependabot
           updated_manifest_files: T::Array[Dependabot::DependencyFile]
         ).returns(T.nilable(String))
       end
-      def update_lockfile_from_cli(new_req, updated_manifest_files) # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
+      def update_lockfile_from_cli(new_req, updated_manifest_files) # rubocop:disable Metrics/AbcSize
         content, provider_source, declaration_regex = lockfile_details(new_req)
         lockfile_dependency_removed = content.sub(declaration_regex, "")
 
