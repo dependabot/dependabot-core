@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 1877
+# Offense count: 1875
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bazel/lib/dependabot/bazel/file_fetcher.rb"
@@ -284,7 +284,6 @@ Sorbet/ForbidTUntyped:
     - "bundler/lib/dependabot/bundler/metadata_finder.rb"
     - "bundler/lib/dependabot/bundler/native_helpers.rb"
     - "bundler/lib/dependabot/bundler/package/package_details_fetcher.rb"
-    - "bundler/lib/dependabot/bundler/requirement.rb"
     - "bundler/lib/dependabot/bundler/update_checker.rb"
     - "bundler/lib/dependabot/bundler/update_checker/conflicting_dependency_resolver.rb"
     - "bundler/lib/dependabot/bundler/update_checker/force_updater.rb"
@@ -480,7 +479,6 @@ Sorbet/ForbidTUntyped:
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/package_manager.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/registry_helper.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/registry_parser.rb"
-    - "npm_and_yarn/lib/dependabot/npm_and_yarn/requirement.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/latest_version_finder.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/library_detector.rb"
