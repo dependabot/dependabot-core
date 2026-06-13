@@ -437,6 +437,27 @@ RSpec.describe Dependabot::Swift::FileParser do
     it_behaves_like "parse"
   end
 
+  context "with traits" do
+    let(:project_name) { "traits" }
+
+    let(:expectations) do
+      [
+        {
+          identity: "benchmark",
+          name: "github.com/ordo-one/benchmark",
+          url: "https://github.com/ordo-one/benchmark",
+          version: "1.34.1",
+          requirement: ">= 1.30.0, < 2.0.0",
+          declaration_string:
+            ".package(url: \"https://github.com/ordo-one/benchmark\", from: \"1.30.0\", traits: [])",
+          requirement_string: "from: \"1.30.0\", traits: []"
+        }
+      ]
+    end
+
+    it_behaves_like "parse"
+  end
+
   describe "#ecosystem" do
     subject(:ecosystem) { parser.ecosystem }
 
