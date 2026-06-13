@@ -150,7 +150,12 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
-        sig { params(requirements: T::Array[T::Hash[Symbol, T.untyped]], network_timeout: T.nilable(String)).returns(T::Array[String]) }
+        sig do
+          params(
+            requirements: T::Array[Dependabot::DependencyRequirement],
+            network_timeout: T.nilable(String)
+          ).returns(T::Array[String])
+        end
         def command_args(requirements, network_timeout)
           version = T.let(requirements[0]&.[](:requirement), String)
           checksum = T.let(requirements[1]&.[](:requirement), T.nilable(String)) if requirements.size > 1
