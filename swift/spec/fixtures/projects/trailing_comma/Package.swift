@@ -37,5 +37,13 @@ let package = Package(
       url: "https://github.com/apple/swift-numerics.git",
       .exact("1.1.0"),
     ),
+    .package(
+      url: "https://github.com/apple/swift-algorithms.git",
+      "1.2.1"..<"2.0.0",
+    ),
+    .package(
+      url: "https://github.com/apple/swift-system.git",
+      "1.6.4"..."1.6.5",
+    ),
   ]
 )

@@ -395,7 +395,15 @@ RSpec.describe Dependabot::Swift::FileParser do
           identity: "swift-system",
           name: "github.com/apple/swift-system",
           url: "https://github.com/apple/swift-system.git",
-          version: "1.6.4"
+          version: "1.6.4",
+          requirement: ">= 1.6.4, <= 1.6.5",
+          declaration_string: <<~DECLARATION.strip,
+            .package(
+                  url: "https://github.com/apple/swift-system.git",
+                  "1.6.4"..."1.6.5",
+                )
+          DECLARATION
+          requirement_string: "\"1.6.4\"...\"1.6.5\""
         },
         {
           identity: "swift-crypto",
@@ -430,6 +438,20 @@ RSpec.describe Dependabot::Swift::FileParser do
                 )
           DECLARATION
           requirement_string: ".exact(\"1.1.0\"),"
+        },
+        {
+          identity: "swift-algorithms",
+          name: "github.com/apple/swift-algorithms",
+          url: "https://github.com/apple/swift-algorithms.git",
+          version: "1.2.1",
+          requirement: ">= 1.2.1, < 2.0.0",
+          declaration_string: <<~DECLARATION.strip,
+            .package(
+                  url: "https://github.com/apple/swift-algorithms.git",
+                  "1.2.1"..<"2.0.0",
+                )
+          DECLARATION
+          requirement_string: "\"1.2.1\"..<\"2.0.0\""
         }
       ]
     end
