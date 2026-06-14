@@ -53,6 +53,9 @@ RSpec.describe Dependabot::Swift::NativeRequirement do
         expect(described_class.new('.exact("1.0.0",)').to_s).to eq("= 1.0.0")
         expect(described_class.new('.exact("1.0.0"),').to_s).to eq("= 1.0.0")
         expect(described_class.new('.exact("1.0.0",),').to_s).to eq("= 1.0.0")
+
+        expect(described_class.new('"1.0.0"..<"2.0.0",').to_s).to eq(">= 1.0.0, < 2.0.0")
+        expect(described_class.new('"1.0.0"..."2.0.0",').to_s).to eq(">= 1.0.0, <= 2.0.0")
       end
     end
 
@@ -73,6 +76,11 @@ RSpec.describe Dependabot::Swift::NativeRequirement do
 
         expect(described_class.new('.exact("1.0.0"), traits: [], foo: "bar"').to_s).to eq("= 1.0.0")
         expect(described_class.new('.exact("1.0.0",), traits: [], foo: "bar"').to_s).to eq("= 1.0.0")
+
+        expect(described_class.new('"1.0.0"..<"2.0.0", traits: [], foo: "bar"').to_s)
+          .to eq(">= 1.0.0, < 2.0.0")
+        expect(described_class.new('"1.0.0"..."2.0.0", traits: [], foo: "bar"').to_s)
+          .to eq(">= 1.0.0, <= 2.0.0")
       end
     end
   end

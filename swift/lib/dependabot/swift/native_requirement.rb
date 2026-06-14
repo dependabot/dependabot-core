@@ -12,7 +12,7 @@ module Dependabot
 
       # TODO: Support pinning to specific revisions
       REGEXP = T.let(
-        /(from.*|\.upToNextMajor.*|\.upToNextMinor.*|"[^"]*"\s*\.\.[\.<]\s*"[^"]*"|exact.*|\.exact.*)/,
+        /(from.*|\.upToNextMajor.*|\.upToNextMinor.*|"[^"]*"\s*\.\.[\.<]\s*"[^"]*".*|exact.*|\.exact.*)/,
         Regexp
       )
 
@@ -115,7 +115,10 @@ module Dependabot
 
       sig { params(separator: String).returns(T::Array[String]) }
       def parse_range(separator)
-        declaration.split(separator).map { |str| unquote(str.strip) }
+        declaration
+          .gsub(/("[^"]*"\s*\.\.[\.<]\s*"[^"]*").*/, '\1')
+          .split(separator)
+          .map { |str| unquote(str.strip) }
       end
 
       sig { returns(T::Boolean) }
