@@ -32,8 +32,9 @@ module Dependabot
       # so there is a single source of truth for URL normalisation.
       sig { params(url: String).returns(String) }
       def self.normalize_registry_url(url)
-        url = "https://#{url}" unless url.start_with?("http://", "https://")
-        url.sub(%r{/+\z}, "")
+        normalized = url.start_with?("http://", "https://") ? url.dup : "https://#{url}"
+        normalized.delete_suffix!("/") while normalized.end_with?("/")
+        normalized
       end
 
       sig do
