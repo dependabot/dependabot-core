@@ -78,12 +78,6 @@ module Dependabot
 
           if Experiments.enabled?(:blocked_versions)
             blocked = service.fetch_blocked_versions(update_job.package_manager)
-            # The service is the source of truth in production. When it supplies
-            # none (e.g. local/CLI runs where the endpoint is absent) fall back
-            # to blocked versions provided via the DEPENDABOT_BLOCKED_VERSIONS
-            # environment variable, and otherwise leave any provided in the job
-            # definition untouched.
-            blocked = blocked_versions_from_env if blocked.empty?
             update_job.blocked_versions = blocked if blocked.any?
           end
 
@@ -99,28 +93,6 @@ module Dependabot
     end
 
     private
-
-    # Reads blocked versions supplied via the DEPENDABOT_BLOCKED_VERSIONS
-    # environment variable. This is a local/CLI testing affordance for when the
-    # service blocked-versions endpoint is unavailable. The value must be a JSON
-    # array of objects, e.g.
-    #   [{"dependency-name":"minimist","version-requirement":"1.2.8"}]
-    # Malformed values are ignored so they can never break a job.
-    # T.untyped is unavoidable here: this parses a freshly-deserialised JSON
-    # value at the wire boundary.
-    # rubocop:disable Sorbet/ForbidTUntyped
-    sig { returns(T::Array[T::Hash[String, T.untyped]]) }
-    # rubocop:enable Sorbet/ForbidTUntyped
-    def blocked_versions_from_env
-      raw = ENV.fetch("DEPENDABOT_BLOCKED_VERSIONS", nil)
-      return [] if raw.nil? || raw.strip.empty?
-
-      parsed = JSON.parse(raw)
-      parsed.is_a?(Array) ? parsed.grep(Hash) : []
-    rescue JSON::ParserError => e
-      Dependabot.logger.warn("Failed to parse DEPENDABOT_BLOCKED_VERSIONS: #{e.message}, ignoring")
-      []
-    end
 
     # rubocop:disable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength, Metrics/PerceivedComplexity
     sig { params(error: StandardError).void }
