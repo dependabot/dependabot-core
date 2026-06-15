@@ -593,7 +593,7 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
       it { is_expected.to eq("npm.pkg.github.com") }
     end
 
-    context "with a scoped dependency where rc file takes priority over credential scope" do
+    context "with a scoped dependency where credential scope takes priority over rc file" do
       let(:dependency_name) { "@my-company/some_dep" }
       let(:npmrc_file) do
         Dependabot::DependencyFile.new(
@@ -612,10 +612,10 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
         )]
       end
 
-      it { is_expected.to eq("npmrc-registry.example.com") }
+      it { is_expected.to eq("npm.pkg.github.com") }
     end
 
-    context "with a scoped dependency where lockfile source takes priority over credential scope" do
+    context "with a scoped dependency where credential scope takes priority over lockfile source" do
       let(:dependency_name) { "@my-company/some_dep" }
       let(:source) do
         { type: "registry", url: "https://locked-registry.example.com" }
@@ -631,7 +631,7 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
         )]
       end
 
-      it { is_expected.to eq("locked-registry.example.com") }
+      it { is_expected.to eq("npm.pkg.github.com") }
     end
   end
 
