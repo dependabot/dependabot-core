@@ -80,14 +80,14 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
     context "when npmrc is provided" do
       let(:registry_config_files) { { npmrc: npmrc_file } }
 
-      it "returns registry from npmrc" do
+      it "returns registry from npmrc with trailing slash stripped" do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://custom-registry.com/",
-          "npm_config_registry" => "https://custom-registry.com/",
+          "COREPACK_NPM_REGISTRY" => "https://custom-registry.com",
+          "npm_config_registry" => "https://custom-registry.com",
           "COREPACK_NPM_TOKEN" => "custom-token",
-          "registry" => "https://custom-registry.com/"
+          "registry" => "https://custom-registry.com"
         )
       end
     end
@@ -120,13 +120,13 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
     context "when npmrc has registry but no token" do
       let(:registry_config_files) { { npmrc: npmrc_without_token_file } }
 
-      it "returns only the registry from npmrc" do
+      it "returns only the registry from npmrc with trailing slash stripped" do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://custom-registry.com/",
-          "npm_config_registry" => "https://custom-registry.com/",
-          "registry" => "https://custom-registry.com/"
+          "COREPACK_NPM_REGISTRY" => "https://custom-registry.com",
+          "npm_config_registry" => "https://custom-registry.com",
+          "registry" => "https://custom-registry.com"
         )
       end
     end
@@ -134,14 +134,14 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
     context "when yarnrc is provided" do
       let(:registry_config_files) { { yarnrc: yarnrc_file } }
 
-      it "returns registry from yarnrc" do
+      it "returns registry from yarnrc with trailing slash stripped" do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://yarn-registry.com/",
-          "npm_config_registry" => "https://yarn-registry.com/",
+          "COREPACK_NPM_REGISTRY" => "https://yarn-registry.com",
+          "npm_config_registry" => "https://yarn-registry.com",
           "COREPACK_NPM_TOKEN" => "your-auth-token-here",
-          "registry" => "https://yarn-registry.com/"
+          "registry" => "https://yarn-registry.com"
         )
       end
     end
@@ -149,13 +149,13 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
     context "when yarnrc has registry but no token" do
       let(:registry_config_files) { { yarnrc: yarnrc_without_token_file } }
 
-      it "returns only the registry from yarnrc" do
+      it "returns only the registry from yarnrc with trailing slash stripped" do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://yarn-registry.com/",
-          "npm_config_registry" => "https://yarn-registry.com/",
-          "registry" => "https://yarn-registry.com/"
+          "COREPACK_NPM_REGISTRY" => "https://yarn-registry.com",
+          "npm_config_registry" => "https://yarn-registry.com",
+          "registry" => "https://yarn-registry.com"
         )
       end
     end
@@ -163,14 +163,14 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
     context "when yarnrc.yml is provided" do
       let(:registry_config_files) { { yarnrc_yml: yarnrc_yml_file } }
 
-      it "returns registry from yarnrc.yml" do
+      it "returns registry from yarnrc.yml with trailing slash stripped" do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://yarnrc-yml-registry.com/",
-          "npm_config_registry" => "https://yarnrc-yml-registry.com/",
+          "COREPACK_NPM_REGISTRY" => "https://yarnrc-yml-registry.com",
+          "npm_config_registry" => "https://yarnrc-yml-registry.com",
           "COREPACK_NPM_TOKEN" => "yarnrc-yml-token",
-          "registry" => "https://yarnrc-yml-registry.com/"
+          "registry" => "https://yarnrc-yml-registry.com"
         )
       end
     end
@@ -178,13 +178,13 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
     context "when yarnrc.yml has registry but no token" do
       let(:registry_config_files) { { yarnrc_yml: yarnrc_yml_without_token_file } }
 
-      it "returns only the registry from yarnrc.yml" do
+      it "returns only the registry from yarnrc.yml with trailing slash stripped" do
         helper = described_class.new(registry_config_files, [])
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://yarnrc-yml-registry.com/",
-          "npm_config_registry" => "https://yarnrc-yml-registry.com/",
-          "registry" => "https://yarnrc-yml-registry.com/"
+          "COREPACK_NPM_REGISTRY" => "https://yarnrc-yml-registry.com",
+          "npm_config_registry" => "https://yarnrc-yml-registry.com",
+          "registry" => "https://yarnrc-yml-registry.com"
         )
       end
     end

@@ -47,6 +47,10 @@ module Dependabot
         if registry_info[:registry] # Prevent the https from being stripped in the process
           registry = registry_info[:registry]
           registry = "https://#{T.must(registry)}" unless T.must(registry).start_with?("http://", "https://")
+          # Corepack appends "/<package>" directly to this value, so a trailing slash
+          # produces a double-slash URL (e.g. ".../registry//@scope/pkg") that causes
+          # request failures on any registry that does not normalise double slashes.
+          registry = T.must(registry).sub(%r{/+\z}, "")
 
           # Set both in the env_variables hash
           unless registry == DEFAULT_NPM_REGISTRY

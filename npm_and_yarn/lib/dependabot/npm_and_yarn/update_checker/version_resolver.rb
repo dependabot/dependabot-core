@@ -936,6 +936,7 @@ module Dependabot
           return nil unless registry_url
 
           registry_url = "https://#{registry_url}" unless registry_url.start_with?("http")
+          registry_url = registry_url.sub(%r{/+\z}, "")
 
           { "npm_config_registry" => registry_url }
         end
