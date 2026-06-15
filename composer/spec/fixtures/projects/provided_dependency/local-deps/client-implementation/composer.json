@@ -1,0 +1,8 @@
+{
+    "name": "dependabot/client-implementation-provider",
+    "type": "library",
+    "version": "1.0.0",
+    "provide": {
+        "php-http/client-implementation": "1.0"
+    }
+}
