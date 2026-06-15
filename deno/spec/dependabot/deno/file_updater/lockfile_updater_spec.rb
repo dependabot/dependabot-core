@@ -177,6 +177,42 @@ RSpec.describe Dependabot::Deno::FileUpdater::LockfileUpdater do
     end
   end
 
+  context "with a workspace (member dependency bump)" do
+    let(:files) { project_dependency_files("deno/workspace") }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "@std/assert",
+        version: "1.0.19",
+        previous_version: "1.0.19",
+        requirements: [{
+          requirement: "^1.0.10",
+          file: "packages/alpha/deno.json",
+          groups: ["imports"],
+          source: { type: "jsr" }
+        }],
+        previous_requirements: [{
+          requirement: "^1.0.0",
+          file: "packages/alpha/deno.json",
+          groups: ["imports"],
+          source: { type: "jsr" }
+        }],
+        package_manager: "deno"
+      )
+    end
+
+    it "regenerates the root lockfile from the bumped member manifest" do
+      content = updater.updated_lockfile_content
+      lock = JSON.parse(content)
+
+      expect(lock["version"]).to eq("5")
+      expect(lock.fetch("specifiers")).to have_key("jsr:@std/assert@^1.0.10")
+
+      # Other members' dependencies remain resolvable in the shared lockfile.
+      expect(lock.fetch("jsr").keys).to include(match(%r{^@std/path@}))
+      expect(lock.fetch("npm").keys).to include(match(/^chalk@/))
+    end
+  end
+
   context "when deno install does not change the lockfile" do
     before do
       # Stub run_deno_command to leave the lockfile untouched in the tmpdir.

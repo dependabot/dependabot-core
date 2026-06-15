@@ -1,6 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "fileutils"
 require "json"
 require "sorbet-runtime"
 
@@ -89,20 +90,26 @@ module Dependabot
 
         sig { params(dir: String).void }
         def write_temporary_files(dir)
-          File.write(File.join(dir, manifest.name), updated_manifest_content)
+          manifest_files.each do |file|
+            path = File.join(dir, file.name)
+            FileUtils.mkdir_p(File.dirname(path))
+            File.write(path, updated_manifest_content(file))
+          end
           File.write(File.join(dir, LOCKFILE_FILENAME), T.must(lockfile.content))
         end
 
-        sig { returns(String) }
-        def updated_manifest_content
-          ManifestUpdater.new(dependencies: dependencies, manifest: manifest).updated_manifest_content
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
+        def updated_manifest_content(file)
+          ManifestUpdater.new(dependencies: dependencies, manifest: file).updated_manifest_content
         end
 
-        sig { returns(Dependabot::DependencyFile) }
-        def manifest
-          @manifest ||= T.let(
-            T.must(dependency_files.find { |f| FileUpdater::MANIFEST_FILENAMES.include?(f.name) }),
-            T.nilable(Dependabot::DependencyFile)
+        # The root manifest plus every workspace member manifest. Members are
+        # fetched relative to the root, so match on basename rather than path.
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def manifest_files
+          @manifest_files ||= T.let(
+            dependency_files.select { |f| FileUpdater::MANIFEST_FILENAMES.include?(File.basename(f.name)) },
+            T.nilable(T::Array[Dependabot::DependencyFile])
           )
         end
 

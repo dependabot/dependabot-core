@@ -45,6 +45,8 @@ Deno support for [`dependabot-core`][core-repo].
 - `deno.json` and `deno.jsonc` import maps
 - `jsr:` and `npm:` specifiers (scoped, unscoped, versionless, sub-path)
 - `deno.lock` regeneration when the manifest changes
+- Workspaces — member `deno.json`/`deno.jsonc` manifests are discovered via the root
+  `workspace` field, including glob patterns (`./packages/*`) and `!` negations
 - Cooldown for direct dependencies
 
 ### Runtime
@@ -60,7 +62,7 @@ Bumping `DENO_VERSION` may change the emitted `deno.lock` version — the
 - HTTPS imports (`https://deno.land/x/...`)
 - `scopes` field overrides
 - `vendor/` directory regeneration
-- Workspaces (nested `deno.json`)
+- `package.json`-only workspace members (handled by the `npm_and_yarn` ecosystem)
 - `links` field (local package overrides)
 - `DENO_AUTH_TOKENS` / private registries
 - Frozen-lockfile UX (we pass `--frozen=false` and may overwrite a frozen lockfile)
