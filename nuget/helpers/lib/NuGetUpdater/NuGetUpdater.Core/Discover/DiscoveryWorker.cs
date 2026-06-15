@@ -139,6 +139,9 @@ public partial class DiscoveryWorker : IDiscoveryWorker
             }
         }
 
+        // filter out imported files that are in .gitignore
+        projectResults = FilterImportedFilesByGitIgnore(projectResults, repoRootPath, initialWorkspacePath);
+
         // if any projectResults are not successful, return a failed result
         if (projectResults.Any(p => p.IsSuccess == false))
         {
@@ -562,6 +565,31 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         }
 
         return [.. filtered];
+    }
+
+    internal static ImmutableArray<ProjectDiscoveryResult> FilterImportedFilesByGitIgnore(
+        ImmutableArray<ProjectDiscoveryResult> projectResults,
+        string repoRootPath,
+        string workspacePath)
+    {
+        var gitIgnoreParser = GitIgnoreParser.FromRepoRoot(repoRootPath);
+        var results = new List<ProjectDiscoveryResult>();
+        foreach (var project in projectResults)
+        {
+            var projectDirectory = Path.GetDirectoryName(Path.Combine(workspacePath, project.FilePath))?.NormalizePathToUnix() ?? workspacePath;
+            var filteredImports = project.ImportedFiles
+                .Where(importedFile =>
+                {
+                    // Resolve the imported file path relative to the repo root
+                    var fullRelativePath = PathHelper.JoinPath(projectDirectory, importedFile).NormalizePathToUnix().NormalizeUnixPathParts();
+                    return !gitIgnoreParser.IsIgnored(fullRelativePath);
+                })
+                .ToImmutableArray();
+
+            results.Add(project with { ImportedFiles = filteredImports });
+        }
+
+        return [.. results];
     }
 
     private static ImmutableDictionary<string, ImmutableArray<string>> MergeDependencyGraphs(

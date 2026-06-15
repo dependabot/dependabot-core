@@ -1952,6 +1952,57 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
     }
 
     [Fact]
+    public async Task ImportedFilesInGitIgnoreAreNotReported()
+    {
+        await TestDiscoveryAsync(
+            packages: [MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0")],
+            workspacePath: "src",
+            files: [
+                ("src/project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <Import Project="ignored.props" />
+                      <Import Project="not-ignored.props" />
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("src/ignored.props", """
+                    <Project>
+                    </Project>
+                    """),
+                ("src/not-ignored.props", """
+                    <Project>
+                    </Project>
+                    """),
+                (".gitignore", """
+                    src/ignored.props
+                    """),
+            ],
+            expectedResult: new()
+            {
+                Path = "src",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = ["not-ignored.props"],
+                        AdditionalFiles = [],
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
     public void MergeProjectDiscovery()
     {
         // project discovery is frequently merged with prior results (e.g., `packages.config` followed by `<PackageReference>`)
