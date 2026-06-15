@@ -1,7 +1,7 @@
 # syntax=docker.io/docker/dockerfile:1.20
 FROM ghcr.io/dependabot/dependabot-updater-core
 
-ARG DENO_VERSION=2.1.0
+ARG DENO_VERSION=2.8.3
 
 USER root
 
