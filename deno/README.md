@@ -47,6 +47,14 @@ Deno support for [`dependabot-core`][core-repo].
 - `deno.lock` regeneration when the manifest changes
 - Cooldown for direct dependencies
 
+### Runtime
+
+The updater image bundles a single Deno binary (`DENO_VERSION` in `deno/Dockerfile`).
+It is kept current so it can read the latest `deno.lock` format; older lockfiles are
+still read and are upgraded in place to the bundled Deno's format on regeneration.
+Bumping `DENO_VERSION` may change the emitted `deno.lock` version — the
+`lockfile_updater` specs pin the expected version so such bumps are intentional.
+
 ### Not yet supported (planned)
 
 - HTTPS imports (`https://deno.land/x/...`)

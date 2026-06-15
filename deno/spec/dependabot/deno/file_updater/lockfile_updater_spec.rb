@@ -51,10 +51,27 @@ RSpec.describe Dependabot::Deno::FileUpdater::LockfileUpdater do
       expect(lock.fetch("jsr")).not_to have_key("@std/path@1.0.0")
     end
 
-    it "preserves the v4 lockfile format" do
+    it "upgrades a legacy v4 lockfile to the bundled Deno's format" do
       content = updater.updated_lockfile_content
       lock = JSON.parse(content)
-      expect(lock["version"]).to eq("4")
+      expect(lock["version"]).to eq("5")
+    end
+  end
+
+  context "with a v5 lockfile" do
+    let(:files) { project_dependency_files("deno/with_lockfile_v5") }
+
+    it "reads and updates the v5 lockfile" do
+      content = updater.updated_lockfile_content
+      lock = JSON.parse(content)
+
+      expect(lock["version"]).to eq("5")
+
+      path_keys = lock.fetch("jsr").keys.grep(%r{^@std/path@})
+      expect(path_keys.length).to eq(1)
+      resolved = Gem::Version.new(path_keys.first.split("@").last)
+      expect(resolved).to be >= Gem::Version.new("1.1.4")
+      expect(resolved).to be < Gem::Version.new("2.0.0")
     end
   end
 
