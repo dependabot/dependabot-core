@@ -76,6 +76,28 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
     Dependabot::DependencyFile.new(name: "yarnrc.yml", content: "")
   end
 
+  describe ".normalize_registry_url" do
+    it "adds https scheme when missing" do
+      expect(described_class.normalize_registry_url("my-registry.com/npm")).to eq("https://my-registry.com/npm")
+    end
+
+    it "preserves an existing https scheme" do
+      expect(described_class.normalize_registry_url("https://my-registry.com/npm")).to eq("https://my-registry.com/npm")
+    end
+
+    it "strips a single trailing slash" do
+      expect(described_class.normalize_registry_url("https://my-registry.com/npm/")).to eq("https://my-registry.com/npm")
+    end
+
+    it "strips multiple trailing slashes" do
+      expect(described_class.normalize_registry_url("https://my-registry.com/npm///")).to eq("https://my-registry.com/npm")
+    end
+
+    it "preserves a path component while stripping the trailing slash" do
+      expect(described_class.normalize_registry_url("https://host.example.com/npm/")).to eq("https://host.example.com/npm")
+    end
+  end
+
   describe "#find_corepack_env_variables" do
     context "when npmrc is provided" do
       let(:registry_config_files) { { npmrc: npmrc_file } }
