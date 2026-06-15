@@ -91,6 +91,15 @@ module Dependabot
         sig { params(dir: String).void }
         def write_temporary_files(dir)
           manifest_files.each do |file|
+            # Defence in depth: manifest names ultimately derive from workspace
+            # member paths in repo content. Refuse to write through an absolute
+            # name or one containing ".." so lockfile regeneration can't become a
+            # write primitive outside the temporary directory.
+            unless Helpers.safe_relative_path?(file.name)
+              raise Dependabot::DependencyFileNotResolvable,
+                    "Unsafe manifest path: #{file.name}"
+            end
+
             path = File.join(dir, file.name)
             FileUtils.mkdir_p(File.dirname(path))
             File.write(path, updated_manifest_content(file))

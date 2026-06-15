@@ -87,7 +87,13 @@ module Dependabot
         includes, excludes = members.partition { |m| !m.start_with?("!") }
         excluded = excludes.flat_map { |m| expand_member(m.delete_prefix("!")) }
 
-        includes.flat_map { |m| expand_member(m) }.uniq.reject { |dir| excluded.include?(dir) }
+        includes
+          .flat_map { |m| expand_member(m) }
+          .uniq
+          .reject { |dir| excluded.include?(dir) }
+          # Member paths come from manifest content; never fetch from an absolute
+          # path or one that traverses out of the repo via "..".
+          .select { |dir| Helpers.safe_relative_path?(dir) }
       end
 
       sig { returns(T::Array[String]) }

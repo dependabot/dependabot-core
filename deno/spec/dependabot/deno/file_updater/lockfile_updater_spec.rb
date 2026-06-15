@@ -213,6 +213,21 @@ RSpec.describe Dependabot::Deno::FileUpdater::LockfileUpdater do
     end
   end
 
+  context "when a manifest has an unsafe path" do
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(name: "../evil/deno.json", content: "{}", directory: "/"),
+        Dependabot::DependencyFile.new(name: "deno.lock", content: "{}", directory: "/")
+      ]
+    end
+
+    it "raises DependencyFileNotResolvable instead of writing outside the temp dir" do
+      expect do
+        updater.updated_lockfile_content
+      end.to raise_error(Dependabot::DependencyFileNotResolvable, /Unsafe manifest path/)
+    end
+  end
+
   context "when deno install does not change the lockfile" do
     before do
       # Stub run_deno_command to leave the lockfile untouched in the tmpdir.

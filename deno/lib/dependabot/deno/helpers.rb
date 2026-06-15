@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "json"
+require "pathname"
 require "sorbet-runtime"
 
 require "dependabot/shared_helpers"
@@ -31,7 +32,25 @@ module Dependabot
 
         cleaned = content.gsub(JSONC_TOKEN) { ::Regexp.last_match(1) || "" }
 
-        JSON.parse(cleaned)
+        parsed = JSON.parse(cleaned)
+        # A deno.json(c) must be a JSON object. Guard here so a malformed manifest
+        # (e.g. a top-level array) surfaces as a clear parse error rather than an
+        # opaque sorbet-runtime type error at the call site.
+        raise JSON::ParserError, "Expected a JSON object, got #{parsed.class}" unless parsed.is_a?(Hash)
+
+        parsed
+      end
+
+      # True when `path` is a repo-relative path with no traversal. Workspace
+      # member paths are derived from manifest content, so absolute paths
+      # ("/etc") or ".." segments must never be used as fetch/write targets —
+      # File.join would otherwise escape the repo checkout or temp directory.
+      sig { params(path: String).returns(T::Boolean) }
+      def self.safe_relative_path?(path)
+        return false if path.empty?
+        return false if Pathname.new(path).absolute?
+
+        Pathname.new(path).each_filename.none?("..")
       end
 
       # Wraps `deno <args>` via Dependabot's standard subprocess helper, so
