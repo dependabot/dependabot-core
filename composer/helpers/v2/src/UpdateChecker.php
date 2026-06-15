@@ -38,6 +38,19 @@ final class UpdateChecker
 
         $config = $composer->getConfig();
 
+        // Don't let Composer's security-advisory policy exclude "insecure"
+        // versions from the resolution pool. Dependabot performs its own
+        // security handling, and blocking these versions here makes Composer
+        // report otherwise-resolvable dependency graphs as unresolvable
+        // whenever a (transitive) dependency is affected by an advisory.
+        $config->merge([
+            'config' => [
+                'audit' => [
+                    'block-insecure' => false,
+                ],
+            ],
+        ]);
+
         if (0 < count($httpBasicCredentials)) {
             $config->merge([
                 'config' => [

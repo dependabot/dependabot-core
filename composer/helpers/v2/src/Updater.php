@@ -34,6 +34,19 @@ final class Updater
         $config = $composer->getConfig();
         $httpBasicCredentials = [];
 
+        // Don't let Composer's security-advisory policy exclude "insecure"
+        // versions from the resolution pool. Dependabot performs its own
+        // security handling, and blocking these versions here makes Composer
+        // report otherwise-resolvable dependency graphs as unresolvable
+        // whenever a (transitive) dependency is affected by an advisory.
+        $config->merge([
+            'config' => [
+                'audit' => [
+                    'block-insecure' => false,
+                ],
+            ],
+        ]);
+
         $pm = new DependabotPluginManager($io, $composer, null, false);
         $composer->setPluginManager($pm);
         $pm->loadInstalledPlugins();
