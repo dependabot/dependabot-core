@@ -136,7 +136,7 @@ module Dependabot
 
         sig { returns(String) }
         def build_npmrc_from_scope_credentials
-          content = T.must(self.class.npmrc_content_from_credentials(credentials))
+          content = T.must(NpmrcBuilder.npmrc_content_from_credentials(credentials))
 
           # Append auth lines for all configured registries
           lines = [content]
@@ -167,7 +167,7 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def build_npmrc_content_from_credential_scopes
-          content = self.class.npmrc_content_from_credentials(credentials)
+          content = NpmrcBuilder.npmrc_content_from_credentials(credentials)
           return unless content
 
           replaces_base_cred = registry_credentials.find(&:replaces_base?)
