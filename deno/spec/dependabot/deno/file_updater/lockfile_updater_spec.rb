@@ -52,10 +52,6 @@ RSpec.describe Dependabot::Deno::FileUpdater::LockfileUpdater do
     end
 
     it "upgrades a legacy v4 lockfile to the bundled Deno's format" do
-      # The image ships a current Deno (see deno/Dockerfile). Reading a legacy
-      # v4 lockfile is still supported, but Deno rewrites it in its own (newer)
-      # lockfile version on `deno install`. Pin that expectation so a future
-      # Deno bump that changes the emitted version is a conscious change.
       content = updater.updated_lockfile_content
       lock = JSON.parse(content)
       expect(lock["version"]).to eq("5")
@@ -63,10 +59,6 @@ RSpec.describe Dependabot::Deno::FileUpdater::LockfileUpdater do
   end
 
   context "with a v5 lockfile" do
-    # Regression test for the launch-blocking bug where the bundled Deno (2.1.0)
-    # could not read lockfile v5 (emitted by Deno 2.3.0+), failing with
-    # "Unsupported lockfile version '5'". Proves the image round-trips a v5
-    # lockfile and emits a valid, updated v5 lockfile.
     let(:files) { project_dependency_files("deno/with_lockfile_v5") }
 
     it "reads and updates the v5 lockfile" do
