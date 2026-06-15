@@ -56,7 +56,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
     it "delegates to Dependabot::Updater" do
       dummy_runner = double(run: nil)
       base_commit_sha = "1c6331732c41e4557a16dacb82534f1d1c831848"
-      expect(Dependabot::Updater)
+      allow(Dependabot::Updater)
         .to receive(:new)
         .with(
           service: service,
@@ -71,6 +71,14 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         .with(dependency_snapshot: an_instance_of(Dependabot::DependencySnapshot))
 
       perform_job
+
+      expect(Dependabot::Updater)
+        .to have_received(:new)
+        .with(
+          service: service,
+          job: an_object_having_attributes(id: job_id, repo_contents_path: nil),
+          dependency_snapshot: an_object_having_attributes(base_commit_sha: base_commit_sha)
+        )
     end
   end
 
@@ -579,6 +587,5 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         )
       end
     end
-
   end
 end
