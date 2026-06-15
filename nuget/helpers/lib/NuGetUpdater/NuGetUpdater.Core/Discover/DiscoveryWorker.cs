@@ -140,7 +140,7 @@ public partial class DiscoveryWorker : IDiscoveryWorker
         }
 
         // filter out imported files that are in .gitignore
-        projectResults = FilterImportedFilesByGitIgnore(projectResults, repoRootPath, initialWorkspacePath);
+        projectResults = FilterImportedFilesByGitIgnore(projectResults, repoRootPath, initialWorkspacePath, _experimentsManager.UseCaseInsensitiveFilesystem);
 
         // if any projectResults are not successful, return a failed result
         if (projectResults.Any(p => p.IsSuccess == false))
@@ -570,9 +570,10 @@ public partial class DiscoveryWorker : IDiscoveryWorker
     internal static ImmutableArray<ProjectDiscoveryResult> FilterImportedFilesByGitIgnore(
         ImmutableArray<ProjectDiscoveryResult> projectResults,
         string repoRootPath,
-        string workspacePath)
+        string workspacePath,
+        bool isCaseInsensitive)
     {
-        var gitIgnoreParser = GitIgnoreParser.FromRepoRoot(repoRootPath);
+        var gitIgnoreParser = GitIgnoreParser.FromRepoRoot(repoRootPath, isCaseInsensitive);
         var results = new List<ProjectDiscoveryResult>();
         foreach (var project in projectResults)
         {

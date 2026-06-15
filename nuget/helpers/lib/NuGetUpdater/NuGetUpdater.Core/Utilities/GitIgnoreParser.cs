@@ -13,12 +13,14 @@ internal class GitIgnoreParser
     }
 
     /// <summary>
-    /// Collects all .gitignore files from the repo root up to and including the directory containing the file being tested.
+    /// Collects all .gitignore files from the entire repo directory tree and builds a parser that can evaluate ignore rules.
     /// </summary>
-    public static GitIgnoreParser FromRepoRoot(string repoRootPath)
+    /// <param name="repoRootPath">The absolute path to the repository root.</param>
+    /// <param name="isCaseInsensitive">Whether the filesystem is case-insensitive (e.g., Windows/macOS).</param>
+    public static GitIgnoreParser FromRepoRoot(string repoRootPath, bool isCaseInsensitive)
     {
         var rules = new List<GitIgnoreRule>();
-        CollectRulesFromDirectory(repoRootPath, repoRootPath, rules);
+        CollectRulesFromDirectory(repoRootPath, repoRootPath, rules, isCaseInsensitive);
         return new GitIgnoreParser([.. rules]);
     }
 
@@ -42,7 +44,7 @@ internal class GitIgnoreParser
         return ignored;
     }
 
-    private static void CollectRulesFromDirectory(string repoRootPath, string currentDirectory, List<GitIgnoreRule> rules)
+    private static void CollectRulesFromDirectory(string repoRootPath, string currentDirectory, List<GitIgnoreRule> rules, bool isCaseInsensitive)
     {
         var gitignorePath = Path.Combine(currentDirectory, ".gitignore");
         if (File.Exists(gitignorePath))
@@ -50,12 +52,18 @@ internal class GitIgnoreParser
             var content = File.ReadAllText(gitignorePath);
             var directoryRelativeToRoot = Path.GetRelativePath(repoRootPath, currentDirectory).NormalizePathToUnix();
             var prefix = directoryRelativeToRoot == "." ? "" : directoryRelativeToRoot + "/";
-            var parsed = ParseRules(content, prefix);
+            var parsed = ParseRules(content, prefix, isCaseInsensitive);
             rules.AddRange(parsed);
         }
 
         // Recurse into subdirectories
-        foreach (var subDir in Directory.EnumerateDirectories(currentDirectory))
+        var enumOptions = new EnumerationOptions
+        {
+            IgnoreInaccessible = true,
+            RecurseSubdirectories = false,
+            AttributesToSkip = FileAttributes.ReparsePoint,
+        };
+        foreach (var subDir in Directory.EnumerateDirectories(currentDirectory, "*", enumOptions))
         {
             var dirName = Path.GetFileName(subDir);
             if (dirName == ".git")
@@ -63,11 +71,11 @@ internal class GitIgnoreParser
                 continue;
             }
 
-            CollectRulesFromDirectory(repoRootPath, subDir, rules);
+            CollectRulesFromDirectory(repoRootPath, subDir, rules, isCaseInsensitive);
         }
     }
 
-    internal static ImmutableArray<GitIgnoreRule> ParseRules(string content, string pathPrefix)
+    internal static ImmutableArray<GitIgnoreRule> ParseRules(string content, string pathPrefix, bool isCaseInsensitive)
     {
         var rules = new List<GitIgnoreRule>();
         foreach (var rawLine in content.Split('\n'))
@@ -87,7 +95,7 @@ internal class GitIgnoreParser
                 line = line[1..];
             }
 
-            // remove trailing spaces (unless escaped)
+            // remove trailing spaces
             line = line.TrimEnd();
 
             if (string.IsNullOrEmpty(line))
@@ -113,7 +121,7 @@ internal class GitIgnoreParser
             // Otherwise it matches at any depth within the .gitignore's directory scope.
             bool isRooted = hasLeadingSlash || line.Contains('/');
 
-            var regex = ConvertPatternToRegex(line, isRooted, directoryOnly, pathPrefix);
+            var regex = ConvertPatternToRegex(line, isRooted, directoryOnly, pathPrefix, isCaseInsensitive);
 
             rules.Add(new GitIgnoreRule(regex, isNegation, directoryOnly));
         }
@@ -121,7 +129,7 @@ internal class GitIgnoreParser
         return [.. rules];
     }
 
-    private static Regex ConvertPatternToRegex(string pattern, bool isRooted, bool directoryOnly, string pathPrefix)
+    private static Regex ConvertPatternToRegex(string pattern, bool isRooted, bool directoryOnly, string pathPrefix, bool isCaseInsensitive)
     {
         // Convert gitignore glob pattern to regex
         var regexPattern = "^";
@@ -152,6 +160,15 @@ internal class GitIgnoreParser
             char c = pattern[i];
             switch (c)
             {
+                case '\\':
+                    // backslash escapes the next character in gitignore
+                    if (i + 1 < pattern.Length)
+                    {
+                        i++;
+                        regexPattern += Regex.Escape(pattern[i].ToString());
+                    }
+
+                    break;
                 case '*':
                     if (i + 1 < pattern.Length && pattern[i + 1] == '*')
                     {
@@ -177,17 +194,6 @@ internal class GitIgnoreParser
                 case '?':
                     regexPattern += "[^/]";
                     break;
-                case '.':
-                case '(':
-                case ')':
-                case '+':
-                case '|':
-                case '^':
-                case '$':
-                case '{':
-                case '}':
-                    regexPattern += "\\" + c;
-                    break;
                 case '[':
                     // character class - pass through to regex
                     var end = pattern.IndexOf(']', i);
@@ -203,7 +209,7 @@ internal class GitIgnoreParser
 
                     break;
                 default:
-                    regexPattern += c;
+                    regexPattern += Regex.Escape(c.ToString());
                     break;
             }
         }
@@ -218,7 +224,13 @@ internal class GitIgnoreParser
             regexPattern += "/.*$";
         }
 
-        return new Regex(regexPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        var options = RegexOptions.Compiled;
+        if (isCaseInsensitive)
+        {
+            options |= RegexOptions.IgnoreCase;
+        }
+
+        return new Regex(regexPattern, options);
     }
 
     internal record GitIgnoreRule(Regex Pattern, bool IsNegation, bool DirectoryOnly)

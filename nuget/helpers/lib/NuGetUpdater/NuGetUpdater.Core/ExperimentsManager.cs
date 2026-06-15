@@ -9,6 +9,7 @@ public record ExperimentsManager
 {
     public bool GenerateSimplePrBody { get; init; } = false;
     public bool FindRootDirectory { get; init; } = false;
+    public bool UseCaseInsensitiveFilesystem { get; init; } = false;
 
     public Dictionary<string, object> ToDictionary()
     {
@@ -16,6 +17,7 @@ public record ExperimentsManager
         {
             ["nuget_generate_simple_pr_body"] = GenerateSimplePrBody,
             ["nuget_find_root_directory"] = FindRootDirectory,
+            ["use_case_insensitive_filesystem"] = UseCaseInsensitiveFilesystem,
         };
     }
 
@@ -25,6 +27,7 @@ public record ExperimentsManager
         {
             GenerateSimplePrBody = IsEnabled(experiments, "nuget_generate_simple_pr_body"),
             FindRootDirectory = IsEnabled(experiments, "nuget_find_root_directory"),
+            UseCaseInsensitiveFilesystem = IsEnabled(experiments, "use_case_insensitive_filesystem"),
         };
     }
 

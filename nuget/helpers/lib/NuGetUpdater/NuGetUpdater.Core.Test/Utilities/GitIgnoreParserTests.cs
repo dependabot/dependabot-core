@@ -10,7 +10,7 @@ public class GitIgnoreParserTests
     [MemberData(nameof(BasicPatternMatchingData))]
     public void BasicPatternMatching(string gitignoreContent, string testPath, bool expectedIgnored)
     {
-        var parser = CreateParserFromContent(gitignoreContent, pathPrefix: "");
+        var parser = CreateParserFromContent(gitignoreContent, pathPrefix: "", isCaseInsensitive: false);
         Assert.Equal(expectedIgnored, parser.IsIgnored(testPath));
     }
 
@@ -58,13 +58,19 @@ public class GitIgnoreParserTests
 
         // blank lines are ignored
         yield return ["\n\n*.log\n\n", "debug.log", true];
+
+        // backslash escapes special characters
+        yield return ["file\\*.txt", "file*.txt", true];
+        yield return ["file\\*.txt", "fileA.txt", false];
+        yield return ["hello\\#world", "hello#world", true];
+        yield return ["space\\ file.txt", "space file.txt", true];
     }
 
     [Theory]
     [MemberData(nameof(NegationPatternData))]
     public void NegationPatterns(string gitignoreContent, string testPath, bool expectedIgnored)
     {
-        var parser = CreateParserFromContent(gitignoreContent, pathPrefix: "");
+        var parser = CreateParserFromContent(gitignoreContent, pathPrefix: "", isCaseInsensitive: false);
         Assert.Equal(expectedIgnored, parser.IsIgnored(testPath));
     }
 
@@ -94,7 +100,7 @@ public class GitIgnoreParserTests
         tempDir.WriteFile("src/kept.txt", "");
         tempDir.WriteFile("lib/sub-ignored.txt", "");
 
-        var parser = GitIgnoreParser.FromRepoRoot(tempDir.RootPath);
+        var parser = GitIgnoreParser.FromRepoRoot(tempDir.RootPath, isCaseInsensitive: false);
 
         // root .gitignore applies everywhere (unrooted pattern)
         Assert.True(parser.IsIgnored("root-ignored.txt"));
@@ -123,7 +129,7 @@ public class GitIgnoreParserTests
         tempDir.WriteFile("src/generated/output.cs", "");
         tempDir.WriteFile("docs/notes.tmp", "");
 
-        var parser = GitIgnoreParser.FromRepoRoot(tempDir.RootPath);
+        var parser = GitIgnoreParser.FromRepoRoot(tempDir.RootPath, isCaseInsensitive: false);
 
         // root pattern *.tmp applies at any depth
         Assert.True(parser.IsIgnored("docs/notes.tmp"));
@@ -147,7 +153,7 @@ public class GitIgnoreParserTests
         tempDir.WriteFile("lib/obj/debug.dll", "");
         tempDir.WriteFile("lib/obj/release.dll", "");
 
-        var parser = GitIgnoreParser.FromRepoRoot(tempDir.RootPath);
+        var parser = GitIgnoreParser.FromRepoRoot(tempDir.RootPath, isCaseInsensitive: false);
 
         Assert.True(parser.IsIgnored("lib/obj/debug.dll"));
         Assert.False(parser.IsIgnored("lib/obj/release.dll"));
@@ -158,7 +164,7 @@ public class GitIgnoreParserTests
     [Fact]
     public void CharacterClassPatterns()
     {
-        var parser = CreateParserFromContent("[Bb]uild/", pathPrefix: "");
+        var parser = CreateParserFromContent("[Bb]uild/", pathPrefix: "", isCaseInsensitive: false);
         Assert.True(parser.IsIgnored("Build/output.dll"));
         Assert.True(parser.IsIgnored("build/output.dll"));
         Assert.False(parser.IsIgnored("rebuild/output.dll"));
@@ -168,7 +174,7 @@ public class GitIgnoreParserTests
     public void PatternWithLeadingSlashIsRooted()
     {
         // leading slash means pattern is rooted relative to gitignore location
-        var parser = CreateParserFromContent("/build\n/dist", pathPrefix: "");
+        var parser = CreateParserFromContent("/build\n/dist", pathPrefix: "", isCaseInsensitive: false);
         Assert.True(parser.IsIgnored("build"));
         Assert.True(parser.IsIgnored("build/output.dll"));
         Assert.True(parser.IsIgnored("dist"));
@@ -176,12 +182,66 @@ public class GitIgnoreParserTests
         Assert.False(parser.IsIgnored("src/dist"));
     }
 
-    private static GitIgnoreParser CreateParserFromContent(string content, string pathPrefix)
+    private static GitIgnoreParser CreateParserFromContent(string content, string pathPrefix, bool isCaseInsensitive)
     {
         // Use a temp directory with just the gitignore content at the root
         using var tempDir = new TempGitIgnoreDirectory();
         tempDir.WriteFile(".gitignore", content);
-        return GitIgnoreParser.FromRepoRoot(tempDir.RootPath);
+        return GitIgnoreParser.FromRepoRoot(tempDir.RootPath, isCaseInsensitive);
+    }
+
+    [Theory]
+    [MemberData(nameof(CaseInsensitiveData))]
+    public void CaseInsensitiveMatching(string gitignoreContent, string testPath, bool expectedIgnored)
+    {
+        var parser = CreateParserFromContent(gitignoreContent, pathPrefix: "", isCaseInsensitive: true);
+        Assert.Equal(expectedIgnored, parser.IsIgnored(testPath));
+    }
+
+    public static IEnumerable<object[]> CaseInsensitiveData()
+    {
+        // case-insensitive: pattern matches regardless of case
+        yield return ["debug.log", "DEBUG.LOG", true];
+        yield return ["debug.log", "Debug.Log", true];
+        yield return ["*.LOG", "file.log", true];
+        yield return ["Build/", "build/output.dll", true];
+        yield return ["Build/", "BUILD/output.dll", true];
+        yield return ["src/file.txt", "SRC/File.TXT", true];
+    }
+
+    [Theory]
+    [MemberData(nameof(CaseSensitiveData))]
+    public void CaseSensitiveMatching(string gitignoreContent, string testPath, bool expectedIgnored)
+    {
+        var parser = CreateParserFromContent(gitignoreContent, pathPrefix: "", isCaseInsensitive: false);
+        Assert.Equal(expectedIgnored, parser.IsIgnored(testPath));
+    }
+
+    public static IEnumerable<object[]> CaseSensitiveData()
+    {
+        // case-sensitive: pattern must match exact case
+        yield return ["debug.log", "DEBUG.LOG", false];
+        yield return ["debug.log", "debug.log", true];
+        yield return ["*.LOG", "file.log", false];
+        yield return ["*.LOG", "file.LOG", true];
+        yield return ["Build/", "build/output.dll", false];
+        yield return ["Build/", "Build/output.dll", true];
+    }
+
+    [Fact]
+    public void CaseInsensitiveWithSubdirectoryGitIgnore()
+    {
+        using var tempDir = new TempGitIgnoreDirectory();
+        tempDir.WriteFile(".gitignore", "Ignored.Props");
+        tempDir.WriteFile("src/ignored.props", "");
+        tempDir.WriteFile("src/Other.props", "");
+
+        var parser = GitIgnoreParser.FromRepoRoot(tempDir.RootPath, isCaseInsensitive: true);
+
+        // case-insensitive: "Ignored.Props" matches "ignored.props"
+        Assert.True(parser.IsIgnored("src/ignored.props"));
+        Assert.True(parser.IsIgnored("src/IGNORED.PROPS"));
+        Assert.False(parser.IsIgnored("src/Other.props"));
     }
 
     /// <summary>
