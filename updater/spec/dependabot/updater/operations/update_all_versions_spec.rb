@@ -461,4 +461,45 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
       end
     end
   end
+
+  describe "blocked versions ignored metric" do
+    before do
+      allow(job).to receive(:package_manager).and_return("bundler")
+      allow(stub_update_checker).to receive_messages(up_to_date?: true)
+      allow(update_all_versions).to receive(:all_versions_ignored?).and_return(false)
+    end
+
+    context "when the dependency has an active GitHub Security block" do
+      before do
+        allow(job).to receive(:blocked_versions_for?).with(dependency).and_return(true)
+      end
+
+      it "increments the ignored metric tagged with the package manager" do
+        update_all_versions.send(:check_and_create_pull_request, dependency)
+
+        expect(mock_service).to have_received(:increment_metric).with(
+          "blocked_versions.ignored",
+          tags: {
+            "operation" => "version_update",
+            "package_manager" => "bundler"
+          }
+        )
+      end
+    end
+
+    context "when the dependency only has user ignore rules (no block)" do
+      before do
+        allow(job).to receive(:blocked_versions_for?).with(dependency).and_return(false)
+      end
+
+      it "does not increment the ignored metric" do
+        update_all_versions.send(:check_and_create_pull_request, dependency)
+
+        expect(mock_service).not_to have_received(:increment_metric).with(
+          "blocked_versions.ignored",
+          tags: anything
+        )
+      end
+    end
+  end
 end

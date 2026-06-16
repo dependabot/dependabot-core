@@ -235,6 +235,35 @@ module Dependabot
           warn_description: notice.description
         )
       end
+
+      # Emits a counter when a GitHub Security blocklist entry applies to a
+      # dependency Core is actively checking for updates.
+      #
+      # This is the "soft" block status. When a block applies, the blocked
+      # versions are folded into the resolver's ignore conditions so they can't
+      # be selected - but they sit alongside the user's own ignores (dependabot.yml
+      # ignore rules and allow update-types), all merged into `ignore_conditions_for`.
+      # Because of that merge, the downstream `AllVersionsIgnored` outcome can't be
+      # attributed to blocking vs ignoring without re-resolving. We therefore only
+      # measure the one block-specific fact Core can observe cleanly: that a Security
+      # block was in effect for this dependency check (presence), not that it
+      # excluded a specific candidate version (causation).
+      #
+      # This pairs with the "hard" status `blocked_versions.enforced` (the
+      # transitive-enforcement path that rejects PR creation) under the shared
+      # `blocked_versions.*` namespace.
+      sig { params(job: Dependabot::Job, dependency: Dependabot::Dependency, operation: String).void }
+      def record_blocked_version_ignored(job:, dependency:, operation:)
+        return unless job.blocked_versions_for?(dependency)
+
+        service.increment_metric(
+          "blocked_versions.ignored",
+          tags: {
+            "operation" => operation,
+            "package_manager" => job.package_manager
+          }
+        )
+      end
     end
   end
 end

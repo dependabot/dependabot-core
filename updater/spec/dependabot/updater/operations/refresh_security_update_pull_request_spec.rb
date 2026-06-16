@@ -205,6 +205,55 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
       allow(job).to receive(:package_manager).and_return("bundler")
     end
 
+    context "when the lead dependency has an active GitHub Security block" do
+      before do
+        allow(stub_update_checker).to receive(:up_to_date?).and_return(true)
+        allow(job).to receive_messages(
+          allowed_update?: true,
+          dependencies: ["dummy-pkg-a"],
+          security_advisories: [
+            Dependabot::Job::SecurityAdvisoryEntry.from_hash({ "dependency-name" => "dummy-pkg-a" })
+          ]
+        )
+        allow(job).to receive(:blocked_versions_for?).and_return(true)
+      end
+
+      it "increments the blocked versions ignored metric tagged with refresh_security_update" do
+        refresh_security_update_pull_request.send(:check_and_update_pull_request, [dependency])
+
+        expect(mock_service).to have_received(:increment_metric).with(
+          "blocked_versions.ignored",
+          tags: {
+            "operation" => "refresh_security_update",
+            "package_manager" => "bundler"
+          }
+        )
+      end
+    end
+
+    context "when the lead dependency has no active GitHub Security block" do
+      before do
+        allow(stub_update_checker).to receive(:up_to_date?).and_return(true)
+        allow(job).to receive_messages(
+          allowed_update?: true,
+          dependencies: ["dummy-pkg-a"],
+          security_advisories: [
+            Dependabot::Job::SecurityAdvisoryEntry.from_hash({ "dependency-name" => "dummy-pkg-a" })
+          ]
+        )
+        allow(job).to receive(:blocked_versions_for?).and_return(false)
+      end
+
+      it "does not increment the blocked versions ignored metric" do
+        refresh_security_update_pull_request.send(:check_and_update_pull_request, [dependency])
+
+        expect(mock_service).not_to have_received(:increment_metric).with(
+          "blocked_versions.ignored",
+          tags: anything
+        )
+      end
+    end
+
     context "when the update is not allowed" do
       before do
         allow(stub_update_checker).to receive(:up_to_date?).and_return(true)

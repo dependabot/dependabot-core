@@ -361,6 +361,8 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
         allow(job)
           .to receive_messages(security_fix?: true, allowed_update?: true)
         allow(job)
+          .to receive(:blocked_versions_for?).with(dependency).and_return(true)
+        allow(job)
           .to receive(:existing_pull_requests).and_return(
             [
               Dependabot::PullRequest.new(
@@ -389,6 +391,19 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
           create_security_update_pull_request
             .send(:check_and_create_pull_request, dependency)
         end
+
+        it "increments the blocked versions ignored metric" do
+          create_security_update_pull_request
+            .send(:check_and_create_pull_request, dependency)
+
+          expect(mock_service).to have_received(:increment_metric).with(
+            "blocked_versions.ignored",
+            tags: {
+              "operation" => "security_update",
+              "package_manager" => "bundler"
+            }
+          )
+        end
       end
     end
 
@@ -409,6 +424,33 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
           .with(stub_update_checker)
         create_security_update_pull_request
           .send(:check_and_create_pull_request, dependency)
+      end
+    end
+
+    context "when every possible update is ignored" do
+      before do
+        allow(stub_update_checker)
+          .to receive(:latest_version)
+          .and_raise(Dependabot::AllVersionsIgnored)
+      end
+
+      it "reraises so the backend records an update job error" do
+        expect do
+          create_security_update_pull_request
+            .send(:check_and_create_pull_request, dependency)
+        end.to raise_error(Dependabot::AllVersionsIgnored)
+      end
+
+      it "does not increment the blocked versions ignored metric" do
+        expect do
+          create_security_update_pull_request
+            .send(:check_and_create_pull_request, dependency)
+        end.to raise_error(Dependabot::AllVersionsIgnored)
+
+        expect(mock_service).not_to have_received(:increment_metric).with(
+          "blocked_versions.ignored",
+          tags: anything
+        )
       end
     end
 
