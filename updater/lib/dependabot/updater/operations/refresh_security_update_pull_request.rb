@@ -163,7 +163,9 @@ module Dependabot
 
           checker = update_checker_for(lead_dependency)
           log_checking_for_update(lead_dependency)
-          record_blocked_version_ignored(job: job, dependency: lead_dependency, operation: "refresh_security_update")
+          record_blocked_version_ignored(
+            job: job, dependency: lead_dependency, operation: BlockedVersionsOperation::REFRESH_SECURITY_UPDATE
+          )
 
           Dependabot.logger.info("Latest version is #{checker.latest_version}")
 

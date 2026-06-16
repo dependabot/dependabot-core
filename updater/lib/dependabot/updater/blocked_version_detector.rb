@@ -159,30 +159,17 @@ module Dependabot
         return nil unless version_class.correct?(version)
 
         parsed_version = version_class.new(version)
-        normalised_name = normalise(name)
 
-        relevant_blocked_versions.each do |blocked_version|
-          next unless normalise(T.must(blocked_version.dependency_name)) == normalised_name
+        Dependabot::Job::BlockedVersion
+          .matching(blocked_versions, dependency_name: name, package_manager: package_manager)
+          .each do |blocked_version|
+            requirement = T.must(blocked_version.version_requirement)
+            next unless requirement_satisfied?(requirement, parsed_version)
 
-          requirement = T.must(blocked_version.version_requirement)
-          next unless requirement_satisfied?(requirement, parsed_version)
-
-          return [requirement, blocked_version.reason]
-        end
+            return [requirement, blocked_version.reason]
+          end
 
         nil
-      end
-
-      sig { returns(T::Array[Dependabot::Job::BlockedVersion]) }
-      def relevant_blocked_versions
-        @relevant_blocked_versions ||= T.let(
-          blocked_versions.select do |blocked_version|
-            name = blocked_version.dependency_name
-            requirement = blocked_version.version_requirement
-            name && !name.strip.empty? && requirement && !requirement.strip.empty?
-          end,
-          T.nilable(T::Array[Dependabot::Job::BlockedVersion])
-        )
       end
 
       sig { params(requirement: String, version: Dependabot::Version).returns(T::Boolean) }

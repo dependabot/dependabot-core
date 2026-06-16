@@ -192,6 +192,18 @@ module Dependabot
 
       abstract!
 
+      # Curated `operation` tag values shared by the `blocked_versions.*` metrics.
+      # Defined once here so the "soft" (ignored) per-operation call sites and the
+      # "hard" (enforced) ErrorHandler translation stay in lockstep on one label
+      # set rather than re-listing the same strings in two places.
+      module BlockedVersionsOperation
+        VERSION_UPDATE = T.let("version_update", String)
+        SECURITY_UPDATE = T.let("security_update", String)
+        REFRESH_SECURITY_UPDATE = T.let("refresh_security_update", String)
+        REFRESH_VERSION_UPDATE = T.let("refresh_version_update", String)
+        GROUP_UPDATE = T.let("group_update", String)
+      end
+
       private
 
       sig { abstract.returns(Dependabot::Service) }

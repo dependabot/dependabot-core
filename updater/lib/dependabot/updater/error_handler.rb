@@ -42,20 +42,21 @@ module Dependabot
 
       # Translates the canonical operation identifier (Operation.tag_name) into
       # the curated `operation` label shared by the blocked_versions.* metrics.
-      # Keeping these values in lockstep with `record_blocked_version_ignored`
-      # (see PR #15333) lets the "soft" status (`blocked_versions.ignored`) and
-      # this "hard" status (`blocked_versions.enforced`) correlate on a single
-      # `operation` tag. Operations absent from this map fall back to their raw
-      # tag name so we never drop the dimension entirely.
+      # The label vocabulary itself lives in
+      # PullRequestHelpers::BlockedVersionsOperation so the "soft"
+      # (`blocked_versions.ignored`) and "hard" (`blocked_versions.enforced`)
+      # statuses stay in lockstep on a single `operation` tag. Operations absent
+      # from this map fall back to their raw tag name so we never drop the
+      # dimension entirely.
       BLOCKED_VERSIONS_OPERATIONS = T.let(
         {
-          "update_all_versions" => "version_update",
-          "create_security_pr" => "security_update",
-          "update_security_pr" => "refresh_security_update",
-          "update_version_pr" => "refresh_version_update",
-          "create_version_group_pr" => "group_update",
-          "update_version_group_pr" => "group_update",
-          "group_update_all_versions" => "group_update"
+          "update_all_versions" => PullRequestHelpers::BlockedVersionsOperation::VERSION_UPDATE,
+          "create_security_pr" => PullRequestHelpers::BlockedVersionsOperation::SECURITY_UPDATE,
+          "update_security_pr" => PullRequestHelpers::BlockedVersionsOperation::REFRESH_SECURITY_UPDATE,
+          "update_version_pr" => PullRequestHelpers::BlockedVersionsOperation::REFRESH_VERSION_UPDATE,
+          "create_version_group_pr" => PullRequestHelpers::BlockedVersionsOperation::GROUP_UPDATE,
+          "update_version_group_pr" => PullRequestHelpers::BlockedVersionsOperation::GROUP_UPDATE,
+          "group_update_all_versions" => PullRequestHelpers::BlockedVersionsOperation::GROUP_UPDATE
         }.freeze,
         T::Hash[String, String]
       )
