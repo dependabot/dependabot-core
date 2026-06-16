@@ -238,11 +238,19 @@ module Dependabot
       sig { returns(T::Array[Dependabot::Credential]) }
       def wrapped_credentials
         @wrapped_credentials ||= T.let(
-          T.unsafe(credentials).map do |cred| # rubocop:disable Sorbet/ForbidTUnsafe
-            cred.is_a?(Dependabot::Credential) ? cred : Dependabot::Credential.new(cred.dup)
-          end,
+          credentials.map { |cred| ensure_credential(cred) },
           T.nilable(T::Array[Dependabot::Credential])
         )
+      end
+
+      sig do
+        params(cred: T.any(Dependabot::Credential, T::Hash[String, T.untyped]))
+          .returns(Dependabot::Credential)
+      end
+      def ensure_credential(cred)
+        return cred if cred.is_a?(Dependabot::Credential)
+
+        Dependabot::Credential.new(cred.dup)
       end
 
       sig { returns(T::Boolean) }
