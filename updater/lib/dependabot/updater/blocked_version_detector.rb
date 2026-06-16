@@ -130,13 +130,17 @@ module Dependabot
       # being masked by `Dependency#version` only exposing the lowest version.
       sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, T::Array[String]]) }
       def version_sets(dependencies)
-        dependencies.each_with_object({}) do |dep, map|
+        sets = T.let({}, T::Hash[String, T::Array[String]])
+
+        dependencies.each do |dep|
           versions = versions_for(dep)
           next if versions.empty?
 
-          existing = (map[normalise(dep.name)] ||= [])
+          existing = (sets[normalise(dep.name)] ||= [])
           versions.each { |version| existing << version unless existing.include?(version) }
         end
+
+        sets
       end
 
       sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
