@@ -9,17 +9,17 @@ require "pathname"
 require "dependabot/gradle/distributions"
 require "dependabot/gradle/version"
 
-require_relative "wrapper/command_builder"
-require_relative "wrapper/executing_version_detector"
-require_relative "wrapper/properties_document"
-require_relative "wrapper/properties_reconciler"
-
 module Dependabot
   module Gradle
     class FileUpdater
       class WrapperUpdater
         extend T::Sig
         include Dependabot::Gradle::Distributions
+
+        require_relative "wrapper/command_builder"
+        require_relative "wrapper/executing_version_detector"
+        require_relative "wrapper/properties_document"
+        require_relative "wrapper/properties_reconciler"
 
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile], dependency: Dependabot::Dependency).void }
         def initialize(dependency_files:, dependency:)
