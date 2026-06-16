@@ -52,16 +52,6 @@ final class Updater
             ];
         }
 
-        $config->merge(
-            [
-                'config' => [
-                    'audit' => [
-                        'block-insecure' => false,
-                    ],
-                ],
-            ]
-        );
-
         if ($httpBasicCredentials) {
             $config->merge(
                 [
