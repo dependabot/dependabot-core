@@ -415,11 +415,13 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         expect(create_change).to be_a(Dependabot::DependencyChange)
       end
 
-      it "logs the transitive dependency change" do
+      it "logs a summary at info and the per-dependency detail at debug" do
         allow(Dependabot.logger).to receive(:info)
+        allow(Dependabot.logger).to receive(:debug)
         create_change
-        expect(Dependabot.logger).to have_received(:info).with(/Transitive dependencies changed/)
-        expect(Dependabot.logger).to have_received(:info).with(/transitive-dep 1\.0\.0 => 1\.5\.0/)
+        expect(Dependabot.logger).to have_received(:info)
+          .with(/Regenerating the lockfile changed 1 transitive dependency/)
+        expect(Dependabot.logger).to have_received(:debug).with(/transitive-dep 1\.0\.0 => 1\.5\.0/)
       end
     end
 
@@ -431,6 +433,17 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       end
 
       it "does not re-parse files or block the update" do
+        expect(create_change).to be_a(Dependabot::DependencyChange)
+        expect(Dependabot::FileParsers).not_to have_received(:for_package_manager)
+      end
+    end
+
+    context "when no blocked versions are configured" do
+      before do
+        allow(job).to receive(:blocked_versions).and_return([])
+      end
+
+      it "does not re-parse files and creates the change" do
         expect(create_change).to be_a(Dependabot::DependencyChange)
         expect(Dependabot::FileParsers).not_to have_received(:for_package_manager)
       end

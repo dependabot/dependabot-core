@@ -213,6 +213,11 @@ module Dependabot
     def enforce_blocked_transitive_versions!
       return unless Dependabot::Experiments.enabled?(:blocked_versions)
 
+      # No blocked rules means nothing can ever be blocked, so skip the extra
+      # re-parsing work entirely rather than computing transitive changes we
+      # would only discard.
+      return if job.blocked_versions.empty?
+
       detector = blocked_version_detector
       return unless detector
 
@@ -253,11 +258,21 @@ module Dependabot
     def log_transitive_dependency_changes(changes)
       return if changes.empty?
 
-      Dependabot.logger.info("Transitive dependencies changed by regenerating the lockfile:")
+      # Keep logging cheap on successful updates: emit a single info summary, and
+      # push the full per-dependency list to debug since it can be very large for
+      # big lockfiles. Blocked changes are always surfaced at info because they
+      # explain why an update was rejected.
+      Dependabot.logger.info(
+        "Regenerating the lockfile changed #{changes.length} transitive " \
+        "#{changes.length == 1 ? 'dependency' : 'dependencies'}"
+      )
+
       changes.each do |change|
-        msg = "  #{change.humanized}"
-        msg += " (blocked by '#{change.blocked_requirement}')" if change.blocked?
-        Dependabot.logger.info(msg)
+        if change.blocked?
+          Dependabot.logger.info("  #{change.humanized} (blocked by '#{change.blocked_requirement}')")
+        else
+          Dependabot.logger.debug("  #{change.humanized}")
+        end
       end
     end
 
