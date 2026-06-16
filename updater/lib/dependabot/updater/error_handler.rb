@@ -3,6 +3,7 @@
 
 require "dependabot/errors"
 require "dependabot/updater/errors"
+require "dependabot/updater/security_update_helpers"
 require "octokit"
 
 # This class is responsible for determining how to present a Dependabot::Error
@@ -23,6 +24,7 @@ module Dependabot
   class Updater
     class ErrorHandler
       extend T::Sig
+      include PullRequestHelpers
 
       # These are errors that halt the update run and are handled in the main
       # backend. They do *not* raise a sentry.
@@ -178,7 +180,8 @@ module Dependabot
 
       private
 
-      sig { returns(Service) }
+      # Implements the abstract `service` reader required by PullRequestHelpers.
+      sig { override.returns(Service) }
       attr_reader :service
 
       sig { returns(Job) }
@@ -187,26 +190,19 @@ module Dependabot
       sig { returns(String) }
       attr_reader :operation_name
 
-      # Emits a counter when a GitHub Security blocklist entry causes a selected
-      # update to be rejected outright (a blocked transitive version was about to
-      # ship in the regenerated files).
-      #
-      # This is the "hard" block status. It pairs with the "soft" status
-      # `blocked_versions.ignored` (recorded at check time when a block is folded
-      # into the resolver's ignore conditions) under the shared `blocked_versions.*`
-      # namespace, so the two correlate cleanly on the service side.
+      # Records the "hard" block status when a selected update is rejected because
+      # a blocked transitive version was about to ship in the regenerated files.
+      # The metric emission lives in PullRequestHelpers#record_blocked_version_enforced
+      # so it sits alongside its "soft" sibling `blocked_versions.ignored`.
       #
       # Recording is guarded and fire-and-forget: it can never affect an update.
       sig { params(error: StandardError).void }
       def increment_blocked_versions_enforced_metric(error)
         return unless error.is_a?(Dependabot::BlockedDependencyVersion)
 
-        service.increment_metric(
-          "blocked_versions.enforced",
-          tags: {
-            "operation" => BLOCKED_VERSIONS_OPERATIONS.fetch(operation_name, operation_name),
-            "package_manager" => job.package_manager
-          }
+        record_blocked_version_enforced(
+          job: job,
+          operation: BLOCKED_VERSIONS_OPERATIONS.fetch(operation_name, operation_name)
         )
       end
 

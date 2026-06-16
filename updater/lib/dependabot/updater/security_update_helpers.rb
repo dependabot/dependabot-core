@@ -235,6 +235,25 @@ module Dependabot
           warn_description: notice.description
         )
       end
+
+      # Emits a counter when a GitHub Security blocklist entry causes a selected
+      # update to be rejected outright: regenerating the lockfile would have
+      # introduced a blocked transitive version, so the whole change is dropped.
+      #
+      # This is the "hard" block status. It pairs with the "soft" status
+      # `blocked_versions.ignored` (recorded at check time when a block is folded
+      # into the resolver's ignore conditions) under the shared `blocked_versions.*`
+      # namespace, so the two correlate cleanly on the service side.
+      sig { params(job: Dependabot::Job, operation: String).void }
+      def record_blocked_version_enforced(job:, operation:)
+        service.increment_metric(
+          "blocked_versions.enforced",
+          tags: {
+            operation: operation,
+            package_manager: job.package_manager
+          }
+        )
+      end
     end
   end
 end

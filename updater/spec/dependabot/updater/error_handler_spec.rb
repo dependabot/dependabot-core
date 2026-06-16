@@ -76,7 +76,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
       it "increments blocked_versions.enforced metric with operation and package manager" do
         expect(mock_service).to receive(:increment_metric).with(
           "blocked_versions.enforced",
-          tags: { "operation" => "version_update", "package_manager" => "bundler" }
+          tags: { operation: "version_update", package_manager: "bundler" }
         )
 
         expect(mock_service).to receive(:record_update_job_error).with(
@@ -99,7 +99,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         it "falls back to the raw operation name" do
           expect(mock_service).to receive(:increment_metric).with(
             "blocked_versions.enforced",
-            tags: { "operation" => "some_future_operation", "package_manager" => "bundler" }
+            tags: { operation: "some_future_operation", package_manager: "bundler" }
           )
 
           allow(mock_service).to receive(:record_update_job_error)
@@ -424,7 +424,7 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
       it "increments blocked_versions.enforced metric with operation and package manager" do
         expect(mock_service).to receive(:increment_metric).with(
           "blocked_versions.enforced",
-          tags: { "operation" => "version_update", "package_manager" => "bundler" }
+          tags: { operation: "version_update", package_manager: "bundler" }
         )
 
         expect(mock_service).to receive(:record_update_job_error).with(
