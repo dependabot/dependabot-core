@@ -30,6 +30,19 @@ RSpec.describe Dependabot::Updater::BlockedVersionDetector do
     )
   end
 
+  # Mirrors how npm/yarn/pnpm expose a dependency resolved to multiple versions:
+  # `version` is the lowest, and the full set is carried in `metadata[:all_versions]`.
+  def multi_version_transitive_dependency(name:, versions:)
+    all_versions = versions.map { |version| transitive_dependency(name: name, version: version) }
+    Dependabot::Dependency.new(
+      name: name,
+      version: versions.min_by { |version| Gem::Version.new(version) },
+      requirements: [],
+      package_manager: "dummy",
+      metadata: { all_versions: all_versions }
+    )
+  end
+
   def direct_dependency(name:, version:)
     Dependabot::Dependency.new(
       name: name,
@@ -103,6 +116,23 @@ RSpec.describe Dependabot::Updater::BlockedVersionDetector do
 
       it "ignores it" do
         expect(detector.transitive_changes).to be_empty
+      end
+    end
+
+    context "when a higher version is added but the lowest version is unchanged" do
+      let(:previous_dependencies) do
+        [multi_version_transitive_dependency(name: "left-pad", versions: ["1.0.0"])]
+      end
+      let(:current_dependencies) do
+        [multi_version_transitive_dependency(name: "left-pad", versions: ["1.0.0", "2.0.0"])]
+      end
+
+      it "detects the newly-added version even though dep.version is unchanged" do
+        change = detector.transitive_changes.first
+
+        expect(detector.transitive_changes.size).to eq(1)
+        expect(change.name).to eq("left-pad")
+        expect(change.new_version).to eq("2.0.0")
       end
     end
   end
@@ -181,6 +211,28 @@ RSpec.describe Dependabot::Updater::BlockedVersionDetector do
 
       it "does not block an update that did not change the dependency" do
         expect(detector.blocked_changes).to be_empty
+      end
+    end
+
+    context "when a blocked version is added but is not the lowest resolved version" do
+      let(:previous_dependencies) do
+        [multi_version_transitive_dependency(name: "left-pad", versions: ["1.0.0"])]
+      end
+      let(:current_dependencies) do
+        [multi_version_transitive_dependency(name: "left-pad", versions: ["1.0.0", "2.0.0"])]
+      end
+      let(:blocked_versions) do
+        [blocked_version(name: "left-pad", requirement: "= 2.0.0", reason: "malware")]
+      end
+
+      it "blocks on the newly-added version even though dep.version is the lower, allowed one" do
+        change = detector.blocked_changes.first
+
+        expect(detector.blocked_changes.size).to eq(1)
+        expect(change.name).to eq("left-pad")
+        expect(change.new_version).to eq("2.0.0")
+        expect(change.blocked_requirement).to eq("= 2.0.0")
+        expect(change.reason).to eq("malware")
       end
     end
   end

@@ -84,22 +84,31 @@ module Dependabot
       sig { returns(T::Array[TransitiveChange]) }
       def compute_transitive_changes
         previous_versions = version_map(previous_dependencies)
+        previous_version_sets = version_sets(previous_dependencies)
 
         current_dependencies.filter_map do |dep|
           next if dep.top_level?
 
-          new_version = dep.version
-          next if new_version.nil?
+          name_key = normalise(dep.name)
 
-          previous_version = previous_versions[normalise(dep.name)]
-          next if previous_version == new_version
+          # Diff the full set of resolved versions rather than only `dep.version`.
+          # Ecosystems that allow multiple versions of the same dependency
+          # (npm/yarn/pnpm) de-dupe by name and expose the *lowest* version via
+          # `dep.version`, with the full set in `dep.all_versions`. Comparing the
+          # sets ensures a newly-introduced version is detected even when it is
+          # not the lowest and even when the lowest version is unchanged.
+          added_versions = versions_for(dep) - (previous_version_sets[name_key] || [])
+          next if added_versions.empty?
 
-          blocked = blocked_match_for(dep.name, new_version)
+          # A change is blocked if *any* newly-introduced version is blocked, so
+          # check every added version instead of only the combined one.
+          blocked_version = added_versions.find { |candidate| blocked_match_for(dep.name, candidate) }
+          blocked = blocked_version ? blocked_match_for(dep.name, blocked_version) : nil
 
           TransitiveChange.new(
             name: dep.name,
-            previous_version: previous_version,
-            new_version: new_version,
+            previous_version: previous_versions[name_key],
+            new_version: blocked_version || highest_version(added_versions),
             blocked_requirement: blocked&.first,
             reason: blocked&.last
           )
@@ -114,6 +123,35 @@ module Dependabot
 
           map[normalise(dep.name)] = version
         end
+      end
+
+      # Maps each dependency name to the full set of resolved versions, so that
+      # multi-version (npm/yarn/pnpm) changes are detected reliably rather than
+      # being masked by `Dependency#version` only exposing the lowest version.
+      sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, T::Array[String]]) }
+      def version_sets(dependencies)
+        dependencies.each_with_object({}) do |dep, map|
+          versions = versions_for(dep)
+          next if versions.empty?
+
+          existing = (map[normalise(dep.name)] ||= [])
+          versions.each { |version| existing << version unless existing.include?(version) }
+        end
+      end
+
+      sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+      def versions_for(dependency)
+        dependency.all_versions.compact
+      end
+
+      # The highest parseable version from a set of newly-added versions. Used
+      # only to label non-blocked changes for human-readable logging.
+      sig { params(versions: T::Array[String]).returns(String) }
+      def highest_version(versions)
+        parseable = versions.select { |version| version_class.correct?(version) }
+        return T.must(versions.last) if parseable.empty?
+
+        T.must(parseable.max_by { |version| version_class.new(version) })
       end
 
       sig { params(name: String, version: String).returns(T.nilable([String, T.nilable(String)])) }
