@@ -61,7 +61,7 @@ module Dependabot
         def registry
           return @registry if @registry
 
-          @registry = configured_registry || locked_registry || scoped_credential_registry_for_dependency ||
+          @registry = scoped_credential_registry_for_dependency || configured_registry || locked_registry ||
                       first_registry_with_dependency_details
           T.must(@registry)
         end
@@ -226,7 +226,7 @@ module Dependabot
                             .select { |cred| cred["type"] == "npm_registry" && cred["registry"] }
                             .tap do |arr|
                               arr.each do |c|
-                                c["registry"] = prepare_registry_url(c["registry"])
+                                c["registry"] = prepare_registry_url(c["registry"])&.delete_suffix("/")
                                 c["token"] ||= nil
                               end
                             end
