@@ -83,7 +83,6 @@ module Dependabot
 
       sig { returns(T::Array[TransitiveChange]) }
       def compute_transitive_changes
-        previous_versions = version_map(previous_dependencies)
         previous_version_sets = version_sets(previous_dependencies)
 
         current_dependencies.filter_map do |dep|
@@ -119,16 +118,6 @@ module Dependabot
             blocked_requirement: blocked_match&.first,
             reason: blocked_match&.last
           )
-        end
-      end
-
-      sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, String]) }
-      def version_map(dependencies)
-        dependencies.each_with_object({}) do |dep, map|
-          version = dep.version
-          next unless version
-
-          map[normalise(dep.name)] = version
         end
       end
 
