@@ -432,6 +432,8 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
         allow(stub_update_checker)
           .to receive(:latest_version)
           .and_raise(Dependabot::AllVersionsIgnored)
+        allow(job)
+          .to receive(:blocked_versions_for?).with(dependency).and_return(false)
       end
 
       it "reraises so the backend records an update job error" do
