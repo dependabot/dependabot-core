@@ -488,6 +488,11 @@ module Dependabot
       conditions + ignored_versions_from_allowed_update_types(dependency) + blocked_versions_for(dependency)
     end
 
+    sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+    def blocked_versions_for?(dependency)
+      blocked_versions_for(dependency).any?
+    end
+
     # TODO: Present Dependabot::Config::IgnoreCondition in calling code
     #
     # This is a workaround for our existing logging using the 'raw'

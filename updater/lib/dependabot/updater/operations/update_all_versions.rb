@@ -124,6 +124,7 @@ module Dependabot
           checker = update_checker_for(dependency, raise_on_ignored: raise_on_ignored?(dependency))
 
           log_checking_for_update(dependency)
+          record_blocked_version_ignored(job: job, dependency: dependency, operation: "version_update")
 
           return if all_versions_ignored?(dependency, checker)
           return log_up_to_date(dependency) if checker.up_to_date?
