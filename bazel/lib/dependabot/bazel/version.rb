@@ -13,15 +13,25 @@ module Dependabot
     class Version < Dependabot::Version
       extend T::Sig
 
+      sig { override.params(version: VersionParameter).returns(T::Boolean) }
+      def self.correct?(version)
+        return false if version.nil?
+
+        super(normalize_bazel_version(version.to_s))
+      end
+
       sig { override.params(version: VersionParameter).void }
       def initialize(version)
         @version_string = T.let(version.to_s, String)
         @bcr_suffix = T.let(parse_bcr_suffix(@version_string), T.nilable(Integer))
 
-        # Remove the .bcr.X suffix for comparison, and strip leading 'v' if present
-        base_version = remove_bcr_suffix(@version_string)
-        base_version = base_version.sub(/^v/i, "")
-        super(base_version)
+        super(Dependabot::Bazel::Version.normalize_bazel_version(@version_string))
+      end
+
+      # Strips .bcr.N suffix and v prefix to yield a Gem::Version-compatible string.
+      sig { params(version_string: String).returns(String) }
+      def self.normalize_bazel_version(version_string)
+        version_string.sub(/\.bcr\.\d+$/, "").sub(/^v/i, "")
       end
 
       sig { override.returns(String) }
@@ -49,11 +59,6 @@ module Dependabot
       def parse_bcr_suffix(version_string)
         match = version_string.match(/\.bcr\.(\d+)$/)
         match ? T.must(match[1]).to_i : nil
-      end
-
-      sig { params(version_string: String).returns(String) }
-      def remove_bcr_suffix(version_string)
-        version_string.sub(/\.bcr\.\d+$/, "")
       end
 
       sig { params(other: T.untyped).returns(T.nilable(Dependabot::Bazel::Version)) }
