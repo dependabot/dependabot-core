@@ -393,6 +393,7 @@ Sorbet/ForbidTUntyped:
     - "helm/lib/dependabot/helm/file_updater/chart_updater.rb"
     - "helm/lib/dependabot/helm/update_checker.rb"
     - "helm/lib/dependabot/helm/update_checker/latest_version_resolver.rb"
+    - "helm/lib/dependabot/helm/update_checker/requirements_updater.rb"
     - "hex/lib/dependabot/hex/credential_helpers.rb"
     - "hex/lib/dependabot/hex/file_parser.rb"
     - "hex/lib/dependabot/hex/metadata_finder.rb"
