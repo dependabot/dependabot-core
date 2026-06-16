@@ -38,6 +38,14 @@ final class UpdateChecker
 
         $config = $composer->getConfig();
 
+        $config->merge([
+            'config' => [
+                'audit' => [
+                    'block-insecure' => false,
+                ],
+            ],
+        ]);
+
         if (0 < count($httpBasicCredentials)) {
             $config->merge([
                 'config' => [
