@@ -154,7 +154,7 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
         [
           {
             file: "rust-toolchain.toml",
-            requirement: latest_version,
+            requirement: latest_version.to_s,
             groups: [],
             source: nil
           }
@@ -187,13 +187,13 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
           [
             {
               file: "rust-toolchain.toml",
-              requirement: latest_version,
+              requirement: latest_version.to_s,
               groups: [],
               source: nil
             },
             {
               file: "other-file.toml",
-              requirement: latest_version,
+              requirement: latest_version.to_s,
               groups: ["dev"],
               source: { type: "git" }
             }

@@ -76,6 +76,20 @@ RSpec.describe Dependabot::Job do
   let(:repo_private) { false }
   let(:cooldown) { nil }
 
+  describe "when wire-format collections contain non-hash entries" do
+    let(:attributes) do
+      super().merge(
+        dependency_groups: [nil, { "name" => "group-a", "rules" => { "patterns" => ["*"] } }],
+        existing_group_pull_requests: ["not-a-hash", { "dependency-group-name" => "group-a" }]
+      )
+    end
+
+    it "ignores the non-hash entries instead of raising" do
+      expect(job.dependency_groups.map(&:name)).to eq(["group-a"])
+      expect(job.existing_group_pull_requests.map(&:dependency_group_name)).to eq(["group-a"])
+    end
+  end
+
   describe "::new_update_job" do
     let(:job_json) { fixture("jobs/job_with_credentials.json") }
 

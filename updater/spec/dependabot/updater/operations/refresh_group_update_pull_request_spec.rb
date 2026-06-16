@@ -272,7 +272,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
                 }
               ]
             }
-          ]
+          ].map { |pr| Dependabot::Job::ExistingGroupPullRequest.from_hash(pr) }
         )
       end
 
@@ -334,7 +334,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
                 }
               ]
             }
-          ]
+          ].map { |pr| Dependabot::Job::ExistingGroupPullRequest.from_hash(pr) }
         )
       end
 
@@ -386,7 +386,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
                 { "dependency-name" => "dummy-pkg-d", "dependency-version" => "0.1.0" }
               ]
             }
-          ]
+          ].map { |pr| Dependabot::Job::ExistingGroupPullRequest.from_hash(pr) }
         )
       end
 

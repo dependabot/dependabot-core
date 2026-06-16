@@ -174,7 +174,9 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         before do
           allow(job).to receive_messages(
             dependencies: [dependency],
-            dependency_groups: [{ "applies-to" => "security-updates" }]
+            dependency_groups: [
+              Dependabot::Job::DependencyGroupDefinition.from_hash({ "applies-to" => "security-updates" })
+            ]
           )
         end
 
@@ -187,7 +189,9 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         before do
           allow(job).to receive_messages(
             dependencies: [dependency],
-            dependency_groups: [{ "applies-to" => "version-updates" }]
+            dependency_groups: [
+              Dependabot::Job::DependencyGroupDefinition.from_hash({ "applies-to" => "version-updates" })
+            ]
           )
         end
 
@@ -266,7 +270,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
           allow(job).to receive(:existing_group_pull_requests).and_return(
             [
               { "dependency-group-name" => "dummy-group", "pr_number" => 123 }
-            ]
+            ].map { |pr| Dependabot::Job::ExistingGroupPullRequest.from_hash(pr) }
           )
         end
 
@@ -299,7 +303,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
                   }
                 ]
               }
-            ],
+            ].map { |pr| Dependabot::Job::ExistingGroupPullRequest.from_hash(pr) },
             source: mock_source
           )
           allow(mock_source).to receive(:directory).and_return("/")
@@ -328,7 +332,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
                   }
                 ]
               }
-            ],
+            ].map { |pr| Dependabot::Job::ExistingGroupPullRequest.from_hash(pr) },
             source: mock_source
           )
           allow(mock_source).to receive(:directory).and_return("/")
@@ -352,7 +356,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
                   { "dependency-name" => "rollup", "dependency-version" => "2.79.2" }
                 ]
               }
-            ],
+            ].map { |pr| Dependabot::Job::ExistingGroupPullRequest.from_hash(pr) },
             source: mock_source
           )
           allow(mock_source).to receive(:directory).and_return("/")

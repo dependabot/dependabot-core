@@ -60,19 +60,31 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
         .and_return(generated_lockfile)
     end
 
-    context "when original lockfile uses Bundler 4.0.10" do
+    context "when original lockfile uses Bundler 4.0.10 (in the [4.0.0, 4.0.11) strip range)" do
       let(:project_name) { "checksums_bundler_4_0_10" }
 
       it "removes newly added bundler checksums" do
         expect(updated_lockfile_content).not_to include("bundler (4.0.11)")
       end
+
+      it "preserves the CHECKSUMS header after stripping the bundler entry (regression for #15193)" do
+        expect(updated_lockfile_content).to match(/^CHECKSUMS\n  business \(1\.5\.0\)/)
+      end
     end
 
-    context "when original lockfile uses Bundler 4.0.11" do
+    context "when original lockfile uses Bundler 4.0.11 (at the strip-range upper bound)" do
       let(:project_name) { "checksums_bundler_4_0_11" }
 
       it "keeps bundler checksums" do
         expect(updated_lockfile_content).to include("bundler (4.0.11)")
+      end
+    end
+
+    context "when original lockfile uses Bundler 4.0.12 (outside the strip range — control)" do
+      let(:project_name) { "checksums_bundler_4_0_12" }
+
+      it "preserves the CHECKSUMS header" do
+        expect(updated_lockfile_content).to include("CHECKSUMS")
       end
     end
   end

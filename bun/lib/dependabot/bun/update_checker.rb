@@ -51,7 +51,7 @@ module Dependabot
       )
         @latest_version = T.let(nil, T.nilable(T.any(String, Gem::Version)))
         @latest_resolvable_version = T.let(nil, T.nilable(T.any(String, Dependabot::Version)))
-        @updated_requirements = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
+        @updated_requirements = T.let(nil, T.nilable(T::Array[Dependabot::DependencyRequirement]))
         @vulnerability_audit = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
         @vulnerable_versions = T.let(nil, T.nilable(T::Array[T.any(String, Gem::Version)]))
 
@@ -161,7 +161,7 @@ module Dependabot
         T.unsafe(version_resolver.latest_resolvable_previous_version(updated_version))
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         resolvable_version =
           if preferred_resolvable_version.is_a?(version_class)
@@ -176,12 +176,14 @@ module Dependabot
           end
 
         @updated_requirements ||=
-          RequirementsUpdater.new(
-            requirements: dependency.requirements,
-            updated_source: updated_source,
-            latest_resolvable_version: resolvable_version,
-            update_strategy: T.must(requirements_update_strategy)
-          ).updated_requirements
+          wrap_requirements(
+            RequirementsUpdater.new(
+              requirements: dependency.requirements,
+              updated_source: updated_source,
+              latest_resolvable_version: resolvable_version,
+              update_strategy: T.must(requirements_update_strategy)
+            ).updated_requirements
+          )
       end
 
       sig { returns(T::Boolean) }
