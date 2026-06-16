@@ -27,8 +27,11 @@ module Dependabot
             T::Array[String]
           )
 
-          # Returns the reconciled properties content, or the original content when either side is
-          # missing (e.g. the wrapper task did not produce a properties file).
+          # Reconciles the regenerated wrapper properties back onto the user's original file.
+          #
+          # When the original file is missing there is nothing to preserve, so nil is returned and the
+          # caller keeps the regenerated file as-is. When only the regenerated file is missing (e.g. the
+          # wrapper task did not produce one) the original content is returned unchanged.
           sig do
             params(original_content: T.nilable(String), regenerated_content: T.nilable(String))
               .returns(T.nilable(String))

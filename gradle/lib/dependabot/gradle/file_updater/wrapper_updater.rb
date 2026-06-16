@@ -86,7 +86,7 @@ module Dependabot
                 # the `gradlew` script may be corrupted, so we try and fall back to system Gradle before giving up
                 SharedHelpers.run_shell_command(command, cwd: cwd, env: env)
               rescue SharedHelpers::HelperSubprocessFailed => e
-                raise e unless has_local_script # already field with system one, there is no point to retry
+                raise e unless has_local_script # already failed with system one, there is no point to retry
 
                 Dependabot.logger.warn("Running #{command} failed, retrying first with system Gradle: #{e.message}")
 
