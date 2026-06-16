@@ -2057,7 +2057,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               "@dependabot-fixtures/npm-transitive-dependency to a non-vulnerable version.",
             "fix_available" => false,
             "fix_updates" => [],
-            "top_level_ancestors" => []
+            "top_level_ancestors" => [],
+            "blocking_dependencies" => [
+              {
+                "name" => "@dependabot-fixtures/npm-intermediate-dependency",
+                "version" => "0.0.1",
+                "requirement" => "1.0.0",
+                "top_level_ancestor" => "@dependabot-fixtures/npm-parent-dependency-5"
+              }
+            ]
           )
       end
     end
