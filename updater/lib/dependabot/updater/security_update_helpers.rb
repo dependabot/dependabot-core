@@ -236,6 +236,29 @@ module Dependabot
         )
       end
 
+      # Emits a counter when a GitHub Security blocklist entry applies to a
+      # dependency Core is actively checking for updates.
+      #
+      # This is the "soft" block status. When a block applies, the blocked
+      # versions are folded into the resolver's ignore conditions so they can't
+      # be selected - but they sit alongside the user's own ignores (dependabot.yml
+      # ignore rules and allow update-types), all merged into `ignore_conditions_for`.
+      # Because of that merge, the downstream `AllVersionsIgnored` outcome can't be
+      # attributed to blocking vs ignoring without re-resolving. We therefore only
+      # measure the one block-specific fact Core can observe cleanly: that a Security
+      # block was in effect for this dependency check (presence), not that it
+      # excluded a specific candidate version (causation).
+      #
+      # This pairs with the "hard" status `blocked_versions.enforced` (the
+      # transitive-enforcement path that rejects PR creation) under the shared
+      # `blocked_versions.*` namespace.
+      sig { params(job: Dependabot::Job, dependency: Dependabot::Dependency, operation: String).void }
+      def record_blocked_version_ignored(job:, dependency:, operation:)
+        return unless job.blocked_versions_for?(dependency)
+
+        record_blocked_versions_metric(status: "ignored", job: job, operation: operation)
+      end
+
       # Emits a counter when a GitHub Security blocklist entry causes a selected
       # update to be rejected outright: regenerating the lockfile would have
       # introduced a blocked transitive version, so the whole change is dropped.
@@ -246,8 +269,17 @@ module Dependabot
       # namespace, so the two correlate cleanly on the service side.
       sig { params(job: Dependabot::Job, operation: String).void }
       def record_blocked_version_enforced(job:, operation:)
+        record_blocked_versions_metric(status: "enforced", job: job, operation: operation)
+      end
+
+      # Shared emitter for the `blocked_versions.*` counter family. Both the
+      # "soft" (ignored) and "hard" (enforced) statuses report the same
+      # `operation` and `package_manager` dimensions, differing only in the
+      # status suffix, so callers correlate cleanly on the service side.
+      sig { params(status: String, job: Dependabot::Job, operation: String).void }
+      def record_blocked_versions_metric(status:, job:, operation:)
         service.increment_metric(
-          "blocked_versions.enforced",
+          "blocked_versions.#{status}",
           tags: {
             operation: operation,
             package_manager: job.package_manager
