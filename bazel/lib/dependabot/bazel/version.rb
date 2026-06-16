@@ -61,7 +61,7 @@ module Dependabot
         match ? T.must(match[1]).to_i : nil
       end
 
-      sig { params(other: T.untyped).returns(T.nilable(Dependabot::Bazel::Version)) }
+      sig { params(other: BasicObject).returns(T.nilable(Dependabot::Bazel::Version)) }
       def convert_to_bazel_version(other)
         case other
         when Dependabot::Bazel::Version
