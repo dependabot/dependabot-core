@@ -87,9 +87,13 @@ module Dependabot
         previous_version_sets = version_sets(previous_dependencies)
 
         current_dependencies.filter_map do |dep|
-          next if dep.top_level?
-
           name_key = normalise(dep.name)
+          current_versions = versions_for(dep)
+
+          # Skip pure direct dependencies (top-level with no transitive versions).
+          # But allow processing of deps that carry transitive versions in all_versions,
+          # even if top-level, since npm/yarn/pnpm may store the full set there.
+          next if dep.top_level? && current_versions.length == 1
 
           # Diff the full set of resolved versions rather than only `dep.version`.
           # Ecosystems that allow multiple versions of the same dependency
@@ -97,20 +101,23 @@ module Dependabot
           # `dep.version`, with the full set in `dep.all_versions`. Comparing the
           # sets ensures a newly-introduced version is detected even when it is
           # not the lowest and even when the lowest version is unchanged.
-          added_versions = versions_for(dep) - (previous_version_sets[name_key] || [])
+          previous_versions_set = previous_version_sets[name_key] || []
+          added_versions = current_versions - previous_versions_set
           next if added_versions.empty?
 
-          # A change is blocked if *any* newly-introduced version is blocked, so
-          # check every added version instead of only the combined one.
-          blocked_version = added_versions.find { |candidate| blocked_match_for(dep.name, candidate) }
-          blocked = blocked_version ? blocked_match_for(dep.name, blocked_version) : nil
+          # A change is blocked if *any* newly-introduced version is blocked.
+          # Store the blocked match result to avoid redundant checking.
+          blocked_match = T.let(nil, T.nilable([String, T.nilable(String)]))
+          blocked_version = added_versions.find do |candidate|
+            blocked_match = blocked_match_for(dep.name, candidate)
+          end
 
           TransitiveChange.new(
             name: dep.name,
-            previous_version: previous_versions[name_key],
+            previous_version: previous_versions_set.any? ? highest_version(previous_versions_set) : nil,
             new_version: blocked_version || highest_version(added_versions),
-            blocked_requirement: blocked&.first,
-            reason: blocked&.last
+            blocked_requirement: blocked_match&.first,
+            reason: blocked_match&.last
           )
         end
       end
