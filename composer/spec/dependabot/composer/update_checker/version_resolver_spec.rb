@@ -170,6 +170,20 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       it { is_expected.to be_nil }
     end
 
+    context "with a dependency that has insecure transitive dependencies" do
+      let(:project_name) { "insecure_transitive_dependency" }
+      let(:string_req) { "^6.5" }
+      let(:latest_allowable_version) { Gem::Version.new("7.0.0") }
+      let(:dependency_name) { "guzzlehttp/guzzle" }
+      let(:dependency_version) { "6.5.8" }
+
+      it "resolves despite transitive dependencies having security advisories" do
+        # Composer 2.9+ blocks packages with security advisories by default.
+        # Our helpers disable block-insecure so resolution still works.
+        expect { resolver.latest_resolvable_version }.not_to raise_error
+      end
+    end
+
     context "with a dependency that uses a stability flag" do
       let(:project_name) { "stability_flag" }
       let(:string_req) { "@stable" }

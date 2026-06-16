@@ -34,14 +34,16 @@ module Dependabot
         nil
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         return dependency.requirements unless latest_version
 
-        RequirementsUpdater.new(
-          requirements: dependency.requirements,
-          latest_version: latest_version.to_s
-        ).updated_requirements
+        wrap_requirements(
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            latest_version: latest_version.to_s
+          ).updated_requirements
+        )
       end
 
       sig { returns(T.class_of(Dependabot::Bazel::Version)) }

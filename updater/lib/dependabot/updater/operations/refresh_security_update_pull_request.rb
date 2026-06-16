@@ -163,6 +163,7 @@ module Dependabot
 
           checker = update_checker_for(lead_dependency)
           log_checking_for_update(lead_dependency)
+          record_blocked_version_ignored(job: job, dependency: lead_dependency, operation: "refresh_security_update")
 
           Dependabot.logger.info("Latest version is #{checker.latest_version}")
 
@@ -326,7 +327,7 @@ module Dependabot
 
         sig { returns(String) }
         def security_advisory_dependency
-          T.cast(job.security_advisories.first, T::Hash[String, String])["dependency-name"].to_s
+          job.security_advisories.first&.dependency_name.to_s
         end
       end
     end

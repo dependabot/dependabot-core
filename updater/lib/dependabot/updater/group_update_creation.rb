@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -290,7 +290,7 @@ module Dependabot
         )
           .returns(T::Array[Dependabot::Dependency])
       end
-      def compile_updates_for(dependency, dependency_files, group) # rubocop:disable Metrics/MethodLength
+      def compile_updates_for(dependency, dependency_files, group) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
         checker = update_checker_for(
           dependency,
           dependency_files,
@@ -299,6 +299,7 @@ module Dependabot
         )
 
         log_checking_for_update(dependency)
+        record_blocked_version_ignored(job: job, dependency: dependency, operation: "group_update")
 
         if all_versions_ignored?(dependency, checker)
           record_security_update_ignored_if_applicable(dependency, checker, group)
@@ -476,7 +477,7 @@ module Dependabot
         }
       end
 
-      sig { params(group: T.untyped, version: Gem::Version, latest_version: Gem::Version).returns(T::Boolean) }
+      sig { params(group: Dependabot::DependencyGroup, version: Gem::Version, latest_version: Gem::Version).returns(T::Boolean) }
       def cargo_update_type_allowed?(group, version, latest_version)
         return true unless Dependabot::Cargo::Version.respond_to?(:update_type)
 
@@ -559,25 +560,25 @@ module Dependabot
         !find_existing_group_pr(group).nil?
       end
 
-      sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(T::Hash[String, T.untyped])) }
+      sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(Dependabot::Job::ExistingGroupPullRequest)) }
       def find_existing_group_pr(group)
         job.existing_group_pull_requests.find do |pr|
-          next false unless pr["dependency-group-name"] == group.name
+          next false unless pr.dependency_group_name == group.name
 
           existing_pr_covers_job_directories?(pr)
         end
       end
 
-      sig { params(pull_request: T::Hash[String, T.untyped]).returns(T::Boolean) }
+      sig { params(pull_request: Dependabot::Job::ExistingGroupPullRequest).returns(T::Boolean) }
       def existing_pr_covers_job_directories?(pull_request)
-        dependencies = pull_request["dependencies"]
+        dependencies = pull_request.dependencies
 
         # Old PRs without directory info — treat as match (backward compat).
         # Only enforce directory matching when ALL dependencies include a directory,
         # consistent with DependencyChange#matches_existing_pr? and PullRequest#using_directory?.
-        return true if dependencies.nil? || !dependencies.all? { |dep| dep["directory"] }
+        return true if dependencies.nil? || !dependencies.all?(&:directory)
 
-        pr_directories = dependencies.filter_map { |dep| dep["directory"] }
+        pr_directories = dependencies.filter_map(&:directory)
         job_directories = job.source.directories || [job.source.directory || "/"]
         normalized_job_dirs = job_directories.map { |d| Pathname.new(d).cleanpath.to_s }.uniq
         normalized_pr_dirs = pr_directories.map { |d| Pathname.new(d).cleanpath.to_s }.uniq

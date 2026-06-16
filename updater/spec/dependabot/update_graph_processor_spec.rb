@@ -854,14 +854,16 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         allow(Dependabot::Environment).to receive(:github_actions?).and_return(false)
       end
 
-      it "records an error for each directory" do
-        expect(service).to receive(:record_update_job_error).with(
-          error_type: "unexpected_external_code",
-          error_details: { message: "Cannot process directory / without external code execution" }
+      it "records a warning for each directory" do
+        expect(service).to receive(:record_update_job_warning).with(
+          warn_type: "unexpected_external_code",
+          warn_title: "Refusing to execute external code",
+          warn_description: "Cannot process directory / without external code execution"
         )
-        expect(service).to receive(:record_update_job_error).with(
-          error_type: "unexpected_external_code",
-          error_details: { message: "Cannot process directory /subproject without external code execution" }
+        expect(service).to receive(:record_update_job_warning).with(
+          warn_type: "unexpected_external_code",
+          warn_title: "Refusing to execute external code",
+          warn_description: "Cannot process directory /subproject without external code execution"
         )
 
         update_graph_processor.run
@@ -875,7 +877,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
       it "does not halt processing of remaining directories" do
         call_count = 0
-        allow(service).to receive(:record_update_job_error) { call_count += 1 }
+        allow(service).to receive(:record_update_job_warning) { call_count += 1 }
 
         update_graph_processor.run
 
@@ -906,8 +908,8 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         update_graph_processor.run
       end
 
-      it "records an error for each directory" do
-        expect(service).to receive(:record_update_job_error).twice
+      it "records a warning for each directory" do
+        expect(service).to receive(:record_update_job_warning).twice
 
         update_graph_processor.run
       end

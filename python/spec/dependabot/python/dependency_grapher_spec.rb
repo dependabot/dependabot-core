@@ -467,6 +467,25 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
           expect(grapher.relevant_dependency_file).to eql(pyproject_toml)
         end
       end
+
+      context "when reject_external_code is true" do
+        let(:parser) do
+          Dependabot::FileParsers.for_package_manager("pip").new(
+            dependency_files: dependency_files,
+            source: nil,
+            credentials: [],
+            reject_external_code: true
+          )
+        end
+
+        it "raises UnexpectedExternalCode without attempting lockfile generation" do
+          expect(Dependabot::Python::DependencyGrapher::LockfileGenerator)
+            .not_to receive(:new)
+
+          expect { grapher.resolved_dependencies }
+            .to raise_error(Dependabot::UnexpectedExternalCode)
+        end
+      end
     end
 
     context "when poetry.lock is corrupt" do

@@ -124,6 +124,7 @@ module Dependabot
           checker = update_checker_for(dependency, raise_on_ignored: raise_on_ignored?(dependency))
 
           log_checking_for_update(dependency)
+          record_blocked_version_ignored(job: job, dependency: dependency, operation: "version_update")
 
           return if all_versions_ignored?(dependency, checker)
           return log_up_to_date(dependency) if checker.up_to_date?
@@ -192,7 +193,13 @@ module Dependabot
 
           create_pull_request(dependency_change)
         end
-        sig { params(dependency_name: String, latest_version: String, latest_version_obj: T.untyped).void }
+        sig do
+          params(
+            dependency_name: String,
+            latest_version: String,
+            latest_version_obj: T.nilable(T.any(String, Gem::Version))
+          ).void
+        end
         def log_existing_pr_for_latest_version(dependency_name, latest_version, latest_version_obj)
           existing_pr = job.existing_pull_requests.find do |pr|
             pr.contains_dependency?(dependency_name, latest_version, T.must(job.source.directory))
@@ -250,7 +257,7 @@ module Dependabot
           job.log_ignore_conditions_for(dependency)
         end
 
-        sig { params(error: StandardError, dependency: Dependabot::Dependency).returns(T.untyped) }
+        sig { params(error: StandardError, dependency: Dependabot::Dependency).void }
         def process_dependency_error(error, dependency)
           if error.class.to_s.include?("RegistryError")
             ex = Dependabot::DependencyFileNotResolvable.new(error.message)

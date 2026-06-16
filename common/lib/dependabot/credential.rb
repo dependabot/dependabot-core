@@ -11,10 +11,20 @@ module Dependabot
 
     def_delegators :@credential, :fetch, :keys, :[]=, :delete, :slice, :values, :entries
 
-    sig { params(credential: T::Hash[String, T.any(T::Boolean, String)]).void }
+    sig { params(credential: T::Hash[String, T.any(T::Boolean, String, T::Array[String])]).void }
     def initialize(credential)
       @replaces_base = T.let(credential["replaces-base"] == true, T::Boolean)
       credential.delete("replaces-base")
+
+      raw_scope = credential.delete("scope")
+      @scope = T.let(
+        case raw_scope
+        when String then [raw_scope]
+        when Array then raw_scope
+        end,
+        T.nilable(T::Array[String])
+      )
+
       @credential = T.let(T.unsafe(credential), T::Hash[String, String])
     end
 
@@ -22,6 +32,9 @@ module Dependabot
     def replaces_base?
       @replaces_base
     end
+
+    sig { returns(T.nilable(T::Array[String])) }
+    attr_reader :scope
 
     sig { params(key: String).returns(T.nilable(String)) }
     def [](key)

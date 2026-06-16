@@ -51,10 +51,27 @@ RSpec.describe Dependabot::Deno::FileUpdater::LockfileUpdater do
       expect(lock.fetch("jsr")).not_to have_key("@std/path@1.0.0")
     end
 
-    it "preserves the v4 lockfile format" do
+    it "upgrades a legacy v4 lockfile to the bundled Deno's format" do
       content = updater.updated_lockfile_content
       lock = JSON.parse(content)
-      expect(lock["version"]).to eq("4")
+      expect(lock["version"]).to eq("5")
+    end
+  end
+
+  context "with a v5 lockfile" do
+    let(:files) { project_dependency_files("deno/with_lockfile_v5") }
+
+    it "reads and updates the v5 lockfile" do
+      content = updater.updated_lockfile_content
+      lock = JSON.parse(content)
+
+      expect(lock["version"]).to eq("5")
+
+      path_keys = lock.fetch("jsr").keys.grep(%r{^@std/path@})
+      expect(path_keys.length).to eq(1)
+      resolved = Gem::Version.new(path_keys.first.split("@").last)
+      expect(resolved).to be >= Gem::Version.new("1.1.4")
+      expect(resolved).to be < Gem::Version.new("2.0.0")
     end
   end
 
@@ -157,6 +174,57 @@ RSpec.describe Dependabot::Deno::FileUpdater::LockfileUpdater do
       expect(path_version).to be < Gem::Version.new("2.0.0")
 
       expect(lock["jsr"].keys).to include(match(%r{^@std/assert@}))
+    end
+  end
+
+  context "with a workspace (member dependency bump)" do
+    let(:files) { project_dependency_files("deno/workspace") }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "@std/assert",
+        version: "1.0.19",
+        previous_version: "1.0.19",
+        requirements: [{
+          requirement: "^1.0.10",
+          file: "packages/alpha/deno.json",
+          groups: ["imports"],
+          source: { type: "jsr" }
+        }],
+        previous_requirements: [{
+          requirement: "^1.0.0",
+          file: "packages/alpha/deno.json",
+          groups: ["imports"],
+          source: { type: "jsr" }
+        }],
+        package_manager: "deno"
+      )
+    end
+
+    it "regenerates the root lockfile from the bumped member manifest" do
+      content = updater.updated_lockfile_content
+      lock = JSON.parse(content)
+
+      expect(lock["version"]).to eq("5")
+      expect(lock.fetch("specifiers")).to have_key("jsr:@std/assert@^1.0.10")
+
+      # Other members' dependencies remain resolvable in the shared lockfile.
+      expect(lock.fetch("jsr").keys).to include(match(%r{^@std/path@}))
+      expect(lock.fetch("npm").keys).to include(match(/^chalk@/))
+    end
+  end
+
+  context "when a manifest has an unsafe path" do
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(name: "../evil/deno.json", content: "{}", directory: "/"),
+        Dependabot::DependencyFile.new(name: "deno.lock", content: "{}", directory: "/")
+      ]
+    end
+
+    it "raises DependencyFileNotResolvable instead of writing outside the temp dir" do
+      expect do
+        updater.updated_lockfile_content
+      end.to raise_error(Dependabot::DependencyFileNotResolvable, /Unsafe manifest path/)
     end
   end
 
