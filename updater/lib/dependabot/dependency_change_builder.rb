@@ -248,7 +248,7 @@ module Dependabot
       # fall back to allowing the update (the resolver-level constraints in
       # Phase 2 still apply where supported).
       Dependabot.logger.warn(
-        "Skipping transitive dependency blocking check: #{e.class} - #{e.message}"
+        "Skipping transitive dependency blocking check: #{e.class}"
       )
       nil
     end
