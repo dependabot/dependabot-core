@@ -2047,9 +2047,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           .to eq(
             "dependency_name" => "@dependabot-fixtures/npm-transitive-dependency",
             "explanation" =>
-              "Dependabot could not find a lockfile update that resolves " \
-              "@dependabot-fixtures/npm-transitive-dependency to a " \
-              "non-vulnerable version.",
+              "@dependabot-fixtures/npm-transitive-dependency can't be updated to a non-vulnerable version " \
+              "because other packages in the dependency tree still require a vulnerable version: " \
+              "@dependabot-fixtures/npm-intermediate-dependency@0.0.1 requires " \
+              "@dependabot-fixtures/npm-transitive-dependency@1.0.0 " \
+              "(pulled in via @dependabot-fixtures/npm-parent-dependency-5). To resolve this, update the " \
+              "parent package(s) listed above to a release that allows a non-vulnerable " \
+              "@dependabot-fixtures/npm-transitive-dependency, or add an override/resolution pinning " \
+              "@dependabot-fixtures/npm-transitive-dependency to a non-vulnerable version.",
             "fix_available" => false,
             "fix_updates" => [],
             "top_level_ancestors" => []
