@@ -78,7 +78,7 @@ module Dependabot
               original_document = original_properties_content && Wrapper::PropertiesDocument.parse(original_properties_content)
               env = { "JAVA_OPTS" => proxy_args.join(" ") } # set proxy for gradle execution
 
-              command = local_wrapper_command(has_local_script, target_requirements, original_document)
+              command = local_wrapper_command(has_local_script, target_requirements, original_document, cwd, env)
 
               begin
                 # first attempt: run the wrapper task via the local Gradle wrapper (if present)
@@ -157,21 +157,28 @@ module Dependabot
           Pathname.new(file.name).cleanpath.to_path
         end
 
-        # There is no guarantee that the `gradlew` script is present on the project; when it is missing
-        # we fall back to system Gradle. The executing Gradle version is derived from the wrapper's
-        # current distributionUrl so we only forward version-gated wrapper flags it understands.
+        # Builds the command for the first wrapper attempt.
+        #
+        # When the project ships a `gradlew` script we run it: it downloads and executes the Gradle
+        # version pinned in the current gradle-wrapper.properties, so wrapper flags are gated on that
+        # distributionUrl version. When `gradlew` is missing we instead invoke system Gradle directly,
+        # so flags must be gated on the system Gradle's detected version (not the wrapper's) to avoid
+        # forwarding options that an older system Gradle does not understand and aborting the run.
         sig do
           params(
             has_local_script: T::Boolean,
             requirements: T::Array[Dependabot::DependencyRequirement],
-            original_document: T.nilable(Wrapper::PropertiesDocument)
+            original_document: T.nilable(Wrapper::PropertiesDocument),
+            cwd: String,
+            env: T::Hash[String, String]
           ).returns(String)
         end
-        def local_wrapper_command(has_local_script, requirements, original_document)
-          executable = has_local_script ? "./gradlew" : "gradle"
+        def local_wrapper_command(has_local_script, requirements, original_document, cwd, env)
+          return system_wrapper_command(requirements, original_document, cwd, env) unless has_local_script
+
           distribution_url = original_document&.value_for("distributionUrl")
           gradle_version = Wrapper::ExecutingVersionDetector.from_distribution_url(distribution_url)
-          Shellwords.join([executable] + build_command_parts(requirements, original_document, gradle_version))
+          Shellwords.join(["./gradlew"] + build_command_parts(requirements, original_document, gradle_version))
         end
 
         # Builds the system-Gradle fallback command, gating wrapper flags on the system Gradle's own
