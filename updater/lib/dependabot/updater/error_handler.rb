@@ -38,10 +38,31 @@ module Dependabot
         T::Hash[T::Module[T.anything], String]
       )
 
-      sig { params(service: Service, job: Job).void }
-      def initialize(service:, job:)
+      # Translates the canonical operation identifier (Operation.tag_name) into
+      # the curated `operation` label shared by the blocked_versions.* metrics.
+      # Keeping these values in lockstep with `record_blocked_version_ignored`
+      # (see PR #15333) lets the "soft" status (`blocked_versions.ignored`) and
+      # this "hard" status (`blocked_versions.enforced`) correlate on a single
+      # `operation` tag. Operations absent from this map fall back to their raw
+      # tag name so we never drop the dimension entirely.
+      BLOCKED_VERSIONS_OPERATIONS = T.let(
+        {
+          "update_all_versions" => "version_update",
+          "create_security_pr" => "security_update",
+          "update_security_pr" => "refresh_security_update",
+          "update_version_pr" => "refresh_version_update",
+          "create_version_group_pr" => "group_update",
+          "update_version_group_pr" => "group_update",
+          "group_update_all_versions" => "group_update"
+        }.freeze,
+        T::Hash[String, String]
+      )
+
+      sig { params(service: Service, job: Job, operation_name: String).void }
+      def initialize(service:, job:, operation_name: "unknown")
         @service = T.let(service, Service)
         @job = T.let(job, Job)
+        @operation_name = T.let(operation_name, String)
       end
 
       # This method handles errors where there is a dependency in the current
@@ -57,6 +78,8 @@ module Dependabot
         # If the error is fatal for the run, we should re-raise it rather than
         # pass it back to the service.
         raise error if RUN_HALTING_ERRORS.keys.any? { |err| error.is_a?(err) }
+
+        increment_blocked_versions_enforced_metric(error)
 
         error_details = error_details_for(error, dependency: dependency, dependency_group: dependency_group)
         service.record_update_job_error(
@@ -113,6 +136,8 @@ module Dependabot
         # pass it back to the service.
         raise error if RUN_HALTING_ERRORS.keys.any? { |err| error.is_a?(err) }
 
+        increment_blocked_versions_enforced_metric(error)
+
         error_details = error_details_for(error, dependency_group: dependency_group)
         service.record_update_job_error(
           error_type: error_details.fetch(:"error-type"),
@@ -158,6 +183,32 @@ module Dependabot
 
       sig { returns(Job) }
       attr_reader :job
+
+      sig { returns(String) }
+      attr_reader :operation_name
+
+      # Emits a counter when a GitHub Security blocklist entry causes a selected
+      # update to be rejected outright (a blocked transitive version was about to
+      # ship in the regenerated files).
+      #
+      # This is the "hard" block status. It pairs with the "soft" status
+      # `blocked_versions.ignored` (recorded at check time when a block is folded
+      # into the resolver's ignore conditions) under the shared `blocked_versions.*`
+      # namespace, so the two correlate cleanly on the service side.
+      #
+      # Recording is guarded and fire-and-forget: it can never affect an update.
+      sig { params(error: StandardError).void }
+      def increment_blocked_versions_enforced_metric(error)
+        return unless error.is_a?(Dependabot::BlockedDependencyVersion)
+
+        service.increment_metric(
+          "blocked_versions.enforced",
+          tags: {
+            "operation" => BLOCKED_VERSIONS_OPERATIONS.fetch(operation_name, operation_name),
+            "package_manager" => job.package_manager
+          }
+        )
+      end
 
       # This method accepts an error class and returns an appropriate `error_details` hash
       # to be reported to the backend service.
