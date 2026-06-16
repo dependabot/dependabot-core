@@ -158,7 +158,8 @@ module Dependabot
       # Create file updater and collect notices from it
       file_updater = file_updater_for(relevant_dependencies)
 
-      # Exclude support files since they are not manifests, just needed for supporting the update
+      # Collect regenerated files (including support files); we filter support files out of
+      # the returned updated files below since they are not manifests.
       all_files = file_updater.updated_dependency_files
       @regenerated_dependency_files = all_files
 
