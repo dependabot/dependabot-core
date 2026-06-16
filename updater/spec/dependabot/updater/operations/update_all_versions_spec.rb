@@ -480,8 +480,8 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
         expect(mock_service).to have_received(:increment_metric).with(
           "blocked_versions.ignored",
           tags: {
-            "operation" => "version_update",
-            "package_manager" => "bundler"
+            operation: "version_update",
+            package_manager: "bundler"
           }
         )
       end

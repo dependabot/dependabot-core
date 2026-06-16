@@ -536,8 +536,8 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         expect(metrics_service).to have_received(:increment_metric).with(
           "blocked_versions.ignored",
           tags: {
-            "operation" => "group_update",
-            "package_manager" => "bundler"
+            operation: "group_update",
+            package_manager: "bundler"
           }
         )
       end

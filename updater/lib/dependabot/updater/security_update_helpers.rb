@@ -259,8 +259,8 @@ module Dependabot
         service.increment_metric(
           "blocked_versions.ignored",
           tags: {
-            "operation" => operation,
-            "package_manager" => job.package_manager
+            operation: operation,
+            package_manager: job.package_manager
           }
         )
       end

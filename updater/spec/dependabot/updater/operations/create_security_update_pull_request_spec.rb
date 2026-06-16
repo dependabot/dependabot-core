@@ -399,8 +399,8 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
           expect(mock_service).to have_received(:increment_metric).with(
             "blocked_versions.ignored",
             tags: {
-              "operation" => "security_update",
-              "package_manager" => "bundler"
+              operation: "security_update",
+              package_manager: "bundler"
             }
           )
         end

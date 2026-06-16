@@ -222,8 +222,8 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
         expect(mock_service).to have_received(:increment_metric).with(
           "blocked_versions.ignored",
           tags: {
-            "operation" => "refresh_version_update",
-            "package_manager" => "bundler"
+            operation: "refresh_version_update",
+            package_manager: "bundler"
           }
         )
       end
