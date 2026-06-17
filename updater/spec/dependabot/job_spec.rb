@@ -718,6 +718,59 @@ RSpec.describe Dependabot::Job do
 
       it "defaults default_days to 3" do
         expect(job.cooldown).to be_a(Dependabot::Package::ReleaseCooldownOptions)
+        expect(job.cooldown.default_days).to eq(Dependabot::Job::DEFAULT_COOLDOWN_DAYS)
+        expect(job.cooldown.default_days).to eq(3)
+      end
+
+      it "falls back to the default for unset semver-specific days" do
+        expect(job.cooldown.semver_major_days).to eq(3)
+        expect(job.cooldown.semver_minor_days).to eq(3)
+        expect(job.cooldown.semver_patch_days).to eq(3)
+      end
+
+      it "still honours include settings" do
+        expect(job.cooldown.include).to include("included-package")
+      end
+    end
+
+    context "when cooldown is provided with default-days explicitly set to 0" do
+      let(:cooldown) do
+        {
+          "default-days" => 0
+        }
+      end
+
+      it "keeps default_days at 0 (explicit values are respected)" do
+        expect(job.cooldown.default_days).to eq(0)
+      end
+    end
+
+    context "when cooldown is provided with only semver-specific days" do
+      let(:cooldown) do
+        {
+          "semver-major-days" => 14
+        }
+      end
+
+      it "defaults default_days to 3" do
+        expect(job.cooldown.default_days).to eq(3)
+      end
+
+      it "uses the provided semver-major-days" do
+        expect(job.cooldown.semver_major_days).to eq(14)
+      end
+
+      it "falls back to the default for the other semver days" do
+        expect(job.cooldown.semver_minor_days).to eq(3)
+        expect(job.cooldown.semver_patch_days).to eq(3)
+      end
+    end
+
+    context "when cooldown is an empty hash" do
+      let(:cooldown) { {} }
+
+      it "defaults default_days to 3" do
+        expect(job.cooldown).to be_a(Dependabot::Package::ReleaseCooldownOptions)
         expect(job.cooldown.default_days).to eq(3)
       end
     end
