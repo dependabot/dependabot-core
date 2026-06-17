@@ -48,6 +48,7 @@ module Dependabot
           @options             = options
           @cooldown_options = cooldown_options
           @cooldown_selected_tag = T.let(nil, T.nilable(T::Hash[Symbol, T.untyped]))
+          @cooldown_rejected_all = T.let(false, T::Boolean)
 
           @git_helper = T.let(git_helper, Dependabot::PreCommit::Helpers::Githelper)
           super(
@@ -92,6 +93,8 @@ module Dependabot
 
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_version_tag
+          return nil if @cooldown_rejected_all
+
           @cooldown_selected_tag || available_latest_version_tag
         end
 
@@ -113,6 +116,7 @@ module Dependabot
           return result if result
 
           Dependabot.logger.info("All candidate versions are in cooldown, keeping current version #{current_version}")
+          @cooldown_rejected_all = true
           current_version
         end
 
