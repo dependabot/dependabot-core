@@ -290,7 +290,7 @@ module Dependabot
         )
           .returns(T::Array[Dependabot::Dependency])
       end
-      def compile_updates_for(dependency, dependency_files, group) # rubocop:disable Metrics/MethodLength
+      def compile_updates_for(dependency, dependency_files, group) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
         checker = update_checker_for(
           dependency,
           dependency_files,
@@ -299,6 +299,7 @@ module Dependabot
         )
 
         log_checking_for_update(dependency)
+        record_blocked_version_ignored(job: job, dependency: dependency, operation: "group_update")
 
         if all_versions_ignored?(dependency, checker)
           record_security_update_ignored_if_applicable(dependency, checker, group)

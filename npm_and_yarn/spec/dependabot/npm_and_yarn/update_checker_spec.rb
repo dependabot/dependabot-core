@@ -2046,7 +2046,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         expect(conflicting_dependencies_result.last)
           .to eq(
             "dependency_name" => "@dependabot-fixtures/npm-transitive-dependency",
-            "explanation" => "No patched version available for @dependabot-fixtures/npm-transitive-dependency",
+            "explanation" =>
+              "Dependabot could not find a lockfile update that resolves " \
+              "@dependabot-fixtures/npm-transitive-dependency to a " \
+              "non-vulnerable version.",
             "fix_available" => false,
             "fix_updates" => [],
             "top_level_ancestors" => []
@@ -2101,7 +2104,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         expect(conflicting_dependencies_result.last)
           .to eq(
             "dependency_name" => "@dependabot-fixtures/npm-transitive-dependency",
-            "explanation" => "No patched version available for @dependabot-fixtures/npm-transitive-dependency",
+            "explanation" =>
+              "A patched version exists for " \
+              "@dependabot-fixtures/npm-transitive-dependency, but the " \
+              "available update path still resolves it to 1.0.0",
             "fix_available" => false,
             "fix_updates" => [],
             "top_level_ancestors" => []
