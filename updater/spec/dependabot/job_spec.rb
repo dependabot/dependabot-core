@@ -709,6 +709,19 @@ RSpec.describe Dependabot::Job do
       end
     end
 
+    context "when cooldown is provided without default-days" do
+      let(:cooldown) do
+        {
+          "include" => ["included-package"]
+        }
+      end
+
+      it "defaults default_days to 3" do
+        expect(job.cooldown).to be_a(Dependabot::Package::ReleaseCooldownOptions)
+        expect(job.cooldown.default_days).to eq(3)
+      end
+    end
+
     context "when cooldown is nil" do
       let(:cooldown) { nil }
 

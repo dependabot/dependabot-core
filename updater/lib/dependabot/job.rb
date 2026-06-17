@@ -37,6 +37,9 @@ module Dependabot
     extend T::Sig
 
     TOP_LEVEL_DEPENDENCY_TYPES = T.let(%w(direct production development).freeze, T::Array[String])
+    # Default cooldown period (in days) applied when a cooldown is configured
+    # without an explicit `default-days` value.
+    DEFAULT_COOLDOWN_DAYS = 3
     PERMITTED_KEYS = T.let(
       %i(
         allowed_updates
@@ -729,7 +732,7 @@ module Dependabot
       return nil unless cooldown
 
       Dependabot::Package::ReleaseCooldownOptions.new(
-        default_days: cooldown["default-days"] || 0,
+        default_days: cooldown["default-days"] || DEFAULT_COOLDOWN_DAYS,
         semver_major_days: cooldown["semver-major-days"] || 0,
         semver_minor_days: cooldown["semver-minor-days"] || 0,
         semver_patch_days: cooldown["semver-patch-days"] || 0,
