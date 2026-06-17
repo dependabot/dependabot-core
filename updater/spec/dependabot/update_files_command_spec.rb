@@ -18,7 +18,8 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       record_update_job_unknown_error: nil,
       update_dependency_list: nil,
       increment_metric: nil,
-      wait_for_calls_to_finish: nil
+      wait_for_calls_to_finish: nil,
+      fetch_blocked_versions: []
     )
   end
   let(:job_definition) do
