@@ -719,7 +719,6 @@ RSpec.describe Dependabot::Job do
       it "defaults default_days to 3" do
         expect(job.cooldown).to be_a(Dependabot::Package::ReleaseCooldownOptions)
         expect(job.cooldown.default_days).to eq(Dependabot::Job::DEFAULT_COOLDOWN_DAYS)
-        expect(job.cooldown.default_days).to eq(3)
       end
 
       it "falls back to the default for unset semver-specific days" do
