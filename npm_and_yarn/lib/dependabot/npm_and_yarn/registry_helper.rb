@@ -27,6 +27,16 @@ module Dependabot
       # Default npm registry - no need to set env vars for this
       DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org"
 
+      # Canonicalise a registry URL: ensure an https:// scheme and strip any
+      # trailing slashes. Used wherever a registry URL is written into an env var
+      # so there is a single source of truth for URL normalisation.
+      sig { params(url: String).returns(String) }
+      def self.normalize_registry_url(url)
+        normalized = url.start_with?("http://", "https://") ? url.dup : "https://#{url}"
+        normalized.delete_suffix!("/") while normalized.end_with?("/")
+        normalized
+      end
+
       sig do
         params(
           registry_config_files: T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)],
@@ -44,11 +54,9 @@ module Dependabot
 
         env_variables = {}
 
-        if registry_info[:registry] # Prevent the https from being stripped in the process
-          registry = registry_info[:registry]
-          registry = "https://#{T.must(registry)}" unless T.must(registry).start_with?("http://", "https://")
+        if (raw_registry = registry_info[:registry])
+          registry = RegistryHelper.normalize_registry_url(raw_registry)
 
-          # Set both in the env_variables hash
           unless registry == DEFAULT_NPM_REGISTRY
             env_variables[COREPACK_NPM_REGISTRY_ENV] = registry # For Corepack
             env_variables[NPM_CONFIG_REGISTRY_ENV] = registry # For npm
