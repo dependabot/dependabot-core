@@ -76,10 +76,8 @@ module Dependabot
             repo_contents_path: Environment.repo_contents_path
           )
 
-          if Experiments.enabled?(:blocked_versions)
-            blocked = service.fetch_blocked_versions(update_job.package_manager)
-            update_job.blocked_versions = blocked
-          end
+          blocked = service.fetch_blocked_versions(update_job.package_manager)
+          update_job.blocked_versions = blocked
 
           update_job
         end,
