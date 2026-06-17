@@ -218,7 +218,7 @@ module Dependabot
 
       sig { returns(T.nilable(DependencyFile)) }
       def generate_npmrc_from_credentials
-        content = NpmAndYarn::FileUpdater::NpmrcBuilder.npmrc_content_from_credentials(credentials)
+        content = NpmAndYarn::FileUpdater::NpmrcBuilder.npmrc_content_from_credentials(wrapped_credentials)
         return unless content
 
         Dependabot::DependencyFile.new(
@@ -229,7 +229,28 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def credentials_have_scope?
-        credentials.any? { |cred| cred["type"] == "npm_registry" && cred.scope }
+        wrapped_credentials.any? { |cred| cred["type"] == "npm_registry" && cred.scope }
+      end
+
+      # file_fetcher_command.rb may pass raw Hashes as credentials at runtime.
+      # Wrap them in Credential objects so we can use .scope and .replaces_base? safely.
+      # Credential#initialize destructively removes "scope"/"replaces-base" keys, so we .dup first.
+      sig { returns(T::Array[Dependabot::Credential]) }
+      def wrapped_credentials
+        @wrapped_credentials ||= T.let(
+          credentials.map { |cred| ensure_credential(cred) },
+          T.nilable(T::Array[Dependabot::Credential])
+        )
+      end
+
+      sig do
+        params(cred: T.any(Dependabot::Credential, T::Hash[String, T.untyped]))
+          .returns(Dependabot::Credential)
+      end
+      def ensure_credential(cred)
+        return cred if cred.is_a?(Dependabot::Credential)
+
+        Dependabot::Credential.new(cred.dup)
       end
 
       sig { returns(T::Boolean) }

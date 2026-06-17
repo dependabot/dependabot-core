@@ -2834,6 +2834,61 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         .not_to include(".npmrc")
     end
   end
+
+  context "with raw Hash credentials (as passed by file_fetcher_command.rb at runtime)" do
+    let(:credentials) do
+      [
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        },
+        {
+          "type" => "npm_registry",
+          "registry" => "npm.pkg.github.com",
+          "token" => "my_token",
+          "scope" => "@my-company"
+        }
+      ]
+    end
+
+    before do
+      Dependabot::Experiments.register(:enable_npmrc_credential_generation, true)
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_js_npm.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "package_json_content.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "package_lock_content.json"),
+          headers: json_header
+        )
+    end
+
+    it "wraps raw Hashes and generates .npmrc without NoMethodError" do
+      expect { file_fetcher_instance.files }.not_to raise_error
+      npmrc_file = file_fetcher_instance.files.find { |f| f.name == ".npmrc" }
+      expect(npmrc_file).not_to be_nil
+      expect(npmrc_file.content).to eq("@my-company:registry=https://npm.pkg.github.com")
+    end
+  end
 end
 
 def fixture_to_response(dir, file)
