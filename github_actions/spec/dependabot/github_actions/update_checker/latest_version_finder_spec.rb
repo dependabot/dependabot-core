@@ -657,7 +657,7 @@ RSpec.describe namespace::LatestVersionFinder do
           .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
                         commit_sha: "abc123" })
 
-        mock_release = instance_double(Sawyer::Resource, tag_name: "v1.0.0", published_at: published_at)
+        mock_release = double("Sawyer::Resource", tag_name: "v1.0.0", published_at: published_at) # rubocop:disable RSpec/VerifiedDoubles
         mock_client = instance_double(Octokit::Client, releases: [mock_release])
         allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
 
