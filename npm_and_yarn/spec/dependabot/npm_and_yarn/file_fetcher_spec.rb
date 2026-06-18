@@ -2879,6 +2879,29 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     it "does not raise an error" do
       expect { file_fetcher_instance.files }.not_to raise_error
     end
+
+    context "when registry is a full URL" do
+      let(:credentials) do
+        [Dependabot::Credential.new(
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }
+        ), Dependabot::Credential.new(
+          {
+            "type" => "npm_registry",
+            "registry" => "https://registry.npmjs.org",
+            "token" => "my_token"
+          }
+        )]
+      end
+
+      it "does not raise an error" do
+        expect { file_fetcher_instance.files }.not_to raise_error
+      end
+    end
   end
 
   context "with raw Hash credentials (as passed by file_fetcher_command.rb at runtime)" do

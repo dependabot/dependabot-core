@@ -240,12 +240,18 @@ module Dependabot
         return unless Dependabot::Experiments.enabled?(:enable_npmrc_credential_generation)
 
         private_registry_creds = wrapped_credentials.select do |cred|
-          cred["type"] == "npm_registry" &&
-            !NpmAndYarn::FileUpdater::NpmrcBuilder::CENTRAL_REGISTRIES.include?(cred["registry"])
+          next false unless cred["type"] == "npm_registry"
+
+          registry = cred["registry"]
+          next false if registry.nil?
+
+          # Normalize: strip scheme to compare against CENTRAL_REGISTRIES (bare hostnames)
+          normalized = registry.sub(%r{^https?://}, "")
+          !NpmAndYarn::FileUpdater::NpmrcBuilder::CENTRAL_REGISTRIES.include?(normalized)
         end
         return if private_registry_creds.empty?
 
-        registry = private_registry_creds.first&.fetch("registry", "unknown")
+        registry = private_registry_creds.first&.fetch("registry", nil) || "unknown"
         raise Dependabot::PrivateRegistryConfigNotFound, registry
       end
 
