@@ -181,6 +181,8 @@ module Dependabot
 
         # Iterates candidate tags inside a bare clone directory, returning the first
         # version whose release date falls outside the cooldown window.
+        # Uses the tag creation date (tagger date for annotated tags) rather than
+        # the commit date, since a tag may point to an old commit but be newly published.
         sig do
           params(candidates: T::Array[T::Hash[Symbol, T.untyped]])
             .returns(T.nilable(Dependabot::Version))
@@ -192,11 +194,7 @@ module Dependabot
             commit_sha = tag[:commit_sha]
             next unless commit_sha
 
-            date_str = SharedHelpers.run_shell_command(
-              "git show --no-patch --format=\"%cd\" --date=iso #{commit_sha}",
-              fingerprint: "git show --no-patch --format=\"%cd\" --date=iso <commit_sha>"
-            )
-            release_date = Time.parse(date_str)
+            release_date = tag_creation_date(tag[:tag] || "v#{tag[:version]}", commit_sha)
 
             if release_in_cooldown_period?(release_date)
               filtered_count += 1
@@ -245,6 +243,31 @@ module Dependabot
             .select { |tag| cur_version.nil? || tag[:version] > cur_version }
             .sort_by { |tag| tag[:version] }
             .reverse
+        end
+
+        # Returns the tag creation date for cooldown purposes.
+        # For annotated tags, uses the tagger date (when the tag was created).
+        # For lightweight tags, falls back to the commit's committer date.
+        # This ensures that re-tagged or republished releases are evaluated based
+        # on when they were actually made available, not when the underlying
+        # commit was originally authored.
+        sig { params(tag_name: String, commit_sha: String).returns(Time) }
+        def tag_creation_date(tag_name, commit_sha)
+          # Try to get the tagger date from an annotated tag
+          tag_date_str = SharedHelpers.run_shell_command(
+            "git for-each-ref --format=\"%(creatordate:iso)\" \"refs/tags/#{tag_name}\"",
+            fingerprint: "git for-each-ref --format=\"%(creatordate:iso)\" \"refs/tags/<tag_name>\""
+          ).strip
+
+          if tag_date_str.empty?
+            # Fallback: use the commit's committer date for lightweight tags
+            tag_date_str = SharedHelpers.run_shell_command(
+              "git show --no-patch --format=\"%cd\" --date=iso #{commit_sha}",
+              fingerprint: "git show --no-patch --format=\"%cd\" --date=iso <commit_sha>"
+            ).strip
+          end
+
+          Time.parse(tag_date_str)
         end
 
         sig { params(release_date: Time).returns(T::Boolean) }
