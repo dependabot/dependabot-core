@@ -187,11 +187,16 @@ module Dependabot
           return nil if releases.empty?
 
           filtered_count = 0
+          all_have_releases = T.let(true, T::Boolean)
 
           candidates.each do |tag|
             tag_name = normalize_tag_name(tag[:tag] || "v#{tag[:version]}")
             release = releases.find { |r| r.tag_name == tag_name }
-            next unless release&.published_at
+
+            unless release&.published_at
+              all_have_releases = false
+              next
+            end
 
             unless release_in_cooldown_period?(release.published_at)
               log_cooldown_result(filtered_count, tag[:version], release.published_at)
@@ -204,7 +209,10 @@ module Dependabot
 
           return nil if filtered_count.zero?
 
-          # All candidates with releases are in cooldown
+          # Some candidates lacked releases — fall back to git clone for those
+          return nil unless all_have_releases
+
+          # Every candidate had a release and all were in cooldown
           Dependabot.logger.info(
             "Filtered #{filtered_count} version(s) due to cooldown for #{dependency.name}, " \
             "no eligible version found (via GitHub Releases)"
