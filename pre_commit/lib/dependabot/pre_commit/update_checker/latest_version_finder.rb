@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 require "dependabot/clients/github_with_retries"
 require "dependabot/errors"
+require "dependabot/git_cooldown_date_resolver"
 require "dependabot/pre_commit/comment_version_helper"
 require "dependabot/pre_commit/file_parser"
 require "dependabot/pre_commit/package/package_details_fetcher"
@@ -20,6 +21,7 @@ module Dependabot
     class UpdateChecker
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
+        include Dependabot::GitCooldownDateResolver
 
         sig do
           params(
@@ -97,6 +99,16 @@ module Dependabot
           return nil if @cooldown_rejected_all
 
           @cooldown_selected_tag || available_latest_version_tag
+        end
+
+        sig { override.returns(T.nilable(String)) }
+        def cooldown_source_url
+          @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
+        end
+
+        sig { override.returns(T::Array[Dependabot::Credential]) }
+        def cooldown_credentials
+          @credentials
         end
 
         private
@@ -230,7 +242,7 @@ module Dependabot
             .returns(T.nilable(Dependabot::Version))
         end
         def check_candidates_via_git_clone(candidates)
-          url = @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
+          url = cooldown_source_url
           source = T.must(Source.from_url(url))
 
           SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
@@ -277,19 +289,6 @@ module Dependabot
           nil
         end
 
-        # Resolves the best available date for a candidate tag.
-        # Priority: GitHub Release published_at > tag creation date > commit date.
-        sig { params(tag_name: String, commit_sha: String).returns(Time) }
-        def resolve_candidate_date(tag_name, commit_sha)
-          releases = cached_github_releases
-          unless releases.empty?
-            release = releases.find { |r| r.tag_name == tag_name }
-            return release.published_at if release&.published_at
-          end
-
-          tag_creation_date(tag_name, commit_sha)
-        end
-
         sig do
           params(filtered_count: Integer, version: T.untyped, release_date: Time).void
         end
@@ -321,58 +320,6 @@ module Dependabot
             .select { |tag| cur_version.nil? || tag[:version] > cur_version }
             .sort_by { |tag| tag[:version] }
             .reverse
-        end
-
-        # Returns the tag creation date for cooldown purposes (used inside bare clone).
-        # Priority: tag creation date from for-each-ref > commit date fallback.
-        sig { params(tag_name: String, commit_sha: String).returns(Time) }
-        def tag_creation_date(tag_name, commit_sha)
-          # Tag creation date (tagger date for annotated tags, commit date for lightweight)
-          tag_date_str = SharedHelpers.run_shell_command(
-            "git for-each-ref --format=\"%(creatordate:iso)\" \"refs/tags/#{tag_name}\"",
-            fingerprint: "git for-each-ref --format=\"%(creatordate:iso)\" \"refs/tags/<tag_name>\""
-          ).strip
-
-          if tag_date_str.empty?
-            # Final fallback: commit's committer date
-            tag_date_str = SharedHelpers.run_shell_command(
-              "git show --no-patch --format=\"%cd\" --date=iso #{commit_sha}",
-              fingerprint: "git show --no-patch --format=\"%cd\" --date=iso <commit_sha>"
-            ).strip
-          end
-
-          Time.parse(tag_date_str)
-        end
-
-        # Strips the `tags/` prefix that GitCommitChecker may add when the pinned
-        # ref starts with `tags/`, preventing construction of invalid refs like
-        # `refs/tags/tags/v1.0.0`.
-        sig { params(tag_name: String).returns(String) }
-        def normalize_tag_name(tag_name)
-          tag_name.delete_prefix("tags/")
-        end
-
-        sig { returns(T::Array[T.untyped]) }
-        def cached_github_releases
-          @cached_github_releases ||= T.let(
-            begin
-              url = @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
-              source = Source.from_url(url)
-              if source&.provider == "github"
-                client = Dependabot::Clients::GithubWithRetries.for_source(
-                  source: T.must(source),
-                  credentials: credentials
-                )
-                client.releases(T.must(source).repo, per_page: 100)
-              else
-                []
-              end
-            rescue StandardError => e
-              Dependabot.logger.debug("Error fetching GitHub releases: #{e.message}")
-              []
-            end,
-            T.nilable(T::Array[T.untyped])
-          )
         end
 
         sig { params(release_date: Time).returns(T::Boolean) }

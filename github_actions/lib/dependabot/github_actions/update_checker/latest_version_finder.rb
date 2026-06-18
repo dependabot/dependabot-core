@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/clients/github_with_retries"
 require "dependabot/errors"
+require "dependabot/git_cooldown_date_resolver"
 require "dependabot/github_actions/file_parser"
 require "dependabot/github_actions/package/package_details_fetcher"
 require "dependabot/github_actions/requirement"
@@ -20,6 +21,7 @@ module Dependabot
     class UpdateChecker
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
+        include Dependabot::GitCooldownDateResolver
 
         sig do
           params(
@@ -125,6 +127,16 @@ module Dependabot
             end,
             T.nilable(T::Hash[Symbol, T.untyped])
           )
+        end
+
+        sig { override.returns(T.nilable(String)) }
+        def cooldown_source_url
+          @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
+        end
+
+        sig { override.returns(T::Array[Dependabot::Credential]) }
+        def cooldown_credentials
+          @credentials
         end
 
         private
@@ -271,7 +283,7 @@ module Dependabot
 
         sig { params(tag_name: T.nilable(String)).returns(T.nilable(String)) }
         def fetch_date_from_git(tag_name)
-          url = @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
+          url = cooldown_source_url
           source = T.must(Source.from_url(url))
 
           SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
@@ -298,13 +310,6 @@ module Dependabot
               date
             end
           end
-        end
-
-        # Strips the `tags/` prefix that GitCommitChecker may add when the pinned
-        # ref starts with `tags/`.
-        sig { params(tag_name: String).returns(String) }
-        def normalize_tag_name(tag_name)
-          tag_name.delete_prefix("tags/")
         end
 
         sig { params(release_date: T.nilable(String)).returns(T::Boolean) }
@@ -359,45 +364,6 @@ module Dependabot
             raise_on_ignored: raise_on_ignored,
             consider_version_branches_pinned: false,
             dependency_source_details: nil
-          )
-        end
-
-        # Looks up the GitHub Release published_at date for a given tag name.
-        # Returns nil if no release exists for this tag.
-        sig { params(tag_name: String).returns(T.nilable(Time)) }
-        def github_release_published_at(tag_name)
-          releases = cached_github_releases
-          return nil if releases.empty?
-
-          release = releases.find { |r| r.tag_name == tag_name }
-          return nil unless release&.published_at
-
-          release.published_at
-        rescue StandardError => e
-          Dependabot.logger.debug("Error fetching GitHub release date for #{tag_name}: #{e.message}")
-          nil
-        end
-
-        sig { returns(T::Array[T.untyped]) }
-        def cached_github_releases
-          @cached_github_releases ||= T.let(
-            begin
-              url = @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
-              source = Source.from_url(url)
-              if source&.provider == "github"
-                client = Dependabot::Clients::GithubWithRetries.for_source(
-                  source: T.must(source),
-                  credentials: credentials
-                )
-                client.releases(T.must(source).repo, per_page: 100)
-              else
-                []
-              end
-            rescue StandardError => e
-              Dependabot.logger.debug("Error fetching GitHub releases: #{e.message}")
-              []
-            end,
-            T.nilable(T::Array[T.untyped])
           )
         end
       end
