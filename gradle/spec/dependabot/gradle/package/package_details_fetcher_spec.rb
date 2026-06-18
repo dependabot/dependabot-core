@@ -7,13 +7,14 @@ require "dependabot/dependency_file"
 require "dependabot/gradle/update_checker/version_finder"
 
 RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
+  let(:cooldown_options) { nil }
   let(:packagedetailsfetcher) do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: credentials,
-
-      forbidden_urls: []
+      forbidden_urls: [],
+      cooldown_options: cooldown_options
     )
   end
   let(:version_class) { Dependabot::Gradle::Version }
@@ -61,6 +62,27 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
 
   describe "#versions" do
     subject(:versions) { packagedetailsfetcher.fetch_available_versions }
+
+    context "when cooldown_options is nil" do
+      it "does not fetch release metadata" do
+        expect(packagedetailsfetcher).not_to receive(:release_details)
+        packagedetailsfetcher.fetch_available_versions
+      end
+    end
+
+    context "when cooldown_options is configured" do
+      let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+
+      before do
+        stub_request(:get, "https://repo.maven.apache.org/maven2/com/google/guava/guava/")
+          .to_return(status: 200, body: "")
+      end
+
+      it "fetches release metadata" do
+        expect(packagedetailsfetcher).to receive(:release_details).and_call_original
+        packagedetailsfetcher.fetch_available_versions
+      end
+    end
 
     its(:count) { is_expected.to eq(70) }
 
@@ -310,9 +332,17 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
           is_expected.to eq("https://plugins.gradle.org/m2")
         end
 
-        its([:released_at]) do
-          # lastUpdated from fixture: 20190404053033 (2019-04-04 05:30:33 UTC)
-          is_expected.to eq(Time.utc(2019, 4, 4, 5, 30, 33))
+        context "without cooldown configured" do
+          its([:released_at]) { is_expected.to be_nil }
+        end
+
+        context "with cooldown configured" do
+          let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+
+          its([:released_at]) do
+            # lastUpdated from fixture: 20190404053033 (2019-04-04 05:30:33 UTC)
+            is_expected.to eq(Time.utc(2019, 4, 4, 5, 30, 33))
+          end
         end
       end
     end
@@ -390,9 +420,17 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
           is_expected.to eq("https://plugins.gradle.org/m2")
         end
 
-        its([:released_at]) do
-          # lastUpdated from fixture: 20201222143435 (2020-12-22 14:34:35 UTC)
-          is_expected.to eq(Time.utc(2020, 12, 22, 14, 34, 35))
+        context "without cooldown configured" do
+          its([:released_at]) { is_expected.to be_nil }
+        end
+
+        context "with cooldown configured" do
+          let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+
+          its([:released_at]) do
+            # lastUpdated from fixture: 20201222143435 (2020-12-22 14:34:35 UTC)
+            is_expected.to eq(Time.utc(2020, 12, 22, 14, 34, 35))
+          end
         end
       end
     end
