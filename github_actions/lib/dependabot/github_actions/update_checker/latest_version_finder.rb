@@ -378,7 +378,7 @@ module Dependabot
                 source: T.must(source),
                 credentials: credentials
               )
-              client.releases(source.repo, per_page: 100)
+              client.releases(T.must(source).repo, per_page: 100)
             rescue StandardError => e
               Dependabot.logger.debug("Error fetching GitHub releases: #{e.message}")
               []
