@@ -605,6 +605,79 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
         expect(result.to_s).to eq("5.0.0")
       end
     end
+
+    context "when GitHub Release published_at is available" do
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7
+        )
+      end
+
+      it "uses GitHub Release published_at for cooldown (bypasses git clone)" do
+        recent_published_at = Time.now - (2 * 24 * 60 * 60) # 2 days ago
+
+        latest_tag = {
+          tag: "v6.0.0",
+          version: Dependabot::PreCommit::Version.new("6.0.0"),
+          commit_sha: "latest_sha"
+        }
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
+          .and_return([latest_tag])
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
+                        ref: "v4.4.0", branch: nil })
+
+        # Mock GitHub Release with recent published_at (in cooldown)
+        mock_release = double("release", tag_name: "v6.0.0", published_at: recent_published_at)
+        mock_client = double("client", releases: [mock_release])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        # Should NOT clone the repo since we got the date from Octokit
+        expect(Dependabot::SharedHelpers).not_to receive(:run_shell_command).with(/git clone/)
+
+        result = finder.latest_release_version
+        # v6.0.0 is in cooldown (published 2 days ago, cooldown is 7 days)
+        expect(result.to_s).to eq("4.4.0")
+      end
+
+      it "falls back to git when no GitHub Release exists for the tag" do
+        old_date = (Time.now - (30 * 24 * 60 * 60)).utc.strftime("%Y-%m-%d %H:%M:%S %z")
+
+        latest_tag = {
+          tag: "v6.0.0",
+          version: Dependabot::PreCommit::Version.new("6.0.0"),
+          commit_sha: "latest_sha"
+        }
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
+          .and_return([latest_tag])
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
+                        ref: "v4.4.0", branch: nil })
+
+        # No release for this tag
+        mock_client = double("client", releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        # Falls back to git clone
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref/, hash_including(fingerprint: anything))
+          .and_return(old_date)
+
+        result = finder.latest_release_version
+        # Falls back to for-each-ref, date is old (outside cooldown)
+        expect(result.to_s).to eq("6.0.0")
+      end
+    end
   end
 
   describe "version precision" do

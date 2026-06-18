@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 
+require "dependabot/clients/github_with_retries"
 require "dependabot/errors"
 require "dependabot/github_actions/file_parser"
 require "dependabot/github_actions/package/package_details_fetcher"
@@ -236,14 +237,24 @@ module Dependabot
         end
 
         # Returns the release date for the latest version tag.
-        # Uses the tag creation date (tagger date for annotated tags) rather than
-        # the commit date, since a tag may point to an old commit but be newly published.
-        # Falls back to the commit's committer date for lightweight tags or if
-        # for-each-ref returns no result.
+        # Priority: GitHub Release published_at > tag creation date > commit date.
+        # This ensures re-tagged or republished releases are evaluated based on
+        # when they were actually made available.
         sig { returns(T.nilable(String)) }
         def commit_metadata_details
           @commit_metadata_details ||= T.let(
             begin
+              # First, try GitHub Release published_at via Octokit
+              tag_name = latest_version_tag&.fetch(:tag, nil)
+              if tag_name
+                release_date = github_release_published_at(tag_name)
+                if release_date
+                  Dependabot.logger.info("Found release date from GitHub Release: #{release_date}")
+                  return release_date.iso8601
+                end
+              end
+
+              # Fallback to git-based date detection
               url = @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
               source = T.must(Source.from_url(url))
 
@@ -252,7 +263,6 @@ module Dependabot
 
                 SharedHelpers.run_shell_command("git clone --bare --no-recurse-submodules #{url} #{repo_contents_path}")
                 Dir.chdir(repo_contents_path) do
-                  tag_name = latest_version_tag&.fetch(:tag, nil)
                   date = if tag_name
                            # Prefer the tag creation date (tagger date for annotated tags,
                            # commit date for lightweight tags)
@@ -337,6 +347,43 @@ module Dependabot
             raise_on_ignored: raise_on_ignored,
             consider_version_branches_pinned: false,
             dependency_source_details: nil
+          )
+        end
+
+        # Looks up the GitHub Release published_at date for a given tag name.
+        # Returns nil if no release exists for this tag.
+        sig { params(tag_name: String).returns(T.nilable(Time)) }
+        def github_release_published_at(tag_name)
+          releases = cached_github_releases
+          return nil if releases.empty?
+
+          release = releases.find { |r| r.tag_name == tag_name }
+          return nil unless release&.published_at
+
+          release.published_at
+        rescue StandardError => e
+          Dependabot.logger.debug("Error fetching GitHub release date for #{tag_name}: #{e.message}")
+          nil
+        end
+
+        sig { returns(T::Array[T.untyped]) }
+        def cached_github_releases
+          @cached_github_releases ||= T.let(
+            begin
+              url = @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
+              source = Source.from_url(url)
+              return [] unless source&.provider == "github"
+
+              client = Dependabot::Clients::GithubWithRetries.for_source(
+                source: T.must(source),
+                credentials: credentials
+              )
+              client.releases(source.repo, per_page: 100)
+            rescue StandardError => e
+              Dependabot.logger.debug("Error fetching GitHub releases: #{e.message}")
+              []
+            end,
+            T.nilable(T::Array[T.untyped])
           )
         end
       end

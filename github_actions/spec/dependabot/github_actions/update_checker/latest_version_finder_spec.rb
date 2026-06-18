@@ -632,5 +632,58 @@ RSpec.describe namespace::LatestVersionFinder do
         expect(parsed_result).to be_within(60).of(Time.now)
       end
     end
+
+    context "when GitHub Release published_at is available" do
+      it "uses published_at from Octokit instead of git clone" do
+        published_at = Time.parse("2026-06-15 10:00:00 UTC")
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return({ type: "git", url: "https://github.com/actions/setup-node",
+                        ref: "v1", branch: nil })
+        allow(finder).to receive(:latest_version_tag)
+          .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                        commit_sha: "abc123" })
+
+        mock_release = double("release", tag_name: "v1.0.0", published_at: published_at)
+        mock_client = double("client", releases: [mock_release])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        # Should NOT need to clone repo
+        expect(Dependabot::SharedHelpers).not_to receive(:run_shell_command).with(/git clone/)
+
+        expect(commit_metadata_details).to eq(published_at.iso8601)
+      end
+    end
+
+    context "when GitHub Release does not exist for the tag" do
+      it "falls back to git for-each-ref" do
+        tag_creation_date = "2026-06-10 10:00:00 +0000"
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return({ type: "git", url: "https://github.com/actions/setup-node",
+                        ref: "v1", branch: nil })
+        allow(finder).to receive(:latest_version_tag)
+          .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                        commit_sha: "abc123" })
+        allow(finder).to receive(:commit_ref).and_return("abc123")
+
+        # No release exists
+        mock_client = double("client", releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        # Falls back to git
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref/, hash_including(fingerprint: anything))
+          .and_return(tag_creation_date)
+
+        expect(commit_metadata_details).to eq(tag_creation_date)
+      end
+    end
   end
 end
