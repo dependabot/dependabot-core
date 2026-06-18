@@ -189,12 +189,16 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
           .to receive(:dependency_source_details)
           .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
                         ref: reference, branch: nil })
+        # Stub GitHub Releases (empty — forces git clone fallback)
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
         allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
         allow(Dir).to receive(:chdir).and_yield
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(/git clone --bare/, any_args).and_return("")
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(/git show --no-patch/, hash_including(fingerprint: anything))
+          .with(/git for-each-ref/, hash_including(fingerprint: anything))
           .and_return(recent_date)
       end
 

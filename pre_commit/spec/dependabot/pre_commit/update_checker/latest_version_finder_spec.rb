@@ -631,7 +631,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
                         ref: "v4.4.0", branch: nil })
 
         # Mock GitHub Release with recent published_at (in cooldown)
-        mock_release = double("Sawyer::Resource", tag_name: "v6.0.0", published_at: recent_published_at) # rubocop:disable RSpec/VerifiedDoubles
+        mock_release = double("Sawyer::Resource", tag_name: "v6.0.0", published_at: recent_published_at, prerelease: false) # rubocop:disable RSpec/VerifiedDoubles
         mock_client = instance_double(Octokit::Client, releases: [mock_release])
         allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
 
