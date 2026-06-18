@@ -243,27 +243,30 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def commit_metadata_details
           @commit_metadata_details ||= T.let(
-            begin
-              # First, try GitHub Release published_at via Octokit
-              tag_name = latest_version_tag&.fetch(:tag, nil)
-              if tag_name
-                release_date = github_release_published_at(tag_name)
-                if release_date
-                  Dependabot.logger.info("Found release date from GitHub Release: #{release_date}")
-                  return release_date.iso8601
-                end
-              end
-
-              # Fallback to git-based date detection
-              fetch_date_from_git(tag_name)
-            rescue StandardError => e
-              msg = "Error (github actions) while checking release date for #{dependency.name}: #{e.message}"
-              Dependabot.logger.warn(msg)
-
-              nil
-            end,
+            resolve_commit_metadata_details,
             T.nilable(String)
           )
+        end
+
+        sig { returns(T.nilable(String)) }
+        def resolve_commit_metadata_details
+          # First, try GitHub Release published_at via Octokit
+          tag_name = latest_version_tag&.fetch(:tag, nil)
+          normalized_tag = tag_name ? normalize_tag_name(tag_name) : nil
+          if normalized_tag
+            release_date = github_release_published_at(normalized_tag)
+            if release_date
+              Dependabot.logger.info("Found release date from GitHub Release: #{release_date}")
+              return release_date.iso8601
+            end
+          end
+
+          # Fallback to git-based date detection
+          fetch_date_from_git(normalized_tag)
+        rescue StandardError => e
+          msg = "Error (github actions) while checking release date for #{dependency.name}: #{e.message}"
+          Dependabot.logger.warn(msg)
+          nil
         end
 
         sig { params(tag_name: T.nilable(String)).returns(T.nilable(String)) }
@@ -295,6 +298,13 @@ module Dependabot
               date
             end
           end
+        end
+
+        # Strips the `tags/` prefix that GitCommitChecker may add when the pinned
+        # ref starts with `tags/`.
+        sig { params(tag_name: String).returns(String) }
+        def normalize_tag_name(tag_name)
+          tag_name.delete_prefix("tags/")
         end
 
         sig { params(release_date: T.nilable(String)).returns(T::Boolean) }

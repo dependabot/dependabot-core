@@ -156,14 +156,70 @@ module Dependabot
           true
         end
 
-        # Checks versions from latest downward (among versions > current_version)
-        # in a single bare clone. Returns the newest version outside cooldown,
-        # or nil if all candidates are within cooldown.
+        # Checks versions from latest downward (among versions > current_version).
+        # First attempts to use GitHub Release published_at dates (no clone needed).
+        # Falls back to a bare clone for git-based date detection.
         sig { returns(T.nilable(Dependabot::Version)) }
         def find_latest_version_outside_cooldown
           candidates = version_candidates_descending
           return nil if candidates.empty?
 
+          # Try GitHub Release dates first (avoids clone)
+          result = check_candidates_via_github_releases(candidates)
+          return result if result
+
+          # Fallback: clone and check tag/commit dates
+          check_candidates_via_git_clone(candidates)
+        rescue StandardError => e
+          Dependabot.logger.error("Error checking cooldown for #{dependency.name}: #{e.message}")
+          nil
+        end
+
+        # Attempts to resolve cooldown using GitHub Release published_at dates.
+        # Returns the first version outside cooldown, nil if all are in cooldown,
+        # or nil if no releases are available (indicating fallback is needed).
+        sig do
+          params(candidates: T::Array[T::Hash[Symbol, T.untyped]])
+            .returns(T.nilable(Dependabot::Version))
+        end
+        def check_candidates_via_github_releases(candidates)
+          releases = cached_github_releases
+          return nil if releases.empty?
+
+          filtered_count = 0
+
+          candidates.each do |tag|
+            tag_name = normalize_tag_name(tag[:tag] || "v#{tag[:version]}")
+            release = releases.find { |r| r.tag_name == tag_name }
+            next unless release&.published_at
+
+            unless release_in_cooldown_period?(release.published_at)
+              log_cooldown_result(filtered_count, tag[:version], release.published_at)
+              @cooldown_selected_tag = tag
+              return T.cast(tag[:version], Dependabot::Version)
+            end
+
+            filtered_count += 1
+          end
+
+          return nil if filtered_count.zero?
+
+          # All candidates with releases are in cooldown
+          Dependabot.logger.info(
+            "Filtered #{filtered_count} version(s) due to cooldown for #{dependency.name}, " \
+            "no eligible version found (via GitHub Releases)"
+          )
+          @cooldown_rejected_all = true
+          T.cast(current_version, T.nilable(Dependabot::Version))
+        end
+
+        # Checks candidate tags inside a bare clone directory, returning the first
+        # version whose tag creation date falls outside the cooldown window.
+        sig do
+          params(candidates: T::Array[T::Hash[Symbol, T.untyped]])
+            .returns(T.nilable(Dependabot::Version))
+        end
+        def check_candidates_via_git_clone(candidates)
           url = @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
           source = T.must(Source.from_url(url))
 
@@ -175,15 +231,10 @@ module Dependabot
               return check_candidates_cooldown(candidates)
             end
           end
-        rescue StandardError => e
-          Dependabot.logger.error("Error checking cooldown for #{dependency.name}: #{e.message}")
-          nil
         end
 
         # Iterates candidate tags inside a bare clone directory, returning the first
         # version whose release date falls outside the cooldown window.
-        # Uses the tag creation date (tagger date for annotated tags) rather than
-        # the commit date, since a tag may point to an old commit but be newly published.
         sig do
           params(candidates: T::Array[T::Hash[Symbol, T.untyped]])
             .returns(T.nilable(Dependabot::Version))
@@ -195,7 +246,7 @@ module Dependabot
             commit_sha = tag[:commit_sha]
             next unless commit_sha
 
-            release_date = tag_creation_date(tag[:tag] || "v#{tag[:version]}", commit_sha)
+            release_date = tag_creation_date(normalize_tag_name(tag[:tag] || "v#{tag[:version]}"), commit_sha)
 
             if release_in_cooldown_period?(release_date)
               filtered_count += 1
@@ -246,18 +297,11 @@ module Dependabot
             .reverse
         end
 
-        # Returns the release/tag creation date for cooldown purposes.
-        # Priority order:
-        # 1. GitHub Release published_at (most accurate for re-published releases)
-        # 2. Tag creation date from for-each-ref (tagger date for annotated tags)
-        # 3. Commit date fallback (for lightweight tags when for-each-ref returns empty)
+        # Returns the tag creation date for cooldown purposes (used inside bare clone).
+        # Priority: tag creation date from for-each-ref > commit date fallback.
         sig { params(tag_name: String, commit_sha: String).returns(Time) }
         def tag_creation_date(tag_name, commit_sha)
-          # First, try GitHub Release published_at via Octokit
-          release_date = github_release_published_at(tag_name)
-          return release_date if release_date
-
-          # Fallback to git for-each-ref (tagger date for annotated tags)
+          # Tag creation date (tagger date for annotated tags, commit date for lightweight)
           tag_date_str = SharedHelpers.run_shell_command(
             "git for-each-ref --format=\"%(creatordate:iso)\" \"refs/tags/#{tag_name}\"",
             fingerprint: "git for-each-ref --format=\"%(creatordate:iso)\" \"refs/tags/<tag_name>\""
@@ -274,20 +318,12 @@ module Dependabot
           Time.parse(tag_date_str)
         end
 
-        # Looks up the GitHub Release published_at date for a given tag name.
-        # Returns nil if no release exists for this tag or if the repo isn't on GitHub.
-        sig { params(tag_name: String).returns(T.nilable(Time)) }
-        def github_release_published_at(tag_name)
-          releases = cached_github_releases
-          return nil if releases.empty?
-
-          release = releases.find { |r| r.tag_name == tag_name }
-          return nil unless release&.published_at
-
-          release.published_at
-        rescue StandardError => e
-          Dependabot.logger.debug("Error fetching GitHub release date for #{tag_name}: #{e.message}")
-          nil
+        # Strips the `tags/` prefix that GitCommitChecker may add when the pinned
+        # ref starts with `tags/`, preventing construction of invalid refs like
+        # `refs/tags/tags/v1.0.0`.
+        sig { params(tag_name: String).returns(String) }
+        def normalize_tag_name(tag_name)
+          tag_name.delete_prefix("tags/")
         end
 
         sig { returns(T::Array[T.untyped]) }

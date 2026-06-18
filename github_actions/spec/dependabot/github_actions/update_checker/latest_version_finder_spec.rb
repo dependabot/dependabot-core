@@ -564,6 +564,10 @@ RSpec.describe namespace::LatestVersionFinder do
                                 commit_sha: "abc123" },
           commit_ref: "abc123"
         )
+        # No GitHub Release available — forces git fallback
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
         allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
         allow(Dir).to receive(:chdir).and_yield
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
@@ -590,6 +594,10 @@ RSpec.describe namespace::LatestVersionFinder do
                                 commit_sha: "abc123" },
           commit_ref: "abc123"
         )
+        # No GitHub Release available — forces git fallback
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
         allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
         allow(Dir).to receive(:chdir).and_yield
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
@@ -610,7 +618,7 @@ RSpec.describe namespace::LatestVersionFinder do
     context "when tag points to old commit but was recently created" do
       it "uses tag creation date for cooldown (not old commit date)" do
         # Tag created today, but commit is from 30 days ago
-        recent_tag_date = Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z")
+        recent_tag_date = "2026-06-18 10:00:00 +0000"
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
@@ -621,6 +629,10 @@ RSpec.describe namespace::LatestVersionFinder do
                                 commit_sha: "abc123" },
           commit_ref: "abc123"
         )
+        # Stub GitHub releases to return empty (force git fallback)
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
         allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
         allow(Dir).to receive(:chdir).and_yield
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
@@ -629,10 +641,7 @@ RSpec.describe namespace::LatestVersionFinder do
           .with(/git for-each-ref/, hash_including(fingerprint: anything))
           .and_return(recent_tag_date)
 
-        result = commit_metadata_details
-        parsed_result = Time.parse(result)
-        # The result should be recent (today), not the old commit date
-        expect(parsed_result).to be_within(60).of(Time.now)
+        expect(commit_metadata_details).to eq(recent_tag_date)
       end
     end
 
