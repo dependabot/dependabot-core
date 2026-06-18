@@ -114,10 +114,18 @@ module Dependabot
         frozen_ver = version_from_comment
         return super unless frozen_ver
 
-        resolved_sha = latest_commit_sha
-        return true if resolved_sha && resolved_sha == dependency.version
+        # Use latest_version (which respects cooldown) for semantic comparison.
+        # This ensures that when cooldown rejects all candidates, the dependency
+        # is correctly treated as up-to-date.
+        lv = latest_version
+        return true if lv.is_a?(Dependabot::Version) && lv <= frozen_ver
 
-        false
+        resolved_sha = latest_commit_sha
+        # If no SHA can be resolved (e.g., all candidate versions rejected by cooldown),
+        # there is nothing to update to — treat as up-to-date.
+        return true unless resolved_sha
+
+        resolved_sha == dependency.version
       end
 
       sig { override.returns(T::Boolean) }

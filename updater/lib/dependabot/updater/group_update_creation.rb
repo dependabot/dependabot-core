@@ -299,7 +299,9 @@ module Dependabot
         )
 
         log_checking_for_update(dependency)
-        record_blocked_version_ignored(job: job, dependency: dependency, operation: "group_update")
+        record_blocked_version_ignored(
+          job: job, dependency: dependency, operation: BlockedVersionsOperation::GROUP_UPDATE
+        )
 
         if all_versions_ignored?(dependency, checker)
           record_security_update_ignored_if_applicable(dependency, checker, group)

@@ -2326,7 +2326,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           .with(
             anything, # The actual command
             hash_including(
-              env: hash_including("npm_config_registry" => "https://artifactory.example.com/artifactory/api/npm/npm/")
+              env: hash_including("npm_config_registry" => "https://artifactory.example.com/artifactory/api/npm/npm")
             )
           )
       end
