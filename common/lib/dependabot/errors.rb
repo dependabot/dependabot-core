@@ -719,10 +719,10 @@ module Dependabot
     sig { returns(String) }
     attr_reader :source
 
-    sig { params(source: T.nilable(String)).void }
-    def initialize(source)
+    sig { params(source: T.nilable(String), error_message: T.nilable(String)).void }
+    def initialize(source, error_message = nil)
       @source = T.let(sanitize_source(T.must(source)), String)
-      msg = "Bad response error while accessing source: #{@source}"
+      msg = error_message || "Bad response error while accessing source: #{@source}"
       super(msg)
     end
   end
