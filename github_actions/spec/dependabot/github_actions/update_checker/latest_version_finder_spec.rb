@@ -553,7 +553,7 @@ RSpec.describe namespace::LatestVersionFinder do
 
     context "when tag is an annotated tag" do
       it "uses tag creation date from for-each-ref instead of commit date" do
-        tag_creation_date = "2026-06-18 10:00:00 +0000"
+        tag_creation_date = Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z")
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
@@ -618,7 +618,7 @@ RSpec.describe namespace::LatestVersionFinder do
     context "when tag points to old commit but was recently created" do
       it "uses tag creation date for cooldown (not old commit date)" do
         # Tag created today, but commit is from 30 days ago
-        recent_tag_date = "2026-06-18 10:00:00 +0000"
+        recent_tag_date = Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z")
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
@@ -647,7 +647,7 @@ RSpec.describe namespace::LatestVersionFinder do
 
     context "when GitHub Release published_at is available" do
       it "uses published_at from Octokit instead of git clone" do
-        published_at = Time.parse("2026-06-15 10:00:00 UTC")
+        published_at = Time.now.utc - (3 * 24 * 60 * 60)
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
@@ -671,7 +671,7 @@ RSpec.describe namespace::LatestVersionFinder do
 
     context "when GitHub Release does not exist for the tag" do
       it "falls back to git for-each-ref" do
-        tag_creation_date = "2026-06-10 10:00:00 +0000"
+        tag_creation_date = (Time.now.utc - (8 * 24 * 60 * 60)).strftime("%Y-%m-%d %H:%M:%S %z")
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
