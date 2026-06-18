@@ -384,13 +384,15 @@ module Dependabot
             begin
               url = @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
               source = Source.from_url(url)
-              return [] unless source&.provider == "github"
-
-              client = Dependabot::Clients::GithubWithRetries.for_source(
-                source: T.must(source),
-                credentials: credentials
-              )
-              client.releases(T.must(source).repo, per_page: 100)
+              if source&.provider == "github"
+                client = Dependabot::Clients::GithubWithRetries.for_source(
+                  source: T.must(source),
+                  credentials: credentials
+                )
+                client.releases(T.must(source).repo, per_page: 100)
+              else
+                []
+              end
             rescue StandardError => e
               Dependabot.logger.debug("Error fetching GitHub releases: #{e.message}")
               []
