@@ -559,12 +559,11 @@ module Dependabot
         .returns(T::Array[BlockedVersion])
     end
     def matching_blocked_entries(dependency)
-      normaliser = name_normaliser
-      normalized_dep_name = T.must(normaliser).call(dependency.name)
-
-      blocked_versions
-        .select { |bv| bv.dependency_name && bv.version_requirement }
-        .select { |bv| T.must(normaliser).call(T.must(bv.dependency_name)) == normalized_dep_name }
+      BlockedVersion.matching(
+        blocked_versions,
+        dependency_name: dependency.name,
+        package_manager: package_manager
+      )
     end
 
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
