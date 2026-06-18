@@ -521,4 +521,116 @@ RSpec.describe namespace::LatestVersionFinder do
       end
     end
   end
+
+  describe "#commit_metadata_details" do
+    subject(:commit_metadata_details) { finder.send(:commit_metadata_details) }
+
+    let(:reference) { "v1" }
+    let(:dependency_version) { "1.0.0" }
+
+    let(:finder) do
+      described_class.new(
+        dependency: dependency,
+        dependency_files: [],
+        credentials: github_credentials,
+        security_advisories: security_advisories,
+        ignored_versions: ignored_versions,
+        raise_on_ignored: raise_on_ignored,
+        cooldown_options: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      )
+    end
+
+    before do
+      stub_request(:get, service_pack_url)
+        .to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
+    end
+
+    context "when tag is an annotated tag" do
+      it "uses tag creation date from for-each-ref instead of commit date" do
+        tag_creation_date = "2026-06-18 10:00:00 +0000"
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return({ type: "git", url: "https://github.com/actions/setup-node",
+                        ref: "v1", branch: nil })
+        allow(finder).to receive(:latest_version_tag)
+          .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                        commit_sha: "abc123" })
+        allow(finder).to receive(:commit_ref).and_return("abc123")
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        # for-each-ref returns the annotated tag date
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref/, hash_including(fingerprint: anything))
+          .and_return(tag_creation_date)
+
+        expect(commit_metadata_details).to eq(tag_creation_date)
+      end
+    end
+
+    context "when for-each-ref returns empty (lightweight tag not found)" do
+      it "falls back to commit date from git show" do
+        commit_date = "2026-06-01 10:00:00 +0000"
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return({ type: "git", url: "https://github.com/actions/setup-node",
+                        ref: "v1", branch: nil })
+        allow(finder).to receive(:latest_version_tag)
+          .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                        commit_sha: "abc123" })
+        allow(finder).to receive(:commit_ref).and_return("abc123")
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        # for-each-ref returns empty
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref/, hash_including(fingerprint: anything))
+          .and_return("")
+        # Fallback to git show
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git show --no-patch/, hash_including(fingerprint: anything))
+          .and_return(commit_date)
+
+        expect(commit_metadata_details).to eq(commit_date)
+      end
+    end
+
+    context "when tag points to old commit but was recently created" do
+      it "uses tag creation date for cooldown (not old commit date)" do
+        # Tag created today, but commit is from 30 days ago
+        recent_tag_date = Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z")
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return({ type: "git", url: "https://github.com/actions/setup-node",
+                        ref: "v1", branch: nil })
+        allow(finder).to receive(:latest_version_tag)
+          .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                        commit_sha: "abc123" })
+        allow(finder).to receive(:commit_ref).and_return("abc123")
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref/, hash_including(fingerprint: anything))
+          .and_return(recent_tag_date)
+
+        result = commit_metadata_details
+        parsed_result = Time.parse(result)
+        # The result should be recent (today), not the old commit date
+        expect(parsed_result).to be_within(60).of(Time.now)
+      end
+    end
+  end
 end
