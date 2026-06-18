@@ -235,6 +235,11 @@ module Dependabot
           []
         end
 
+        # Returns the release date for the latest version tag.
+        # Uses the tag creation date (tagger date for annotated tags) rather than
+        # the commit date, since a tag may point to an old commit but be newly published.
+        # Falls back to the commit's committer date for lightweight tags or if
+        # for-each-ref returns no result.
         sig { returns(T.nilable(String)) }
         def commit_metadata_details
           @commit_metadata_details ||= T.let(
@@ -247,10 +252,25 @@ module Dependabot
 
                 SharedHelpers.run_shell_command("git clone --bare --no-recurse-submodules #{url} #{repo_contents_path}")
                 Dir.chdir(repo_contents_path) do
-                  date = SharedHelpers.run_shell_command(
+                  tag_name = latest_version_tag&.fetch(:tag, nil)
+                  date = if tag_name
+                           # Prefer the tag creation date (tagger date for annotated tags,
+                           # commit date for lightweight tags)
+                           tag_date = SharedHelpers.run_shell_command(
+                             "git for-each-ref --format=\"%(creatordate:iso)\" " \
+                             "\"refs/tags/#{tag_name}\"",
+                             fingerprint: "git for-each-ref --format=\"%(creatordate:iso)\" \"refs/tags/<tag_name>\""
+                           ).strip
+                           tag_date.empty? ? nil : tag_date
+                         end
+
+                  # Fallback to commit date if tag lookup failed
+                  date ||= SharedHelpers.run_shell_command(
                     "git show --no-patch --format=\"%cd\" " \
-                    "--date=iso #{commit_ref}"
-                  )
+                    "--date=iso #{commit_ref}",
+                    fingerprint: "git show --no-patch --format=\"%cd\" --date=iso <commit_ref>"
+                  ).strip
+
                   Dependabot.logger.info("Found release date : #{Time.parse(date)}")
                   return date
                 end
