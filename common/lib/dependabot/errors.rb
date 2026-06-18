@@ -238,6 +238,16 @@ module Dependabot
         "error-type": "dependency_file_not_resolvable",
         "error-detail": { message: error.message }
       }
+    when Dependabot::BlockedDependencyVersion
+      {
+        "error-type": "blocked_dependency_version",
+        "error-detail": {
+          "dependency-name": error.dependency_name,
+          "blocked-version": error.blocked_version,
+          "version-requirement": error.version_requirement,
+          reason: error.reason
+        }.compact
+      }
     when Dependabot::DependencyFileNotEvaluatable
       {
         "error-type": "dependency_file_not_evaluatable",
@@ -392,6 +402,18 @@ module Dependabot
   # rubocop:enable Metrics/CyclomaticComplexity
   # rubocop:enable Lint/RedundantCopDisableDirective
   # rubocop:enable Metrics/AbcSize
+
+  # Interface for error classes that provide Sentry context (e.g. fingerprint).
+  # Include this module in any error class that defines #sentry_context.
+  module HasSentryContext
+    extend T::Sig
+    extend T::Helpers
+
+    interface!
+
+    sig { abstract.returns(T::Hash[Symbol, T.untyped]) }
+    def sentry_context; end
+  end
 
   class DependabotError < StandardError
     extend T::Sig
@@ -888,6 +910,46 @@ module Dependabot
 
   # Raised by UpdateChecker if all candidate updates are ignored
   class AllVersionsIgnored < DependabotError; end
+
+  # Raised when regenerating a lockfile would introduce or change a transitive
+  # (indirect) dependency to a version that matches a configured blocked version.
+  # The offending change is rejected so the blocked version is never shipped,
+  # while other dependencies are still allowed to update.
+  class BlockedDependencyVersion < DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :dependency_name
+
+    sig { returns(String) }
+    attr_reader :blocked_version
+
+    sig { returns(String) }
+    attr_reader :version_requirement
+
+    sig { returns(T.nilable(String)) }
+    attr_reader :reason
+
+    sig do
+      params(
+        dependency_name: String,
+        blocked_version: String,
+        version_requirement: String,
+        reason: T.nilable(String)
+      ).void
+    end
+    def initialize(dependency_name:, blocked_version:, version_requirement:, reason: nil)
+      @dependency_name = dependency_name
+      @blocked_version = blocked_version
+      @version_requirement = version_requirement
+      @reason = reason
+
+      msg = "Update blocked: transitive dependency #{dependency_name} #{blocked_version} " \
+            "matches blocked version requirement '#{version_requirement}'"
+      msg += " (reason: #{reason})" if reason && !reason.empty?
+      super(msg)
+    end
+  end
 
   # Raised by FileParser if processing may execute external code in the update context
   class UnexpectedExternalCode < DependabotError; end

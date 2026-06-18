@@ -24,6 +24,9 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       ],
       experiments: {},
       security_updates_only?: false,
+      cooldown: nil,
+      blocked_versions: [],
+      reject_external_code?: false,
       source: source
     )
   end
@@ -316,6 +319,133 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
             Dependabot::DependabotError,
             "FileUpdater failed to update any files for: dummy-pkg-a, dummy-pkg-b"
           )
+      end
+    end
+  end
+
+  describe "blocking transitive dependency versions" do
+    subject(:create_change) do
+      described_class.create_from(
+        job: job,
+        dependency_files: dependency_files,
+        updated_dependencies: updated_dependencies,
+        change_source: change_source
+      )
+    end
+
+    let(:change_source) { direct_dep("dummy-pkg-b", "1.1.0") }
+    let(:updated_dependencies) { [direct_dep("dummy-pkg-b", "1.2.0", previous_version: "1.1.0")] }
+
+    let(:file_updater_class) { class_double(Dependabot::Bundler::FileUpdater) }
+    let(:parser_class) { class_double(Dependabot::Bundler::FileParser) }
+    let(:parser) { instance_double(Dependabot::Bundler::FileParser) }
+
+    let(:previous_dependencies) { [transitive_dep("transitive-dep", "1.0.0")] }
+    let(:current_dependencies) { [transitive_dep("transitive-dep", "1.5.0")] }
+
+    def direct_dep(name, version, previous_version: nil)
+      args = {
+        name: name,
+        package_manager: "bundler",
+        version: version,
+        requirements: [{ file: "Gemfile", requirement: "~> #{version}", groups: [], source: nil }]
+      }
+      if previous_version
+        args[:previous_version] = previous_version
+        args[:previous_requirements] = [
+          { file: "Gemfile", requirement: "~> #{previous_version}", groups: [], source: nil }
+        ]
+      end
+      Dependabot::Dependency.new(**args)
+    end
+
+    def transitive_dep(name, version)
+      Dependabot::Dependency.new(name: name, version: version, requirements: [], package_manager: "bundler")
+    end
+
+    def blocked_entry(name:, requirement:, reason: nil)
+      Dependabot::Job::BlockedVersion.from_hash(
+        { "dependency-name" => name, "version-requirement" => requirement, "reason" => reason }.compact
+      )
+    end
+
+    before do
+      Dependabot::Experiments.register(:blocked_versions, true)
+
+      file_updater = instance_double(
+        Dependabot::Bundler::FileUpdater,
+        updated_dependency_files: dependency_files.reject(&:support_file?),
+        notices: []
+      )
+      allow(Dependabot::FileUpdaters).to receive(:for_package_manager)
+        .with("bundler").and_return(file_updater_class)
+      allow(file_updater_class).to receive(:new).and_return(file_updater)
+
+      allow(Dependabot::FileParsers).to receive(:for_package_manager)
+        .with("bundler").and_return(parser_class)
+      allow(parser_class).to receive(:new).and_return(parser)
+      allow(parser).to receive(:parse).and_return(previous_dependencies, current_dependencies)
+    end
+
+    after { Dependabot::Experiments.reset! }
+
+    context "when a transitive dependency changes to a blocked version" do
+      before do
+        allow(job).to receive(:blocked_versions)
+          .and_return([blocked_entry(name: "transitive-dep", requirement: "= 1.5.0", reason: "malware")])
+      end
+
+      it "raises BlockedDependencyVersion with details and does not create a change" do
+        expect { create_change }.to raise_error(Dependabot::BlockedDependencyVersion) do |error|
+          expect(error.dependency_name).to eq("transitive-dep")
+          expect(error.blocked_version).to eq("1.5.0")
+          expect(error.version_requirement).to eq("= 1.5.0")
+          expect(error.reason).to eq("malware")
+        end
+      end
+    end
+
+    context "when a transitive dependency changes to an allowed version" do
+      before do
+        allow(job).to receive(:blocked_versions)
+          .and_return([blocked_entry(name: "transitive-dep", requirement: "= 9.9.9")])
+      end
+
+      it "creates the change without raising" do
+        expect(create_change).to be_a(Dependabot::DependencyChange)
+      end
+
+      it "logs a summary at info and the per-dependency detail at debug" do
+        allow(Dependabot.logger).to receive(:info)
+        allow(Dependabot.logger).to receive(:debug)
+        create_change
+        expect(Dependabot.logger).to have_received(:info)
+          .with(/Regenerating the lockfile changed 1 transitive dependency/)
+        expect(Dependabot.logger).to have_received(:debug).with(/transitive-dep 1\.0\.0 => 1\.5\.0/)
+      end
+    end
+
+    context "when the blocked_versions experiment is disabled" do
+      before do
+        Dependabot::Experiments.reset!
+        allow(job).to receive(:blocked_versions)
+          .and_return([blocked_entry(name: "transitive-dep", requirement: "= 1.5.0")])
+      end
+
+      it "does not re-parse files or block the update" do
+        expect(create_change).to be_a(Dependabot::DependencyChange)
+        expect(Dependabot::FileParsers).not_to have_received(:for_package_manager)
+      end
+    end
+
+    context "when no blocked versions are configured" do
+      before do
+        allow(job).to receive(:blocked_versions).and_return([])
+      end
+
+      it "does not re-parse files and creates the change" do
+        expect(create_change).to be_a(Dependabot::DependencyChange)
+        expect(Dependabot::FileParsers).not_to have_received(:for_package_manager)
       end
     end
   end

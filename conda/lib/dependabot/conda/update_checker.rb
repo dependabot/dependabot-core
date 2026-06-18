@@ -94,13 +94,15 @@ module Dependabot
         @lowest_resolvable_security_fix_version
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        RequirementsUpdater.new(
-          requirements: dependency.requirements,
-          update_strategy: requirements_update_strategy,
-          latest_resolvable_version: preferred_resolvable_version&.to_s
-        ).updated_requirements
+        wrap_requirements(
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            update_strategy: requirements_update_strategy,
+            latest_resolvable_version: preferred_resolvable_version&.to_s
+          ).updated_requirements
+        )
       end
 
       sig { override.returns(Dependabot::RequirementsUpdateStrategy) }

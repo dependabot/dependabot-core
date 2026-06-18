@@ -19,6 +19,14 @@ module Dependabot
   class UpdateGraphProcessor
     extend T::Sig
 
+    UNEXPECTED_EXTERNAL_CODE_MESSAGE = <<~MSG
+      Dependabot refused to execute external code
+
+      This directory is configured to use a private registry but does not allow insecure code execution via your Dependabot configuration.
+
+      Please set `insecure-external-code-execution: allow` in the config if you trust your dependencies' supply chain or remove the private registry from this directory.
+    MSG
+
     # To do work, this class needs three arguments:
     # - The Dependabot::Service to send events and outcomes to
     # - The Dependabot::Job that describes the work to be done
@@ -56,6 +64,13 @@ module Dependabot
         # block the overall job.
         process_directory(branch:, directory:)
       end
+    rescue StandardError => e
+      service.record_workflow_result(
+        directory: "(unknown)",
+        status: GithubApi::DependencySubmission::SnapshotStatus::FAILED.serialize,
+        details: "unexpected error: #{e.class}"
+      )
+      raise
     end
 
     private
@@ -76,7 +91,7 @@ module Dependabot
     attr_reader :error_handler
 
     sig { params(branch: String, directory: String).void }
-    def process_directory(branch:, directory:) # rubocop:disable Metrics/MethodLength
+    def process_directory(branch:, directory:) # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
       directory_source = create_source_for(directory)
       directory_dependency_files = dependency_files_for(directory)
 
@@ -93,6 +108,12 @@ module Dependabot
 
       Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
       service.create_dependency_submission(dependency_submission: submission)
+
+      record_workflow_result(
+        directory,
+        submission.status,
+        "Found #{submission.resolved_dependencies.size} dependencies"
+      )
     rescue Dependabot::UnexpectedExternalCode
       # If this has been raised, then the directory is trying to use a private registry with an ecosystem
       # that requires the `insecure-external-code-execution: allow` flag.
@@ -100,17 +121,13 @@ module Dependabot
       # The default policy is denied, so this outcome represents a misconfiguration for the directory.
       # We should record this failure and allow other directories in the job to continue, as they may
       # not be misconfigured.
-      Dependabot.logger.info(<<~LOG)
-        Skipping directory #{directory} — Dependabot refused to execute external code
+      Dependabot.logger.info("Skipping directory #{directory} — #{UNEXPECTED_EXTERNAL_CODE_MESSAGE}")
 
-        This directory is configured to use a private registry but does not allow insecure code execution via your Dependabot configuration.
-
-        Please set `insecure-external-code-execution: allow` in the config if you trust your dependencies'
-        supply chain or remove the private registry from this directory.
-      LOG
-      service.record_update_job_error(
-        error_type: "unexpected_external_code",
-        error_details: { message: "Cannot process directory #{directory} without external code execution" }
+      # Emit a warning rather than an error since this is a misconfiguration the user needs to fix.
+      service.record_update_job_warning(
+        warn_type: "unexpected_external_code",
+        warn_title: "Refusing to execute external code",
+        warn_description: "Cannot process directory #{directory} without external code execution"
       )
 
       return unless Dependabot::Environment.github_actions?
@@ -123,6 +140,12 @@ module Dependabot
           "unexpected_external_code"
         )
       )
+
+      record_workflow_result(
+        directory,
+        GithubApi::DependencySubmission::SnapshotStatus::FAILED,
+        UNEXPECTED_EXTERNAL_CODE_MESSAGE
+      )
     rescue Dependabot::ApiError, Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
       # If the submission API is down, we should raise this as a specific error type for visibility.
       error_handler.handle_job_error(
@@ -130,14 +153,27 @@ module Dependabot
           "Unable to submit data to the Dependency Snapshot API"
         )
       )
+
+      record_workflow_result(
+        directory,
+        GithubApi::DependencySubmission::SnapshotStatus::FAILED,
+        "Unable to submit data to the Dependency Snapshot API"
+      )
     rescue Dependabot::DependabotError => e
       error_handler.handle_job_error(error: e)
 
       # If we are not running in Actions, there's nothing more to do.
       return unless Dependabot::Environment.github_actions?
 
-      # Send an empty submission so the snapshot service has a record that the job id has been completed.
       error_details = Dependabot.updater_error_details(e) || { "error-type": "unknown_error" }
+      detail_message = error_details.dig(:"error-detail", :message)
+      record_workflow_result(
+        directory,
+        GithubApi::DependencySubmission::SnapshotStatus::FAILED,
+        detail_message.is_a?(String) ? detail_message : "An unknown error occurred, please check the logs for details."
+      )
+
+      # Send an empty submission so the snapshot service has a record that the job id has been completed.
       empty_submission = empty_submission(
         branch,
         T.must(directory_source),
@@ -237,6 +273,14 @@ module Dependabot
         warn_title: "dependency graph incomplete",
         warn_description: "The dependency graph may be incomplete. #{error_message}"
       )
+
+      service.record_workflow_result(
+        directory: T.must(source.directory),
+        status: GithubApi::DependencySubmission::SnapshotStatus::DEGRADED.serialize,
+        details: <<~MSG
+          The dependency graph may be incomplete: #{error_message}
+        MSG
+      )
     end
 
     sig { params(error: T.nilable(StandardError), source: Dependabot::Source).void }
@@ -263,6 +307,21 @@ module Dependabot
           branch.strip.sub("origin/", "refs/heads/")
         end
       end
+    end
+
+    sig do
+      params(
+        directory: String,
+        status: GithubApi::DependencySubmission::SnapshotStatus,
+        details: String
+      ).void
+    end
+    def record_workflow_result(directory, status, details)
+      service.record_workflow_result(
+        directory: directory,
+        status: status.serialize,
+        details: details
+      )
     end
   end
 end

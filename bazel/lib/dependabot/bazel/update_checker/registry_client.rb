@@ -26,7 +26,7 @@ module Dependabot
 
         sig { params(module_name: String).returns(T::Array[String]) }
         def all_module_versions(module_name)
-          contents = T.unsafe(github_client).contents(GITHUB_REPO, path: "modules/#{module_name}")
+          contents = github_client.contents(GITHUB_REPO, path: "modules/#{module_name}")
           return [] unless contents.is_a?(Array)
 
           versions = contents.filter_map do |item|
@@ -66,7 +66,7 @@ module Dependabot
           file_path = "modules/#{module_name}/#{version}/source.json"
 
           begin
-            content = T.unsafe(github_client).contents(GITHUB_REPO, path: file_path)
+            content = T.unsafe(github_client.contents(GITHUB_REPO, path: file_path))
             return nil unless content
 
             decoded_content = Base64.decode64(content.content)
@@ -82,7 +82,7 @@ module Dependabot
           file_path = "modules/#{module_name}/#{version}/MODULE.bazel"
 
           begin
-            content = T.unsafe(github_client).contents(GITHUB_REPO, path: file_path)
+            content = T.unsafe(github_client.contents(GITHUB_REPO, path: file_path))
             return nil unless content
 
             Base64.decode64(content.content)
@@ -109,7 +109,7 @@ module Dependabot
 
           return nil unless commits&.any?
 
-          commits.first.commit.committer.date
+          T.unsafe(commits).first.commit.committer.date
         end
 
         private

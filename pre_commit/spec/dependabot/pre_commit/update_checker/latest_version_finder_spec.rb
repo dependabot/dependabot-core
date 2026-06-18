@@ -242,6 +242,75 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
         expect(result.to_s).to eq("4.4.0")
       end
 
+      it "returns nil from latest_version_tag when all versions are in cooldown" do
+        recent_date = Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z")
+
+        latest_tag = {
+          tag: "v6.0.0",
+          version: Dependabot::PreCommit::Version.new("6.0.0"),
+          commit_sha: "latest_sha"
+        }
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
+          .and_return([latest_tag])
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
+                        ref: "v4.4.0", branch: nil })
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git show --no-patch/, hash_including(fingerprint: anything))
+          .and_return(recent_date)
+
+        # Trigger cooldown evaluation
+        finder.latest_release_version
+
+        # latest_version_tag must be nil so that sha1_version_up_to_date?
+        # does not resolve a commit SHA for the cooldown-blocked version
+        expect(finder.latest_version_tag).to be_nil
+      end
+
+      it "returns the cooldown-selected tag from latest_version_tag" do
+        recent_date = Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z")
+        old_date = (Time.now - (30 * 24 * 60 * 60)).utc.strftime("%Y-%m-%d %H:%M:%S %z")
+
+        latest_tag = {
+          tag: "v6.0.0",
+          version: Dependabot::PreCommit::Version.new("6.0.0"),
+          commit_sha: "latest_sha"
+        }
+        older_tag = {
+          tag: "v5.0.0",
+          version: Dependabot::PreCommit::Version.new("5.0.0"),
+          commit_sha: "older_sha"
+        }
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
+          .and_return([latest_tag, older_tag])
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
+                        ref: "v4.4.0", branch: nil })
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git show --no-patch/, hash_including(fingerprint: anything))
+          .and_return(recent_date, old_date)
+
+        # Trigger cooldown evaluation
+        finder.latest_release_version
+
+        # latest_version_tag should return the cooldown-selected tag (v5.0.0)
+        expect(finder.latest_version_tag).to eq(older_tag)
+      end
+
       context "with v-prefixed version in dependency" do
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -300,6 +369,124 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       it "returns latest version without filtering" do
         expect(finder.latest_release_version).to be_a(Dependabot::PreCommit::Version)
         expect(finder.latest_release_version.to_s).to eq("6.0.0")
+      end
+    end
+
+    context "when pinned to a SHA with frozen comment and cooldown enabled" do
+      let(:reference) { "cef0300fd0fc4d2a87a85fa2093c6b283ea36f4b" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "https://github.com/#{dependency_name}",
+          version: "cef0300fd0fc4d2a87a85fa2093c6b283ea36f4b",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".pre-commit-config.yaml",
+            source: dependency_source,
+            metadata: { comment: "# frozen: v5.0.0" }
+          }],
+          package_manager: "pre_commit"
+        )
+      end
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7
+        )
+      end
+
+      before do
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tag_for_pinned_sha).and_return(nil)
+      end
+
+      it "uses the frozen comment version for cooldown comparison" do
+        old_date = (Time.now - (30 * 24 * 60 * 60)).utc.strftime("%Y-%m-%d %H:%M:%S %z")
+
+        v6_tag = {
+          tag: "v6.0.0",
+          version: Dependabot::PreCommit::Version.new("6.0.0"),
+          commit_sha: "3e8a8703264a2f4a69428a0aa4dcb512790b2c8c"
+        }
+        v5_tag = {
+          tag: "v5.0.0",
+          version: Dependabot::PreCommit::Version.new("5.0.0"),
+          commit_sha: "cef0300fd0fc4d2a87a85fa2093c6b283ea36f4b"
+        }
+        v4_tag = {
+          tag: "v4.4.0",
+          version: Dependabot::PreCommit::Version.new("4.4.0"),
+          commit_sha: "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e"
+        }
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions)
+          .and_return([v6_tag, v5_tag, v4_tag])
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
+          .and_raise("unexpected precision filtering")
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
+                        ref: reference, branch: nil })
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git show --no-patch/, hash_including(fingerprint: anything))
+          .and_return(old_date)
+
+        result = finder.latest_release_version
+        # Should return v6.0.0 (not nil) because the frozen comment tells us
+        # current version is v5.0.0, so only v6.0.0 is a candidate,
+        # and it's outside the cooldown window
+        expect(result).to be_a(Dependabot::PreCommit::Version)
+        expect(result.to_s).to eq("6.0.0")
+      end
+
+      it "does not falsely flag all versions as in cooldown" do
+        recent_date = Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z")
+        old_date = (Time.now - (30 * 24 * 60 * 60)).utc.strftime("%Y-%m-%d %H:%M:%S %z")
+
+        v6_tag = {
+          tag: "v6.0.0",
+          version: Dependabot::PreCommit::Version.new("6.0.0"),
+          commit_sha: "3e8a8703264a2f4a69428a0aa4dcb512790b2c8c"
+        }
+        v5_1_tag = {
+          tag: "v5.1.0",
+          version: Dependabot::PreCommit::Version.new("5.1.0"),
+          commit_sha: "abc123"
+        }
+        v5_tag = {
+          tag: "v5.0.0",
+          version: Dependabot::PreCommit::Version.new("5.0.0"),
+          commit_sha: "cef0300fd0fc4d2a87a85fa2093c6b283ea36f4b"
+        }
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions)
+          .and_return([v6_tag, v5_1_tag, v5_tag])
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
+          .and_raise("unexpected precision filtering")
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
+                        ref: reference, branch: nil })
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        # v6.0.0 is in cooldown, but v5.1.0 is not
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git show --no-patch/, hash_including(fingerprint: anything))
+          .and_return(recent_date, old_date)
+
+        result = finder.latest_release_version
+        # Should fall back to v5.1.0 (> v5.0.0 and outside cooldown)
+        expect(result).to be_a(Dependabot::PreCommit::Version)
+        expect(result.to_s).to eq("5.1.0")
       end
     end
   end

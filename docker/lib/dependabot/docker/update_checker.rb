@@ -130,9 +130,9 @@ module Dependabot
         dependency.version
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        dependency.requirements.map do |req|
+        updated = dependency.requirements.map do |req|
           updated_source = req.fetch(:source).dup
 
           tag = req[:source][:tag]
@@ -148,6 +148,7 @@ module Dependabot
 
           req.merge(source: updated_source)
         end
+        wrap_requirements(updated)
       end
 
       private

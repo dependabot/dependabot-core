@@ -76,6 +76,20 @@ RSpec.describe Dependabot::Job do
   let(:repo_private) { false }
   let(:cooldown) { nil }
 
+  describe "when wire-format collections contain non-hash entries" do
+    let(:attributes) do
+      super().merge(
+        dependency_groups: [nil, { "name" => "group-a", "rules" => { "patterns" => ["*"] } }],
+        existing_group_pull_requests: ["not-a-hash", { "dependency-group-name" => "group-a" }]
+      )
+    end
+
+    it "ignores the non-hash entries instead of raising" do
+      expect(job.dependency_groups.map(&:name)).to eq(["group-a"])
+      expect(job.existing_group_pull_requests.map(&:dependency_group_name)).to eq(["group-a"])
+    end
+  end
+
   describe "::new_update_job" do
     let(:job_json) { fixture("jobs/job_with_credentials.json") }
 
@@ -1584,6 +1598,46 @@ RSpec.describe Dependabot::Job do
       it "does not log blocked versions" do
         expect(Dependabot.logger).not_to receive(:info).with("Blocked versions (by GitHub Security):")
         job.log_ignore_conditions_for(dependency)
+      end
+    end
+  end
+
+  describe "#blocked_versions_for?" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "event-stream",
+        package_manager: "bundler",
+        version: "3.3.5",
+        requirements: [{ file: "Gemfile", requirement: "~> 3.3", groups: [], source: nil }]
+      )
+    end
+
+    context "when a non-empty blocked version matches the dependency" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "returns true" do
+        expect(job.blocked_versions_for?(dependency)).to be(true)
+      end
+    end
+
+    context "when no usable blocked version matches the dependency" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version-requirement" => " ", "reason" => "empty" },
+            { "dependency-name" => "other-package", "version-requirement" => "= 1.0.0", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "returns false" do
+        expect(job.blocked_versions_for?(dependency)).to be(false)
       end
     end
   end

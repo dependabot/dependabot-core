@@ -296,11 +296,13 @@ module Dependabot
             ErrorAttributes::MESSAGE => error.message,
             ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
             ErrorAttributes::FINGERPRINT =>
-                    (T.unsafe(error).sentry_context[:fingerprint] if error.respond_to?(:sentry_context)),
+                    (if error.respond_to?(:sentry_context)
+                       T.cast(error, Dependabot::HasSentryContext).sentry_context[:fingerprint]
+                     end),
             ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
             ErrorAttributes::JOB_ID => job.id,
             ErrorAttributes::DEPENDENCIES => job.dependencies,
-            ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
+            ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups.map(&:to_h)
           }.compact,
           T::Hash[Symbol, T.untyped]
         )

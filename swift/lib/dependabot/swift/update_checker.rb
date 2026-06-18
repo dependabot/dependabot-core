@@ -50,18 +50,20 @@ module Dependabot
         )
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        return updated_xcode_requirements if xcode_spm_mode?
+        return wrap_requirements(updated_xcode_requirements) if xcode_spm_mode?
 
         # If no target version is available, return old requirements unchanged
         target = preferred_resolvable_version
-        return old_requirements unless target
+        return wrap_requirements(old_requirements) unless target
 
-        RequirementsUpdater.new(
-          requirements: old_requirements,
-          target_version: target
-        ).updated_requirements
+        wrap_requirements(
+          RequirementsUpdater.new(
+            requirements: old_requirements,
+            target_version: target
+          ).updated_requirements
+        )
       end
 
       private

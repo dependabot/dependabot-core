@@ -917,4 +917,34 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       end
     end
   end
+
+  describe "::yarn_berry_supports_minimal_age_gate?" do
+    context "when Yarn version is >= 4.10.0" do
+      it "logs version and support decision, returns true" do
+        allow(described_class).to receive(:run_single_yarn_command).with("--version").and_return("4.10.0")
+        expect(Dependabot.logger).to receive(:info)
+          .with(a_string_including("Yarn 4.10.0").and(including("bypass the release-age gate for security updates")))
+        expect(described_class.yarn_berry_supports_minimal_age_gate?).to be(true)
+      end
+    end
+
+    context "when Yarn version is < 4.10.0" do
+      it "logs version and no-support decision, returns false" do
+        allow(described_class).to receive(:run_single_yarn_command).with("--version").and_return("4.9.2")
+        expect(Dependabot.logger).to receive(:info)
+          .with(a_string_including("Yarn 4.9.2").and(including("does not support npmMinimalAgeGate")))
+        expect(described_class.yarn_berry_supports_minimal_age_gate?).to be(false)
+      end
+    end
+
+    context "when the version command raises an error" do
+      it "logs a warning and returns false" do
+        allow(described_class).to receive(:run_single_yarn_command)
+          .with("--version")
+          .and_raise(StandardError, "command failed")
+        expect(Dependabot.logger).to receive(:warn).with(a_string_including("command failed"))
+        expect(described_class.yarn_berry_supports_minimal_age_gate?).to be(false)
+      end
+    end
+  end
 end

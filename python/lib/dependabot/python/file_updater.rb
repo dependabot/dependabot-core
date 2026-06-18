@@ -93,7 +93,8 @@ module Dependabot
         PoetryFileUpdater.new(
           dependencies: dependencies,
           dependency_files: dependency_files,
-          credentials: credentials
+          credentials: credentials,
+          cooldown: options[:update_cooldown]
         ).updated_dependency_files
       end
 

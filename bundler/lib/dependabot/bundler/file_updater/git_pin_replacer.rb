@@ -52,7 +52,7 @@ module Dependabot
             @new_pin = T.let(new_pin, String)
           end
 
-          sig { params(node: Parser::AST::Node).returns(T.untyped) }
+          sig { params(node: Parser::AST::Node).void }
           def on_send(node)
             return unless declares_targeted_gem?(node)
             return unless node.children.last.type == :hash

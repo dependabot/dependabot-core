@@ -539,7 +539,7 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def pip_compile_files
-        @pip_compile_files ||= T.let(dependency_files.select { |f| f.name.end_with?(".in") }, T.untyped)
+        @pip_compile_files ||= T.let(dependency_files.select { |f| f.name.end_with?(".in") }, T.nilable(T::Array[Dependabot::DependencyFile]))
       end
 
       sig { returns(Dependabot::Python::PipCompileFileMatcher) }

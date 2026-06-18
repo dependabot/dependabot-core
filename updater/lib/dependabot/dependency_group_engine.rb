@@ -36,9 +36,9 @@ module Dependabot
 
       groups = job.dependency_groups.map do |group|
         Dependabot::DependencyGroup.new(
-          name: group["name"],
-          rules: group["rules"],
-          applies_to: group["applies-to"]
+          name: T.must(group.name),
+          rules: group.rules || {},
+          applies_to: group.applies_to
         )
       end
 
@@ -65,14 +65,14 @@ module Dependabot
       return unless job.dependency_groups.any?
 
       unsupported_groups = job.dependency_groups.select do |group|
-        rules = group["rules"] || {}
+        rules = group.rules || {}
         rules.key?("dependency-type") &&
           !PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE.include?(job.package_manager)
       end
 
       return unless unsupported_groups.any?
 
-      group_names = unsupported_groups.map { |g| g["name"] }.join(", ")
+      group_names = unsupported_groups.map(&:name).join(", ")
       Dependabot.logger.warn <<~WARN
         The 'dependency-type' option is not supported for the '#{job.package_manager}' package manager.
         It is only supported for: #{PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE.join(', ')}.
