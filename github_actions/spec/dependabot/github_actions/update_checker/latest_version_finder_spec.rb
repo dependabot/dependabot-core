@@ -559,10 +559,11 @@ RSpec.describe namespace::LatestVersionFinder do
           .to receive(:dependency_source_details)
           .and_return({ type: "git", url: "https://github.com/actions/setup-node",
                         ref: "v1", branch: nil })
-        allow(finder).to receive(:latest_version_tag)
-          .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
-                        commit_sha: "abc123" })
-        allow(finder).to receive(:commit_ref).and_return("abc123")
+        allow(finder).to receive_messages(
+          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                                commit_sha: "abc123" },
+          commit_ref: "abc123"
+        )
         allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
         allow(Dir).to receive(:chdir).and_yield
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
@@ -584,10 +585,11 @@ RSpec.describe namespace::LatestVersionFinder do
           .to receive(:dependency_source_details)
           .and_return({ type: "git", url: "https://github.com/actions/setup-node",
                         ref: "v1", branch: nil })
-        allow(finder).to receive(:latest_version_tag)
-          .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
-                        commit_sha: "abc123" })
-        allow(finder).to receive(:commit_ref).and_return("abc123")
+        allow(finder).to receive_messages(
+          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                                commit_sha: "abc123" },
+          commit_ref: "abc123"
+        )
         allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
         allow(Dir).to receive(:chdir).and_yield
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
@@ -614,10 +616,11 @@ RSpec.describe namespace::LatestVersionFinder do
           .to receive(:dependency_source_details)
           .and_return({ type: "git", url: "https://github.com/actions/setup-node",
                         ref: "v1", branch: nil })
-        allow(finder).to receive(:latest_version_tag)
-          .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
-                        commit_sha: "abc123" })
-        allow(finder).to receive(:commit_ref).and_return("abc123")
+        allow(finder).to receive_messages(
+          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                                commit_sha: "abc123" },
+          commit_ref: "abc123"
+        )
         allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
         allow(Dir).to receive(:chdir).and_yield
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
@@ -645,8 +648,8 @@ RSpec.describe namespace::LatestVersionFinder do
           .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
                         commit_sha: "abc123" })
 
-        mock_release = double("release", tag_name: "v1.0.0", published_at: published_at)
-        mock_client = double("client", releases: [mock_release])
+        mock_release = instance_double(Sawyer::Resource, tag_name: "v1.0.0", published_at: published_at)
+        mock_client = instance_double(Octokit::Client, releases: [mock_release])
         allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
 
         # Should NOT need to clone repo
@@ -664,13 +667,14 @@ RSpec.describe namespace::LatestVersionFinder do
           .to receive(:dependency_source_details)
           .and_return({ type: "git", url: "https://github.com/actions/setup-node",
                         ref: "v1", branch: nil })
-        allow(finder).to receive(:latest_version_tag)
-          .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
-                        commit_sha: "abc123" })
-        allow(finder).to receive(:commit_ref).and_return("abc123")
+        allow(finder).to receive_messages(
+          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                                commit_sha: "abc123" },
+          commit_ref: "abc123"
+        )
 
         # No release exists
-        mock_client = double("client", releases: [])
+        mock_client = instance_double(Octokit::Client, releases: [])
         allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
 
         # Falls back to git

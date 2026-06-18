@@ -255,36 +255,7 @@ module Dependabot
               end
 
               # Fallback to git-based date detection
-              url = @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
-              source = T.must(Source.from_url(url))
-
-              SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
-                repo_contents_path = File.join(temp_dir, File.basename(source.repo))
-
-                SharedHelpers.run_shell_command("git clone --bare --no-recurse-submodules #{url} #{repo_contents_path}")
-                Dir.chdir(repo_contents_path) do
-                  date = if tag_name
-                           # Prefer the tag creation date (tagger date for annotated tags,
-                           # commit date for lightweight tags)
-                           tag_date = SharedHelpers.run_shell_command(
-                             "git for-each-ref --format=\"%(creatordate:iso)\" " \
-                             "\"refs/tags/#{tag_name}\"",
-                             fingerprint: "git for-each-ref --format=\"%(creatordate:iso)\" \"refs/tags/<tag_name>\""
-                           ).strip
-                           tag_date.empty? ? nil : tag_date
-                         end
-
-                  # Fallback to commit date if tag lookup failed
-                  date ||= SharedHelpers.run_shell_command(
-                    "git show --no-patch --format=\"%cd\" " \
-                    "--date=iso #{commit_ref}",
-                    fingerprint: "git show --no-patch --format=\"%cd\" --date=iso <commit_ref>"
-                  ).strip
-
-                  Dependabot.logger.info("Found release date : #{Time.parse(date)}")
-                  return date
-                end
-              end
+              fetch_date_from_git(tag_name)
             rescue StandardError => e
               msg = "Error (github actions) while checking release date for #{dependency.name}: #{e.message}"
               Dependabot.logger.warn(msg)
@@ -293,6 +264,37 @@ module Dependabot
             end,
             T.nilable(String)
           )
+        end
+
+        sig { params(tag_name: T.nilable(String)).returns(T.nilable(String)) }
+        def fetch_date_from_git(tag_name)
+          url = @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
+          source = T.must(Source.from_url(url))
+
+          SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
+            repo_contents_path = File.join(temp_dir, File.basename(source.repo))
+
+            SharedHelpers.run_shell_command("git clone --bare --no-recurse-submodules #{url} #{repo_contents_path}")
+            Dir.chdir(repo_contents_path) do
+              date = if tag_name
+                       tag_date = SharedHelpers.run_shell_command(
+                         "git for-each-ref --format=\"%(creatordate:iso)\" " \
+                         "\"refs/tags/#{tag_name}\"",
+                         fingerprint: "git for-each-ref --format=\"%(creatordate:iso)\" \"refs/tags/<tag_name>\""
+                       ).strip
+                       tag_date.empty? ? nil : tag_date
+                     end
+
+              date ||= SharedHelpers.run_shell_command(
+                "git show --no-patch --format=\"%cd\" " \
+                "--date=iso #{commit_ref}",
+                fingerprint: "git show --no-patch --format=\"%cd\" --date=iso <commit_ref>"
+              ).strip
+
+              Dependabot.logger.info("Found release date : #{Time.parse(date)}")
+              date
+            end
+          end
         end
 
         sig { params(release_date: T.nilable(String)).returns(T::Boolean) }

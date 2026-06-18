@@ -631,8 +631,8 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
                         ref: "v4.4.0", branch: nil })
 
         # Mock GitHub Release with recent published_at (in cooldown)
-        mock_release = double("release", tag_name: "v6.0.0", published_at: recent_published_at)
-        mock_client = double("client", releases: [mock_release])
+        mock_release = instance_double(Sawyer::Resource, tag_name: "v6.0.0", published_at: recent_published_at)
+        mock_client = instance_double(Octokit::Client, releases: [mock_release])
         allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
 
         # Should NOT clone the repo since we got the date from Octokit
@@ -661,7 +661,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
                         ref: "v4.4.0", branch: nil })
 
         # No release for this tag
-        mock_client = double("client", releases: [])
+        mock_client = instance_double(Octokit::Client, releases: [])
         allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
 
         # Falls back to git clone
