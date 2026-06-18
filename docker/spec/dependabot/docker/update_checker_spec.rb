@@ -2150,6 +2150,10 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
     before do
       Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+
+      # These tests exercise the created-timestamp/platform validation path with
+      # genuinely different image contents, so bypass the digest-content check.
+      allow(checker).to receive(:fetch_platform_digests).and_return({})
     end
 
     after { Dependabot::Experiments.reset! }
@@ -2515,25 +2519,108 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         end
       end
 
-      it "stops validating after MAX_PLATFORM_VALIDATION_ATTEMPTS and accepts the next candidate" do
-        # With 8 candidates above 1.24.0 and a cap of 5, the 6th candidate (1.25.2)
-        # is accepted without timestamp validation
-        expect(checker.latest_version).to eq("1.25.2")
+      it "stops validating after MAX_PLATFORM_VALIDATION_ATTEMPTS and falls back to the current version" do
+        # With 8 candidates above 1.24.0 and a cap of 5, candidates beyond the cap
+        # are skipped (not blindly accepted). The loop continues until it reaches
+        # version_tag itself (1.24.0), which returns no update.
+        # This prevents spurious updates when a rolling tag (e.g. 9.0) points to
+        # the same image as a specific patch tag (e.g. 9.0.11).
+        expect(checker.latest_version).to eq("1.24.0")
       end
 
       it "does not call fetch_manifest_platforms more than MAX_PLATFORM_VALIDATION_ATTEMPTS times for candidates" do
         checker.latest_version
 
         # The cap should prevent validation of candidates beyond the limit.
-        # 5 candidates validated (1.25.7..1.25.3) + 1 current tag fetch = at most 6 calls
-        # for unique tags, but the 6th candidate (1.25.2) is accepted without validation.
+        # 5 candidates validated (1.25.7..1.25.3); the rest are skipped without validation.
         failed_candidate_tags = %w(1.25.7 1.25.6 1.25.5 1.25.4 1.25.3)
         failed_candidate_tags.each do |tag|
           expect(checker).to have_received(:fetch_manifest_platforms).with(tag)
         end
         # Tags beyond the cap should NOT have been validated
+        expect(checker).not_to have_received(:fetch_manifest_platforms).with("1.25.2")
         expect(checker).not_to have_received(:fetch_manifest_platforms).with("1.25.1")
         expect(checker).not_to have_received(:fetch_manifest_platforms).with("1.25.0")
+      end
+    end
+  end
+
+  describe "digest-content check (same image contents)" do
+    let(:dependency_name) { "nginx" }
+    let(:repo_url) { "https://registry.hub.docker.com/v2/library/nginx/" }
+    let(:tags_fixture_name) { "multi_platform.json" }
+    let(:source) { { tag: version } }
+    let(:version) { "1.25.3" }
+
+    let(:platforms) do
+      [
+        { "os" => "linux", "architecture" => "amd64" },
+        { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+      ]
+    end
+
+    before do
+      Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+
+      allow(checker).to receive_messages(fetch_manifest_platforms: platforms, fetch_platform_digests: {})
+    end
+
+    after { Dependabot::Experiments.reset! }
+
+    context "when the candidate resolves to the same per-platform digests" do
+      before do
+        digests = {
+          "linux/amd64" => "sha256:aaaaaaaaaaaa",
+          "linux/arm64/v8" => "sha256:bbbbbbbbbbbb"
+        }
+        allow(checker).to receive(:fetch_platform_digests).with("1.25.3").and_return(digests)
+        allow(checker).to receive(:fetch_platform_digests).with("1.25.4").and_return(digests)
+      end
+
+      it "does not update and stays on the current version" do
+        # A rolling/candidate tag (1.25.4) that points to the exact same image
+        # contents as the current tag (1.25.3) must not trigger an update. This
+        # mirrors a rolling tag like 9.0 pointing at the same image as 9.0.11.
+        expect(checker.latest_version).to eq("1.25.3")
+      end
+
+      it "does not consult the created timestamps" do
+        expect(checker).not_to receive(:fetch_all_platform_timestamps)
+        checker.latest_version
+      end
+    end
+
+    context "when the candidate resolves to different per-platform digests" do
+      before do
+        allow(checker).to receive(:fetch_platform_digests).with("1.25.3").and_return(
+          {
+            "linux/amd64" => "sha256:aaaaaaaaaaaa",
+            "linux/arm64/v8" => "sha256:bbbbbbbbbbbb"
+          }
+        )
+        allow(checker).to receive(:fetch_platform_digests).with("1.25.4").and_return(
+          {
+            "linux/amd64" => "sha256:cccccccccccc",
+            "linux/arm64/v8" => "sha256:dddddddddddd"
+          }
+        )
+
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.3").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-01-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-01-01T10:30:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.4").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-03-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-03-01T10:30:00Z")
+          }
+        )
+      end
+
+      it "updates to the candidate tag" do
+        expect(checker.latest_version).to eq("1.25.4")
       end
     end
   end
