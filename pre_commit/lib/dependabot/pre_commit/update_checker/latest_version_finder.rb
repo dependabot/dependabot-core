@@ -176,8 +176,10 @@ module Dependabot
         end
 
         # Attempts to resolve cooldown using GitHub Release published_at dates.
-        # Returns the first version outside cooldown, nil if all are in cooldown,
-        # or nil if no releases are available (indicating fallback is needed).
+        # Returns:
+        # - A version outside cooldown (first eligible candidate)
+        # - current_version when ALL candidates have releases and all are in cooldown
+        # - nil when no releases exist or some candidates lack releases (triggers git fallback)
         sig do
           params(candidates: T::Array[T::Hash[Symbol, T.untyped]])
             .returns(T.nilable(Dependabot::Version))
@@ -243,6 +245,8 @@ module Dependabot
 
         # Iterates candidate tags inside a bare clone directory, returning the first
         # version whose release date falls outside the cooldown window.
+        # Prefers GitHub Release published_at when available for a candidate,
+        # falling back to tag creation date from the cloned repo.
         sig do
           params(candidates: T::Array[T::Hash[Symbol, T.untyped]])
             .returns(T.nilable(Dependabot::Version))
@@ -254,7 +258,8 @@ module Dependabot
             commit_sha = tag[:commit_sha]
             next unless commit_sha
 
-            release_date = tag_creation_date(normalize_tag_name(tag[:tag] || "v#{tag[:version]}"), commit_sha)
+            tag_name = normalize_tag_name(tag[:tag] || "v#{tag[:version]}")
+            release_date = resolve_candidate_date(tag_name, commit_sha)
 
             if release_in_cooldown_period?(release_date)
               filtered_count += 1
@@ -270,6 +275,19 @@ module Dependabot
             "no eligible version found"
           )
           nil
+        end
+
+        # Resolves the best available date for a candidate tag.
+        # Priority: GitHub Release published_at > tag creation date > commit date.
+        sig { params(tag_name: String, commit_sha: String).returns(Time) }
+        def resolve_candidate_date(tag_name, commit_sha)
+          releases = cached_github_releases
+          unless releases.empty?
+            release = releases.find { |r| r.tag_name == tag_name }
+            return release.published_at if release&.published_at
+          end
+
+          tag_creation_date(tag_name, commit_sha)
         end
 
         sig do
