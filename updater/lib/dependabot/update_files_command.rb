@@ -78,7 +78,7 @@ module Dependabot
 
           if Experiments.enabled?(:blocked_versions)
             blocked = service.fetch_blocked_versions(update_job.package_manager)
-            update_job.blocked_versions = blocked
+            update_job.blocked_versions = blocked if blocked.any?
           end
 
           update_job
