@@ -329,6 +329,22 @@ RSpec.describe namespace::LatestVersionFinder do
     let(:commit_two) { "b" * 40 }   # v3.0.0 HEAD after the move, 8 days old
     let(:reference) { commit_three }
     let(:dependency_version) { nil }
+    # Mirror what the file parser emits for a SHA pin: the declaration string
+    # references the pinned SHA, not the top-level "@master" default.
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: dependency_version,
+        requirements: [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          source: dependency_source,
+          metadata: { declaration_string: "#{dependency_name}@#{reference}" }
+        }],
+        package_manager: "github_actions"
+      )
+    end
     let(:head_commit_date) do
       (Time.now - (8 * 24 * 60 * 60)).utc.strftime("%Y-%m-%d %H:%M:%S %z")
     end

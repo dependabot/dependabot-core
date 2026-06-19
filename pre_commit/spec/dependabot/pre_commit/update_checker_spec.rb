@@ -247,7 +247,10 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
   #   - bare SHA pin         => commit-driven, follows the moving tag => commit-2
   #   - SHA + frozen comment => version-driven; the tag stays the same version
   #     (v3.0.0), so the version filter never offers the newer commit => stays on
-  #     commit-3 (regression introduced by #15346).
+  #     commit-3.
+  #
+  # These specs document the current behavior as-is; see the PR discussion for
+  # context on where this divergence may have originated.
   describe "moving tag (same version v3.0.0) SHA characterization" do
     let(:commit_three) { "c" * 40 } # pinned, 15 days old
     let(:commit_two) { "b" * 40 }   # v3.0.0 HEAD after the move, 8 days old
