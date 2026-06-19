@@ -97,6 +97,11 @@ module Dependabot
         "error-type": "path_dependencies_not_reachable",
         "error-detail": { dependencies: error.dependencies }
       }
+    when Dependabot::PrivateRegistryConfigNotFound
+      {
+        "error-type": "private_registry_config_not_found",
+        "error-detail": { source: error.source }
+      }
     when Dependabot::PrivateSourceAuthenticationFailure
       {
         "error-type": "private_source_authentication_failure",
@@ -696,6 +701,22 @@ module Dependabot
   #######################
   # Source level errors #
   #######################
+
+  class PrivateRegistryConfigNotFound < DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :source
+
+    sig { params(source: String).void }
+    def initialize(source)
+      @source = T.let(sanitize_source(source), String)
+      msg = "Private npm registries require either a .npmrc file in your repository, " \
+            "or explicit `scope`/`replaces-base` configuration in dependabot.yml. " \
+            "Registry: #{@source}"
+      super(msg)
+    end
+  end
 
   class PrivateSourceAuthenticationFailure < DependabotError
     extend T::Sig
