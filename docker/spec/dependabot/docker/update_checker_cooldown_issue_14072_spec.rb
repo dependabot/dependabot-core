@@ -23,24 +23,8 @@ require "dependabot/package/release_cooldown_options"
 # with the real FileParser (guarding the digest-extraction path the cooldown logic
 # relies on) and then asserts the UpdateChecker now respects the cooldown.
 RSpec.describe Dependabot::Docker::UpdateChecker do
-  # Verbatim content of future-architect/vuls /Dockerfile.
-  let(:dockerfile_body) do
-    <<~DOCKER
-      FROM golang:alpine@sha256:f85330846cde1e57ca9ec309382da3b8e6ae3ab943d2739500e08c86393a21b1 as builder
-
-      RUN apk add --no-cache git make gcc musl-dev
-
-      ENV REPOSITORY github.com/future-architect/vuls
-      COPY . $GOPATH/src/$REPOSITORY
-      RUN cd $GOPATH/src/$REPOSITORY && make install
-
-      FROM alpine:3.22@sha256:310c62b5e7ca5b08167e4384c68db0fd2905dd9c7493756d356e893909057601
-
-      COPY --from=builder /go/bin/vuls /usr/local/bin/
-
-      ENTRYPOINT ["vuls"]
-    DOCKER
-  end
+  # Verbatim content of future-architect/vuls /Dockerfile, stored as a fixture.
+  let(:dockerfile_body) { fixture("docker", "dockerfiles", "vuls_issue_14072") }
   let(:dockerfile) { Dependabot::DependencyFile.new(name: "Dockerfile", content: dockerfile_body) }
   let(:source) { Dependabot::Source.new(provider: "github", repo: "future-architect/vuls", directory: "/") }
   let(:parser) { Dependabot::Docker::FileParser.new(dependency_files: [dockerfile], source: source) }
