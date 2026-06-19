@@ -53,7 +53,6 @@ module Dependabot
             # Dependabot's proxy cannot satisfy the HEAD request Gradle issues to validate the
             # distribution URL, so we always skip validation. The user's original
             # `validateDistributionUrl` value is preserved by reconciliation.
-            # See https://github.com/dependabot/dependabot-core/issues/14036
             args += %w(--no-validate-url)
 
             args += steered_args
@@ -93,7 +92,9 @@ module Dependabot
           sig { returns(T.nilable(String)) }
           def distribution_type
             url = T.let(T.must(@requirements[0])[:source], T::Hash[Symbol, String])[:url]
-            url&.match(/\b(bin|all)\b/)&.captures&.first
+            # Anchor to the `-bin.zip` / `-all.zip` filename suffix so a path segment such as a
+            # mirror host (e.g. https://binaries.example.com/...) can't false-match `bin`/`all`.
+            url&.match(/-(bin|all)\.zip/)&.captures&.first
           end
         end
       end

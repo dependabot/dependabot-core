@@ -38,6 +38,26 @@ RSpec.describe Dependabot::Gradle::FileUpdater::Wrapper::CommandBuilder do
     expect(args).to include("--distribution-type", "bin")
   end
 
+  context "with a mirror host that contains 'bin' in the domain" do
+    let(:requirements) do
+      [{
+        file: "gradle/wrapper/gradle-wrapper.properties",
+        requirement: "9.0.0",
+        groups: [],
+        source: {
+          type: "gradle-distribution",
+          url: "https://bin.example.com/dists/gradle-9.0.0-all.zip",
+          property: "distributionUrl"
+        }
+      }]
+    end
+
+    it "derives the type from the filename suffix, not the host" do
+      expect(args).to include("--distribution-type", "all")
+      expect(args).not_to include("bin")
+    end
+  end
+
   context "with a checksum requirement" do
     let(:requirements) do
       super() + [{

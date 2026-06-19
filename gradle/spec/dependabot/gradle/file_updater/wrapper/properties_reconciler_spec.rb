@@ -97,6 +97,31 @@ RSpec.describe Dependabot::Gradle::FileUpdater::Wrapper::PropertiesReconciler do
       end
     end
 
+    context "when the regenerated file introduces a managed key absent from the original" do
+      let(:original_content) do
+        <<~PROPS
+          # keep me
+          distributionUrl=https\\://services.gradle.org/distributions/gradle-8.14.2-bin.zip
+          networkTimeout=10000
+        PROPS
+      end
+      let(:regenerated_content) do
+        <<~PROPS
+          distributionUrl=https\\://services.gradle.org/distributions/gradle-9.0.0-bin.zip
+          distributionSha256Sum=newsum
+        PROPS
+      end
+
+      it "appends the new managed key while preserving original content and order" do
+        expect(reconciled).to include("distributionSha256Sum=newsum")
+        expect(reconciled).to include("# keep me")
+        expect(reconciled).to include("networkTimeout=10000")
+        # appended at the end, after the preserved original lines
+        expect(reconciled.index("distributionSha256Sum"))
+          .to be > reconciled.index("networkTimeout")
+      end
+    end
+
     context "when there is no original content" do
       let(:original_content) { nil }
       let(:regenerated_content) { "distributionUrl=foo\n" }
