@@ -710,6 +710,7 @@ RSpec.describe Dependabot::Job do
     end
 
     context "when cooldown is provided without default-days" do
+      let(:experiments) { { "enable_cooldown_default_days" => true } }
       let(:cooldown) do
         {
           "include" => ["included-package"]
@@ -732,7 +733,27 @@ RSpec.describe Dependabot::Job do
       end
     end
 
+    context "when cooldown is provided without default-days and the experiment is disabled" do
+      let(:cooldown) do
+        {
+          "include" => ["included-package"]
+        }
+      end
+
+      it "defaults default_days to 0 (no cooldown)" do
+        expect(job.cooldown).to be_a(Dependabot::Package::ReleaseCooldownOptions)
+        expect(job.cooldown.default_days).to eq(0)
+      end
+
+      it "keeps semver-specific days at 0" do
+        expect(job.cooldown.semver_major_days).to eq(0)
+        expect(job.cooldown.semver_minor_days).to eq(0)
+        expect(job.cooldown.semver_patch_days).to eq(0)
+      end
+    end
+
     context "when cooldown is provided with default-days explicitly set to 0" do
+      let(:experiments) { { "enable_cooldown_default_days" => true } }
       let(:cooldown) do
         {
           "default-days" => 0
@@ -745,6 +766,7 @@ RSpec.describe Dependabot::Job do
     end
 
     context "when cooldown is provided with only semver-specific days" do
+      let(:experiments) { { "enable_cooldown_default_days" => true } }
       let(:cooldown) do
         {
           "semver-major-days" => 14
@@ -766,6 +788,7 @@ RSpec.describe Dependabot::Job do
     end
 
     context "when cooldown is an empty hash" do
+      let(:experiments) { { "enable_cooldown_default_days" => true } }
       let(:cooldown) { {} }
 
       it "defaults default_days to DEFAULT_COOLDOWN_DAYS" do

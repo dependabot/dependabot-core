@@ -731,13 +731,24 @@ module Dependabot
       return nil unless cooldown
 
       Dependabot::Package::ReleaseCooldownOptions.new(
-        default_days: cooldown["default-days"] || DEFAULT_COOLDOWN_DAYS,
+        default_days: cooldown["default-days"] || default_cooldown_days,
         semver_major_days: cooldown["semver-major-days"] || 0,
         semver_minor_days: cooldown["semver-minor-days"] || 0,
         semver_patch_days: cooldown["semver-patch-days"] || 0,
         include: cooldown["include"] || [],
         exclude: cooldown["exclude"] || []
       )
+    end
+
+    # The fallback applied when a cooldown block is present but `default-days`
+    # is not explicitly set. Behind the `enable_cooldown_default_days`
+    # experiment this defaults to DEFAULT_COOLDOWN_DAYS, otherwise it remains 0
+    # (no cooldown) to preserve the previous behaviour.
+    sig { returns(Integer) }
+    def default_cooldown_days
+      return DEFAULT_COOLDOWN_DAYS if experiments[:enable_cooldown_default_days]
+
+      0
     end
 
     sig { params(source_details: T::Hash[String, T.untyped]).returns([T.nilable(String), T.nilable(T::Array[String])]) }
