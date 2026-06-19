@@ -61,6 +61,15 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
     stub_request(:get, repo_url + "tags/list")
       .and_return(status: 200, body: registry_tags)
+
+    # Multi-arch no-op detection (digest_up_to_date?) fetches the manifest for a
+    # digest reference to compare per-platform digests. Default to a single-image
+    # manifest so the check fails open; specific tests override this as needed.
+    stub_request(:get, %r{/manifests/sha256:})
+      .and_return(
+        status: 200,
+        body: { "mediaType" => "application/vnd.docker.distribution.manifest.v2+json" }.to_json
+      )
   end
 
   it_behaves_like "an update checker"
@@ -1585,6 +1594,193 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
+    describe "respecting cooldown for digest-only updates" do
+      subject(:can_update) { checker.can_update?(requirements_to_unlock: :own) }
+
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 14)
+      end
+      let(:mock_client) { instance_double(DockerRegistry2::Registry) }
+      let(:blob_headers) { { last_modified: last_modified } }
+      let(:blob_response) { instance_double(RestClient::Response, headers: blob_headers) }
+
+      before do
+        allow(checker).to receive(:docker_registry_client).and_return(mock_client)
+        allow(mock_client).to receive_messages(
+          tags: { "tags" => registry_tag_names },
+          digest: "sha256:newdigest",
+          manifest_digest: "sha256:newdigest",
+          manifest: { "mediaType" => "application/vnd.docker.distribution.manifest.v2+json" }
+        )
+        allow(mock_client).to receive(:dohead).and_return(blob_response)
+        allow(Dependabot.logger).to receive(:info)
+        allow(Dependabot.logger).to receive(:warn)
+      end
+
+      # Reproduces https://github.com/dependabot/dependabot-core/issues/14072:
+      # a non-comparable tag (e.g. "alpine") pinned by digest never reaches the
+      # version-tag cooldown, so a freshly-pushed digest used to slip through.
+      context "with a non-comparable tag pinned by digest" do
+        let(:dependency_name) { "golang" }
+        let(:version) { "alpine" }
+        let(:source) { { tag: "alpine", digest: "old_digest" } }
+        let(:registry_tag_names) { %w(alpine latest) }
+
+        context "when the new digest is newer than the cooldown window" do
+          let(:last_modified) { (Time.now - (2 * 86_400)).httpdate }
+
+          it { is_expected.to be false }
+        end
+
+        context "when the new digest is older than the cooldown window" do
+          let(:last_modified) { (Time.now - (30 * 86_400)).httpdate }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the registry omits the Last-Modified header" do
+          let(:blob_headers) { {} }
+          let(:last_modified) { nil }
+
+          it "fails open and proposes the update" do
+            expect(can_update).to be true
+          end
+        end
+      end
+
+      # Reproduces the comment case: ruby:4.0.2-alpine3.23@sha256:… where the
+      # version tag is unchanged and only the digest moved.
+      context "with a comparable tag whose digest moved" do
+        let(:dependency_name) { "ruby" }
+        let(:version) { "4.0.2-alpine3.23" }
+        let(:source) { { tag: "4.0.2-alpine3.23", digest: "old_digest" } }
+        let(:registry_tag_names) { %w(4.0.2-alpine3.23 latest) }
+
+        context "when the new digest is newer than the cooldown window" do
+          let(:last_modified) { (Time.now - (1 * 86_400)).httpdate }
+
+          it { is_expected.to be false }
+        end
+
+        context "when the new digest is older than the cooldown window" do
+          let(:last_modified) { (Time.now - (30 * 86_400)).httpdate }
+
+          it { is_expected.to be true }
+        end
+      end
+    end
+
+    # Reproduces the multi-arch observation in
+    # https://github.com/dependabot/dependabot-core/issues/14072: the OCI index
+    # digest changes when only an unconsumed platform (e.g. riscv64) is rebuilt.
+    describe "multi-arch no-op digest detection" do
+      subject(:can_update) { checker.can_update?(requirements_to_unlock: :own) }
+
+      let(:mock_client) { instance_double(DockerRegistry2::Registry) }
+      let(:dependency_name) { "ruby" }
+      let(:version) { "alpine" }
+
+      before do
+        allow(checker).to receive(:docker_registry_client).and_return(mock_client)
+        allow(mock_client).to receive_messages(
+          tags: { "tags" => %w(alpine latest) },
+          digest: "sha256:newindex",
+          manifest_digest: "sha256:newindex"
+        )
+        allow(Dependabot.logger).to receive(:info)
+        allow(Dependabot.logger).to receive(:warn)
+
+        allow(checker).to receive(:platform_digests)
+          .with("sha256:oldindex").and_return(current_platform_digests)
+        allow(checker).to receive(:platform_digests)
+          .with("sha256:newindex").and_return(candidate_platform_digests)
+      end
+
+      context "without a pinned --platform" do
+        let(:source) { { tag: "alpine", digest: "oldindex" } }
+
+        context "when only an unconsumed platform changed (riscv64)" do
+          let(:current_platform_digests) do
+            { "linux/amd64" => "sha256:a", "linux/arm64/v8" => "sha256:b", "linux/riscv64" => "sha256:r1" }
+          end
+          let(:candidate_platform_digests) do
+            { "linux/amd64" => "sha256:a", "linux/arm64/v8" => "sha256:b", "linux/riscv64" => "sha256:r2" }
+          end
+
+          it "still proposes the update (cannot prove a no-op without a pinned platform)" do
+            expect(can_update).to be true
+          end
+        end
+
+        context "when every platform digest is identical (index-only churn)" do
+          let(:current_platform_digests) do
+            { "linux/amd64" => "sha256:a", "linux/arm64/v8" => "sha256:b" }
+          end
+          let(:candidate_platform_digests) do
+            { "linux/amd64" => "sha256:a", "linux/arm64/v8" => "sha256:b" }
+          end
+
+          it "treats the digest as up-to-date (no update)" do
+            expect(can_update).to be false
+          end
+        end
+      end
+
+      context "with a pinned --platform" do
+        let(:source) { { tag: "alpine", digest: "oldindex", platform: "linux/amd64" } }
+
+        context "when the pinned platform digest is unchanged" do
+          let(:current_platform_digests) do
+            { "linux/amd64" => "sha256:a", "linux/riscv64" => "sha256:r1" }
+          end
+          let(:candidate_platform_digests) do
+            { "linux/amd64" => "sha256:a", "linux/riscv64" => "sha256:r2" }
+          end
+
+          it "treats the digest as up-to-date (no update)" do
+            expect(can_update).to be false
+          end
+        end
+
+        context "when the pinned platform digest changed" do
+          let(:current_platform_digests) do
+            { "linux/amd64" => "sha256:a1", "linux/riscv64" => "sha256:r1" }
+          end
+          let(:candidate_platform_digests) do
+            { "linux/amd64" => "sha256:a2", "linux/riscv64" => "sha256:r1" }
+          end
+
+          it "proposes the update" do
+            expect(can_update).to be true
+          end
+        end
+
+        context "when the pinned platform is absent from the index" do
+          let(:source) { { tag: "alpine", digest: "oldindex", platform: "linux/ppc64le" } }
+          let(:current_platform_digests) do
+            { "linux/amd64" => "sha256:a", "linux/riscv64" => "sha256:r1" }
+          end
+          let(:candidate_platform_digests) do
+            { "linux/amd64" => "sha256:a", "linux/riscv64" => "sha256:r2" }
+          end
+
+          it "fails open and proposes the update" do
+            expect(can_update).to be true
+          end
+        end
+      end
+
+      context "when the image is single-platform (no manifest list)" do
+        let(:source) { { tag: "alpine", digest: "oldindex" } }
+        let(:current_platform_digests) { nil }
+        let(:candidate_platform_digests) { nil }
+
+        it "fails open and proposes the update" do
+          expect(can_update).to be true
+        end
+      end
+    end
+
     context "when the dependency has a compound suffix with alpine version" do
       let(:dependency_name) { "golang" }
       let(:version) { "1.26.0-alpine3.23" }
@@ -1598,6 +1794,46 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it "updates to the latest version with the same exact suffix" do
         expect(checker.latest_version).to eq("1.27.0-alpine3.23")
+      end
+    end
+
+    # Regression guard for https://github.com/dependabot/dependabot-core/issues/14072:
+    # a single pinned "4.0.2-alpine3.23" must resolve to the same variant and not
+    # to a different one such as "4.0.2-slim-bookworm". (The metadata mis-report in
+    # that issue comes from multi-stage merging of same-name images, which is a
+    # separate concern from single-tag variant selection verified here.)
+    context "when a compound variant suffix could collide with another variant" do
+      let(:dependency_name) { "ruby" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/ruby/" }
+      let(:registry_tags) do
+        { "name" => "library/ruby", "tags" => tag_names }.to_json
+      end
+
+      before do
+        stub_request(:get, repo_url + "tags/list")
+          .and_return(status: 200, body: registry_tags)
+      end
+
+      context "when only the same version exists across variants" do
+        let(:version) { "4.0.2-alpine3.23" }
+        let(:tag_names) do
+          %w(4.0.2-alpine3.23 4.0.2-slim-bookworm 4.0.2-bookworm 4.0.2-slim)
+        end
+
+        it "stays on the pinned alpine variant" do
+          expect(checker.latest_version).to eq("4.0.2-alpine3.23")
+        end
+      end
+
+      context "when a newer patch exists in multiple variants" do
+        let(:version) { "4.0.2-alpine3.23" }
+        let(:tag_names) do
+          %w(4.0.2-alpine3.23 4.0.3-alpine3.23 4.0.3-slim-bookworm 4.0.3-bookworm)
+        end
+
+        it "updates to the newer alpine variant, not a different variant" do
+          expect(checker.latest_version).to eq("4.0.3-alpine3.23")
+        end
       end
     end
 
