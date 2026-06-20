@@ -14,6 +14,7 @@ module Dependabot
       require_relative "file_fetcher/module_path_extractor"
       require_relative "file_fetcher/directory_tree_fetcher"
       require_relative "file_fetcher/downloader_config_fetcher"
+      require_relative "file_fetcher/bazelrc_import_fetcher"
       require_relative "file_fetcher/include_extractor"
 
       WORKSPACE_FILES = T.let(%w(WORKSPACE WORKSPACE.bazel).freeze, T::Array[String])
@@ -40,6 +41,7 @@ module Dependabot
         fetched_files += config_files
         fetched_files += referenced_files_from_modules
         fetched_files += downloader_config_files
+        fetched_files += bazelrc_import_files
 
         return fetched_files if fetched_files.any?
 
@@ -240,6 +242,12 @@ module Dependabot
       def downloader_config_files
         config_fetcher = DownloaderConfigFetcher.new(fetcher: self)
         config_fetcher.fetch_downloader_config_files
+      end
+
+      sig { returns(T::Array[DependencyFile]) }
+      def bazelrc_import_files
+        import_fetcher = BazelrcImportFetcher.new(fetcher: self)
+        import_fetcher.fetch_bazelrc_imports
       end
     end
   end
