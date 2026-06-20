@@ -7,25 +7,36 @@ RUN apt-get update \
 
 ARG ERLANG_MAJOR_VERSION=27
 
-# This is using https://www.rabbitmq.com/docs/install-debian#apt-launchpad-erlang to install erlang. Previously, esl-erlang was used, but it does not
-# contain arm architecture packages. The base `apt` erlang version should not be used--it is too old.
+# Install Erlang/OTP from the CloudAMQP packagecloud mirror of Erlang Solutions.
+#
+# History:
+#   * Originally `esl-erlang` was used from packages.erlang-solutions.com, but
+#     that repo has no working Jammy support (Release file missing, no arm64),
+#     see https://github.com/esl/packages/issues/15.
+#   * We then switched to the RabbitMQ Launchpad PPA (rabbitmq-erlang-27).
+#     That PPA only publishes the arch-independent metapackages (erlang,
+#     erlang-nox, ...) for arm64; the actual binary packages such as
+#     erlang-base / erlang-crypto are amd64-only. On arm64 apt silently fell
+#     back to Ubuntu Jammy's default Erlang (OTP 24), which then failed to
+#     load Elixir's OTP-27-compiled BEAM files with:
+#       {undef,[{elixir,start_cli,[],[]}, ...]}
+#   * CloudAMQP maintains a packagecloud mirror of Erlang Solutions which
+#     does ship `esl-erlang` for both amd64 and arm64 on Jammy, so we use it.
+#
+# The base Ubuntu `apt` erlang version should not be used--it is too old.
 
-# primary RabbitMQ signing key
-RUN curl -1sLf "https://github.com/rabbitmq/signing-keys/releases/download/3.0/rabbitmq-release-signing-key.asc" | sudo gpg --dearmor | sudo tee /usr/share/keyrings/com.github.rabbitmq.signing.gpg > /dev/null
+# CloudAMQP packagecloud signing key
+RUN curl -1sLf "https://packagecloud.io/cloudamqp/erlang/gpgkey" | sudo gpg --dearmor | sudo tee /usr/share/keyrings/io.packagecloud.cloudamqp.erlang.gpg > /dev/null
 
-# Launchpad PPA signing key for apt
-RUN curl -1sLf "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xf77f1eda57ebb1cc" | sudo gpg --dearmor | sudo tee /usr/share/keyrings/net.launchpad.ppa.rabbitmq.erlang.gpg > /dev/null
+RUN echo "deb [signed-by=/usr/share/keyrings/io.packagecloud.cloudamqp.erlang.gpg] https://packagecloud.io/cloudamqp/erlang/ubuntu/ jammy main" > /etc/apt/sources.list.d/cloudamqp-erlang.list
 
-RUN echo "deb [signed-by=/usr/share/keyrings/net.launchpad.ppa.rabbitmq.erlang.gpg] https://ppa.launchpadcontent.net/rabbitmq/rabbitmq-erlang-${ERLANG_MAJOR_VERSION}/ubuntu jammy main" >> /etc/apt/sources.list
-RUN echo "deb-src [signed-by=/usr/share/keyrings/net.launchpad.ppa.rabbitmq.erlang.gpg] https://ppa.launchpadcontent.net/rabbitmq/rabbitmq-erlang-${ERLANG_MAJOR_VERSION}/ubuntu jammy main" >> /etc/apt/sources.list
-
-# The `erlang` package from rabbitmq includes large packages, like erlang-wx, that aren't needed for this.
+# `esl-erlang` is a self-contained Erlang/OTP package (it bundles all the
+# applications such as crypto/ssl/inets/etc. that we previously selected
+# individually). We pin it to the requested OTP major version via a wildcard
+# so this Dockerfile keeps tracking the latest patch release on the chosen
+# OTP line.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends erlang-base \
-  erlang-asn1 erlang-crypto erlang-eldap erlang-ftp erlang-inets \
-  erlang-mnesia erlang-os-mon erlang-parsetools erlang-public-key \
-  erlang-runtime-tools erlang-snmp erlang-ssh erlang-ssl \
-  erlang-syntax-tools erlang-tftp erlang-tools erlang-xmerl
+  && apt-get install -y --no-install-recommends "esl-erlang=1:${ERLANG_MAJOR_VERSION}.*"
 
 # Install Elixir
 # https://github.com/elixir-lang/elixir/releases
