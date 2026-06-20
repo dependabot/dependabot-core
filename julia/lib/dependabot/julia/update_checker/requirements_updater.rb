@@ -63,6 +63,8 @@ module Dependabot
         requirement.merge(requirement: new_requirement)
       end
 
+      EXACT_PIN_REGEX = /\A\s*=\s*\d+(?:\.\d+)*\s*\z/
+
       sig { params(requirement_string: String, target_version: Dependabot::Julia::Version).returns(String) }
       def updated_version_requirement(requirement_string, target_version)
         # Don't update range requirements (e.g., "0.34-0.35") - these are explicit manual constraints
@@ -74,6 +76,11 @@ module Dependabot
         # Check if any requirement is satisfied by the target version
         # Note: This uses the implicit caret semantics from the Requirement class
         return requirement_string if reqs.any? { |req| req.satisfied_by?(target_version) }
+
+        # An exact pin (e.g. "=1.2.3") expresses a hard constraint: only that one
+        # version is acceptable. Appending a looser spec would silently relax it.
+        # Bump the pin to the new target instead, so user intent is preserved.
+        return "=#{target_version}" if requirement_string.match?(EXACT_PIN_REGEX)
 
         # Otherwise, append a new requirement that includes the target version
         # Following CompatHelper.jl's approach: use major.minor for versions >= 1.0,
