@@ -1119,9 +1119,9 @@ module Dependabot
       # Returns true when the candidate tag and current tag reference the exact
       # same image contents. Only multi-arch (manifest list) images are compared
       # here, by checking that both tags expose the identical set of platforms
-      # with matching per-platform manifest digests. Single-platform images yield
-      # an empty digest map and are already handled by the precision/digest logic
-      # in selection.
+      # with matching per-platform manifest digests. For single-platform images this
+      # returns false (empty digest map), so this check is effectively a no-op and
+      # we fall back to the existing semver/precision selection logic.
       sig do
         params(
           candidate_tag: Dependabot::Docker::Tag,
@@ -1152,8 +1152,7 @@ module Dependabot
         platform_digests_cache[tag_name] = digests
         digests
       rescue *transient_docker_errors, DockerRegistry2::RegistryAuthenticationException,
-             RestClient::Forbidden, JSON::ParserError => e
-        Dependabot.logger.info(
+             RestClient::Forbidden, RestClient::TooManyRequests, JSON::ParserError => e
           "Failed to fetch platform digests for #{docker_repo_name}:#{tag_name}: #{e.message}"
         )
         platform_digests_cache[tag_name] = {}
