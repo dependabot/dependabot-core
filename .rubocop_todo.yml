@@ -9,16 +9,17 @@
 # Offense count: 76
 Lint/UselessConstantScoping:
   Exclude:
-    - 'bun/lib/dependabot/bun/file_updater/bun_lockfile_updater.rb'
-    - 'bundler/helpers/v2/lib/functions/file_parser.rb'
-    - 'bundler/lib/dependabot/bundler/file_updater/requirement_replacer.rb'
-    - 'common/lib/dependabot/config/file.rb'
-    - 'common/lib/dependabot/file_updaters/artifact_updater.rb'
-    - 'common/lib/dependabot/pull_request_updater/github.rb'
-    - 'docker/lib/dependabot/docker/update_checker.rb'
-    - 'npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/bun_lockfile_updater.rb'
-    - 'npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/npm_lockfile_updater.rb'
-    - 'npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater.rb'
+    - "bun/lib/dependabot/bun/file_updater/bun_lockfile_updater.rb"
+    - "bundler/helpers/v2/lib/functions/file_parser.rb"
+    - "bundler/helpers/v4/lib/functions/file_parser.rb"
+    - "bundler/lib/dependabot/bundler/file_updater/requirement_replacer.rb"
+    - "common/lib/dependabot/config/file.rb"
+    - "common/lib/dependabot/file_updaters/artifact_updater.rb"
+    - "common/lib/dependabot/pull_request_updater/github.rb"
+    - "docker/lib/dependabot/docker/update_checker.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/bun_lockfile_updater.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/npm_lockfile_updater.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater.rb"
 
 # Offense count: 12
 # Configuration parameters: Mode, AllowedMethods, AllowedPatterns, AllowBangMethods, WaywardPredicates.
@@ -26,34 +27,34 @@ Lint/UselessConstantScoping:
 # WaywardPredicates: nonzero?
 Naming/PredicateMethod:
   Exclude:
-    - 'bundler/lib/dependabot/bundler/update_checker/version_resolver.rb'
-    - 'common/lib/dependabot/dependency.rb'
-    - 'common/lib/dependabot/dependency_file.rb'
-    - 'common/lib/dependabot/git_metadata_fetcher.rb'
-    - 'common/lib/dependabot/pull_request_creator/pr_name_prefixer.rb'
-    - 'go_modules/lib/dependabot/go_modules/file_parser.rb'
-    - 'maven/lib/dependabot/maven/file_fetcher.rb'
-    - 'npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/yarn_lockfile_updater.rb'
-    - 'python/lib/dependabot/python/file_parser.rb'
-    - 'python/lib/dependabot/python/file_updater/requirement_replacer.rb'
-    - 'uv/lib/dependabot/uv/file_updater/requirement_replacer.rb'
+    - "bundler/lib/dependabot/bundler/update_checker/version_resolver.rb"
+    - "common/lib/dependabot/dependency.rb"
+    - "common/lib/dependabot/dependency_file.rb"
+    - "common/lib/dependabot/git_metadata_fetcher.rb"
+    - "common/lib/dependabot/pull_request_creator/pr_name_prefixer.rb"
+    - "go_modules/lib/dependabot/go_modules/file_parser.rb"
+    - "maven/lib/dependabot/maven/file_fetcher.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/yarn_lockfile_updater.rb"
+    - "python/lib/dependabot/python/file_parser.rb"
+    - "python/lib/dependabot/python/file_updater/requirement_replacer.rb"
+    - "uv/lib/dependabot/uv/file_updater/requirement_replacer.rb"
 
 # Offense count: 44
 RSpec/AnyInstance:
   Exclude:
-    - 'bun/spec/dependabot/bun/update_checker_spec.rb'
-    - 'bundler/spec/dependabot/bundler/update_checker_spec.rb'
-    - 'common/spec/dependabot/clients/codecommit_spec.rb'
-    - 'common/spec/dependabot/file_fetchers/base_spec.rb'
-    - 'common/spec/dependabot/git_commit_checker_spec.rb'
-    - 'common/spec/dependabot/pull_request_creator/message_builder_spec.rb'
-    - 'gradle/spec/dependabot/gradle/metadata_finder_spec.rb'
-    - 'maven/spec/dependabot/maven/metadata_finder_spec.rb'
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb'
-    - 'python/spec/dependabot/python/file_updater_spec.rb'
-    - 'go_modules/spec/dependabot/go_modules/file_updater_spec.rb'
-    - 'updater/spec/dependabot/dependency_change_builder_spec.rb'
-    - 'updater/spec/dependabot/file_fetcher_command_spec.rb'
+    - "bun/spec/dependabot/bun/update_checker_spec.rb"
+    - "bundler/spec/dependabot/bundler/update_checker_spec.rb"
+    - "common/spec/dependabot/clients/codecommit_spec.rb"
+    - "common/spec/dependabot/file_fetchers/base_spec.rb"
+    - "common/spec/dependabot/git_commit_checker_spec.rb"
+    - "common/spec/dependabot/pull_request_creator/message_builder_spec.rb"
+    - "gradle/spec/dependabot/gradle/metadata_finder_spec.rb"
+    - "maven/spec/dependabot/maven/metadata_finder_spec.rb"
+    - "npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb"
+    - "python/spec/dependabot/python/file_updater_spec.rb"
+    - "go_modules/spec/dependabot/go_modules/file_updater_spec.rb"
+    - "updater/spec/dependabot/dependency_change_builder_spec.rb"
+    - "updater/spec/dependabot/file_fetcher_command_spec.rb"
 
 # Offense count: 1642
 # Configuration parameters: CountAsOne.
@@ -64,39 +65,39 @@ RSpec/ExampleLength:
 # This cop supports unsafe autocorrection (--autocorrect-all).
 RSpec/IncludeExamples:
   Exclude:
-    - 'common/spec/dependabot/clients/azure_spec.rb'
+    - "common/spec/dependabot/clients/azure_spec.rb"
 
 # Offense count: 4
 # Configuration parameters: AssignmentOnly.
 RSpec/InstanceVariable:
   Exclude:
-    - 'go_modules/spec/dependabot/go_modules/file_updater_spec.rb'
+    - "go_modules/spec/dependabot/go_modules/file_updater_spec.rb"
 
 # Offense count: 22
 # This cop supports safe autocorrection (--autocorrect).
 RSpec/IteratedExpectation:
   Exclude:
-    - 'bundler/spec/dependabot/bundler/file_updater_spec.rb'
-    - 'cargo/spec/dependabot/cargo/file_updater_spec.rb'
-    - 'composer/spec/dependabot/composer/file_updater_spec.rb'
-    - 'docker/spec/dependabot/docker/file_updater_spec.rb'
-    - 'elm/spec/dependabot/elm/file_updater_spec.rb'
-    - 'git_submodules/spec/dependabot/git_submodules/file_updater_spec.rb'
-    - 'github_actions/spec/dependabot/github_actions/file_updater_spec.rb'
-    - 'go_modules/spec/dependabot/go_modules/file_updater_spec.rb'
-    - 'gradle/spec/dependabot/gradle/file_updater_spec.rb'
-    - 'hex/spec/dependabot/hex/file_updater_spec.rb'
-    - 'maven/spec/dependabot/maven/file_updater_spec.rb'
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/file_updater_spec.rb'
-    - 'python/spec/dependabot/python/file_updater/requirement_file_updater_spec.rb'
-    - 'python/spec/dependabot/python/file_updater_spec.rb'
+    - "bundler/spec/dependabot/bundler/file_updater_spec.rb"
+    - "cargo/spec/dependabot/cargo/file_updater_spec.rb"
+    - "composer/spec/dependabot/composer/file_updater_spec.rb"
+    - "docker/spec/dependabot/docker/file_updater_spec.rb"
+    - "elm/spec/dependabot/elm/file_updater_spec.rb"
+    - "git_submodules/spec/dependabot/git_submodules/file_updater_spec.rb"
+    - "github_actions/spec/dependabot/github_actions/file_updater_spec.rb"
+    - "go_modules/spec/dependabot/go_modules/file_updater_spec.rb"
+    - "gradle/spec/dependabot/gradle/file_updater_spec.rb"
+    - "hex/spec/dependabot/hex/file_updater_spec.rb"
+    - "maven/spec/dependabot/maven/file_updater_spec.rb"
+    - "npm_and_yarn/spec/dependabot/npm_and_yarn/file_updater_spec.rb"
+    - "python/spec/dependabot/python/file_updater/requirement_file_updater_spec.rb"
+    - "python/spec/dependabot/python/file_updater_spec.rb"
 
 # Offense count: 3
 RSpec/MessageChain:
   Exclude:
-    - 'updater/spec/dependabot/api_client_spec.rb'
-    - 'updater/spec/dependabot/sentry/exception_sanitizer_processor_spec.rb'
-    - 'updater/spec/dependabot/service_spec.rb'
+    - "updater/spec/dependabot/api_client_spec.rb"
+    - "updater/spec/dependabot/sentry/exception_sanitizer_processor_spec.rb"
+    - "updater/spec/dependabot/service_spec.rb"
 
 # Offense count: 628
 # Configuration parameters: EnforcedStyle.
@@ -107,7 +108,7 @@ RSpec/MessageSpies:
 # Offense count: 1
 RSpec/MissingExpectationTargetMethod:
   Exclude:
-    - 'go_modules/spec/dependabot/go_modules/update_checker/latest_version_finder_spec.rb'
+    - "go_modules/spec/dependabot/go_modules/update_checker/latest_version_finder_spec.rb"
 
 # Offense count: 2085
 RSpec/MultipleExpectations:
@@ -126,46 +127,46 @@ RSpec/NestedGroups:
 # Offense count: 15
 RSpec/OverwritingSetup:
   Exclude:
-    - 'bundler/spec/dependabot/bundler/update_checker_spec.rb'
-    - 'common/spec/dependabot/pull_request_creator/message_builder_spec.rb'
-    - 'docker/spec/dependabot/docker/file_updater_spec.rb'
-    - 'gradle/spec/dependabot/gradle/update_checker/version_finder_spec.rb'
-    - 'maven/spec/dependabot/maven/update_checker/version_finder_spec.rb'
-    - 'opentofu/spec/dependabot/opentofu/file_parser_spec.rb'
-    - 'python/spec/dependabot/python/update_checker/pip_version_resolver_spec.rb'
-    - 'python/spec/dependabot/python/update_checker_spec.rb'
-    - 'terraform/spec/dependabot/terraform/file_parser_spec.rb'
-    - 'updater/spec/dependabot/dependency_snapshot_spec.rb'
+    - "bundler/spec/dependabot/bundler/update_checker_spec.rb"
+    - "common/spec/dependabot/pull_request_creator/message_builder_spec.rb"
+    - "docker/spec/dependabot/docker/file_updater_spec.rb"
+    - "gradle/spec/dependabot/gradle/update_checker/version_finder_spec.rb"
+    - "maven/spec/dependabot/maven/update_checker/version_finder_spec.rb"
+    - "opentofu/spec/dependabot/opentofu/file_parser_spec.rb"
+    - "python/spec/dependabot/python/update_checker/pip_version_resolver_spec.rb"
+    - "python/spec/dependabot/python/update_checker_spec.rb"
+    - "terraform/spec/dependabot/terraform/file_parser_spec.rb"
+    - "updater/spec/dependabot/dependency_snapshot_spec.rb"
 
 # Offense count: 2
 RSpec/RepeatedExample:
   Exclude:
-    - 'terraform/spec/dependabot/terraform/registry_client_spec.rb'
-    - 'opentofu/spec/dependabot/opentofu/registry_client_spec.rb'
+    - "terraform/spec/dependabot/terraform/registry_client_spec.rb"
+    - "opentofu/spec/dependabot/opentofu/registry_client_spec.rb"
 
 # Offense count: 15
 Metrics/CyclomaticComplexity:
   Exclude:
-    - 'updater/lib/github_api/dependency_submission.rb'
+    - "updater/lib/github_api/dependency_submission.rb"
 
 # Offense count: 354/350
 Metrics/AbcSize:
   Exclude:
-    - 'opentofu/lib/dependabot/opentofu/file_parser.rb'
+    - "opentofu/lib/dependabot/opentofu/file_parser.rb"
 
 # Offense count: 354/350
 Metrics/ClassLength:
   Exclude:
-    - 'common/lib/dependabot/dependency.rb'
-    - 'opentofu/lib/dependabot/opentofu/file_parser.rb'
+    - "common/lib/dependabot/dependency.rb"
+    - "opentofu/lib/dependabot/opentofu/file_parser.rb"
 
 # Offense count: 8
 RSpec/RepeatedExampleGroupBody:
   Exclude:
-    - 'cargo/spec/dependabot/cargo/file_fetcher_spec.rb'
-    - 'composer/spec/dependabot/composer/update_checker/latest_version_finder_spec.rb'
-    - 'maven/spec/dependabot/maven_spec.rb'
-    - 'pub/spec/dependabot/pub/requirements_spec.rb'
+    - "cargo/spec/dependabot/cargo/file_fetcher_spec.rb"
+    - "composer/spec/dependabot/composer/update_checker/latest_version_finder_spec.rb"
+    - "maven/spec/dependabot/maven_spec.rb"
+    - "pub/spec/dependabot/pub/requirements_spec.rb"
 
 # Offense count: 106
 RSpec/RepeatedExampleGroupDescription:
@@ -175,69 +176,415 @@ RSpec/RepeatedExampleGroupDescription:
 # Configuration parameters: CustomTransform, IgnoreMethods, IgnoreMetadata.
 RSpec/SpecFilePathFormat:
   Exclude:
-    - 'bundler/helpers/v2/spec/ruby_version_spec.rb'
-    - 'bundler/spec/dependabot/bundler/helper_spec.rb'
-    - 'common/spec/dependabot/clients/codecommit_spec.rb'
-    - 'elm/spec/dependabot/elm/update_checker/elm_19_version_resolver_spec.rb'
+    - "bundler/helpers/v2/spec/ruby_version_spec.rb"
+    - "bundler/helpers/v4/spec/ruby_version_spec.rb"
+    - "bundler/spec/dependabot/bundler/helper_spec.rb"
+    - "common/spec/dependabot/clients/codecommit_spec.rb"
+    - "elm/spec/dependabot/elm/update_checker/elm_19_version_resolver_spec.rb"
 
 # Offense count: 62
 RSpec/StubbedMock:
   Exclude:
-    - 'bun/spec/dependabot/bun/update_checker_spec.rb'
-    - 'bundler/spec/dependabot/bundler/update_checker_spec.rb'
-    - 'common/spec/dependabot/pull_request_creator/branch_namer_spec.rb'
-    - 'common/spec/dependabot/pull_request_creator_spec.rb'
-    - 'common/spec/dependabot/pull_request_updater_spec.rb'
-    - 'go_modules/spec/dependabot/go_modules/file_updater_spec.rb'
-    - 'npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb'
-    - 'python/spec/dependabot/python/file_updater_spec.rb'
-    - 'python/spec/dependabot/python/update_checker_spec.rb'
-    - 'updater/spec/dependabot/update_files_command_spec.rb'
-    - 'updater/spec/dependabot/updater_spec.rb'
-    - 'uv/spec/dependabot/uv/update_checker_spec.rb'
+    - "bun/spec/dependabot/bun/update_checker_spec.rb"
+    - "bundler/spec/dependabot/bundler/update_checker_spec.rb"
+    - "common/spec/dependabot/pull_request_creator/branch_namer_spec.rb"
+    - "common/spec/dependabot/pull_request_creator_spec.rb"
+    - "common/spec/dependabot/pull_request_updater_spec.rb"
+    - "go_modules/spec/dependabot/go_modules/file_updater_spec.rb"
+    - "npm_and_yarn/spec/dependabot/npm_and_yarn/update_checker_spec.rb"
+    - "python/spec/dependabot/python/file_updater_spec.rb"
+    - "python/spec/dependabot/python/update_checker_spec.rb"
+    - "updater/spec/dependabot/update_files_command_spec.rb"
+    - "updater/spec/dependabot/updater_spec.rb"
+    - "uv/spec/dependabot/uv/update_checker_spec.rb"
 
 # Offense count: 12
 RSpec/SubjectStub:
   Exclude:
-    - 'common/spec/dependabot/metadata_finders/base/commits_finder_spec.rb'
-    - 'common/spec/dependabot/metadata_finders/base_spec.rb'
-    - 'common/spec/dependabot/pull_request_updater/azure_spec.rb'
-    - 'updater/spec/dependabot/environment_spec.rb'
+    - "common/spec/dependabot/metadata_finders/base/commits_finder_spec.rb"
+    - "common/spec/dependabot/metadata_finders/base_spec.rb"
+    - "common/spec/dependabot/pull_request_updater/azure_spec.rb"
+    - "updater/spec/dependabot/environment_spec.rb"
 
 # Offense count: 2
 RSpec/UnspecifiedException:
   Exclude:
-    - 'updater/spec/dependabot/job_spec.rb'
+    - "updater/spec/dependabot/job_spec.rb"
 
 # Offense count: 33
 # Configuration parameters: IgnoreNameless, IgnoreSymbolicNames.
 RSpec/VerifiedDoubles:
   Exclude:
-    - 'common/spec/dependabot/git_commit_checker_spec.rb'
-    - 'common/spec/dependabot/git_metadata_fetcher_spec.rb'
-    - 'common/spec/dependabot/metadata_finders/base/commits_finder_spec.rb'
-    - 'common/spec/dependabot/pull_request_creator/branch_namer_spec.rb'
-    - 'common/spec/dependabot/pull_request_creator/github_spec.rb'
-    - 'github_actions/spec/dependabot/github_actions/update_checker_spec.rb'
-    - 'go_modules/spec/dependabot/go_modules/file_updater/go_mod_updater_spec.rb'
-    - 'go_modules/spec/dependabot/go_modules/file_updater_spec.rb'
-    - 'python/spec/dependabot/python/file_updater_spec.rb'
-    - 'updater/spec/dependabot/file_fetcher_command_spec.rb'
-    - 'updater/spec/dependabot/sentry/sentry_context_processor_spec.rb'
-    - 'updater/spec/dependabot/update_files_command_spec.rb'
-
-# Offense count: 102
-# This cop supports unsafe autocorrection (--autocorrect-all).
-Sorbet/BlockMethodDefinition:
-  Enabled: false
+    - "common/spec/dependabot/git_commit_checker_spec.rb"
+    - "common/spec/dependabot/git_metadata_fetcher_spec.rb"
+    - "common/spec/dependabot/metadata_finders/base/commits_finder_spec.rb"
+    - "common/spec/dependabot/pull_request_creator/branch_namer_spec.rb"
+    - "common/spec/dependabot/pull_request_creator/github_spec.rb"
+    - "github_actions/spec/dependabot/github_actions/update_checker_spec.rb"
+    - "go_modules/spec/dependabot/go_modules/file_updater/go_mod_updater_spec.rb"
+    - "go_modules/spec/dependabot/go_modules/file_updater_spec.rb"
+    - "python/spec/dependabot/python/file_updater_spec.rb"
+    - "updater/spec/dependabot/file_fetcher_command_spec.rb"
+    - "updater/spec/dependabot/sentry/sentry_context_processor_spec.rb"
+    - "updater/spec/dependabot/update_files_command_spec.rb"
 
 # Offense count: 2
 # This cop supports unsafe autocorrection (--autocorrect-all).
 Style/HashSlice:
   Exclude:
-    - 'common/lib/dependabot/requirement.rb'
+    - "common/lib/dependabot/requirement.rb"
 
 # Offense count: 45
 # Configuration parameters: Max.
 Style/SafeNavigationChainLength:
   Enabled: false
+
+# Offense count: 1843
+Sorbet/ForbidTUntyped:
+  Exclude:
+    - "bazel/lib/dependabot/bazel/file_fetcher.rb"
+    - "bazel/lib/dependabot/bazel/file_parser/starlark_parser.rb"
+    - "bazel/lib/dependabot/bazel/update_checker/registry_client.rb"
+    - "bazel/lib/dependabot/bazel/update_checker/requirements_updater.rb"
+    - "bazel/lib/dependabot/bazel/version.rb"
+    - "bun/lib/dependabot/bun.rb"
+    - "bun/lib/dependabot/bun/dependency_files_filterer.rb"
+    - "bun/lib/dependabot/bun/file_fetcher.rb"
+    - "bun/lib/dependabot/bun/file_fetcher/path_dependency_builder.rb"
+    - "bun/lib/dependabot/bun/file_parser.rb"
+    - "bun/lib/dependabot/bun/file_parser/bun_lock.rb"
+    - "bun/lib/dependabot/bun/file_parser/lockfile_parser.rb"
+    - "bun/lib/dependabot/bun/file_updater.rb"
+    - "bun/lib/dependabot/bun/file_updater/package_json_updater.rb"
+    - "bun/lib/dependabot/bun/metadata_finder.rb"
+    - "bun/lib/dependabot/bun/package/package_details_fetcher.rb"
+    - "bun/lib/dependabot/bun/package/registry_finder.rb"
+    - "bun/lib/dependabot/bun/package_manager.rb"
+    - "bun/lib/dependabot/bun/registry_helper.rb"
+    - "bun/lib/dependabot/bun/registry_parser.rb"
+    - "bun/lib/dependabot/bun/update_checker.rb"
+    - "bun/lib/dependabot/bun/update_checker/latest_version_finder.rb"
+    - "bun/lib/dependabot/bun/update_checker/library_detector.rb"
+    - "bun/lib/dependabot/bun/update_checker/requirements_updater.rb"
+    - "bun/lib/dependabot/bun/update_checker/version_resolver.rb"
+    - "bun/lib/dependabot/bun/update_checker/vulnerability_auditor.rb"
+    - "bun/lib/dependabot/bun/version_selector.rb"
+    - "bundler/lib/dependabot/bundler/file_parser.rb"
+    - "bundler/lib/dependabot/bundler/file_updater/lockfile_updater.rb"
+    - "bundler/lib/dependabot/bundler/file_updater/requirement_replacer.rb"
+    - "bundler/lib/dependabot/bundler/file_updater/ruby_requirement_setter.rb"
+    - "bundler/lib/dependabot/bundler/metadata_finder.rb"
+    - "bundler/lib/dependabot/bundler/native_helpers.rb"
+    - "bundler/lib/dependabot/bundler/package/package_details_fetcher.rb"
+    - "bundler/lib/dependabot/bundler/update_checker.rb"
+    - "bundler/lib/dependabot/bundler/update_checker/conflicting_dependency_resolver.rb"
+    - "bundler/lib/dependabot/bundler/update_checker/force_updater.rb"
+    - "bundler/lib/dependabot/bundler/update_checker/latest_version_finder.rb"
+    - "bundler/lib/dependabot/bundler/update_checker/latest_version_finder/dependency_source.rb"
+    - "bundler/lib/dependabot/bundler/update_checker/requirements_updater.rb"
+    - "bundler/lib/dependabot/bundler/update_checker/shared_bundler_helpers.rb"
+    - "bundler/lib/dependabot/bundler/update_checker/version_resolver.rb"
+    - "cargo/lib/dependabot/cargo/file_fetcher.rb"
+    - "cargo/lib/dependabot/cargo/file_parser.rb"
+    - "cargo/lib/dependabot/cargo/file_updater/lockfile_updater.rb"
+    - "cargo/lib/dependabot/cargo/metadata_finder.rb"
+    - "cargo/lib/dependabot/cargo/package/package_details_fetcher.rb"
+    - "cargo/lib/dependabot/cargo/update_checker.rb"
+    - "cargo/lib/dependabot/cargo/update_checker/file_preparer.rb"
+    - "cargo/lib/dependabot/cargo/update_checker/requirements_updater.rb"
+    - "common/lib/dependabot/clients/azure.rb"
+    - "common/lib/dependabot/clients/bitbucket.rb"
+    - "common/lib/dependabot/clients/bitbucket_with_retries.rb"
+    - "common/lib/dependabot/clients/codecommit.rb"
+    - "common/lib/dependabot/clients/github_with_retries.rb"
+    - "common/lib/dependabot/clients/gitlab_with_retries.rb"
+    - "common/lib/dependabot/command_helpers.rb"
+    - "common/lib/dependabot/config/file.rb"
+    - "common/lib/dependabot/dependency.rb"
+    - "common/lib/dependabot/dependency_group.rb"
+    - "common/lib/dependabot/errors.rb"
+    - "common/lib/dependabot/experiments.rb"
+    - "common/lib/dependabot/file_fetchers/base.rb"
+    - "common/lib/dependabot/file_parsers/base.rb"
+    - "common/lib/dependabot/file_updaters/base.rb"
+    - "common/lib/dependabot/git_commit_checker.rb"
+    - "common/lib/dependabot/git_metadata_fetcher.rb"
+    - "common/lib/dependabot/metadata_finders/base/changelog_finder.rb"
+    - "common/lib/dependabot/metadata_finders/base/release_finder.rb"
+    - "common/lib/dependabot/package/package_latest_version_finder.rb"
+    - "common/lib/dependabot/package/package_release.rb"
+    - "common/lib/dependabot/pull_request_creator.rb"
+    - "common/lib/dependabot/pull_request_creator/github.rb"
+    - "common/lib/dependabot/pull_request_creator/message_builder.rb"
+    - "common/lib/dependabot/pull_request_creator/message_builder/metadata_presenter.rb"
+    - "common/lib/dependabot/pull_request_creator/message_builder/title_builder.rb"
+    - "common/lib/dependabot/pull_request_creator/pr_name_prefixer.rb"
+    - "common/lib/dependabot/pull_request_updater.rb"
+    - "common/lib/dependabot/pull_request_updater/azure.rb"
+    - "common/lib/dependabot/pull_request_updater/github.rb"
+    - "common/lib/dependabot/pull_request_updater/gitlab.rb"
+    - "common/lib/dependabot/registry_client.rb"
+    - "common/lib/dependabot/requirements_updater/base.rb"
+    - "common/lib/dependabot/shared_helpers.rb"
+    - "common/lib/dependabot/simple_instrumentor.rb"
+    - "common/lib/dependabot/update_checkers/base.rb"
+    - "composer/lib/dependabot/composer/file_fetcher.rb"
+    - "composer/lib/dependabot/composer/file_fetcher/path_dependency_builder.rb"
+    - "composer/lib/dependabot/composer/file_parser.rb"
+    - "composer/lib/dependabot/composer/file_updater/lockfile_updater.rb"
+    - "composer/lib/dependabot/composer/file_updater/manifest_updater.rb"
+    - "composer/lib/dependabot/composer/helpers.rb"
+    - "composer/lib/dependabot/composer/metadata_finder.rb"
+    - "composer/lib/dependabot/composer/package/package_details_fetcher.rb"
+    - "composer/lib/dependabot/composer/requirement.rb"
+    - "composer/lib/dependabot/composer/update_checker/version_resolver.rb"
+    - "conda/lib/dependabot/conda/conda_registry_client.rb"
+    - "conda/lib/dependabot/conda/file_fetcher.rb"
+    - "conda/lib/dependabot/conda/file_parser.rb"
+    - "conda/lib/dependabot/conda/file_updater.rb"
+    - "conda/lib/dependabot/conda/requirement.rb"
+    - "conda/lib/dependabot/conda/update_checker.rb"
+    - "conda/lib/dependabot/conda/update_checker/latest_version_finder.rb"
+    - "conda/lib/dependabot/conda/update_checker/requirements_updater.rb"
+    - "conda/lib/dependabot/conda/version.rb"
+    - "deno/lib/dependabot/deno/file_fetcher.rb"
+    - "deno/lib/dependabot/deno/file_parser.rb"
+    - "deno/lib/dependabot/deno/file_updater/manifest_updater.rb"
+    - "deno/lib/dependabot/deno/helpers.rb"
+    - "devcontainers/lib/dependabot/devcontainers/file_fetcher.rb"
+    - "devcontainers/lib/dependabot/devcontainers/file_parser/feature_dependency_parser.rb"
+    - "devcontainers/lib/dependabot/devcontainers/file_updater.rb"
+    - "devcontainers/lib/dependabot/devcontainers/update_checker/latest_version_finder.rb"
+    - "docker/lib/dependabot/docker/file_parser.rb"
+    - "docker/lib/dependabot/docker/metadata_finder.rb"
+    - "docker/lib/dependabot/docker/update_checker.rb"
+    - "docker/lib/dependabot/docker_compose/file_parser.rb"
+    - "docker/lib/dependabot/shared/shared_file_updater.rb"
+    - "dotnet_sdk/lib/dependabot/dotnet_sdk/package/package_details_fetcher.rb"
+    - "elm/lib/dependabot/elm/file_parser.rb"
+    - "elm/lib/dependabot/elm/update_checker/latest_version_finder.rb"
+    - "elm/lib/dependabot/elm/update_checker/requirements_updater.rb"
+    - "git_submodules/lib/dependabot/git_submodules/package/package_details_fetcher.rb"
+    - "github_actions/lib/dependabot/github_actions/file_parser.rb"
+    - "github_actions/lib/dependabot/github_actions/package/package_details_fetcher.rb"
+    - "github_actions/lib/dependabot/github_actions/update_checker/latest_version_finder.rb"
+    - "go_modules/lib/dependabot/go_modules/dependency_grapher.rb"
+    - "go_modules/lib/dependabot/go_modules/file_fetcher.rb"
+    - "go_modules/lib/dependabot/go_modules/file_parser.rb"
+    - "go_modules/lib/dependabot/go_modules/file_updater.rb"
+    - "go_modules/lib/dependabot/go_modules/file_updater/go_mod_updater.rb"
+    - "go_modules/lib/dependabot/go_modules/package/package_details_fetcher.rb"
+    - "go_modules/lib/dependabot/go_modules/replace_stubber.rb"
+    - "go_modules/lib/dependabot/go_modules/update_checker.rb"
+    - "gradle/lib/dependabot/gradle/distributions.rb"
+    - "gradle/lib/dependabot/gradle/file_parser.rb"
+    - "gradle/lib/dependabot/gradle/file_parser/repositories_finder.rb"
+    - "gradle/lib/dependabot/gradle/file_updater.rb"
+    - "gradle/lib/dependabot/gradle/package/distributions_fetcher.rb"
+    - "gradle/lib/dependabot/gradle/package/package_details_fetcher.rb"
+    - "gradle/lib/dependabot/gradle/package/release_date_extractor.rb"
+    - "gradle/lib/dependabot/gradle/package/version_release_date_fallback_fetcher.rb"
+    - "gradle/lib/dependabot/gradle/update_checker.rb"
+    - "gradle/lib/dependabot/gradle/update_checker/multi_dependency_updater.rb"
+    - "gradle/lib/dependabot/gradle/update_checker/requirements_updater.rb"
+    - "gradle/lib/dependabot/gradle/update_checker/version_finder.rb"
+    - "gradle/lib/dependabot/gradle/version.rb"
+    - "helm/lib/dependabot/helm/file_parser.rb"
+    - "helm/lib/dependabot/helm/file_updater/chart_updater.rb"
+    - "helm/lib/dependabot/helm/update_checker.rb"
+    - "helm/lib/dependabot/helm/update_checker/latest_version_resolver.rb"
+    - "hex/lib/dependabot/hex/credential_helpers.rb"
+    - "hex/lib/dependabot/hex/file_parser.rb"
+    - "hex/lib/dependabot/hex/metadata_finder.rb"
+    - "hex/lib/dependabot/hex/update_checker.rb"
+    - "hex/lib/dependabot/hex/update_checker/latest_version_finder.rb"
+    - "hex/lib/dependabot/hex/update_checker/requirements_updater.rb"
+    - "hex/lib/dependabot/hex/version.rb"
+    - "julia/lib/dependabot/julia/file_fetcher.rb"
+    - "julia/lib/dependabot/julia/file_parser.rb"
+    - "julia/lib/dependabot/julia/file_updater.rb"
+    - "julia/lib/dependabot/julia/package/package_details_fetcher.rb"
+    - "julia/lib/dependabot/julia/package_manager.rb"
+    - "julia/lib/dependabot/julia/registry_client.rb"
+    - "julia/lib/dependabot/julia/update_checker.rb"
+    - "julia/lib/dependabot/julia/update_checker/latest_version_finder.rb"
+    - "julia/lib/dependabot/julia/update_checker/requirements_updater.rb"
+    - "maven/lib/dependabot/maven/file_parser.rb"
+    - "maven/lib/dependabot/maven/file_parser/maven_dependency_parser.rb"
+    - "maven/lib/dependabot/maven/file_parser/property_value_finder.rb"
+    - "maven/lib/dependabot/maven/file_parser/repositories_finder.rb"
+    - "maven/lib/dependabot/maven/file_updater.rb"
+    - "maven/lib/dependabot/maven/file_updater/declaration_finder.rb"
+    - "maven/lib/dependabot/maven/package/package_details_fetcher.rb"
+    - "maven/lib/dependabot/maven/requirement.rb"
+    - "maven/lib/dependabot/maven/shared/base_version_finder.rb"
+    - "maven/lib/dependabot/maven/shared/shared_package_details_fetcher.rb"
+    - "maven/lib/dependabot/maven/shared/shared_property_value_updater.rb"
+    - "maven/lib/dependabot/maven/shared/shared_requirement.rb"
+    - "maven/lib/dependabot/maven/token_bucket.rb"
+    - "maven/lib/dependabot/maven/update_checker.rb"
+    - "maven/lib/dependabot/maven/update_checker/property_updater.rb"
+    - "maven/lib/dependabot/maven/update_checker/requirements_updater.rb"
+    - "maven/lib/dependabot/maven/update_checker/version_finder.rb"
+    - "maven/lib/dependabot/maven/utils/auth_headers_finder.rb"
+    - "nix/lib/dependabot/nix/file_fetcher.rb"
+    - "nix/lib/dependabot/nix/file_parser.rb"
+    - "nix/lib/dependabot/nix/flake_nix_parser.rb"
+    - "nix/lib/dependabot/nix/package/package_details_fetcher.rb"
+    - "nix/lib/dependabot/nix/update_checker.rb"
+    - "nix/lib/dependabot/nix/update_checker/versioned_branch_finder.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/dependency_files_filterer.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/dependency_grapher.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/dependency_grapher/npm_relationship_resolver.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/dependency_grapher/yarn_relationship_resolver.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_fetcher.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_fetcher/path_dependency_builder.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_parser.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_parser/json_lock.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_parser/lockfile_parser.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_parser/pnpm_lock.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_parser/yarn_lock.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/berry_lockfile_handler.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/npm_lockfile_updater.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/npmrc_builder.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/package_json_updater.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/yarn_lockfile_updater.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/helpers.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/metadata_finder.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/package/package_details_fetcher.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/package/registry_finder.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/package_manager.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/registry_helper.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/latest_version_finder.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/library_detector.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/requirements_updater.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/version_resolver.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/vulnerability_auditor.rb"
+    - "npm_and_yarn/lib/dependabot/npm_and_yarn/version_selector.rb"
+    - "opentofu/lib/dependabot/opentofu/file_parser.rb"
+    - "opentofu/lib/dependabot/opentofu/file_selector.rb"
+    - "opentofu/lib/dependabot/opentofu/file_updater.rb"
+    - "opentofu/lib/dependabot/opentofu/package/package_details_fetcher.rb"
+    - "opentofu/lib/dependabot/opentofu/registry_client.rb"
+    - "opentofu/lib/dependabot/opentofu/requirements_updater.rb"
+    - "opentofu/lib/dependabot/opentofu/update_checker.rb"
+    - "opentofu/lib/dependabot/opentofu/update_checker/latest_version_resolver.rb"
+    - "pre_commit/lib/dependabot/pre_commit/additional_dependency_checkers/base.rb"
+    - "pre_commit/lib/dependabot/pre_commit/additional_dependency_checkers/dart.rb"
+    - "pre_commit/lib/dependabot/pre_commit/additional_dependency_checkers/go.rb"
+    - "pre_commit/lib/dependabot/pre_commit/additional_dependency_checkers/node.rb"
+    - "pre_commit/lib/dependabot/pre_commit/additional_dependency_checkers/python.rb"
+    - "pre_commit/lib/dependabot/pre_commit/additional_dependency_checkers/ruby.rb"
+    - "pre_commit/lib/dependabot/pre_commit/additional_dependency_checkers/rust.rb"
+    - "pre_commit/lib/dependabot/pre_commit/file_fetcher.rb"
+    - "pre_commit/lib/dependabot/pre_commit/file_parser.rb"
+    - "pre_commit/lib/dependabot/pre_commit/file_parser/hook_language_fetcher.rb"
+    - "pre_commit/lib/dependabot/pre_commit/file_updater.rb"
+    - "pre_commit/lib/dependabot/pre_commit/package/package_details_fetcher.rb"
+    - "pre_commit/lib/dependabot/pre_commit/update_checker.rb"
+    - "pre_commit/lib/dependabot/pre_commit/update_checker/latest_version_finder.rb"
+    - "pub/lib/dependabot/pub/file_parser.rb"
+    - "pub/lib/dependabot/pub/helpers.rb"
+    - "pub/lib/dependabot/pub/metadata_finder.rb"
+    - "pub/lib/dependabot/pub/package/package_details_fetcher.rb"
+    - "pub/lib/dependabot/pub/update_checker.rb"
+    - "pub/lib/dependabot/pub/update_checker/latest_version_finder.rb"
+    - "python/lib/dependabot/python/dependency_grapher.rb"
+    - "python/lib/dependabot/python/file_fetcher.rb"
+    - "python/lib/dependabot/python/file_parser.rb"
+    - "python/lib/dependabot/python/file_parser/pipfile_files_parser.rb"
+    - "python/lib/dependabot/python/file_parser/pyproject_files_parser.rb"
+    - "python/lib/dependabot/python/file_parser/setup_file_parser.rb"
+    - "python/lib/dependabot/python/file_updater/pip_compile_file_updater.rb"
+    - "python/lib/dependabot/python/file_updater/pipfile_file_updater.rb"
+    - "python/lib/dependabot/python/file_updater/poetry_file_updater.rb"
+    - "python/lib/dependabot/python/file_updater/poetry_file_updater/pep621_updater.rb"
+    - "python/lib/dependabot/python/file_updater/pyproject_preparer.rb"
+    - "python/lib/dependabot/python/file_updater/requirement_file_updater.rb"
+    - "python/lib/dependabot/python/language_version_manager.rb"
+    - "python/lib/dependabot/python/metadata_finder.rb"
+    - "python/lib/dependabot/python/package/package_details_fetcher.rb"
+    - "python/lib/dependabot/python/pipenv_runner.rb"
+    - "python/lib/dependabot/python/requirement.rb"
+    - "python/lib/dependabot/python/shared_file_fetcher.rb"
+    - "python/lib/dependabot/python/update_checker.rb"
+    - "python/lib/dependabot/python/update_checker/latest_version_finder.rb"
+    - "python/lib/dependabot/python/update_checker/pip_version_resolver.rb"
+    - "python/lib/dependabot/python/update_checker/poetry_version_resolver.rb"
+    - "python/lib/dependabot/python/update_checker/requirements_updater.rb"
+    - "rakelib/support/helpers.rb"
+    - "rust_toolchain/lib/dependabot/rust_toolchain/models/rust_toolchain_config.rb"
+    - "rust_toolchain/lib/dependabot/rust_toolchain/models/rust_toolchain_toml.rb"
+    - "rust_toolchain/lib/dependabot/rust_toolchain/requirement.rb"
+    - "rust_toolchain/lib/dependabot/rust_toolchain/update_checker/latest_version_finder.rb"
+    - "sbt/lib/dependabot/sbt/file_fetcher.rb"
+    - "sbt/lib/dependabot/sbt/file_parser.rb"
+    - "sbt/lib/dependabot/sbt/file_updater.rb"
+    - "sbt/lib/dependabot/sbt/package/package_details_fetcher.rb"
+    - "sbt/lib/dependabot/sbt/update_checker.rb"
+    - "sbt/lib/dependabot/sbt/update_checker/requirements_updater.rb"
+    - "silent/lib/dependabot/silent/file_updater.rb"
+    - "silent/lib/dependabot/silent/update_checker.rb"
+    - "swift/lib/dependabot/swift/file_parser/dependency_parser.rb"
+    - "swift/lib/dependabot/swift/file_parser/manifest_parser.rb"
+    - "swift/lib/dependabot/swift/file_parser/package_resolved_parser.rb"
+    - "swift/lib/dependabot/swift/file_parser/pbxproj_parser.rb"
+    - "swift/lib/dependabot/swift/file_parser/xcode_spm_resolver.rb"
+    - "swift/lib/dependabot/swift/file_updater/manifest_updater.rb"
+    - "swift/lib/dependabot/swift/file_updater/xcode_lockfile_updater.rb"
+    - "swift/lib/dependabot/swift/native_requirement.rb"
+    - "swift/lib/dependabot/swift/requirement.rb"
+    - "swift/lib/dependabot/swift/update_checker.rb"
+    - "swift/lib/dependabot/swift/update_checker/latest_version_resolver.rb"
+    - "swift/lib/dependabot/swift/update_checker/requirements_updater.rb"
+    - "swift/lib/dependabot/swift/update_checker/xcode_version_resolver.rb"
+    - "terraform/lib/dependabot/terraform/file_parser.rb"
+    - "terraform/lib/dependabot/terraform/file_selector.rb"
+    - "terraform/lib/dependabot/terraform/file_updater.rb"
+    - "terraform/lib/dependabot/terraform/file_updater/provider_cli_config_builder.rb"
+    - "terraform/lib/dependabot/terraform/package/package_details_fetcher.rb"
+    - "terraform/lib/dependabot/terraform/requirements_updater.rb"
+    - "terraform/lib/dependabot/terraform/update_checker.rb"
+    - "terraform/lib/dependabot/terraform/update_checker/latest_version_resolver.rb"
+    - "updater/lib/dependabot/api_client.rb"
+    - "updater/lib/dependabot/dependency_attribution.rb"
+    - "updater/lib/dependabot/dependency_change.rb"
+    - "updater/lib/dependabot/environment.rb"
+    - "updater/lib/dependabot/file_fetcher_command.rb"
+    - "updater/lib/dependabot/job.rb"
+    - "updater/lib/dependabot/job/allowed_update.rb"
+    - "updater/lib/dependabot/job/ignore_condition.rb"
+    - "updater/lib/dependabot/job/security_advisory_entry.rb"
+    - "updater/lib/dependabot/opentelemetry.rb"
+    - "updater/lib/dependabot/pull_request.rb"
+    - "updater/lib/dependabot/sentry.rb"
+    - "updater/lib/dependabot/sentry/exception_sanitizer_processor.rb"
+    - "updater/lib/dependabot/sentry/processor.rb"
+    - "updater/lib/dependabot/sentry/sentry_context_processor.rb"
+    - "updater/lib/dependabot/service.rb"
+    - "updater/lib/dependabot/updater/dependency_group_change_batch.rb"
+    - "updater/lib/dependabot/updater/error_handler.rb"
+    - "updater/lib/dependabot/updater/errors.rb"
+    - "updater/lib/dependabot/updater/group_dependency_selector.rb"
+    - "updater/lib/dependabot/updater/pattern_specificity_calculator.rb"
+    - "updater/lib/dependabot/updater/update_type_helper.rb"
+    - "updater/lib/github_api/dependency_submission.rb"
+    - "uv/lib/dependabot/uv.rb"
+    - "uv/lib/dependabot/uv/dependency_grapher.rb"
+    - "uv/lib/dependabot/uv/file_fetcher/workspace_fetcher.rb"
+    - "uv/lib/dependabot/uv/file_parser.rb"
+    - "uv/lib/dependabot/uv/file_parser/pyproject_files_parser.rb"
+    - "uv/lib/dependabot/uv/file_updater/compile_file_updater.rb"
+    - "uv/lib/dependabot/uv/file_updater/lock_file_error_handler.rb"
+    - "uv/lib/dependabot/uv/file_updater/lock_file_updater.rb"
+    - "uv/lib/dependabot/uv/file_updater/version_config_parser.rb"
+    - "uv/lib/dependabot/uv/update_checker.rb"
+    - "uv/lib/dependabot/uv/update_checker/lock_file_resolver.rb"
+    - "vcpkg/lib/dependabot/vcpkg/file_parser.rb"
+    - "vcpkg/lib/dependabot/vcpkg/file_updater.rb"
+    - "vcpkg/lib/dependabot/vcpkg/package/package_details_fetcher.rb"
+    - "vcpkg/lib/dependabot/vcpkg/update_checker.rb"
+    - "vcpkg/lib/dependabot/vcpkg/version.rb"

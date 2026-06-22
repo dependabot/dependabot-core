@@ -207,6 +207,7 @@ internal static class SdkProjectDiscovery
                 }
 
                 MSBuildHelper.ThrowOnError(stdOut);
+                MSBuildHelper.ThrowOnError(stdErr);
                 if (exitCode != 0)
                 {
                     // log error, but still try to resolve what we can
@@ -215,6 +216,11 @@ internal static class SdkProjectDiscovery
 
                 if (!File.Exists(binLogPath))
                 {
+                    if (stdErr.Contains("A compatible .NET SDK was not found."))
+                    {
+                        throw new Exception("Missing SDK, check global.json locations vs. job directories.");
+                    }
+
                     throw new FileNotFoundException("Dependency discovery didn't produce a log file.");
                 }
 
@@ -518,6 +524,11 @@ internal static class SdkProjectDiscovery
             {
                 if (propertiesForProject.TryGetValue("ProjectAssetsFile", out var assetsFilePath))
                 {
+                    if (!File.Exists(assetsFilePath))
+                    {
+                        throw new FileNotFoundException("The file specified at $(ProjectAssetsFile) does not exist.");
+                    }
+
                     var assetsContent = File.ReadAllText(assetsFilePath);
                     var assets = JsonDocument.Parse(assetsContent).RootElement;
                     return assets;
@@ -821,7 +832,13 @@ internal static class SdkProjectDiscovery
             var tempProjectPath = await MSBuildHelper.CreateTempProjectAsync(tempDirectory, repoRootPath, projectPath, targetFrameworks, topLevelDependencies, logger);
             var tempProjectDirectory = Path.GetDirectoryName(tempProjectPath)!;
             var rediscoveredDependencies = await DiscoverAsync(tempProjectDirectory, tempProjectDirectory, tempProjectPath, experimentsManager, logger);
-            var rediscoveredDependenciesForThisProject = rediscoveredDependencies.Single(); // we started with a single temp project, this will be the only result
+            var tempProjectFileName = Path.GetFileName(tempProjectPath);
+            var rediscoveredDependenciesForThisProject = rediscoveredDependencies.FirstOrDefault(r => PathComparer.Instance.Equals(r.FilePath, tempProjectFileName));
+            if (rediscoveredDependenciesForThisProject is null)
+            {
+                logger.Warn($"Unable to rediscover packages for legacy project {projectPath}; using original package set.");
+                return packagesPerProject;
+            }
 
             // re-build packagesPerProject
             var rebuiltPackagesPerProject = packagesPerProject.ToDictionary(PathComparer.Instance); // shallow copy

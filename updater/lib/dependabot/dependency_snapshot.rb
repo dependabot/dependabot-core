@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "base64"
@@ -136,7 +136,7 @@ module Dependabot
 
           dependencies_in_existing_prs = dependencies_in_existing_prs.filter do |dep|
             # When grouping by name, include deps from all directories; otherwise filter by current directory
-            group_by_name || !dep["directory"] || dep["directory"] == directory
+            group_by_name || !dep.directory || dep.directory == directory
           end
 
           # also add dependencies that might be in the group, as a rebase would add them;
@@ -147,14 +147,12 @@ module Dependabot
 
           add_handled_dependencies(
             current_dependencies.concat(
-              dependencies_in_existing_prs.filter_map do |dep|
-                dep["dependency-name"]
-              end
+              dependencies_in_existing_prs.filter_map(&:name)
             )
           )
         else
           # add the existing dependencies in the group so individual updates don't try to update them
-          add_handled_dependencies(dependencies_in_existing_pr_for_group(group).filter_map { |d| d["dependency-name"] })
+          add_handled_dependencies(dependencies_in_existing_pr_for_group(group).filter_map(&:name))
           # also add dependencies that might be in the group, as a rebase would add them;
           # this avoids individual PR creation that immediately is superseded by a group PR supersede
           add_handled_dependencies(group.dependencies.map(&:name))
@@ -198,15 +196,13 @@ module Dependabot
       allowed_dependencies.reject { |dep| handled_dependencies.include?(dep.name) }
     end
 
-    sig { params(group: Dependabot::DependencyGroup).returns(T::Array[T::Hash[String, T.untyped]]) }
+    sig { params(group: Dependabot::DependencyGroup).returns(T::Array[Job::ExistingGroupPullRequest::Dependency]) }
     def dependencies_in_existing_pr_for_group(group)
       existing = job.existing_group_pull_requests.find do |pr|
-        pr["dependency-group-name"] == group.name
-      end&.fetch("dependencies", []) || []
-
-      existing.filter do |dep|
-        dep["dependency-name"]
+        pr.dependency_group_name == group.name
       end
+
+      (existing&.dependencies || []).select(&:name)
     end
 
     private

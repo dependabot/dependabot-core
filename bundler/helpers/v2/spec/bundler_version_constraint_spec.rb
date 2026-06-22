@@ -6,12 +6,10 @@ require_relative "../lib/bundler_version_constraint"
 
 RSpec.describe BundlerVersionConstraint do
   describe "helper runtime activation" do
-    it "is running a supported Bundler major version" do
-      # Bundler 3 was intentionally skipped upstream (Bundler jumped from 2.7
-      # straight to 4.0 to align with RubyGems) so the supported window is
-      # 2.x or 4.x.
+    it "is running Bundler 2" do
+      # The v2 helper tree pins Bundler 2.x; Bundler 4 lives in the v4 tree.
       bundler_major = Bundler::VERSION.split(".").first.to_i
-      expect(bundler_major).to be_between(2, 4)
+      expect(bundler_major).to eq(2)
     end
   end
 
@@ -35,7 +33,7 @@ RSpec.describe BundlerVersionConstraint do
     end
 
     it "uses the default activation constraint when no env var is set" do
-      expect(described_class.resolve(env: {})).to eq(">= 2.4, < 5")
+      expect(described_class.resolve(env: {})).to eq(">= 2.4, < 3")
     end
 
     it "honours an explicit default override" do
@@ -45,11 +43,11 @@ RSpec.describe BundlerVersionConstraint do
 
   describe ".activation_clauses" do
     it "splits comma-separated requirement strings into trimmed clauses" do
-      expect(described_class.activation_clauses(">= 2.4, < 5")).to eq([">= 2.4", "< 5"])
+      expect(described_class.activation_clauses(">= 2.4, < 3")).to eq([">= 2.4", "< 3"])
     end
 
     it "returns a single clause for a single requirement" do
-      expect(described_class.activation_clauses("~> 4.0")).to eq(["~> 4.0"])
+      expect(described_class.activation_clauses("~> 2")).to eq(["~> 2"])
     end
   end
 

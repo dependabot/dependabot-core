@@ -5,6 +5,7 @@ require "json"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
+require "dependabot/deno/helpers"
 require "dependabot/deno/version"
 
 module Dependabot
@@ -20,17 +21,6 @@ module Dependabot
       JSR_SPECIFIER = %r{\Ajsr:(?<name>@[^@/]+/[^@/]+)(?:@(?<constraint>[^/]+))?(?:/[^\s]*)?\z}
       NPM_SPECIFIER = %r{\Anpm:(?<name>(?:@[^/]+/)?[^@/]+)(?:@(?<constraint>[^/]+))?(?:/[^\s]*)?\z}
 
-      # Matches either a JSON string literal (with escapes), a line comment, a
-      # block comment, or a trailing comma. The alternation lets gsub preserve
-      # strings while stripping the JSONC-only constructs, so e.g. "//" inside a
-      # URL value is not mistaken for the start of a comment.
-      JSONC_TOKEN = %r{
-        ("(?:\\.|[^"\\])*")    # JSON string literal
-        | //[^\n]*             # line comment
-        | /\*.*?\*/            # block comment
-        | ,(?=\s*[\}\]])       # trailing comma
-      }mx
-
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         # Multiple import aliases can reference the same underlying package
@@ -43,22 +33,24 @@ module Dependabot
         # can update them all.
         deps_by_key = {}
 
-        imports.each do |_alias_name, specifier|
-          dep = parse_specifier(specifier.to_s)
-          next unless dep
+        manifest_files.each do |file|
+          imports_for(file).each do |_alias_name, specifier|
+            dep = parse_specifier(specifier.to_s, file)
+            next unless dep
 
-          key = [dep.name, T.must(dep.requirements.first)[:source][:type]]
-          existing = deps_by_key[key]
-          deps_by_key[key] = if existing
-                               Dependabot::Dependency.new(
-                                 name: existing.name,
-                                 version: existing.version,
-                                 requirements: (existing.requirements + dep.requirements).uniq,
-                                 package_manager: existing.package_manager
-                               )
-                             else
-                               dep
-                             end
+            key = [dep.name, T.must(dep.requirements.first)[:source][:type]]
+            existing = deps_by_key[key]
+            deps_by_key[key] = if existing
+                                 Dependabot::Dependency.new(
+                                   name: existing.name,
+                                   version: existing.version,
+                                   requirements: (existing.requirements + dep.requirements).uniq,
+                                   package_manager: existing.package_manager
+                                 )
+                               else
+                                 dep
+                               end
+          end
         end
 
         deps_by_key.values.sort_by(&:name)
@@ -68,51 +60,55 @@ module Dependabot
 
       sig { override.void }
       def check_required_files
-        return if manifest_file
+        return if manifest_files.any?
 
         raise "No deno.json or deno.jsonc found!"
       end
 
-      sig { returns(T::Hash[String, T.untyped]) }
-      def imports
-        parsed_manifest.fetch("imports", {})
-      end
-
-      sig { returns(T::Hash[String, T.untyped]) }
-      def parsed_manifest
-        @parsed_manifest ||= T.let(
-          parse_json_or_jsonc(T.must(manifest_file).content),
-          T.nilable(T::Hash[String, T.untyped])
+      # The root manifest plus every workspace member manifest. Members are
+      # fetched relative to the root (e.g. "packages/foo/deno.json"), so match
+      # on basename rather than the full path.
+      sig { returns(T::Array[DependencyFile]) }
+      def manifest_files
+        @manifest_files ||= T.let(
+          dependency_files.select { |f| MANIFEST_FILENAMES.include?(File.basename(f.name)) },
+          T.nilable(T::Array[DependencyFile])
         )
       end
 
-      sig { returns(T.nilable(DependencyFile)) }
-      def manifest_file
-        @manifest_file ||= T.let(
-          MANIFEST_FILENAMES.filter_map { |f| get_original_file(f) }.first,
-          T.nilable(DependencyFile)
-        )
+      sig { params(file: DependencyFile).returns(T::Hash[String, T.untyped]) }
+      def imports_for(file)
+        Helpers.parse_json_or_jsonc(file.content).fetch("imports", {})
       end
 
-      sig { params(specifier: String).returns(T.nilable(Dependabot::Dependency)) }
-      def parse_specifier(specifier)
+      sig { params(specifier: String, file: DependencyFile).returns(T.nilable(Dependabot::Dependency)) }
+      def parse_specifier(specifier, file)
         if (match = JSR_SPECIFIER.match(specifier))
           build_dependency(
             name: T.must(match[:name]),
             constraint: match[:constraint],
-            source_type: "jsr"
+            source_type: "jsr",
+            file: file
           )
         elsif (match = NPM_SPECIFIER.match(specifier))
           build_dependency(
             name: T.must(match[:name]),
             constraint: match[:constraint],
-            source_type: "npm"
+            source_type: "npm",
+            file: file
           )
         end
       end
 
-      sig { params(name: String, constraint: T.nilable(String), source_type: String).returns(Dependabot::Dependency) }
-      def build_dependency(name:, constraint:, source_type:)
+      sig do
+        params(
+          name: String,
+          constraint: T.nilable(String),
+          source_type: String,
+          file: DependencyFile
+        ).returns(Dependabot::Dependency)
+      end
+      def build_dependency(name:, constraint:, source_type:, file:)
         version = constraint ? extract_version(constraint) : nil
 
         Dependabot::Dependency.new(
@@ -120,7 +116,7 @@ module Dependabot
           version: version,
           requirements: [{
             requirement: constraint,
-            file: T.must(manifest_file).name,
+            file: file.name,
             groups: ["imports"],
             source: { type: source_type }
           }],
@@ -134,15 +130,6 @@ module Dependabot
         return version_str if Deno::Version.correct?(version_str)
 
         nil
-      end
-
-      sig { params(content: T.nilable(String)).returns(T::Hash[String, T.untyped]) }
-      def parse_json_or_jsonc(content)
-        return {} unless content
-
-        cleaned = content.gsub(JSONC_TOKEN) { ::Regexp.last_match(1) || "" }
-
-        JSON.parse(cleaned)
       end
     end
   end

@@ -15,30 +15,57 @@ require "dependabot/logger"
 require "dependabot/gradle/metadata_finder"
 require "dependabot/gradle/package/release_date_extractor"
 require "dependabot/gradle/package/version_release_date_fallback_fetcher"
+require "dependabot/package/release_cooldown_options"
 
 module Dependabot
   module Gradle
     module Package
+      module EofRetry
+        extend T::Sig
+
+        EOF_RETRY_COUNT = 2
+
+        sig do
+          params(
+            url: String,
+            headers: T::Hash[T.any(String, Symbol), T.untyped]
+          ).returns(Excon::Response)
+        end
+        def self.get(url:, headers:)
+          retries_remaining = EOF_RETRY_COUNT
+
+          begin
+            Dependabot::RegistryClient.get(url: url, headers: headers)
+          rescue Excon::Error::Socket => e
+            raise e unless e.socket_error.is_a?(EOFError) && retries_remaining.positive?
+
+            retries_remaining -= 1
+            retry
+          end
+        end
+      end
+
       class PackageDetailsFetcher
         extend T::Sig
 
         CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
         KOTLIN_PLUGIN_REPO_PREFIX = "org.jetbrains.kotlin"
         TYPE_SUFFICES = %w(jre android java native_mt agp).freeze
-
         sig do
           params(
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            forbidden_urls: T.nilable(T::Array[String])
+            forbidden_urls: T.nilable(T::Array[String]),
+            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize(dependency:, dependency_files:, credentials:, forbidden_urls:)
+        def initialize(dependency:, dependency_files:, credentials:, forbidden_urls:, cooldown_options: nil)
           @dependency = dependency
           @dependency_files = dependency_files
           @credentials = credentials
           @forbidden_urls = forbidden_urls
+          @cooldown_options = T.let(cooldown_options, T.nilable(Dependabot::Package::ReleaseCooldownOptions))
           @repositories = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
           @google_version_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
           @dependency_repository_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
@@ -77,7 +104,7 @@ module Dependabot
             end.flatten.compact
 
           version_details = version_details.sort_by { |details| details.fetch(:version) }
-          release_date_info = release_details
+          release_date_info = @cooldown_options ? release_details : {}
           version_details.each do |info|
             package_releases << {
               version: Gradle::Version.new(info[:version].to_s),
@@ -225,7 +252,7 @@ module Dependabot
           @dependency_metadata ||= T.let({}, T.nilable(T::Hash[T.untyped, T.untyped]))
           @dependency_metadata[repository_details.hash] ||=
             begin
-              response = Dependabot::RegistryClient.get(
+              response = EofRetry.get(
                 url: dependency_metadata_url(repository_details.fetch("url")),
                 headers: repository_details.fetch("auth_headers")
               )
@@ -247,7 +274,7 @@ module Dependabot
           @release_info_metadata ||= T.let({}, T.nilable(T::Hash[Integer, T.untyped]))
           @release_info_metadata[repository_details.hash] ||=
             begin
-              response = Dependabot::RegistryClient.get(
+              response = EofRetry.get(
                 url: dependency_metadata_url(repository_details.fetch("url")).gsub("maven-metadata.xml", ""),
                 headers: repository_details.fetch("auth_headers")
               )

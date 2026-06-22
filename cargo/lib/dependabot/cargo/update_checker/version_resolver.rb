@@ -15,11 +15,12 @@ module Dependabot
       class VersionResolver # rubocop:disable Metrics/ClassLength
         extend T::Sig
 
-        UNABLE_TO_UPDATE = /Unable to update (?<url>.*?)$/
+        UNABLE_TO_UPDATE = /unable to update (?<url>.*?)$/i
         BRANCH_NOT_FOUND_REGEX = /#{UNABLE_TO_UPDATE}.*to find branch `(?<branch>[^`]+)`/m
         REVSPEC_PATTERN = /revspec '.*' not found/
         OBJECT_PATTERN = /object not found - no match for id \(.*\)/
-        REF_NOT_FOUND_REGEX = /#{UNABLE_TO_UPDATE}.*(#{REVSPEC_PATTERN}|#{OBJECT_PATTERN})/m
+        REVISION_PATTERN = /revision .* not found/
+        REF_NOT_FOUND_REGEX = /#{UNABLE_TO_UPDATE}.*(#{REVSPEC_PATTERN}|#{OBJECT_PATTERN}|#{REVISION_PATTERN})/m
         GIT_REF_NOT_FOUND_REGEX = /Updating git repository `(?<url>[^`]*)`.*fatal: couldn't find remote ref/m
 
         # Note that as of Rust 1.80, git error message handling in the `cargo update` command changed.
@@ -186,10 +187,7 @@ module Dependabot
         def run_cargo_command(command, fingerprint: nil)
           start = Time.now
           command = SharedHelpers.escape_command(command)
-          Helpers.bypass_cargo_credential_providers
-          # Pass through any cargo registry configuration via environment variables
-          # (e.g. CARGO_REGISTRIES_CRATES_IO_PROTOCOL, CARGO_REGISTRY_GLOBAL_CREDENTIAL_PROVIDERS).
-          env = ENV.select { |key, _value| key.match(/^CARGO_REGISTR(Y|IES)_/) }
+          env = Helpers.cargo_command_env(original_dependency_files, credentials)
 
           stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start

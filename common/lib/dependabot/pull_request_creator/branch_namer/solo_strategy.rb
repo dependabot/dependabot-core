@@ -119,21 +119,21 @@ module Dependabot
 
         sig { params(dependency: Dependabot::Dependency).returns(String) }
         def sanitized_requirement(dependency)
-          new_library_requirement(dependency)
-            .delete(" ")
-            .gsub("!=", "neq-")
-            .gsub(">=", "gte-")
-            .gsub("<=", "lte-")
-            .gsub("~>", "tw-")
-            .gsub("^", "tw-")
-            .gsub("||", "or-")
-            .gsub("~", "approx-")
-            .gsub("~=", "tw-")
-            .gsub(/==*/, "eq-")
-            .gsub(">", "gt-")
-            .gsub("<", "lt-")
-            .gsub("*", "star")
-            .gsub(",", "-and-")
+          T.must(new_library_requirement(dependency))
+           .delete(" ")
+           .gsub("!=", "neq-")
+           .gsub(">=", "gte-")
+           .gsub("<=", "lte-")
+           .gsub("~>", "tw-")
+           .gsub("^", "tw-")
+           .gsub("||", "or-")
+           .gsub("~", "approx-")
+           .gsub("~=", "tw-")
+           .gsub(/==*/, "eq-")
+           .gsub(">", "gt-")
+           .gsub("<", "lt-")
+           .gsub("*", "star")
+           .gsub(",", "-and-")
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
@@ -176,7 +176,7 @@ module Dependabot
           previous_ref(dependency) != new_ref(dependency)
         end
 
-        sig { params(dependency: Dependabot::Dependency).returns(T.untyped) }
+        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
         def new_library_requirement(dependency)
           updated_reqs =
             dependency.requirements - T.must(dependency.previous_requirements)

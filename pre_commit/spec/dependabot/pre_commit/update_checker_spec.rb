@@ -148,6 +148,65 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
       end
     end
 
+    context "when SHA-pinned with frozen comment and cooldown rejects all versions" do
+      let(:reference) { "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "https://github.com/#{dependency_name}",
+          version: reference,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".pre-commit-config.yaml",
+            source: dependency_source,
+            metadata: { comment: "# frozen: v4.4.0" }
+          }],
+          package_manager: "pre_commit"
+        )
+      end
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7
+        )
+      end
+
+      before do
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tag_for_pinned_sha).and_return(nil)
+
+        recent_date = Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z")
+
+        v6_tag = {
+          tag: "v6.0.0",
+          version: Dependabot::PreCommit::Version.new("6.0.0"),
+          commit_sha: "3e8a8703264a2f4a69428a0aa4dcb512790b2c8c"
+        }
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions)
+          .and_return([v6_tag])
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
+                        ref: reference, branch: nil })
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git show --no-patch/, hash_including(fingerprint: anything))
+          .and_return(recent_date)
+      end
+
+      it "reports the dependency as up to date" do
+        expect(checker.up_to_date?).to be(true)
+      end
+
+      it "returns the current version as latest_version" do
+        expect(checker.latest_version.to_s).to eq("4.4.0")
+      end
+    end
+
     context "with shortened version ref" do
       let(:reference) { "v4.4" }
 

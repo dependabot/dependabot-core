@@ -92,7 +92,15 @@ RSpec:
 RSpec/IndexedLet:
   Enabled: false
 
+Sorbet/BlockMethodDefinition:
+  Enabled: true
+  Exclude:
+    - "**/spec/**/*"
+Sorbet/ForbidTAnyWithNil:
+  Enabled: true
 Sorbet/ForbidTUnsafe:
+  Enabled: true
+Sorbet/ForbidTUntyped:
   Enabled: true
 Sorbet/TrueSigil:
   Enabled: true
@@ -132,6 +140,7 @@ Style/NumericPredicate:
 Style/OneClassPerFile:
   Exclude:
     - "bundler/helpers/v2/monkey_patches/git_source_patch.rb"
+    - "bundler/helpers/v4/monkey_patches/git_source_patch.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/pnpm_workspace_updater.rb"
     - "rakelib/support/helpers.rb"
 Style/OptionalBooleanParameter:

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -9,6 +9,9 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
+      require_relative "file_updater/manifest_updater"
+      require_relative "file_updater/lockfile_updater"
+
       MANIFEST_FILENAMES = T.let(%w(deno.json deno.jsonc).freeze, T::Array[String])
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
@@ -16,12 +19,19 @@ module Dependabot
         updated_files = []
 
         dependency_files.each do |file|
-          next unless MANIFEST_FILENAMES.include?(file.name)
+          next unless MANIFEST_FILENAMES.include?(File.basename(file.name))
 
           new_content = update_manifest_content(file)
           next if new_content == file.content
 
           updated_files << updated_file(file: file, content: new_content)
+        end
+
+        if lockfile
+          updated_files << updated_file(
+            file: T.must(lockfile),
+            content: lockfile_updater.updated_lockfile_content
+          )
         end
 
         updated_files
@@ -31,33 +41,34 @@ module Dependabot
 
       sig { override.void }
       def check_required_files
-        return if dependency_files.any? { |f| MANIFEST_FILENAMES.include?(f.name) }
+        return if dependency_files.any? { |f| MANIFEST_FILENAMES.include?(File.basename(f.name)) }
 
         raise "No deno.json or deno.jsonc found!"
       end
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def lockfile
+        @lockfile ||= T.let(
+          dependency_files.find { |f| f.name == "deno.lock" },
+          T.nilable(Dependabot::DependencyFile)
+        )
+      end
+
+      sig { returns(LockfileUpdater) }
+      def lockfile_updater
+        @lockfile_updater ||= T.let(
+          LockfileUpdater.new(
+            dependencies: dependencies,
+            dependency_files: dependency_files,
+            credentials: credentials
+          ),
+          T.nilable(LockfileUpdater)
+        )
+      end
+
       sig { params(file: Dependabot::DependencyFile).returns(String) }
       def update_manifest_content(file)
-        content = T.must(file.content)
-
-        dependencies.each do |dep|
-          prev_reqs = dep.previous_requirements&.select { |r| r[:file] == file.name } || []
-          new_reqs = dep.requirements.select { |r| r[:file] == file.name }
-
-          prev_reqs.zip(new_reqs).each do |prev_req, new_req|
-            source_type = prev_req[:source][:type]
-            prev_req_str = prev_req[:requirement]
-            new_req_str = T.must(new_req)[:requirement]
-
-            base = "#{source_type}:#{dep.name}"
-            old_specifier = prev_req_str ? "#{base}@#{prev_req_str}" : base
-            new_specifier = "#{base}@#{new_req_str}"
-
-            content = content.gsub(%r{#{Regexp.escape(old_specifier)}(?=["/])}, new_specifier)
-          end
-        end
-
-        content
+        ManifestUpdater.new(dependencies: dependencies, manifest: file).updated_manifest_content
       end
     end
   end

@@ -24,7 +24,8 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       Dependabot::Service,
       create_dependency_submission: nil,
       record_update_job_error: nil,
-      record_update_job_warning: nil
+      record_update_job_warning: nil,
+      record_workflow_result: nil
     )
   end
 
@@ -119,6 +120,16 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         dependency2 = lockfile[:resolved]["pkg:gem/dummy-pkg-b@1.1.0"]
         expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
       end
+
+      update_graph_processor.run
+    end
+
+    it "records a workflow result for the directory" do
+      expect(service).to receive(:record_workflow_result).with(
+        directory: "/",
+        status: "ok",
+        details: "Found 2 dependencies"
+      )
 
       update_graph_processor.run
     end
@@ -790,6 +801,16 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
       update_graph_processor.run
     end
+
+    it "records a failed workflow result" do
+      expect(service).to receive(:record_workflow_result).with(
+        directory: "/",
+        status: "failed",
+        details: "Unable to submit data to the Dependency Snapshot API"
+      )
+
+      update_graph_processor.run
+    end
   end
 
   context "when external code execution is rejected" do
@@ -833,14 +854,16 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         allow(Dependabot::Environment).to receive(:github_actions?).and_return(false)
       end
 
-      it "records an error for each directory" do
-        expect(service).to receive(:record_update_job_error).with(
-          error_type: "unexpected_external_code",
-          error_details: { message: "Cannot process directory / without external code execution" }
+      it "records a warning for each directory" do
+        expect(service).to receive(:record_update_job_warning).with(
+          warn_type: "unexpected_external_code",
+          warn_title: "Refusing to execute external code",
+          warn_description: "Cannot process directory / without external code execution"
         )
-        expect(service).to receive(:record_update_job_error).with(
-          error_type: "unexpected_external_code",
-          error_details: { message: "Cannot process directory /subproject without external code execution" }
+        expect(service).to receive(:record_update_job_warning).with(
+          warn_type: "unexpected_external_code",
+          warn_title: "Refusing to execute external code",
+          warn_description: "Cannot process directory /subproject without external code execution"
         )
 
         update_graph_processor.run
@@ -854,11 +877,17 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
       it "does not halt processing of remaining directories" do
         call_count = 0
-        allow(service).to receive(:record_update_job_error) { call_count += 1 }
+        allow(service).to receive(:record_update_job_warning) { call_count += 1 }
 
         update_graph_processor.run
 
         expect(call_count).to eq(2)
+      end
+
+      it "does not record workflow results when not in GitHub Actions" do
+        expect(service).not_to receive(:record_workflow_result)
+
+        update_graph_processor.run
       end
     end
 
@@ -879,8 +908,23 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         update_graph_processor.run
       end
 
-      it "records an error for each directory" do
-        expect(service).to receive(:record_update_job_error).twice
+      it "records a warning for each directory" do
+        expect(service).to receive(:record_update_job_warning).twice
+
+        update_graph_processor.run
+      end
+
+      it "records a failed workflow result for each directory" do
+        expect(service).to receive(:record_workflow_result).with(
+          directory: "/",
+          status: "failed",
+          details: a_string_including("Dependabot refused to execute external code")
+        )
+        expect(service).to receive(:record_workflow_result).with(
+          directory: "/subproject",
+          status: "failed",
+          details: a_string_including("Dependabot refused to execute external code")
+        )
 
         update_graph_processor.run
       end

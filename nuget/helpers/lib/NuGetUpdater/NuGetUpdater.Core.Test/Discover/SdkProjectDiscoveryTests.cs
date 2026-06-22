@@ -636,6 +636,62 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
         Assert.False(File.Exists(errorSentinelPath), "Build targets should not have executed during discovery");
     }
 
+    [Fact]
+    public async Task LegacyProjectWithPackagesConfigAndVersionRangePackageReference_DoesNotThrow()
+    {
+        // A legacy project with packages.config and a <PackageReference> using a version range
+        // correctly resolves both direct and transitive dependencies.
+        await TestDiscoverAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("SdkStyle.Package", "1.5.0", "net48", [(null, [("Transitive.Dependency", "3.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "3.0.0", "net48"),
+            ],
+            startingDirectory: "",
+            projectPath: "project.csproj",
+            files:
+            [
+                ("project.csproj", """
+                    <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <OutputType>Library</OutputType>
+                        <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <PackageReference Include="SdkStyle.Package" Version="[1.0.0,2.0.0)" />
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """),
+                ("packages.config", """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <packages>
+                    </packages>
+                    """)
+            ],
+            expectedProjects:
+            [
+                new()
+                {
+                    FilePath = "project.csproj",
+                    Dependencies =
+                    [
+                        new("SdkStyle.Package", "1.5.0", DependencyType.PackageReference, TargetFrameworks: ["net48"]),
+                        new("Transitive.Dependency", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["net48"], IsTopLevel: false),
+                    ],
+                    ImportedFiles = [],
+                    TargetFrameworks = ["net48"],
+                    ReferencedProjectPaths = [],
+                    AdditionalFiles = ["packages.config"],
+                }
+            ]
+        );
+    }
+
     private static async Task TestDiscoverAsync(
         string startingDirectory,
         string projectPath,

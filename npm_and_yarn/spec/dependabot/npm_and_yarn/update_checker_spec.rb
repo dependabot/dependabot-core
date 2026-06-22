@@ -2046,10 +2046,27 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         expect(conflicting_dependencies_result.last)
           .to eq(
             "dependency_name" => "@dependabot-fixtures/npm-transitive-dependency",
-            "explanation" => "No patched version available for @dependabot-fixtures/npm-transitive-dependency",
+            "explanation" =>
+              "@dependabot-fixtures/npm-transitive-dependency can't be updated to a non-vulnerable version " \
+              "because the npm helper identified parent package constraints in the dependency tree that still " \
+              "require a vulnerable version: " \
+              "@dependabot-fixtures/npm-intermediate-dependency@0.0.1 requires " \
+              "@dependabot-fixtures/npm-transitive-dependency@1.0.0 " \
+              "(pulled in via @dependabot-fixtures/npm-parent-dependency-5). To resolve this, update the " \
+              "parent package(s) listed above to a release that allows a non-vulnerable " \
+              "@dependabot-fixtures/npm-transitive-dependency, or add an override/resolution pinning " \
+              "@dependabot-fixtures/npm-transitive-dependency to a non-vulnerable version.",
             "fix_available" => false,
             "fix_updates" => [],
-            "top_level_ancestors" => []
+            "top_level_ancestors" => [],
+            "blocking_dependencies" => [
+              {
+                "name" => "@dependabot-fixtures/npm-intermediate-dependency",
+                "version" => "0.0.1",
+                "requirement" => "1.0.0",
+                "top_level_ancestor" => "@dependabot-fixtures/npm-parent-dependency-5"
+              }
+            ]
           )
       end
     end
@@ -2101,7 +2118,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         expect(conflicting_dependencies_result.last)
           .to eq(
             "dependency_name" => "@dependabot-fixtures/npm-transitive-dependency",
-            "explanation" => "No patched version available for @dependabot-fixtures/npm-transitive-dependency",
+            "explanation" =>
+              "A patched version exists for " \
+              "@dependabot-fixtures/npm-transitive-dependency, but the " \
+              "available update path still resolves it to 1.0.0",
             "fix_available" => false,
             "fix_updates" => [],
             "top_level_ancestors" => []
@@ -2393,6 +2413,112 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(updated_deps.length).to eq(1)
       expect(updated_deps[0].version).to eq("1.1.0")
       expect(updated_deps[0].name).to eq("is-stream")
+    end
+  end
+
+  describe "npmrc min-release-age cooldown" do
+    let(:dependency_files) { project_dependency_files("npm6/npmrc_min_release_age") }
+
+    it "creates a cooldown from the npmrc min-release-age value" do
+      expect(checker.update_cooldown).to be_a(Dependabot::Package::ReleaseCooldownOptions)
+      expect(checker.update_cooldown.default_days).to eq(3)
+    end
+
+    context "when an explicit update_cooldown already exceeds the npmrc floor" do
+      let(:checker) do
+        described_class.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          update_cooldown: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 10),
+          options: options
+        )
+      end
+
+      it "keeps default_days unchanged and logs no warning" do
+        expect(Dependabot.logger).not_to receive(:warn)
+        expect(checker.update_cooldown.default_days).to eq(10)
+      end
+    end
+
+    context "when dependabot.yml default_days is below the npmrc floor" do
+      let(:checker) do
+        described_class.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          update_cooldown: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 1),
+          options: options
+        )
+      end
+
+      it "raises default_days to the npmrc floor and logs semver-field warnings only" do
+        expect(Dependabot.logger).to receive(:warn).with(
+          ".npmrc min-release-age (3 days) conflicts with dependabot.yml update_cooldown " \
+          "(default_days: 1); it acts as a minimum floor for all cooldown values."
+        ).once
+        # ReleaseCooldownOptions derives semver fields from default_days when not set
+        # explicitly, so all three are 1 and each gets an override warning.
+        %w(semver_major_days semver_minor_days semver_patch_days).each do |field|
+          expect(Dependabot.logger).to receive(:warn).with(
+            ".npmrc min-release-age (3 days) overrides dependabot.yml #{field} " \
+            "(1 days) because it would cause npm install to fail."
+          )
+        end
+        expect(checker.update_cooldown.default_days).to eq(3)
+      end
+    end
+
+    context "when a semver-specific day is below the npmrc floor" do
+      let(:checker) do
+        described_class.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          update_cooldown: Dependabot::Package::ReleaseCooldownOptions.new(
+            default_days: 10,
+            semver_patch_days: 1
+          ),
+          options: options
+        )
+      end
+
+      it "raises semver_patch_days to the npmrc floor and logs an override warning" do
+        expect(Dependabot.logger).to receive(:warn).with(
+          ".npmrc min-release-age (3 days) conflicts with dependabot.yml update_cooldown " \
+          "(default_days: 10); it acts as a minimum floor for all cooldown values."
+        )
+        expect(Dependabot.logger).to receive(:warn).with(
+          ".npmrc min-release-age (3 days) overrides dependabot.yml semver_patch_days " \
+          "(1 days) because it would cause npm install to fail."
+        )
+        expect(checker.update_cooldown.semver_patch_days).to eq(3)
+      end
+    end
+
+    context "when include/exclude patterns are configured alongside npmrc" do
+      let(:checker) do
+        described_class.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          update_cooldown: Dependabot::Package::ReleaseCooldownOptions.new(
+            default_days: 5,
+            include: %w(lodash react)
+          ),
+          options: options
+        )
+      end
+
+      it "drops include/exclude and logs a warning" do
+        expect(Dependabot.logger).to receive(:warn).with(
+          ".npmrc min-release-age does not support include/exclude patterns; " \
+          "dropping dependabot.yml update_cooldown include/exclude configuration."
+        )
+        expect(checker.update_cooldown.include).to be_empty
+        expect(checker.update_cooldown.exclude).to be_empty
+        expect(checker.update_cooldown.default_days).to eq(5)
+      end
     end
   end
 end
