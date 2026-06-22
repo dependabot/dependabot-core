@@ -55,7 +55,9 @@ module Dependabot
 
       private
 
-      sig { params(version_string: String).returns(T::Hash[Symbol, T.untyped]) }
+      sig do
+        params(version_string: String).returns({ base_version: T.nilable(String), port_version: T.nilable(Integer) })
+      end
       def parse_version(version_string)
         match = version_string.match(VERSION_PATTERN)
         raise ArgumentError, "Malformed version number string #{version_string}" unless match

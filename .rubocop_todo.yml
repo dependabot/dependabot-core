@@ -239,14 +239,13 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 1843
+# Offense count: 1835
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bazel/lib/dependabot/bazel/file_fetcher.rb"
     - "bazel/lib/dependabot/bazel/file_parser/starlark_parser.rb"
     - "bazel/lib/dependabot/bazel/update_checker/registry_client.rb"
     - "bazel/lib/dependabot/bazel/update_checker/requirements_updater.rb"
-    - "bazel/lib/dependabot/bazel/version.rb"
     - "bun/lib/dependabot/bun.rb"
     - "bun/lib/dependabot/bun/dependency_files_filterer.rb"
     - "bun/lib/dependabot/bun/file_fetcher.rb"
@@ -336,7 +335,6 @@ Sorbet/ForbidTUntyped:
     - "composer/lib/dependabot/composer/helpers.rb"
     - "composer/lib/dependabot/composer/metadata_finder.rb"
     - "composer/lib/dependabot/composer/package/package_details_fetcher.rb"
-    - "composer/lib/dependabot/composer/requirement.rb"
     - "composer/lib/dependabot/composer/update_checker/version_resolver.rb"
     - "conda/lib/dependabot/conda/conda_registry_client.rb"
     - "conda/lib/dependabot/conda/file_fetcher.rb"
@@ -399,7 +397,6 @@ Sorbet/ForbidTUntyped:
     - "hex/lib/dependabot/hex/update_checker.rb"
     - "hex/lib/dependabot/hex/update_checker/latest_version_finder.rb"
     - "hex/lib/dependabot/hex/update_checker/requirements_updater.rb"
-    - "hex/lib/dependabot/hex/version.rb"
     - "julia/lib/dependabot/julia/file_fetcher.rb"
     - "julia/lib/dependabot/julia/file_parser.rb"
     - "julia/lib/dependabot/julia/file_updater.rb"
@@ -416,7 +413,6 @@ Sorbet/ForbidTUntyped:
     - "maven/lib/dependabot/maven/file_updater.rb"
     - "maven/lib/dependabot/maven/file_updater/declaration_finder.rb"
     - "maven/lib/dependabot/maven/package/package_details_fetcher.rb"
-    - "maven/lib/dependabot/maven/requirement.rb"
     - "maven/lib/dependabot/maven/shared/base_version_finder.rb"
     - "maven/lib/dependabot/maven/shared/shared_package_details_fetcher.rb"
     - "maven/lib/dependabot/maven/shared/shared_property_value_updater.rb"
@@ -536,7 +532,6 @@ Sorbet/ForbidTUntyped:
     - "swift/lib/dependabot/swift/file_updater/manifest_updater.rb"
     - "swift/lib/dependabot/swift/file_updater/xcode_lockfile_updater.rb"
     - "swift/lib/dependabot/swift/native_requirement.rb"
-    - "swift/lib/dependabot/swift/requirement.rb"
     - "swift/lib/dependabot/swift/update_checker.rb"
     - "swift/lib/dependabot/swift/update_checker/latest_version_resolver.rb"
     - "swift/lib/dependabot/swift/update_checker/requirements_updater.rb"
@@ -587,4 +582,3 @@ Sorbet/ForbidTUntyped:
     - "vcpkg/lib/dependabot/vcpkg/file_updater.rb"
     - "vcpkg/lib/dependabot/vcpkg/package/package_details_fetcher.rb"
     - "vcpkg/lib/dependabot/vcpkg/update_checker.rb"
-    - "vcpkg/lib/dependabot/vcpkg/version.rb"
