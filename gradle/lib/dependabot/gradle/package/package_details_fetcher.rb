@@ -15,6 +15,7 @@ require "dependabot/logger"
 require "dependabot/gradle/metadata_finder"
 require "dependabot/gradle/package/release_date_extractor"
 require "dependabot/gradle/package/version_release_date_fallback_fetcher"
+require "dependabot/package/release_cooldown_options"
 
 module Dependabot
   module Gradle
@@ -55,14 +56,16 @@ module Dependabot
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            forbidden_urls: T.nilable(T::Array[String])
+            forbidden_urls: T.nilable(T::Array[String]),
+            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize(dependency:, dependency_files:, credentials:, forbidden_urls:)
+        def initialize(dependency:, dependency_files:, credentials:, forbidden_urls:, cooldown_options: nil)
           @dependency = dependency
           @dependency_files = dependency_files
           @credentials = credentials
           @forbidden_urls = forbidden_urls
+          @cooldown_options = T.let(cooldown_options, T.nilable(Dependabot::Package::ReleaseCooldownOptions))
           @repositories = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
           @google_version_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
           @dependency_repository_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
@@ -101,7 +104,7 @@ module Dependabot
             end.flatten.compact
 
           version_details = version_details.sort_by { |details| details.fetch(:version) }
-          release_date_info = release_details
+          release_date_info = @cooldown_options ? release_details : {}
           version_details.each do |info|
             package_releases << {
               version: Gradle::Version.new(info[:version].to_s),

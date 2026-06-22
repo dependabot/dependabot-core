@@ -161,7 +161,12 @@ module Dependabot
           end
         end
 
-        return @inferred_npmrc ||= T.let(nil, T.nilable(DependencyFile)) unless npmrc.nil? && package_lock
+        unless npmrc.nil? && package_lock
+          # If .npmrc exists in the repo, it handles things — no rejection needed.
+          # If no .npmrc AND no lockfile, we can't infer, so check for rejection.
+          reject_if_private_registry_without_config! if npmrc.nil?
+          return @inferred_npmrc ||= T.let(nil, T.nilable(DependencyFile))
+        end
 
         known_registries = []
         FileParser::JsonLock.new(T.must(package_lock)).parsed.fetch(
@@ -209,6 +214,9 @@ module Dependabot
           end
         end
 
+        # Phase 3: Reject updates when private registries exist but no config is resolvable
+        reject_if_private_registry_without_config!
+
         @inferred_npmrc ||= nil
       end
       # rubocop:enable Metrics/MethodLength
@@ -225,6 +233,26 @@ module Dependabot
           name: ".npmrc",
           content: content
         )
+      end
+
+      sig { void }
+      def reject_if_private_registry_without_config!
+        return unless Dependabot::Experiments.enabled?(:enable_npmrc_credential_generation)
+
+        private_registry_creds = wrapped_credentials.select do |cred|
+          next false unless cred["type"] == "npm_registry"
+
+          registry = cred["registry"]
+          next false if registry.nil?
+
+          # Normalize: strip scheme to compare against CENTRAL_REGISTRIES (bare hostnames)
+          normalized = registry.sub(%r{^https?://}, "")
+          !NpmAndYarn::FileUpdater::NpmrcBuilder::CENTRAL_REGISTRIES.include?(normalized)
+        end
+        return if private_registry_creds.empty?
+
+        registry = private_registry_creds.first&.fetch("registry", nil) || "unknown"
+        raise Dependabot::PrivateRegistryConfigNotFound, registry
       end
 
       sig { returns(T::Boolean) }
