@@ -564,7 +564,7 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.12.3)
     simplecov_json_formatter (0.1.4)
-    sorbet-runtime (0.6.13208)
+    sorbet-runtime (0.6.13296)
     stackprof (0.2.28)
     stringio (3.2.0)
     terminal-table (4.0.0)
@@ -850,7 +850,7 @@ CHECKSUMS
   simplecov (0.22.0) sha256=fe2622c7834ff23b98066bb0a854284b2729a569ac659f82621fc22ef36213a5
   simplecov-html (0.12.3) sha256=4b1aad33259ffba8b29c6876c12db70e5750cb9df829486e4c6e5da4fa0aa07b
   simplecov_json_formatter (0.1.4) sha256=529418fbe8de1713ac2b2d612aa3daa56d316975d307244399fa4838c601b428
-  sorbet-runtime (0.6.13208) sha256=2ae9a6e52bbfdd39916448b09bfb165357190effb28fd8c554c5dd2c52be0a32
+  sorbet-runtime (0.6.13296) sha256=6c38b37727d254e272a1384a0c56e86f7b02df1aba127e24383f2a239ad8d0cd
   stackprof (0.2.28) sha256=4ec2ace02f386012b40ca20ef80c030ad711831f59511da12e83b34efb0f9a04
   stringio (3.2.0) sha256=c37cb2e58b4ffbd33fe5cd948c05934af997b36e0b6ca6fdf43afa234cf222e1
   terminal-table (4.0.0) sha256=f504793203f8251b2ea7c7068333053f0beeea26093ec9962e62ea79f94301d2

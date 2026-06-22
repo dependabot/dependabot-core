@@ -5,12 +5,12 @@
 # Please instead update this file by running `bin/tapioca gem faraday-follow_redirects`.
 
 
-# source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#3
+# pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:3
 module Faraday; end
 
 # Main Faraday::FollowRedirects module.
 #
-# source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#4
+# pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:4
 module Faraday::FollowRedirects; end
 
 # Public: Follow HTTP 301, 302, 303, 307, and 308 redirects.
@@ -32,7 +32,7 @@ module Faraday::FollowRedirects; end
 #     faraday.adapter Faraday.default_adapter
 #   end
 #
-# source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#23
+# pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:23
 class Faraday::FollowRedirects::Middleware < ::Faraday::Middleware
   # Public: Initialize the middleware.
   #
@@ -51,41 +51,33 @@ class Faraday::FollowRedirects::Middleware < ::Faraday::Middleware
   #                                  Authorization header should be cleared on
   #                                  redirects (default: true)
   #
-  # @return [Middleware] a new instance of Middleware
-  #
-  # source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#56
+  # pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:56
   def initialize(app, options = T.unsafe(nil)); end
 
-  # source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#64
+  # pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:64
   def call(env); end
 
   private
 
-  # source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#123
+  # pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:123
   def callback; end
 
-  # source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#138
+  # pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:138
   def clear_authorization_header(env, from_url, to_url); end
 
-  # @return [Boolean]
-  #
-  # source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#70
+  # pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:70
   def convert_to_get?(response); end
 
-  # source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#115
+  # pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:115
   def follow_limit; end
 
-  # @return [Boolean]
-  #
-  # source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#110
+  # pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:110
   def follow_redirect?(env, response); end
 
-  # source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#75
+  # pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:75
   def perform_with_redirection(env, follows); end
 
-  # @return [Boolean]
-  #
-  # source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#145
+  # pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:145
   def redirect_to_same_host?(from_url, to_url); end
 
   # Internal: escapes unsafe characters from an URL which might be a path
@@ -93,62 +85,56 @@ class Faraday::FollowRedirects::Middleware < ::Faraday::Middleware
   # URI:HTTP using the `+` operator. Doesn't escape "%" characters so to not
   # risk double-escaping.
   #
-  # source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#131
+  # pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:131
   def safe_escape(uri); end
 
-  # @return [Boolean]
-  #
-  # source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#119
+  # pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:119
   def standards_compliant?; end
 
-  # source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#91
+  # pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:91
   def update_env(env, request_body, response); end
 end
 
 # HTTP methods for which 30x redirects can be followed
 #
-# source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#25
+# pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:25
 Faraday::FollowRedirects::Middleware::ALLOWED_METHODS = T.let(T.unsafe(nil), Set)
 
-# source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#38
+# pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:38
 Faraday::FollowRedirects::Middleware::AUTH_HEADER = T.let(T.unsafe(nil), String)
 
 # Keys in env hash which will get cleared between requests
 #
-# source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#29
+# pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:29
 Faraday::FollowRedirects::Middleware::ENV_TO_CLEAR = T.let(T.unsafe(nil), Set)
 
 # Default value for max redirects followed
 #
-# source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#32
+# pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:32
 Faraday::FollowRedirects::Middleware::FOLLOW_LIMIT = T.let(T.unsafe(nil), Integer)
 
 # HTTP redirect status codes that this middleware implements
 #
-# source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#27
+# pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:27
 Faraday::FollowRedirects::Middleware::REDIRECT_CODES = T.let(T.unsafe(nil), Set)
 
 # Regex that matches characters that need to be escaped in URLs, sans
 # the "%" character which we assume already represents an escaped sequence.
 #
-# source://faraday-follow_redirects//lib/faraday/follow_redirects/middleware.rb#36
+# pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/middleware.rb:36
 Faraday::FollowRedirects::Middleware::URI_UNSAFE = T.let(T.unsafe(nil), Regexp)
 
 # Exception thrown when the maximum amount of requests is
 # exceeded.
 #
-# source://faraday-follow_redirects//lib/faraday/follow_redirects/redirect_limit_reached.rb#9
+# pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/redirect_limit_reached.rb:9
 class Faraday::FollowRedirects::RedirectLimitReached < ::Faraday::ClientError
-  # @return [RedirectLimitReached] a new instance of RedirectLimitReached
-  #
-  # source://faraday-follow_redirects//lib/faraday/follow_redirects/redirect_limit_reached.rb#12
+  # pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/redirect_limit_reached.rb:12
   def initialize(response); end
 
-  # Returns the value of attribute response.
-  #
-  # source://faraday-follow_redirects//lib/faraday/follow_redirects/redirect_limit_reached.rb#10
+  # pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/redirect_limit_reached.rb:10
   def response; end
 end
 
-# source://faraday-follow_redirects//lib/faraday/follow_redirects/version.rb#5
+# pkg:gem/faraday-follow_redirects#lib/faraday/follow_redirects/version.rb:5
 Faraday::FollowRedirects::VERSION = T.let(T.unsafe(nil), String)
