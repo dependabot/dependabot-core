@@ -206,6 +206,34 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
     end
   end
 
+  describe "CHECKSUMS_SECTION" do
+    let(:lockfile_body) do
+      <<~LOCKFILE
+        DEPENDENCIES
+          business (~> 1.5)
+
+        CHECKSUMS
+          business (1.5.0) sha256=abc
+          bundler (4.0.8) sha256=def
+
+        BUNDLED WITH
+           4.0.8
+      LOCKFILE
+    end
+
+    # Regression: the constant used the `/m` flag, which made the greedy `.*`
+    # in `entries` match newlines and swallow everything to EOF — including the
+    # trailing `BUNDLED WITH` section. See #15193 / #15229.
+    it "captures only the indented checksum lines, not the BUNDLED WITH section" do
+      match = lockfile_body.match(described_class::CHECKSUMS_SECTION)
+
+      expect(match[:entries]).to eq(
+        "  business (1.5.0) sha256=abc\n  bundler (4.0.8) sha256=def\n"
+      )
+      expect(match[:entries]).not_to include("BUNDLED WITH")
+    end
+  end
+
   describe "with multiple path gems" do
     let(:dependency) do
       Dependabot::Dependency.new(
