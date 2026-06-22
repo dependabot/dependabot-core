@@ -239,13 +239,12 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 1822
+# Offense count: 1695
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bazel/lib/dependabot/bazel/file_fetcher.rb"
     - "bazel/lib/dependabot/bazel/file_parser/starlark_parser.rb"
     - "bazel/lib/dependabot/bazel/update_checker/registry_client.rb"
-    - "bazel/lib/dependabot/bazel/update_checker/requirements_updater.rb"
     - "bun/lib/dependabot/bun.rb"
     - "bun/lib/dependabot/bun/dependency_files_filterer.rb"
     - "bun/lib/dependabot/bun/file_fetcher.rb"
@@ -342,7 +341,6 @@ Sorbet/ForbidTUntyped:
     - "conda/lib/dependabot/conda/requirement.rb"
     - "conda/lib/dependabot/conda/update_checker.rb"
     - "conda/lib/dependabot/conda/update_checker/latest_version_finder.rb"
-    - "conda/lib/dependabot/conda/update_checker/requirements_updater.rb"
     - "conda/lib/dependabot/conda/version.rb"
     - "deno/lib/dependabot/deno/file_fetcher.rb"
     - "deno/lib/dependabot/deno/file_parser.rb"
@@ -393,7 +391,6 @@ Sorbet/ForbidTUntyped:
     - "hex/lib/dependabot/hex/metadata_finder.rb"
     - "hex/lib/dependabot/hex/update_checker.rb"
     - "hex/lib/dependabot/hex/update_checker/latest_version_finder.rb"
-    - "hex/lib/dependabot/hex/update_checker/requirements_updater.rb"
     - "julia/lib/dependabot/julia/file_fetcher.rb"
     - "julia/lib/dependabot/julia/file_parser.rb"
     - "julia/lib/dependabot/julia/file_updater.rb"
@@ -402,7 +399,6 @@ Sorbet/ForbidTUntyped:
     - "julia/lib/dependabot/julia/registry_client.rb"
     - "julia/lib/dependabot/julia/update_checker.rb"
     - "julia/lib/dependabot/julia/update_checker/latest_version_finder.rb"
-    - "julia/lib/dependabot/julia/update_checker/requirements_updater.rb"
     - "maven/lib/dependabot/maven/file_parser.rb"
     - "maven/lib/dependabot/maven/file_parser/maven_dependency_parser.rb"
     - "maven/lib/dependabot/maven/file_parser/property_value_finder.rb"
@@ -461,7 +457,6 @@ Sorbet/ForbidTUntyped:
     - "opentofu/lib/dependabot/opentofu/file_updater.rb"
     - "opentofu/lib/dependabot/opentofu/package/package_details_fetcher.rb"
     - "opentofu/lib/dependabot/opentofu/registry_client.rb"
-    - "opentofu/lib/dependabot/opentofu/requirements_updater.rb"
     - "opentofu/lib/dependabot/opentofu/update_checker.rb"
     - "opentofu/lib/dependabot/opentofu/update_checker/latest_version_resolver.rb"
     - "pre_commit/lib/dependabot/pre_commit/additional_dependency_checkers/base.rb"
@@ -506,7 +501,6 @@ Sorbet/ForbidTUntyped:
     - "python/lib/dependabot/python/update_checker/latest_version_finder.rb"
     - "python/lib/dependabot/python/update_checker/pip_version_resolver.rb"
     - "python/lib/dependabot/python/update_checker/poetry_version_resolver.rb"
-    - "python/lib/dependabot/python/update_checker/requirements_updater.rb"
     - "rakelib/support/helpers.rb"
     - "rust_toolchain/lib/dependabot/rust_toolchain/models/rust_toolchain_config.rb"
     - "rust_toolchain/lib/dependabot/rust_toolchain/models/rust_toolchain_toml.rb"
@@ -536,7 +530,6 @@ Sorbet/ForbidTUntyped:
     - "terraform/lib/dependabot/terraform/file_updater.rb"
     - "terraform/lib/dependabot/terraform/file_updater/provider_cli_config_builder.rb"
     - "terraform/lib/dependabot/terraform/package/package_details_fetcher.rb"
-    - "terraform/lib/dependabot/terraform/requirements_updater.rb"
     - "terraform/lib/dependabot/terraform/update_checker.rb"
     - "terraform/lib/dependabot/terraform/update_checker/latest_version_resolver.rb"
     - "updater/lib/dependabot/api_client.rb"
