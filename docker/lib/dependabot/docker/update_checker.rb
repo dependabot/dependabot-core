@@ -1153,6 +1153,7 @@ module Dependabot
         digests
       rescue *transient_docker_errors, DockerRegistry2::RegistryAuthenticationException,
              RestClient::Forbidden, RestClient::TooManyRequests, JSON::ParserError => e
+        Dependabot.logger.info(
           "Failed to fetch platform digests for #{docker_repo_name}:#{tag_name}: #{e.message}"
         )
         platform_digests_cache[tag_name] = {}
