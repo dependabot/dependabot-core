@@ -96,6 +96,13 @@ Sorbet/BlockMethodDefinition:
   Enabled: true
   Exclude:
     - "**/spec/**/*"
+Sorbet/EnforceSignatures:
+  Enabled: true
+  Exclude:
+    - "**/spec/**/*"
+    - "bin/**/*"
+    - "bundler/helpers/**/*"
+    - "rakelib/support/test/**/*"
 Sorbet/ForbidTAnyWithNil:
   Enabled: true
 Sorbet/ForbidTUnsafe:
