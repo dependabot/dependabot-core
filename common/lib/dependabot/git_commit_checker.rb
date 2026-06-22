@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "time"
 require "sorbet-runtime"
 require "gitlab"
 require "dependabot/clients/github_with_retries"
@@ -15,6 +16,9 @@ require "dependabot/dependency"
 require "dependabot/credential"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_tag_details"
+require "dependabot/package/package_release"
+require "dependabot/package/release_cooldown_options"
+require "dependabot/update_checkers/cooldown_calculation"
 module Dependabot
   # rubocop:disable Metrics/ClassLength
   class GitCommitChecker
@@ -283,6 +287,47 @@ module Dependabot
     sig { returns(T::Array[Dependabot::GitRef]) }
     def all_version_tags
       allowed_versions(local_tags, filter_by_prefix: false)
+    end
+
+    # (A) Returns the allowed version tags paired with their parsed release
+    # dates as a single list, so callers don't have to re-correlate two
+    # separate lists (tags and tag-dates) by tag name themselves.
+    sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
+    def allowed_version_tags_with_release_dates
+      allowed_version_tags.map do |tag|
+        Dependabot::Package::PackageRelease.new(
+          version: T.cast(version_from_tag(tag), Dependabot::Version),
+          tag: tag.name,
+          released_at: release_date_for_tag_name(tag.name)
+        )
+      end
+    end
+
+    # (B) Returns the latest allowed version tag that is not within its cooldown
+    # window, or nil when every candidate tag is still cooling down. Cooldown is
+    # never applied to security updates: callers pass cooldown_options: nil for
+    # those, which short-circuits to the standard latest-tag resolution.
+    sig do
+      params(cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+        .returns(T.nilable(Dependabot::GitTagDetails))
+    end
+    def local_tag_for_latest_version_respecting_cooldown(cooldown_options)
+      if Dependabot::UpdateCheckers::CooldownCalculation.skip_cooldown?(cooldown_options, dependency.name)
+        return local_tag_for_latest_version
+      end
+
+      cooldown = T.must(cooldown_options)
+      candidate_tags = allowed_version_tags
+      filtered_tags = candidate_tags.reject { |tag| tag_in_cooldown_period?(tag, cooldown) }
+
+      if filtered_tags.empty? && candidate_tags.any?
+        Dependabot.logger.info(
+          "All git tags for #{dependency.name} are within their cooldown period; skipping update"
+        )
+        return nil
+      end
+
+      max_local_tag(filtered_tags)
     end
 
     private
@@ -710,6 +755,72 @@ module Dependabot
     sig { params(name: String).returns(String) }
     def scan_version(name)
       T.must(T.must(name.match(VERSION_REGEX)).named_captures.fetch("version"))
+    end
+
+    sig do
+      params(tag: Dependabot::GitRef, cooldown: Dependabot::Package::ReleaseCooldownOptions)
+        .returns(T::Boolean)
+    end
+    def tag_in_cooldown_period?(tag, cooldown)
+      released_at = release_date_for_tag_name(tag.name)
+      return false unless released_at
+
+      cooldown_days = Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(
+        cooldown,
+        T.cast(current_version, T.nilable(Dependabot::Version)),
+        T.cast(version_from_tag(tag), Dependabot::Version)
+      )
+
+      in_cooldown = Dependabot::UpdateCheckers::CooldownCalculation
+                    .within_cooldown_window?(released_at, cooldown_days)
+
+      if in_cooldown
+        passed_days = (Time.now.to_i - released_at.to_i) /
+                      Dependabot::UpdateCheckers::CooldownCalculation::DAY_IN_SECONDS
+        Dependabot.logger.info(
+          "Filtered git tag #{tag.name} for #{dependency.name}: released " \
+          "#{released_at.strftime('%Y-%m-%d')} (#{passed_days}/#{cooldown_days} cooldown days)"
+        )
+      end
+
+      in_cooldown
+    end
+
+    # The allowed version tags may carry a "tags/" prefix (when the dependency
+    # is pinned via "tags/<ref>"), whereas refs_for_tag_with_detail returns the
+    # raw tag names, so we try both forms to line dates up regardless of prefix.
+    sig { params(tag_name: String).returns(T.nilable(Time)) }
+    def release_date_for_tag_name(tag_name)
+      release_dates_by_tag_name[tag_name] ||
+        release_dates_by_tag_name[tag_name.delete_prefix("tags/")]
+    end
+
+    sig { returns(T::Hash[String, Time]) }
+    def release_dates_by_tag_name
+      @release_dates_by_tag_name ||= T.let(
+        build_release_dates_by_tag_name,
+        T.nilable(T::Hash[String, Time])
+      )
+    end
+
+    sig { returns(T::Hash[String, Time]) }
+    def build_release_dates_by_tag_name
+      dates = T.let({}, T::Hash[String, Time])
+      refs_for_tag_with_detail.each do |detail|
+        released_at = parse_release_date(detail.release_date)
+        dates[detail.tag] = released_at if released_at
+      end
+      dates
+    end
+
+    sig { params(release_date: T.nilable(String)).returns(T.nilable(Time)) }
+    def parse_release_date(release_date)
+      return nil if release_date.nil? || release_date.empty?
+
+      Time.parse(release_date)
+    rescue ArgumentError => e
+      Dependabot.logger.error("Invalid release date format: #{release_date} (#{e.message})")
+      nil
     end
 
     sig { returns(T.class_of(Gem::Version)) }

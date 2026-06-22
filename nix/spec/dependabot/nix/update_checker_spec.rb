@@ -84,7 +84,7 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
         allow(git_checker).to receive_messages(
           git_dependency?: true,
           pinned_ref_looks_like_version?: true,
-          local_tag_for_latest_version: {
+          local_tag_for_latest_version_respecting_cooldown: {
             tag: "v0.6.2", commit_sha: "def456", tag_sha: "def456"
           }
         )
@@ -96,6 +96,48 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
 
       it "reports as updatable" do
         expect(checker.can_update?(requirements_to_unlock: :own)).to be true
+      end
+    end
+
+    context "with a tag-pinned input whose latest tag is within its cooldown window" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "devenv",
+          version: "abc123",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", url: "https://github.com/cachix/devenv", branch: nil, ref: "v0.5" }
+          }],
+          package_manager: "nix"
+        )
+      end
+      let(:checker) do
+        described_class.new(
+          dependency: dependency,
+          dependency_files: [],
+          credentials: [],
+          update_cooldown: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+        )
+      end
+
+      before do
+        git_checker = instance_double(Dependabot::GitCommitChecker)
+        allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+        allow(git_checker).to receive_messages(
+          git_dependency?: true,
+          pinned_ref_looks_like_version?: true,
+          local_tag_for_latest_version_respecting_cooldown: nil
+        )
+      end
+
+      it "makes no update while the tag is cooling down" do
+        expect(checker.latest_version).to be_nil
+      end
+
+      it "reports as not updatable" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be false
       end
     end
 
@@ -120,7 +162,7 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
         allow(git_checker).to receive_messages(
           git_dependency?: true,
           pinned_ref_looks_like_version?: true,
-          local_tag_for_latest_version: {
+          local_tag_for_latest_version_respecting_cooldown: {
             tag: "v0.6.2", commit_sha: "def456", tag_sha: "def456"
           }
         )
@@ -321,7 +363,7 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
         allow(git_checker).to receive_messages(
           git_dependency?: true,
           pinned_ref_looks_like_version?: true,
-          local_tag_for_latest_version: {
+          local_tag_for_latest_version_respecting_cooldown: {
             tag: "v0.6.2", commit_sha: "def456", tag_sha: "def456"
           }
         )
