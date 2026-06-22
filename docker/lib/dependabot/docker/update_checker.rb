@@ -263,6 +263,7 @@ module Dependabot
         # (which requires a call to the registry for each tag, so can be slow)
         candidate_tags = comparable_tags_from_registry(version_tag)
         candidate_tags = remove_version_downgrades(candidate_tags, version_tag)
+        candidate_tags = remove_more_precise_tags(candidate_tags, version_tag)
         candidate_tags = remove_prereleases(candidate_tags, version_tag)
         candidate_tags = filter_ignored(candidate_tags)
         candidate_tags = sort_tags(candidate_tags, version_tag)
@@ -284,6 +285,18 @@ module Dependabot
         # Iterate from highest to lowest, trying each candidate until one passes validation
         candidate_tags.reverse_each do |candidate|
           selected = select_tag_with_precision(candidate, same_precision_tags, version_tag)
+
+          # Content check (runs regardless of experiments): if the candidate tag
+          # resolves to the exact same image contents as the current tag, there
+          # is no real update to make. This catches rolling tags (e.g. "9.0")
+          # that point to the same image as a pinned tag (e.g. "9.0.11").
+          if selected.name != version_tag.name && same_image_contents?(selected, version_tag)
+            Dependabot.logger.info(
+              "Digest check: #{selected.name} has the same image contents as #{version_tag.name} " \
+              "— no update needed, staying on #{version_tag.name}"
+            )
+            next
+          end
 
           if Dependabot::Experiments.enabled?(:docker_created_timestamp_validation) &&
              selected.name != version_tag.name
@@ -348,18 +361,6 @@ module Dependabot
       def validate_tag_with_timestamp(selected_tag, current_tag)
         return selected_tag unless Dependabot::Experiments.enabled?(:docker_created_timestamp_validation)
         return selected_tag if selected_tag.name == current_tag.name
-
-        # Content check (runs before the created-timestamp check): if the
-        # candidate tag resolves to the exact same image contents as the current
-        # tag, there is no real update to make. This catches rolling tags (e.g.
-        # "9.0") that point to the same image as a pinned tag (e.g. "9.0.11").
-        if same_image_contents?(selected_tag, current_tag)
-          Dependabot.logger.info(
-            "Digest check: #{selected_tag.name} has the same image contents as #{current_tag.name} " \
-            "— no update needed, staying on #{current_tag.name}"
-          )
-          return current_tag
-        end
 
         if validate_candidate_platforms(selected_tag, current_tag)
           Dependabot.logger.info(
@@ -572,6 +573,26 @@ module Dependabot
         candidate_tags.select do |tag|
           comparable_version_from(tag) >= current_version
         end
+      end
+
+      # When the current tag pins only the major or major.minor version (e.g.
+      # "9.0"), a candidate that additionally specifies a patch version (e.g.
+      # "9.0.17") is not a wanted upgrade: pinning the less precise tag opts into
+      # a rolling tag, so the patch should not be specified for them. Only true
+      # semver tags (":normal" format) are filtered here — build-number and date
+      # based formats have their own comparability rules and are left untouched.
+      sig do
+        params(
+          candidate_tags: T::Array[Dependabot::Docker::Tag],
+          version_tag: Dependabot::Docker::Tag
+        )
+          .returns(T::Array[Dependabot::Docker::Tag])
+      end
+      def remove_more_precise_tags(candidate_tags, version_tag)
+        return candidate_tags unless version_tag.format == :normal
+        return candidate_tags if version_tag.precision > 2
+
+        candidate_tags.select { |tag| tag.precision <= version_tag.precision }
       end
 
       sig do
@@ -1097,9 +1118,10 @@ module Dependabot
 
       # Returns true when the candidate tag and current tag reference the exact
       # same image contents. Only multi-arch (manifest list) images are compared
-      # here, by checking that every platform in the current tag is present in the
-      # candidate with an identical per-platform manifest digest. Single-platform
-      # images are already handled by the precision/digest logic in selection.
+      # here, by checking that both tags expose the identical set of platforms
+      # with matching per-platform manifest digests. Single-platform images yield
+      # an empty digest map and are already handled by the precision/digest logic
+      # in selection.
       sig do
         params(
           candidate_tag: Dependabot::Docker::Tag,
@@ -1107,19 +1129,16 @@ module Dependabot
         ).returns(T::Boolean)
       end
       def same_image_contents?(candidate_tag, current_tag)
-        return false if fetch_manifest_platforms(current_tag.name).nil?
-
         current_digests = fetch_platform_digests(current_tag.name)
         return false if current_digests.empty?
 
         candidate_digests = fetch_platform_digests(candidate_tag.name)
         return false if candidate_digests.empty?
 
-        # The contents are unchanged when every platform in the current tag is
-        # present in the candidate with an identical manifest digest.
-        current_digests.all? do |key, digest|
-          candidate_digests[key] == digest
-        end
+        # The contents are unchanged only when both tags expose the exact same set
+        # of platforms with identical per-platform manifest digests. A candidate
+        # with extra platforms is a different image and must not match.
+        current_digests == candidate_digests
       end
 
       # Fetches a map of platform key (e.g. "linux/amd64") to platform manifest

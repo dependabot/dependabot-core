@@ -61,6 +61,14 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
     stub_request(:get, repo_url + "tags/list")
       .and_return(status: 200, body: registry_tags)
+
+    # The fixtures used throughout this spec describe single-platform images, so
+    # the (experiment-independent) digest-content check is a no-op by default:
+    # an empty platform-digest map means "not a manifest list", so candidates are
+    # never suppressed as same-content. Multi-platform behaviour is exercised by
+    # the dedicated "multi-platform validation" and "digest-content check"
+    # describe blocks, which re-stub these methods with their own platform digests.
+    allow(checker).to receive(:fetch_platform_digests).and_return({})
   end
 
   it_behaves_like "an update checker"
@@ -1112,6 +1120,33 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("8.7") }
     end
 
+    context "when the tag pins only major.minor and newer tags add a patch version" do
+      let(:dependency_name) { "golang" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/golang/" }
+      let(:tags_fixture_name) { "golang.json" }
+      let(:version) { "1.25" }
+
+      it "ignores patch-versioned candidates and stays on the major.minor tag" do
+        # The registry only offers patch tags (1.25.0, 1.26.0, 1.27.0). A tag
+        # pinned to 1.25 opted into the rolling major.minor tag, so none of the
+        # more precise patch tags should be proposed as an update.
+        expect(checker.latest_version).to eq("1.25")
+      end
+    end
+
+    context "when the tag pins major.minor.patch" do
+      let(:dependency_name) { "golang" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/golang/" }
+      let(:tags_fixture_name) { "golang.json" }
+      let(:version) { "1.25.0" }
+
+      it "still proposes a newer patch version" do
+        # A tag that already pins a patch version is happy to receive newer
+        # patch versions, so 1.27.0 is a valid update from 1.25.0.
+        expect(checker.latest_version).to eq("1.27.0")
+      end
+    end
+
     context "when the latest tag points to an older version" do
       let(:tags_fixture_name) { "dotnet.json" }
       let(:headers_response) do
@@ -1654,7 +1689,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       context "when docker_created_timestamp_validation is enabled" do
         before do
           Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
-          allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
+          allow(checker).to receive_messages(fetch_manifest_platforms: nil, fetch_platform_digests: {})
         end
 
         after { Dependabot::Experiments.reset! }
@@ -1918,7 +1953,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
-    context "when all non-dated candidate tags are genuinely newer by timestamp" do
+    context "when the only newer non-dated candidate adds a patch version" do
       let(:dependency_name) { "dotnet/framework/aspnet" }
       let(:version) { "4.8-windowsservercore-ltsc2022" }
       let(:tags_fixture_name) { "aspnet.json" }
@@ -1931,7 +1966,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
-        allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
+        allow(checker).to receive_messages(fetch_manifest_platforms: nil, fetch_platform_digests: {})
 
         # Stub manifest digest requests needed by precision comparison
         stub_request(:head, repo_url + "manifests/4.8-windowsservercore-ltsc2022")
@@ -1950,10 +1985,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       after { Dependabot::Experiments.reset! }
 
-      it "returns the highest non-dated tag since dated tags are excluded" do
+      it "stays on the major.minor tag and ignores the patch candidate" do
         # 4.8-20250909 is excluded because it's a dated tag and 4.8 is non-dated.
-        # The only comparable non-dated upgrade is 4.8.1.
-        expect(checker.latest_version).to eq("4.8.1-windowsservercore-ltsc2022")
+        # The only other comparable candidate, 4.8.1, adds a patch version that
+        # the pinned 4.8 tag did not request, so it is ignored and 4.8 stays put.
+        expect(checker.latest_version).to eq("4.8-windowsservercore-ltsc2022")
       end
     end
 
@@ -2017,7 +2053,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
-        allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
+        allow(checker).to receive_messages(fetch_manifest_platforms: nil, fetch_platform_digests: {})
 
         # Stub manifest digest requests needed by precision comparison
         stub_request(:head, repo_url + "manifests/4.8.1-20251014-windowsservercore-ltsc2022")
@@ -2066,7 +2102,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
-        allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
+        allow(checker).to receive_messages(fetch_manifest_platforms: nil, fetch_platform_digests: {})
 
         stub_request(:head, repo_url + "manifests/4.8.1-windowsservercore-ltsc2022")
           .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
@@ -2106,7 +2142,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
-        allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
+        allow(checker).to receive_messages(fetch_manifest_platforms: nil, fetch_platform_digests: {})
 
         stub_request(:head, repo_url + "manifests/4.8.1-20251014-windowsservercore-ltsc2022")
           .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
@@ -2560,12 +2596,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     end
 
     before do
-      Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
-
       allow(checker).to receive_messages(fetch_manifest_platforms: platforms, fetch_platform_digests: {})
     end
-
-    after { Dependabot::Experiments.reset! }
 
     context "when the candidate resolves to the same per-platform digests" do
       before do
