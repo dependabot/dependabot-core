@@ -1271,6 +1271,25 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
       end
 
+      context "when a GitHub Release publish date is available" do
+        let(:refs_with_detail) do
+          [
+            Dependabot::GitTagWithDetail.new(tag: "v1.11.1", release_date: "2018-01-02"),
+            Dependabot::GitTagWithDetail.new(tag: "v1.13.0", release_date: "2018-03-04")
+          ]
+        end
+
+        before do
+          github_release = Struct.new(:tag_name, :published_at)
+                                 .new("v1.13.0", Time.now)
+          allow(checker).to receive(:cached_github_releases).and_return([github_release])
+        end
+
+        it "prefers the release publish date over the tag creation date" do
+          expect(latest_tag[:tag]).to eq("v1.11.1")
+        end
+      end
+
       context "when the dependency is excluded from cooldown" do
         let(:cooldown_options) do
           Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90, exclude: ["business"])

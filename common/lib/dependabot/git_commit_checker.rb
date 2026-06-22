@@ -19,10 +19,12 @@ require "dependabot/git_tag_details"
 require "dependabot/package/package_release"
 require "dependabot/package/release_cooldown_options"
 require "dependabot/update_checkers/cooldown_calculation"
+require "dependabot/git_cooldown_date_resolver"
 module Dependabot
   # rubocop:disable Metrics/ClassLength
   class GitCommitChecker
     extend T::Sig
+    include Dependabot::GitCooldownDateResolver
 
     VERSION_REGEX = /
       (?<version>
@@ -789,10 +791,27 @@ module Dependabot
     # The allowed version tags may carry a "tags/" prefix (when the dependency
     # is pinned via "tags/<ref>"), whereas refs_for_tag_with_detail returns the
     # raw tag names, so we try both forms to line dates up regardless of prefix.
+    #
+    # A GitHub Release's published_at is preferred when available, falling back
+    # to the tag creation date from refs_for_tag_with_detail. This mirrors the
+    # priority used by Dependabot::GitCooldownDateResolver.
     sig { params(tag_name: String).returns(T.nilable(Time)) }
     def release_date_for_tag_name(tag_name)
-      release_dates_by_tag_name[tag_name] ||
-        release_dates_by_tag_name[tag_name.delete_prefix("tags/")]
+      normalized = normalize_tag_name(tag_name)
+
+      github_release_published_at(normalized) ||
+        release_dates_by_tag_name[tag_name] ||
+        release_dates_by_tag_name[normalized]
+    end
+
+    sig { override.returns(T.nilable(String)) }
+    def cooldown_source_url
+      dependency_source_details&.fetch(:url, nil)
+    end
+
+    sig { override.returns(T::Array[Dependabot::Credential]) }
+    def cooldown_credentials
+      credentials
     end
 
     sig { returns(T::Hash[String, Time]) }
