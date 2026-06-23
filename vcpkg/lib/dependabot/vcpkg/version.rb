@@ -16,9 +16,9 @@ module Dependabot
       sig { override.params(version: VersionParameter).void }
       def initialize(version)
         @version_string = T.let(version.to_s, String)
-        parsed_version = parse_version(@version_string)
-        super(T.cast(parsed_version[:base_version], String))
-        @port_version = T.let(parsed_version[:port_version], T.nilable(Integer))
+        base_version, port_version = parse_version(@version_string)
+        super(base_version)
+        @port_version = T.let(port_version, T.nilable(Integer))
       end
 
       sig { returns(T.nilable(Integer)) }
@@ -55,17 +55,12 @@ module Dependabot
 
       private
 
-      sig do
-        params(version_string: String).returns({ base_version: T.nilable(String), port_version: T.nilable(Integer) })
-      end
+      sig { params(version_string: String).returns([String, T.nilable(Integer)]) }
       def parse_version(version_string)
         match = version_string.match(VERSION_PATTERN)
         raise ArgumentError, "Malformed version number string #{version_string}" unless match
 
-        {
-          base_version: match[1],
-          port_version: match[2]&.to_i
-        }
+        [T.must(match[1]), match[2]&.to_i]
       end
     end
   end
