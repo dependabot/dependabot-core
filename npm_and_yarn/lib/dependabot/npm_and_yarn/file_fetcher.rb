@@ -91,6 +91,11 @@ module Dependabot
         fetched_files += workspace_package_jsons
         fetched_files += path_dependencies(fetched_files)
 
+        # Ensure private registry rejection runs even when npm_version is nil
+        # (e.g. no lockfile, no packageManager, no engines), since inferred_npmrc
+        # is only called from npm_files which is gated on npm_version.
+        reject_if_private_registry_without_config! unless npm_version
+
         # Filter excluded files from final collection
         filtered_files = fetched_files.uniq.reject do |file|
           Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
@@ -156,7 +161,7 @@ module Dependabot
         if Dependabot::Experiments.enabled?(:enable_npmrc_credential_generation) && credentials_have_scope?
           npmrc_from_credentials = generate_npmrc_from_credentials
           if npmrc_from_credentials
-            Dependabot.logger.info("Generated .npmrc from credential scope configuration (overrides committed .npmrc)")
+            Dependabot.logger.warn("Generated .npmrc from credential scope configuration (overrides committed .npmrc)")
             return @inferred_npmrc ||= T.let(npmrc_from_credentials, T.nilable(DependencyFile))
           end
         end
