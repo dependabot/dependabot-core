@@ -230,6 +230,10 @@ public class RunWorker
         var includeCooldown = allowCooldown &&
             job.Cooldown is not null &&
             job.Cooldown.AppliesToPackage(dependency.Name);
+        var allowPrerelease = job.AllowedUpdates.Any(a =>
+            a.Prerelease &&
+            (a.DependencyName is null ||
+             FileSystemName.MatchesSimpleExpression(a.DependencyName, dependency.Name)));
         var dependencyInfo = new DependencyInfo()
         {
             Name = dependency.Name,
@@ -239,6 +243,7 @@ public class RunWorker
             Vulnerabilities = vulnerabilities,
             IgnoredUpdateTypes = [.. ignoredUpdateTypes.OrderBy(t => t)],
             Cooldown = includeCooldown ? job.Cooldown : null,
+            AllowPrerelease = allowPrerelease,
         };
         return dependencyInfo;
     }

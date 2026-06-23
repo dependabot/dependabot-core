@@ -17,6 +17,7 @@ module Dependabot
       const :dependency_type, String, default: "all"
       const :update_type, String, default: "all"
       const :update_types, T::Array[String], default: []
+      const :prerelease, T.nilable(T::Boolean), default: nil
 
       sig { params(hash: T::Hash[String, T.untyped]).returns(AllowedUpdate) }
       def self.from_hash(hash)
@@ -24,7 +25,8 @@ module Dependabot
           dependency_name: hash["dependency-name"],
           dependency_type: hash.fetch("dependency-type", "all") || "all",
           update_type: hash.fetch("update-type", "all") || "all",
-          update_types: hash.fetch("update-types", []) || []
+          update_types: hash.fetch("update-types", []) || [],
+          prerelease: hash["prerelease"]
         )
       end
 
@@ -37,6 +39,7 @@ module Dependabot
         h["dependency-type"] = dependency_type
         h["update-type"] = update_type
         h["update-types"] = update_types unless update_types.empty?
+        h["prerelease"] = prerelease unless prerelease.nil?
         h
       end
     end

@@ -5,6 +5,7 @@ public sealed record AllowedUpdate
     public DependencyType DependencyType { get; init; } = DependencyType.All;
     public string? DependencyName { get; init; } = null;
     public UpdateType UpdateType { get; init; } = UpdateType.All;
+    public bool Prerelease { get; init; } = false;
 }
 
 public enum DependencyType
