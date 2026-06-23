@@ -38,12 +38,10 @@ module Dependabot
       def updated_requirements
         return dependency.requirements unless latest_version
 
-        wrap_requirements(
-          RequirementsUpdater.new(
-            requirements: dependency.requirements,
-            latest_version: latest_version.to_s
-          ).updated_requirements
-        )
+        RequirementsUpdater.new(
+          requirements: dependency.requirements,
+          latest_version: latest_version.to_s
+        ).updated_requirements
       end
 
       sig { returns(T.class_of(Dependabot::Bazel::Version)) }

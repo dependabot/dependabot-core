@@ -8,6 +8,7 @@
 
 require "sorbet-runtime"
 
+require "dependabot/dependency_requirement"
 require "dependabot/opentofu/version"
 require "dependabot/opentofu/requirement"
 
@@ -50,18 +51,21 @@ module Dependabot
     class RequirementsUpdater
       extend T::Sig
 
-      # @param requirements [Hash{Symbol => String, Array, Hash}]
+      # @param requirements [Array<Dependabot::DependencyRequirement>]
       # @param latest_version [Dependabot::Opentofu::Version]
       # @param tag_for_latest_version [String, NilClass]
       sig do
         params(
-          requirements: T::Array[T::Hash[Symbol, T.untyped]],
+          requirements: T::Array[Dependabot::DependencyRequirement],
           latest_version: T.nilable(Dependabot::Version::VersionParameter),
           tag_for_latest_version: T.nilable(String)
         ).void
       end
       def initialize(requirements:, latest_version:, tag_for_latest_version:)
-        @requirements = requirements
+        @requirements = T.let(
+          requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
+          T::Array[Dependabot::DependencyRequirement]
+        )
         @tag_for_latest_version = tag_for_latest_version
 
         return unless latest_version
@@ -70,12 +74,12 @@ module Dependabot
         @latest_version = T.let(version_class.new(latest_version), Dependabot::Opentofu::Version)
       end
 
-      # @return requirements [Hash{Symbol => String, Array, Hash}]
+      # @return requirements [Array<Dependabot::DependencyRequirement>]
       #   * requirement [String, NilClass] the updated version constraint
       #   * groups [Array] no-op for OpenTofu
       #   * file [String] the file that specified this dependency
       #   * source [Hash{Symbol => String}] The updated git or registry source details
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         # NOTE: Order is important here. The FileUpdater needs the updated
         # requirement at index `i` to correspond to the previous requirement
@@ -92,7 +96,7 @@ module Dependabot
 
       private
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       attr_reader :requirements
 
       sig { returns(Dependabot::Opentofu::Version) }
@@ -101,15 +105,15 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       attr_reader :tag_for_latest_version
 
-      sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+      sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
       def update_git_requirement(req)
         return req unless req.dig(:source, :ref)
         return req unless tag_for_latest_version
 
-        req.merge(source: req[:source].merge(ref: tag_for_latest_version))
+        Dependabot::DependencyRequirement.create(req.merge(source: req[:source].merge(ref: tag_for_latest_version)))
       end
 
-      sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+      sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
       def update_oci_requirement(req)
         return req unless defined?(@latest_version) && @latest_version
         return req if req.dig(:source, :digest)
@@ -118,12 +122,14 @@ module Dependabot
         new_tag = latest_version.to_s
         return req if req.dig(:source, :tag) == new_tag
 
-        req.merge(
-          source: req[:source].merge(tag: new_tag, version: new_tag)
+        Dependabot::DependencyRequirement.create(
+          req.merge(
+            source: req[:source].merge(tag: new_tag, version: new_tag)
+          )
         )
       end
 
-      sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+      sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
       def update_registry_requirement(req)
         return req if req.fetch(:requirement).nil?
 
@@ -139,7 +145,7 @@ module Dependabot
             update_range(string_req).join(", ")
           end
 
-        req.merge(requirement: new_req)
+        Dependabot::DependencyRequirement.create(req.merge(requirement: new_req))
       end
 
       # Updates the version in a "~>" constraint to allow the given version
