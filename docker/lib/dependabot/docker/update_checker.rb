@@ -263,6 +263,7 @@ module Dependabot
         # (which requires a call to the registry for each tag, so can be slow)
         candidate_tags = comparable_tags_from_registry(version_tag)
         candidate_tags = remove_version_downgrades(candidate_tags, version_tag)
+        candidate_tags = remove_more_precise_tags(candidate_tags, version_tag)
         candidate_tags = remove_prereleases(candidate_tags, version_tag)
         candidate_tags = filter_ignored(candidate_tags)
         candidate_tags = sort_tags(candidate_tags, version_tag)
@@ -285,14 +286,26 @@ module Dependabot
         candidate_tags.reverse_each do |candidate|
           selected = select_tag_with_precision(candidate, same_precision_tags, version_tag)
 
+          # Content check (runs regardless of experiments): if the candidate tag
+          # resolves to the exact same image contents as the current tag, there
+          # is no real update to make. This catches rolling tags (e.g. "9.0")
+          # that point to the same image as a pinned tag (e.g. "9.0.11").
+          if selected.name != version_tag.name && same_image_contents?(selected, version_tag)
+            Dependabot.logger.info(
+              "Digest check: #{selected.name} has the same image contents as #{version_tag.name} " \
+              "— no update needed, staying on #{version_tag.name}"
+            )
+            next
+          end
+
           if Dependabot::Experiments.enabled?(:docker_created_timestamp_validation) &&
              selected.name != version_tag.name
             if validation_attempts >= MAX_PLATFORM_VALIDATION_ATTEMPTS
               Dependabot.logger.info(
                 "Platform validation: reached max attempts (#{MAX_PLATFORM_VALIDATION_ATTEMPTS}), " \
-                "accepting #{selected.name} without timestamp check"
+                "skipping #{selected.name} — continuing to find a validated candidate"
               )
-              return selected
+              next
             end
             validation_attempts += 1
           end
@@ -560,6 +573,26 @@ module Dependabot
         candidate_tags.select do |tag|
           comparable_version_from(tag) >= current_version
         end
+      end
+
+      # When the current tag pins only the major or major.minor version (e.g.
+      # "9.0"), a candidate that additionally specifies a patch version (e.g.
+      # "9.0.17") is not a wanted upgrade: pinning the less precise tag opts into
+      # a rolling tag, so the patch should not be specified for them. Only true
+      # semver tags (":normal" format) are filtered here — build-number and date
+      # based formats have their own comparability rules and are left untouched.
+      sig do
+        params(
+          candidate_tags: T::Array[Dependabot::Docker::Tag],
+          version_tag: Dependabot::Docker::Tag
+        )
+          .returns(T::Array[Dependabot::Docker::Tag])
+      end
+      def remove_more_precise_tags(candidate_tags, version_tag)
+        return candidate_tags unless version_tag.format == :normal
+        return candidate_tags if version_tag.precision > 2
+
+        candidate_tags.select { |tag| tag.precision <= version_tag.precision }
       end
 
       sig do
@@ -1083,6 +1116,80 @@ module Dependabot
         candidate_created > current_created
       end
 
+      # Returns true when the candidate tag and current tag reference the exact
+      # same image contents. Only multi-arch (manifest list) images are compared
+      # here, by checking that both tags expose the identical set of platforms
+      # with matching per-platform manifest digests. For single-platform images this
+      # returns false (empty digest map), so this check is effectively a no-op and
+      # we fall back to the existing semver/precision selection logic.
+      sig do
+        params(
+          candidate_tag: Dependabot::Docker::Tag,
+          current_tag: Dependabot::Docker::Tag
+        ).returns(T::Boolean)
+      end
+      def same_image_contents?(candidate_tag, current_tag)
+        current_digests = fetch_platform_digests(current_tag.name)
+        return false if current_digests.empty?
+
+        candidate_digests = fetch_platform_digests(candidate_tag.name)
+        return false if candidate_digests.empty?
+
+        # The contents are unchanged only when both tags expose the exact same set
+        # of platforms with identical per-platform manifest digests. A candidate
+        # with extra platforms is a different image and must not match.
+        current_digests == candidate_digests
+      end
+
+      # Fetches a map of platform key (e.g. "linux/amd64") to platform manifest
+      # digest for a tag's manifest list. Returns an empty hash for single-platform
+      # images or when the manifest can't be fetched.
+      sig { params(tag_name: String).returns(T::Hash[String, String]) }
+      def fetch_platform_digests(tag_name)
+        return T.must(platform_digests_cache[tag_name]) if platform_digests_cache.key?(tag_name)
+
+        digests = fetch_platform_digests_from_registry(tag_name)
+        platform_digests_cache[tag_name] = digests
+        digests
+      rescue *transient_docker_errors, DockerRegistry2::RegistryAuthenticationException,
+             RestClient::Forbidden, RestClient::TooManyRequests, JSON::ParserError => e
+        Dependabot.logger.info(
+          "Failed to fetch platform digests for #{docker_repo_name}:#{tag_name}: #{e.message}"
+        )
+        platform_digests_cache[tag_name] = {}
+        {}
+      end
+
+      sig { params(tag_name: String).returns(T::Hash[String, String]) }
+      def fetch_platform_digests_from_registry(tag_name)
+        manifest = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+          docker_registry_client.manifest(docker_repo_name, tag_name)
+        end
+
+        media_type = manifest["mediaType"] || manifest[:mediaType]
+        return {} unless MANIFEST_LIST_TYPES.include?(media_type)
+
+        manifests = manifest["manifests"] || manifest[:manifests] || []
+        collect_platform_digests(manifests)
+      end
+
+      sig { params(manifests: T.untyped).returns(T::Hash[String, String]) }
+      def collect_platform_digests(manifests)
+        digests = {}
+
+        manifests.each do |m|
+          platform = extract_platform(m)
+          next unless platform
+
+          digest = m["digest"] || m[:digest]
+          next unless digest
+
+          digests[platform_key(platform)] = digest
+        end
+
+        digests
+      end
+
       # Fetches the platform entries from a manifest list for a given tag.
       # Returns nil if the tag is a single-platform image (not a manifest list).
       sig { params(tag_name: String).returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
@@ -1215,6 +1322,14 @@ module Dependabot
         @platform_timestamps_cache ||= T.let(
           {},
           T.nilable(T::Hash[String, T::Hash[String, T.nilable(Time)]])
+        )
+      end
+
+      sig { returns(T::Hash[String, T::Hash[String, String]]) }
+      def platform_digests_cache
+        @platform_digests_cache ||= T.let(
+          {},
+          T.nilable(T::Hash[String, T::Hash[String, String]])
         )
       end
 
