@@ -1188,10 +1188,7 @@ module Dependabot
 
         media_type = response.headers[:content_type]&.split(";")&.first&.strip
         SINGLE_PLATFORM_MANIFEST_TYPES.include?(media_type)
-      rescue *transient_docker_errors,
-             DockerRegistry2::RegistryAuthenticationException,
-             RestClient::Forbidden,
-             RestClient::TooManyRequests => e
+      rescue DockerRegistry2::Exception => e
         Dependabot.logger.info(
           "Failed to determine manifest media type for #{docker_repo_name}:#{tag_name}, " \
           "falling back to per-platform comparison: #{e.class} - #{e.message}"
@@ -1208,6 +1205,13 @@ module Dependabot
         return manifest_list_cache[tag_name] if manifest_list_cache.key?(tag_name)
 
         manifest_list_cache[tag_name] = fetch_manifest_list_from_registry(tag_name)
+      rescue DockerRegistry2::Exception, JSON::ParserError => e
+        # Cache the failure so the other manifest-inspection callers share the
+        # result instead of each repeating the same failing registry GET.
+        Dependabot.logger.info(
+          "Failed to fetch manifest list for #{docker_repo_name}:#{tag_name}: #{e.message}"
+        )
+        manifest_list_cache[tag_name] = nil
       end
 
       sig { params(tag_name: String).returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
