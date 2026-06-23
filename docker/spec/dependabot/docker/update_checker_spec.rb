@@ -62,14 +62,13 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     stub_request(:get, repo_url + "tags/list")
       .and_return(status: 200, body: registry_tags)
 
-    # Multi-arch no-op detection (digest_up_to_date?) fetches the manifest for a
-    # digest reference to compare per-platform digests. Default to a single-image
-    # manifest so the check fails open; specific tests override this as needed.
-    stub_request(:get, %r{/manifests/sha256:})
-      .and_return(
-        status: 200,
-        body: { "mediaType" => "application/vnd.docker.distribution.manifest.v2+json" }.to_json
-      )
+    # The fixtures used throughout this spec describe single-platform images, so
+    # both the digest-content check and the multi-arch no-op detection are no-ops
+    # by default: an empty platform-digest map means "not a manifest list", so
+    # candidates are never suppressed as same-content and digest-only refreshes are
+    # never suppressed as no-ops. Multi-platform behaviour is exercised by the
+    # dedicated describe blocks, which re-stub these methods with their own digests.
+    allow(checker).to receive(:fetch_platform_digests).and_return({})
   end
 
   it_behaves_like "an update checker"
@@ -1121,6 +1120,33 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("8.7") }
     end
 
+    context "when the tag pins only major.minor and newer tags add a patch version" do
+      let(:dependency_name) { "golang" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/golang/" }
+      let(:tags_fixture_name) { "golang.json" }
+      let(:version) { "1.25" }
+
+      it "ignores patch-versioned candidates and stays on the major.minor tag" do
+        # The registry only offers patch tags (1.25.0, 1.26.0, 1.27.0). A tag
+        # pinned to 1.25 opted into the rolling major.minor tag, so none of the
+        # more precise patch tags should be proposed as an update.
+        expect(checker.latest_version).to eq("1.25")
+      end
+    end
+
+    context "when the tag pins major.minor.patch" do
+      let(:dependency_name) { "golang" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/golang/" }
+      let(:tags_fixture_name) { "golang.json" }
+      let(:version) { "1.25.0" }
+
+      it "still proposes a newer patch version" do
+        # A tag that already pins a patch version is happy to receive newer
+        # patch versions, so 1.27.0 is a valid update from 1.25.0.
+        expect(checker.latest_version).to eq("1.27.0")
+      end
+    end
+
     context "when the latest tag points to an older version" do
       let(:tags_fixture_name) { "dotnet.json" }
       let(:headers_response) do
@@ -1887,7 +1913,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       context "when docker_created_timestamp_validation is enabled" do
         before do
           Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
-          allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
+          allow(checker).to receive_messages(fetch_manifest_platforms: nil, fetch_platform_digests: {})
         end
 
         after { Dependabot::Experiments.reset! }
@@ -2151,7 +2177,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
-    context "when all non-dated candidate tags are genuinely newer by timestamp" do
+    context "when the only newer non-dated candidate adds a patch version" do
       let(:dependency_name) { "dotnet/framework/aspnet" }
       let(:version) { "4.8-windowsservercore-ltsc2022" }
       let(:tags_fixture_name) { "aspnet.json" }
@@ -2164,7 +2190,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
-        allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
+        allow(checker).to receive_messages(fetch_manifest_platforms: nil, fetch_platform_digests: {})
 
         # Stub manifest digest requests needed by precision comparison
         stub_request(:head, repo_url + "manifests/4.8-windowsservercore-ltsc2022")
@@ -2183,10 +2209,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       after { Dependabot::Experiments.reset! }
 
-      it "returns the highest non-dated tag since dated tags are excluded" do
+      it "stays on the major.minor tag and ignores the patch candidate" do
         # 4.8-20250909 is excluded because it's a dated tag and 4.8 is non-dated.
-        # The only comparable non-dated upgrade is 4.8.1.
-        expect(checker.latest_version).to eq("4.8.1-windowsservercore-ltsc2022")
+        # The only other comparable candidate, 4.8.1, adds a patch version that
+        # the pinned 4.8 tag did not request, so it is ignored and 4.8 stays put.
+        expect(checker.latest_version).to eq("4.8-windowsservercore-ltsc2022")
       end
     end
 
@@ -2250,7 +2277,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
-        allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
+        allow(checker).to receive_messages(fetch_manifest_platforms: nil, fetch_platform_digests: {})
 
         # Stub manifest digest requests needed by precision comparison
         stub_request(:head, repo_url + "manifests/4.8.1-20251014-windowsservercore-ltsc2022")
@@ -2299,7 +2326,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
-        allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
+        allow(checker).to receive_messages(fetch_manifest_platforms: nil, fetch_platform_digests: {})
 
         stub_request(:head, repo_url + "manifests/4.8.1-windowsservercore-ltsc2022")
           .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
@@ -2339,7 +2366,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
-        allow(checker).to receive(:fetch_manifest_platforms).and_return(nil)
+        allow(checker).to receive_messages(fetch_manifest_platforms: nil, fetch_platform_digests: {})
 
         stub_request(:head, repo_url + "manifests/4.8.1-20251014-windowsservercore-ltsc2022")
           .and_return(status: 200, body: "", headers: JSON.parse(headers_response))
@@ -2383,6 +2410,10 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
     before do
       Dependabot::Experiments.register(:docker_created_timestamp_validation, true)
+
+      # These tests exercise the created-timestamp/platform validation path with
+      # genuinely different image contents, so bypass the digest-content check.
+      allow(checker).to receive(:fetch_platform_digests).and_return({})
     end
 
     after { Dependabot::Experiments.reset! }
@@ -2748,25 +2779,104 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         end
       end
 
-      it "stops validating after MAX_PLATFORM_VALIDATION_ATTEMPTS and accepts the next candidate" do
-        # With 8 candidates above 1.24.0 and a cap of 5, the 6th candidate (1.25.2)
-        # is accepted without timestamp validation
-        expect(checker.latest_version).to eq("1.25.2")
+      it "stops validating after MAX_PLATFORM_VALIDATION_ATTEMPTS and falls back to the current version" do
+        # With 8 candidates above 1.24.0 and a cap of 5, candidates beyond the cap
+        # are skipped (not blindly accepted). The loop continues until it reaches
+        # version_tag itself (1.24.0), which returns no update.
+        # This prevents spurious updates when a rolling tag (e.g. 9.0) points to
+        # the same image as a specific patch tag (e.g. 9.0.11).
+        expect(checker.latest_version).to eq("1.24.0")
       end
 
       it "does not call fetch_manifest_platforms more than MAX_PLATFORM_VALIDATION_ATTEMPTS times for candidates" do
         checker.latest_version
 
         # The cap should prevent validation of candidates beyond the limit.
-        # 5 candidates validated (1.25.7..1.25.3) + 1 current tag fetch = at most 6 calls
-        # for unique tags, but the 6th candidate (1.25.2) is accepted without validation.
+        # 5 candidates validated (1.25.7..1.25.3); the rest are skipped without validation.
         failed_candidate_tags = %w(1.25.7 1.25.6 1.25.5 1.25.4 1.25.3)
         failed_candidate_tags.each do |tag|
           expect(checker).to have_received(:fetch_manifest_platforms).with(tag)
         end
         # Tags beyond the cap should NOT have been validated
+        expect(checker).not_to have_received(:fetch_manifest_platforms).with("1.25.2")
         expect(checker).not_to have_received(:fetch_manifest_platforms).with("1.25.1")
         expect(checker).not_to have_received(:fetch_manifest_platforms).with("1.25.0")
+      end
+    end
+  end
+
+  describe "digest-content check (same image contents)" do
+    let(:dependency_name) { "nginx" }
+    let(:repo_url) { "https://registry.hub.docker.com/v2/library/nginx/" }
+    let(:tags_fixture_name) { "multi_platform.json" }
+    let(:source) { { tag: version } }
+    let(:version) { "1.25.3" }
+
+    let(:platforms) do
+      [
+        { "os" => "linux", "architecture" => "amd64" },
+        { "os" => "linux", "architecture" => "arm64", "variant" => "v8" }
+      ]
+    end
+
+    before do
+      allow(checker).to receive_messages(fetch_manifest_platforms: platforms, fetch_platform_digests: {})
+    end
+
+    context "when the candidate resolves to the same per-platform digests" do
+      before do
+        digests = {
+          "linux/amd64" => "sha256:aaaaaaaaaaaa",
+          "linux/arm64/v8" => "sha256:bbbbbbbbbbbb"
+        }
+        allow(checker).to receive(:fetch_platform_digests).with("1.25.3").and_return(digests)
+        allow(checker).to receive(:fetch_platform_digests).with("1.25.4").and_return(digests)
+      end
+
+      it "does not update and stays on the current version" do
+        # A rolling/candidate tag (1.25.4) that points to the exact same image
+        # contents as the current tag (1.25.3) must not trigger an update. This
+        # mirrors a rolling tag like 9.0 pointing at the same image as 9.0.11.
+        expect(checker.latest_version).to eq("1.25.3")
+      end
+
+      it "does not consult the created timestamps" do
+        expect(checker).not_to receive(:fetch_all_platform_timestamps)
+        checker.latest_version
+      end
+    end
+
+    context "when the candidate resolves to different per-platform digests" do
+      before do
+        allow(checker).to receive(:fetch_platform_digests).with("1.25.3").and_return(
+          {
+            "linux/amd64" => "sha256:aaaaaaaaaaaa",
+            "linux/arm64/v8" => "sha256:bbbbbbbbbbbb"
+          }
+        )
+        allow(checker).to receive(:fetch_platform_digests).with("1.25.4").and_return(
+          {
+            "linux/amd64" => "sha256:cccccccccccc",
+            "linux/arm64/v8" => "sha256:dddddddddddd"
+          }
+        )
+
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.3").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-01-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-01-01T10:30:00Z")
+          }
+        )
+        allow(checker).to receive(:fetch_all_platform_timestamps).with("1.25.4").and_return(
+          {
+            "linux/amd64" => Time.parse("2024-03-01T10:00:00Z"),
+            "linux/arm64/v8" => Time.parse("2024-03-01T10:30:00Z")
+          }
+        )
+      end
+
+      it "updates to the candidate tag" do
+        expect(checker.latest_version).to eq("1.25.4")
       end
     end
   end
