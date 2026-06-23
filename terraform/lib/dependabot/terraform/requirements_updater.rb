@@ -51,7 +51,7 @@ module Dependabot
     class RequirementsUpdater
       extend T::Sig
 
-      # @param requirements [Hash{Symbol => String, Array, Hash}]
+      # @param requirements [Array<Dependabot::DependencyRequirement>]
       # @param latest_version [Dependabot::Terraform::Version]
       # @param tag_for_latest_version [String, NilClass]
       sig do
@@ -74,7 +74,7 @@ module Dependabot
         @latest_version = T.let(version_class.new(latest_version), Dependabot::Terraform::Version)
       end
 
-      # @return requirements [Hash{Symbol => String, Array, Hash}]
+      # @return requirements [Array<Dependabot::DependencyRequirement>]
       #   * requirement [String, NilClass] the updated version constraint
       #   * groups [Array] no-op for terraform
       #   * file [String] the file that specified this dependency
