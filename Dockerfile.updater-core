@@ -185,7 +185,7 @@ WORKDIR $DEPENDABOT_HOME/dependabot-updater
 #
 # As of RubyGems/Bundler 4.0.0 the two are released in sync with matching version
 # numbers, so RubyGems x.y.z ships Bundler x.y.z as its default gem.
-ARG RUBYGEMS_VERSION=4.0.13
+ARG RUBYGEMS_VERSION=4.0.14
 ARG GEM_ENABLED=true
 RUN if [[ "$GEM_ENABLED" == "true" ]]; then \
     gem update --system $RUBYGEMS_VERSION; \
