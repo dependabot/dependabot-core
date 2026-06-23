@@ -742,7 +742,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
               [dev-packages]
 
               [requires]
-              python_version = "3.9.13"
+              python_version = "3.10.20"
             PIPFILE
           )
         end
@@ -758,7 +758,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
                       },
                       "pipfile-spec": 6,
                       "requires": {
-                          "python_version": "3.9.13"
+                          "python_version": "3.10.20"
                       },
                       "sources": [
                           {
@@ -841,7 +841,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
               pytest = {extras = ["coverage"], version = "==6.0.0"}
 
               [requires]
-              python_version = "3.9"
+              python_version = "3.10"
             PIPFILE
           )
         end
@@ -857,7 +857,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
                       },
                       "pipfile-spec": 6,
                       "requires": {
-                          "python_version": "3.9"
+                          "python_version": "3.10"
                       },
                       "sources": [
                           {
@@ -935,7 +935,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
               pytest = {extras = ["coverage"], version = "==6.0.0"}
 
               [requires]
-              python_version = "3.9"
+              python_version = "3.10"
             PIPFILE
           )
         end
@@ -951,7 +951,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
                       },
                       "pipfile-spec": 6,
                       "requires": {
-                          "python_version": "3.9"
+                          "python_version": "3.10"
                       },
                       "sources": [
                           {
@@ -1059,7 +1059,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
               pytest = {extras = ["coverage"], version = "==6.0.0"}
 
               [requires]
-              python_version = "3.9"
+              python_version = "3.10"
             PIPFILE
           )
         end
@@ -1075,7 +1075,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
                       },
                       "pipfile-spec": 6,
                       "requires": {
-                          "python_version": "3.9"
+                          "python_version": "3.10"
                       },
                       "sources": [
                           {
