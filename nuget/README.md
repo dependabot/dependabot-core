@@ -22,7 +22,7 @@ Open the solution file at `helpers/lib/NuGetUpdater/NuGetUpdater.slnx` in your p
 ### Per-dependency prerelease opt-in
 
 By default, Dependabot only considers stable (non-prerelease) versions when updating NuGet
-dependencies. You can opt individual dependencies in to prerelease resolution using the `allow`
+dependencies. You can opt individual dependencies into prerelease resolution using the `allow`
 list in your `dependabot.yml`:
 
 ```yaml

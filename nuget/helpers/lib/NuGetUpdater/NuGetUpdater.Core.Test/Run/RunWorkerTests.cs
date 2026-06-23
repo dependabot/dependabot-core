@@ -1,6 +1,3 @@
-using System.Collections.Immutable;
-
-using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Run.ApiModel;
 
