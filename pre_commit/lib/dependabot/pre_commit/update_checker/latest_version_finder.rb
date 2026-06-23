@@ -128,14 +128,15 @@ module Dependabot
           result = find_latest_version_outside_cooldown
           return result if result
 
-          # If no newer version exists outside cooldown but the release version
+          # If no newer version exists outside cooldown but the dependency is
+          # SHA-pinned with a frozen version comment and the release version
           # equals current_version, the tag may have been force-moved to a new
           # commit. Don't block the unfiltered tag — let SHA comparison in
           # sha1_version_up_to_date? detect whether the commit actually changed.
           cur = current_version
-          if cur && release.is_a?(Dependabot::Version) && release == cur
+          if sha_pinned_with_version_comment? && cur && release.is_a?(Dependabot::Version) && release == cur
             Dependabot.logger.info(
-              "Same-version tag detected for #{dependency.name}, deferring to SHA comparison"
+              "Same-version tag detected for SHA-pinned #{dependency.name}, deferring to SHA comparison"
             )
             return release
           end
