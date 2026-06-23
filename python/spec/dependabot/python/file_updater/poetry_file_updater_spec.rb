@@ -129,9 +129,9 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
     end
 
     context "with the oldest python version currently supported by Dependabot" do
-      let(:python_version) { "3.9.21" }
-      let(:pyproject_fixture_name) { "python_39.toml" }
-      let(:lockfile_fixture_name) { "python_39.lock" }
+      let(:python_version) { "3.10.20" }
+      let(:pyproject_fixture_name) { "python_310_django.toml" }
+      let(:lockfile_fixture_name) { "python_310_django.lock" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "django",
