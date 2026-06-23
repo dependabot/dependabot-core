@@ -332,6 +332,16 @@ module Dependabot
       max_local_tag(filtered_tags)
     end
 
+    sig { override.returns(T.nilable(String)) }
+    def cooldown_source_url
+      dependency_source_details&.fetch(:url, nil)
+    end
+
+    sig { override.returns(T::Array[Dependabot::Credential]) }
+    def cooldown_credentials
+      credentials
+    end
+
     private
 
     sig { returns(Dependabot::Dependency) }
@@ -802,16 +812,6 @@ module Dependabot
       github_release_published_at(normalized) ||
         release_dates_by_tag_name[tag_name] ||
         release_dates_by_tag_name[normalized]
-    end
-
-    sig { override.returns(T.nilable(String)) }
-    def cooldown_source_url
-      dependency_source_details&.fetch(:url, nil)
-    end
-
-    sig { override.returns(T::Array[Dependabot::Credential]) }
-    def cooldown_credentials
-      credentials
     end
 
     sig { returns(T::Hash[String, Time]) }
