@@ -1617,8 +1617,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         allow(Dependabot.logger).to receive(:warn)
       end
 
-      # Reproduces https://github.com/dependabot/dependabot-core/issues/14072:
-      # a non-comparable tag (e.g. "alpine") pinned by digest never reaches the
+      # A non-comparable tag (e.g. "alpine") pinned by digest never reaches the
       # version-tag cooldown, so a freshly-pushed digest used to slip through.
       context "with a non-comparable tag pinned by digest" do
         let(:dependency_name) { "golang" }
@@ -1648,8 +1647,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         end
       end
 
-      # Reproduces the comment case: ruby:4.0.2-alpine3.23@sha256:… where the
-      # version tag is unchanged and only the digest moved.
+      # A comparable tag (e.g. ruby:4.0.2-alpine3.23@sha256:…) where the version
+      # tag is unchanged and only the digest moved.
       context "with a comparable tag whose digest moved" do
         let(:dependency_name) { "ruby" }
         let(:version) { "4.0.2-alpine3.23" }
@@ -1670,9 +1669,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
-    # Reproduces the multi-arch observation in
-    # https://github.com/dependabot/dependabot-core/issues/14072: the OCI index
-    # digest changes when only an unconsumed platform (e.g. riscv64) is rebuilt.
+    # The OCI index digest changes when only an unconsumed platform (e.g. riscv64)
+    # is rebuilt, even though the consumed platform's image is unchanged.
     describe "multi-arch no-op digest detection" do
       subject(:can_update) { checker.can_update?(requirements_to_unlock: :own) }
 
@@ -1797,11 +1795,10 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
-    # Regression guard for https://github.com/dependabot/dependabot-core/issues/14072:
-    # a single pinned "4.0.2-alpine3.23" must resolve to the same variant and not
-    # to a different one such as "4.0.2-slim-bookworm". (The metadata mis-report in
-    # that issue comes from multi-stage merging of same-name images, which is a
-    # separate concern from single-tag variant selection verified here.)
+    # A single pinned "4.0.2-alpine3.23" must resolve to the same variant and not
+    # to a different one such as "4.0.2-slim-bookworm". (Metadata mis-reporting can
+    # arise from multi-stage merging of same-name images, which is a separate
+    # concern from the single-tag variant selection verified here.)
     context "when a compound variant suffix could collide with another variant" do
       let(:dependency_name) { "ruby" }
       let(:repo_url) { "https://registry.hub.docker.com/v2/library/ruby/" }
