@@ -34,8 +34,11 @@ module Dependabot
         @version_string = T.let(version.to_s.gsub(/^v/, ""), String)
         version = version.gsub(/^v/, "") if version.is_a?(String)
         version = version.to_s.split("+").first if version.to_s.include?("+")
-        @prerelease = T.let(nil, T.nilable(String))
-        version, @prerelease = version.to_s.split("-", 2) if version.to_s.include?("-")
+        # NOTE: avoid the name `@prerelease`; RubyGems 4's Gem::Version#prerelease?
+        # memoizes its boolean result into an `@prerelease` ivar, so reusing that
+        # name here would corrupt the inherited prerelease? check.
+        @prerelease_suffix = T.let(nil, T.nilable(String))
+        version, @prerelease_suffix = version.to_s.split("-", 2) if version.to_s.include?("-")
 
         super
       end
@@ -57,13 +60,13 @@ module Dependabot
         return result unless result.zero?
 
         other = self.class.new(other.to_s) unless other.is_a?(Version)
-        compare_prerelease(@prerelease || "", T.unsafe(other).prerelease || "")
+        compare_prerelease(@prerelease_suffix || "", T.unsafe(other).prerelease_suffix || "")
       end
 
       protected
 
       sig { returns(T.nilable(String)) }
-      attr_reader :prerelease
+      attr_reader :prerelease_suffix
 
       private
 
