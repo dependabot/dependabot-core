@@ -26,7 +26,7 @@ ARG HELM_VERSION=3.17.2
 # curl -sL https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz | sha256sum
 ARG HELM_AMD64_CHECKSUM=90c28792a1eb5fb0b50028e39ebf826531ebfcf73f599050dbd79bab2f277241
 # curl -sL https://get.helm.sh/helm-v${HELM_VERSION}-linux-arm64.tar.gz | sha256sum
-ARG HELM_ARM64_CHECKSUM=0b13ec8580dd5498b5a2d7cb34146e098049f59500a266db1bb98f59649eb90a
+ARG HELM_ARM64_CHECKSUM=d78d76ec7625a94991e887ac049d93f44bd70e4876200b945f813c9e1ed1df7c
 
 ENV PATH=/opt/bin:$PATH
 RUN cd /tmp \
@@ -43,7 +43,7 @@ RUN cd /tmp \
 
 
 RUN cd /tmp \
-  && curl -LO https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz \
+  && curl -LO https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_${TARGETARCH}.tar.gz \
   && mkdir -p oras-install/ \
   && tar -zxf oras_${ORAS_VERSION}_*.tar.gz -C oras-install/ \
   && mv oras-install/oras /opt/bin/oras \
