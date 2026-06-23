@@ -11,6 +11,7 @@ require "dependabot/errors"
 require "dependabot/pull_request_creator"
 require "dependabot/service"
 require "dependabot/experiments"
+require "github_api/dependency_submission"
 
 RSpec.describe Dependabot::Service do
   subject(:service) { described_class.new(client: mock_client) }
