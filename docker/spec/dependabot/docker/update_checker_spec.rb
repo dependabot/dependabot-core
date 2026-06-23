@@ -68,7 +68,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     # never suppressed as same-content. Multi-platform behaviour is exercised by
     # the dedicated "multi-platform validation" and "digest-content check"
     # describe blocks, which re-stub these methods with their own platform digests.
-    allow(checker).to receive(:fetch_platform_digests).and_return({})
+    allow(checker).to receive_messages(single_platform_image?: true, fetch_platform_digests: {})
   end
 
   it_behaves_like "an update checker"
@@ -2596,7 +2596,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     end
 
     before do
-      allow(checker).to receive_messages(fetch_manifest_platforms: platforms, fetch_platform_digests: {})
+      allow(checker).to receive_messages(
+        single_platform_image?: false,
+        fetch_manifest_platforms: platforms,
+        fetch_platform_digests: {}
+      )
     end
 
     context "when the candidate resolves to the same per-platform digests" do
@@ -2654,6 +2658,90 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it "updates to the candidate tag" do
         expect(checker.latest_version).to eq("1.25.4")
       end
+    end
+  end
+
+  describe "#single_platform_image? (manifest media-type HEAD check)" do
+    let(:mock_client) { instance_double(DockerRegistry2::Registry) }
+
+    before do
+      # The suite-wide stub treats every tag as single-platform; restore the real
+      # implementation so we can exercise the HEAD-based media-type detection.
+      allow(checker).to receive(:single_platform_image?).and_call_original
+      allow(checker).to receive(:docker_registry_client).and_return(mock_client)
+    end
+
+    def head_response_with(content_type)
+      instance_double(RestClient::Response, headers: { content_type: content_type })
+    end
+
+    context "when the registry negotiates a single-platform manifest media type" do
+      before do
+        allow(mock_client).to receive(:dohead)
+          .and_return(head_response_with("application/vnd.docker.distribution.manifest.v2+json"))
+      end
+
+      it "returns true after only a HEAD request" do
+        expect(checker.send(:single_platform_image?, "17.04")).to be(true)
+        expect(mock_client).to have_received(:dohead).with("v2/library/ubuntu/manifests/17.04")
+      end
+
+      it "ignores any parameters on the Content-Type header" do
+        allow(mock_client).to receive(:dohead)
+          .and_return(head_response_with("application/vnd.oci.image.manifest.v1+json; charset=utf-8"))
+        expect(checker.send(:single_platform_image?, "17.04")).to be(true)
+      end
+
+      it "caches the result so repeated calls issue a single HEAD request" do
+        2.times { checker.send(:single_platform_image?, "17.04") }
+        expect(mock_client).to have_received(:dohead).once
+      end
+    end
+
+    context "when the registry negotiates a manifest-list media type" do
+      before do
+        allow(mock_client).to receive(:dohead)
+          .and_return(head_response_with("application/vnd.docker.distribution.manifest.list.v2+json"))
+      end
+
+      it "returns false so the per-platform comparison still runs" do
+        expect(checker.send(:single_platform_image?, "17.04")).to be(false)
+      end
+    end
+
+    context "when the HEAD request fails" do
+      before do
+        allow(mock_client).to receive(:dohead).and_raise(DockerRegistry2::RegistryAuthenticationException)
+      end
+
+      it "falls back to false rather than risk skipping a manifest list" do
+        expect(checker.send(:single_platform_image?, "17.04")).to be(false)
+      end
+    end
+
+    context "when a manifest list has already been fetched for the tag" do
+      before { allow(mock_client).to receive(:dohead) }
+
+      it "reuses the cached manifest instead of issuing a HEAD request" do
+        checker.send(:manifest_list_cache)["17.04"] = nil
+        expect(checker.send(:single_platform_image?, "17.04")).to be(true)
+        expect(mock_client).not_to have_received(:dohead)
+      end
+    end
+  end
+
+  describe "#same_image_contents? with a single-platform current tag" do
+    it "short-circuits without fetching the current tag's platform digests" do
+      # single_platform_image? is stubbed true suite-wide, mirroring the default
+      # single-platform path. The guard must skip fetch_platform_digests, which is
+      # what performs the expensive manifest GET on the current tag.
+      result = checker.send(
+        :same_image_contents?,
+        Dependabot::Docker::Tag.new("17.10"),
+        Dependabot::Docker::Tag.new("17.04")
+      )
+      expect(result).to be(false)
+      expect(checker).not_to have_received(:fetch_platform_digests)
     end
   end
 
