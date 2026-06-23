@@ -86,6 +86,15 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
 
         stub_request(:get, repo_url + "tags/list")
           .and_return(status: 200, body: repo_tags)
+
+        single_platform_manifest = {
+          schemaVersion: 2,
+          mediaType: "application/vnd.docker.distribution.manifest.v2+json"
+        }.to_json
+        stub_request(:get, repo_url + "manifests/17.04")
+          .and_return(status: 200, body: single_platform_manifest)
+        stub_request(:get, repo_url + "manifests/17.10")
+          .and_return(status: 200, body: single_platform_manifest)
       end
 
       it { is_expected.to eq(Dependabot::Helm::Version.new("17.10")) }
