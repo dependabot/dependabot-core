@@ -2730,6 +2730,27 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     end
   end
 
+  describe "#fetch_manifest_list error handling" do
+    let(:mock_client) { instance_double(DockerRegistry2::Registry) }
+
+    before do
+      allow(checker).to receive(:docker_registry_client).and_return(mock_client)
+    end
+
+    it "returns nil without poisoning manifest_list_cache when the fetch fails" do
+      allow(mock_client).to receive(:manifest)
+        .and_raise(DockerRegistry2::RegistryAuthenticationException)
+
+      expect(checker.send(:fetch_manifest_list, "17.04")).to be_nil
+
+      # A cached nil is reserved for "definitely not a manifest list"
+      # (single-platform). A transient fetch failure must not be cached as nil,
+      # otherwise single_platform_image? would permanently misclassify the tag as
+      # single-platform and short-circuit same-content suppression.
+      expect(checker.send(:manifest_list_cache)).not_to have_key("17.04")
+    end
+  end
+
   describe "#same_image_contents? with a single-platform current tag" do
     it "short-circuits without fetching the current tag's platform digests" do
       # single_platform_image? is stubbed true suite-wide, mirroring the default

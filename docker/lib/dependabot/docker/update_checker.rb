@@ -1206,12 +1206,16 @@ module Dependabot
 
         manifest_list_cache[tag_name] = fetch_manifest_list_from_registry(tag_name)
       rescue DockerRegistry2::Exception, JSON::ParserError => e
-        # Cache the failure so the other manifest-inspection callers share the
-        # result instead of each repeating the same failing registry GET.
+        # Do NOT cache fetch failures. A cached nil is reserved for "definitely
+        # not a manifest list" (single-platform), which single_platform_image?
+        # relies on. Caching a transient error as nil would misclassify the tag
+        # as single-platform and permanently short-circuit same-content
+        # suppression, even if a later manifest fetch would succeed. Returning
+        # nil without caching lets a subsequent call retry.
         Dependabot.logger.info(
           "Failed to fetch manifest list for #{docker_repo_name}:#{tag_name}: #{e.message}"
         )
-        manifest_list_cache[tag_name] = nil
+        nil
       end
 
       sig { params(tag_name: String).returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
