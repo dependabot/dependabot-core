@@ -256,7 +256,7 @@ internal static class VersionFinder
     internal static Func<NuGetVersion, bool> CreateVersionFilter(NuGetVersion currentVersion, bool allowPrerelease = false)
     {
         return version => version > currentVersion
-            && (allowPrerelease || currentVersion is null || !currentVersion.IsPrerelease || !version.IsPrerelease || version.Version == currentVersion.Version);
+            && (allowPrerelease || !currentVersion.IsPrerelease || !version.IsPrerelease || version.Version == currentVersion.Version);
     }
 
     public static async Task<bool> DoVersionsExistAsync(
