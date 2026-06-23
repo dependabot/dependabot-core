@@ -315,7 +315,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
 
         it "passes --min-release-age=0 so the .npmrc cooldown is bypassed" do
           allow(Dependabot::NpmAndYarn::NativeHelpers)
-            .to receive(:run_npm8_subdependency_update_command).and_return("")
+            .to receive_messages(run_npm8_subdependency_update_command: "", run_npm_audit_fix_command: "")
 
           latest_resolvable_version
 
