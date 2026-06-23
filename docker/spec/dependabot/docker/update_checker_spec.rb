@@ -2719,7 +2719,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
-    context "when a manifest list has already been fetched for the tag" do
+    context "when a non-manifest-list result has already been cached for the tag" do
       before { allow(mock_client).to receive(:dohead) }
 
       it "reuses the cached manifest instead of issuing a HEAD request" do
