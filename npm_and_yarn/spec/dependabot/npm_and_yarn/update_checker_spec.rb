@@ -2424,6 +2424,22 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(checker.update_cooldown.default_days).to eq(3)
     end
 
+    context "when this is a security update" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency.name,
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["< 99.0.0"]
+          )
+        ]
+      end
+
+      it "does not apply the npmrc min-release-age cooldown floor" do
+        expect(checker.update_cooldown).to be_nil
+      end
+    end
+
     context "when an explicit update_cooldown already exceeds the npmrc floor" do
       let(:checker) do
         described_class.new(
