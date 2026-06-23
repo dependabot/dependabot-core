@@ -53,6 +53,19 @@ module Dependabot
         @version_string
       end
 
+      # Go represents prereleases as a dash-suffix (e.g. "1.2.0-pre2"), which is
+      # stripped off before being handed to Gem::Version. As a result the parent's
+      # prerelease? check (which looks for alphabetic characters in the version it
+      # was given) can't see the suffix, so we report the suffix here and otherwise
+      # delegate to Gem::Version for dot-style prereleases such as "1.0.0.pre1".
+      sig { returns(T::Boolean) }
+      def prerelease?
+        suffix = @prerelease_suffix
+        return true if suffix && !suffix.empty?
+
+        super
+      end
+
       sig { params(other: Object).returns(T.nilable(Integer)) }
       def <=>(other)
         result = super
