@@ -5,7 +5,7 @@
 # Please instead update this file by running `bin/tapioca gem aws-partitions`.
 
 
-# source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#3
+# pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:3
 module Aws; end
 
 # A {Partition} is a group of AWS {Region} and {Service} objects. You
@@ -124,49 +124,49 @@ module Aws; end
 # {Service} names are those used by the the AWS SDK for Ruby. They
 # correspond to the service's module.
 #
-# source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#4
+# pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:4
 module Aws::Partitions
   extend ::Enumerable
 
   class << self
+    # @param [Hash] new_partitions
     # @api private For internal use only.
-    # @param new_partitions [Hash]
     #
-    # source://aws-partitions//lib/aws-partitions.rb#192
+    # pkg:gem/aws-partitions#lib/aws-partitions.rb:192
     def add(new_partitions); end
 
     # @api private For internal use only.
     #
-    # source://aws-partitions//lib/aws-partitions.rb#206
+    # pkg:gem/aws-partitions#lib/aws-partitions.rb:206
     def clear; end
 
-    # @api private
     # @return [Hash]
+    # @api private
     #
-    # source://aws-partitions//lib/aws-partitions.rb#233
+    # pkg:gem/aws-partitions#lib/aws-partitions.rb:233
     def default_metadata; end
 
-    # @api private
     # @return [PartitionList]
+    # @api private
     #
-    # source://aws-partitions//lib/aws-partitions.rb#213
+    # pkg:gem/aws-partitions#lib/aws-partitions.rb:213
     def default_partition_list; end
 
-    # @api private
     # @return [Hash]
+    # @api private
     #
-    # source://aws-partitions//lib/aws-partitions.rb#223
+    # pkg:gem/aws-partitions#lib/aws-partitions.rb:223
     def defaults; end
 
     # @return [Enumerable<Partition>]
     #
-    # source://aws-partitions//lib/aws-partitions.rb#137
+    # pkg:gem/aws-partitions#lib/aws-partitions.rb:137
     def each(&block); end
 
+    # @param [Hash] partition_metadata
     # @api private For Internal use only
-    # @param partition_metadata [Hash]
     #
-    # source://aws-partitions//lib/aws-partitions.rb#201
+    # pkg:gem/aws-partitions#lib/aws-partitions.rb:201
     def merge_metadata(partition_metadata); end
 
     # Return the partition with the given name. A partition describes
@@ -184,14 +184,16 @@ module Aws::Partitions
     #       puts services.name
     #     end
     #
-    # @param name [String] The name of the partition to return.
+    # @param [String] name The name of the partition to return.
     #   Valid names include "aws", "aws-cn", and "aws-us-gov".
+    #
+    # @return [Partition]
+    #
     # @raise [ArgumentError] Raises an `ArgumentError` if a partition is
     #   not found with the given name. The error message contains a list
     #   of valid partition names.
-    # @return [Partition]
     #
-    # source://aws-partitions//lib/aws-partitions.rb#164
+    # pkg:gem/aws-partitions#lib/aws-partitions.rb:164
     def partition(name); end
 
     # Returns an array with every partitions. A partition describes
@@ -213,64 +215,64 @@ module Aws::Partitions
     # @return [Enumerable<Partition>] Returns an enumerable of all
     #   known partitions.
     #
-    # source://aws-partitions//lib/aws-partitions.rb#186
+    # pkg:gem/aws-partitions#lib/aws-partitions.rb:186
     def partitions; end
 
-    # @api private For internal use only.
     # @return [Hash<String,String>] Returns a map of service module names
     #   to their id as used in the endpoints.json document.
+    # @api private For internal use only.
     #
-    # source://aws-partitions//lib/aws-partitions.rb#244
+    # pkg:gem/aws-partitions#lib/aws-partitions.rb:244
     def service_ids; end
   end
 end
 
 # @api private
 #
-# source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#6
+# pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:6
 class Aws::Partitions::EndpointProvider
   # Intentionally marked private. The format of the endpoint rules
   # is an implementation detail.
-  #
   # @api private
-  # @return [EndpointProvider] a new instance of EndpointProvider
   #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#31
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:31
   def initialize(rules); end
 
-  # @api private Use the static class methods instead.
-  # @option variants
-  # @option variants
-  # @param region [String] The region used to fetch the partition.
-  # @param service [String] Used only if dualstack is true. Used to find a
+  # @param [String] region The region used to fetch the partition.
+  # @param [String] service Used only if dualstack is true. Used to find a
   #   DNS suffix for a specific service.
-  # @param variants [Hash] Endpoint variants such as 'fips' or 'dualstack'
+  # @param [Hash] variants Endpoint variants such as 'fips' or 'dualstack'
+  # @option variants [Boolean] :dualstack When true, resolve a dualstack
+  #   endpoint.
+  # @option variants [Boolean] :fips When true, resolve a FIPS endpoint.
+  # @api private Use the static class methods instead.
   #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#73
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:73
   def dns_suffix_for(region, service, variants); end
 
-  # @api private Use the static class methods instead.
-  # @option variants
-  # @option variants
-  # @param region [String] The region for the client.
-  # @param service [String] The endpoint prefix for the service, e.g.
+  # @param [String] region The region for the client.
+  # @param [String] service The endpoint prefix for the service, e.g.
   #   "monitoring" for cloudwatch.
-  # @param sts_regional_endpoints [String] [STS only] Whether to use
+  # @param [String] sts_regional_endpoints [STS only] Whether to use
   #   `legacy` (global endpoint for legacy regions) or `regional` mode for
   #   using regional endpoint for supported regions except 'aws-global'
-  # @param variants [Hash] Endpoint variants such as 'fips' or 'dualstack'
+  # @param [Hash] variants Endpoint variants such as 'fips' or 'dualstack'
+  # @option variants [Boolean] :dualstack When true, resolve a dualstack
+  #   endpoint.
+  # @option variants [Boolean] :fips When true, resolve a FIPS endpoint.
+  # @api private Use the static class methods instead.
   #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#46
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:46
   def resolve(region, service, sts_regional_endpoints, variants); end
 
   # @api private Use the static class methods instead.
   #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#51
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:51
   def signing_region(region, service, sts_regional_endpoints); end
 
   # @api private Use the static class methods instead.
   #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#57
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:57
   def signing_service(region, service); end
 
   private
@@ -278,108 +280,67 @@ class Aws::Partitions::EndpointProvider
   # returns a callable that takes a region
   # and returns true if the service is global
   #
-  # @api private
-  #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#178
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:178
   def build_is_global_fn(sts_regional_endpoints = T.unsafe(nil)); end
 
-  # @api private
-  # @return [Boolean]
-  #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#83
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:83
   def configured_variants?(variants); end
 
-  # @api private
-  #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#192
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:192
   def credential_scope(region, service, is_global_fn); end
 
-  # @api private
-  #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#238
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:238
   def default_partition; end
 
-  # @api private
-  #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#125
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:125
   def endpoint_for(region, service, is_global_fn, variants); end
 
-  # @api private
-  #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#141
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:141
   def endpoint_no_variants_for(region, service, is_global_fn); end
 
-  # @api private
-  #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#133
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:133
   def endpoint_with_variants_for(region, service, variants); end
 
-  # @api private
-  #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#87
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:87
   def fetch_variant(cfg, tags); end
 
-  # @api private
-  #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#212
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:212
   def get_partition(region_or_partition); end
 
-  # @api private
-  #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#219
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:219
   def partition_containing_region(region); end
 
-  # @api private
-  #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#234
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:234
   def partition_matching_name(partition_name); end
 
-  # @api private
-  #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#225
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:225
   def partition_matching_region(region); end
 
-  # @api private
-  #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#92
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:92
   def resolve_variant(region, service, config_variants); end
 
-  # @api private
-  #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#117
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:117
   def validate_variant!(config_variants, resolved_variant); end
 
-  # @api private
-  #
-  # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#171
+  # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:171
   def warn_deprecation(service, region); end
 
   class << self
-    # @api private
-    #
-    # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#256
+    # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:256
     def dns_suffix_for(region, service = T.unsafe(nil), variants = T.unsafe(nil)); end
 
-    # @api private
-    #
-    # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#244
+    # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:244
     def resolve(region, service, sts_endpoint = T.unsafe(nil), variants = T.unsafe(nil)); end
 
-    # @api private
-    #
-    # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#248
+    # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:248
     def signing_region(region, service, sts_regional_endpoints = T.unsafe(nil)); end
 
-    # @api private
-    #
-    # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#252
+    # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:252
     def signing_service(region, service); end
 
     private
 
-    # @api private
-    #
-    # source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#262
+    # pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:262
     def default_provider; end
   end
 end
@@ -387,272 +348,253 @@ end
 # When sts_regional_endpoint is set to `legacy`, the endpoint
 # pattern stays global for the following regions:
 #
-# @api private
-#
-# source://aws-partitions//lib/aws-partitions/endpoint_provider.rb#9
+# pkg:gem/aws-partitions#lib/aws-partitions/endpoint_provider.rb:9
 Aws::Partitions::EndpointProvider::STS_LEGACY_REGIONS = T.let(T.unsafe(nil), Array)
 
 # @api private
 #
-# source://aws-partitions//lib/aws-partitions/metadata.rb#6
+# pkg:gem/aws-partitions#lib/aws-partitions/metadata.rb:6
 module Aws::Partitions::Metadata
   class << self
-    # @api private
-    #
-    # source://aws-partitions//lib/aws-partitions/metadata.rb#25
+    # pkg:gem/aws-partitions#lib/aws-partitions/metadata.rb:25
     def default_partition_metadata; end
 
     # aws.partition(region: string) Option<Partition>
     #
-    # @api private
-    #
-    # source://aws-partitions//lib/aws-partitions/metadata.rb#10
+    # pkg:gem/aws-partitions#lib/aws-partitions/metadata.rb:10
     def partition(region); end
 
-    # @api private
-    #
-    # source://aws-partitions//lib/aws-partitions/metadata.rb#21
+    # pkg:gem/aws-partitions#lib/aws-partitions/metadata.rb:21
     def partitions; end
   end
 end
 
-# source://aws-partitions//lib/aws-partitions/partition.rb#5
+# pkg:gem/aws-partitions#lib/aws-partitions/partition.rb:5
 class Aws::Partitions::Partition
+  # @option options [required, String] :name
+  # @option options [required, Hash<String,Region>] :regions
+  # @option options [required, Hash<String,Service>] :services
   # @api private
-  # @option options
-  # @option options
-  # @option options
-  # @param options [Hash] a customizable set of options
-  # @return [Partition] a new instance of Partition
   #
-  # source://aws-partitions//lib/aws-partitions/partition.rb#10
+  # pkg:gem/aws-partitions#lib/aws-partitions/partition.rb:10
   def initialize(options = T.unsafe(nil)); end
 
   # @return [Metadata] The metadata for the partition.
   #
-  # source://aws-partitions//lib/aws-partitions/partition.rb#25
+  # pkg:gem/aws-partitions#lib/aws-partitions/partition.rb:25
   def metadata; end
 
   # @return [String] The partition name, e.g. "aws", "aws-cn", "aws-us-gov".
   #
-  # source://aws-partitions//lib/aws-partitions/partition.rb#19
+  # pkg:gem/aws-partitions#lib/aws-partitions/partition.rb:19
   def name; end
 
-  # @param region_name [String] The name of the region, e.g. "us-east-1".
-  # @raise [ArgumentError] Raises `ArgumentError` for unknown region name.
+  # @param [String] region_name The name of the region, e.g. "us-east-1".
   # @return [Region]
+  # @raise [ArgumentError] Raises `ArgumentError` for unknown region name.
   #
-  # source://aws-partitions//lib/aws-partitions/partition.rb#30
+  # pkg:gem/aws-partitions#lib/aws-partitions/partition.rb:30
   def region(region_name); end
 
-  # @param region_name [String] The name of the region, e.g. "us-east-1".
+  # @param [String] region_name The name of the region, e.g. "us-east-1".
   # @return [Boolean] true if the region is in the partition.
   #
-  # source://aws-partitions//lib/aws-partitions/partition.rb#47
+  # pkg:gem/aws-partitions#lib/aws-partitions/partition.rb:47
   def region?(region_name); end
 
   # @return [String] The regex representing the region format.
   #
-  # source://aws-partitions//lib/aws-partitions/partition.rb#22
+  # pkg:gem/aws-partitions#lib/aws-partitions/partition.rb:22
   def region_regex; end
 
   # @return [Array<Region>]
   #
-  # source://aws-partitions//lib/aws-partitions/partition.rb#41
+  # pkg:gem/aws-partitions#lib/aws-partitions/partition.rb:41
   def regions; end
 
-  # @param service_name [String] The service module name.
-  # @raise [ArgumentError] Raises `ArgumentError` for unknown service name.
+  # @param [String] service_name The service module name.
   # @return [Service]
+  # @raise [ArgumentError] Raises `ArgumentError` for unknown service name.
   #
-  # source://aws-partitions//lib/aws-partitions/partition.rb#54
+  # pkg:gem/aws-partitions#lib/aws-partitions/partition.rb:54
   def service(service_name); end
 
-  # @param service_name [String] The service module name.
+  # @param [String] service_name The service module name.
   # @return [Boolean] true if the service is in the partition.
   #
-  # source://aws-partitions//lib/aws-partitions/partition.rb#71
+  # pkg:gem/aws-partitions#lib/aws-partitions/partition.rb:71
   def service?(service_name); end
 
   # @return [Array<Service>]
   #
-  # source://aws-partitions//lib/aws-partitions/partition.rb#65
+  # pkg:gem/aws-partitions#lib/aws-partitions/partition.rb:65
   def services; end
 
   class << self
     # @api private
     #
-    # source://aws-partitions//lib/aws-partitions/partition.rb#77
+    # pkg:gem/aws-partitions#lib/aws-partitions/partition.rb:77
     def build(partition); end
 
     private
 
-    # @param partition [Hash]
+    # @param [Hash] partition
     # @return [Hash<String,Region>]
     #
-    # source://aws-partitions//lib/aws-partitions/partition.rb#90
+    # pkg:gem/aws-partitions#lib/aws-partitions/partition.rb:90
     def build_regions(partition); end
 
-    # @param partition [Hash]
+    # @param [Hash] partition
     # @return [Hash<String,Service>]
     #
-    # source://aws-partitions//lib/aws-partitions/partition.rb#102
+    # pkg:gem/aws-partitions#lib/aws-partitions/partition.rb:102
     def build_services(partition); end
   end
 end
 
-# source://aws-partitions//lib/aws-partitions/partition_list.rb#5
+# pkg:gem/aws-partitions#lib/aws-partitions/partition_list.rb:5
 class Aws::Partitions::PartitionList
   include ::Enumerable
 
-  # @return [PartitionList] a new instance of PartitionList
-  #
-  # source://aws-partitions//lib/aws-partitions/partition_list.rb#9
+  # pkg:gem/aws-partitions#lib/aws-partitions/partition_list.rb:9
   def initialize; end
 
+  # @param [Partition] partition
   # @api private
-  # @param partition [Partition]
   #
-  # source://aws-partitions//lib/aws-partitions/partition_list.rb#37
+  # pkg:gem/aws-partitions#lib/aws-partitions/partition_list.rb:37
   def add_partition(partition); end
 
   # Removed all partitions.
-  #
   # @api private
   #
-  # source://aws-partitions//lib/aws-partitions/partition_list.rb#80
+  # pkg:gem/aws-partitions#lib/aws-partitions/partition_list.rb:80
   def clear; end
 
   # @return [Enumerator<Partition>]
   #
-  # source://aws-partitions//lib/aws-partitions/partition_list.rb#14
+  # pkg:gem/aws-partitions#lib/aws-partitions/partition_list.rb:14
   def each(&block); end
 
+  # @param [Partition] partitions_metadata
   # @api private
-  # @param partitions_metadata [Partition]
   #
-  # source://aws-partitions//lib/aws-partitions/partition_list.rb#47
+  # pkg:gem/aws-partitions#lib/aws-partitions/partition_list.rb:47
   def merge_metadata(partitions_metadata); end
 
-  # @param partition_name [String]
+  # @param [String] partition_name
   # @return [Partition]
   #
-  # source://aws-partitions//lib/aws-partitions/partition_list.rb#20
+  # pkg:gem/aws-partitions#lib/aws-partitions/partition_list.rb:20
   def partition(partition_name); end
 
   # @return [Array<Partition>]
   #
-  # source://aws-partitions//lib/aws-partitions/partition_list.rb#31
+  # pkg:gem/aws-partitions#lib/aws-partitions/partition_list.rb:31
   def partitions; end
 
   private
 
-  # source://aws-partitions//lib/aws-partitions/partition_list.rb#86
+  # pkg:gem/aws-partitions#lib/aws-partitions/partition_list.rb:86
   def build_metadata_regions(partition_name, metadata_regions, existing = T.unsafe(nil)); end
 
   class << self
     # @api private
     #
-    # source://aws-partitions//lib/aws-partitions/partition_list.rb#104
+    # pkg:gem/aws-partitions#lib/aws-partitions/partition_list.rb:104
     def build(partitions); end
   end
 end
 
-# source://aws-partitions//lib/aws-partitions/region.rb#7
+# pkg:gem/aws-partitions#lib/aws-partitions/region.rb:7
 class Aws::Partitions::Region
+  # @option options [required, String] :name
+  # @option options [required, String] :description
+  # @option options [required, String] :partition_name
+  # @option options [required, Set<String>] :services
   # @api private
-  # @option options
-  # @option options
-  # @option options
-  # @option options
-  # @param options [Hash] a customizable set of options
-  # @return [Region] a new instance of Region
   #
-  # source://aws-partitions//lib/aws-partitions/region.rb#14
+  # pkg:gem/aws-partitions#lib/aws-partitions/region.rb:14
   def initialize(options = T.unsafe(nil)); end
 
   # @return [String] A short description of this region.
   #
-  # source://aws-partitions//lib/aws-partitions/region.rb#25
+  # pkg:gem/aws-partitions#lib/aws-partitions/region.rb:25
   def description; end
 
   # @return [String] The name of this region, e.g. "us-east-1".
   #
-  # source://aws-partitions//lib/aws-partitions/region.rb#22
+  # pkg:gem/aws-partitions#lib/aws-partitions/region.rb:22
   def name; end
 
   # @return [String] The partition this region exists in, e.g. "aws",
   #   "aws-cn", "aws-us-gov".
   #
-  # source://aws-partitions//lib/aws-partitions/region.rb#29
+  # pkg:gem/aws-partitions#lib/aws-partitions/region.rb:29
   def partition_name; end
 
   # @return [Set<String>] The list of services available in this region.
   #   Service names are the module names as used by the AWS SDK
   #   for Ruby.
   #
-  # source://aws-partitions//lib/aws-partitions/region.rb#34
+  # pkg:gem/aws-partitions#lib/aws-partitions/region.rb:34
   def services; end
 
   class << self
     # @api private
     #
-    # source://aws-partitions//lib/aws-partitions/region.rb#39
+    # pkg:gem/aws-partitions#lib/aws-partitions/region.rb:39
     def build(region_name, region, partition); end
 
     private
 
-    # source://aws-partitions//lib/aws-partitions/region.rb#50
+    # pkg:gem/aws-partitions#lib/aws-partitions/region.rb:50
     def region_services(region_name, partition); end
 
-    # @return [Boolean]
-    #
-    # source://aws-partitions//lib/aws-partitions/region.rb#61
+    # pkg:gem/aws-partitions#lib/aws-partitions/region.rb:61
     def service_in_region?(svc, region_name); end
   end
 end
 
-# source://aws-partitions//lib/aws-partitions/service.rb#7
+# pkg:gem/aws-partitions#lib/aws-partitions/service.rb:7
 class Aws::Partitions::Service
+  # @option options [required, String] :name
+  # @option options [required, String] :partition_name
+  # @option options [required, Set<String>] :region_name
+  # @option options [required, Boolean] :regionalized
+  # @option options [String] :partition_region
   # @api private
-  # @option options
-  # @option options
-  # @option options
-  # @option options
-  # @option options
-  # @param options [Hash] a customizable set of options
-  # @return [Service] a new instance of Service
   #
-  # source://aws-partitions//lib/aws-partitions/service.rb#15
+  # pkg:gem/aws-partitions#lib/aws-partitions/service.rb:15
   def initialize(options = T.unsafe(nil)); end
 
   # @return [Set<String>] The Dualstack compatible regions this service is
   #   available in. Regions are scoped to the partition.
   #
-  # source://aws-partitions//lib/aws-partitions/service.rb#42
+  # pkg:gem/aws-partitions#lib/aws-partitions/service.rb:42
   def dualstack_regions; end
 
   # @return [Set<String>] The FIPS compatible regions this service is
   #   available in. Regions are scoped to the partition.
   #
-  # source://aws-partitions//lib/aws-partitions/service.rb#38
+  # pkg:gem/aws-partitions#lib/aws-partitions/service.rb:38
   def fips_regions; end
 
   # @return [String] The name of this service. The name is the module
   #   name as used by the AWS SDK for Ruby.
   #
-  # source://aws-partitions//lib/aws-partitions/service.rb#27
+  # pkg:gem/aws-partitions#lib/aws-partitions/service.rb:27
   def name; end
 
   # @return [String] The partition name, e.g "aws", "aws-cn", "aws-us-gov".
   #
-  # source://aws-partitions//lib/aws-partitions/service.rb#30
+  # pkg:gem/aws-partitions#lib/aws-partitions/service.rb:30
   def partition_name; end
 
-  # @return [String, nil] The global patition endpoint for this service.
+  # @return [String,nil] The global patition endpoint for this service.
   #   May be `nil`.
   #
-  # source://aws-partitions//lib/aws-partitions/service.rb#46
+  # pkg:gem/aws-partitions#lib/aws-partitions/service.rb:46
   def partition_region; end
 
   # Returns `false` if the service operates with a single global
@@ -663,30 +605,30 @@ class Aws::Partitions::Service
   #
   # @return [Boolean]
   #
-  # source://aws-partitions//lib/aws-partitions/service.rb#55
+  # pkg:gem/aws-partitions#lib/aws-partitions/service.rb:55
   def regionalized?; end
 
   # @return [Set<String>] The regions this service is available in.
   #   Regions are scoped to the partition.
   #
-  # source://aws-partitions//lib/aws-partitions/service.rb#34
+  # pkg:gem/aws-partitions#lib/aws-partitions/service.rb:34
   def regions; end
 
   class << self
     # @api private
     #
-    # source://aws-partitions//lib/aws-partitions/service.rb#62
+    # pkg:gem/aws-partitions#lib/aws-partitions/service.rb:62
     def build(service_name, service, partition); end
 
     private
 
-    # source://aws-partitions//lib/aws-partitions/service.rb#97
+    # pkg:gem/aws-partitions#lib/aws-partitions/service.rb:97
     def partition_region(service); end
 
-    # source://aws-partitions//lib/aws-partitions/service.rb#76
+    # pkg:gem/aws-partitions#lib/aws-partitions/service.rb:76
     def regions(service, partition); end
 
-    # source://aws-partitions//lib/aws-partitions/service.rb#82
+    # pkg:gem/aws-partitions#lib/aws-partitions/service.rb:82
     def variant_regions(variant_name, service, partition); end
   end
 end

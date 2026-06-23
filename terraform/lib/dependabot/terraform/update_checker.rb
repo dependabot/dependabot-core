@@ -47,13 +47,11 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        wrap_requirements(
-          RequirementsUpdater.new(
-            requirements: dependency.requirements,
-            latest_version: latest_version&.to_s,
-            tag_for_latest_version: tag_for_latest_version
-          ).updated_requirements
-        )
+        RequirementsUpdater.new(
+          requirements: dependency.requirements,
+          latest_version: latest_version&.to_s,
+          tag_for_latest_version: tag_for_latest_version
+        ).updated_requirements
       end
 
       sig { returns(T::Boolean) }
