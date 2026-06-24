@@ -1,0 +1,72 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Non-regression ratchet for the `Sorbet/ForbidTUntyped` burndown.
+#
+# `Sorbet/ForbidTUntyped` is enabled repo-wide with a grandfathered per-file
+# Exclude list in `.rubocop_todo.yml`. RuboCop already fails when `T.untyped`
+# is added to a file that is NOT on that list, so clean files stay clean. This
+# script guards the other direction: it fails when a pull request
+#
+#   * adds a file back onto the Exclude list (a clean file regressing), or
+#   * raises the `# Offense count` (piling more `T.untyped` into excluded files).
+#
+# The list and count may only shrink. It compares the working tree against a
+# base ref (default `origin/main`, override with BASE_REF) and no-ops when the
+# base ref is unavailable, so it is safe to run anywhere.
+
+require "yaml"
+
+TODO_FILE = ".rubocop_todo.yml"
+COP = "Sorbet/ForbidTUntyped"
+BASE_REF = ENV.fetch("BASE_REF", "origin/main")
+COUNT_PATTERN = /^# Offense count: (\d+)\n#{Regexp.escape(COP)}:/m
+
+# Extracts the Exclude list and `# Offense count` for COP from a
+# `.rubocop_todo.yml` document, returning them as a [Array, Integer] pair.
+def parse_todo(content)
+  excludes = (YAML.safe_load(content) || {}).dig(COP, "Exclude") || []
+  match = content.match(COUNT_PATTERN)
+  count = match ? match[1].to_i : excludes.length
+  [excludes, count]
+end
+
+base_content = `git show #{BASE_REF}:#{TODO_FILE} 2>/dev/null`
+if base_content.empty?
+  puts "sorbet-untyped-ratchet: base ref '#{BASE_REF}' unavailable; skipping (nothing to compare)."
+  exit 0
+end
+
+base_excludes, base_count = parse_todo(base_content)
+head_excludes, head_count = parse_todo(File.read(TODO_FILE))
+
+errors = []
+
+added = (head_excludes - base_excludes).sort
+unless added.empty?
+  errors << <<~MSG
+    #{added.length} file(s) were newly added to the #{COP} Exclude list:
+    #{added.map { |f| "  + #{f}" }.join("\n")}
+    The burndown list may only shrink. Remove the `T.untyped` from these files
+    instead of excluding them.
+  MSG
+end
+
+if head_count > base_count
+  errors << <<~MSG
+    #{COP} offense count rose from #{base_count} to #{head_count}.
+    `T.untyped` was added to an already-excluded file. The count may only shrink.
+  MSG
+end
+
+if errors.empty?
+  removed = (base_excludes - head_excludes).length
+  puts "sorbet-untyped-ratchet: OK " \
+       "(files #{base_excludes.length} -> #{head_excludes.length}, -#{removed}; " \
+       "offenses #{base_count} -> #{head_count}, -#{base_count - head_count})."
+  exit 0
+end
+
+warn "sorbet-untyped-ratchet: FAILED\n\n"
+warn errors.join("\n")
+exit 1
