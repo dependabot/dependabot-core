@@ -45,7 +45,7 @@ public class RunWorker
     {
         var jobFileContent = await File.ReadAllTextAsync(jobFilePath.FullName);
         var jobWrapper = Deserialize(jobFileContent);
-        var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
+        var experimentsManager = ExperimentsManager.FromJob(jobWrapper.Job);
         var result = await RunAsync(jobWrapper.Job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, experimentsManager);
         return result;
     }

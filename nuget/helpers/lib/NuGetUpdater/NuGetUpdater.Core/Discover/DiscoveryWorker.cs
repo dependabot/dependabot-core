@@ -100,7 +100,6 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 await TryRestoreMSBuildSdksAsync(repoRootPath, workspacePath, globalJsonDiscovery.Dependencies, _logger);
             }
 
-            // this next line should throw or something
             projectResults = await RunForDirectoryAsync(repoRootPath, workspacePath);
         }
         else
@@ -221,13 +220,24 @@ public partial class DiscoveryWorker : IDiscoveryWorker
                 Error = new DependencyFileNotParseable(invalidProjectFile),
             }];
         }
-        if (projects.IsEmpty)
+        var fileBasedAppResults = _experimentsManager.UpdateFileBasedApps
+            ? await CSharpFileBasedAppDiscovery.DiscoverAsync(repoRootPath, workspacePath, _logger)
+            : [];
+        if (!_experimentsManager.UpdateFileBasedApps)
+        {
+            _logger.Info($"    C# file-based app discovery disabled by {ExperimentsManager.UpdateFileBasedAppsExperimentName}.");
+        }
+
+        if (projects.IsEmpty && fileBasedAppResults.IsEmpty)
         {
             _logger.Info("    No project files found.");
             return [];
         }
 
-        return await RunForProjectPathsAsync(repoRootPath, workspacePath, projects);
+        var projectResults = projects.IsEmpty
+            ? []
+            : await RunForProjectPathsAsync(repoRootPath, workspacePath, projects);
+        return [.. projectResults.Concat(fileBasedAppResults)];
     }
 
     private static ImmutableArray<string> FindEntryPoints(string workspacePath)

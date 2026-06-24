@@ -7,8 +7,11 @@ namespace NuGetUpdater.Core;
 
 public record ExperimentsManager
 {
+    internal const string UpdateFileBasedAppsExperimentName = "nuget_update_file_based_apps";
+
     public bool GenerateSimplePrBody { get; init; } = false;
     public bool FindRootDirectory { get; init; } = false;
+    public bool UpdateFileBasedApps { get; init; } = true;
 
     public Dictionary<string, object> ToDictionary()
     {
@@ -16,6 +19,7 @@ public record ExperimentsManager
         {
             ["nuget_generate_simple_pr_body"] = GenerateSimplePrBody,
             ["nuget_find_root_directory"] = FindRootDirectory,
+            [UpdateFileBasedAppsExperimentName] = UpdateFileBasedApps,
         };
     }
 
@@ -25,6 +29,16 @@ public record ExperimentsManager
         {
             GenerateSimplePrBody = IsEnabled(experiments, "nuget_generate_simple_pr_body"),
             FindRootDirectory = IsEnabled(experiments, "nuget_find_root_directory"),
+            UpdateFileBasedApps = IsEnabled(experiments, UpdateFileBasedAppsExperimentName, defaultValue: true),
+        };
+    }
+
+    public static ExperimentsManager FromJob(Job job)
+    {
+        var experimentsManager = GetExperimentsManager(job.Experiments);
+        return experimentsManager with
+        {
+            UpdateFileBasedApps = job.UpdateFileBasedApps && experimentsManager.UpdateFileBasedApps,
         };
     }
 
@@ -37,7 +51,7 @@ public record ExperimentsManager
         {
             jobFileContent = await File.ReadAllTextAsync(jobFilePath);
             var jobWrapper = RunWorker.Deserialize(jobFileContent);
-            experimentsManager = GetExperimentsManager(jobWrapper.Job.Experiments);
+            experimentsManager = FromJob(jobWrapper.Job);
         }
         catch (JsonException ex)
         {
@@ -52,11 +66,11 @@ public record ExperimentsManager
         return (experimentsManager, error);
     }
 
-    private static bool IsEnabled(Dictionary<string, object>? experiments, string experimentName)
+    private static bool IsEnabled(Dictionary<string, object>? experiments, string experimentName, bool defaultValue = false)
     {
         if (experiments is null)
         {
-            return false;
+            return defaultValue;
         }
 
         // prefer experiments named with underscores, but hyphens are also allowed as an alternate
@@ -65,12 +79,18 @@ public record ExperimentsManager
         if (experiments.TryGetValue(experimentName, out experimentValue) ||
             experiments.TryGetValue(experimentNameAlternate, out experimentValue))
         {
-            if ((experimentValue?.ToString() ?? "").Equals("true", StringComparison.OrdinalIgnoreCase))
+            var value = experimentValue?.ToString() ?? "";
+            if (value.Equals("true", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
+
+            if (value.Equals("false", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
         }
 
-        return false;
+        return defaultValue;
     }
 }
