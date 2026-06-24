@@ -281,6 +281,10 @@ function Get-NuGetConfigContents([PSObject[]]$creds) {
             $baseSourceLines = @()
         }
 
+        if ("url" -notin $cred.PSObject.Properties.Name -or [string]::IsNullOrWhiteSpace([string]$cred.url)) {
+            continue
+        }
+
         $sourceName = "nuget_source_$i"
         $i++
         $url = $cred.url
