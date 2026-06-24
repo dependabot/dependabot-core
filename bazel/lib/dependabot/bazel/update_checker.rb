@@ -79,7 +79,9 @@ module Dependabot
         versions = registry_client.all_module_versions(dependency.name)
         return nil if versions.empty?
 
-        filtered_versions = filter_ignored_versions(versions)
+        # Prerelease filter must run first so stable releases remain visible when upgrading from a prerelease.
+        filtered_versions = filter_prerelease_versions(versions)
+        filtered_versions = filter_ignored_versions(filtered_versions)
         filtered_versions = filter_lower_versions(filtered_versions)
         filtered_versions = apply_cooldown_filter(filtered_versions)
         return nil if filtered_versions.empty?
@@ -103,17 +105,21 @@ module Dependabot
 
       sig { params(versions: T::Array[String]).returns(T::Array[String]) }
       def filter_ignored_versions(versions)
-        filtered = versions.reject do |version_string|
+        valid = versions.select { |v| version_class.correct?(v) }
+        filtered = valid.reject do |version_string|
           version = version_class.new(version_string)
           ignore_requirements.any? { |req| req.satisfied_by?(version) }
         end
 
-        if versions.count > filtered.count
-          Dependabot.logger.info("Filtered out #{versions.count - filtered.count} ignored versions")
+        if valid.count > filtered.count
+          Dependabot.logger.info("Filtered out #{valid.count - filtered.count} ignored versions")
         end
 
-        if raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions).any?
-          Dependabot.logger.info("All updates for #{dependency.name} were ignored")
+        if raise_on_ignored
+          lower_filtered = filter_lower_versions(filtered)
+          if lower_filtered.empty? && filter_lower_versions(valid).any?
+            Dependabot.logger.info("All updates for #{dependency.name} were ignored")
+          end
         end
 
         filtered
@@ -121,10 +127,45 @@ module Dependabot
 
       sig { params(versions: T::Array[String]).returns(T::Array[String]) }
       def filter_lower_versions(versions)
-        return versions unless dependency.version
+        return versions unless dependency.version && version_class.correct?(dependency.version)
 
         current_version = version_class.new(dependency.version)
-        versions.select { |v| version_class.new(v) > current_version }
+        versions.select { |v| version_class.correct?(v) && version_class.new(v) > current_version }
+      end
+
+      # Filters prereleases keyed off dependency.version only (Bazel uses exact pins, not ranges).
+      sig { params(versions: T::Array[String]).returns(T::Array[String]) }
+      def filter_prerelease_versions(versions)
+        current_release = current_prerelease_release_line
+        filtered = versions.reject { |v| prerelease_to_exclude?(v, current_release) }
+
+        if versions.count > filtered.count
+          Dependabot.logger.info("Filtered out #{versions.count - filtered.count} pre-release versions")
+        end
+
+        filtered
+      end
+
+      # Returns the release line of the current version if it's a prerelease, nil otherwise.
+      sig { returns(T.nilable(Gem::Version)) }
+      def current_prerelease_release_line
+        current = dependency.version
+        return nil unless current && version_class.correct?(current)
+
+        parsed = version_class.new(current)
+        parsed.prerelease? ? parsed.release : nil
+      end
+
+      sig { params(version_string: String, current_release: T.nilable(Gem::Version)).returns(T::Boolean) }
+      def prerelease_to_exclude?(version_string, current_release)
+        # Filters malformed versions — they cannot be parsed for prerelease detection.
+        return false unless version_class.correct?(version_string)
+
+        candidate = version_class.new(version_string)
+        return false unless candidate.prerelease?
+
+        # On stable: exclude all prereleases. On prerelease: exclude only unrelated ones.
+        current_release.nil? || candidate.release != current_release
       end
 
       sig { params(versions: T::Array[String]).returns(T::Array[String]) }

@@ -1095,4 +1095,331 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
       end
     end
   end
+
+  describe "prerelease filtering" do
+    before do
+      allow(registry_client).to receive(:get_metadata)
+        .with("protobuf")
+        .and_return({ "name" => "protobuf", "versions" => versions })
+      allow(registry_client).to receive(:all_module_versions)
+        .with("protobuf")
+        .and_return(versions)
+    end
+
+    let(:dependency_name) { "protobuf" }
+    let(:versions) { ["34.0", "34.1", "35.0-rc1", "35.0-rc2", "35.0"] }
+
+    context "when current version is stable" do
+      let(:dependency_version) { "34.0" }
+      let(:dependency_requirements) do
+        [{ file: "MODULE.bazel", requirement: "34.0", groups: [], source: nil }]
+      end
+
+      it "excludes prerelease versions" do
+        expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("35.0"))
+      end
+    end
+
+    context "when current version is a prerelease" do
+      let(:dependency_version) { "35.0-rc1" }
+      let(:dependency_requirements) do
+        [{ file: "MODULE.bazel", requirement: "35.0-rc1", groups: [], source: nil }]
+      end
+
+      it "proposes the stable release when upgrading from a prerelease" do
+        expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("35.0"))
+      end
+    end
+
+    context "when only prerelease versions are newer" do
+      let(:dependency_version) { "35.0" }
+      let(:versions) { ["34.0", "35.0", "36.0-rc1", "36.0-rc2"] }
+      let(:dependency_requirements) do
+        [{ file: "MODULE.bazel", requirement: "35.0", groups: [], source: nil }]
+      end
+
+      it "returns nil (no stable update available)" do
+        expect(checker.latest_version).to be_nil
+      end
+    end
+
+    context "when current version is a prerelease and unrelated prereleases exist" do
+      let(:dependency_version) { "35.0-rc1" }
+      let(:versions) { ["34.0", "35.0-rc1", "35.0-rc2", "35.0", "36.0-alpha.1"] }
+      let(:dependency_requirements) do
+        [{ file: "MODULE.bazel", requirement: "35.0-rc1", groups: [], source: nil }]
+      end
+
+      it "includes same-release-line prereleases and stable, excludes unrelated prereleases" do
+        expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("35.0"))
+      end
+    end
+
+    context "when current version is a prerelease with no stable available for same line" do
+      let(:dependency_version) { "36.0-rc1" }
+      let(:versions) { ["35.0", "36.0-rc1", "36.0-rc2"] }
+      let(:dependency_requirements) do
+        [{ file: "MODULE.bazel", requirement: "36.0-rc1", groups: [], source: nil }]
+      end
+
+      it "returns the latest prerelease for the same release line" do
+        expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("36.0-rc2"))
+      end
+    end
+
+    context "when current version is a prerelease and both same-line rc and stable exist" do
+      let(:dependency_version) { "35.0-rc1" }
+      let(:versions) { ["35.0-rc1", "35.0-rc2", "35.0"] }
+      let(:dependency_requirements) do
+        [{ file: "MODULE.bazel", requirement: "35.0-rc1", groups: [], source: nil }]
+      end
+
+      it "prefers the stable release over the newer prerelease" do
+        expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("35.0"))
+      end
+    end
+
+    context "when current version is a prerelease and only unrelated prereleases are newer" do
+      let(:dependency_version) { "35.0-rc1" }
+      let(:versions) { ["34.0", "35.0-rc1", "36.0-alpha.1", "37.0-beta.1"] }
+      let(:dependency_requirements) do
+        [{ file: "MODULE.bazel", requirement: "35.0-rc1", groups: [], source: nil }]
+      end
+
+      it "returns nil (no same-line update available)" do
+        expect(checker.latest_version).to be_nil
+      end
+    end
+
+    context "when dependency has no current version" do
+      let(:dependency_version) { nil }
+      let(:versions) { ["1.0.0", "1.1.0", "2.0.0-rc1"] }
+      let(:dependency_requirements) do
+        [{ file: "MODULE.bazel", requirement: nil, groups: [], source: nil }]
+      end
+
+      it "excludes prereleases and returns latest stable" do
+        expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("1.1.0"))
+      end
+    end
+
+    context "when on an early prerelease and full progression exists (alpha → beta → rc → stable)" do
+      let(:dependency_version) { "2.0.0-alpha.1" }
+      let(:versions) { ["1.0.0", "2.0.0-alpha.1", "2.0.0-beta.1", "2.0.0-rc1", "2.0.0"] }
+      let(:dependency_requirements) do
+        [{ file: "MODULE.bazel", requirement: "2.0.0-alpha.1", groups: [], source: nil }]
+      end
+
+      it "proposes the stable release as the latest version" do
+        expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("2.0.0"))
+      end
+    end
+
+    context "when on a prerelease and a higher same-line prerelease exists with no stable yet" do
+      let(:dependency_version) { "35.0-rc2" }
+      let(:versions) { ["35.0-rc1", "35.0-rc2", "35.0-rc3"] }
+      let(:dependency_requirements) do
+        [{ file: "MODULE.bazel", requirement: "35.0-rc2", groups: [], source: nil }]
+      end
+
+      it "proposes the next prerelease in the same release line" do
+        expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("35.0-rc3"))
+      end
+    end
+
+    context "when on a prerelease with raise_on_ignored and ignored versions" do
+      let(:dependency_version) { "35.0-rc1" }
+      let(:versions) { ["35.0-rc1", "35.0-rc2", "35.0", "36.0-alpha.1"] }
+      let(:dependency_requirements) do
+        [{ file: "MODULE.bazel", requirement: "35.0-rc1", groups: [], source: nil }]
+      end
+      let(:ignored_versions) { [">= 35.0-rc2"] }
+      let(:checker) do
+        described_class.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: true
+        )
+      end
+
+      before do
+        allow(Dependabot::Bazel::UpdateChecker::RegistryClient).to receive(:new).and_return(registry_client)
+        allow(registry_client).to receive(:get_metadata)
+          .with("protobuf")
+          .and_return({ "name" => "protobuf", "versions" => versions })
+        allow(registry_client).to receive(:all_module_versions)
+          .with("protobuf")
+          .and_return(versions)
+        allow(Dependabot.logger).to receive(:info)
+      end
+
+      it "logs that all updates were ignored after prerelease filtering" do
+        expect(checker.latest_version).to be_nil
+        expect(Dependabot.logger).to have_received(:info)
+          .with("All updates for protobuf were ignored")
+      end
+    end
+
+    context "when versions use v prefix" do
+      let(:dependency_version) { "v35.0-rc1" }
+      let(:versions) { ["v35.0-rc1", "v35.0-rc2", "v35.0", "v36.0-alpha.1"] }
+      let(:dependency_requirements) do
+        [{ file: "MODULE.bazel", requirement: "v35.0-rc1", groups: [], source: nil }]
+      end
+
+      it "handles v-prefixed versions correctly with prerelease scoping" do
+        expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("v35.0"))
+      end
+    end
+  end
+
+  describe "#prerelease_to_exclude?" do
+    let(:stable_release) { nil }
+    let(:prerelease_line) { Dependabot::Bazel::Version.new("35.0") }
+
+    it "excludes all prereleases when current is stable (nil release line)" do
+      expect(checker.send(:prerelease_to_exclude?, "35.0-rc1", stable_release)).to be true
+      expect(checker.send(:prerelease_to_exclude?, "36.0-alpha.1", stable_release)).to be true
+    end
+
+    it "keeps stable versions regardless of release line" do
+      expect(checker.send(:prerelease_to_exclude?, "35.0", stable_release)).to be false
+      expect(checker.send(:prerelease_to_exclude?, "35.0", prerelease_line)).to be false
+    end
+
+    it "keeps same-line prereleases when on a prerelease" do
+      expect(checker.send(:prerelease_to_exclude?, "35.0-rc2", prerelease_line)).to be false
+    end
+
+    it "excludes unrelated prereleases when on a prerelease" do
+      expect(checker.send(:prerelease_to_exclude?, "36.0-alpha.1", prerelease_line)).to be true
+    end
+
+    it "keeps malformed version strings (passes them to downstream filters)" do
+      expect(checker.send(:prerelease_to_exclude?, "not_valid!!!", prerelease_line)).to be false
+    end
+  end
+
+  describe "malformed version in full filter chain" do
+    let(:dependency_version) { "1.0.0" }
+
+    before do
+      allow(registry_client).to receive(:get_metadata)
+        .with("rules_go")
+        .and_return({ "name" => "rules_go", "versions" => ["1.0.0", "not_valid!!!", "2.0.0"] })
+      allow(registry_client).to receive(:all_module_versions)
+        .with("rules_go")
+        .and_return(["1.0.0", "not_valid!!!", "2.0.0"])
+    end
+
+    it "skips malformed versions and returns the latest valid version" do
+      expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("2.0.0"))
+    end
+  end
+
+  describe "prerelease filtering logging" do
+    let(:dependency_version) { "34.0" }
+
+    before do
+      allow(registry_client).to receive(:get_metadata)
+        .with("rules_go")
+        .and_return({ "name" => "rules_go", "versions" => ["34.0", "35.0-rc1", "35.0-rc2", "35.0"] })
+      allow(registry_client).to receive(:all_module_versions)
+        .with("rules_go")
+        .and_return(["34.0", "35.0-rc1", "35.0-rc2", "35.0"])
+      allow(Dependabot.logger).to receive(:info)
+    end
+
+    it "logs the number of filtered pre-release versions" do
+      checker.latest_version
+      expect(Dependabot.logger).to have_received(:info)
+        .with("Filtered out 2 pre-release versions")
+    end
+  end
+
+  describe "bcr suffix and prerelease interaction" do
+    let(:dependency_name) { "protobuf" }
+    let(:dependency_version) { "35.0-rc1" }
+    let(:dependency_requirements) do
+      [{ file: "MODULE.bazel", requirement: "35.0-rc1", groups: [], source: nil }]
+    end
+
+    before do
+      allow(registry_client).to receive(:get_metadata)
+        .with("protobuf")
+        .and_return({ "name" => "protobuf", "versions" => ["35.0-rc1", "35.0-rc2", "35.0", "35.0.bcr.1"] })
+      allow(registry_client).to receive(:all_module_versions)
+        .with("protobuf")
+        .and_return(["35.0-rc1", "35.0-rc2", "35.0", "35.0.bcr.1"])
+    end
+
+    it "treats .bcr.X as stable and selects it over prereleases" do
+      expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("35.0.bcr.1"))
+    end
+  end
+
+  describe "prerelease with .bcr suffix (35.0-rc1.bcr.1)" do
+    let(:dependency_name) { "protobuf" }
+    let(:dependency_version) { "35.0" }
+    let(:dependency_requirements) do
+      [{ file: "MODULE.bazel", requirement: "35.0", groups: [], source: nil }]
+    end
+
+    before do
+      allow(registry_client).to receive(:get_metadata)
+        .with("protobuf")
+        .and_return({ "name" => "protobuf", "versions" => ["35.0", "36.0-rc1.bcr.1", "36.0"] })
+      allow(registry_client).to receive(:all_module_versions)
+        .with("protobuf")
+        .and_return(["35.0", "36.0-rc1.bcr.1", "36.0"])
+    end
+
+    it "detects the prerelease+bcr combo as a prerelease and filters it" do
+      expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("36.0"))
+    end
+  end
+
+  describe "current version is .bcr with newer prereleases available" do
+    let(:dependency_name) { "protobuf" }
+    let(:dependency_version) { "35.0.bcr.1" }
+    let(:dependency_requirements) do
+      [{ file: "MODULE.bazel", requirement: "35.0.bcr.1", groups: [], source: nil }]
+    end
+
+    before do
+      allow(registry_client).to receive(:get_metadata)
+        .with("protobuf")
+        .and_return({ "name" => "protobuf", "versions" => ["35.0.bcr.1", "36.0-rc1", "36.0"] })
+      allow(registry_client).to receive(:all_module_versions)
+        .with("protobuf")
+        .and_return(["35.0.bcr.1", "36.0-rc1", "36.0"])
+    end
+
+    it "treats .bcr current as stable and filters unrelated prereleases" do
+      expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("36.0"))
+    end
+  end
+
+  describe "current version is prerelease+bcr combo (35.0-rc1.bcr.1)" do
+    let(:dependency_name) { "protobuf" }
+    let(:dependency_version) { "35.0-rc1.bcr.1" }
+    let(:dependency_requirements) do
+      [{ file: "MODULE.bazel", requirement: "35.0-rc1.bcr.1", groups: [], source: nil }]
+    end
+
+    before do
+      allow(registry_client).to receive(:get_metadata)
+        .with("protobuf")
+        .and_return({ "name" => "protobuf", "versions" => ["35.0-rc1.bcr.1", "35.0-rc2", "35.0", "36.0-alpha.1"] })
+      allow(registry_client).to receive(:all_module_versions)
+        .with("protobuf")
+        .and_return(["35.0-rc1.bcr.1", "35.0-rc2", "35.0", "36.0-alpha.1"])
+    end
+
+    it "treats as prerelease on 35.0 line and includes same-line versions" do
+      expect(checker.latest_version).to eq(Dependabot::Bazel::Version.new("35.0"))
+    end
+  end
 end
