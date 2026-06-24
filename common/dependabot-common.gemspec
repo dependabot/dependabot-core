@@ -34,8 +34,9 @@ Gem::Specification.new do |spec|
   spec.add_dependency "excon", ">= 0.109", "< 2.0"
   spec.add_dependency "faraday", "~> 2.7"
   spec.add_dependency "faraday-retry", "~> 2.2"
-  spec.add_dependency "gitlab", ">= 5", "< 7"
-  spec.add_dependency "json", "< 2.13"
+  spec.add_dependency "gitlab", ">= 5", "< 7" dependabot/bundler/updater/prod-dependencies-30c7e35c5c
+  spec.add_dependency "json", "< 2.18"
+  spec.add_dependency "json", "< 2.19" main
   spec.add_dependency "nokogiri", "~> 1.8"
   spec.add_dependency "octokit", ">= 7.2", "< 11.0"
   spec.add_dependency "opentelemetry-api", "~> 1.5"
