@@ -176,14 +176,12 @@ module Dependabot
           end
 
         @updated_requirements ||=
-          wrap_requirements(
-            RequirementsUpdater.new(
-              requirements: dependency.requirements,
-              updated_source: updated_source,
-              latest_resolvable_version: resolvable_version,
-              update_strategy: T.must(requirements_update_strategy)
-            ).updated_requirements
-          )
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            updated_source: updated_source,
+            latest_resolvable_version: resolvable_version,
+            update_strategy: T.must(requirements_update_strategy)
+          ).updated_requirements
       end
 
       sig { returns(T::Boolean) }
