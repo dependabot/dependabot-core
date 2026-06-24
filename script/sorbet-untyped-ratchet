@@ -15,6 +15,7 @@
 # base ref (default `origin/main`, override with BASE_REF) and no-ops when the
 # base ref is unavailable, so it is safe to run anywhere.
 
+require "open3"
 require "yaml"
 
 TODO_FILE = ".rubocop_todo.yml"
@@ -23,22 +24,31 @@ BASE_REF = ENV.fetch("BASE_REF", "origin/main")
 COUNT_PATTERN = /^# Offense count: (\d+)\n#{Regexp.escape(COP)}:/m
 
 # Extracts the Exclude list and `# Offense count` for COP from a
-# `.rubocop_todo.yml` document, returning them as a [Array, Integer] pair.
-def parse_todo(content)
+# `.rubocop_todo.yml` document. Raises if the offense-count comment is missing,
+# so a PR cannot pass the ratchet by deleting or reformatting it.
+def parse_todo(content, source)
   excludes = (YAML.safe_load(content) || {}).dig(COP, "Exclude") || []
   match = content.match(COUNT_PATTERN)
-  count = match ? match[1].to_i : excludes.length
-  [excludes, count]
+  raise "could not find '# Offense count: <n>' for #{COP} in #{source}" unless match
+
+  [excludes, match[1].to_i]
 end
 
-base_content = `git show #{BASE_REF}:#{TODO_FILE} 2>/dev/null`
-if base_content.empty?
+# Reads .rubocop_todo.yml at the base ref without invoking a shell, returning
+# nil when the ref (or the file at that ref) is unavailable.
+def base_todo
+  stdout, _stderr, status = Open3.capture3("git", "show", "#{BASE_REF}:#{TODO_FILE}")
+  status.success? ? stdout : nil
+end
+
+base_content = base_todo
+if base_content.nil?
   puts "sorbet-untyped-ratchet: base ref '#{BASE_REF}' unavailable; skipping (nothing to compare)."
   exit 0
 end
 
-base_excludes, base_count = parse_todo(base_content)
-head_excludes, head_count = parse_todo(File.read(TODO_FILE))
+base_excludes, base_count = parse_todo(base_content, "base ref '#{BASE_REF}'")
+head_excludes, head_count = parse_todo(File.read(TODO_FILE), TODO_FILE)
 
 errors = []
 
