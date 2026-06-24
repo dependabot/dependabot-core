@@ -54,7 +54,8 @@ public class XmlFileWriter : IFileWriter
         ImmutableArray<string> relativeFilePaths,
         ImmutableArray<Dependency> originalDependencies,
         ImmutableArray<Dependency> requiredPackageVersions,
-        PackageManagementKind packageManagementKind
+        PackageManagementKind packageManagementKind,
+        string? packageManagementSpecialFileRelativePath
     )
     {
         if (relativeFilePaths.IsDefaultOrEmpty)
@@ -494,8 +495,13 @@ public class XmlFileWriter : IFileWriter
                                 var newCpvElement = XmlExtensions.CreateSingleLineXmlElementSyntax(PackageReferenceElementName)
                                     .WithAttribute(UpdateAttributeName, requiredPackageVersion.Name)
                                     .WithAttribute(VersionMetadataName, requiredVersion.ToString());
-                                var priorCpvElementsAndPaths = allCpvElementsAndPaths
-                                    .TakeWhile(pair => (pair.Key.GetAttributeValue(UpdateAttributeName) ?? string.Empty).Trim().CompareTo(requiredPackageVersion.Name) < 0)
+                                // sort by the `Update` value so placement is deterministic regardless of document/dictionary
+                                // traversal order; use ordinal (case-insensitive) comparison to match NuGet's package id semantics
+                                var sortedCpvElementsAndPaths = allCpvElementsAndPaths
+                                    .OrderBy(pair => (pair.Key.GetAttributeValue(UpdateAttributeName) ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
+                                    .ToArray();
+                                var priorCpvElementsAndPaths = sortedCpvElementsAndPaths
+                                    .TakeWhile(pair => string.Compare((pair.Key.GetAttributeValue(UpdateAttributeName) ?? string.Empty).Trim(), requiredPackageVersion.Name, StringComparison.OrdinalIgnoreCase) < 0)
                                     .ToArray();
                                 if (priorCpvElementsAndPaths.Length > 0)
                                 {
@@ -518,7 +524,7 @@ public class XmlFileWriter : IFileWriter
                                 {
                                     // no prior elements; add to the front of the document
                                     _logger.Info($"Adding new `<{PackageReferenceElementName}>` element for {requiredPackageVersion.Name} with version {requiredVersion} at the start of the document.");
-                                    var (cpvGroup, filePath) = allCpvElementsAndPaths.First();
+                                    var (cpvGroup, filePath) = sortedCpvElementsAndPaths.First();
                                     cpvGroup = cpvGroup.Parent;
                                     var groupTrivia = cpvGroup.AsNode.GetLeadingTrivia().ToList();
                                     var priorEolIndex = groupTrivia.FindLastIndex(t => t.Kind == SyntaxKind.EndOfLineTrivia);
@@ -538,8 +544,26 @@ public class XmlFileWriter : IFileWriter
                             {
                                 // CPV is in use but there's no existing central `<PackageReference Update=...>` element;
                                 // the package is being pinned as a transitive dependency, so add a new element to the
-                                // first `Packages.props` file (its last `<ItemGroup>`).
-                                var packagesPropsPath = filesAndContents.Keys
+                                // central file's last `<ItemGroup>`.  Prefer the central file discovered upstream (the
+                                // `CentralPackagesFile` MSBuild property); fall back to the conventional `Packages.props`
+                                // filename when it wasn't provided or couldn't be matched.
+                                string? packagesPropsPath = null;
+                                if (packageManagementSpecialFileRelativePath is not null)
+                                {
+                                    var lastSeparatorIndex = projectRelativePath.LastIndexOf('/');
+                                    var projectDirectory = lastSeparatorIndex >= 0
+                                        ? projectRelativePath.Substring(0, lastSeparatorIndex + 1)
+                                        : "/";
+                                    var resolvedCentralPath = (projectDirectory + packageManagementSpecialFileRelativePath).FullyNormalizedRootedPath();
+                                    packagesPropsPath = filesAndContents.Keys
+                                        .FirstOrDefault(path => path.FullyNormalizedRootedPath().Equals(resolvedCentralPath, StringComparison.OrdinalIgnoreCase));
+                                    if (packagesPropsPath is null)
+                                    {
+                                        _logger.Warn($"Discovered central package management file `{packageManagementSpecialFileRelativePath}` was not found among the updatable files; falling back to `{PackagesPropsFileName}`.");
+                                    }
+                                }
+
+                                packagesPropsPath ??= filesAndContents.Keys
                                     .FirstOrDefault(path => Path.GetFileName(path).Equals(PackagesPropsFileName, StringComparison.OrdinalIgnoreCase));
                                 var centralItemGroup = packagesPropsPath is null
                                     ? null
@@ -564,11 +588,11 @@ public class XmlFileWriter : IFileWriter
                                 }
                                 else
                                 {
-                                    // there's no `Packages.props` file to record the version; emitting a versionless
+                                    // there's no central file to record the version; emitting a versionless
                                     // `<PackageReference Include=...>` would produce an unresolvable reference, so report
                                     // that no update was performed.
                                     updatesPerformed[requiredPackageVersion.Name] = false;
-                                    _logger.Warn($"Unable to find a `{PackagesPropsFileName}` file to set {requiredPackageVersion.Name} to version {requiredVersion}; no update performed.");
+                                    _logger.Warn($"Unable to find a central package management file to set {requiredPackageVersion.Name} to version {requiredVersion}; no update performed.");
                                 }
                             }
                         }

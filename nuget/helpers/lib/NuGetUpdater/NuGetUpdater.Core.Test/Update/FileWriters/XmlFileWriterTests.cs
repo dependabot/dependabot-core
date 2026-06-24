@@ -869,10 +869,56 @@ public class XmlFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
-    public async Task SingleDependency_CentralPackageVersions_TransitiveIsPinned_NoPackagesPropsFile_NoUpdatePerformed()
+    public async Task SingleDependency_CentralPackageVersions_TransitiveIsPinned_CentralPackagesFileFromDiscovery_ElementAddedToDiscoveredFile()
     {
-        // CPV is in use but there's no `Packages.props` file (the central file is named differently) and no existing
-        // `<PackageReference Update=...>` element, so there's no reliable location to record the version; rather than
+        // CPV is in use with a non-conventionally-named central file (`Versions.props`) that has no
+        // `<PackageReference Update=...>` elements yet; because the discovered `CentralPackagesFile` path is supplied,
+        // the new central element is added to that file rather than relying on the `Packages.props` filename heuristic.
+        await TestAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageVersions,
+            packageManagementSpecialFileRelativePath: "Versions.props",
+            files: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Versions.props", """
+                    <Project>
+                      <ItemGroup>
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.1.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Versions.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Dependency" Version="1.1.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageVersions_TransitiveIsPinned_NoCentralFileFound_NoUpdatePerformed()
+    {
+        // CPV is in use but there's no `Packages.props` file, no existing `<PackageReference Update=...>` element, and
+        // no discovered `CentralPackagesFile` path, so there's no reliable location to record the version; rather than
         // writing a versionless, unresolvable `PackageReference`, no update is performed and the files are left unchanged.
         await TestNoChangeAsync(
             packageManagementKind: PackageManagementKind.CentralPackageVersions,
