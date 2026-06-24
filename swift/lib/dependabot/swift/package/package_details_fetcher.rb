@@ -1,12 +1,11 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "json"
-require "time"
-require "cgi"
-require "excon"
 require "sorbet-runtime"
 require "dependabot/swift"
+require "dependabot/swift/version"
+require "dependabot/source"
+require "dependabot/clients/github_with_retries"
 
 module Dependabot
   module Swift
@@ -14,54 +13,68 @@ module Dependabot
       class PackageDetailsFetcher
         extend T::Sig
 
-        RELEASES_URL = "https://api.github.com/repos/"
-        APPLICATION_JSON = "JSON"
-
         sig do
           params(
             dependency: Dependency,
-            credentials: T::Array[Dependabot::Credential],
-            git_commit_checker: Dependabot::GitCommitChecker
+            credentials: T::Array[Dependabot::Credential]
           ).void
         end
-        def initialize(dependency:, credentials:, git_commit_checker:)
+        def initialize(dependency:, credentials:)
           @dependency = dependency
           @credentials = credentials
-          @git_commit_checker = git_commit_checker
         end
-
-        sig { returns(Dependabot::GitCommitChecker) }
-        attr_reader :git_commit_checker
 
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
         sig { returns(T::Array[GitTagWithDetail]) }
         def fetch_tag_and_release_date
-          truncate_github_url = @dependency.name.gsub("github.com/", "")
-          url = RELEASES_URL + "#{truncate_github_url}/releases"
+          source = source_from_dependency
+          return [] unless source
+          return [] unless source.provider == "github"
+
+          client = Dependabot::Clients::GithubWithRetries.for_source(
+            source: source,
+            credentials: credentials
+          )
+
+          releases = client.releases(source.repo, per_page: 100)
+
           result_lines = T.let([], T::Array[GitTagWithDetail])
-          # Fetch the releases from the GitHub API
-          response = Excon.get(url, headers: { "Accept" => "application/vnd.github.v3+json" })
-          Dependabot.logger.error("Failed call details: #{response.body}") unless response.status == 200
-          return result_lines unless response.status == 200
+          releases.each do |release|
+            next if release.prerelease
 
-          # Parse the JSON response
-          releases = JSON.parse(response.body)
+            tag_name = release.tag_name
+            next unless tag_name.is_a?(String)
 
-          # Extract version names and release dates into a hash
-          releases.map do |release|
+            normalized_tag = tag_name.delete_prefix("v")
+            next unless Version.correct?(normalized_tag)
+
+            published_at = release.published_at
+            release_date = case published_at
+                           when Time then published_at.iso8601
+                           when String then published_at
+                           end
             result_lines << GitTagWithDetail.new(
-              tag: release["tag_name"],
-              release_date: release["published_at"]
+              tag: tag_name,
+              release_date: release_date
             )
           end
 
-          # sort the result lines by tag in descending order
-          result_lines = result_lines.sort_by(&:tag).reverse
-          # Log the extracted details for debugging
-          Dependabot.logger.info("Extracted release details: #{result_lines}")
-          result_lines
+          result_lines.sort_by do |detail|
+            Version.new(detail.tag.delete_prefix("v"))
+          end.reverse
+        rescue Octokit::Error => e
+          Dependabot.logger.debug("Error fetching release details: #{e.message}")
+          []
+        end
+
+        private
+
+        sig { returns(T.nilable(Dependabot::Source)) }
+        def source_from_dependency
+          url = "https://#{@dependency.name}"
+          Dependabot::Source.from_url(url)
         end
       end
     end
