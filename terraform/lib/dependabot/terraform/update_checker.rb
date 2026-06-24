@@ -109,11 +109,32 @@ module Dependabot
       def registry_client
         @registry_client ||= T.let(
           begin
-            hostname = dependency_source_details&.fetch(:registry_hostname)
+            hostname = registry_hostname
             RegistryClient.new(hostname: hostname, credentials: credentials)
           end,
           T.nilable(Dependabot::Terraform::RegistryClient)
         )
+      end
+
+      sig { returns(T.nilable(String)) }
+      def registry_hostname
+        hostname = dependency_source_details&.fetch(:registry_hostname)
+        return hostname unless hostname == RegistryClient::PUBLIC_HOSTNAME
+
+        base_registry = credentials.find do |cred|
+          cred["type"] == "terraform_registry" && credential_replaces_base?(cred)
+        end
+
+        base_registry&.fetch("host", nil) || hostname
+      end
+
+      sig { params(credential: T::Hash[String, T.untyped]).returns(T::Boolean) }
+      def credential_replaces_base?(credential)
+        if credential.respond_to?(:replaces_base?)
+          credential.replaces_base?
+        else
+          credential["replaces-base"] == true
+        end
       end
 
       sig { returns(T.nilable(Dependabot::Terraform::Version)) }
