@@ -152,9 +152,9 @@ module Dependabot
           if tag
             updated_tag = latest_version_from(tag)
             updated_source[:tag] = updated_tag
-            updated_source[:digest] = digest_of(updated_tag) if digest || pin_digests?
+            updated_source[:digest] = resolved_digest_for(tag, updated_tag, digest) if digest || pin_digests?
           elsif digest
-            updated_source[:digest] = digest_of("latest")
+            updated_source[:digest] = digest_within_cooldown?("latest") ? digest : digest_of("latest")
           end
 
           req.merge(source: updated_source)
@@ -217,37 +217,51 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def digest_up_to_date?
-        digest_requirements.all? do |req|
-          source = req.fetch(:source)
-          source_digest = source.fetch(:digest)
-          source_tag = source[:tag]
+        digest_requirements.all? { |req| digest_requirement_up_to_date?(req) }
+      end
 
-          expected_digest =
-            if source_tag
-              latest_tag = latest_tag_from(source_tag)
+      sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
+      def digest_requirement_up_to_date?(req)
+        source = req.fetch(:source)
+        source_digest = source.fetch(:digest)
+        source_tag = source[:tag]
 
-              # When digest-only updates are suppressed and the tag hasn't changed,
-              # treat the digest as up-to-date to avoid proposing a PR that only
-              # bumps the digest without a corresponding version change.
-              # Only apply to comparable (versioned) tags — non-comparable tags like
-              # "latest" or distro codenames should still get digest updates.
-              if Dependabot::Experiments.enabled?(:docker_digest_only_update_suppression) &&
-                 Tag.new(source_tag).comparable? &&
-                 latest_tag.name == source_tag
-                next true
-              end
+        if source_tag
+          latest_tag = latest_tag_from(source_tag)
+          digest_only_refresh = latest_tag.name == source_tag
 
-              digest_of(latest_tag.name)
-            else
-              updated_digest
-            end
+          # Digest-only refresh (tag unchanged): respect the cooldown window
+          # so a freshly-pushed digest isn't proposed before it matures. This
+          # covers both comparable and non-comparable tags (e.g. "alpine"),
+          # which the version-tag cooldown (apply_cooldown) never reaches.
+          return true if digest_only_refresh && digest_within_cooldown?(source_tag)
 
-          # If we can't determine an expected digest (for example if the registry does not return digests)
-          # assume it's up to date
-          next true if expected_digest.nil?
+          # When digest-only updates are suppressed and the tag hasn't changed,
+          # treat the digest as up-to-date to avoid proposing a PR that only
+          # bumps the digest without a corresponding version change.
+          # Only apply to comparable (versioned) tags — non-comparable tags like
+          # "latest" or distro codenames should still get digest updates.
+          return true if digest_only_update_suppressed?(source_tag, latest_tag)
 
-          source_digest == expected_digest
+          expected_digest = digest_of(latest_tag.name)
+        else
+          digest_only_refresh = true
+          # Pure digest pin (no tag): the proposed digest resolves from the
+          # "latest" tag, so gate it on the same cooldown window.
+          return true if digest_within_cooldown?("latest")
+
+          expected_digest = updated_digest
         end
+
+        # If we can't determine an expected digest (for example if the registry does not return digests)
+        # assume it's up to date
+        return true if expected_digest.nil?
+
+        # Multi-arch no-op: a digest-only refresh whose index digest changed only
+        # because an unconsumed platform was rebuilt should not open a PR.
+        return true if digest_refresh_is_noop?(source, source_digest, expected_digest, digest_only_refresh)
+
+        source_digest == expected_digest
       end
 
       sig { params(version: String).returns(String) }
@@ -457,7 +471,7 @@ module Dependabot
         published_date = last_modified ? Time.parse(last_modified) : nil
 
         Dependabot::Package::PackageRelease.new(
-          version: Docker::Version.new(tag.name),
+          version: release_version_for(tag),
           released_at: published_date,
           latest: false,
           yanked: false,
@@ -943,6 +957,130 @@ module Dependabot
         Dependabot::UpdateCheckers::CooldownCalculation.within_cooldown_window?(release_date, days)
       end
 
+      # Builds the PackageRelease version for a tag. Non-comparable tags (e.g.
+      # "alpine") have no semver, so Docker::Version.new would raise. The version
+      # is only consumed by semver-aware version-tag cooldown; the digest cooldown
+      # path relies solely on the release date, so a sentinel keeps PackageRelease
+      # construction safe for non-comparable tags.
+      sig { params(tag: Dependabot::Docker::Tag).returns(Dependabot::Version) }
+      def release_version_for(tag)
+        Docker::Version.new(tag.name)
+      rescue ArgumentError, TypeError
+        Dependabot::Version.new("0")
+      end
+
+      # Whether the digest currently served for the given tag was published too
+      # recently to satisfy the configured cooldown window. Digest-only refreshes
+      # don't change the version string, so the default cooldown window applies
+      # (semver-specific windows require a version delta, and the tag may be
+      # non-comparable like "alpine"). Fails open (returns false) when the
+      # publication date can't be determined, so a missing Last-Modified header
+      # never permanently blocks an update.
+      sig { params(tag_name: String).returns(T::Boolean) }
+      def digest_within_cooldown?(tag_name)
+        return false if should_skip_cooldown?
+
+        cooldown = @update_cooldown
+        return false unless cooldown
+
+        released_at = publication_detail(Tag.new(tag_name))&.released_at
+        return false unless released_at
+
+        Dependabot::UpdateCheckers::CooldownCalculation.within_cooldown_window?(
+          released_at, cooldown.default_days
+        )
+      end
+
+      # Resolves the digest to write for a tag during a requirement update.
+      # Keeps the existing digest for a digest-only refresh that's still within
+      # the cooldown window; otherwise resolves the latest digest for the tag.
+      sig do
+        params(
+          current_tag: String,
+          updated_tag: String,
+          current_digest: T.nilable(String)
+        ).returns(T.nilable(String))
+      end
+      def resolved_digest_for(current_tag, updated_tag, current_digest)
+        # Keep the existing digest for a digest-only refresh that's still within
+        # the cooldown window; otherwise resolve the latest digest for the tag.
+        return current_digest if current_digest && updated_tag == current_tag &&
+                                 digest_within_cooldown?(updated_tag)
+
+        digest_of(updated_tag)
+      end
+
+      # Whether a digest-only update for an unchanged comparable tag is suppressed
+      # by the docker_digest_only_update_suppression experiment. Non-comparable
+      # tags like "latest" or distro codenames are excluded so they still update.
+      sig do
+        params(source_tag: String, latest_tag: Dependabot::Docker::Tag).returns(T::Boolean)
+      end
+      def digest_only_update_suppressed?(source_tag, latest_tag)
+        Dependabot::Experiments.enabled?(:docker_digest_only_update_suppression) &&
+          Tag.new(source_tag).comparable? &&
+          latest_tag.name == source_tag
+      end
+
+      # Whether a digest-only refresh is a no-op for the platform(s) the user
+      # actually consumes. Only applies when the tag is unchanged and the index
+      # digest moved; otherwise this is a genuine version/digest change.
+      sig do
+        params(
+          source: T::Hash[Symbol, T.untyped],
+          current_digest: String,
+          expected_digest: String,
+          digest_only_refresh: T::Boolean
+        ).returns(T::Boolean)
+      end
+      def digest_refresh_is_noop?(source, current_digest, expected_digest, digest_only_refresh)
+        digest_only_refresh &&
+          current_digest != expected_digest &&
+          multiarch_noop?(source, current_digest, expected_digest)
+      end
+
+      # Compares the per-platform manifest digests of the currently-pinned index
+      # against the candidate index. When the Dockerfile pins `--platform`, only
+      # that platform is compared; otherwise every platform must be identical.
+      # Fails open (returns false) whenever a confident comparison isn't possible.
+      sig do
+        params(
+          source: T::Hash[Symbol, T.untyped],
+          current_digest: String,
+          candidate_digest: String
+        ).returns(T::Boolean)
+      end
+      def multiarch_noop?(source, current_digest, candidate_digest)
+        current = platform_digests("sha256:#{current_digest}")
+        candidate = platform_digests("sha256:#{candidate_digest}")
+
+        # Either reference is single-platform or couldn't be fetched: can't prove a no-op.
+        return false if current.nil? || candidate.nil?
+
+        pinned = pinned_platform_key(source[:platform])
+        if pinned
+          current_platform = current[pinned]
+          candidate_platform = candidate[pinned]
+          return false if current_platform.nil? || candidate_platform.nil?
+
+          current_platform == candidate_platform
+        else
+          # No platform pin: only a no-op if nothing changed for any platform.
+          current == candidate
+        end
+      end
+
+      # Normalizes a Dockerfile `--platform` value into a manifest platform key
+      # (e.g. "linux/amd64", "linux/arm64/v8"). Returns nil for build-arg
+      # placeholders like `$BUILDPLATFORM` so we fall back to the strict check.
+      sig { params(platform: T.nilable(String)).returns(T.nilable(String)) }
+      def pinned_platform_key(platform)
+        return nil if platform.nil?
+        return nil unless platform.match?(%r{\A[a-z0-9]+/[a-z0-9]+(?:/[a-z0-9]+)?\z})
+
+        platform
+      end
+
       # Fetches the "created" timestamp from the image config blob for a given tag.
       # This represents the actual build time, which is more reliable than semver
       # for determining which image is truly newer.
@@ -1299,6 +1437,19 @@ module Dependabot
 
         # Filter to actual image manifests (exclude attestations/signatures)
         manifests.filter_map { |m| extract_platform(m) }
+      end
+
+      # Maps each platform in a manifest list to its per-platform manifest digest,
+      # e.g. { "linux/amd64" => "sha256:…", "linux/arm64/v8" => "sha256:…" }.
+      # Accepts a tag name or a digest reference (e.g. "sha256:…"). Returns nil
+      # for single-platform images or when the manifest can't be fetched, so
+      # callers fail open rather than treat an unknown image as a no-op.
+      sig { params(reference: String).returns(T.nilable(T::Hash[String, String])) }
+      def platform_digests(reference)
+        digests = fetch_platform_digests(reference)
+        return nil if digests.empty?
+
+        digests
       end
 
       sig { params(manifest_entry: T.untyped).returns(T.nilable(T::Hash[String, T.untyped])) }

@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "dependabot/dependency_requirement"
 require "dependabot/julia/requirement"
 require "dependabot/julia/version"
 
@@ -11,18 +12,21 @@ module Dependabot
 
       sig do
         params(
-          requirements: T::Array[T::Hash[Symbol, T.untyped]],
+          requirements: T::Array[Dependabot::DependencyRequirement],
           target_version: T.nilable(String),
           update_strategy: T.nilable(Symbol)
         ).void
       end
       def initialize(requirements:, target_version:, update_strategy:)
-        @requirements = requirements
+        @requirements = T.let(
+          requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
+          T::Array[Dependabot::DependencyRequirement]
+        )
         @target_version = target_version
         @update_strategy = T.let(update_strategy || :bump_versions, Symbol)
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         return requirements unless target_version
 
@@ -35,7 +39,7 @@ module Dependabot
 
       private
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       attr_reader :requirements
 
       sig { returns(T.nilable(String)) }
@@ -46,9 +50,9 @@ module Dependabot
 
       sig do
         params(
-          requirement: T::Hash[Symbol, T.untyped],
+          requirement: Dependabot::DependencyRequirement,
           target_version: Dependabot::Julia::Version
-        ).returns(T::Hash[Symbol, T.untyped])
+        ).returns(Dependabot::DependencyRequirement)
       end
       def update_requirement(requirement, target_version)
         current_requirement = requirement[:requirement]
@@ -60,7 +64,7 @@ module Dependabot
                             updated_version_requirement(current_requirement, target_version)
                           end
 
-        requirement.merge(requirement: new_requirement)
+        Dependabot::DependencyRequirement.create(requirement.merge(requirement: new_requirement))
       end
 
       sig { params(requirement_string: String, target_version: Dependabot::Julia::Version).returns(String) }

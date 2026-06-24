@@ -96,14 +96,12 @@ module Dependabot
           declarations_using_a_property
           .map { |req| req.dig(:metadata, :property_name) }
 
-        wrap_requirements(
-          RequirementsUpdater.new(
-            requirements: dependency.requirements,
-            latest_version: preferred_resolvable_version&.to_s,
-            source_url: preferred_version_details&.fetch(:source_url),
-            properties_to_update: property_names
-          ).updated_requirements
-        )
+        RequirementsUpdater.new(
+          requirements: dependency.requirements,
+          latest_version: preferred_resolvable_version&.to_s,
+          source_url: preferred_version_details&.fetch(:source_url),
+          properties_to_update: property_names
+        ).updated_requirements
       end
 
       sig { override.returns(T::Boolean) }
