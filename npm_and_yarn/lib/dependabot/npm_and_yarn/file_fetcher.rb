@@ -80,7 +80,7 @@ module Dependabot
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
-      def fetch_files
+      def fetch_files # rubocop:disable Metrics/PerceivedComplexity
         fetched_files = T.let([], T::Array[DependencyFile])
         fetched_files << package_json
         fetched_files << T.must(npmrc) if npmrc && !scope_overrides_npmrc?
@@ -91,10 +91,13 @@ module Dependabot
         fetched_files += workspace_package_jsons
         fetched_files += path_dependencies(fetched_files)
 
-        # Ensure private registry rejection runs even when npm_version is nil
-        # (e.g. no lockfile, no packageManager, no engines), since inferred_npmrc
-        # is only called from npm_files which is gated on npm_version.
-        reject_if_private_registry_without_config! unless npm_version
+        # When no package manager version is detected at all (no lockfile, no
+        # packageManager, no engines) AND no committed .npmrc exists, the
+        # inferred_npmrc path inside npm_files is never reached. Run the
+        # private-registry rejection check directly so users get an actionable
+        # error instead of a confusing 404 from registry.npmjs.org.
+        # Skip for yarn/pnpm-only projects where npm isn't the relevant manager.
+        reject_if_private_registry_without_config! if no_package_manager_detected? && npmrc.nil?
 
         # Filter excluded files from final collection
         filtered_files = fetched_files.uniq.reject do |file|
@@ -289,6 +292,11 @@ module Dependabot
       sig { returns(T::Boolean) }
       def scope_overrides_npmrc?
         Dependabot::Experiments.enabled?(:enable_npmrc_credential_generation) && credentials_have_scope?
+      end
+
+      sig { returns(T::Boolean) }
+      def no_package_manager_detected?
+        !npm_version && !yarn_version && !pnpm_version
       end
 
       sig { returns(T.nilable(T.any(Integer, String))) }

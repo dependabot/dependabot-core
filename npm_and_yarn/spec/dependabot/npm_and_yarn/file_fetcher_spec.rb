@@ -2832,7 +2832,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     it "raises PrivateRegistryConfigNotFound" do
       expect { file_fetcher_instance.files }.to raise_error(
         Dependabot::PrivateRegistryConfigNotFound,
-        /Private npm registries require either a .npmrc file.*npm.pkg.github.com/
+        /Private npm registries require either a \.npmrc file.*npm\.pkg\.github\.com/
       )
     end
   end
@@ -2883,7 +2883,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     it "raises PrivateRegistryConfigNotFound" do
       expect { file_fetcher_instance.files }.to raise_error(
         Dependabot::PrivateRegistryConfigNotFound,
-        /npm.pkg.github.com/
+        /npm\.pkg\.github\.com/
       )
     end
   end
