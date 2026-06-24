@@ -21,7 +21,6 @@ module Dependabot
         3.12.13
         3.11.15
         3.10.20
-        3.9.25
       ).freeze
 
       PRE_INSTALLED_PYTHON_VERSIONS = T.let(
@@ -47,8 +46,9 @@ module Dependabot
         T::Array[Dependabot::Python::Version]
       )
 
-      # The highest Python version that is no longer fully supported.
-      # Deprecated now (warning); unsupported once removed from PRE_INSTALLED_PYTHON_VERSIONS_RAW.
+      # The highest Python version that is no longer supported.
+      # Python 3.9 reached end-of-life and was removed from PRE_INSTALLED_PYTHON_VERSIONS_RAW,
+      # so a ToolVersionNotSupported error is raised for it (and any lower version).
       NON_SUPPORTED_HIGHEST_VERSION = "3.9"
 
       DEPRECATED_VERSIONS = T.let([Version.new(NON_SUPPORTED_HIGHEST_VERSION)].freeze, T::Array[Dependabot::Version])

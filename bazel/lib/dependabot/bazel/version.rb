@@ -42,7 +42,7 @@ module Dependabot
       sig { returns(T.nilable(Integer)) }
       attr_reader :bcr_suffix
 
-      sig { override.params(other: T.untyped).returns(T.nilable(Integer)) }
+      sig { override.params(other: BasicObject).returns(T.nilable(Integer)) }
       def <=>(other)
         other_bazel = convert_to_bazel_version(other)
         return nil unless other_bazel

@@ -26,7 +26,9 @@ module Dependabot
         LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
         GIT_DEPENDENCIES_SECTION = /GIT\n.*?\n\n(?!GIT)/m
         GIT_DEPENDENCY_DETAILS = /GIT\n.*?\n\n/m
-        CHECKSUMS_SECTION = /(^CHECKSUMS\n)(?<entries>(?:^  .*\n)+)/m
+        # No `/m`: it would let the greedy `.*` in `entries` match newlines and
+        # swallow the trailing `BUNDLED WITH` section. `^` is line-anchored anyway.
+        CHECKSUMS_SECTION = /(^CHECKSUMS\n)(?<entries>(?:^  .*\n)+)/
         BUNDLED_WITH_VERSION_REGEX = /BUNDLED WITH\s+(?<version>\d+\.\d+\.\d+)/m
         BUNDLER_CHECKSUM_ENTRY_REGEX = /^  bundler \([^)]+\).*\n?$/
         MIN_BUNDLER_CHECKSUM_VERSION = Gem::Version.new("4.0.11")

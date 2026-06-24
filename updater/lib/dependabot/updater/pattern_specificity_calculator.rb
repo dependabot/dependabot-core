@@ -61,7 +61,7 @@ module Dependabot
         applies_to: nil,
         update_type: nil
       )
-        patterns = cast_patterns(current_group)
+        patterns = current_group.patterns
         return false unless patterns&.any?
 
         return false if excluded_by_group?(current_group, dep.name)
@@ -119,7 +119,7 @@ module Dependabot
 
       sig { params(group: Dependabot::DependencyGroup, dep: Dependabot::Dependency).returns(T::Boolean) }
       def can_check_specificity?(group, dep)
-        patterns = cast_patterns(group)
+        patterns = group.patterns
         return false unless patterns&.any?
 
         !excluded_by_group?(group, dep.name)
@@ -183,7 +183,7 @@ module Dependabot
         return EXPLICIT_MEMBER_SCORE if group.dependencies.include?(dep)
         return 0 if excluded_by_group?(group, dep.name)
 
-        patterns = cast_patterns(group)
+        patterns = group.patterns
         return NO_PATTERNS_SCORE unless patterns
 
         matching_patterns = patterns.select { |pattern| WildcardMatcher.match?(pattern, dep.name) }
@@ -208,7 +208,7 @@ module Dependabot
 
       sig { params(group: Dependabot::DependencyGroup, dep_name: String).returns(T::Boolean) }
       def excluded_by_group?(group, dep_name)
-        exclude_patterns = T.cast(group.rules["exclude-patterns"], T.nilable(T::Array[String]))
+        exclude_patterns = group.exclude_patterns
         return false unless exclude_patterns
 
         exclude_patterns.any? { |pattern| WildcardMatcher.match?(pattern, dep_name) }
@@ -218,7 +218,7 @@ module Dependabot
       def update_type_allowed?(group, update_type)
         return true if update_type.nil?
 
-        group_update_types = T.cast(group.rules["update-types"], T.nilable(T::Array[String]))
+        group_update_types = group.update_types
         return true unless group_update_types
 
         group_update_types.include?(update_type)
@@ -232,11 +232,6 @@ module Dependabot
         return true if group_applies_to.nil?
 
         group_applies_to == applies_to
-      end
-
-      sig { params(group: Dependabot::DependencyGroup).returns(T.nilable(T::Array[String])) }
-      def cast_patterns(group)
-        T.cast(group.rules["patterns"], T.nilable(T::Array[String]))
       end
     end
   end

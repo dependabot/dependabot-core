@@ -8,10 +8,24 @@ require "dependabot/job"
 require "dependabot/updater/group_dependency_selector"
 
 RSpec.describe Dependabot::Updater::GroupDependencySelector do
-  let(:group_name) { "backend-dependencies" }
-  let(:dependency_group) do
+  # Builds a DependencyGroup instance_double, deriving the typed rule readers
+  # (patterns/exclude_patterns/update_types) from the same rules hash so the
+  # double matches how DependencyGroup parses its rules. A nil reader means the
+  # rule is absent, mirroring DependencyGroup#string_array_rule.
+  def group_double(rules:, **attrs)
     instance_double(
       Dependabot::DependencyGroup,
+      rules: rules,
+      patterns: rules.key?("patterns") ? Array(rules["patterns"]) : nil,
+      exclude_patterns: rules.key?("exclude-patterns") ? Array(rules["exclude-patterns"]) : nil,
+      update_types: rules.key?("update-types") ? Array(rules["update-types"]) : nil,
+      **attrs
+    )
+  end
+
+  let(:group_name) { "backend-dependencies" }
+  let(:dependency_group) do
+    group_double(
       name: group_name,
       dependencies: [],
       rules: group_rules,
@@ -318,8 +332,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
     let(:redis_dep) { create_dependency("redis-client", "0.11.0") }
 
     let(:generic_group) do
-      instance_double(
-        Dependabot::DependencyGroup,
+      group_double(
         name: "all-dependencies",
         dependencies: [],
         rules: { "patterns" => ["*"] }
@@ -327,8 +340,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
     end
 
     let(:docker_group) do
-      instance_double(
-        Dependabot::DependencyGroup,
+      group_double(
         name: "docker-dependencies",
         dependencies: [],
         rules: { "patterns" => ["docker*"] }
@@ -336,8 +348,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
     end
 
     let(:exact_group) do
-      instance_double(
-        Dependabot::DependencyGroup,
+      group_double(
         name: "exact-nginx",
         dependencies: [],
         rules: { "patterns" => ["nginx"] }
@@ -400,8 +411,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         )
       end
       let(:generic_group) do
-        instance_double(
-          Dependabot::DependencyGroup,
+        group_double(
           name: "all-dependencies",
           dependencies: [],
           rules: { "patterns" => ["*"] }
@@ -409,8 +419,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       end
 
       let(:docker_group) do
-        instance_double(
-          Dependabot::DependencyGroup,
+        group_double(
           name: "docker-dependencies",
           dependencies: [],
           rules: { "patterns" => ["docker*"], "update-types" => ["patch"] }
@@ -635,8 +644,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
 
     describe "applies_to aware specificity" do
       let(:generic_group) do
-        instance_double(
-          Dependabot::DependencyGroup,
+        group_double(
           name: "all-dependencies",
           dependencies: [],
           applies_to: "version-updates",
@@ -645,8 +653,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       end
 
       let(:security_group) do
-        instance_double(
-          Dependabot::DependencyGroup,
+        group_double(
           name: "security-dependencies",
           dependencies: [],
           applies_to: "security-updates",
@@ -705,8 +712,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
 
     context "with all group rule options" do
       let(:generic_group) do
-        instance_double(
-          Dependabot::DependencyGroup,
+        group_double(
           name: "generic",
           dependencies: [],
           applies_to: "version-updates",
@@ -715,8 +721,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       end
 
       let(:docker_minor_prod_group) do
-        instance_double(
-          Dependabot::DependencyGroup,
+        group_double(
           name: "docker-minor-prod",
           dependencies: [],
           applies_to: "version-updates",
@@ -725,8 +730,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       end
 
       let(:docker_exact_group) do
-        instance_double(
-          Dependabot::DependencyGroup,
+        group_double(
           name: "docker-compose-exact",
           dependencies: [],
           applies_to: nil,
@@ -735,8 +739,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       end
 
       let(:docker_security_group) do
-        instance_double(
-          Dependabot::DependencyGroup,
+        group_double(
           name: "docker-security",
           dependencies: [],
           applies_to: "security-updates",
@@ -745,8 +748,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       end
 
       let(:excluded_group) do
-        instance_double(
-          Dependabot::DependencyGroup,
+        group_double(
           name: "docker-excluded",
           dependencies: [],
           applies_to: "version-updates",
@@ -755,8 +757,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       end
 
       let(:explicit_group) do
-        instance_double(
-          Dependabot::DependencyGroup,
+        group_double(
           name: "explicit",
           dependencies: [],
           applies_to: nil,
@@ -849,8 +850,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
     context "with complete multi-group interaction integration tests" do
       context "with complete routing through multiple competing groups" do
         let(:generic_group) do
-          instance_double(
-            Dependabot::DependencyGroup,
+          group_double(
             name: "generic",
             dependencies: [],
             applies_to: "version-updates",
@@ -859,8 +859,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         end
 
         let(:minor_updates_group) do
-          instance_double(
-            Dependabot::DependencyGroup,
+          group_double(
             name: "minor-updates",
             dependencies: [],
             applies_to: "version-updates",
@@ -869,8 +868,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         end
 
         let(:exact_rails_group) do
-          instance_double(
-            Dependabot::DependencyGroup,
+          group_double(
             name: "exact-rails",
             dependencies: [],
             applies_to: "version-updates",
@@ -964,8 +962,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
 
       context "with applies_to filtering across version and security updates" do
         let(:version_generic_group) do
-          instance_double(
-            Dependabot::DependencyGroup,
+          group_double(
             name: "version-generic",
             dependencies: [],
             applies_to: "version-updates",
@@ -974,8 +971,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         end
 
         let(:security_rails_group) do
-          instance_double(
-            Dependabot::DependencyGroup,
+          group_double(
             name: "security-rails",
             dependencies: [],
             applies_to: "security-updates",
@@ -984,8 +980,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         end
 
         let(:version_rails_group) do
-          instance_double(
-            Dependabot::DependencyGroup,
+          group_double(
             name: "version-rails",
             dependencies: [],
             applies_to: "version-updates",
@@ -1054,8 +1049,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
 
       context "with explicit membership overriding pattern matching" do
         let(:generic_group) do
-          instance_double(
-            Dependabot::DependencyGroup,
+          group_double(
             name: "generic",
             dependencies: [],
             applies_to: "version-updates",
@@ -1064,8 +1058,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         end
 
         let(:express_explicit_group) do
-          instance_double(
-            Dependabot::DependencyGroup,
+          group_double(
             name: "express-explicit",
             dependencies: ["express"],
             applies_to: "version-updates",
@@ -1074,8 +1067,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         end
 
         let(:prod_deps_group) do
-          instance_double(
-            Dependabot::DependencyGroup,
+          group_double(
             name: "prod-deps",
             dependencies: [],
             applies_to: "version-updates",
@@ -1178,8 +1170,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
 
       context "with update-type filtering splitting dependencies by version change magnitude" do
         let(:generic_group) do
-          instance_double(
-            Dependabot::DependencyGroup,
+          group_double(
             name: "generic",
             dependencies: [],
             applies_to: "version-updates",
@@ -1188,8 +1179,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         end
 
         let(:minor_patch_only_group) do
-          instance_double(
-            Dependabot::DependencyGroup,
+          group_double(
             name: "minor-patch-only",
             dependencies: [],
             applies_to: "version-updates",
@@ -1198,8 +1188,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         end
 
         let(:major_only_group) do
-          instance_double(
-            Dependabot::DependencyGroup,
+          group_double(
             name: "major-only",
             dependencies: [],
             applies_to: "version-updates",
@@ -1282,8 +1271,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
 
       context "with exclude-patterns affecting specificity routing" do
         let(:generic_group) do
-          instance_double(
-            Dependabot::DependencyGroup,
+          group_double(
             name: "generic",
             dependencies: [],
             applies_to: "version-updates",
@@ -1292,8 +1280,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
         end
 
         let(:rails_except_test_group) do
-          instance_double(
-            Dependabot::DependencyGroup,
+          group_double(
             name: "rails-except-test",
             dependencies: [],
             applies_to: "version-updates",
