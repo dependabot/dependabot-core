@@ -133,6 +133,65 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
       .with(headers: { "Authorization" => "Bearer #{token}" })
   end
 
+  describe ".all_oci_tags" do
+    let(:host) { "ghcr.io" }
+    let(:repo) { "my-org/opentofu-modules/my-module" }
+    let(:artifact_identifier) { "#{host}/#{repo}" }
+    let(:tags_url) { "https://#{host}/v2/#{repo}/tags/list" }
+    let(:tags_response) { { tags: %w(1.0.0 1.1.0 2.0.0) }.to_json }
+
+    it "fetches OCI tags without credentials for public registries" do
+      stub_request(:get, tags_url).and_return(status: 200, body: tags_response)
+
+      versions = described_class.all_oci_tags(artifact_identifier: artifact_identifier)
+      expect(versions.map(&:to_s)).to contain_exactly("1.0.0", "1.1.0", "2.0.0")
+    end
+
+    it "uses opentofu_registry credentials when available" do
+      token = SecureRandom.hex(16)
+      credentials = [Dependabot::Credential.new({ "type" => "opentofu_registry", "host" => host, "token" => token })]
+
+      stub_request(:get, tags_url).and_return(status: 200, body: tags_response)
+
+      versions = described_class.all_oci_tags(artifact_identifier: artifact_identifier,
+                                               credentials: credentials)
+      expect(versions.map(&:to_s)).to contain_exactly("1.0.0", "1.1.0", "2.0.0")
+      expect(WebMock).to have_requested(:get, tags_url)
+        .with(headers: { "Authorization" => "Bearer #{token}" })
+    end
+
+    it "also accepts terraform_registry credentials for OCI registries" do
+      token = SecureRandom.hex(16)
+      credentials = [Dependabot::Credential.new({ "type" => "terraform_registry", "host" => host, "token" => token })]
+
+      stub_request(:get, tags_url).and_return(status: 200, body: tags_response)
+
+      versions = described_class.all_oci_tags(artifact_identifier: artifact_identifier,
+                                               credentials: credentials)
+      expect(versions.map(&:to_s)).to contain_exactly("1.0.0", "1.1.0", "2.0.0")
+      expect(WebMock).to have_requested(:get, tags_url)
+        .with(headers: { "Authorization" => "Bearer #{token}" })
+    end
+
+    it "raises PrivateSourceAuthenticationFailure on 401" do
+      stub_request(:get, tags_url).and_return(
+        status: 401, headers: { "WWW-Authenticate" => "Basic realm=\"ghcr.io\"" }
+      )
+
+      expect do
+        described_class.all_oci_tags(artifact_identifier: artifact_identifier)
+      end.to raise_error(Dependabot::PrivateSourceAuthenticationFailure, /ghcr\.io/)
+    end
+
+    it "raises DependabotError on 404" do
+      stub_request(:get, tags_url).and_return(status: 404)
+
+      expect do
+        described_class.all_oci_tags(artifact_identifier: artifact_identifier)
+      end.to raise_error(Dependabot::DependabotError, /not found/)
+    end
+  end
+
   it "fetches module versions", :vcr do
     response = client.all_module_versions(identifier: "hashicorp/consul/aws")
     expect(response.max).to eq(Gem::Version.new("0.10.1"))
