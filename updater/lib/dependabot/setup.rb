@@ -33,6 +33,7 @@ Sentry.init do |config|
     composer|
     conda|
     deno|
+    devbox|
     devcontainers|
     docker|
     dotnet_sdk|

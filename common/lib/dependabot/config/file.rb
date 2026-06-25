@@ -67,6 +67,7 @@ module Dependabot
           "composer" => "composer",
           "deno" => "deno",
           "conda" => "conda",
+          "devbox" => "devbox",
           "devcontainer" => "devcontainers",
           "docker-compose" => "docker_compose",
           "docker" => "docker",

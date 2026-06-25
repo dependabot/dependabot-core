@@ -30,6 +30,11 @@
     "ecosystem": "deno"
   },
   {
+    "core": "devbox",
+    "test": "devbox",
+    "ecosystem": "devbox"
+  },
+  {
     "core": "devcontainers",
     "test": "devcontainers",
     "ecosystem": "devcontainers"
@@ -96,12 +101,12 @@
   },
   {
     "core": "nuget",
-    "test": "nuget-resolvability",
+    "test": "nuget",
     "ecosystem": "nuget"
   },
   {
     "core": "nuget",
-    "test": "nuget",
+    "test": "nuget-resolvability",
     "ecosystem": "nuget"
   },
   {

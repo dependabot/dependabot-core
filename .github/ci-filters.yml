@@ -37,6 +37,9 @@ conda:
 deno:
   - *shared
   - 'deno/**'
+devbox:
+  - *shared
+  - 'devbox/**'
 devcontainers:
   - *shared
   - 'devcontainers/**'
