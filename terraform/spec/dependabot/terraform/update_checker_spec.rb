@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/terraform"
 require "dependabot/terraform/update_checker"
@@ -131,12 +132,14 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
 
       context "when a replacing Terraform registry is configured" do
         let(:credentials) do
-          [{
-            "type" => "terraform_registry",
-            "host" => "registry.example.org",
-            "token" => "token",
-            "replaces-base" => true
-          }]
+          [Dependabot::Credential.new(
+            {
+              "type" => "terraform_registry",
+              "host" => "registry.example.org",
+              "token" => "token",
+              "replaces-base" => true
+            }
+          )]
         end
 
         before do

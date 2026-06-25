@@ -116,13 +116,13 @@ module Dependabot
         )
       end
 
-      sig { returns(T.nilable(String)) }
+      sig { returns(String) }
       def registry_hostname
-        hostname = dependency_source_details&.fetch(:registry_hostname)
+        hostname = dependency_source_details&.fetch(:registry_hostname) || RegistryClient::PUBLIC_HOSTNAME
         return hostname unless hostname == RegistryClient::PUBLIC_HOSTNAME
 
         base_registry = credentials.find do |cred|
-          cred["type"] == "terraform_registry" && cred["replaces-base"] == true
+          cred["type"] == "terraform_registry" && cred.replaces_base?
         end
 
         base_registry&.fetch("host", nil) || hostname
