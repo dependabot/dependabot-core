@@ -488,6 +488,11 @@ module Dependabot
       conditions + ignored_versions_from_allowed_update_types(dependency) + blocked_versions_for(dependency)
     end
 
+    sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+    def blocked_versions_for?(dependency)
+      blocked_versions_for(dependency).any?
+    end
+
     # TODO: Present Dependabot::Config::IgnoreCondition in calling code
     #
     # This is a workaround for our existing logging using the 'raw'
@@ -551,12 +556,11 @@ module Dependabot
         .returns(T::Array[BlockedVersion])
     end
     def matching_blocked_entries(dependency)
-      normaliser = name_normaliser
-      normalized_dep_name = T.must(normaliser).call(dependency.name)
-
-      blocked_versions
-        .select { |bv| bv.dependency_name && bv.version_requirement }
-        .select { |bv| T.must(normaliser).call(T.must(bv.dependency_name)) == normalized_dep_name }
+      BlockedVersion.matching(
+        blocked_versions,
+        dependency_name: dependency.name,
+        package_manager: package_manager
+      )
     end
 
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }

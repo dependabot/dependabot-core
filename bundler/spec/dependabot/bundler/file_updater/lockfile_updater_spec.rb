@@ -80,12 +80,157 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "when original lockfile already has a bundler checksum (4.0.12)" do
+      let(:project_name) { "checksums_bundler_4_0_12" }
+      let(:generated_lockfile) do
+        <<~LOCKFILE
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              business (1.5.0)
+
+          PLATFORMS
+            ruby
+
+          DEPENDENCIES
+            business (~> 1.5)
+
+          CHECKSUMS
+            business (1.5.0) sha256=123
+            bundler (4.0.13) sha256=new13
+
+          BUNDLED WITH
+             4.0.13
+        LOCKFILE
+      end
+
+      it "restores the original bundler checksum and drops the runner's" do
+        expect(updated_lockfile_content).to include("bundler (4.0.12) sha256=old12")
+        expect(updated_lockfile_content).not_to include("bundler (4.0.13)")
+      end
+    end
+
+    context "when the project pins bundler in DEPENDENCIES" do
+      let(:project_name) { "checksums_bundler_dep_pinned" }
+      let(:generated_lockfile) do
+        <<~LOCKFILE
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              business (1.5.0)
+
+          PLATFORMS
+            ruby
+
+          DEPENDENCIES
+            bundler (~> 4.0)
+            business (~> 1.5)
+
+          CHECKSUMS
+            business (1.5.0) sha256=123
+            bundler (4.0.13) sha256=new13
+
+          BUNDLED WITH
+             4.0.13
+        LOCKFILE
+      end
+
+      it "restores the checksum without touching the DEPENDENCIES entry" do
+        expect(updated_lockfile_content).to include("bundler (4.0.12) sha256=old12")
+        expect(updated_lockfile_content).to include("  bundler (~> 4.0)\n")
+        expect(updated_lockfile_content).not_to include("bundler (4.0.13)")
+      end
+    end
+
+    context "when the generated lockfile has no CHECKSUMS section" do
+      let(:project_name) { "checksums_bundler_4_0_12" }
+      let(:generated_lockfile) do
+        <<~LOCKFILE
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              business (1.5.0)
+
+          PLATFORMS
+            ruby
+
+          DEPENDENCIES
+            business (~> 1.5)
+
+          BUNDLED WITH
+             4.0.12
+        LOCKFILE
+      end
+
+      it "leaves the generated lockfile untouched without raising" do
+        expect { updated_lockfile_content }.not_to raise_error
+        expect(updated_lockfile_content).not_to include("CHECKSUMS")
+      end
+    end
+
+    context "when the generated lockfile has CHECKSUMS but no bundler entry" do
+      let(:project_name) { "checksums_bundler_4_0_12" }
+      let(:generated_lockfile) do
+        <<~LOCKFILE
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              business (1.5.0)
+
+          PLATFORMS
+            ruby
+
+          DEPENDENCIES
+            business (~> 1.5)
+
+          CHECKSUMS
+            business (1.5.0) sha256=123
+
+          BUNDLED WITH
+             4.0.12
+        LOCKFILE
+      end
+
+      it "does not inject the original bundler checksum" do
+        expect(updated_lockfile_content).not_to include("bundler (4.0.12)")
+        expect(updated_lockfile_content).not_to include("bundler (4.0.13)")
+      end
+    end
+
     context "when original lockfile uses Bundler 4.0.12 (outside the strip range — control)" do
       let(:project_name) { "checksums_bundler_4_0_12" }
 
       it "preserves the CHECKSUMS header" do
         expect(updated_lockfile_content).to include("CHECKSUMS")
       end
+    end
+  end
+
+  describe "CHECKSUMS_SECTION" do
+    let(:lockfile_body) do
+      <<~LOCKFILE
+        DEPENDENCIES
+          business (~> 1.5)
+
+        CHECKSUMS
+          business (1.5.0) sha256=abc
+          bundler (4.0.8) sha256=def
+
+        BUNDLED WITH
+           4.0.8
+      LOCKFILE
+    end
+
+    # Regression: the constant used the `/m` flag, which made the greedy `.*`
+    # in `entries` match newlines and swallow everything to EOF — including the
+    # trailing `BUNDLED WITH` section. See #15193 / #15229.
+    it "captures only the indented checksum lines, not the BUNDLED WITH section" do
+      match = lockfile_body.match(described_class::CHECKSUMS_SECTION)
+
+      expect(match[:entries]).to eq(
+        "  business (1.5.0) sha256=abc\n  bundler (4.0.8) sha256=def\n"
+      )
+      expect(match[:entries]).not_to include("BUNDLED WITH")
     end
   end
 

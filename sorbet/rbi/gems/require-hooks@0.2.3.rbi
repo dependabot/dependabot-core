@@ -5,7 +5,7 @@
 # Please instead update this file by running `bin/tapioca gem require-hooks`.
 
 
-# source://require-hooks//lib/require-hooks/api.rb#3
+# pkg:gem/require-hooks#lib/require-hooks/api.rb:3
 module RequireHooks
   class << self
     # Define a block to wrap the code loading.
@@ -17,10 +17,10 @@ module RequireHooks
     #      block.call.tap { puts "Loaded #{path}" }
     #    end
     #
-    # source://require-hooks//lib/require-hooks/api.rb#71
+    # pkg:gem/require-hooks#lib/require-hooks/api.rb:71
     def around_load(patterns: T.unsafe(nil), exclude_patterns: T.unsafe(nil), &block); end
 
-    # source://require-hooks//lib/require-hooks/api.rb#107
+    # pkg:gem/require-hooks#lib/require-hooks/api.rb:107
     def context_for(path); end
 
     # This hook should be used to manually compile byte code to be loaded by the VM.
@@ -38,19 +38,13 @@ module RequireHooks
     #     end
     #   end
     #
-    # source://require-hooks//lib/require-hooks/api.rb#103
+    # pkg:gem/require-hooks#lib/require-hooks/api.rb:103
     def hijack_load(patterns: T.unsafe(nil), exclude_patterns: T.unsafe(nil), &block); end
 
-    # Returns the value of attribute print_warnings.
-    #
-    # source://require-hooks//lib/require-hooks/api.rb#61
+    # pkg:gem/require-hooks#lib/require-hooks/api.rb:61
     def print_warnings; end
 
-    # Sets the attribute print_warnings
-    #
-    # @param value the value to set the attribute print_warnings to.
-    #
-    # source://require-hooks//lib/require-hooks/api.rb#61
+    # pkg:gem/require-hooks#lib/require-hooks/api.rb:61
     def print_warnings=(_arg0); end
 
     # Define hooks to perform source-to-source transformations.
@@ -62,46 +56,38 @@ module RequireHooks
     #    RequireHooks.source_transform do |path, source|
     #    end
     #
-    # source://require-hooks//lib/require-hooks/api.rb#85
+    # pkg:gem/require-hooks#lib/require-hooks/api.rb:85
     def source_transform(patterns: T.unsafe(nil), exclude_patterns: T.unsafe(nil), &block); end
   end
 end
 
-# source://require-hooks//lib/require-hooks/api.rb#8
+# pkg:gem/require-hooks#lib/require-hooks/api.rb:8
 class RequireHooks::Context
-  # @return [Context] a new instance of Context
-  #
-  # source://require-hooks//lib/require-hooks/api.rb#9
+  # pkg:gem/require-hooks#lib/require-hooks/api.rb:9
   def initialize(around_load, source_transform, hijack_load); end
 
-  # @return [Boolean]
-  #
-  # source://require-hooks//lib/require-hooks/api.rb#15
+  # pkg:gem/require-hooks#lib/require-hooks/api.rb:15
   def empty?; end
 
-  # @return [Boolean]
-  #
-  # source://require-hooks//lib/require-hooks/api.rb#23
+  # pkg:gem/require-hooks#lib/require-hooks/api.rb:23
   def hijack?; end
 
-  # source://require-hooks//lib/require-hooks/api.rb#37
+  # pkg:gem/require-hooks#lib/require-hooks/api.rb:37
   def perform_source_transform(path); end
 
-  # source://require-hooks//lib/require-hooks/api.rb#27
+  # pkg:gem/require-hooks#lib/require-hooks/api.rb:27
   def run_around_load_callbacks(path); end
 
-  # @return [Boolean]
-  #
-  # source://require-hooks//lib/require-hooks/api.rb#19
+  # pkg:gem/require-hooks#lib/require-hooks/api.rb:19
   def source_transform?; end
 
-  # source://require-hooks//lib/require-hooks/api.rb#49
+  # pkg:gem/require-hooks#lib/require-hooks/api.rb:49
   def try_hijack_load(path, source); end
 end
 
-# source://require-hooks//lib/require-hooks/mode/load_iseq.rb#4
+# pkg:gem/require-hooks#lib/require-hooks/mode/load_iseq.rb:4
 module RequireHooks::LoadIseq
-  # source://require-hooks//lib/require-hooks/mode/load_iseq.rb#5
+  # pkg:gem/require-hooks#lib/require-hooks/mode/load_iseq.rb:5
   def load_iseq(path); end
 end
 

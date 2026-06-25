@@ -124,7 +124,8 @@ module Dependabot
             dependency: dependency,
             dependency_files: dependency_files,
             credentials: credentials,
-            forbidden_urls: forbidden_urls
+            forbidden_urls: forbidden_urls,
+            cooldown_options: cooldown_options
           ).fetch_available_versions
         end
 
@@ -169,7 +170,8 @@ module Dependabot
               dependency: dependency,
               dependency_files: dependency_files,
               credentials: credentials,
-              forbidden_urls: []
+              forbidden_urls: [],
+              cooldown_options: cooldown_options
             ),
             T.nilable(Dependabot::Gradle::Package::PackageDetailsFetcher)
           )

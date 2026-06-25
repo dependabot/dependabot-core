@@ -1601,4 +1601,44 @@ RSpec.describe Dependabot::Job do
       end
     end
   end
+
+  describe "#blocked_versions_for?" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "event-stream",
+        package_manager: "bundler",
+        version: "3.3.5",
+        requirements: [{ file: "Gemfile", requirement: "~> 3.3", groups: [], source: nil }]
+      )
+    end
+
+    context "when a non-empty blocked version matches the dependency" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "returns true" do
+        expect(job.blocked_versions_for?(dependency)).to be(true)
+      end
+    end
+
+    context "when no usable blocked version matches the dependency" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version-requirement" => " ", "reason" => "empty" },
+            { "dependency-name" => "other-package", "version-requirement" => "= 1.0.0", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "returns false" do
+        expect(job.blocked_versions_for?(dependency)).to be(false)
+      end
+    end
+  end
 end

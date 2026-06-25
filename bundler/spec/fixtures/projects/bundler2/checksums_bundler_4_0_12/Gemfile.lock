@@ -11,6 +11,7 @@ DEPENDENCIES
 
 CHECKSUMS
   business (1.4.0) sha256=456
+  bundler (4.0.12) sha256=old12
 
 BUNDLED WITH
    4.0.12
