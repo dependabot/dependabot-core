@@ -110,11 +110,23 @@ module Dependabot
       def registry_client
         @registry_client ||= T.let(
           begin
-            hostname = dependency_source_details&.fetch(:registry_hostname)
+            hostname = registry_hostname
             RegistryClient.new(hostname: hostname, credentials: credentials)
           end,
           T.nilable(Dependabot::Opentofu::RegistryClient)
         )
+      end
+
+      sig { returns(String) }
+      def registry_hostname
+        hostname = dependency_source_details&.fetch(:registry_hostname) || RegistryClient::PUBLIC_HOSTNAME
+        return hostname unless hostname == RegistryClient::PUBLIC_HOSTNAME
+
+        base_registry = credentials.find do |cred|
+          RegistryClient::ACCEPTED_CREDENTIAL_TYPES.include?(cred.fetch("type", "")) && cred.replaces_base?
+        end
+
+        base_registry&.[]("host") || hostname
       end
 
       sig { returns(T.nilable(Dependabot::Opentofu::Version)) }
