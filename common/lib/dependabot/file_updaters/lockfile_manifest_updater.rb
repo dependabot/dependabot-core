@@ -5,6 +5,9 @@ require "sorbet-runtime"
 
 module Dependabot
   module FileUpdaters
+    # Shared helper for updaters that need transient manifest edits to refresh a
+    # provider lockfile. Including classes are expected to expose `dependency`
+    # and `lockfile`.
     module LockfileManifestUpdater
       extend T::Sig
       extend T::Helpers
