@@ -113,6 +113,15 @@ RSpec.describe Dependabot::Nix::FileParser do
       end
     end
 
+    context "with a commit-pinned (bare SHA) input that should be skipped" do
+      let(:flake_lock_content) { fixture("flake_with_rev_pinned.lock") }
+
+      it "skips inputs pinned to an immutable revision" do
+        expect(dependencies.length).to eq(1)
+        expect(dependencies.first.name).to eq("nixpkgs")
+      end
+    end
+
     context "with gitlab inputs" do
       let(:flake_lock_content) { fixture("flake_with_gitlab.lock") }
 
