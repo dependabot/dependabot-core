@@ -119,15 +119,7 @@ module Dependabot
 
       sig { returns(String) }
       def registry_hostname
-        hostname = dependency_source_details&.fetch(:registry_hostname) || RegistryClient::PUBLIC_HOSTNAME
-        return hostname unless hostname == RegistryClient::PUBLIC_HOSTNAME
-
-        base_registry = credentials.find do |cred|
-          RegistryClient::ACCEPTED_CREDENTIAL_TYPES.include?(cred.fetch("type", "")) &&
-            RegistryClient.credential_replaces_base?(cred)
-        end
-
-        base_registry&.[]("host") || hostname
+        dependency_source_details&.fetch(:registry_hostname) || RegistryClient::PUBLIC_HOSTNAME
       end
 
       sig { returns(T.nilable(Dependabot::Opentofu::Version)) }

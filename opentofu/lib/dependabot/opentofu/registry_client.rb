@@ -45,8 +45,9 @@ module Dependabot
             # trigger a malformed `Authorization: Bearer ` header.
             next unless ACCEPTED_CREDENTIAL_TYPES.include?(item["type"]) && item["token"]
 
-            memo[WILDCARD_HOST] = T.must(item["token"]) if self.class.credential_replaces_base?(item)
-            memo[T.must(item["host"])] = T.must(item["token"]) if item["host"]
+            token = item["token"]
+            memo[WILDCARD_HOST] = token if item["registry"] == WILDCARD_HOST
+            memo[T.must(item["host"])] = token if item["host"]
           end,
           T::Hash[String, String]
         )
@@ -237,7 +238,7 @@ module Dependabot
       def self.oci_get(url, host:, credentials:)
         cred = credentials.find do |c|
           ACCEPTED_CREDENTIAL_TYPES.include?(c["type"]) &&
-            (c["host"] == host || c["registry"] == host || credential_replaces_base?(c))
+            (c["host"] == host || c["registry"] == host || c["registry"] == WILDCARD_HOST)
         end
 
         headers = {}
@@ -260,13 +261,6 @@ module Dependabot
         response
       end
       private_class_method :oci_get
-
-      sig { params(credential: T.any(Dependabot::Credential, T::Hash[String, T.untyped])).returns(T::Boolean) }
-      def self.credential_replaces_base?(credential)
-        return credential.replaces_base? if credential.is_a?(Dependabot::Credential)
-
-        !!credential["replaces-base"]
-      end
 
       sig { params(www_authenticate: T.nilable(String)).returns(T.nilable(String)) }
       def self.oci_anonymous_bearer_token(www_authenticate)
@@ -309,11 +303,7 @@ module Dependabot
 
       sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
       def self.oci_token_cache
-        @oci_token_cache = T.let(
-          @oci_token_cache,
-          T.nilable(T::Hash[String, T::Hash[Symbol, T.untyped]])
-        )
-        @oci_token_cache ||= {}
+        @oci_token_cache ||= T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
       end
       private_class_method :oci_token_cache
 

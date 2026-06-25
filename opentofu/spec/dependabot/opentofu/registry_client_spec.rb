@@ -134,12 +134,10 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
       .with(headers: { "Authorization" => "Bearer #{token}" })
   end
 
-  it "uses replaces-base credentials for provider requests" do
+  it "uses wildcard registry credentials for provider requests" do
     hostname = "registry.example.org"
     token = SecureRandom.hex(16)
-    credentials = [Dependabot::Credential.new(
-      { "type" => "opentofu_registry", "token" => token, "replaces-base" => true }
-    )]
+    credentials = [{ "type" => "opentofu_registry", "registry" => "*", "token" => token }]
 
     stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
       body: {
@@ -156,18 +154,16 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
       .with(headers: { "Authorization" => "Bearer #{token}" })
   end
 
-  it "uses replaces-base credentials as wildcard even when host is present" do
+  it "uses wildcard registry credentials even when host does not match" do
     hostname = "registry.alt.example.org"
     token = SecureRandom.hex(16)
     auth_header = ["Bearer", token].join(" ")
-    credentials = [Dependabot::Credential.new(
-      {
-        "type" => "opentofu_registry",
-        "host" => "registry.example.org",
-        "token" => token,
-        "replaces-base" => true
-      }
-    )]
+    credentials = [{
+      "type" => "opentofu_registry",
+      "host" => "registry.example.org",
+      "registry" => "*",
+      "token" => token
+    }]
 
     stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
       body: {
@@ -228,10 +224,10 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
         .with(headers: { "Authorization" => "Bearer #{token}" })
     end
 
-    it "uses replaces-base credentials for OCI registries" do
+    it "uses wildcard registry credentials for OCI registries" do
       token = SecureRandom.hex(16)
       credentials = [Dependabot::Credential.new(
-        { "type" => "terraform_registry", "token" => token, "replaces-base" => true }
+        { "type" => "terraform_registry", "registry" => "*", "token" => token }
       )]
 
       stub_request(:get, tags_url).and_return(status: 200, body: tags_response)
