@@ -122,10 +122,10 @@ module Dependabot
         return hostname unless hostname == RegistryClient::PUBLIC_HOSTNAME
 
         base_registry = credentials.find do |cred|
-          cred["type"] == "terraform_registry" && cred.replaces_base?
+          cred.fetch("type", nil) == "terraform_registry" && cred.replaces_base?
         end
 
-        base_registry&.fetch("host", nil) || hostname
+        base_registry&.[]("host") || hostname
       end
 
       sig { returns(T.nilable(Dependabot::Terraform::Version)) }
