@@ -134,6 +134,9 @@ module Dependabot
         source_type = locked.fetch("type", nil)
         return unless SUPPORTED_SOURCE_TYPES.include?(source_type)
 
+        # Skip inputs pinned to a bare commit SHA: no branch or tag to track.
+        return if revision_pinned?(original)
+
         rev = locked.fetch("rev", nil)
         return unless rev
 
@@ -153,6 +156,11 @@ module Dependabot
             groups: []
           }]
         )
+      end
+
+      sig { params(original: T::Hash[String, T.untyped]).returns(T::Boolean) }
+      def revision_pinned?(original)
+        !original.fetch("rev", nil).nil?
       end
 
       sig { params(locked: T::Hash[String, T.untyped]).returns(T.nilable(String)) }
