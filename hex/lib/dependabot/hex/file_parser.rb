@@ -6,7 +6,6 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/hex/file_updater/mixfile_sanitizer"
-require "dependabot/hex/native_helpers"
 require "dependabot/hex/language"
 require "dependabot/hex/package_manager"
 require "dependabot/hex/requirement"
@@ -73,11 +72,10 @@ module Dependabot
           write_sanitized_mixfiles
           write_sanitized_supporting_files
           File.write("mix.lock", lockfile&.content) if lockfile
-          FileUtils.cp(elixir_helper_parse_deps_path, "parse_deps.exs")
 
           SharedHelpers.run_helper_subprocess(
             env: mix_env,
-            command: "mix run #{elixir_helper_path}",
+            command: "dependabot_hex",
             function: "parse",
             args: [Dir.pwd],
             stderr_to_stdout: true
@@ -122,19 +120,8 @@ module Dependabot
       sig { returns(T::Hash[String, String]) }
       def mix_env
         {
-          "MIX_EXS" => File.join(NativeHelpers.hex_helpers_dir, "mix.exs"),
           "MIX_QUIET" => "1"
         }
-      end
-
-      sig { returns(String) }
-      def elixir_helper_path
-        File.join(NativeHelpers.hex_helpers_dir, "lib/run.exs")
-      end
-
-      sig { returns(String) }
-      def elixir_helper_parse_deps_path
-        File.join(NativeHelpers.hex_helpers_dir, "lib/parse_deps.exs")
       end
 
       sig { override.void }
@@ -187,11 +174,12 @@ module Dependabot
       def hex_info
         @hex_info ||= T.let(
           begin
-            version = SharedHelpers.run_shell_command("mix hex.info")
-            {
-              hex_version: version.match(/Hex: \s*(\d+\.\d+(.\d+)*)/)&.captures&.first,
-              elixir_version: version.match(/Elixir: \s*(\d+\.\d+(.\d+)*)/)&.captures&.first
-            }
+            info = SharedHelpers.run_helper_subprocess(
+              command: "dependabot_hex",
+              function: "hex_info",
+              args: []
+            )
+            { hex_version: info["hex_version"], elixir_version: info["elixir_version"] }
           end,
           T.nilable(T::Hash[Symbol, T.nilable(String)])
         )

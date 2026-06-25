@@ -1,0 +1,7 @@
+%{
+  "hex_core": {:hex, :hex_core, "0.15.0", "8eadc0ccb08e3742f2313073d04f39eaa7904617329039e9d3c402f5dd227673", [:rebar3], [], "hexpm", "c2093764c7af8ef0818c104fa141eba431e7be93f8374638c45c7037b26a52f8"},
+  "optimus": {:hex, :optimus, "0.6.1", "b493bdc7ee71035fdf8cbfbf158b1863e2d622b65c3906153e4042815c901fca", [:mix], [], "hexpm", "c0db4107a51f5af94de8b05e4208333ebb8016a3bfdbcd74df6e5c99829db17f"},
+  "protobuf": {:hex, :protobuf, "0.16.0", "d1878725105d49162977cf3408ccc3eac4f3532e26e5a9e250f2c624175d10f6", [:mix], [{:jason, "~> 1.2", [hex: :jason, repo: "hexpm", optional: true]}], "hexpm", "f0d0d3edd8768130f24cc2cfc41320637d32c80110e80d13f160fa699102c828"},
+  "purl": {:hex, :purl, "0.3.0", "b6e2f792e944007ed474299e56ea43ea4819f064a4a4f67e4153e1ba02d066de", [:mix, :rebar3], [{:stream_data, "~> 1.1", [hex: :stream_data, repo: "hexpm", optional: true]}], "hexpm", "158cf2c0533517fe0d68752bd790392f065c5ffdfbde38524890066ebe640302"},
+  "sbom": {:hex, :sbom, "0.10.0", "b99be5407bc196d0ad71b8061126a67aae46dc3bfaa852b4c1c04645dd1ad984", [:mix], [{:hex_core, "~> 0.15.0", [hex: :hex_core, repo: "hexpm", optional: false]}, {:jason, "~> 1.4", [hex: :jason, repo: "hexpm", optional: true]}, {:optimus, "~> 0.6.1", [hex: :optimus, repo: "hexpm", optional: false]}, {:protobuf, "~> 0.16.0", [hex: :protobuf, repo: "hexpm", optional: false]}, {:purl, "~> 0.3.0", [hex: :purl, repo: "hexpm", optional: false]}], "hexpm", "a8116ef965c1ebd103e223545794bd0a6691edd3ec678ec07972d473e2badc95"},
+}

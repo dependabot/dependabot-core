@@ -441,7 +441,13 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
       let(:lockfile_body) { fixture("lockfiles", "private_package") }
 
-      before { `mix hex.organization deauth dependabot` }
+      before do
+        Dependabot::SharedHelpers.run_helper_subprocess(
+          command: "dependabot_hex",
+          function: "remove_repo",
+          args: ["hexpm:dependabot"]
+        )
+      end
 
       context "with good credentials" do
         let(:hex_pm_org_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
@@ -557,7 +563,11 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       let(:private_registry_url) { "https://dependabot-private.fly.dev" }
 
       before do
-        `mix hex.repo remove dependabot`
+        Dependabot::SharedHelpers.run_helper_subprocess(
+          command: "dependabot_hex",
+          function: "remove_repo",
+          args: ["dependabot"]
+        )
       end
 
       context "with good credentials" do

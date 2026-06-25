@@ -66,7 +66,17 @@ module Dependabot
       sig { returns(T::Hash[String, ResolvedDependency]) }
       def resolved_dependencies
         prepare! unless prepared
+        build_resolved_dependencies
+      end
 
+      private
+
+      # Subclasses may override this to provide their own PURL-building strategy,
+      # e.g. when PURLs are produced externally by a native helper.
+      # The default implementation uses @dependencies populated by prepare! and the
+      # purl_pkg_for / fetch_subdependencies abstract methods.
+      sig { overridable.returns(T::Hash[String, ResolvedDependency]) }
+      def build_resolved_dependencies
         @dependencies.each_with_object({}) do |dep, resolved|
           purl = build_purl(dep)
           resolved[purl] = ResolvedDependency.new(
@@ -77,8 +87,6 @@ module Dependabot
           )
         end
       end
-
-      private
 
       sig { returns(Dependabot::FileParsers::Base) }
       attr_reader :file_parser
