@@ -80,7 +80,7 @@ module Dependabot
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
-      def fetch_files # rubocop:disable Metrics/PerceivedComplexity
+      def fetch_files # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
         fetched_files = T.let([], T::Array[DependencyFile])
         fetched_files << package_json
         fetched_files << T.must(npmrc) if npmrc && !scope_overrides_npmrc?
@@ -247,7 +247,7 @@ module Dependabot
       end
 
       sig { void }
-      def reject_if_private_registry_without_config!
+      def reject_if_private_registry_without_config! # rubocop:disable Metrics/PerceivedComplexity
         return unless Dependabot::Experiments.enabled?(:enable_npmrc_credential_generation)
         return if credentials_have_scope?
         return if wrapped_credentials.any?(&:replaces_base?)
@@ -270,7 +270,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def credentials_have_scope?
-        wrapped_credentials.any? { |cred| cred["type"] == "npm_registry" && cred.scope }
+        wrapped_credentials.any? { |cred| cred["type"] == "npm_registry" && cred.scope&.any? }
       end
 
       # file_fetcher_command.rb may pass raw Hashes as credentials at runtime.
