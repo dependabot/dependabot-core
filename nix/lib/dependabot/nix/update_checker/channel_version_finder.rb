@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -24,13 +24,15 @@ module Dependabot
           params(
             current_channel: String,
             credentials: T::Array[Dependabot::Credential],
-            ignored_versions: T::Array[String]
+            ignored_versions: T::Array[String],
+            extension: String
           ).void
         end
-        def initialize(current_channel:, credentials:, ignored_versions: [])
+        def initialize(current_channel:, credentials:, ignored_versions: [], extension: Channel::DEFAULT_EXTENSION)
           @current_channel = T.let(Channel.new(current_channel), Channel)
           @credentials = credentials
           @ignored_versions = ignored_versions
+          @extension = extension
           @available_channels = T.let(nil, T.nilable(T::Array[String]))
           @ignore_filter = T.let(nil, T.nilable(IgnoreFilter))
         end
@@ -47,7 +49,7 @@ module Dependabot
           rev = resolve_revision(candidate.name)
           return unless rev
 
-          { channel: candidate.name, url: Channel.url_for(candidate.name), commit_sha: rev }
+          { channel: candidate.name, url: Channel.url_for(candidate.name, extension: extension), commit_sha: rev }
         end
 
         # Current channel's revision (refresh path).
@@ -66,6 +68,9 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         attr_reader :ignored_versions
+
+        sig { returns(String) }
+        attr_reader :extension
 
         sig { returns(T.nilable(Channel)) }
         def newest_candidate

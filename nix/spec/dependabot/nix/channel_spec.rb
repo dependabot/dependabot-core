@@ -20,6 +20,11 @@ RSpec.describe Dependabot::Nix::Channel do
       expect(described_class.channel_url?("https://example.com/archive/v1.0.0.tar.gz")).to be(false)
     end
 
+    it "recognises gzip and bzip2 channel tarballs" do
+      expect(described_class.channel_url?("https://channels.nixos.org/nixos-26.05/nixexprs.tar.gz")).to be(true)
+      expect(described_class.channel_url?("https://channels.nixos.org/nixos-26.05/nixexprs.tar.bz2")).to be(true)
+    end
+
     it "handles nil" do
       expect(described_class.channel_url?(nil)).to be(false)
     end
@@ -36,10 +41,27 @@ RSpec.describe Dependabot::Nix::Channel do
     end
   end
 
+  describe ".extension_from_url" do
+    it "extracts the compression suffix for each supported format" do
+      expect(described_class.extension_from_url("https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz")).to eq("xz")
+      expect(described_class.extension_from_url("https://channels.nixos.org/nixos-26.05/nixexprs.tar.gz")).to eq("gz")
+      expect(described_class.extension_from_url("https://channels.nixos.org/nixos-26.05/nixexprs.tar.bz2")).to eq("bz2")
+    end
+
+    it "returns nil for non-channel URLs" do
+      expect(described_class.extension_from_url("https://example.com/foo.tar.gz")).to be_nil
+    end
+  end
+
   describe ".url_for" do
-    it "builds the channel tarball URL" do
+    it "builds the channel tarball URL, defaulting to xz" do
       expect(described_class.url_for("nixos-26.05"))
         .to eq("https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz")
+    end
+
+    it "preserves a non-default compression suffix" do
+      expect(described_class.url_for("nixos-26.05", extension: "gz"))
+        .to eq("https://channels.nixos.org/nixos-26.05/nixexprs.tar.gz")
     end
   end
 

@@ -13,12 +13,14 @@ module Dependabot
       extend T::Sig
 
       CHANNEL_HOST = "channels.nixos.org"
+      DEFAULT_EXTENSION = "xz"
 
       # e.g. https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz
+      # The suffix is captured so a bump keeps the flake's existing format.
       CHANNEL_URL_PATTERN = %r{
         \Ahttps?://channels\.nixos\.org/
         (?<channel>[a-zA-Z0-9][a-zA-Z0-9._-]*)
-        /nixexprs\.tar\.(?:xz|gz|bz2)\z
+        /nixexprs\.tar\.(?<extension>xz|gz|bz2)\z
       }x
 
       sig { params(url: T.nilable(String)).returns(T::Boolean) }
@@ -35,9 +37,18 @@ module Dependabot
         CHANNEL_URL_PATTERN.match(url)&.[](:channel)
       end
 
-      sig { params(channel_name: String).returns(String) }
-      def self.url_for(channel_name)
-        "https://#{CHANNEL_HOST}/#{channel_name}/nixexprs.tar.xz"
+      # The compression suffix (xz, gz, bz2) of a channel tarball URL.
+      sig { params(url: T.nilable(String)).returns(T.nilable(String)) }
+      def self.extension_from_url(url)
+        return unless url
+
+        CHANNEL_URL_PATTERN.match(url)&.[](:extension)
+      end
+
+      # Preserves the flake's suffix so a bump keeps its compression format.
+      sig { params(channel_name: String, extension: String).returns(String) }
+      def self.url_for(channel_name, extension: DEFAULT_EXTENSION)
+        "https://#{CHANNEL_HOST}/#{channel_name}/nixexprs.tar.#{extension}"
       end
     end
   end

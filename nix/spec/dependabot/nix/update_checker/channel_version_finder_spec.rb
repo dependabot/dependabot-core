@@ -9,12 +9,14 @@ RSpec.describe Dependabot::Nix::UpdateChecker::ChannelVersionFinder do
     described_class.new(
       current_channel: current_channel,
       credentials: credentials,
-      ignored_versions: ignored_versions
+      ignored_versions: ignored_versions,
+      extension: extension
     )
   end
 
   let(:credentials) { [] }
   let(:ignored_versions) { [] }
+  let(:extension) { Dependabot::Nix::Channel::DEFAULT_EXTENSION }
   let(:listing_url) { "https://channels.nixos.org/" }
 
   let(:channel_listing) do
@@ -58,6 +60,24 @@ RSpec.describe Dependabot::Nix::UpdateChecker::ChannelVersionFinder do
         finder.latest_channel
         expect(WebMock)
           .not_to have_requested(:get, "https://channels.nixos.org/nixos-26.05-small/git-revision")
+      end
+    end
+
+    context "with a non-default tarball extension" do
+      let(:current_channel) { "nixos-25.05" }
+      let(:extension) { "gz" }
+
+      before do
+        stub_request(:get, listing_url)
+          .with(query: hash_including("prefix" => "nixos-"))
+          .to_return(status: 200, body: channel_listing)
+        stub_request(:get, "https://channels.nixos.org/nixos-26.05/git-revision")
+          .to_return(status: 200, body: "bd0ff2d3eac24699c3664d5966b9ef36f388e2ca")
+      end
+
+      it "preserves the extension in the channel URL" do
+        expect(finder.latest_channel)
+          .to include(url: "https://channels.nixos.org/nixos-26.05/nixexprs.tar.gz")
       end
     end
 

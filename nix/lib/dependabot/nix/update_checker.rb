@@ -83,7 +83,7 @@ module Dependabot
         source = dependency.source_details(allowed_types: ["tarball"])
         return false unless source
 
-        Channel.channel_url?(source[:url])
+        Channel.channel_url?(source[:url] || source["url"])
       end
 
       sig { returns(T.nilable(String)) }
@@ -118,7 +118,8 @@ module Dependabot
           ChannelVersionFinder.new(
             current_channel: T.must(tarball_channel_name),
             credentials: credentials,
-            ignored_versions: ignored_versions
+            ignored_versions: ignored_versions,
+            extension: tarball_channel_extension
           ),
           T.nilable(ChannelVersionFinder)
         )
@@ -126,7 +127,22 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def tarball_channel_name
-        dependency.source_details(allowed_types: ["tarball"])&.fetch(:ref, nil)
+        source = dependency.source_details(allowed_types: ["tarball"])
+        return unless source
+
+        ref = source[:ref] || source["ref"]
+        return ref if ref
+
+        # Fall back to the URL's channel when the source omits a ref.
+        Channel.channel_name_from_url(source[:url] || source["url"])
+      end
+
+      # Preserve the flake's existing tarball suffix (xz, gz, bz2) on a bump.
+      sig { returns(String) }
+      def tarball_channel_extension
+        source = dependency.source_details(allowed_types: ["tarball"])
+        url = source && (source[:url] || source["url"])
+        Channel.extension_from_url(url) || Channel::DEFAULT_EXTENSION
       end
 
       # --- Tag-pinned ref support ---

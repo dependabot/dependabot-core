@@ -365,6 +365,90 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
         expect(checker.can_update?(requirements_to_unlock: :own)).to be false
       end
     end
+
+    context "with a NixOS channel tarball input whose source omits the ref" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nixpkgs",
+          version: "bd0ff2d3eac24699c3664d5966b9ef36f388e2ca",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "tarball",
+              url: "https://channels.nixos.org/nixos-25.05/nixexprs.tar.xz",
+              branch: nil
+            }
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      before do
+        channel_finder = instance_double(
+          Dependabot::Nix::UpdateChecker::ChannelVersionFinder,
+          latest_channel: {
+            channel: "nixos-26.05",
+            url: "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz",
+            commit_sha: "34268251cf55aa3d8c4c5e6f7a8b9c0d1e2f3a4b"
+          }
+        )
+        allow(Dependabot::Nix::UpdateChecker::ChannelVersionFinder)
+          .to receive(:new).and_return(channel_finder)
+      end
+
+      it "parses the channel from the URL instead of crashing" do
+        expect(checker.latest_version).to eq("34268251cf55aa3d8c4c5e6f7a8b9c0d1e2f3a4b")
+        expect(Dependabot::Nix::UpdateChecker::ChannelVersionFinder)
+          .to have_received(:new).with(hash_including(current_channel: "nixos-25.05"))
+      end
+    end
+
+    context "with a NixOS channel tarball input using a non-xz suffix" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nixpkgs",
+          version: "bd0ff2d3eac24699c3664d5966b9ef36f388e2ca",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "tarball",
+              url: "https://channels.nixos.org/nixos-25.05/nixexprs.tar.gz",
+              branch: nil,
+              ref: "nixos-25.05"
+            }
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      before do
+        channel_finder = instance_double(
+          Dependabot::Nix::UpdateChecker::ChannelVersionFinder,
+          latest_channel: {
+            channel: "nixos-26.05",
+            url: "https://channels.nixos.org/nixos-26.05/nixexprs.tar.gz",
+            commit_sha: "34268251cf55aa3d8c4c5e6f7a8b9c0d1e2f3a4b"
+          }
+        )
+        allow(Dependabot::Nix::UpdateChecker::ChannelVersionFinder)
+          .to receive(:new).and_return(channel_finder)
+      end
+
+      it "passes the original extension to the channel finder" do
+        checker.latest_version
+        expect(Dependabot::Nix::UpdateChecker::ChannelVersionFinder)
+          .to have_received(:new).with(hash_including(extension: "gz"))
+      end
+
+      it "updates the requirement URL preserving the suffix" do
+        expect(checker.updated_requirements.first[:source][:url])
+          .to eq("https://channels.nixos.org/nixos-26.05/nixexprs.tar.gz")
+      end
+    end
   end
 
   describe "#updated_requirements" do
