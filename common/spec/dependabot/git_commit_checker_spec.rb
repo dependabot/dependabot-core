@@ -1290,7 +1290,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
       end
 
-      context "when the dependency is excluded from cooldown" do
+      context "when the dependency is on the cooldown exclude list" do
         let(:cooldown_options) do
           Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90, exclude: ["business"])
         end
@@ -1300,8 +1300,8 @@ RSpec.describe Dependabot::GitCommitChecker do
           ]
         end
 
-        it "ignores cooldown and returns the latest version tag" do
-          expect(latest_tag[:tag]).to eq("v1.13.0")
+        it "still applies cooldown (the exclude list is not honoured for git tags)" do
+          expect(latest_tag[:tag]).to eq("v1.11.1")
         end
       end
     end

@@ -180,24 +180,20 @@ module Dependabot
       max_local_tag_for_lower_precision(allowed_refs)
     end
 
-    # Returns the latest allowed version tag. When cooldown_options are provided
-    # (and the dependency isn't excluded), tags still within their cooldown
-    # window are skipped, and nil is returned when every candidate tag is still
-    # cooling down. Cooldown is never applied to security updates: callers pass
-    # cooldown_options: nil for those, which short-circuits to the standard
-    # latest-tag resolution.
+    # Returns the latest allowed version tag. When cooldown_options are provided,
+    # tags still within their cooldown window are skipped, and nil is returned
+    # when every candidate tag is still cooling down. Cooldown is never applied
+    # when cooldown_options is nil (e.g. security updates), which short-circuits
+    # to the standard latest-tag resolution.
     sig do
       params(cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions))
         .returns(T.nilable(Dependabot::GitTagDetails))
     end
     def local_tag_for_latest_version(cooldown_options = nil)
-      if Dependabot::UpdateCheckers::CooldownCalculation.skip_cooldown?(cooldown_options, dependency.name)
-        return max_local_tag(allowed_version_tags)
-      end
+      return max_local_tag(allowed_version_tags) if cooldown_options.nil?
 
-      cooldown = T.must(cooldown_options)
       candidate_tags = allowed_version_tags
-      filtered_tags = candidate_tags.reject { |tag| tag_in_cooldown_period?(tag, cooldown) }
+      filtered_tags = apply_cooldown(candidate_tags, cooldown_options)
 
       if filtered_tags.empty? && candidate_tags.any?
         Dependabot.logger.info(
@@ -764,6 +760,19 @@ module Dependabot
     sig { params(name: String).returns(String) }
     def scan_version(name)
       T.must(T.must(name.match(VERSION_REGEX)).named_captures.fetch("version"))
+    end
+
+    # Returns the candidate tags with any that are still inside their cooldown
+    # window removed, so callers can pick the latest tag that is eligible to be
+    # proposed as an update.
+    sig do
+      params(
+        candidate_tags: T::Array[Dependabot::GitRef],
+        cooldown: Dependabot::Package::ReleaseCooldownOptions
+      ).returns(T::Array[Dependabot::GitRef])
+    end
+    def apply_cooldown(candidate_tags, cooldown)
+      candidate_tags.reject { |tag| tag_in_cooldown_period?(tag, cooldown) }
     end
 
     sig do
