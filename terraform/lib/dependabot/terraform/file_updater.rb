@@ -5,8 +5,10 @@ require "sorbet-runtime"
 
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/file_updaters/lockfile_manifest_updater"
 require "dependabot/errors"
 require "dependabot/terraform/file_selector"
+require "dependabot/terraform/requirement"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -17,6 +19,7 @@ module Dependabot
       require_relative "file_updater/provider_cli_config_builder"
 
       include FileSelector
+      include Dependabot::FileUpdaters::LockfileManifestUpdater
 
       PRIVATE_MODULE_ERROR = /Could not download module.*code from\n.*\"(?<repo>\S+)\":/
       MODULE_NOT_INSTALLED_ERROR =  /Module not installed.*module\s*\"(?<mod>\S+)\"/m
@@ -353,51 +356,6 @@ module Dependabot
       def dependency
         # Terraform updates will only ever be updating a single dependency
         T.must(dependencies.first)
-      end
-
-      sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
-      def lockfile_only_manifest_update?(file)
-        return false unless lockfile
-
-        requirements = changed_requirements_for(file)
-        return false if requirements.empty?
-
-        requirements.all? do |new_req, old_req|
-          provider_requirement_satisfied?(new_req, old_req)
-        end
-      end
-
-      sig do
-        params(file: Dependabot::DependencyFile)
-        returns(
-          T::Array[
-            [T::Hash[Symbol, T.untyped], T.nilable(T::Hash[Symbol, T.untyped])]
-          ]
-        )
-      end
-      def changed_requirements_for(file)
-        dependency.requirements.zip(T.must(dependency.previous_requirements))
-                  .reject { |new_req, old_req| new_req == old_req }
-                  .select { |new_req, _old_req| new_req[:file] == file.name }
-      end
-
-      sig do
-        params(
-          new_req: T::Hash[Symbol, T.untyped],
-          old_req: T.nilable(T::Hash[Symbol, T.untyped])
-        )
-          .returns(T::Boolean)
-      end
-      def provider_requirement_satisfied?(new_req, old_req)
-        return false unless new_req.dig(:source, :type) == "provider"
-
-        previous_requirement = old_req&.fetch(:requirement)
-        new_version = dependency.version
-        return false if previous_requirement.nil? || new_version.nil?
-
-        dependency.requirement_class
-                  .new(previous_requirement)
-                  .satisfied_by?(dependency.version_class.new(new_version))
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

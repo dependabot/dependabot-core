@@ -5,8 +5,10 @@ require "sorbet-runtime"
 
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/file_updaters/lockfile_manifest_updater"
 require "dependabot/errors"
 require "dependabot/opentofu/file_selector"
+require "dependabot/opentofu/requirement"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -15,6 +17,7 @@ module Dependabot
       extend T::Sig
 
       include FileSelector
+      include Dependabot::FileUpdaters::LockfileManifestUpdater
 
       PRIVATE_MODULE_ERROR = /Could not download module.*code from\n.*\"(?<repo>\S+)\":/
       MODULE_NOT_INSTALLED_ERROR =  /Module not installed.*module\s*\"(?<mod>\S+)\"/m
@@ -24,29 +27,23 @@ module Dependabot
       def updated_dependency_files
         updated_files = []
         updated_manifest_files = []
-
         [*opentofu_files, *terragrunt_files].each do |file|
           next unless file_changed?(file)
 
           updated_content = updated_opentofu_file_content(file)
-
           raise "Content didn't change!" if updated_content == file.content
 
           updated_file = updated_file(file: file, content: updated_content)
-
           updated_manifest_files << updated_file unless updated_manifest_files.include?(updated_file)
           next if lockfile_only_manifest_update?(file)
 
           updated_files << updated_file unless updated_files.include?(updated_file)
         end
         updated_lockfile_content = update_lockfile_declaration(updated_manifest_files)
-
         if updated_lockfile_content && T.must(lockfile).content != updated_lockfile_content
           updated_files << updated_file(file: T.must(lockfile), content: updated_lockfile_content)
         end
-
         updated_files.compact!
-
         raise "No files changed!" if updated_files.none?
 
         updated_files
@@ -398,51 +395,6 @@ module Dependabot
       def dependency
         # OpenTofu updates will only ever be updating a single dependency
         T.must(dependencies.first)
-      end
-
-      sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
-      def lockfile_only_manifest_update?(file)
-        return false unless lockfile
-
-        requirements = changed_requirements_for(file)
-        return false if requirements.empty?
-
-        requirements.all? do |new_req, old_req|
-          provider_requirement_satisfied?(new_req, old_req)
-        end
-      end
-
-      sig do
-        params(file: Dependabot::DependencyFile)
-        returns(
-          T::Array[
-            [T::Hash[Symbol, T.untyped], T.nilable(T::Hash[Symbol, T.untyped])]
-          ]
-        )
-      end
-      def changed_requirements_for(file)
-        dependency.requirements.zip(T.must(dependency.previous_requirements))
-                  .reject { |new_req, old_req| new_req == old_req }
-                  .select { |new_req, _old_req| new_req[:file] == file.name }
-      end
-
-      sig do
-        params(
-          new_req: T::Hash[Symbol, T.untyped],
-          old_req: T.nilable(T::Hash[Symbol, T.untyped])
-        )
-          .returns(T::Boolean)
-      end
-      def provider_requirement_satisfied?(new_req, old_req)
-        return false unless new_req.dig(:source, :type) == "provider"
-
-        previous_requirement = old_req&.fetch(:requirement)
-        new_version = dependency.version
-        return false if previous_requirement.nil? || new_version.nil?
-
-        dependency.requirement_class
-                  .new(previous_requirement)
-                  .satisfied_by?(dependency.version_class.new(new_version))
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
