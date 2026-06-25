@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/dependency"
 require "dependabot/terraform"
 require "dependabot/terraform/update_checker"
@@ -100,14 +101,16 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
           module_identifier: "hashicorp/consul/aws"
         }
       end
+      let(:registry_response) do
+        fixture(
+          "registry_responses",
+          "hashicorp_consul_aws_versions.json"
+        )
+      end
 
       before do
         url = "https://registry.terraform.io/v1/modules/" \
               "hashicorp/consul/aws/versions"
-        registry_response = fixture(
-          "registry_responses",
-          "hashicorp_consul_aws_versions.json"
-        )
 
         stub_request(
           :get, "https://registry.terraform.io/.well-known/terraform.json"
@@ -125,6 +128,44 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
         let(:ignored_versions) { [">= 0.3.8, < 0.4.0"] }
 
         it { is_expected.to eq(Gem::Version.new("0.3.7")) }
+      end
+
+      context "when a replacing Terraform registry is configured" do
+        let(:auth_header) { ["Bearer", credentials.first.fetch("token")].join(" ") }
+
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "terraform_registry",
+              "host" => "registry.example.org",
+              "token" => "token",
+              "replaces-base" => true
+            }
+          )]
+        end
+
+        before do
+          stub_request(:get, "https://registry.example.org/.well-known/terraform.json")
+            .with(headers: { "Authorization" => auth_header })
+            .to_return(
+              status: 200,
+              body: {
+                "modules.v1": "/v1/modules/",
+                "providers.v1": "/v1/providers/"
+              }.to_json
+            )
+
+          stub_request(:get, "https://registry.example.org/v1/modules/hashicorp/consul/aws/versions")
+            .with(headers: { "Authorization" => auth_header })
+            .to_return(status: 200, body: registry_response)
+        end
+
+        it "uses the replacing registry host for version lookups" do
+          expect(latest_version).to eq(Gem::Version.new("0.3.8"))
+          expect(WebMock).to have_requested(:get, "https://registry.example.org/v1/modules/hashicorp/consul/aws/versions")
+            .with(headers: { "Authorization" => auth_header })
+          expect(WebMock).not_to have_requested(:get, "https://registry.terraform.io/v1/modules/hashicorp/consul/aws/versions")
+        end
       end
     end
   end
