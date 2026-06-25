@@ -66,6 +66,18 @@ module Dependabot
         !registry_dependency? && dependency.requirements.any? { |req| req[:requirement] }
       end
 
+      # `latest_version` is a git tag but the baseline is a commit SHA, so the base check never
+      # matches and reports an up-to-date baseline as stale. Compare the release SHA instead.
+      sig { returns(T::Boolean) }
+      def sha1_version_up_to_date?
+        return super unless registry_dependency?
+
+        latest_commit_sha = latest_version_finder.latest_release_info&.details&.dig("commit_sha")
+        return super unless latest_commit_sha
+
+        latest_commit_sha == dependency.version
+      end
+
       # Vcpkg doesn't support full unlocking since dependencies are tracked via baselines
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock? = false
