@@ -1198,8 +1198,8 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
-  describe "#local_tag_for_latest_version_respecting_cooldown" do
-    subject(:latest_tag) { checker.local_tag_for_latest_version_respecting_cooldown(cooldown_options) }
+  describe "#local_tag_for_latest_version with cooldown options" do
+    subject(:latest_tag) { checker.local_tag_for_latest_version(cooldown_options) }
 
     let(:repo_url) { "https://github.com/gocardless/business.git" }
     let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }

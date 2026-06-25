@@ -189,8 +189,8 @@ module Dependabot
         # we want to update that tag. The latest version will then be the SHA
         # of the latest tag that looks like a version.
         if git_commit_checker.pinned_ref_looks_like_version? &&
-           git_commit_checker.local_tag_for_latest_version_respecting_cooldown(update_cooldown)
-          latest_tag = git_commit_checker.local_tag_for_latest_version_respecting_cooldown(update_cooldown)
+           git_commit_checker.local_tag_for_latest_version(update_cooldown)
+          latest_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
           return latest_tag&.fetch(:commit_sha)
         end
 
