@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/credential"
 require "dependabot/opentofu/registry_client"
 
 RSpec.describe Dependabot::Opentofu::RegistryClient do
@@ -149,7 +150,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
 
     it "uses opentofu_registry credentials when available" do
       token = SecureRandom.hex(16)
-      credentials = [{ "type" => "opentofu_registry", "host" => host, "token" => token }]
+      credentials = [Dependabot::Credential.new({ "type" => "opentofu_registry", "host" => host, "token" => token })]
 
       stub_request(:get, tags_url).and_return(status: 200, body: tags_response)
 
@@ -164,7 +165,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
 
     it "also accepts terraform_registry credentials for OCI registries" do
       token = SecureRandom.hex(16)
-      credentials = [{ "type" => "terraform_registry", "host" => host, "token" => token }]
+      credentials = [Dependabot::Credential.new({ "type" => "terraform_registry", "host" => host, "token" => token })]
 
       stub_request(:get, tags_url).and_return(status: 200, body: tags_response)
 
