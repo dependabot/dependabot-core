@@ -14,6 +14,9 @@ namespace NuGetUpdater.Core.Run.ApiModel;
 public sealed record Job
 {
     public string PackageManager { get; init; } = "nuget";
+
+    public JobCommand Command { get; init; } = JobCommand.None;
+
     public ImmutableArray<AllowedUpdate> AllowedUpdates { get; init; } = [new AllowedUpdate()];
 
     [JsonConverter(typeof(NullAsBoolConverter))]

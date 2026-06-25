@@ -44,7 +44,7 @@ public class RunWorker
     public async Task<int> RunAsync(FileInfo jobFilePath, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha)
     {
         var jobFileContent = await File.ReadAllTextAsync(jobFilePath.FullName);
-        var jobWrapper = Deserialize(jobFileContent);
+        var jobWrapper = Deserialize(jobFileContent, _logger);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
         var result = await RunAsync(jobWrapper.Job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, experimentsManager);
         return result;
@@ -367,9 +367,12 @@ public class RunWorker
         return updatedDependencyList;
     }
 
-    public static JobFile Deserialize(string json)
+    public static JobFile Deserialize(string json) => Deserialize(json, new ConsoleLogger());
+
+    public static JobFile Deserialize(string json, ILogger logger)
     {
-        var jobFile = JsonSerializer.Deserialize<JobFile>(json, SerializerOptions);
+        var options = GetDeserializerOptions(logger);
+        var jobFile = JsonSerializer.Deserialize<JobFile>(json, options);
         if (jobFile is null)
         {
             throw new InvalidOperationException("Unable to deserialize job wrapper.");
@@ -381,6 +384,13 @@ public class RunWorker
         }
 
         return jobFile;
+    }
+
+    internal static JsonSerializerOptions GetDeserializerOptions(ILogger logger)
+    {
+        var options = new JsonSerializerOptions(SerializerOptions);
+        options.Converters.Insert(0, new JobCommandConverter(logger));
+        return options;
     }
 
     internal static string AddInsecureConnectionsAttribute(string nugetConfigContents)
