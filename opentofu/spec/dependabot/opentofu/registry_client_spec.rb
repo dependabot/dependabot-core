@@ -149,7 +149,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
 
     it "uses opentofu_registry credentials when available" do
       token = SecureRandom.hex(16)
-      credentials = [Dependabot::Credential.new({ "type" => "opentofu_registry", "host" => host, "token" => token })]
+      credentials = [{ "type" => "opentofu_registry", "host" => host, "token" => token }]
 
       stub_request(:get, tags_url).and_return(status: 200, body: tags_response)
 
@@ -164,7 +164,7 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
 
     it "also accepts terraform_registry credentials for OCI registries" do
       token = SecureRandom.hex(16)
-      credentials = [Dependabot::Credential.new({ "type" => "terraform_registry", "host" => host, "token" => token })]
+      credentials = [{ "type" => "terraform_registry", "host" => host, "token" => token }]
 
       stub_request(:get, tags_url).and_return(status: 200, body: tags_response)
 
