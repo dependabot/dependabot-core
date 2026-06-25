@@ -97,6 +97,11 @@ module Dependabot
         "error-type": "path_dependencies_not_reachable",
         "error-detail": { dependencies: error.dependencies }
       }
+    when Dependabot::PrivateRegistryConfigNotFound
+      {
+        "error-type": "private_registry_config_not_found",
+        "error-detail": { source: error.source }
+      }
     when Dependabot::PrivateSourceAuthenticationFailure
       {
         "error-type": "private_source_authentication_failure",
@@ -237,6 +242,16 @@ module Dependabot
       {
         "error-type": "dependency_file_not_resolvable",
         "error-detail": { message: error.message }
+      }
+    when Dependabot::BlockedDependencyVersion
+      {
+        "error-type": "blocked_dependency_version",
+        "error-detail": {
+          "dependency-name": error.dependency_name,
+          "blocked-version": error.blocked_version,
+          "version-requirement": error.version_requirement,
+          reason: error.reason
+        }.compact
       }
     when Dependabot::DependencyFileNotEvaluatable
       {
@@ -392,6 +407,18 @@ module Dependabot
   # rubocop:enable Metrics/CyclomaticComplexity
   # rubocop:enable Lint/RedundantCopDisableDirective
   # rubocop:enable Metrics/AbcSize
+
+  # Interface for error classes that provide Sentry context (e.g. fingerprint).
+  # Include this module in any error class that defines #sentry_context.
+  module HasSentryContext
+    extend T::Sig
+    extend T::Helpers
+
+    interface!
+
+    sig { abstract.returns(T::Hash[Symbol, T.untyped]) }
+    def sentry_context; end
+  end
 
   class DependabotError < StandardError
     extend T::Sig
@@ -675,6 +702,22 @@ module Dependabot
   # Source level errors #
   #######################
 
+  class PrivateRegistryConfigNotFound < DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :source
+
+    sig { params(source: String).void }
+    def initialize(source)
+      @source = T.let(sanitize_source(source), String)
+      msg = "Private npm registries require either a .npmrc file in your repository, " \
+            "or explicit `scope`/`replaces-base` configuration in dependabot.yml. " \
+            "Registry: #{@source}"
+      super(msg)
+    end
+  end
+
   class PrivateSourceAuthenticationFailure < DependabotError
     extend T::Sig
 
@@ -697,10 +740,10 @@ module Dependabot
     sig { returns(String) }
     attr_reader :source
 
-    sig { params(source: T.nilable(String)).void }
-    def initialize(source)
+    sig { params(source: T.nilable(String), error_message: T.nilable(String)).void }
+    def initialize(source, error_message = nil)
       @source = T.let(sanitize_source(T.must(source)), String)
-      msg = "Bad response error while accessing source: #{@source}"
+      msg = error_message ? sanitize_source(error_message) : "Bad response error while accessing source: #{@source}"
       super(msg)
     end
   end
@@ -888,6 +931,46 @@ module Dependabot
 
   # Raised by UpdateChecker if all candidate updates are ignored
   class AllVersionsIgnored < DependabotError; end
+
+  # Raised when regenerating a lockfile would introduce or change a transitive
+  # (indirect) dependency to a version that matches a configured blocked version.
+  # The offending change is rejected so the blocked version is never shipped,
+  # while other dependencies are still allowed to update.
+  class BlockedDependencyVersion < DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :dependency_name
+
+    sig { returns(String) }
+    attr_reader :blocked_version
+
+    sig { returns(String) }
+    attr_reader :version_requirement
+
+    sig { returns(T.nilable(String)) }
+    attr_reader :reason
+
+    sig do
+      params(
+        dependency_name: String,
+        blocked_version: String,
+        version_requirement: String,
+        reason: T.nilable(String)
+      ).void
+    end
+    def initialize(dependency_name:, blocked_version:, version_requirement:, reason: nil)
+      @dependency_name = dependency_name
+      @blocked_version = blocked_version
+      @version_requirement = version_requirement
+      @reason = reason
+
+      msg = "Update blocked: transitive dependency #{dependency_name} #{blocked_version} " \
+            "matches blocked version requirement '#{version_requirement}'"
+      msg += " (reason: #{reason})" if reason && !reason.empty?
+      super(msg)
+    end
+  end
 
   # Raised by FileParser if processing may execute external code in the update context
   class UnexpectedExternalCode < DependabotError; end

@@ -5,6 +5,7 @@ using Microsoft.Language.Xml;
 
 using NuGet.Versioning;
 
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core.Updater.FileWriters;
@@ -51,7 +52,7 @@ public class XmlFileWriter : IFileWriter
         ImmutableArray<string> relativeFilePaths,
         ImmutableArray<Dependency> originalDependencies,
         ImmutableArray<Dependency> requiredPackageVersions,
-        bool addPackageReferenceElementForPinnedPackages
+        PackageManagementKind packageManagementKind
     )
     {
         if (relativeFilePaths.IsDefaultOrEmpty)
@@ -185,38 +186,39 @@ public class XmlFileWriter : IFileWriter
                     .WithAttribute(IncludeAttributeName, requiredPackageVersion.Name);
 
                 // ...add the `<PackageReference>` element if and where appropriate...
+                var addPackageReferenceElementForPinnedPackages =
+                    packageManagementKind switch
+                    {
+                        PackageManagementKind.Default or
+                        PackageManagementKind.CentralPackageVersions or
+                        PackageManagementKind.CentralPackageManagement => true,
+                        PackageManagementKind.CentralPackageManagementWithTransitivePinning => false,
+                        _ => throw new NotSupportedException($"Unexpected package management kind {packageManagementKind}"),
+                    };
                 if (addPackageReferenceElementForPinnedPackages)
                 {
                     addItemGroup();
                     var lastPriorElement = elementsBeforeNew.LastOrDefault();
                     if (lastPriorElement is not null)
                     {
-                        // find line number of last prior element
-                        // find the offset of the first token on each newline
-                        var firstOffsetForLine = new List<int>();
-                        foreach (var tr in filesAndContents[projectRelativePath].DescendantTrivia(descendIntoChildren: _ => true, descendIntoTrivia: true))
+                        // find line indent of the prior element and mimic it
+                        var lastPriorElementIndent = string.Empty;
+                        for (int i = elementsBeforeNew.Length - 1; i >= 0; i--)
                         {
-                            if (tr.Kind == SyntaxKind.EndOfLineTrivia)
+                            var elementIndent = elementsBeforeNew[i].GetLeadingTrivia().ToFullString();
+                            var lastNewlineIndex = elementIndent.LastIndexOf('\n');
+                            if (lastNewlineIndex < 0)
                             {
-                                firstOffsetForLine.Add(tr.SpanStart);
+                                // prior element is on the same line as its prior sibling so keep walking backwards
+                                continue;
                             }
 
-                            if (tr.SpanStart >= lastPriorElement.SpanStart)
-                            {
-                                break;
-                            }
+                            var elementLineIndent = elementIndent[(lastNewlineIndex + 1)..];
+                            lastPriorElementIndent = elementLineIndent;
+                            break;
                         }
 
-                        var lastPriorElementLineNumber = firstOffsetForLine.Count(o => o < lastPriorElement.SpanStart);
-                        var lastElementAtStartOfLine = lastPriorElement.Parent.ChildNodes
-                            .First(n => firstOffsetForLine.Count(o => o < n.SpanStart) >= lastPriorElementLineNumber);
-                        var trivia = lastElementAtStartOfLine.GetLeadingTrivia().ToList();
-                        var priorEolIndex = trivia.FindLastIndex(t => t.Kind == SyntaxKind.EndOfLineTrivia);
-                        var indentTrivia = trivia
-                            .Skip(priorEolIndex + 1)
-                            .Select(t => SyntaxFactory.WhitespaceTrivia(t.ToFullString()))
-                            .ToArray();
-                        var newTrivia = new SyntaxTriviaList([SyntaxFactory.EndOfLineTrivia("\n"), .. indentTrivia]);
+                        var newTrivia = new SyntaxTriviaList([SyntaxFactory.EndOfLineTrivia("\n"), SyntaxFactory.WhitespaceTrivia(lastPriorElementIndent)]);
                         newElement = (IXmlElementSyntax)newElement.AsNode.WithLeadingTrivia(newTrivia);
                         var replacementParent = lastPriorElement.Parent.InsertNodesAfter(lastPriorElement, [newElement.AsNode]);
                         var actualReplacementParent = ReplaceNode(projectRelativePath, lastPriorElement.Parent, replacementParent);

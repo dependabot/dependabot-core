@@ -1,5 +1,7 @@
 using System.Collections.Immutable;
 
+using NuGetUpdater.Core.Discover;
+
 namespace NuGetUpdater.Core.Updater.FileWriters;
 
 public interface IFileWriter
@@ -9,6 +11,6 @@ public interface IFileWriter
         ImmutableArray<string> relativeFilePaths,
         ImmutableArray<Dependency> originalDependencies,
         ImmutableArray<Dependency> requiredPackageVersions,
-        bool addPackageReferenceElementForPinnedPackages
+        PackageManagementKind packageManagementKind
     );
 }

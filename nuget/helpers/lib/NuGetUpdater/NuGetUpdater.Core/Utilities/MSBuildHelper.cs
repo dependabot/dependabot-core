@@ -346,7 +346,7 @@ internal static partial class MSBuildHelper
                 // empty `Version` attributes will cause the temporary project to not build
                 .Where(p => (p.EvaluationResult is null || p.EvaluationResult.ResultType == EvaluationResultType.Success) && !string.IsNullOrWhiteSpace(p.Version))
                 // If all PackageReferences for a package are update-only mark it as such, otherwise it can cause package incoherence errors which do not exist in the repo.
-                .Select(p => $"<{(usePackageDownload ? "PackageDownload" : "PackageReference")} {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"{(p.Version!.Contains("*") ? p.Version : $"[{p.Version}]")}\" />"));
+                .Select(p => $"<{(usePackageDownload ? "PackageDownload" : "PackageReference")} {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"{GetExactVersionConstraint(p.Version!)}\" />"));
 
         var dependencyTargetsImport = importDependencyTargets
             ? $"""<Import Project="{GetFileFromRuntimeDirectory("DependencyDiscovery.targets")}" />"""
@@ -400,15 +400,37 @@ internal static partial class MSBuildHelper
         return tempProjectPath;
     }
 
+    /// <summary>
+    /// Returns a NuGet version constraint string suitable for use in a temporary project file.
+    /// If the version is a single version (e.g., "1.0.0"), it is wrapped in square brackets to
+    /// pin to that exact version (e.g., "[1.0.0]").
+    /// If the version is already a valid version range (e.g., "[1.0.0,2.0.0)" or "1.*"), it is
+    /// returned as-is.
+    /// Throws if the string is neither a valid version nor a valid version range.
+    /// </summary>
+    internal static string GetExactVersionConstraint(string version)
+    {
+        if (NuGetVersion.TryParse(version, out _))
+        {
+            return $"[{version}]";
+        }
+
+        if (VersionRange.TryParse(version, out _))
+        {
+            return version;
+        }
+
+        throw new ArgumentException($"Invalid NuGet version or version range: '{version}'", nameof(version));
+    }
+
     internal static async Task<ImmutableArray<string>> GetTargetFrameworkValuesFromProject(string repoRoot, string projectPath, ILogger logger)
     {
         var projectDirectory = Path.GetDirectoryName(projectPath)!;
         var (exitCode, stdOut, stdErr) = await HandleGlobalJsonAsync(projectDirectory, repoRoot, async () =>
         {
             var targetsHelperPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "TargetFrameworkReporter.targets");
-            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(
                 [
-                    "msbuild",
                     projectPath,
                     "/t:ReportTargetFramework",
                     $"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={targetsHelperPath}",
@@ -524,11 +546,10 @@ internal static partial class MSBuildHelper
         var projectDirectory = Path.GetDirectoryName(projectPath)!;
         var args = new[]
         {
-            "msbuild",
             projectPath,
             "-targets"
         };
-        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, projectDirectory);
+        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, projectDirectory);
         if (exitCode != 0)
         {
             logger.Warn($"Unable to determine targets for project [{projectPath}]:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
@@ -555,12 +576,11 @@ internal static partial class MSBuildHelper
         var projectDirectory = Path.GetDirectoryName(projectPath)!;
         var args = new[]
         {
-            "msbuild",
             projectPath,
             $"-getProperty:{propertyName}"
         };
 
-        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, projectDirectory);
+        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, projectDirectory);
         if (exitCode != 0)
         {
             if (stdOut.Contains("error MSB1001: Unknown switch."))
@@ -580,12 +600,11 @@ internal static partial class MSBuildHelper
 
                     // do it
                     args = [
-                        "msbuild",
                         projectPath,
                         $"/p:CustomAfterMicrosoftCommonTargets={tempTargetsPath}",
                         "/t:_Dependabot_GetProperty",
                     ];
-                    (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, projectDirectory);
+                    (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, projectDirectory);
                     if (exitCode == 0)
                     {
                         var match = Regex.Match(stdOut, "__PROPERTY_VALUE:(?<PropertyValue>[^$]*)$", RegexOptions.Multiline);
@@ -650,6 +669,8 @@ internal static partial class MSBuildHelper
         ThrowOnBadResponse(output);
         ThrowOnUnparseableFile(output);
         ThrowOnMultipleProjectsForPackagesConfig(output);
+        ThrowOnCircularDependency(output);
+        ThrowOnInvalidIcuPackage(output);
     }
 
     private static void ThrowOnUnauthenticatedFeed(string stdout)
@@ -789,6 +810,23 @@ internal static partial class MSBuildHelper
         if (output.Contains("Found multiple project files for "))
         {
             throw new Exception("Multiple project files found for single packages.config");
+        }
+    }
+
+    private static void ThrowOnCircularDependency(string output)
+    {
+        var pattern = new Regex(@"Circular dependency detected '.*'");
+        if (pattern.IsMatch(output))
+        {
+            throw new Exception("Circular dependency detected");
+        }
+    }
+
+    private static void ThrowOnInvalidIcuPackage(string output)
+    {
+        if (output.Contains("Couldn't find a valid ICU package installed on the system."))
+        {
+            throw new Exception("Couldn't find a valid ICU package installed on the system. Likely EOL SDK.");
         }
     }
 

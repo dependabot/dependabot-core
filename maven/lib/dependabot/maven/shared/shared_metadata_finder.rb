@@ -140,7 +140,7 @@ module Dependabot
           @dependency_pom_file = Nokogiri::XML("")
         end
 
-        sig { returns(T.nilable(String)) }
+        sig { overridable.returns(T.nilable(String)) }
         def dependency_artifact_id
           _group_id, artifact_id = dependency.name.split(":")
           artifact_id
@@ -186,7 +186,7 @@ module Dependabot
           ).central_repo_url
         end
 
-        sig { returns(String) }
+        sig { overridable.returns(String) }
         def maven_repo_dependency_url
           group_id, artifact_id = dependency.name.split(":")
           "#{maven_repo_url}/#{T.must(group_id).tr('.', '/')}/#{artifact_id}"

@@ -31,13 +31,52 @@ module Dependabot
 
       private
 
+      # VendorUpdater always flags files as vendored, so it accepts but ignores
+      # the vendored_file argument. The parameter must stay to keep the override
+      # signature compatible with ArtifactUpdater#create_dependency_file.
       sig do
         override
-          .params(parameters: T::Hash[Symbol, T.untyped])
+          .params(
+            name: String,
+            content: T.nilable(String),
+            directory: String,
+            type: String,
+            support_file: T::Boolean,
+            vendored_file: T::Boolean,
+            symlink_target: T.nilable(String),
+            content_encoding: String,
+            deleted: T::Boolean,
+            operation: String,
+            mode: T.nilable(String)
+          )
           .returns(Dependabot::DependencyFile)
       end
-      def create_dependency_file(parameters)
-        Dependabot::DependencyFile.new(**T.unsafe({ **parameters, vendored_file: true }))
+      def create_dependency_file(
+        name:,
+        content: nil,
+        directory: "/",
+        type: "file",
+        support_file: false,
+        vendored_file: false, # rubocop:disable Lint/UnusedMethodArgument
+        symlink_target: nil,
+        content_encoding: Dependabot::DependencyFile::ContentEncoding::UTF_8,
+        deleted: false,
+        operation: Dependabot::DependencyFile::Operation::UPDATE,
+        mode: nil
+      )
+        super(
+          name: name,
+          content: content,
+          directory: directory,
+          type: type,
+          support_file: support_file,
+          vendored_file: true,
+          symlink_target: symlink_target,
+          content_encoding: content_encoding,
+          deleted: deleted,
+          operation: operation,
+          mode: mode
+        )
       end
     end
   end

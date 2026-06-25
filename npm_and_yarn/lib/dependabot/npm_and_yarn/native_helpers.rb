@@ -21,29 +21,85 @@ module Dependabot
         File.join(__dir__, "../../../helpers")
       end
 
-      sig { params(dependency_names: T::Array[String]).returns(String) }
-      def self.run_npm8_subdependency_update_command(dependency_names)
+      sig { params(dependency_names: T::Array[String], security_updates_only: T::Boolean).returns(String) }
+      def self.run_npm8_subdependency_update_command(dependency_names, security_updates_only: false)
         # NOTE: npm options
         # - `--force` ignores checks for platform (os, cpu) and engines
         # - `--ignore-scripts` disables prepare and prepack scripts which are run
         #   when installing git dependencies
-        command = [
+        command_args = [
           "update",
           *dependency_names,
           "--force",
           "--ignore-scripts",
           "--package-lock-only"
-        ].join(" ")
+        ]
+        # Override any min-release-age set in .npmrc: security fixes must not be
+        # blocked by a release-age gate the user configured for regular updates.
+        command_args << "--min-release-age=0" if security_updates_only
+        command = command_args.join(" ")
 
-        fingerprint = [
+        fingerprint_args = [
           "update",
           "<dependency_names>",
           "--force",
           "--ignore-scripts",
           "--package-lock-only"
-        ].join(" ")
+        ]
+        fingerprint_args << "--min-release-age=0" if security_updates_only
+        fingerprint = fingerprint_args.join(" ")
 
         Helpers.run_npm_command(command, fingerprint: fingerprint)
+      end
+
+      sig { params(security_updates_only: T::Boolean).returns(String) }
+      def self.run_npm_audit_fix_command(security_updates_only: false)
+        # Fallback for transitive dependencies in workspace repos where
+        # `npm update` is a no-op because the package isn't in package.json.
+        # `npm audit fix` updates all fixable vulnerabilities in the lockfile.
+        # `--force` ignores checks for platform (os, cpu) and engines,
+        # matching the flags used by run_npm8_subdependency_update_command.
+        command = "audit fix --force --package-lock-only --ignore-scripts"
+        # Override any min-release-age set in .npmrc: security fixes must not be
+        # blocked by a release-age gate the user configured for regular updates.
+        command += " --min-release-age=0" if security_updates_only
+        fingerprint = command
+
+        Helpers.run_npm_command(command, fingerprint: fingerprint)
+      end
+
+      sig { returns(String) }
+      def self.run_pnpm_audit_fix_command
+        # Fallback for transitive dependencies where `pnpm update` is a no-op.
+        # `pnpm audit --fix` adds overrides to the manifest for vulnerable deps.
+        Helpers.run_pnpm_command(
+          "audit --fix",
+          fingerprint: "audit --fix"
+        )
+      end
+
+      sig { params(dependency_name: String, recursive: T::Boolean).returns(String) }
+      def self.run_pnpm_deep_update_command(dependency_name, recursive: false)
+        # `pnpm update --depth Infinity <dep>` traverses the full dependency
+        # graph, allowing transitive dependencies to be updated in the lockfile
+        # without modifying any package.json (unlike `pnpm audit --fix`).
+        # `-r --include-workspace-root` is required for workspace repos so the
+        # update is applied across all packages.
+        flags = recursive ? "-r --include-workspace-root " : ""
+        Helpers.run_pnpm_command(
+          "#{flags}update #{dependency_name} --depth Infinity --lockfile-only",
+          fingerprint: "#{flags}update <dependency_name> --depth Infinity --lockfile-only"
+        )
+      end
+
+      sig { returns(String) }
+      def self.run_yarn_audit_fix_command
+        # Fallback for transitive dependencies where `yarn up -R` is a no-op.
+        # `yarn npm audit --fix` updates vulnerable deps in the lockfile.
+        Helpers.run_yarn_command(
+          "npm audit --fix --mode update-lockfile",
+          fingerprint: "npm audit --fix --mode update-lockfile"
+        )
       end
     end
   end

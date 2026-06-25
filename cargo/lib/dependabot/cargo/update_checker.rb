@@ -88,7 +88,7 @@ module Dependabot
         )
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         RequirementsUpdater.new(
           requirements: dependency.requirements,
@@ -108,8 +108,12 @@ module Dependabot
         # If passed in as an option (in the base class) honour that option
         return @requirements_update_strategy if @requirements_update_strategy
 
-        # Otherwise, widen ranges for libraries and bump versions for apps
-        library? ? RequirementsUpdateStrategy::BumpVersionsIfNecessary : RequirementsUpdateStrategy::BumpVersions
+        # Cargo resolves to the newest compatible version and a bare version is a
+        # caret-equivalent (compatible) requirement, so only raise the requirement
+        # when it doesn't already allow the new version. Avoids needless churn and
+        # MSRV bumps.
+        # https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#caret-requirements
+        RequirementsUpdateStrategy::BumpVersionsIfNecessary
       end
 
       private
@@ -132,13 +136,12 @@ module Dependabot
         # present in other areas
         return unless preferred_resolvable_version
 
-        library? ? latest_version&.to_s : preferred_resolvable_version.to_s
+        # No lockfile: target the latest version. With one: the resolvable version.
+        no_lockfile? ? latest_version&.to_s : preferred_resolvable_version.to_s
       end
 
       sig { returns(T::Boolean) }
-      def library?
-        # If it has a lockfile, treat it as an application. Otherwise treat it
-        # as a library.
+      def no_lockfile?
         dependency_files.none? { |f| f.name == "Cargo.lock" }
       end
 

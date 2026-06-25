@@ -276,6 +276,28 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
               .not_to include(%(rsc.io/quote v1.4.0/go.mod h1:))
           end
 
+          context "when `go mod tidy` fails" do
+            before do
+              allow(Open3).to receive(:capture3).and_wrap_original do |original, *args|
+                if args == ["go mod tidy"]
+                  ["", "missing go.sum entry for go.mod file", instance_double(Process::Status, success?: false)]
+                else
+                  original.call(*args)
+                end
+              end
+            end
+
+            it "surfaces the real error instead of silently continuing" do
+              expect { updated_go_mod_content }
+                .to raise_error(Dependabot::DependencyFileNotResolvable)
+            end
+
+            it "does not fall back to `go mod tidy -e`" do
+              expect { updated_go_mod_content }.to raise_error(Dependabot::DependabotError)
+              expect(Open3).not_to have_received(:capture3).with("go mod tidy -e")
+            end
+          end
+
           describe "a non-existent dependency with a pseudo-version" do
             let(:project_name) { "non_existent_dependency" }
 

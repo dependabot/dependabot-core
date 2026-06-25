@@ -240,6 +240,9 @@ module Dependabot
             next if requirement.start_with?("workspace:", "catalog:")
 
             requirement = "*" if requirement == ""
+
+            name, requirement = dealias_package(name, requirement) if dealias_packages?
+
             dep = build_dependency(
               file: file, type: type, name: name, requirement: requirement
             )
@@ -278,7 +281,8 @@ module Dependabot
       def lockfile_parser
         @lockfile_parser ||= T.let(
           LockfileParser.new(
-            dependency_files: dependency_files
+            dependency_files: dependency_files,
+            dealias_packages: dealias_packages?
           ),
           T.nilable(Dependabot::NpmAndYarn::FileParser::LockfileParser)
         )
@@ -385,6 +389,64 @@ module Dependabot
       sig { params(name: String).returns(T::Boolean) }
       def aliased_package_name?(name)
         name.include?("@#{NpmPackageManager::NAME}:")
+      end
+
+      sig { returns(T::Boolean) }
+      def dealias_packages?
+        options.fetch(:dealias_packages, false) == true
+      end
+
+      # Resolves an aliased manifest entry to its real package name and requirement.
+      # Yarn-style: "my-fetch-factory@npm:fetch-factory": "0.0.2"
+      # npm-style: "my-fetch-factory": "npm:fetch-factory@0.0.2"
+      sig { params(name: String, requirement: String).returns([String, String]) }
+      def dealias_package(name, requirement)
+        if aliased_package_name?(name)
+          real_name = extract_real_name_from_alias_key(name)
+          name = real_name if real_name
+        elsif alias_package?(requirement)
+          parsed = parse_alias_package_requirement(requirement)
+          if parsed
+            name = T.must(parsed[:name])
+            requirement = T.must(parsed[:requirement])
+          end
+        end
+
+        [name, requirement]
+      end
+
+      # npm-style: "npm:fetch-factory@0.0.2" → { name: "fetch-factory", requirement: "0.0.2" }
+      # npm-style: "npm:@scope/pkg@^1.0.0" → { name: "@scope/pkg", requirement: "^1.0.0" }
+      sig { params(requirement: String).returns(T.nilable(T::Hash[Symbol, String])) }
+      def parse_alias_package_requirement(requirement)
+        return nil unless requirement.start_with?("#{NpmPackageManager::NAME}:")
+
+        rest = requirement.delete_prefix("#{NpmPackageManager::NAME}:")
+
+        if rest.start_with?("@")
+          second_at = rest.index("@", 1)
+          if second_at
+            { name: rest[0...second_at], requirement: rest[(second_at + 1)..] }
+          else
+            { name: rest, requirement: "*" }
+          end
+        else
+          at_index = rest.index("@")
+          if at_index
+            { name: rest[0...at_index], requirement: rest[(at_index + 1)..] }
+          else
+            { name: rest, requirement: "*" }
+          end
+        end
+      end
+
+      # Yarn-style: "my-fetch-factory@npm:fetch-factory" → "fetch-factory"
+      sig { params(name: String).returns(T.nilable(String)) }
+      def extract_real_name_from_alias_key(name)
+        match = name.match(/@#{NpmPackageManager::NAME}:(.+)$/o)
+        return nil unless match
+
+        match[1]
       end
 
       sig { returns(T::Array[String]) }

@@ -5,6 +5,7 @@ require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/file_updaters/vendor_updater"
 require "dependabot/file_updaters/artifact_updater"
+require "dependabot/errors"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 require "sorbet-runtime"
@@ -22,6 +23,7 @@ module Dependabot
 
       class NoChangeError < StandardError
         extend T::Sig
+        include Dependabot::HasSentryContext
 
         sig { params(message: String, error_context: T::Hash[Symbol, T.untyped]).void }
         def initialize(message:, error_context:)
@@ -29,7 +31,7 @@ module Dependabot
           @error_context = error_context
         end
 
-        sig { returns(T::Hash[Symbol, T.untyped]) }
+        sig { override.returns(T::Hash[Symbol, T.untyped]) }
         def sentry_context
           { extra: @error_context }
         end
@@ -79,19 +81,7 @@ module Dependabot
         return unless original_pnpm_locks.any?
         return unless updated_files.none? || updated_files.all?(&:support_file?)
 
-        raise_tool_not_supported_for_pnpm_if_transitive
         raise_miss_configured_tooling_if_pnpm_subdirectory
-      end
-
-      sig { void }
-      def raise_tool_not_supported_for_pnpm_if_transitive
-        return if dependencies.empty? || dependencies.any?(&:top_level?)
-
-        raise ToolFeatureNotSupported.new(
-          tool_name: "pnpm",
-          tool_type: "package_manager",
-          feature: "updating transitive dependencies"
-        )
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
@@ -452,7 +442,8 @@ module Dependabot
             dependencies: dependencies,
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
-            credentials: credentials
+            credentials: credentials,
+            security_updates_only: options.fetch(:security_updates_only, false)
           ),
           T.nilable(Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater)
         )
@@ -465,7 +456,8 @@ module Dependabot
             dependencies: dependencies,
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
-            credentials: credentials
+            credentials: credentials,
+            security_updates_only: options.fetch(:security_updates_only, false)
           ),
           T.nilable(Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater)
         )
@@ -481,7 +473,8 @@ module Dependabot
           lockfile: file,
           dependencies: dependencies,
           dependency_files: dependency_files,
-          credentials: credentials
+          credentials: credentials,
+          security_updates_only: options.fetch(:security_updates_only, false)
         )
       end
 

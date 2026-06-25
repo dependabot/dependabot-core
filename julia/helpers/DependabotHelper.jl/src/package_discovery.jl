@@ -376,7 +376,7 @@ end
     get_available_versions(package_name::String, package_uuid::String)
 
 Get all available versions for a package from the registry using both name and UUID for precise identification.
-Returns just the version strings in sorted order.
+Yanked versions are excluded. Returns just the version strings in sorted order.
 """
 function get_available_versions(package_name::String, package_uuid::String)
     try
@@ -390,7 +390,9 @@ function get_available_versions(package_name::String, package_uuid::String)
 
                 if name_matches && uuid_matches
                     version_info = Pkg.Registry.registry_info(entry).version_info
-                    versions = [string(v) for v in keys(version_info)]
+                    # Filter out yanked versions so callers (e.g. latest version finder)
+                    # never consider retracted releases.
+                    versions = [string(ver) for (ver, info) in version_info if !info.yanked]
                     break
                 end
             end

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/registry_client"
 require "sorbet-runtime"
@@ -60,7 +61,8 @@ module Dependabot
         def registry
           return @registry if @registry
 
-          @registry = configured_registry || locked_registry || first_registry_with_dependency_details
+          @registry = scoped_credential_registry_for_dependency || configured_registry || locked_registry ||
+                      first_registry_with_dependency_details
           T.must(@registry)
         end
 
@@ -197,19 +199,12 @@ module Dependabot
         def locked_registry
           return unless registry_source_url
 
-          lockfile_registry =
-            registry_source_url
-            &.gsub("https://", "")
-            &.gsub("http://", "")
+          lockfile_registry = registry_source_url&.gsub("https://", "")&.gsub("http://", "")
+          return unless lockfile_registry
 
-          if lockfile_registry
-            detailed_registry =
-              known_registries
-              .find { |h| h["registry"]&.include?(lockfile_registry) }
-              &.fetch("registry")
-          end
-
-          detailed_registry || lockfile_registry
+          known_registries
+            .find { |h| h["registry"]&.include?(lockfile_registry) }
+            &.fetch("registry") || lockfile_registry
         end
 
         sig { returns(T.nilable(String)) }
@@ -231,7 +226,7 @@ module Dependabot
                             .select { |cred| cred["type"] == "npm_registry" && cred["registry"] }
                             .tap do |arr|
                               arr.each do |c|
-                                c["registry"] = prepare_registry_url(c["registry"])
+                                c["registry"] = prepare_registry_url(c["registry"])&.delete_suffix("/")
                                 c["token"] ||= nil
                               end
                             end
@@ -288,10 +283,7 @@ module Dependabot
 
         sig { returns(String) }
         def global_registry
-          return @global_registry if @global_registry
-
-          @global_registry = configured_global_registry || GLOBAL_NPM_REGISTRY
-          @global_registry
+          @global_registry ||= configured_global_registry || GLOBAL_NPM_REGISTRY
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -340,6 +332,30 @@ module Dependabot
           end
 
           nil
+        end
+
+        sig { returns(T.nilable(String)) }
+        def scoped_credential_registry_for_dependency
+          dep_name = dependency&.name
+          return unless dep_name&.start_with?("@") && dep_name.include?("/")
+
+          scope = T.must(dep_name.split("/").first)
+          registry = scoped_credential_registry(scope)
+          normalize_configured_registry(registry) if registry
+        end
+
+        sig { params(scope: String).returns(T.nilable(String)) }
+        def scoped_credential_registry(scope)
+          cred = credentials.find do |c|
+            c["type"] == "npm_registry" && c["registry"] && c.scope&.any? do |s|
+              Helpers.normalize_npm_scope(s) == scope
+            end
+          end
+          return unless cred
+
+          reg = T.must(cred["registry"])
+          registry = reg.start_with?("http") ? reg : "https://#{reg}"
+          prepare_registry_url(registry)
         end
 
         sig do

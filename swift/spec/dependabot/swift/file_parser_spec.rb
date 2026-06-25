@@ -281,8 +281,8 @@ RSpec.describe Dependabot::Swift::FileParser do
           url: "https://github.com/apple/swift-crypto.git",
           version: "2.6.0",
           requirement: ">= 1.0.0, < 3.0.0",
-          declaration_string: ".package(url: \"https://github.com/apple/swift-crypto.git\", \"1.0.0\"..<\"3.0.0\")",
-          requirement_string: "\"1.0.0\"..<\"3.0.0\""
+          declaration_string: ".package(url: \"https://github.com/apple/swift-crypto.git\", \"1.0.0\"..<\"3.0.0\"))",
+          requirement_string: "\"1.0.0\"..<\"3.0.0\")"
         }
       ]
     end
@@ -395,7 +395,15 @@ RSpec.describe Dependabot::Swift::FileParser do
           identity: "swift-system",
           name: "github.com/apple/swift-system",
           url: "https://github.com/apple/swift-system.git",
-          version: "1.6.4"
+          version: "1.6.4",
+          requirement: ">= 1.6.4, <= 1.6.5",
+          declaration_string: <<~DECLARATION.strip,
+            .package(
+                  url: "https://github.com/apple/swift-system.git",
+                  "1.6.4"..."1.6.5",
+                )
+          DECLARATION
+          requirement_string: "\"1.6.4\"...\"1.6.5\","
         },
         {
           identity: "swift-crypto",
@@ -430,6 +438,41 @@ RSpec.describe Dependabot::Swift::FileParser do
                 )
           DECLARATION
           requirement_string: ".exact(\"1.1.0\"),"
+        },
+        {
+          identity: "swift-algorithms",
+          name: "github.com/apple/swift-algorithms",
+          url: "https://github.com/apple/swift-algorithms.git",
+          version: "1.2.1",
+          requirement: ">= 1.2.1, < 2.0.0",
+          declaration_string: <<~DECLARATION.strip,
+            .package(
+                  url: "https://github.com/apple/swift-algorithms.git",
+                  "1.2.1"..<"2.0.0",
+                )
+          DECLARATION
+          requirement_string: "\"1.2.1\"..<\"2.0.0\","
+        }
+      ]
+    end
+
+    it_behaves_like "parse"
+  end
+
+  context "with traits" do
+    let(:project_name) { "traits" }
+
+    let(:expectations) do
+      [
+        {
+          identity: "benchmark",
+          name: "github.com/ordo-one/benchmark",
+          url: "https://github.com/ordo-one/benchmark",
+          version: "1.34.1",
+          requirement: ">= 1.30.0, < 2.0.0",
+          declaration_string:
+            ".package(url: \"https://github.com/ordo-one/benchmark\", from: \"1.30.0\", traits: [])",
+          requirement_string: "from: \"1.30.0\", traits: []"
         }
       ]
     end
@@ -452,7 +495,7 @@ RSpec.describe Dependabot::Swift::FileParser do
       it "returns the correct package manager" do
         expect(package_manager.name).to eq "swift"
         expect(package_manager.requirement).to be_nil
-        expect(package_manager.version.to_s).to eq "6.2.3"
+        expect(package_manager.version.to_s).to eq "6.3.1"
       end
     end
 
@@ -482,7 +525,7 @@ RSpec.describe Dependabot::Swift::FileParser do
       it "returns the correct language" do
         expect(language.name).to eq "swift"
         expect(language.requirement).to be_nil
-        expect(language.version.to_s).to eq "6.2.3"
+        expect(language.version.to_s).to eq "6.3.1"
       end
     end
   end

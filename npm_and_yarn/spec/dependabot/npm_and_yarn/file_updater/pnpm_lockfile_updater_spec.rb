@@ -76,6 +76,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_audit_fix_fallback).and_return(true)
   end
 
   after do
@@ -347,6 +349,30 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             Dependabot::InconsistentRegistryResponse,
             /pnpm trust downgrade detected for "fetch-factory@0.0.2"/
           )
+      end
+    end
+
+    context "when pnpm returns ERR_PNPM_INVALID_DEPENDENCY_NAME" do
+      let(:project_name) { "pnpm/simple" }
+
+      let(:invalid_dependency_name_error_message) do
+        "ERR_PNPM_INVALID_DEPENDENCY_NAME  Invalid dependency name \"foo bar\": " \
+          "invalid name: \"foo bar\""
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: invalid_dependency_name_error_message,
+              error_context: {}
+            )
+          )
+      end
+
+      it "raises a DependencyNotFound error with the captured invalid dep name" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyNotFound, /foo bar/)
       end
     end
 
@@ -768,9 +794,82 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
             .with("install --lockfile-only")
             .ordered
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .with(
+              "-r --include-workspace-root update prettier --depth Infinity --lockfile-only",
+              { fingerprint: "-r --include-workspace-root update <dependency_name> --depth Infinity --lockfile-only" }
+            )
+            .ordered
+            .and_return("")
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .with("audit --fix", { fingerprint: "audit --fix" })
+            .ordered
+            .and_return("")
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .with("install --lockfile-only")
+            .ordered
 
           updated_pnpm_lock_content
         end
+      end
+    end
+  end
+
+  describe "security_updates_only flag" do
+    let(:project_name) { "pnpm/simple" }
+    let(:files) { project_dependency_files(project_name) }
+
+    context "when security_updates_only is true" do
+      let(:updater) do
+        described_class.new(
+          dependency_files: files,
+          dependencies: dependencies,
+          credentials: credentials,
+          repo_contents_path: repo_contents_path,
+          security_updates_only: true
+        )
+      end
+
+      it "passes --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false to pnpm update" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          # Override any minimumReleaseAge set in pnpm-workspace.yaml: security fixes must not be
+          # blocked by a release-age gate the user configured for regular updates.
+          expect(cmd).to include("--config.minimumReleaseAge=0")
+          expect(cmd).to include("--config.minimumReleaseAgeStrict=false")
+          ""
+        end.at_least(:once)
+
+        updater.send(:run_pnpm_update_packages)
+      end
+
+      it "passes --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false to pnpm install" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          expect(cmd).to include("--config.minimumReleaseAge=0")
+          expect(cmd).to include("--config.minimumReleaseAgeStrict=false")
+          ""
+        end
+
+        updater.send(:run_pnpm_install)
+      end
+    end
+
+    context "when security_updates_only is false (default)" do
+      it "does not pass --config.minimumReleaseAge=0 to pnpm update" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          expect(cmd).not_to include("--config.minimumReleaseAge=0")
+          ""
+        end
+
+        updater.send(:run_pnpm_update_packages)
+      end
+
+      it "does not pass --config.minimumReleaseAge=0 to pnpm install" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          expect(cmd).not_to include("--config.minimumReleaseAge=0")
+          ""
+        end
+
+        updater.send(:run_pnpm_install)
       end
     end
   end

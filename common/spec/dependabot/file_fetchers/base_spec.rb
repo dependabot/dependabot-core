@@ -309,6 +309,12 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       it { is_expected.to eq(head_sha) }
 
+      it "only checks cloned_commit once" do
+        expect(file_fetcher_instance).to receive(:cloned_commit).once.and_call_original
+
+        commit
+      end
+
       context "with warnings from git rev-parse" do
         before do
           # Git no longer allows you to create a branch or symbolic ref named HEAD

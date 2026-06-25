@@ -33,17 +33,18 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :gemfile
 
-        sig { params(node: T.untyped).returns(T::Array[String]) }
+        sig { params(node: T.nilable(Prism::Node)).returns(T::Array[String]) }
         def find_child_gemfile_paths(node)
           return [] if node.nil?
 
           if declares_eval_gemfile?(node)
-            path_node = node.arguments&.arguments&.first
+            call_node = T.cast(node, Prism::CallNode)
+            path_node = call_node.arguments&.arguments&.first
             unless path_node.is_a?(Prism::StringNode)
               path = gemfile&.path
               msg = "Dependabot only supports uninterpolated string arguments " \
                     "to eval_gemfile. Got " \
-                    "`#{path_node.slice}`"
+                    "`#{path_node&.slice}`"
               raise Dependabot::DependencyFileNotParseable.new(T.must(path), msg)
             end
 

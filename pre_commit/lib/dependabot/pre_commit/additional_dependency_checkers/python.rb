@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/dependency"
+require "dependabot/dependency_requirement"
 require "dependabot/update_checkers"
 require "dependabot/requirements_update_strategy"
 require "dependabot/python/update_checker/requirements_updater"
@@ -92,7 +93,8 @@ module Dependabot
             credentials: credentials,
             ignored_versions: [],
             security_advisories: [],
-            raise_on_ignored: false
+            raise_on_ignored: false,
+            update_cooldown: cooldown_options
           )
         end
 
@@ -164,12 +166,14 @@ module Dependabot
           return ">=#{new_version}" unless original_requirement
 
           updater = Dependabot::Python::UpdateChecker::RequirementsUpdater.new(
-            requirements: [{
-              requirement: original_requirement,
-              file: "requirements.txt",
-              groups: [],
-              source: nil
-            }],
+            requirements: [Dependabot::DependencyRequirement.create(
+              {
+                requirement: original_requirement,
+                file: "requirements.txt",
+                groups: [],
+                source: nil
+              }
+            )],
             update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
             has_lockfile: false,
             latest_resolvable_version: new_version

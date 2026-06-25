@@ -91,7 +91,7 @@ module Dependabot
         Dependabot::Julia::Version.new(latest_version.to_s)
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         Dependabot::Julia::RequirementsUpdater.new(
           requirements: dependency.requirements,

@@ -45,7 +45,7 @@ module Dependabot
         nil
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         RequirementsUpdater.new(
           requirements: dependency.requirements,
@@ -109,11 +109,23 @@ module Dependabot
       def registry_client
         @registry_client ||= T.let(
           begin
-            hostname = dependency_source_details&.fetch(:registry_hostname)
+            hostname = registry_hostname
             RegistryClient.new(hostname: hostname, credentials: credentials)
           end,
           T.nilable(Dependabot::Terraform::RegistryClient)
         )
+      end
+
+      sig { returns(String) }
+      def registry_hostname
+        hostname = dependency_source_details&.fetch(:registry_hostname) || RegistryClient::PUBLIC_HOSTNAME
+        return hostname unless hostname == RegistryClient::PUBLIC_HOSTNAME
+
+        base_registry = credentials.find do |cred|
+          cred.fetch("type", nil) == "terraform_registry" && cred.replaces_base?
+        end
+
+        base_registry&.[]("host") || hostname
       end
 
       sig { returns(T.nilable(Dependabot::Terraform::Version)) }
