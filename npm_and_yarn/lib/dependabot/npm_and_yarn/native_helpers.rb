@@ -21,40 +21,49 @@ module Dependabot
         File.join(__dir__, "../../../helpers")
       end
 
-      sig { params(dependency_names: T::Array[String]).returns(String) }
-      def self.run_npm8_subdependency_update_command(dependency_names)
+      sig { params(dependency_names: T::Array[String], security_updates_only: T::Boolean).returns(String) }
+      def self.run_npm8_subdependency_update_command(dependency_names, security_updates_only: false)
         # NOTE: npm options
         # - `--force` ignores checks for platform (os, cpu) and engines
         # - `--ignore-scripts` disables prepare and prepack scripts which are run
         #   when installing git dependencies
-        command = [
+        command_args = [
           "update",
           *dependency_names,
           "--force",
           "--ignore-scripts",
           "--package-lock-only"
-        ].join(" ")
+        ]
+        # Override any min-release-age set in .npmrc: security fixes must not be
+        # blocked by a release-age gate the user configured for regular updates.
+        command_args << "--min-release-age=0" if security_updates_only
+        command = command_args.join(" ")
 
-        fingerprint = [
+        fingerprint_args = [
           "update",
           "<dependency_names>",
           "--force",
           "--ignore-scripts",
           "--package-lock-only"
-        ].join(" ")
+        ]
+        fingerprint_args << "--min-release-age=0" if security_updates_only
+        fingerprint = fingerprint_args.join(" ")
 
         Helpers.run_npm_command(command, fingerprint: fingerprint)
       end
 
-      sig { returns(String) }
-      def self.run_npm_audit_fix_command
+      sig { params(security_updates_only: T::Boolean).returns(String) }
+      def self.run_npm_audit_fix_command(security_updates_only: false)
         # Fallback for transitive dependencies in workspace repos where
         # `npm update` is a no-op because the package isn't in package.json.
         # `npm audit fix` updates all fixable vulnerabilities in the lockfile.
         # `--force` ignores checks for platform (os, cpu) and engines,
         # matching the flags used by run_npm8_subdependency_update_command.
         command = "audit fix --force --package-lock-only --ignore-scripts"
-        fingerprint = "audit fix --force --package-lock-only --ignore-scripts"
+        # Override any min-release-age set in .npmrc: security fixes must not be
+        # blocked by a release-age gate the user configured for regular updates.
+        command += " --min-release-age=0" if security_updates_only
+        fingerprint = command
 
         Helpers.run_npm_command(command, fingerprint: fingerprint)
       end
