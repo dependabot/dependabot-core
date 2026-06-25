@@ -284,6 +284,87 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
         expect(checker.latest_version).to eq(current_sha)
       end
     end
+
+    context "with a NixOS channel tarball input that has a newer channel" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nixpkgs",
+          version: "bd0ff2d3eac24699c3664d5966b9ef36f388e2ca",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "tarball",
+              url: "https://channels.nixos.org/nixos-25.05/nixexprs.tar.xz",
+              branch: nil,
+              ref: "nixos-25.05"
+            }
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      before do
+        channel_finder = instance_double(
+          Dependabot::Nix::UpdateChecker::ChannelVersionFinder,
+          latest_channel: {
+            channel: "nixos-26.05",
+            url: "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz",
+            commit_sha: "34268251cf55aa3d8c4c5e6f7a8b9c0d1e2f3a4b"
+          }
+        )
+        allow(Dependabot::Nix::UpdateChecker::ChannelVersionFinder)
+          .to receive(:new).and_return(channel_finder)
+      end
+
+      it "returns the revision of the newest channel" do
+        expect(checker.latest_version).to eq("34268251cf55aa3d8c4c5e6f7a8b9c0d1e2f3a4b")
+      end
+
+      it "reports as updatable" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be true
+      end
+    end
+
+    context "with a NixOS channel tarball input on the newest channel" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nixpkgs",
+          version: "bd0ff2d3eac24699c3664d5966b9ef36f388e2ca",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "tarball",
+              url: "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz",
+              branch: nil,
+              ref: "nixos-26.05"
+            }
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      before do
+        channel_finder = instance_double(
+          Dependabot::Nix::UpdateChecker::ChannelVersionFinder,
+          latest_channel: nil,
+          current_channel_revision: "bd0ff2d3eac24699c3664d5966b9ef36f388e2ca"
+        )
+        allow(Dependabot::Nix::UpdateChecker::ChannelVersionFinder)
+          .to receive(:new).and_return(channel_finder)
+      end
+
+      it "falls back to refreshing the current channel revision" do
+        expect(checker.latest_version).to eq("bd0ff2d3eac24699c3664d5966b9ef36f388e2ca")
+      end
+
+      it "reports as not updatable when the revision is unchanged" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be false
+      end
+    end
   end
 
   describe "#updated_requirements" do
@@ -370,6 +451,84 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
         updated = checker.updated_requirements
         expect(updated.first[:source][:ref]).to eq("nixos-25.05")
         expect(updated.first[:source][:branch]).to be_nil
+      end
+    end
+
+    context "with a NixOS channel tarball input that has a newer channel" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nixpkgs",
+          version: "old_rev_aaa",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "tarball",
+              url: "https://channels.nixos.org/nixos-25.05/nixexprs.tar.xz",
+              branch: nil,
+              ref: "nixos-25.05"
+            }
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      before do
+        channel_finder = instance_double(
+          Dependabot::Nix::UpdateChecker::ChannelVersionFinder,
+          latest_channel: {
+            channel: "nixos-26.05",
+            url: "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz",
+            commit_sha: "new_rev_bbb"
+          }
+        )
+        allow(Dependabot::Nix::UpdateChecker::ChannelVersionFinder)
+          .to receive(:new).and_return(channel_finder)
+      end
+
+      it "rewrites the channel ref and url" do
+        updated = checker.updated_requirements
+        expect(updated.first[:source][:ref]).to eq("nixos-26.05")
+        expect(updated.first[:source][:url])
+          .to eq("https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz")
+      end
+    end
+
+    context "with a NixOS channel tarball input being refreshed" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nixpkgs",
+          version: "current_rev_ccc",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "tarball",
+              url: "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz",
+              branch: nil,
+              ref: "nixos-26.05"
+            }
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      before do
+        channel_finder = instance_double(
+          Dependabot::Nix::UpdateChecker::ChannelVersionFinder,
+          latest_channel: nil
+        )
+        allow(Dependabot::Nix::UpdateChecker::ChannelVersionFinder)
+          .to receive(:new).and_return(channel_finder)
+      end
+
+      it "leaves the channel ref and url unchanged" do
+        updated = checker.updated_requirements
+        expect(updated.first[:source][:ref]).to eq("nixos-26.05")
+        expect(updated.first[:source][:url])
+          .to eq("https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz")
       end
     end
   end
