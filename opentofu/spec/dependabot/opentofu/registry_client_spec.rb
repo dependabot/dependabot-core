@@ -156,6 +156,34 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
       .with(headers: { "Authorization" => "Bearer #{token}" })
   end
 
+  it "uses replaces-base credentials as wildcard even when host is present" do
+    hostname = "registry.alt.example.org"
+    token = SecureRandom.hex(16)
+    auth_header = ["Bearer", token].join(" ")
+    credentials = [Dependabot::Credential.new(
+      {
+        "type" => "opentofu_registry",
+        "host" => "registry.example.org",
+        "token" => token,
+        "replaces-base" => true
+      }
+    )]
+
+    stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
+      body: {
+        "modules.v1": "/v1/modules/",
+        "providers.v1": "/v1/providers/"
+      }.to_json
+    )
+    stub_request(:get, "https://#{hostname}/v1/providers/x/y/versions")
+      .and_return(body: { id: "x/y", versions: [{ version: "0.1.0" }] }.to_json)
+    client = described_class.new(hostname: hostname, credentials: credentials)
+
+    expect(client.all_provider_versions(identifier: "x/y")).to contain_exactly(Gem::Version.new("0.1.0"))
+    expect(WebMock).to have_requested(:get, "https://#{hostname}/v1/providers/x/y/versions")
+      .with(headers: { "Authorization" => auth_header })
+  end
+
   describe ".all_oci_tags" do
     let(:host) { "ghcr.io" }
     let(:repo) { "my-org/opentofu-modules/my-module" }

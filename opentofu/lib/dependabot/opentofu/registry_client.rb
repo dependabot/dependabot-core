@@ -25,6 +25,7 @@ module Dependabot
       )
       PUBLIC_HOSTNAME = "registry.opentofu.org"
       API_BASE_URL = "api.opentofu.org"
+      WILDCARD_HOST = "*"
 
       # The OpenTofu Module Registry HTTP API is wire-compatible with Terraform's,
       # so credentials issued for either ecosystem are valid here.
@@ -44,11 +45,8 @@ module Dependabot
             # trigger a malformed `Authorization: Bearer ` header.
             next unless ACCEPTED_CREDENTIAL_TYPES.include?(item["type"]) && item["token"]
 
-            if item["host"]
-              memo[T.must(item["host"])] = T.must(item["token"])
-            elsif item.replaces_base?
-              memo["*"] = T.must(item["token"])
-            end
+            memo[WILDCARD_HOST] = T.must(item["token"]) if self.class.credential_replaces_base?(item)
+            memo[T.must(item["host"])] = T.must(item["token"]) if item["host"]
           end,
           T::Hash[String, String]
         )
@@ -239,7 +237,7 @@ module Dependabot
       def self.oci_get(url, host:, credentials:)
         cred = credentials.find do |c|
           ACCEPTED_CREDENTIAL_TYPES.include?(c["type"]) &&
-            (c["host"] == host || c["registry"] == host || c.replaces_base?)
+            (c["host"] == host || c["registry"] == host || credential_replaces_base?(c))
         end
 
         headers = {}
@@ -262,6 +260,13 @@ module Dependabot
         response
       end
       private_class_method :oci_get
+
+      sig { params(credential: T.any(Dependabot::Credential, T::Hash[String, T.untyped])).returns(T::Boolean) }
+      def self.credential_replaces_base?(credential)
+        return credential.replaces_base? if credential.is_a?(Dependabot::Credential)
+
+        !!credential["replaces-base"]
+      end
 
       sig { params(www_authenticate: T.nilable(String)).returns(T.nilable(String)) }
       def self.oci_anonymous_bearer_token(www_authenticate)
@@ -355,7 +360,7 @@ module Dependabot
 
       sig { params(hostname: String).returns(T::Hash[String, String]) }
       def headers_for(hostname)
-        token = tokens[hostname] || tokens["*"]
+        token = tokens[hostname] || tokens[WILDCARD_HOST]
         token ? { "Authorization" => "Bearer #{token}" } : {}
       end
 
