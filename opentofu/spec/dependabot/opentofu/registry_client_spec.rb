@@ -134,6 +134,28 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
       .with(headers: { "Authorization" => "Bearer #{token}" })
   end
 
+  it "uses replaces-base credentials for provider requests" do
+    hostname = "registry.example.org"
+    token = SecureRandom.hex(16)
+    credentials = [Dependabot::Credential.new(
+      { "type" => "opentofu_registry", "token" => token, "replaces-base" => true }
+    )]
+
+    stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
+      body: {
+        "modules.v1": "/v1/modules/",
+        "providers.v1": "/v1/providers/"
+      }.to_json
+    )
+    stub_request(:get, "https://#{hostname}/v1/providers/x/y/versions")
+      .and_return(body: { id: "x/y", versions: [{ version: "0.1.0" }] }.to_json)
+    client = described_class.new(hostname: hostname, credentials: credentials)
+
+    expect(client.all_provider_versions(identifier: "x/y")).to contain_exactly(Gem::Version.new("0.1.0"))
+    expect(WebMock).to have_requested(:get, "https://#{hostname}/v1/providers/x/y/versions")
+      .with(headers: { "Authorization" => "Bearer #{token}" })
+  end
+
   describe ".all_oci_tags" do
     let(:host) { "ghcr.io" }
     let(:repo) { "my-org/opentofu-modules/my-module" }
@@ -166,6 +188,23 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
     it "also accepts terraform_registry credentials for OCI registries" do
       token = SecureRandom.hex(16)
       credentials = [Dependabot::Credential.new({ "type" => "terraform_registry", "host" => host, "token" => token })]
+
+      stub_request(:get, tags_url).and_return(status: 200, body: tags_response)
+
+      versions = described_class.all_oci_tags(
+        artifact_identifier: artifact_identifier,
+        credentials: credentials
+      )
+      expect(versions.map(&:to_s)).to contain_exactly("1.0.0", "1.1.0", "2.0.0")
+      expect(WebMock).to have_requested(:get, tags_url)
+        .with(headers: { "Authorization" => "Bearer #{token}" })
+    end
+
+    it "uses replaces-base credentials for OCI registries" do
+      token = SecureRandom.hex(16)
+      credentials = [Dependabot::Credential.new(
+        { "type" => "terraform_registry", "token" => token, "replaces-base" => true }
+      )]
 
       stub_request(:get, tags_url).and_return(status: 200, body: tags_response)
 

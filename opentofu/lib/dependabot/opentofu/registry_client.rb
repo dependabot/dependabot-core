@@ -44,7 +44,11 @@ module Dependabot
             # trigger a malformed `Authorization: Bearer ` header.
             next unless ACCEPTED_CREDENTIAL_TYPES.include?(item["type"]) && item["token"]
 
-            memo[item["host"]] = item["token"]
+            if item["host"]
+              memo[T.must(item["host"])] = T.must(item["token"])
+            elsif item.replaces_base?
+              memo["*"] = T.must(item["token"])
+            end
           end,
           T::Hash[String, String]
         )
@@ -234,7 +238,8 @@ module Dependabot
       end
       def self.oci_get(url, host:, credentials:)
         cred = credentials.find do |c|
-          ACCEPTED_CREDENTIAL_TYPES.include?(c["type"]) && (c["host"] == host || c["registry"] == host)
+          ACCEPTED_CREDENTIAL_TYPES.include?(c["type"]) &&
+            (c["host"] == host || c["registry"] == host || c.replaces_base?)
         end
 
         headers = {}
@@ -350,7 +355,7 @@ module Dependabot
 
       sig { params(hostname: String).returns(T::Hash[String, String]) }
       def headers_for(hostname)
-        token = tokens[hostname]
+        token = tokens[hostname] || tokens["*"]
         token ? { "Authorization" => "Bearer #{token}" } : {}
       end
 
