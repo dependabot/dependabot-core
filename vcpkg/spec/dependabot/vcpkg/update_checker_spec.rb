@@ -206,6 +206,15 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
       end
     end
 
+    context "when the baseline is an abbreviated SHA that prefixes the latest release commit" do
+      let(:dependency_version) { "9b75e78" }
+      let(:commit_sha) { "9b75e789ece3f942159b8500584e35aafe3979ff" }
+
+      it "is up to date" do
+        expect(up_to_date).to be(true)
+      end
+    end
+
     context "when there is no resolvable latest release" do
       let(:commit_sha) { dependency_version }
       let(:mock_latest_release_info) { nil }
