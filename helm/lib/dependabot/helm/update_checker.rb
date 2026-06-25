@@ -64,10 +64,10 @@ module Dependabot
       # strategy is set we default to BumpVersions, which preserves the authored
       # operator and bumps the floor (e.g. `^1.0.0` -> `^1.0.5`); exact pins stay
       # exact (`1.0.0` -> `1.5.0`).
-      sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+      sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
       def updated_chart_requirement(req)
         current_constraint = req[:requirement] || dependency.version
-        synthetic = req.merge(requirement: current_constraint)
+        synthetic = T.cast(req.merge(requirement: current_constraint), Dependabot::DependencyRequirement)
 
         T.must(
           RequirementsUpdater.new(

@@ -10,6 +10,7 @@
 
 require "sorbet-runtime"
 
+require "dependabot/dependency_requirement"
 require "dependabot/helm/requirement"
 require "dependabot/helm/update_checker"
 require "dependabot/helm/version"
@@ -38,7 +39,7 @@ module Dependabot
 
         sig do
           params(
-            requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            requirements: T::Array[Dependabot::DependencyRequirement],
             update_strategy: Dependabot::RequirementsUpdateStrategy,
             latest_resolvable_version: T.nilable(T.any(String, Gem::Version))
           ).void
@@ -57,7 +58,7 @@ module Dependabot
           )
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_requirements
           return requirements if update_strategy.lockfile_only?
 
@@ -79,7 +80,7 @@ module Dependabot
 
         private
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :requirements
 
         sig { returns(Dependabot::RequirementsUpdateStrategy) }
@@ -95,7 +96,7 @@ module Dependabot
           raise "Unknown update strategy: #{update_strategy}"
         end
 
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_version_requirement(req)
           current_requirement = req[:requirement]
 
@@ -105,14 +106,14 @@ module Dependabot
             return req if ruby_requirements(current_requirement).any? { |r| r.satisfied_by?(latest_resolvable_version) }
 
             updated_req = update_range_requirement(current_requirement)
-            return req.merge(requirement: updated_req)
+            return T.cast(req.merge(requirement: updated_req), Dependabot::DependencyRequirement)
           end
 
           reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
-          req.merge(requirement: update_version_string(reqs.first))
+          T.cast(req.merge(requirement: update_version_string(reqs.first)), Dependabot::DependencyRequirement)
         end
 
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_version_requirement_if_needed(req)
           current_requirement = req[:requirement]
           version = latest_resolvable_version
@@ -124,7 +125,7 @@ module Dependabot
           update_version_requirement(req)
         end
 
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def widen_requirement(req)
           current_requirement = req[:requirement]
           version = latest_resolvable_version
@@ -144,7 +145,7 @@ module Dependabot
               current_requirement
             end
 
-          req.merge(requirement: updated_requirement)
+          T.cast(req.merge(requirement: updated_requirement), Dependabot::DependencyRequirement)
         end
 
         sig { params(requirement_string: String).returns(T::Array[Helm::Requirement]) }
