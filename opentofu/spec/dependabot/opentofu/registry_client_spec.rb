@@ -153,8 +153,10 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
 
       stub_request(:get, tags_url).and_return(status: 200, body: tags_response)
 
-      versions = described_class.all_oci_tags(artifact_identifier: artifact_identifier,
-                                               credentials: credentials)
+      versions = described_class.all_oci_tags(
+        artifact_identifier: artifact_identifier,
+        credentials: credentials
+      )
       expect(versions.map(&:to_s)).to contain_exactly("1.0.0", "1.1.0", "2.0.0")
       expect(WebMock).to have_requested(:get, tags_url)
         .with(headers: { "Authorization" => "Bearer #{token}" })
@@ -166,8 +168,10 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
 
       stub_request(:get, tags_url).and_return(status: 200, body: tags_response)
 
-      versions = described_class.all_oci_tags(artifact_identifier: artifact_identifier,
-                                               credentials: credentials)
+      versions = described_class.all_oci_tags(
+        artifact_identifier: artifact_identifier,
+        credentials: credentials
+      )
       expect(versions.map(&:to_s)).to contain_exactly("1.0.0", "1.1.0", "2.0.0")
       expect(WebMock).to have_requested(:get, tags_url)
         .with(headers: { "Authorization" => "Bearer #{token}" })
