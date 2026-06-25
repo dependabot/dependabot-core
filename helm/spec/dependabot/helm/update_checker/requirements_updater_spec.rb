@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency_requirement"
 require "dependabot/requirements_update_strategy"
 require "dependabot/helm/update_checker/requirements_updater"
 
@@ -15,13 +16,13 @@ RSpec.describe Dependabot::Helm::UpdateChecker::RequirementsUpdater do
   end
 
   let(:requirements) do
-    [{
+    [Dependabot::DependencyRequirement.create(
       file: "Chart.yaml",
       requirement: chart_req,
       groups: [],
       source: { tag: "x" },
       metadata: { type: :helm_chart }
-    }]
+    )]
   end
   let(:chart_req) { "^1.0.0" }
   let(:latest_resolvable_version) { "1.0.5" }
