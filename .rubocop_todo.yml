@@ -154,12 +154,11 @@ Metrics/AbcSize:
   Exclude:
     - "opentofu/lib/dependabot/opentofu/file_parser.rb"
 
-# Offense count: 355/350
+# Offense count: 354/350
 Metrics/ClassLength:
   Exclude:
     - "common/lib/dependabot/dependency.rb"
     - "opentofu/lib/dependabot/opentofu/file_parser.rb"
-    - "opentofu/lib/dependabot/opentofu/file_updater.rb"
 
 # Offense count: 8
 RSpec/RepeatedExampleGroupBody:

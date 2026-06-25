@@ -5,10 +5,8 @@ require "sorbet-runtime"
 
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
-require "dependabot/file_updaters/lockfile_manifest_updater"
 require "dependabot/errors"
 require "dependabot/terraform/file_selector"
-require "dependabot/terraform/requirement"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -19,7 +17,6 @@ module Dependabot
       require_relative "file_updater/provider_cli_config_builder"
 
       include FileSelector
-      include Dependabot::FileUpdaters::LockfileManifestUpdater
 
       PRIVATE_MODULE_ERROR = /Could not download module.*code from\n.*\"(?<repo>\S+)\":/
       MODULE_NOT_INSTALLED_ERROR =  /Module not installed.*module\s*\"(?<mod>\S+)\"/m
@@ -28,7 +25,6 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = []
-        updated_manifest_files = []
 
         [*terraform_files, *terragrunt_files].each do |file|
           next unless file_changed?(file)
@@ -39,12 +35,9 @@ module Dependabot
 
           updated_file = updated_file(file: file, content: updated_content)
 
-          updated_manifest_files << updated_file unless updated_manifest_files.include?(updated_file)
-          next if lockfile_only_manifest_update?(file)
-
           updated_files << updated_file unless updated_files.include?(updated_file)
         end
-        updated_lockfile_content = update_lockfile_declaration(updated_manifest_files)
+        updated_lockfile_content = update_lockfile_declaration(updated_files)
 
         if updated_lockfile_content && T.must(lockfile).content != updated_lockfile_content
           updated_files << updated_file(file: T.must(lockfile), content: updated_lockfile_content)
