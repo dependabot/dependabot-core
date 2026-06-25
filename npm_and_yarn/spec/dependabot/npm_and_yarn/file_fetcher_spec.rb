@@ -2955,6 +2955,62 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
+  context "with raw Hash credentials with scope, no lockfile, no .npmrc (CLI scenario)" do
+    let(:credentials) do
+      [
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        },
+        {
+          "type" => "npm_registry",
+          "registry" => "jfrogghdemo.jfrog.io/artifactory/api/npm/dpndbt-pvt-repo-npm-key",
+          "scope" => "@mycompany"
+        },
+        {
+          "type" => "npm_registry",
+          "registry" => "jfrogghdemo.jfrog.io/artifactory/api/npm/dpndbt-pvt-repo-npm-key",
+          "scope" => "@mycompany2"
+        }
+      ]
+    end
+
+    before do
+      Dependabot::Experiments.register(:enable_npmrc_credential_generation, true)
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_js_library.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, File.join(url, "package.json?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "package_json_content.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404)
+    end
+
+    it "generates .npmrc from scope credentials and does NOT raise PrivateRegistryConfigNotFound" do
+      expect { file_fetcher_instance.files }.not_to raise_error
+      npmrc_file = file_fetcher_instance.files.find { |f| f.name == ".npmrc" }
+      expect(npmrc_file).not_to be_nil
+      expect(npmrc_file.content).to include("@mycompany:registry=https://jfrogghdemo.jfrog.io")
+      expect(npmrc_file.content).to include("@mycompany2:registry=https://jfrogghdemo.jfrog.io")
+    end
+  end
+
   context "with raw Hash credentials (as passed by file_fetcher_command.rb at runtime)" do
     let(:credentials) do
       [
