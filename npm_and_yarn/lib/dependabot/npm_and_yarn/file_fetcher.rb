@@ -80,7 +80,7 @@ module Dependabot
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
-      def fetch_files # rubocop:disable Metrics/PerceivedComplexity
+      def fetch_files # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
         fetched_files = T.let([], T::Array[DependencyFile])
         fetched_files << package_json
         fetched_files << T.must(npmrc) if npmrc && !scope_overrides_npmrc?
@@ -93,11 +93,14 @@ module Dependabot
 
         # When no package manager version is detected at all (no lockfile, no
         # packageManager, no engines) AND no committed .npmrc exists, the
-        # inferred_npmrc path inside npm_files is never reached. Run the
-        # private-registry rejection check directly so users get an actionable
-        # error instead of a confusing 404 from registry.npmjs.org.
+        # inferred_npmrc path inside npm_files is never reached. Try generating
+        # an .npmrc from scope credentials, or reject if no config is available.
         # Skip for yarn/pnpm-only projects where npm isn't the relevant manager.
-        reject_if_private_registry_without_config! if no_package_manager_detected? && npmrc.nil?
+        if no_package_manager_detected? && npmrc.nil?
+          generated = inferred_npmrc
+          fetched_files << generated if generated
+          reject_if_private_registry_without_config! unless generated
+        end
 
         # Filter excluded files from final collection
         filtered_files = fetched_files.uniq.reject do |file|
@@ -244,8 +247,10 @@ module Dependabot
       end
 
       sig { void }
-      def reject_if_private_registry_without_config!
+      def reject_if_private_registry_without_config! # rubocop:disable Metrics/PerceivedComplexity
         return unless Dependabot::Experiments.enabled?(:enable_npmrc_credential_generation)
+        return if credentials_have_scope?
+        return if wrapped_credentials.any?(&:replaces_base?)
 
         private_registry_creds = wrapped_credentials.select do |cred|
           next false unless cred["type"] == "npm_registry"
@@ -265,7 +270,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def credentials_have_scope?
-        wrapped_credentials.any? { |cred| cred["type"] == "npm_registry" && cred.scope }
+        wrapped_credentials.any? { |cred| cred["type"] == "npm_registry" && cred.scope&.any? }
       end
 
       # file_fetcher_command.rb may pass raw Hashes as credentials at runtime.
