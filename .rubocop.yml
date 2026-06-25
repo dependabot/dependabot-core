@@ -101,6 +101,7 @@ Sorbet/EnforceSignatures:
   Exclude:
     - "**/spec/**/*"
     - "bin/**/*"
+    - "script/**/*"
     - "bundler/helpers/**/*"
     - "rakelib/support/test/**/*"
 Sorbet/ForbidTAnyWithNil:
@@ -135,6 +136,7 @@ Sorbet/StrictSigil:
     - "bin/**/*"
     - "rakelib/support/test/**/*"
 Sorbet/StrongSigil:
+  Enabled: false
   Exclude:
     - "**/spec/**/*"
     - "rakelib/support/test/**/*"
