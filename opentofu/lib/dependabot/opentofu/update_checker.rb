@@ -123,7 +123,8 @@ module Dependabot
         return hostname unless hostname == RegistryClient::PUBLIC_HOSTNAME
 
         base_registry = credentials.find do |cred|
-          RegistryClient::ACCEPTED_CREDENTIAL_TYPES.include?(cred.fetch("type", "")) && cred.replaces_base?
+          RegistryClient::ACCEPTED_CREDENTIAL_TYPES.include?(cred.fetch("type", "")) &&
+            RegistryClient.credential_replaces_base?(cred)
         end
 
         base_registry&.[]("host") || hostname
