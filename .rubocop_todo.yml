@@ -345,6 +345,7 @@ Sorbet/ForbidTUntyped:
     - "deno/lib/dependabot/deno/file_updater/manifest_updater.rb"
     - "deno/lib/dependabot/deno/helpers.rb"
     - "devbox/lib/dependabot/devbox/file_fetcher.rb"
+    - "devbox/lib/dependabot/devbox/file_parser.rb"
     - "devbox/lib/dependabot/devbox/helpers.rb"
     - "devcontainers/lib/dependabot/devcontainers/file_fetcher.rb"
     - "devcontainers/lib/dependabot/devcontainers/file_parser/feature_dependency_parser.rb"
