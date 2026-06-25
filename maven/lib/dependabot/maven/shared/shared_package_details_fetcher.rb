@@ -76,6 +76,14 @@ module Dependabot
           base_url = dependency_base_url(repository_url)
           type = dependency.requirements.first&.dig(:metadata, :packaging_type) || "jar"
           classifier = dependency.requirements.first&.dig(:metadata, :classifier)
+
+          # Maven's test-jar type is published as a normal .jar with the "tests" classifier.
+          # See: https://maven.apache.org/guides/mini/guide-attached-tests.html
+          if type == "test-jar"
+            type = "jar"
+            classifier ||= "tests"
+          end
+
           actual_classifier = classifier.nil? ? "" : "-#{classifier}"
 
           "#{base_url}/#{version}/#{artifact_id}-#{version}#{actual_classifier}.#{type}"
