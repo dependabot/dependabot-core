@@ -347,6 +347,8 @@ Sorbet/ForbidTUntyped:
     - "devbox/lib/dependabot/devbox/file_fetcher.rb"
     - "devbox/lib/dependabot/devbox/file_parser.rb"
     - "devbox/lib/dependabot/devbox/helpers.rb"
+    - "devbox/lib/dependabot/devbox/metadata_finder.rb"
+    - "devbox/lib/dependabot/devbox/package/package_details_fetcher.rb"
     - "devcontainers/lib/dependabot/devcontainers/file_fetcher.rb"
     - "devcontainers/lib/dependabot/devcontainers/file_parser/feature_dependency_parser.rb"
     - "devcontainers/lib/dependabot/devcontainers/file_updater.rb"
