@@ -148,6 +148,83 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
     end
   end
 
+  describe "#up_to_date?" do
+    subject(:up_to_date) { checker.up_to_date? }
+
+    let(:dependency_version) { "9b75e789ece3f942159b8500584e35aafe3979ff" }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: dependency_version,
+        requirements: [{
+          requirement: nil,
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/microsoft/vcpkg.git",
+            ref: "master"
+          },
+          file: "vcpkg.json"
+        }],
+        package_manager: "vcpkg"
+      )
+    end
+
+    let(:latest_version) { "2025.06.13" }
+    let(:latest_version_finder) { instance_double(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder) }
+    let(:mock_latest_release_info) do
+      instance_double(
+        Dependabot::Package::PackageRelease,
+        details: { "commit_sha" => commit_sha, "tag_sha" => "tag123" }
+      )
+    end
+
+    before do
+      allow(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder)
+        .to receive(:new)
+        .and_return(latest_version_finder)
+      allow(latest_version_finder)
+        .to receive_messages(
+          latest_version: latest_version,
+          latest_release_info: mock_latest_release_info
+        )
+    end
+
+    context "when the baseline already points at the latest release commit" do
+      let(:commit_sha) { dependency_version }
+
+      it "is up to date and does not propose an empty update" do
+        expect(up_to_date).to be(true)
+      end
+    end
+
+    context "when the baseline points at an older commit than the latest release" do
+      let(:commit_sha) { "1111111111111111111111111111111111111111" }
+
+      it "is not up to date" do
+        expect(up_to_date).to be(false)
+      end
+    end
+
+    context "when the baseline is an abbreviated SHA that prefixes the latest release commit" do
+      let(:dependency_version) { "9b75e78" }
+      let(:commit_sha) { "9b75e789ece3f942159b8500584e35aafe3979ff" }
+
+      it "is up to date" do
+        expect(up_to_date).to be(true)
+      end
+    end
+
+    context "when there is no resolvable latest release" do
+      let(:commit_sha) { dependency_version }
+      let(:mock_latest_release_info) { nil }
+
+      it "falls back to the base behaviour and is not up to date" do
+        expect(up_to_date).to be(false)
+      end
+    end
+  end
+
   describe "#updated_requirements" do
     subject(:updated_requirements) { checker.updated_requirements }
 
