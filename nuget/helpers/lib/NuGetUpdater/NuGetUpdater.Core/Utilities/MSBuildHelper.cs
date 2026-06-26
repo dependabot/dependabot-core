@@ -726,6 +726,7 @@ internal static partial class MSBuildHelper
             new Regex(@"The file is not a valid nupkg"),
             new Regex(@"The response ended prematurely\. \(ResponseEnded\)"),
             new Regex(@"The content at '.*' is not valid XML\."),
+            new Regex(@"End of Central Directory record could not be found\."),
         };
         if (patterns.Any(p => p.IsMatch(stdout)))
         {

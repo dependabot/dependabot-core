@@ -478,6 +478,14 @@ public class MSBuildHelperTests : TestBase
 
         yield return
         [
+            // output
+            "error : End of Central Directory record could not be found.",
+            // expectedError
+            new PrivateSourceBadResponse(["http://localhost/test-feed"], "unused"),
+        ];
+
+        yield return
+        [
             // a generic 404 (e.g., a misconfigured credential in a `packages.config` scenario) is reported as a bad response
             // output
             "Failed to fetch results from V2 feed at 'https://nuget.example.com/FindPackagesById()?id='Some.Package'&semVerLevel=2.0.0' with following message : Response status code does not indicate success: 404 (Not Found)",
