@@ -667,6 +667,7 @@ internal static partial class MSBuildHelper
         ThrowOnRateLimitExceeded(output);
         ThrowOnTimeout(output);
         ThrowOnBadResponse(output);
+        ThrowOnNotFoundResponse(output);
         ThrowOnUnparseableFile(output);
         ThrowOnMultipleProjectsForPackagesConfig(output);
         ThrowOnCircularDependency(output);
@@ -729,6 +730,19 @@ internal static partial class MSBuildHelper
         if (patterns.Any(p => p.IsMatch(stdout)))
         {
             throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.InternalServerError);
+        }
+    }
+
+    private static void ThrowOnNotFoundResponse(string stdout)
+    {
+        // This commonly occurs in `packages.config` scenarios when a feed is misconfigured (e.g., a bad
+        // credential or URL); it's a user configuration error rather than an updater failure.  The URI is
+        // the portion before the `/FindPackagesById` path.
+        var pattern = new Regex(@"Failed to fetch results from V2 feed at '(?<Uri>.+?)/FindPackagesById.*Response status code does not indicate success: 404");
+        var match = pattern.Match(stdout);
+        if (match.Success)
+        {
+            throw new BadResponseException(stdout, uri: match.Groups["Uri"].Value);
         }
     }
 
