@@ -3,6 +3,8 @@
 
 require "sorbet-runtime"
 
+require "dependabot/nix/channel"
+
 module Dependabot
   module Nix
     # Parses flake.nix content to locate input URL declarations and extract
@@ -62,35 +64,9 @@ module Dependabot
 
         url_str = match[:url]
 
-        # Try shorthand scheme first (github:, gitlab:, sourcehut:)
-        url_match = FLAKE_URL_PATTERN.match(url_str)
-        if url_match
-          return InputUrl.new(
-            full_url: url_str,
-            scheme: T.must(url_match[:scheme]),
-            owner: T.must(url_match[:owner]),
-            repo: T.must(url_match[:repo]),
-            ref: url_match[:ref],
-            query: url_match[:query],
-            match_start: match[:url_start],
-            match_end: match[:url_end]
-          )
-        end
-
-        # Try indirect/registry shorthand (e.g. nixpkgs/nixos-24.11)
-        indirect_match = INDIRECT_URL_PATTERN.match(url_str)
-        return unless indirect_match
-
-        InputUrl.new(
-          full_url: url_str,
-          scheme: "indirect",
-          owner: T.must(indirect_match[:id]),
-          repo: "",
-          ref: indirect_match[:ref],
-          query: nil,
-          match_start: match[:url_start],
-          match_end: match[:url_end]
-        )
+        build_shorthand_input(url_str, match) ||
+          build_tarball_input(url_str, match) ||
+          build_indirect_input(url_str, match)
       end
 
       sig { params(new_ref: String).returns(T.nilable(String)) }
@@ -116,6 +92,60 @@ module Dependabot
 
       sig { returns(String) }
       attr_reader :input_name
+
+      # Shorthand scheme URLs: github:, gitlab:, sourcehut:
+      sig { params(url_str: String, match: T::Hash[Symbol, T.untyped]).returns(T.nilable(InputUrl)) }
+      def build_shorthand_input(url_str, match)
+        url_match = FLAKE_URL_PATTERN.match(url_str)
+        return unless url_match
+
+        InputUrl.new(
+          full_url: url_str,
+          scheme: T.must(url_match[:scheme]),
+          owner: T.must(url_match[:owner]),
+          repo: T.must(url_match[:repo]),
+          ref: url_match[:ref],
+          query: url_match[:query],
+          match_start: match[:url_start],
+          match_end: match[:url_end]
+        )
+      end
+
+      # NixOS channel tarball URL, e.g. channels.nixos.org/nixos-26.05/nixexprs.tar.xz
+      sig { params(url_str: String, match: T::Hash[Symbol, T.untyped]).returns(T.nilable(InputUrl)) }
+      def build_tarball_input(url_str, match)
+        channel = Channel.channel_name_from_url(url_str)
+        return unless channel
+
+        InputUrl.new(
+          full_url: url_str,
+          scheme: "tarball",
+          owner: "",
+          repo: "",
+          ref: channel,
+          query: nil,
+          match_start: match[:url_start],
+          match_end: match[:url_end]
+        )
+      end
+
+      # Indirect/registry shorthand (e.g. nixpkgs/nixos-24.11)
+      sig { params(url_str: String, match: T::Hash[Symbol, T.untyped]).returns(T.nilable(InputUrl)) }
+      def build_indirect_input(url_str, match)
+        indirect_match = INDIRECT_URL_PATTERN.match(url_str)
+        return unless indirect_match
+
+        InputUrl.new(
+          full_url: url_str,
+          scheme: "indirect",
+          owner: T.must(indirect_match[:id]),
+          repo: "",
+          ref: indirect_match[:ref],
+          query: nil,
+          match_start: match[:url_start],
+          match_end: match[:url_end]
+        )
+      end
 
       # Returns a hash with :url, :url_start, :url_end if found, or nil.
       sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
@@ -180,8 +210,12 @@ module Dependabot
 
       sig { params(input_url: InputUrl, new_ref: String).returns(String) }
       def build_updated_url(input_url, new_ref)
-        if input_url.scheme == "indirect"
+        case input_url.scheme
+        when "indirect"
           "#{input_url.owner}/#{new_ref}"
+        when "tarball"
+          old_channel = T.must(input_url.ref)
+          input_url.full_url.sub("/#{old_channel}/", "/#{new_ref}/")
         else
           base = "#{input_url.scheme}:#{input_url.owner}/#{input_url.repo}/#{new_ref}"
           input_url.query ? "#{base}?#{input_url.query}" : base
