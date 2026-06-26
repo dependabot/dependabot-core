@@ -365,5 +365,27 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
       expect(WebMock).to have_requested(:get, "https://#{host}/v2/example/module/tags/list")
         .with(headers: { "Authorization" => "Bearer #{token}" })
     end
+
+    it "uses the last matching credential when multiple credentials match the same host" do
+      host = "registry.example.org"
+      first_token = SecureRandom.hex(16)
+      last_token = SecureRandom.hex(16)
+      credentials = [
+        Dependabot::Credential.new({ "type" => "opentofu_registry", "host" => host, "token" => first_token }),
+        Dependabot::Credential.new({ "type" => "terraform_registry", "host" => host, "token" => last_token })
+      ]
+
+      stub_request(:get, "https://#{host}/v2/example/module/tags/list")
+        .with(headers: { "Authorization" => "Bearer #{last_token}" })
+        .and_return(status: 200, body: { tags: ["1.0.0"] }.to_json)
+
+      described_class.all_oci_tags(
+        artifact_identifier: "#{host}/example/module",
+        credentials: credentials
+      )
+
+      expect(WebMock).to have_requested(:get, "https://#{host}/v2/example/module/tags/list")
+        .with(headers: { "Authorization" => "Bearer #{last_token}" })
+    end
   end
 end
