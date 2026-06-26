@@ -205,8 +205,6 @@ RSpec.describe GithubApi::DependencySubmission do
   end
 
   context "with a manifest file but no resolved dependencies" do
-    include DependencyFileHelpers
-
     subject(:dependency_submission) do
       described_class.new(
         job_id: "9999",
