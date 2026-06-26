@@ -726,7 +726,6 @@ internal static partial class MSBuildHelper
             new Regex(@"The file is not a valid nupkg"),
             new Regex(@"The response ended prematurely\. \(ResponseEnded\)"),
             new Regex(@"The content at '.*' is not valid XML\."),
-            new Regex(@"The content at '.*' is not a valid JSON object\."),
             new Regex(@"End of Central Directory record could not be found\."),
         };
         if (patterns.Any(p => p.IsMatch(stdout)))
@@ -737,12 +736,18 @@ internal static partial class MSBuildHelper
 
     private static void ThrowOnNotFoundResponse(string stdout)
     {
-        // This commonly occurs in `packages.config` scenarios when a feed is misconfigured (e.g., a bad
-        // credential or URL); it's a user configuration error rather than an updater failure.  The URI is
-        // the portion before the `/FindPackagesById` path.
-        var pattern = new Regex(@"Failed to fetch results from V2 feed at '(?<Uri>.+?)/FindPackagesById.*Response status code does not indicate success: 404");
-        var match = pattern.Match(stdout);
-        if (match.Success)
+        // These commonly occur when a feed is misconfigured (e.g., a bad credential or URL); they're a user
+        // configuration error rather than an updater failure.  In each case a URI is extracted from the
+        // message and passed through to the reported error.
+        var patterns = new[]
+        {
+            // V2 feed 404; the URI is the portion before the `/FindPackagesById` path
+            new Regex(@"Failed to fetch results from V2 feed at '(?<Uri>.+?)/FindPackagesById.*Response status code does not indicate success: 404"),
+            // feed returned content that couldn't be parsed as a valid JSON object
+            new Regex(@"The content at '(?<Uri>[^']*)' is not a valid JSON object\."),
+        };
+        var match = patterns.Select(p => p.Match(stdout)).FirstOrDefault(m => m.Success);
+        if (match is not null)
         {
             throw new BadResponseException(stdout, uri: match.Groups["Uri"].Value);
         }

@@ -489,7 +489,7 @@ public class MSBuildHelperTests : TestBase
             // output
             "The content at 'https://nuget.example.com/v3/some.package/index.json' is not a valid JSON object.",
             // expectedError
-            new PrivateSourceBadResponse(["http://localhost/test-feed"], "unused"),
+            new PrivateSourceBadResponse(["https://nuget.example.com/v3/some.package/index.json"], "unused"),
         ];
 
         yield return
