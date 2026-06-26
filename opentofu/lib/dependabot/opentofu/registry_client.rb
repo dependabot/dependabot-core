@@ -233,7 +233,7 @@ module Dependabot
         ).returns(Excon::Response)
       end
       def self.oci_get(url, host:, credentials:)
-        cred = credentials.reverse.find do |c|
+        cred = credentials.reverse_each.find do |c|
           ACCEPTED_CREDENTIAL_TYPES.include?(c["type"]) && (c["host"] == host || c["registry"] == host)
         end
 
