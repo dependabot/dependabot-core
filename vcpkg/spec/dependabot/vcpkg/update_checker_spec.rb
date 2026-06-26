@@ -515,4 +515,77 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
       end
     end
   end
+
+  describe "with a synthesized missing-baseline (version-less) dependency" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: nil,
+        requirements: [{
+          requirement: nil,
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/microsoft/vcpkg.git",
+            ref: "master"
+          },
+          file: "vcpkg.json"
+        }],
+        package_manager: "vcpkg"
+      )
+    end
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "vcpkg.json",
+          content: '{"dependencies": ["fmt"]}',
+          directory: "/"
+        )
+      ]
+    end
+
+    let(:commit_sha) { "9b75e789ece3f942159b8500584e35aafe3979ff" }
+    let(:latest_version_finder) { instance_double(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder) }
+    let(:mock_latest_release_info) do
+      instance_double(
+        Dependabot::Package::PackageRelease,
+        details: { "commit_sha" => commit_sha, "tag_sha" => "tag123" }
+      )
+    end
+
+    before do
+      allow(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder)
+        .to receive(:new)
+        .and_return(latest_version_finder)
+      allow(latest_version_finder)
+        .to receive_messages(
+          latest_version: "2025.06.13",
+          latest_release_info: mock_latest_release_info
+        )
+    end
+
+    it "is not up to date" do
+      expect(checker.up_to_date?).to be(false)
+    end
+
+    it "can update via an own-requirement unlock" do
+      expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+    end
+
+    it "sets the baseline ref to the latest release commit SHA" do
+      expect(checker.updated_requirements).to eq(
+        [{
+          requirement: nil,
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/microsoft/vcpkg.git",
+            ref: commit_sha
+          },
+          file: "vcpkg.json"
+        }]
+      )
+    end
+  end
 end
