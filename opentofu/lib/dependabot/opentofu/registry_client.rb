@@ -234,7 +234,7 @@ module Dependabot
       end
       def self.oci_get(url, host:, credentials:)
         cred = credentials.find do |c|
-          c["type"] == "opentofu_registry" && (c["host"] == host || c["registry"] == host)
+          ACCEPTED_CREDENTIAL_TYPES.include?(c["type"]) && (c["host"] == host || c["registry"] == host)
         end
 
         headers = {}

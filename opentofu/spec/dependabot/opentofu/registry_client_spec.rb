@@ -345,4 +345,25 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
       end
     end
   end
+
+  describe ".all_oci_tags" do
+    it "accepts terraform_registry credentials for OCI tag listing" do
+      host = "registry.example.org"
+      token = SecureRandom.hex(16)
+      credentials = [Dependabot::Credential.new({ "type" => "terraform_registry", "host" => host, "token" => token })]
+
+      stub_request(:get, "https://#{host}/v2/example/module/tags/list")
+        .with(headers: { "Authorization" => "Bearer #{token}" })
+        .and_return(status: 200, body: { tags: ["1.0.0"] }.to_json)
+
+      tags = described_class.all_oci_tags(
+        artifact_identifier: "#{host}/example/module",
+        credentials: credentials
+      )
+
+      expect(tags).to contain_exactly(Gem::Version.new("1.0.0"))
+      expect(WebMock).to have_requested(:get, "https://#{host}/v2/example/module/tags/list")
+        .with(headers: { "Authorization" => "Bearer #{token}" })
+    end
+  end
 end
