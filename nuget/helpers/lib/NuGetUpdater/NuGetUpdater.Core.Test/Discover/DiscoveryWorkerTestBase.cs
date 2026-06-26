@@ -45,6 +45,7 @@ public class DiscoveryWorkerTestBase : TestBase
         ValidateResultWithDependencies(expectedResult.DotNetToolsJson, actualResult.DotNetToolsJson);
         ValidateProjectResults(expectedResult.Projects, actualResult.Projects);
         Assert.Equal(expectedResult.ExpectedProjectCount ?? expectedResult.Projects.Length, actualResult.Projects.Length);
+        Assert.Equal(expectedResult.SolutionDirectory?.NormalizePathToUnix(), actualResult.SolutionDirectory?.NormalizePathToUnix());
         ValidateDiscoveryOperationResult(expectedResult, actualResult);
 
         return;

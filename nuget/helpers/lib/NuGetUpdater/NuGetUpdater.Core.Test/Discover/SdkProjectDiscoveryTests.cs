@@ -13,6 +13,91 @@ namespace NuGetUpdater.Core.Test.Discover;
 public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
 {
     [Fact]
+    public async Task DiscoveryInSingleProject_SolutionDirPropertyIsHonored()
+    {
+        // the project only references the package when the MSBuild `SolutionDir` property is set, which mimics
+        // project files that rely on `$(SolutionDir)` being defined by a solution-level build; the concatenated path
+        // also asserts that the faked value ends with a directory separator like VS/MSBuild solution builds
+        await TestDiscoverAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Solution.Scoped.Package", "1.2.3", "net8.0"),
+            ],
+            startingDirectory: "src",
+            projectPath: "src/library.csproj",
+            solutionDir: "src",
+            files:
+            [
+                ("src/library.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup Condition="Exists('$(SolutionDir)library.csproj')">
+                        <PackageReference Include="Solution.Scoped.Package" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedProjects:
+            [
+                new()
+                {
+                    FilePath = "library.csproj",
+                    Dependencies =
+                    [
+                        new("Solution.Scoped.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                    ],
+                    ImportedFiles = [],
+                    TargetFrameworks = ["net8.0"],
+                    ReferencedProjectPaths = [],
+                    AdditionalFiles = [],
+                }
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task DiscoveryInSingleProject_SolutionDirPropertyIsUnsetWhenNotProvided()
+    {
+        // without a solution directory the `$(SolutionDir)` property is undefined, so the conditional package
+        // reference is not evaluated and the package is not discovered
+        await TestDiscoverAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Solution.Scoped.Package", "1.2.3", "net8.0"),
+            ],
+            startingDirectory: "src",
+            projectPath: "src/library.csproj",
+            files:
+            [
+                ("src/library.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup Condition="Exists('$(SolutionDir)library.csproj')">
+                        <PackageReference Include="Solution.Scoped.Package" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedProjects:
+            [
+                new()
+                {
+                    FilePath = "library.csproj",
+                    Dependencies = [],
+                    ImportedFiles = [],
+                    TargetFrameworks = ["net8.0"],
+                    ReferencedProjectPaths = [],
+                    AdditionalFiles = [],
+                }
+            ]
+        );
+    }
+
+    [Fact]
     public async Task DiscoveryInSingleProject_TopLevelAndTransitive()
     {
         await TestDiscoverAsync(
@@ -697,7 +782,8 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
         string projectPath,
         TestFile[] files,
         ImmutableArray<ExpectedSdkProjectDiscoveryResult> expectedProjects,
-        MockNuGetPackage[]? packages = null
+        MockNuGetPackage[]? packages = null,
+        string? solutionDir = null
     )
     {
         using var testDirectory = await TemporaryDirectory.CreateWithContentsAsync(files);
@@ -707,7 +793,9 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
         var logger = new TestLogger();
         var fullProjectPath = Path.Combine(testDirectory.DirectoryPath, projectPath);
         var experimentsManager = new ExperimentsManager();
-        var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(testDirectory.DirectoryPath, Path.GetDirectoryName(fullProjectPath)!, fullProjectPath, experimentsManager, logger);
+        var resolvedSolutionDir = solutionDir is null ? null : Path.Combine(testDirectory.DirectoryPath, solutionDir);
+        var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(testDirectory.DirectoryPath, Path.GetDirectoryName(fullProjectPath)!, fullProjectPath, experimentsManager, resolvedSolutionDir, logger);
         ValidateProjectResults(expectedProjects, projectDiscovery);
     }
 }
+

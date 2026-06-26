@@ -87,10 +87,18 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
         stub_request(:get, repo_url + "tags/list")
           .and_return(status: 200, body: repo_tags)
 
-        # The docker update checker fetches the current tag's manifest to
-        # compare platform digests (same_image_contents?). ubuntu:#{version} is
-        # a single-platform image, so return a non-manifest-list mediaType to
-        # make that check a no-op.
+        # The merged Docker UpdateChecker first issues a HEAD request per tag to
+        # detect single-platform images (single_platform_image?) before its
+        # digest-content check, and otherwise GETs the manifest to compare
+        # platform digests (same_image_contents?). ubuntu:#{version} is a
+        # single-platform image, so report a non-manifest-list media type for
+        # both requests, keeping those checks no-ops so version selection
+        # proceeds from the tags alone.
+        stub_request(:head, %r{#{Regexp.escape(repo_url)}manifests/.+})
+          .and_return(
+            status: 200,
+            headers: { "Content-Type" => "application/vnd.docker.distribution.manifest.v2+json" }
+          )
         stub_request(:get, repo_url + "manifests/#{version}")
           .and_return(
             status: 200,

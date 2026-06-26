@@ -1,6 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "cgi/escape"
 require "sorbet-runtime"
 
 module Dependabot

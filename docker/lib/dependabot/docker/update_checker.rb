@@ -60,6 +60,17 @@ module Dependabot
         T::Array[String]
       )
 
+      # Media types returned for single-platform (non manifest-list) images.
+      # Used to cheaply rule out manifest-list comparison via a HEAD request's
+      # negotiated Content-Type, avoiding a full manifest GET for these images.
+      SINGLE_PLATFORM_MANIFEST_TYPES = T.let(
+        [
+          "application/vnd.docker.distribution.manifest.v2+json",
+          "application/vnd.oci.image.manifest.v1+json"
+        ].freeze,
+        T::Array[String]
+      )
+
       # Tolerance window for platform timestamp comparison.
       # Multi-arch CI builds may finish platforms at slightly different times.
       PLATFORM_TIMESTAMP_TOLERANCE_SECONDS = T.let(3 * 60 * 60, Integer)
@@ -1260,6 +1271,10 @@ module Dependabot
       # with matching per-platform manifest digests. For single-platform images this
       # returns false (empty digest map), so this check is effectively a no-op and
       # we fall back to the existing semver/precision selection logic.
+      #
+      # Single-platform current tags are ruled out up front with a cheap HEAD
+      # request, so the default path doesn't pay for a full manifest GET that
+      # would only ever return an empty digest map.
       sig do
         params(
           candidate_tag: Dependabot::Docker::Tag,
@@ -1267,6 +1282,12 @@ module Dependabot
         ).returns(T::Boolean)
       end
       def same_image_contents?(candidate_tag, current_tag)
+        # Only manifest lists can match here, so confirm the current tag is
+        # multi-arch with a cheap HEAD request before paying for the full
+        # manifest GET that fetch_platform_digests performs. Single-platform
+        # images (the default path) short-circuit without an extra manifest GET.
+        return false if single_platform_image?(current_tag.name)
+
         current_digests = fetch_platform_digests(current_tag.name)
         return false if current_digests.empty?
 
@@ -1277,6 +1298,74 @@ module Dependabot
         # of platforms with identical per-platform manifest digests. A candidate
         # with extra platforms is a different image and must not match.
         current_digests == candidate_digests
+      end
+
+      # Returns true when a tag points at a single-platform image rather than a
+      # multi-arch manifest list. Uses a HEAD request — the registry reports the
+      # negotiated media type in the Content-Type header — so we avoid the more
+      # expensive full-manifest GET that fetch_platform_digests performs.
+      #
+      # Reuses a manifest list already fetched for the tag when available, and
+      # only treats positively recognised single-platform media types as
+      # single-platform. An ambiguous, missing or errored response returns false
+      # so the caller falls back to the per-platform comparison rather than risk
+      # skipping a real manifest list.
+      sig { params(tag_name: String).returns(T::Boolean) }
+      def single_platform_image?(tag_name)
+        return manifest_list_cache[tag_name].nil? if manifest_list_cache.key?(tag_name)
+        return T.must(single_platform_cache[tag_name]) if single_platform_cache.key?(tag_name)
+
+        single_platform_cache[tag_name] = fetch_single_platform_flag(tag_name)
+      end
+
+      sig { params(tag_name: String).returns(T::Boolean) }
+      def fetch_single_platform_flag(tag_name)
+        response = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+          docker_registry_client.dohead("v2/#{docker_repo_name}/manifests/#{tag_name}")
+        end
+
+        media_type = response.headers[:content_type]&.split(";")&.first&.strip
+        SINGLE_PLATFORM_MANIFEST_TYPES.include?(media_type)
+      rescue DockerRegistry2::Exception => e
+        Dependabot.logger.info(
+          "Failed to determine manifest media type for #{docker_repo_name}:#{tag_name}, " \
+          "falling back to per-platform comparison: #{e.class} - #{e.message}"
+        )
+        false
+      end
+
+      # Fetches a tag's manifest list (multi-arch image index) and returns the
+      # array of per-platform manifest entries, or nil for single-platform images
+      # (not a manifest list). Cached so the platform-inspection methods below
+      # share a single registry GET per tag.
+      sig { params(tag_name: String).returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+      def fetch_manifest_list(tag_name)
+        return manifest_list_cache[tag_name] if manifest_list_cache.key?(tag_name)
+
+        manifest_list_cache[tag_name] = fetch_manifest_list_from_registry(tag_name)
+      rescue DockerRegistry2::Exception, JSON::ParserError => e
+        # Do NOT cache fetch failures. A cached nil is reserved for "definitely
+        # not a manifest list" (single-platform), which single_platform_image?
+        # relies on. Caching a transient error as nil would misclassify the tag
+        # as single-platform and permanently short-circuit same-content
+        # suppression, even if a later manifest fetch would succeed. Returning
+        # nil without caching lets a subsequent call retry.
+        Dependabot.logger.info(
+          "Failed to fetch manifest list for #{docker_repo_name}:#{tag_name}: #{e.message}"
+        )
+        nil
+      end
+
+      sig { params(tag_name: String).returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+      def fetch_manifest_list_from_registry(tag_name)
+        manifest = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+          docker_registry_client.manifest(docker_repo_name, tag_name)
+        end
+
+        media_type = manifest["mediaType"] || manifest[:mediaType]
+        return nil unless MANIFEST_LIST_TYPES.include?(media_type)
+
+        manifest["manifests"] || manifest[:manifests] || []
       end
 
       # Fetches a map of platform key (e.g. "linux/amd64") to platform manifest
@@ -1300,14 +1389,9 @@ module Dependabot
 
       sig { params(tag_name: String).returns(T::Hash[String, String]) }
       def fetch_platform_digests_from_registry(tag_name)
-        manifest = with_retries(max_attempts: 3, errors: transient_docker_errors) do
-          docker_registry_client.manifest(docker_repo_name, tag_name)
-        end
+        manifests = fetch_manifest_list(tag_name)
+        return {} unless manifests
 
-        media_type = manifest["mediaType"] || manifest[:mediaType]
-        return {} unless MANIFEST_LIST_TYPES.include?(media_type)
-
-        manifests = manifest["manifests"] || manifest[:manifests] || []
         collect_platform_digests(manifests)
       end
 
@@ -1348,14 +1432,8 @@ module Dependabot
 
       sig { params(tag_name: String).returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
       def fetch_manifest_platforms_from_registry(tag_name)
-        manifest = with_retries(max_attempts: 3, errors: transient_docker_errors) do
-          docker_registry_client.manifest(docker_repo_name, tag_name)
-        end
-
-        media_type = manifest["mediaType"] || manifest[:mediaType]
-        return nil unless MANIFEST_LIST_TYPES.include?(media_type)
-
-        manifests = manifest["manifests"] || manifest[:manifests] || []
+        manifests = fetch_manifest_list(tag_name)
+        return nil unless manifests
 
         # Filter to actual image manifests (exclude attestations/signatures)
         manifests.filter_map { |m| extract_platform(m) }
@@ -1418,14 +1496,9 @@ module Dependabot
 
       sig { params(tag_name: String).returns(T::Hash[String, T.nilable(Time)]) }
       def fetch_all_platform_timestamps_from_registry(tag_name)
-        manifest = with_retries(max_attempts: 3, errors: transient_docker_errors) do
-          docker_registry_client.manifest(docker_repo_name, tag_name)
-        end
+        manifests = fetch_manifest_list(tag_name)
+        return {} unless manifests
 
-        media_type = manifest["mediaType"] || manifest[:mediaType]
-        return {} unless MANIFEST_LIST_TYPES.include?(media_type)
-
-        manifests = manifest["manifests"] || manifest[:manifests] || []
         collect_platform_timestamps(manifests)
       end
 
@@ -1458,6 +1531,22 @@ module Dependabot
         return nil unless config_digest
 
         parse_created_from_config_blob(config_digest)
+      end
+
+      sig { returns(T::Hash[String, T.nilable(T::Array[T::Hash[String, T.untyped]])]) }
+      def manifest_list_cache
+        @manifest_list_cache ||= T.let(
+          {},
+          T.nilable(T::Hash[String, T.nilable(T::Array[T::Hash[String, T.untyped]])])
+        )
+      end
+
+      sig { returns(T::Hash[String, T::Boolean]) }
+      def single_platform_cache
+        @single_platform_cache ||= T.let(
+          {},
+          T.nilable(T::Hash[String, T::Boolean])
+        )
       end
 
       sig { returns(T::Hash[String, T.nilable(T::Array[T::Hash[String, T.untyped]])]) }

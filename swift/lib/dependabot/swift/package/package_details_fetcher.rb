@@ -1,6 +1,9 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "json"
+require "time"
+require "excon"
 require "sorbet-runtime"
 require "dependabot/swift"
 require "dependabot/swift/version"
