@@ -50,6 +50,15 @@ module Dependabot
           )
         end
 
+        # The release tag for the given commit SHA, if any.
+        sig { params(commit_sha: String).returns(T.nilable(String)) }
+        def tag_for_commit_sha(commit_sha)
+          package_details
+            &.releases
+            &.find { |release| release.details["commit_sha"] == commit_sha }
+            &.tag
+        end
+
         private
 
         sig { returns(T::Boolean) }
