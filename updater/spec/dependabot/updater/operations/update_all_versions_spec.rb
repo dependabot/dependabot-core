@@ -294,6 +294,28 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
       end
     end
 
+    context "when latest version is nil after existing-PR detection" do
+      before do
+        allow(stub_update_checker).to receive_messages(
+          up_to_date?: false,
+          latest_version: nil
+        )
+        allow(update_all_versions).to receive_messages(
+          all_versions_ignored?: false,
+          pr_exists_for_latest_version?: true
+        )
+      end
+
+      it "returns without raising" do
+        expect { update_all_versions.send(:check_and_create_pull_request, dependency) }.not_to raise_error
+      end
+
+      it "does not log an existing PR for the latest version" do
+        expect(update_all_versions).not_to receive(:log_existing_pr_for_latest_version)
+        update_all_versions.send(:check_and_create_pull_request, dependency)
+      end
+    end
+
     context "when requirements update is not possible" do
       before do
         allow(stub_update_checker).to receive_messages(
