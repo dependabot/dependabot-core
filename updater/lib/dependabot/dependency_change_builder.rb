@@ -168,6 +168,11 @@ module Dependabot
       @notices.concat(updater_notices)
 
       updated_files = all_files.reject(&:support_file?)
+
+      # If the file updater only produced support files, include them — they are the
+      # primary update targets (e.g. provider requirements in Terraform local modules,
+      # build-system deps in UV workspace members).
+      updated_files = all_files if updated_files.empty? && all_files.any?
       updated_files
     end
 
