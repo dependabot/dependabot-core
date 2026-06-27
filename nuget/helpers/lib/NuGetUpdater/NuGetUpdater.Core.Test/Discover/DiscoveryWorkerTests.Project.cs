@@ -518,6 +518,7 @@ public partial class DiscoveryWorkerTests
                 expectedResult: new()
                 {
                     Path = "solutions",
+                    SolutionDirectory = "solutions",
                     Projects = [
                         new()
                         {

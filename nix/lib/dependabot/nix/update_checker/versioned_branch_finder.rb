@@ -4,7 +4,8 @@
 require "sorbet-runtime"
 
 require "dependabot/nix/update_checker"
-require "dependabot/nix/requirement"
+require "dependabot/nix/versioned_name"
+require "dependabot/nix/ignore_filter"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_ref"
 
@@ -15,14 +16,6 @@ module Dependabot
       # and finds the latest branch matching the same prefix.
       class VersionedBranchFinder
         extend T::Sig
-
-        # Matches branch names with a YY.MM version segment and optional suffix.
-        # Captures: prefix (including separator), version, and optional suffix.
-        # Examples: "nixos-24.11" => prefix="nixos-", version="24.11", suffix=nil
-        #           "nixos-24.11-small" => prefix="nixos-", version="24.11", suffix="-small"
-        #           "release-24.11-aarch64" => prefix="release-", version="24.11", suffix="-aarch64"
-        VERSIONED_BRANCH_PATTERN = /\A(.+[.\-_])(\d{2}\.\d{2})(-[a-zA-Z0-9]+)?\z/
-        private_constant :VERSIONED_BRANCH_PATTERN
 
         sig do
           params(
@@ -42,22 +35,16 @@ module Dependabot
         # Returns true if the current ref looks like a versioned branch.
         sig { returns(T::Boolean) }
         def versioned_branch?
-          !branch_version_match.nil?
+          current_name.versioned?
         end
 
         # Returns the latest versioned branch info or nil if no newer branch exists.
         # Returns { branch: "nixos-25.05", commit_sha: "abc123" } or nil.
         sig { returns(T.nilable(T::Hash[Symbol, String])) }
         def latest_versioned_branch
-          match = branch_version_match
-          return unless match
+          return unless current_name.versioned?
 
-          prefix = match[1]
-          current_version = parse_version(T.must(match[2]))
-          return unless current_version
-
-          suffix = match[3] # nil if no suffix, e.g. "-small" if present
-          find_latest_branch(T.must(prefix), current_version, suffix)
+          find_latest_branch
         end
 
         private
@@ -74,25 +61,14 @@ module Dependabot
         sig { returns(T::Array[String]) }
         attr_reader :ignored_versions
 
-        sig { returns(T.nilable(MatchData)) }
-        def branch_version_match
-          @branch_version_match ||= T.let(
-            VERSIONED_BRANCH_PATTERN.match(current_ref),
-            T.nilable(MatchData)
-          )
+        sig { returns(VersionedName) }
+        def current_name
+          @current_name ||= T.let(VersionedName.new(current_ref), T.nilable(VersionedName))
         end
 
-        sig do
-          params(
-            prefix: String,
-            current_version: T::Array[Integer],
-            suffix: T.nilable(String)
-          ).returns(T.nilable(T::Hash[Symbol, String]))
-        end
-        def find_latest_branch(prefix, current_version, suffix)
-          candidates = remote_branches.filter_map do |ref|
-            build_candidate(ref, prefix, current_version, suffix)
-          end
+        sig { returns(T.nilable(T::Hash[Symbol, String])) }
+        def find_latest_branch
+          candidates = remote_branches.filter_map { |ref| build_candidate(ref) }
 
           latest = candidates.max_by { |c| c[:version] }
           return unless latest
@@ -100,62 +76,19 @@ module Dependabot
           { branch: latest[:branch].to_s, commit_sha: latest[:commit_sha].to_s }
         end
 
-        sig do
-          params(
-            ref: Dependabot::GitRef,
-            prefix: String,
-            current_version: T::Array[Integer],
-            suffix: T.nilable(String)
-          ).returns(T.nilable(T::Hash[Symbol, T.untyped]))
-        end
-        def build_candidate(ref, prefix, current_version, suffix)
-          branch_match = VERSIONED_BRANCH_PATTERN.match(ref.name)
-          return unless branch_match
-          return unless branch_match[1] == prefix
-          return unless branch_match[3] == suffix
+        sig { params(ref: Dependabot::GitRef).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        def build_candidate(ref)
+          candidate = VersionedName.new(ref.name)
+          return unless candidate.same_family?(current_name)
+          return unless candidate.newer_than?(current_name)
+          return if ignore_filter.ignored?(candidate.version_string)
 
-          version_str = T.must(branch_match[2])
-          version = parse_version(version_str)
-          return unless version
-          return unless (version <=> current_version) == 1
-          return if version_ignored?(version_str)
-
-          { branch: ref.name, commit_sha: ref.commit_sha, version: version }
+          { branch: ref.name, commit_sha: ref.commit_sha, version: candidate.version }
         end
 
-        sig { params(version_str: String).returns(T::Boolean) }
-        def version_ignored?(version_str)
-          return false if ignore_requirements.empty?
-
-          gem_version = Gem::Version.new(version_str)
-          ignore_requirements.any? { |req| req.satisfied_by?(gem_version) }
-        end
-
-        # Parses "YY.MM" into [year, month] for comparison.
-        sig { params(version_str: String).returns(T.nilable(T::Array[Integer])) }
-        def parse_version(version_str)
-          parts = version_str.split(".")
-          return unless parts.length == 2
-
-          year = Integer(T.must(parts[0]), 10)
-          month = Integer(T.must(parts[1]), 10)
-          return unless month.between?(1, 12)
-
-          [year, month]
-        rescue ArgumentError
-          nil
-        end
-
-        sig { returns(T::Array[Gem::Requirement]) }
-        def ignore_requirements
-          @ignore_requirements ||= T.let(
-            ignored_versions.flat_map do |req|
-              Dependabot::Nix::Requirement.requirements_array(req)
-            rescue Gem::Requirement::BadRequirementError
-              []
-            end,
-            T.nilable(T::Array[Gem::Requirement])
-          )
+        sig { returns(IgnoreFilter) }
+        def ignore_filter
+          @ignore_filter ||= T.let(IgnoreFilter.new(ignored_versions), T.nilable(IgnoreFilter))
         end
 
         sig { returns(T::Array[Dependabot::GitRef]) }
