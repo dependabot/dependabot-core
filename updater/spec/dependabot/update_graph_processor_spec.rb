@@ -62,9 +62,12 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       credentials: credentials,
       source: source,
       reject_external_code?: false,
-      experiments: { large_hadron_collider: true }
+      experiments: { large_hadron_collider: true },
+      exclude_paths: exclude_paths
     )
   end
+
+  let(:exclude_paths) { [] }
 
   let(:base_commit_sha) { "fake-sha" }
   let(:repo_contents_path) { nil }
@@ -936,6 +939,131 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
           status: "failed",
           details: a_string_including("Dependabot refused to execute external code")
         )
+
+        update_graph_processor.run
+      end
+    end
+  end
+
+  context "when exclude_paths is configured" do
+    let(:directories) { [dir1, dir2] }
+
+    let(:dir1) { "/" }
+    let(:dir2) { "/subproject/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler_sinatra_app/original", path: "") }
+    let(:experiment_enabled) { true }
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler_sinatra_app/original/Gemfile"),
+          directory: dir1
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler_sinatra_app/original/Gemfile.lock"),
+          directory: dir1
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: dir2
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler/original/Gemfile.lock"),
+          directory: dir2
+        )
+      ]
+    end
+
+    around do |example|
+      Dependabot::Experiments.register(:enable_exclude_paths_subdirectory_manifest_files, experiment_enabled)
+      example.run
+    ensure
+      Dependabot::Experiments.reset!
+    end
+
+    context "when an excluded path matches a configured directory" do
+      let(:exclude_paths) { ["subproject"] }
+
+      it "emits a SKIPPED submission for the excluded directory so the previous snapshot is replaced" do
+        payloads = []
+        allow(service).to receive(:create_dependency_submission) do |args|
+          payloads << args[:dependency_submission].payload
+        end
+
+        update_graph_processor.run
+
+        expect(payloads.length).to eq(2)
+        included = payloads.find { |p| p[:job][:correlator] == "dependabot-bundler" }
+        excluded = payloads.find { |p| p[:job][:correlator] == "dependabot-bundler-subproject" }
+
+        expect(included[:manifests].keys).to eq(["/Gemfile.lock"])
+
+        expect(excluded[:detector][:name]).to eq("dependabot")
+        expect(excluded[:manifests]).to be_empty
+        expect(excluded[:job][:html_url]).to be_nil if excluded[:job].key?(:html_url)
+        expect(excluded[:scanned]).to be_nil if excluded.key?(:scanned)
+      end
+
+      it "marks the excluded-directory submission as SKIPPED with the exclude_paths reason" do
+        submissions = []
+        allow(service).to receive(:create_dependency_submission) do |args|
+          submissions << args[:dependency_submission]
+        end
+
+        update_graph_processor.run
+
+        excluded = submissions.find { |s| s.payload[:job][:correlator] == "dependabot-bundler-subproject" }
+        expect(excluded.status).to eq(GithubApi::DependencySubmission::SnapshotStatus::SKIPPED)
+        expect(excluded.reason).to eq(GithubApi::DependencySubmission::EMPTY_REASON_EXCLUDED_PATHS)
+      end
+    end
+
+    context "when an excluded path matches a dependency file inside an included directory" do
+      let(:exclude_paths) { ["subproject/Gemfile.lock"] }
+
+      it "filters the excluded file from the submission for that directory" do
+        payloads = []
+        allow(service).to receive(:create_dependency_submission) do |args|
+          payloads << args[:dependency_submission].payload
+        end
+
+        update_graph_processor.run
+
+        subproject_payload = payloads.find { |p| p[:job][:correlator] == "dependabot-bundler-subproject" }
+        expect(subproject_payload).not_to be_nil
+        # Gemfile.lock was excluded, leaving only the Gemfile manifest for /subproject.
+        expect(subproject_payload[:manifests].keys).to eq(["/subproject/Gemfile"])
+      end
+    end
+
+    context "when every dependency file in a directory is excluded" do
+      let(:exclude_paths) { ["subproject/Gemfile", "subproject/Gemfile.lock"] }
+
+      it "emits a SKIPPED submission tagged with the exclude_paths reason" do
+        submissions = []
+        allow(service).to receive(:create_dependency_submission) do |args|
+          submissions << args[:dependency_submission]
+        end
+
+        update_graph_processor.run
+
+        excluded = submissions.find { |s| s.payload[:job][:correlator] == "dependabot-bundler-subproject" }
+        expect(excluded.status).to eq(GithubApi::DependencySubmission::SnapshotStatus::SKIPPED)
+        expect(excluded.reason).to eq(GithubApi::DependencySubmission::EMPTY_REASON_EXCLUDED_PATHS)
+        expect(excluded.payload[:manifests]).to be_empty
+      end
+    end
+
+    context "when the experiment is disabled" do
+      let(:experiment_enabled) { false }
+      let(:exclude_paths) { ["subproject"] }
+
+      it "ignores exclude_paths and processes every directory" do
+        expect(service).to receive(:create_dependency_submission).twice
 
         update_graph_processor.run
       end

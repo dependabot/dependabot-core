@@ -7,6 +7,7 @@ require "sorbet-runtime"
 require "dependabot/environment"
 require "dependabot/experiments"
 require "dependabot/dependency_graphers"
+require "dependabot/file_filtering"
 require "dependabot/logger"
 
 # Updater components
@@ -93,18 +94,8 @@ module Dependabot
     sig { params(branch: String, directory: String).void }
     def process_directory(branch:, directory:) # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
       directory_source = create_source_for(directory)
-      directory_dependency_files = dependency_files_for(directory)
 
-      submission = if directory_dependency_files.empty?
-                     empty_submission(
-                       branch,
-                       directory_source,
-                       GithubApi::DependencySubmission::SnapshotStatus::SKIPPED,
-                       GithubApi::DependencySubmission::EMPTY_REASON_NO_MANIFESTS
-                     )
-                   else
-                     create_submission(branch, directory_source, directory_dependency_files)
-                   end
+      submission = build_submission(branch, directory, directory_source)
 
       Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
       service.create_dependency_submission(dependency_submission: submission)
@@ -190,9 +181,62 @@ module Dependabot
       end
     end
 
-    sig { params(directory: String).returns(T::Array[Dependabot::DependencyFile]) }
-    def dependency_files_for(directory)
-      dependency_files.select { |f| f.directory == directory }
+    sig do
+      params(
+        branch: String,
+        directory: String,
+        directory_source: Dependabot::Source
+      ).returns(GithubApi::DependencySubmission)
+    end
+    def build_submission(branch, directory, directory_source)
+      if directory_excluded?(directory)
+        return skipped_submission(branch, directory_source, GithubApi::DependencySubmission::EMPTY_REASON_EXCLUDED_PATHS)
+      end
+
+      all_directory_files = dependency_files.select { |f| f.directory == directory }
+      directory_dependency_files = filter_excluded_files(all_directory_files)
+
+      if directory_dependency_files.empty?
+        reason = if all_directory_files.any?
+                   GithubApi::DependencySubmission::EMPTY_REASON_EXCLUDED_PATHS
+                 else
+                   GithubApi::DependencySubmission::EMPTY_REASON_NO_MANIFESTS
+                 end
+        return skipped_submission(branch, directory_source, reason)
+      end
+
+      create_submission(branch, directory_source, directory_dependency_files)
+    end
+
+    sig do
+      params(
+        branch: String,
+        source: Dependabot::Source,
+        reason: String
+      ).returns(GithubApi::DependencySubmission)
+    end
+    def skipped_submission(branch, source, reason)
+      empty_submission(
+        branch,
+        source,
+        GithubApi::DependencySubmission::SnapshotStatus::SKIPPED,
+        reason
+      )
+    end
+
+    sig { params(directory: String).returns(T::Boolean) }
+    def directory_excluded?(directory)
+      Dependabot::FileFiltering.should_exclude_path?(directory, "graph job directory", job.exclude_paths)
+    end
+
+    sig { params(files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile]) }
+    def filter_excluded_files(files)
+      exclude_paths = job.exclude_paths
+      return files if exclude_paths.nil? || exclude_paths.empty?
+
+      files.reject do |file|
+        Dependabot::FileFiltering.should_exclude_path?(file.path, "graph job dependency file", exclude_paths)
+      end
     end
 
     sig do
