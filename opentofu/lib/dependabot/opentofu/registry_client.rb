@@ -233,8 +233,8 @@ module Dependabot
         ).returns(Excon::Response)
       end
       def self.oci_get(url, host:, credentials:)
-        cred = credentials.find do |c|
-          c["type"] == "opentofu_registry" && (c["host"] == host || c["registry"] == host)
+        cred = credentials.reverse_each.find do |c|
+          ACCEPTED_CREDENTIAL_TYPES.include?(c["type"]) && (c["host"] == host || c["registry"] == host)
         end
 
         headers = {}
@@ -299,11 +299,7 @@ module Dependabot
 
       sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
       def self.oci_token_cache
-        @oci_token_cache = T.let(
-          @oci_token_cache,
-          T.nilable(T::Hash[String, T::Hash[Symbol, T.untyped]])
-        )
-        @oci_token_cache ||= {}
+        @oci_token_cache ||= T.let({}, T.nilable(T::Hash[String, T::Hash[Symbol, T.untyped]]))
       end
       private_class_method :oci_token_cache
 
