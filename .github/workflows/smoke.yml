@@ -25,12 +25,12 @@ jobs:
     outputs:
       suites: ${{ steps.suites.outputs.suites }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           submodules: recursive
           persist-credentials: false
 
-      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+      - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         if: github.event_name != 'workflow_dispatch'
         id: changes
         with:
@@ -74,13 +74,13 @@ jobs:
       matrix:
         suite: ${{ fromJSON(needs.discover.outputs.suites) }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           submodules: recursive
           persist-credentials: false
 
       - name: Setup Go
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: 'go_modules/helpers/go.mod'
 
@@ -89,7 +89,7 @@ jobs:
 
       - name: Restore Smoke Test
         id: cache-smoke-test
-        uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: smoke.yaml
           key: ${{ matrix.suite.sha }}-${{ matrix.suite.name }}
@@ -101,7 +101,7 @@ jobs:
 
       - name: Cache Smoke Test
         if: steps.cache-smoke-test.outputs.cache-hit != 'true'
-        uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: smoke.yaml
           key: ${{ steps.cache-smoke-test.outputs.cache-primary-key }}
