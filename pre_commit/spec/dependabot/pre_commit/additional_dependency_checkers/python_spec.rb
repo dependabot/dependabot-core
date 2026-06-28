@@ -4,6 +4,7 @@
 require "spec_helper"
 require "dependabot/pre_commit/additional_dependency_checkers/python"
 require "dependabot/python/update_checker"
+require "dependabot/package/release_cooldown_options"
 
 RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Python do
   let(:checker) do
@@ -288,9 +289,9 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Python do
 
       it "updates the upper bound when new version exceeds it" do
         updated = checker.updated_requirements("5.1.0")
-        # Python's RequirementsUpdater updates upper bound to next major version
-        expect(updated.first[:requirement]).to eq(">=4.0.0,<6.0.0")
-        expect(updated.first[:source][:original_string]).to eq("typing-extensions>=4.0.0,<6.0.0")
+        # Python's RequirementsUpdater bumps both bounds with bump_versions strategy
+        expect(updated.first[:requirement]).to eq(">=5.1.0,<6.0.0")
+        expect(updated.first[:source][:original_string]).to eq("typing-extensions>=5.1.0,<6.0.0")
       end
     end
 
@@ -323,8 +324,9 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Python do
 
         it "bumps the lower bound" do
           # Pre-commit has no lockfile, so we always bump lower bounds
+          # Strict > becomes >= since the resolved version is the exact target
           updated = checker.updated_requirements("2.32.0")
-          expect(updated.first[:requirement]).to eq(">2.32.0")
+          expect(updated.first[:requirement]).to eq(">=2.32.0")
         end
       end
 
@@ -403,6 +405,50 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Python do
       expect(updated.first[:source][:hook_id]).to eq("mypy")
       expect(updated.first[:source][:repo_url]).to eq("https://github.com/pre-commit/mirrors-mypy")
       expect(updated.first[:source][:package_name]).to eq("types-requests")
+    end
+  end
+
+  describe "cooldown passthrough" do
+    let(:cooldown_options) do
+      Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3)
+    end
+
+    let(:checker_with_cooldown) do
+      described_class.new(
+        source: source,
+        credentials: credentials,
+        requirements: requirements,
+        current_version: current_version,
+        cooldown_options: cooldown_options
+      )
+    end
+
+    let(:pip_checker) { instance_double(Dependabot::Python::UpdateChecker) }
+
+    it "passes cooldown_options as update_cooldown to the Python UpdateChecker" do
+      allow(Dependabot::Python::UpdateChecker).to receive(:new).with(
+        hash_including(update_cooldown: cooldown_options)
+      ).and_return(pip_checker)
+      allow(pip_checker).to receive(:latest_version).and_return(nil)
+
+      checker_with_cooldown.latest_version
+
+      expect(Dependabot::Python::UpdateChecker).to have_received(:new).with(
+        hash_including(update_cooldown: cooldown_options)
+      )
+    end
+
+    it "passes nil update_cooldown when no cooldown_options provided" do
+      allow(Dependabot::Python::UpdateChecker).to receive(:new).with(
+        hash_including(update_cooldown: nil)
+      ).and_return(pip_checker)
+      allow(pip_checker).to receive(:latest_version).and_return(nil)
+
+      checker.latest_version
+
+      expect(Dependabot::Python::UpdateChecker).to have_received(:new).with(
+        hash_including(update_cooldown: nil)
+      )
     end
   end
 end

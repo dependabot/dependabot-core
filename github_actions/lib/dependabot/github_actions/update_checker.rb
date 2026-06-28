@@ -52,9 +52,9 @@ module Dependabot
         )
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        dependency.requirements.map do |req|
+        updated_reqs = dependency.requirements.map do |req|
           source = req[:source]
           updated = updated_ref(source)
           next req unless updated
@@ -72,6 +72,7 @@ module Dependabot
           new_source = source.merge(ref: updated)
           req.merge(source: new_source)
         end
+        wrap_requirements(updated_reqs)
       end
 
       private
@@ -152,7 +153,7 @@ module Dependabot
 
         # Return the git tag if updating a pinned version
         if source_git_commit_checker.pinned_ref_looks_like_version? &&
-           (new_tag = T.must(latest_version_finder).latest_version_tag)
+           (new_tag = T.must(latest_version_finder).latest_version_tag_respecting_cooldown)
           return new_tag.fetch(:tag)
         end
 
@@ -168,13 +169,16 @@ module Dependabot
 
       sig { params(source_checker: Dependabot::GitCommitChecker).returns(T.nilable(String)) }
       def latest_commit_sha(source_checker)
-        new_tag = T.must(latest_version_finder).latest_version_tag
-        return unless new_tag
+        latest_tag = T.must(latest_version_finder).latest_version_tag
+        return unless latest_tag
 
         if source_checker.local_tag_for_pinned_sha
-          new_tag.fetch(:commit_sha)
+          new_tag = T.must(latest_version_finder).latest_version_tag_respecting_cooldown
+          new_tag&.fetch(:commit_sha)
         else
-          latest_commit_for_pinned_ref
+          # Keep SHA rewrites aligned with the checker decision (including cooldown filtering).
+          latest = latest_version
+          latest.is_a?(String) ? latest : latest_commit_for_pinned_ref
         end
       end
 

@@ -1,0 +1,21 @@
+[project]
+name = "test"
+version = "0.1.0"
+description = ""
+requires-python = ">=3.9"
+
+dependencies = [
+    "requests>=2.13.0",
+    "ffmpeg-python @ git+https://github.com/example/ffmpeg-python",
+]
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.dependencies]
+requests = { version = "^2.13", source = "private-source" }
+
+[[tool.poetry.source]]
+name = "private-source"
+url = "https://private.example.com/simple"
+priority = "supplemental"

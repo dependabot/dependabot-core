@@ -1,0 +1,9 @@
+<Project>
+  <Target Name="_Dependabot_GetProperty">
+    <PropertyGroup>
+      <!-- the following value will get copied and replaced at runtime -->
+      <_DependabotPropertyValue>%RequestedPropertyName%</_DependabotPropertyValue>
+    </PropertyGroup>
+    <Message Importance="High" Text="__PROPERTY_VALUE:$(_DependabotPropertyValue)" />
+  </Target>
+</Project>

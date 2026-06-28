@@ -36,17 +36,18 @@ module Dependabot
         dependency.version
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         return dependency.requirements unless latest_version
 
-        dependency.requirements.map do |req|
+        updated_reqs = dependency.requirements.map do |req|
           updated_metadata = req.fetch(:metadata).dup
           updated_req = req.dup
           updated_req[:requirement] = latest_version.to_s if updated_metadata.key?(:type)
 
           updated_req
         end
+        wrap_requirements(updated_reqs)
       end
 
       private

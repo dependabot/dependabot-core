@@ -89,6 +89,7 @@ internal static partial class MSBuildHelper
 
     internal static async Task<ImmutableArray<Dependency>?> ResolveDependencyConflicts(string repoRoot, string projectPath, string targetFramework, ImmutableArray<Dependency> packages, ImmutableArray<Dependency> update, ILogger logger)
     {
+        var projectPathDir = Path.GetDirectoryName(projectPath)!;
         var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-coherence_");
         PackageManager packageManager = new PackageManager(repoRoot, projectPath);
 
@@ -112,7 +113,7 @@ internal static partial class MSBuildHelper
             .Select(package => new PackageToUpdate
             {
                 PackageName = package.Name,
-                NewVersion = package.Version.ToString()
+                NewVersion = package.Version!.ToString()
             })
             .ToList();
 
@@ -148,12 +149,12 @@ internal static partial class MSBuildHelper
                 packageManager.UpdateExistingPackagesWithNewVersions(existingDuplicate, packagesToUpdate, logger);
 
                 // Make relationships
-                await packageManager.PopulatePackageDependenciesAsync(existingDuplicate, targetFramework, Path.GetDirectoryName(projectPath), logger);
+                await packageManager.PopulatePackageDependenciesAsync(existingDuplicate, targetFramework, projectPathDir, logger);
 
                 // Update all to new versions
                 foreach (var package in existingDuplicate)
                 {
-                    string updateResult = await packageManager.UpdateVersion(existingDuplicate, package, targetFramework, Path.GetDirectoryName(projectPath), logger);
+                    string updateResult = await packageManager.UpdateVersion(existingDuplicate, package, targetFramework, projectPathDir, logger);
                 }
             }
 
@@ -164,12 +165,12 @@ internal static partial class MSBuildHelper
                 packageManager.UpdateExistingPackagesWithNewVersions(existingPackages, packagesToUpdate, logger);
 
                 // Make relationships
-                await packageManager.PopulatePackageDependenciesAsync(existingPackages, targetFramework, Path.GetDirectoryName(projectPath), logger);
+                await packageManager.PopulatePackageDependenciesAsync(existingPackages, targetFramework, projectPathDir, logger);
 
                 // Update all to new versions
                 foreach (var package in existingPackages)
                 {
-                    string updateResult = await packageManager.UpdateVersion(existingPackages, package, targetFramework, Path.GetDirectoryName(projectPath), logger);
+                    string updateResult = await packageManager.UpdateVersion(existingPackages, package, targetFramework, projectPathDir, logger);
                 }
             }
 
@@ -196,10 +197,7 @@ internal static partial class MSBuildHelper
                 DependencyType.Unknown,
                 null,
                 null,
-                false,
-                false,
-                false,
-                false,
+                true,
                 false
             ))
             .ToList();
@@ -257,7 +255,7 @@ internal static partial class MSBuildHelper
     {
         try
         {
-            var nugetConfigDir = Path.GetDirectoryName(nugetConfigPath);
+            var nugetConfigDir = Path.GetDirectoryName(nugetConfigPath)!;
             var settings = Settings.LoadSpecificSettings(nugetConfigDir, Path.GetFileName(nugetConfigPath));
             var packageSourceProvider = new PackageSourceProvider(settings);
             return packageSourceProvider.LoadPackageSources();
@@ -348,7 +346,7 @@ internal static partial class MSBuildHelper
                 // empty `Version` attributes will cause the temporary project to not build
                 .Where(p => (p.EvaluationResult is null || p.EvaluationResult.ResultType == EvaluationResultType.Success) && !string.IsNullOrWhiteSpace(p.Version))
                 // If all PackageReferences for a package are update-only mark it as such, otherwise it can cause package incoherence errors which do not exist in the repo.
-                .Select(p => $"<{(usePackageDownload ? "PackageDownload" : "PackageReference")} {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"{(p.Version!.Contains("*") ? p.Version : $"[{p.Version}]")}\" />"));
+                .Select(p => $"<{(usePackageDownload ? "PackageDownload" : "PackageReference")} {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"{GetExactVersionConstraint(p.Version!)}\" />"));
 
         var dependencyTargetsImport = importDependencyTargets
             ? $"""<Import Project="{GetFileFromRuntimeDirectory("DependencyDiscovery.targets")}" />"""
@@ -402,15 +400,37 @@ internal static partial class MSBuildHelper
         return tempProjectPath;
     }
 
+    /// <summary>
+    /// Returns a NuGet version constraint string suitable for use in a temporary project file.
+    /// If the version is a single version (e.g., "1.0.0"), it is wrapped in square brackets to
+    /// pin to that exact version (e.g., "[1.0.0]").
+    /// If the version is already a valid version range (e.g., "[1.0.0,2.0.0)" or "1.*"), it is
+    /// returned as-is.
+    /// Throws if the string is neither a valid version nor a valid version range.
+    /// </summary>
+    internal static string GetExactVersionConstraint(string version)
+    {
+        if (NuGetVersion.TryParse(version, out _))
+        {
+            return $"[{version}]";
+        }
+
+        if (VersionRange.TryParse(version, out _))
+        {
+            return version;
+        }
+
+        throw new ArgumentException($"Invalid NuGet version or version range: '{version}'", nameof(version));
+    }
+
     internal static async Task<ImmutableArray<string>> GetTargetFrameworkValuesFromProject(string repoRoot, string projectPath, ILogger logger)
     {
         var projectDirectory = Path.GetDirectoryName(projectPath)!;
         var (exitCode, stdOut, stdErr) = await HandleGlobalJsonAsync(projectDirectory, repoRoot, async () =>
         {
             var targetsHelperPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "TargetFrameworkReporter.targets");
-            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(
                 [
-                    "msbuild",
                     projectPath,
                     "/t:ReportTargetFramework",
                     $"/p:CustomAfterMicrosoftCommonCrossTargetingTargets={targetsHelperPath}",
@@ -494,7 +514,7 @@ internal static partial class MSBuildHelper
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, logger, importDependencyTargets: false);
 
             var experimentsManager = new ExperimentsManager();
-            var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(repoRoot, tempDirectory.FullName, tempProjectPath, experimentsManager, logger);
+            var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(repoRoot, tempDirectory.FullName, tempProjectPath, experimentsManager, solutionDir: null, logger);
             var allDependencies = projectDiscovery
                 .Where(p => p.FilePath == Path.GetFileName(tempProjectPath))
                 .FirstOrDefault()
@@ -526,11 +546,10 @@ internal static partial class MSBuildHelper
         var projectDirectory = Path.GetDirectoryName(projectPath)!;
         var args = new[]
         {
-            "msbuild",
             projectPath,
             "-targets"
         };
-        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, projectDirectory);
+        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, projectDirectory);
         if (exitCode != 0)
         {
             logger.Warn($"Unable to determine targets for project [{projectPath}]:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
@@ -545,31 +564,78 @@ internal static partial class MSBuildHelper
         return targets;
     }
 
-    internal static async Task<ImmutableArray<string>> GetProjectTargetFrameworksAsync(string projectPath, ILogger logger)
+    internal static async Task<string?> GetProjectPropertyAsync(string projectPath, string propertyName, ILogger logger)
     {
         var extension = Path.GetExtension(projectPath)?.ToLowerInvariant();
         if (extension == ".sln" || extension == ".slnx")
         {
-            // solution files don't specify target frameworks, so we can skip the process invocation
-            return [];
+            // solution files don't specify properties, so we can skip the process invocation
+            return null;
         }
 
         var projectDirectory = Path.GetDirectoryName(projectPath)!;
         var args = new[]
         {
-            "msbuild",
             projectPath,
-            "-getProperty:TargetFrameworks"
+            $"-getProperty:{propertyName}"
         };
 
-        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, projectDirectory);
+        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, projectDirectory);
         if (exitCode != 0)
         {
-            logger.Warn($"Unable to determine target frameworks for project [{projectPath}]:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
+            if (stdOut.Contains("error MSB1001: Unknown switch."))
+            {
+                // older versions of MSBuild don't allow `-getProperty` so we go a different route
+                // we can't force an indirect property evaluation, but we can force import a custom targets file that effectively renames the property
+                var tempDir = Directory.CreateTempSubdirectory("__get_msbuild_property_");
+                try
+                {
+                    // prepare magic contents
+                    var targetsTemplateContents = await File.ReadAllTextAsync(GetFileFromRuntimeDirectory("GetProperty.targets"));
+                    var targetContents = targetsTemplateContents.Replace("%RequestedPropertyName%", $"$({propertyName})");
+
+                    // write magic contents
+                    var tempTargetsPath = Path.Combine(tempDir.FullName, $"GetProperty_{propertyName}.targets");
+                    await File.WriteAllTextAsync(tempTargetsPath, targetContents);
+
+                    // do it
+                    args = [
+                        projectPath,
+                        $"/p:CustomAfterMicrosoftCommonTargets={tempTargetsPath}",
+                        "/t:_Dependabot_GetProperty",
+                    ];
+                    (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetMSBuildSafelyAsync(args, projectDirectory);
+                    if (exitCode == 0)
+                    {
+                        var match = Regex.Match(stdOut, "__PROPERTY_VALUE:(?<PropertyValue>[^$]*)$", RegexOptions.Multiline);
+                        if (match.Success)
+                        {
+                            return match.Groups["PropertyValue"].Value.Trim();
+                        }
+                    }
+                }
+                finally
+                {
+                    tempDir.Delete(recursive: true);
+                }
+            }
+
+            logger.Warn($"Unable to determine property '{propertyName}' for project [{projectPath}]:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}\n");
+            return null;
+        }
+
+        return stdOut.Trim();
+    }
+
+    internal static async Task<ImmutableArray<string>> GetProjectTargetFrameworksAsync(string projectPath, ILogger logger)
+    {
+        var rawValue = await GetProjectPropertyAsync(projectPath, "TargetFrameworks", logger);
+        if (rawValue is null)
+        {
             return [];
         }
 
-        var tfms = Regex.Replace(stdOut, "@[\r\n\t ]", "")
+        var tfms = Regex.Replace(rawValue, "@[\r\n\t ]", "")
             .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .OrderBy(t => t)
             .ToImmutableArray();
@@ -603,6 +669,8 @@ internal static partial class MSBuildHelper
         ThrowOnBadResponse(output);
         ThrowOnUnparseableFile(output);
         ThrowOnMultipleProjectsForPackagesConfig(output);
+        ThrowOnCircularDependency(output);
+        ThrowOnInvalidIcuPackage(output);
     }
 
     private static void ThrowOnUnauthenticatedFeed(string stdout)
@@ -742,6 +810,23 @@ internal static partial class MSBuildHelper
         if (output.Contains("Found multiple project files for "))
         {
             throw new Exception("Multiple project files found for single packages.config");
+        }
+    }
+
+    private static void ThrowOnCircularDependency(string output)
+    {
+        var pattern = new Regex(@"Circular dependency detected '.*'");
+        if (pattern.IsMatch(output))
+        {
+            throw new Exception("Circular dependency detected");
+        }
+    }
+
+    private static void ThrowOnInvalidIcuPackage(string output)
+    {
+        if (output.Contains("Couldn't find a valid ICU package installed on the system."))
+        {
+            throw new Exception("Couldn't find a valid ICU package installed on the system. Likely EOL SDK.");
         }
     }
 

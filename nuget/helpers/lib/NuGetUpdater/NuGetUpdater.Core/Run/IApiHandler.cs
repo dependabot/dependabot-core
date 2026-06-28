@@ -46,6 +46,7 @@ public static class IApiHandlerExtensions
     public static Task ClosePullRequest(this IApiHandler handler, ClosePullRequest closePullRequest) => handler.PostAsJson("close_pull_request", closePullRequest);
     public static Task UpdatePullRequest(this IApiHandler handler, UpdatePullRequest updatePullRequest) => handler.PostAsJson("update_pull_request", updatePullRequest);
     public static Task MarkAsProcessed(this IApiHandler handler, MarkAsProcessed markAsProcessed) => handler.PatchAsJson("mark_as_processed", markAsProcessed);
+    public static Task CreateDependencySubmission(this IApiHandler handler, CreateDependencySubmission createDependencySubmission) => handler.PostAsJson("create_dependency_submission", createDependencySubmission);
 
     private static Task PostAsJson(this IApiHandler handler, string endpoint, object body) => handler.WithRetries(() => handler.SendAsync(endpoint, body, "POST"));
     private static Task PatchAsJson(this IApiHandler handler, string endpoint, object body) => handler.WithRetries(() => handler.SendAsync(endpoint, body, "PATCH"));

@@ -1,0 +1,16 @@
+[
+  {
+    "name": "plugins.sbt",
+    "path": "project/plugins.sbt",
+    "sha": "ppp111",
+    "size": 200,
+    "type": "file"
+  },
+  {
+    "name": "build.properties",
+    "path": "project/build.properties",
+    "sha": "bbb333",
+    "size": 30,
+    "type": "file"
+  }
+]

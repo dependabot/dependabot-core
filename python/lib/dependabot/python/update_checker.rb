@@ -6,6 +6,7 @@ require "toml-rb"
 require "sorbet-runtime"
 
 require "dependabot/dependency"
+require "dependabot/dependency_requirement"
 require "dependabot/errors"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/requirement_parser"
@@ -93,12 +94,12 @@ module Dependabot
         )
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         return updated_git_requirements if git_dependency?
 
         RequirementsUpdater.new(
-          requirements: requirements,
+          requirements: dependency.requirements,
           latest_resolvable_version: preferred_resolvable_version&.to_s,
           update_strategy: requirements_update_strategy,
           has_lockfile: !(pipfile_lock || poetry_lock).nil?
@@ -137,13 +138,13 @@ module Dependabot
         latest_version_for_git_dependency
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_git_requirements
         updated_source = updated_git_source
-        return requirements unless updated_source
+        return dependency.requirements unless updated_source
 
-        requirements.map do |req|
-          req.merge(source: updated_source)
+        dependency.requirements.map do |req|
+          Dependabot::DependencyRequirement.create(req.merge(source: updated_source))
         end
       end
 
@@ -407,16 +408,24 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def check_pypi_for_library_match
-        return false unless updating_pyproject? && library_details && !T.must(library_details)["name"].nil?
+        return false unless updating_pyproject?
+
+        library_details_temp = library_details
+        return false unless library_details_temp && !library_details_temp["name"].nil?
+
+        has_library_metadata = !library_details_temp["description"].nil?
 
         response = Dependabot::RegistryClient.get(
-          url: "https://pypi.org/pypi/#{normalised_name(T.must(library_details)['name'])}/json/"
+          url: "https://pypi.org/pypi/#{normalised_name(library_details_temp['name'])}/json/"
         )
-        return false unless response.status == 200
+        return has_library_metadata unless response.status == 200
 
-        (JSON.parse(response.body)["info"] || {})["summary"] == T.must(library_details)["description"]
+        local_description = library_details_temp["description"]
+        return true if local_description.nil?
+
+        (JSON.parse(response.body)["info"] || {})["summary"] == local_description
       rescue Excon::Error::Timeout, Excon::Error::Socket, URI::InvalidURIError
-        false
+        has_library_metadata
       end
 
       sig { returns(T::Boolean) }

@@ -124,7 +124,8 @@ module Dependabot
             dependency: dependency,
             dependency_files: dependency_files,
             credentials: credentials,
-            forbidden_urls: forbidden_urls
+            forbidden_urls: forbidden_urls,
+            cooldown_options: cooldown_options
           ).fetch_available_versions
         end
 
@@ -148,28 +149,6 @@ module Dependabot
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
 
-        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
-        def filter_date_based_versions(possible_versions)
-          return possible_versions if wants_date_based_version?
-
-          filtered = possible_versions.reject { |release| release.version > version_class.new(1900) }
-          if possible_versions.count > filtered.count
-            Dependabot.logger.info("Filtered out #{possible_versions.count - filtered.count} date-based versions")
-          end
-          filtered
-        end
-
-        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
-        def filter_version_types(possible_versions)
-          filtered = possible_versions.select { |release| matches_dependency_version_type?(release.version) }
-          if possible_versions.count > filtered.count
-            diff = possible_versions.count - filtered.count
-            classifier = T.must(dependency.version).split(/[.\-]/).last
-            Dependabot.logger.info("Filtered out #{diff} non-#{classifier} classifier versions")
-          end
-          filtered
-        end
-
         sig { params(version: T::Array[T.untyped]).returns(T::Array[Dependabot::Package::PackageRelease]) }
         def package_release(version)
           package_releases = []
@@ -191,7 +170,8 @@ module Dependabot
               dependency: dependency,
               dependency_files: dependency_files,
               credentials: credentials,
-              forbidden_urls: []
+              forbidden_urls: [],
+              cooldown_options: cooldown_options
             ),
             T.nilable(Dependabot::Gradle::Package::PackageDetailsFetcher)
           )
@@ -254,21 +234,36 @@ module Dependabot
 
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
         def in_cooldown_period?(release)
-          unless release.released_at
-            if cooldown_options
-              Dependabot.logger.info("Release date not available for version #{release.version} - filtering out")
-              return true
-            else
-              Dependabot.logger.info("Release date not available for version #{release.version}")
-              return false
-            end
-          end
-
           current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
           days = cooldown_days_for(current_version, release.version)
+          return false if days <= 0
+
+          release = package_details_fetcher.fetch_release_metadata(release: release)
+          return missing_release_date_in_cooldown?(release) unless release.released_at
+
+          cooldown_window?(release: release, days: days)
+        end
+
+        sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
+        def missing_release_date_in_cooldown?(release)
+          if cooldown_options
+            Dependabot.logger.info("Release date not available for version #{release.version} - filtering out")
+            true
+          else
+            Dependabot.logger.info("Release date not available for version #{release.version}")
+            false
+          end
+        end
+
+        sig do
+          params(
+            release: Dependabot::Package::PackageRelease,
+            days: Integer
+          ).returns(T::Boolean)
+        end
+        def cooldown_window?(release:, days:)
           in_cooldown = Dependabot::UpdateCheckers::CooldownCalculation
                         .within_cooldown_window?(T.must(release.released_at), days)
-
           if in_cooldown
             passed_days = (Time.now.to_i - release.released_at.to_i) / (24 * 60 * 60)
             Dependabot.logger.info(
@@ -276,28 +271,9 @@ module Dependabot
               " Days since release: #{passed_days} (cooldown days: #{days})"
             )
           end
-
           in_cooldown
         end
 
-        sig { returns(T::Boolean) }
-        def wants_prerelease?
-          return false unless dependency.numeric_version
-
-          T.must(dependency.numeric_version).prerelease?
-        end
-
-        sig { returns(T::Boolean) }
-        def wants_date_based_version?
-          return false unless dependency.numeric_version
-
-          T.must(dependency.numeric_version) >= version_class.new(100)
-        end
-
-        sig { returns(T.class_of(Dependabot::Version)) }
-        def version_class
-          dependency.version_class
-        end
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def package_details; end
       end

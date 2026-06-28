@@ -36,9 +36,9 @@ module Dependabot
 
       groups = job.dependency_groups.map do |group|
         Dependabot::DependencyGroup.new(
-          name: group["name"],
-          rules: group["rules"],
-          applies_to: group["applies-to"]
+          name: T.must(group.name),
+          rules: group.rules || {},
+          applies_to: group.applies_to
         )
       end
 
@@ -65,14 +65,14 @@ module Dependabot
       return unless job.dependency_groups.any?
 
       unsupported_groups = job.dependency_groups.select do |group|
-        rules = group["rules"] || {}
+        rules = group.rules || {}
         rules.key?("dependency-type") &&
           !PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE.include?(job.package_manager)
       end
 
       return unless unsupported_groups.any?
 
-      group_names = unsupported_groups.map { |g| g["name"] }.join(", ")
+      group_names = unsupported_groups.map(&:name).join(", ")
       Dependabot.logger.warn <<~WARN
         The 'dependency-type' option is not supported for the '#{job.package_manager}' package manager.
         It is only supported for: #{PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE.join(', ')}.
@@ -190,17 +190,30 @@ module Dependabot
       ).returns(T::Boolean)
     end
     def should_skip_due_to_specificity?(group, dependency, specificity_calculator)
-      return false unless Dependabot::Experiments.enabled?(:group_membership_enforcement)
-
       contains_checker = proc { |g, dep, _dir| g.contains?(dep) }
       applies_to = group.applies_to if group.respond_to?(:applies_to)
+
+      # Groups with update-types rules are complementary, not competing.
+      # Filter out groups with non-overlapping update-types so they don't
+      # prevent each other from receiving dependencies during assignment.
+      current_update_types = group.update_types
+      eligible_groups = if current_update_types
+                          @dependency_groups.reject do |other|
+                            other_update_types = other.update_types
+                            next false unless other_update_types
+
+                            !current_update_types.intersect?(other_update_types)
+                          end
+                        else
+                          @dependency_groups
+                        end
 
       Dependabot.logger.info(
         "Checking specificity for #{dependency.name} in group '#{group.name}' (applies_to: #{applies_to || 'nil'})"
       )
 
       more_specific_group_name = specificity_calculator.find_most_specific_group_name(
-        group, dependency, @dependency_groups, contains_checker, dependency.directory, applies_to:
+        group, dependency, eligible_groups, contains_checker, dependency.directory, applies_to:
       )
 
       if more_specific_group_name

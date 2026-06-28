@@ -69,11 +69,20 @@ module Dependabot
     sig { override.returns(Dependabot::Job) }
     def job
       @job ||= T.let(
-        Job.new_update_job(
-          job_id: job_id,
-          job_definition: Environment.job_definition,
-          repo_contents_path: Environment.repo_contents_path
-        ),
+        begin
+          update_job = Job.new_update_job(
+            job_id: job_id,
+            job_definition: Environment.job_definition,
+            repo_contents_path: Environment.repo_contents_path
+          )
+
+          if Experiments.enabled?(:blocked_versions)
+            blocked = service.fetch_blocked_versions(update_job.package_manager)
+            update_job.blocked_versions = blocked if blocked.any?
+          end
+
+          update_job
+        end,
         T.nilable(Dependabot::Job)
       )
     end
@@ -118,11 +127,11 @@ module Dependabot
             ErrorAttributes::CLASS => error.class.to_s,
             ErrorAttributes::MESSAGE => error.message,
             ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
-            ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? T.unsafe(error).sentry_context[:fingerprint] : nil,
+            ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? T.cast(error, Dependabot::HasSentryContext).sentry_context[:fingerprint] : nil,
             ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
             ErrorAttributes::JOB_ID => job.id,
             ErrorAttributes::DEPENDENCIES => job.dependencies,
-            ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
+            ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups.map(&:to_h)
           }.compact
 
           service.capture_exception(error: error, job: job)

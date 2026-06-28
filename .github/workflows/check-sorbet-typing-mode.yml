@@ -60,3 +60,23 @@ jobs:
           else
             echo "All changed Ruby files have Sorbet typings."
           fi
+
+  untyped-burndown-ratchet:
+    name: Sorbet T.untyped Burndown Ratchet
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # need the base branch to compare against
+
+      - uses: ruby/setup-ruby@9eb537ca036ebaed86729dcb9309076e4c5c3b74 # v1.314.0
+
+      - name: Ensure the Sorbet/ForbidTUntyped burndown only shrinks
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: ruby script/sorbet-untyped-ratchet

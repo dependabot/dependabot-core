@@ -30,11 +30,11 @@ module Dependabot
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_resolvable_version_with_no_unlock = latest_version
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         return dependency.requirements unless latest_version
 
-        dependency.requirements.filter_map do |requirement|
+        updated = dependency.requirements.filter_map do |requirement|
           source = T.cast(requirement[:source], T.nilable(T::Hash[Symbol, T.untyped]))
           requirement_constraint = requirement[:requirement]
 
@@ -50,6 +50,7 @@ module Dependabot
             requirement
           end
         end
+        wrap_requirements(updated)
       end
 
       private
@@ -63,6 +64,18 @@ module Dependabot
       def port_dependency?
         # A port dependency has no git source but has a requirement constraint
         !registry_dependency? && dependency.requirements.any? { |req| req[:requirement] }
+      end
+
+      # `latest_version` is a git tag but the baseline is a commit SHA, so the base check never
+      # matches and reports an up-to-date baseline as stale. Match the release commit SHA by prefix.
+      sig { returns(T::Boolean) }
+      def sha1_version_up_to_date?
+        return super unless registry_dependency?
+
+        latest_commit_sha = latest_version_finder.latest_release_info&.details&.dig("commit_sha")
+        return super unless latest_commit_sha
+
+        latest_commit_sha.start_with?(T.must(dependency.version))
       end
 
       # Vcpkg doesn't support full unlocking since dependencies are tracked via baselines

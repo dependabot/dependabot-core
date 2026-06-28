@@ -43,14 +43,14 @@ public class SpecialFilePatcherTests
         // act
         using (var patcher = new SpecialImportsConditionPatcher(projectPath))
         {
-            var actualPatchedContent = await File.ReadAllTextAsync(projectPath);
+            var actualPatchedContent = await File.ReadAllTextAsync(projectPath, TestContext.Current.CancellationToken);
 
             // assert
             Assert.Equal(expectedPatchedContent.Replace("\r", ""), actualPatchedContent.Replace("\r", ""));
         }
 
         // assert again
-        var restoredContent = await File.ReadAllTextAsync(projectPath);
+        var restoredContent = await File.ReadAllTextAsync(projectPath, TestContext.Current.CancellationToken);
         Assert.Equal(restoredContent.Replace("\r", ""), fileContent.Replace("\r", ""));
     }
 

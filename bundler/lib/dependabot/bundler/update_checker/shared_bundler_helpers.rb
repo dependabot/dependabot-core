@@ -38,6 +38,12 @@ module Dependabot
         GIT_REGEX = /reset --hard [^\s]*` in directory (?<path>[^\s]*)/
         GIT_REF_REGEX = /not exist in the repository (?<path>[^\s]*)\./
         PATH_REGEX = /The path `(?<path>.*)` does not exist/
+        # Raised by Bundler when a registry's compact index (`/info/<gem>`) returns
+        # gem metadata it can't parse (e.g. an illformed `ruby:`/`rubygems:`
+        # requirement). This means the *registry* served bad data, not that the
+        # user's dependency files are broken.
+        REGISTRY_METADATA_ERROR_REGEX =
+          /error parsing the metadata for the gem (?<gem>\S+) \((?<version>[^)]+)\)/
 
         module BundlerErrorPatterns
           MISSING_AUTH_REGEX = /bundle config set --global (?<source>.*) username:password/
@@ -118,7 +124,7 @@ module Dependabot
           case error.error_class
           when "Bundler::Dsl::DSLError", "Bundler::GemspecError"
             # We couldn't evaluate the Gemfile, let alone resolve it
-            raise Dependabot::DependencyFileNotEvaluatable, msg
+            raise registry_metadata_error(error) || Dependabot::DependencyFileNotEvaluatable.new(msg)
           when "Bundler::Source::Git::MissingGitRevisionError"
             match_data = error.message.match(GIT_REF_REGEX)
             gem_name = T.must(T.must(match_data).named_captures["path"])
@@ -195,6 +201,31 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/MethodLength
+
+        # When Bundler fails to parse gem metadata served by a registry's compact
+        # index, surface it as a private source error (the registry returned bad
+        # data) rather than blaming the user's dependency files. Returns nil when
+        # the error isn't a registry metadata error so the caller can fall back.
+        sig do
+          params(error: Dependabot::SharedHelpers::HelperSubprocessFailed)
+            .returns(T.nilable(Dependabot::PrivateSourceBadResponse))
+        end
+        def registry_metadata_error(error)
+          match = error.message.match(REGISTRY_METADATA_ERROR_REGEX)
+          return nil unless match
+
+          source = private_registry_source
+          return nil unless source
+
+          detail = "Invalid gem metadata returned for #{match[:gem]} (#{match[:version]}) " \
+                   "by the source: #{source}"
+          Dependabot::PrivateSourceBadResponse.new(source, detail)
+        end
+
+        sig { returns(T.nilable(String)) }
+        def private_registry_source
+          private_registry_credentials.filter_map { |cred| cred["host"] }.first
+        end
 
         sig { returns(T::Array[T::Hash[String, T.untyped]]) }
         def inaccessible_git_dependencies

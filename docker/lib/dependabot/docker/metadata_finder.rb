@@ -45,7 +45,7 @@ module Dependabot
         )
       end
       def image_details(source)
-        registry = source[:registry]
+        registry = source[:registry].to_s.sub(%r{^oci://}, "")
         tag = source[:tag]
         digest = source[:digest]
 

@@ -1,7 +1,6 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "cgi"
 require "excon"
 require "nokogiri"
 require "sorbet-runtime"
@@ -323,11 +322,16 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def wants_prerelease?
-        return version_class.new(dependency.version).prerelease? if dependency.version
+        return true if dependency.numeric_version&.prerelease?
 
         dependency.requirements.any? do |req|
-          reqs = (req.fetch(:requirement) || "").split(",").map(&:strip)
-          reqs.any? { |r| r.match?(/[A-Za-z]/) }
+          req_string = req.fetch(:requirement) || ""
+          req_string.split(",").map(&:strip).any? do |r|
+            version_str = r.gsub(/^\s*[!<>=~^]+\s*/, "").strip
+            next false unless version_class.correct?(version_str)
+
+            version_class.new(version_str).prerelease?
+          end
         end
       end
 

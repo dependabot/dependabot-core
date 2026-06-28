@@ -214,6 +214,7 @@ module Dependabot
       sig { returns(String) }
       def solo_pr_name
         name = library? ? library_pr_name : application_pr_name
+        name += " (via audit fix)" if dependencies.any? { |dep| dep.metadata[:audit_fix_used] }
         "#{name}#{pr_name_directory}"
       end
 

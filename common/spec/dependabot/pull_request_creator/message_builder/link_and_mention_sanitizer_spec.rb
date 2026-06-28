@@ -233,6 +233,36 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
           )
         end
       end
+
+      context "when a scoped package name is inside a link" do
+        let(:text) { "Sourced from [@adamlui/minify.js](https://npmjs.com/package/@adamlui/minify.js)" }
+
+        it "preserves the link without partial code formatting" do
+          expect(sanitize_links_and_mentions).to eq(
+            "<p>Sourced from <a href=\"https://npmjs.com/package/@adamlui/minify.js\">" \
+            "@\u200Badamlui/minify.js</a></p>\n"
+          )
+        end
+      end
+
+      context "when a scoped package name without extension is inside a link" do
+        let(:text) { "Sourced from [@angular/cli](https://npmjs.com/package/@angular/cli)" }
+
+        it "preserves the link without code formatting" do
+          expect(sanitize_links_and_mentions).to eq(
+            "<p>Sourced from <a href=\"https://npmjs.com/package/@angular/cli\">" \
+            "@\u200Bangular/cli</a></p>\n"
+          )
+        end
+      end
+
+      context "when a team mention is inside a link" do
+        let(:text) { "Reviewed by [@dependabot/reviewers](https://github.com/orgs/dependabot/teams/reviewers)" }
+
+        it "inserts zero-width space to prevent notifications" do
+          expect(sanitize_links_and_mentions).to include("@\u200Bdependabot/reviewers")
+        end
+      end
     end
 
     context "with empty text" do

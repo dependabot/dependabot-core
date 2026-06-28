@@ -71,6 +71,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_audit_fix_fallback).and_return(true)
   end
 
   after do
@@ -382,6 +384,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           "package-lock.json"
         )
         expect(updated_npm_lock_content).to eq(expected_updated_npm_lock_content)
+      end
+    end
+
+    context "when updating a subdependency in a workspace repo" do
+      let(:files) { project_dependency_files("npm8/workspace_subdependency_update") }
+
+      let(:dependency_name) { "lodash" }
+      let(:version) { "3.10.2" }
+      let(:previous_version) { "3.10.1" }
+      let(:requirements) { [] }
+      let(:previous_requirements) { [] }
+
+      it "falls back to npm audit fix when npm update is a no-op" do
+        # Simulate npm update being a no-op (transitive dep not in package.json)
+        allow(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive_messages(run_npm8_subdependency_update_command: "", run_npm_audit_fix_command: "")
+
+        expect(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive(:run_npm_audit_fix_command).once
+
+        updated_npm_lock_content
       end
     end
   end
@@ -1333,6 +1356,90 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
           # The key fix: optional dependency should NOT be in dependencies section
           expect(root_package["dependencies"]).not_to have_key("@rollup/rollup-linux-x64-gnu")
+        end
+      end
+    end
+
+    describe "#run_npm_install_lockfile_only" do
+      let(:files) { project_dependency_files("npm8/simple") }
+      let(:install_args) { ["lodash@4.18.1"] }
+
+      context "when security_updates_only is true" do
+        let(:updater) do
+          described_class.new(
+            lockfile: package_lock,
+            dependency_files: files,
+            dependencies: dependencies,
+            credentials: credentials,
+            security_updates_only: true
+          )
+        end
+
+        it "passes --min-release-age=0 to override the .npmrc setting" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
+            expect(command).to include("--min-release-age=0")
+            expect(command).to include("--package-lock-only")
+            expect(command).to include("--force")
+            ""
+          end
+
+          updater.send(:run_npm_install_lockfile_only, install_args)
+        end
+      end
+
+      context "when security_updates_only is false (default)" do
+        it "does not pass --min-release-age=0" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
+            expect(command).not_to include("--min-release-age=0")
+            expect(command).to include("--package-lock-only")
+            ""
+          end
+
+          updater.send(:run_npm_install_lockfile_only, install_args)
+        end
+      end
+    end
+
+    describe "#run_npm8_subdependency_updater" do
+      let(:files) { project_dependency_files("npm8/subdependency_update") }
+      let(:dependency_name) { "acorn" }
+      let(:version) { "5.7.4" }
+      let(:previous_version) { "5.5.3" }
+      let(:requirements) { [] }
+      let(:previous_requirements) { [] }
+
+      before do
+        allow(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive_messages(run_npm8_subdependency_update_command: "", run_npm_audit_fix_command: "")
+      end
+
+      context "when security_updates_only is true" do
+        let(:updater) do
+          described_class.new(
+            lockfile: package_lock,
+            dependency_files: files,
+            dependencies: dependencies,
+            credentials: credentials,
+            security_updates_only: true
+          )
+        end
+
+        it "passes --min-release-age=0 to override the .npmrc setting" do
+          updated_npm_lock_content
+
+          expect(Dependabot::NpmAndYarn::NativeHelpers)
+            .to have_received(:run_npm8_subdependency_update_command)
+            .with(["acorn"], security_updates_only: true)
+        end
+      end
+
+      context "when security_updates_only is false (default)" do
+        it "does not request the .npmrc override" do
+          updated_npm_lock_content
+
+          expect(Dependabot::NpmAndYarn::NativeHelpers)
+            .to have_received(:run_npm8_subdependency_update_command)
+            .with(["acorn"], security_updates_only: false)
         end
       end
     end

@@ -3,6 +3,7 @@
 
 require "dependabot/errors"
 require "dependabot/updater/errors"
+require "dependabot/updater/security_update_helpers"
 require "octokit"
 
 # This class is responsible for determining how to present a Dependabot::Error
@@ -23,6 +24,7 @@ module Dependabot
   class Updater
     class ErrorHandler
       extend T::Sig
+      include PullRequestHelpers
 
       # These are errors that halt the update run and are handled in the main
       # backend. They do *not* raise a sentry.
@@ -38,10 +40,32 @@ module Dependabot
         T::Hash[T::Module[T.anything], String]
       )
 
-      sig { params(service: Service, job: Job).void }
-      def initialize(service:, job:)
+      # Translates the canonical operation identifier (Operation.tag_name) into
+      # the curated `operation` label shared by the blocked_versions.* metrics.
+      # The label vocabulary itself lives in
+      # PullRequestHelpers::BlockedVersionsOperation so the "soft"
+      # (`blocked_versions.ignored`) and "hard" (`blocked_versions.enforced`)
+      # statuses stay in lockstep on a single `operation` tag. Operations absent
+      # from this map fall back to their raw tag name so we never drop the
+      # dimension entirely.
+      BLOCKED_VERSIONS_OPERATIONS = T.let(
+        {
+          "update_all_versions" => PullRequestHelpers::BlockedVersionsOperation::VERSION_UPDATE,
+          "create_security_pr" => PullRequestHelpers::BlockedVersionsOperation::SECURITY_UPDATE,
+          "update_security_pr" => PullRequestHelpers::BlockedVersionsOperation::REFRESH_SECURITY_UPDATE,
+          "update_version_pr" => PullRequestHelpers::BlockedVersionsOperation::REFRESH_VERSION_UPDATE,
+          "create_version_group_pr" => PullRequestHelpers::BlockedVersionsOperation::GROUP_UPDATE,
+          "update_version_group_pr" => PullRequestHelpers::BlockedVersionsOperation::GROUP_UPDATE,
+          "group_update_all_versions" => PullRequestHelpers::BlockedVersionsOperation::GROUP_UPDATE
+        }.freeze,
+        T::Hash[String, String]
+      )
+
+      sig { params(service: Service, job: Job, operation_name: String).void }
+      def initialize(service:, job:, operation_name: "unknown")
         @service = T.let(service, Service)
         @job = T.let(job, Job)
+        @operation_name = T.let(operation_name, String)
       end
 
       # This method handles errors where there is a dependency in the current
@@ -57,6 +81,8 @@ module Dependabot
         # If the error is fatal for the run, we should re-raise it rather than
         # pass it back to the service.
         raise error if RUN_HALTING_ERRORS.keys.any? { |err| error.is_a?(err) }
+
+        increment_blocked_versions_enforced_metric(error)
 
         error_details = error_details_for(error, dependency: dependency, dependency_group: dependency_group)
         service.record_update_job_error(
@@ -113,6 +139,8 @@ module Dependabot
         # pass it back to the service.
         raise error if RUN_HALTING_ERRORS.keys.any? { |err| error.is_a?(err) }
 
+        increment_blocked_versions_enforced_metric(error)
+
         error_details = error_details_for(error, dependency_group: dependency_group)
         service.record_update_job_error(
           error_type: error_details.fetch(:"error-type"),
@@ -153,11 +181,31 @@ module Dependabot
 
       private
 
-      sig { returns(Service) }
+      # Implements the abstract `service` reader required by PullRequestHelpers.
+      sig { override.returns(Service) }
       attr_reader :service
 
       sig { returns(Job) }
       attr_reader :job
+
+      sig { returns(String) }
+      attr_reader :operation_name
+
+      # Records the "hard" block status when a selected update is rejected because
+      # a blocked transitive version was about to ship in the regenerated files.
+      # The metric emission lives in PullRequestHelpers#record_blocked_version_enforced
+      # so it sits alongside its "soft" sibling `blocked_versions.ignored`.
+      #
+      # Recording is guarded and fire-and-forget: it can never affect an update.
+      sig { params(error: StandardError).void }
+      def increment_blocked_versions_enforced_metric(error)
+        return unless error.is_a?(Dependabot::BlockedDependencyVersion)
+
+        record_blocked_version_enforced(
+          job: job,
+          operation: BLOCKED_VERSIONS_OPERATIONS.fetch(operation_name, operation_name)
+        )
+      end
 
       # This method accepts an error class and returns an appropriate `error_details` hash
       # to be reported to the backend service.
@@ -208,7 +256,7 @@ module Dependabot
           ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
           ErrorAttributes::JOB_ID => job.id,
           ErrorAttributes::DEPENDENCIES => job.dependencies,
-          ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
+          ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups.map(&:to_h)
         }.compact
 
         service.increment_metric(
@@ -224,7 +272,7 @@ module Dependabot
       sig { params(error: StandardError).returns(T.nilable(T::Array[String])) }
       def extract_fingerprint(error)
         if error.respond_to?(:sentry_context)
-          context = T.unsafe(error).sentry_context
+          context = T.cast(error, Dependabot::HasSentryContext).sentry_context
           return context[:fingerprint] if context.is_a?(Hash)
         end
 

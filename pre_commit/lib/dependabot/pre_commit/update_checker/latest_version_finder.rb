@@ -2,7 +2,10 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/clients/github_with_retries"
 require "dependabot/errors"
+require "dependabot/git_cooldown_date_resolver"
+require "dependabot/pre_commit/comment_version_helper"
 require "dependabot/pre_commit/file_parser"
 require "dependabot/pre_commit/package/package_details_fetcher"
 require "dependabot/pre_commit/requirement"
@@ -18,6 +21,7 @@ module Dependabot
     class UpdateChecker
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
+        include Dependabot::GitCooldownDateResolver
 
         sig do
           params(
@@ -46,6 +50,8 @@ module Dependabot
           @raise_on_ignored    = raise_on_ignored
           @options             = options
           @cooldown_options = cooldown_options
+          @cooldown_selected_tag = T.let(nil, T.nilable(T::Hash[Symbol, T.untyped]))
+          @cooldown_rejected_all = T.let(false, T::Boolean)
 
           @git_helper = T.let(git_helper, Dependabot::PreCommit::Helpers::Githelper)
           super(
@@ -85,21 +91,47 @@ module Dependabot
 
           Dependabot.logger.info("Available release version/ref is #{release}")
 
-          release = cooldown_filter(release)
-          if release.nil?
-            Dependabot.logger.info("Returning current version/ref (no viable filtered release) #{current_version}")
-            return current_version
-          end
-
-          release
+          filter_release_with_cooldown(release)
         end
 
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_version_tag
-          available_latest_version_tag
+          return nil if @cooldown_rejected_all
+
+          @cooldown_selected_tag || available_latest_version_tag
+        end
+
+        sig { override.returns(T.nilable(String)) }
+        def cooldown_source_url
+          @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
+        end
+
+        sig { override.returns(T::Array[Dependabot::Credential]) }
+        def cooldown_credentials
+          @credentials
         end
 
         private
+
+        sig do
+          params(release: T.any(Dependabot::Version, String))
+            .returns(T.nilable(T.any(Dependabot::Version, String)))
+        end
+        def filter_release_with_cooldown(release)
+          return release unless cooldown_enabled?
+          return release unless cooldown_options
+          # Commit SHA releases have no version ordering to fall back through
+          return release if release_type_sha?
+
+          Dependabot.logger.info("Applying cooldown filter for #{dependency.name}")
+
+          result = find_latest_version_outside_cooldown
+          return result if result
+
+          Dependabot.logger.info("All candidate versions are in cooldown, keeping current version #{current_version}")
+          @cooldown_rejected_all = true
+          current_version
+        end
 
         sig { returns(T.nilable(Dependabot::PreCommit::Package::PackageDetailsFetcher)) }
         def package_details_fetcher
@@ -136,58 +168,158 @@ module Dependabot
           true
         end
 
+        # Checks versions from latest downward (among versions > current_version).
+        # First attempts to use GitHub Release published_at dates (no clone needed).
+        # Falls back to a bare clone for git-based date detection.
+        sig { returns(T.nilable(Dependabot::Version)) }
+        def find_latest_version_outside_cooldown
+          candidates = version_candidates_descending
+          return nil if candidates.empty?
+
+          # Try GitHub Release dates first (avoids clone)
+          result = check_candidates_via_github_releases(candidates)
+          return result if result
+
+          # Fallback: clone and check tag/commit dates
+          check_candidates_via_git_clone(candidates)
+        rescue StandardError => e
+          Dependabot.logger.error("Error checking cooldown for #{dependency.name}: #{e.message}")
+          nil
+        end
+
+        # Attempts to resolve cooldown using GitHub Release published_at dates.
+        # Returns:
+        # - A version outside cooldown (first eligible candidate)
+        # - current_version when ALL candidates have releases and all are in cooldown
+        # - nil when no releases exist or some candidates lack releases (triggers git fallback)
         sig do
-          params(release: T.nilable(T.any(Dependabot::Version, String)))
-            .returns(T.nilable(T.any(Dependabot::Version, String)))
+          params(candidates: T::Array[T::Hash[Symbol, T.untyped]])
+            .returns(T.nilable(Dependabot::Version))
         end
-        def cooldown_filter(release)
-          return release unless cooldown_enabled?
-          return release unless cooldown_options
+        def check_candidates_via_github_releases(candidates)
+          releases = cached_github_releases
+          return nil if releases.empty?
 
-          Dependabot.logger.info("Initializing cooldown filter")
-          release_date = commit_metadata_details
+          filtered_count = 0
+          all_have_releases = T.let(true, T::Boolean)
 
-          unless release_date
-            Dependabot.logger.info("No release date found, skipping cooldown filtering")
-            return release
+          candidates.each do |tag|
+            tag_name = normalize_tag_name(tag[:tag] || "v#{tag[:version]}")
+            release = releases.find { |r| r.tag_name == tag_name }
+
+            unless release&.published_at
+              all_have_releases = false
+              next
+            end
+
+            unless release_in_cooldown_period?(release.published_at)
+              log_cooldown_result(filtered_count, tag[:version], release.published_at)
+              @cooldown_selected_tag = tag
+              return T.cast(tag[:version], Dependabot::Version)
+            end
+
+            filtered_count += 1
           end
 
-          if release_in_cooldown_period?(Time.parse(release_date))
-            Dependabot.logger.info("Filtered out (cooldown) #{dependency.name}, #{release}")
-            return nil
-          end
+          return nil if filtered_count.zero?
 
-          release
-        end
+          # Some candidates lacked releases — fall back to git clone for those
+          return nil unless all_have_releases
 
-        sig { returns(T.nilable(String)) }
-        def commit_metadata_details
-          @commit_metadata_details ||= T.let(
-            begin
-              url = @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
-              source = T.must(Source.from_url(url))
-
-              SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
-                repo_contents_path = File.join(temp_dir, File.basename(source.repo))
-
-                SharedHelpers.run_shell_command("git clone --bare --no-recurse-submodules #{url} #{repo_contents_path}")
-                Dir.chdir(repo_contents_path) do
-                  date = SharedHelpers.run_shell_command(
-                    "git show --no-patch --format=\"%cd\" " \
-                    "--date=iso #{commit_ref}"
-                  )
-                  Dependabot.logger.info("Found release date : #{Time.parse(date)}")
-                  return date
-                end
-              end
-            rescue StandardError => e
-              Dependabot.logger.error("Error (pre_commit) while checking release date for #{dependency.name}")
-              Dependabot.logger.error(e.message)
-
-              nil
-            end,
-            T.nilable(String)
+          # Every candidate had a release and all were in cooldown
+          Dependabot.logger.info(
+            "Filtered #{filtered_count} version(s) due to cooldown for #{dependency.name}, " \
+            "no eligible version found (via GitHub Releases)"
           )
+          @cooldown_rejected_all = true
+          T.cast(current_version, T.nilable(Dependabot::Version))
+        end
+
+        # Checks candidate tags inside a bare clone directory, returning the first
+        # version whose tag creation date falls outside the cooldown window.
+        sig do
+          params(candidates: T::Array[T::Hash[Symbol, T.untyped]])
+            .returns(T.nilable(Dependabot::Version))
+        end
+        def check_candidates_via_git_clone(candidates)
+          url = cooldown_source_url
+          source = T.must(Source.from_url(url))
+
+          SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
+            repo_contents_path = File.join(temp_dir, File.basename(source.repo))
+            SharedHelpers.run_shell_command("git clone --bare --no-recurse-submodules #{url} #{repo_contents_path}")
+
+            Dir.chdir(repo_contents_path) do
+              return check_candidates_cooldown(candidates)
+            end
+          end
+        end
+
+        # Iterates candidate tags inside a bare clone directory, returning the first
+        # version whose release date falls outside the cooldown window.
+        # Prefers GitHub Release published_at when available for a candidate,
+        # falling back to tag creation date from the cloned repo.
+        sig do
+          params(candidates: T::Array[T::Hash[Symbol, T.untyped]])
+            .returns(T.nilable(Dependabot::Version))
+        end
+        def check_candidates_cooldown(candidates)
+          filtered_count = 0
+
+          candidates.each do |tag|
+            commit_sha = tag[:commit_sha]
+            next unless commit_sha
+
+            tag_name = normalize_tag_name(tag[:tag] || "v#{tag[:version]}")
+            release_date = resolve_candidate_date(tag_name, commit_sha)
+
+            if release_in_cooldown_period?(release_date)
+              filtered_count += 1
+            else
+              log_cooldown_result(filtered_count, tag[:version], release_date)
+              @cooldown_selected_tag = tag
+              return T.cast(tag[:version], Dependabot::Version)
+            end
+          end
+
+          Dependabot.logger.info(
+            "Filtered #{filtered_count} version(s) due to cooldown for #{dependency.name}, " \
+            "no eligible version found"
+          )
+          nil
+        end
+
+        sig do
+          params(filtered_count: Integer, version: T.untyped, release_date: Time).void
+        end
+        def log_cooldown_result(filtered_count, version, release_date)
+          if filtered_count.positive?
+            Dependabot.logger.info(
+              "Filtered #{filtered_count} version(s) due to cooldown for #{dependency.name}"
+            )
+          end
+          Dependabot.logger.info("Selected version #{version} (released #{release_date})")
+        end
+
+        # Returns all version tags > current_version, sorted descending (latest first).
+        # This ensures we evaluate from the newest candidate downward.
+        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        def version_candidates_descending
+          # When pinned to a SHA, precision matching against the SHA is meaningless
+          # (a SHA has no dots, so precision=1 matches nothing useful).
+          # Use the unfiltered allowed version tags instead.
+          all_tags = if sha_pinned_with_version_comment?
+                       @git_helper.git_commit_checker.local_tags_for_allowed_versions
+                     else
+                       @git_helper.git_commit_checker.local_tags_for_allowed_versions_matching_existing_precision
+                     end
+          cur_version = current_version
+
+          all_tags
+            .select { |tag| tag[:version].is_a?(Gem::Version) }
+            .select { |tag| cur_version.nil? || tag[:version] > cur_version }
+            .sort_by { |tag| tag[:version] }
+            .reverse
         end
 
         sig { params(release_date: Time).returns(T::Boolean) }
@@ -198,30 +330,60 @@ module Dependabot
 
           days = T.must(cooldown).default_days
 
-          Dependabot.logger.info(
-            "Days since release : #{(Time.now.to_i - release_date.to_i) / (24 * 60 * 60)} " \
-            "(cooldown days #{days})"
-          )
-
           Dependabot::UpdateCheckers::CooldownCalculation
             .within_cooldown_window?(release_date, days)
-        end
-
-        sig { returns(String) }
-        def commit_ref
-          T.cast(latest_version_tag&.fetch(:commit_sha), String)
         end
 
         sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
         def current_version
           return dependency.source_details(allowed_types: ["git"])&.fetch(:ref) if release_type_sha?
 
-          T.let(dependency.numeric_version, T.nilable(Dependabot::Version))
+          # numeric_version handles plain versions like "4.4.0"
+          numeric = dependency.numeric_version
+          return numeric if numeric
+
+          # Handle v-prefixed tags like "v4.4.0" common in pre-commit
+          version_str = dependency.version
+          return nil unless version_str
+
+          stripped = version_str.sub(/\Av/i, "")
+          return version_from_frozen_comment unless Dependabot::PreCommit::Version.correct?(stripped)
+
+          Dependabot::PreCommit::Version.new(stripped)
         end
 
         sig { returns(T::Boolean) }
         def release_type_sha?
           available_release.is_a?(String)
+        end
+
+        # Returns true when the dependency's stored ref isn't a semantic version (e.g., a commit SHA)
+        # but a frozen version comment (e.g. "# frozen: v5.0.0") provides a semantic
+        # version we can use for version ordering and tag selection.
+        sig { returns(T::Boolean) }
+        def sha_pinned_with_version_comment?
+          return false if release_type_sha?
+
+          version_str = dependency.version
+          return false unless version_str
+
+          !Dependabot::PreCommit::Version.correct?(version_str) && !version_from_frozen_comment.nil?
+        end
+
+        # Extracts the semantic version from a frozen comment (e.g. "# frozen: v5.0.0")
+        # when the dependency's stored version is a commit SHA.
+        sig { returns(T.nilable(Dependabot::Version)) }
+        def version_from_frozen_comment
+          comment = dependency.requirements.first&.dig(:metadata, :comment)
+          return nil unless comment
+
+          match = comment.match(CommentVersionHelper::FROZEN_COMMENT_REF_PATTERN)
+          return nil unless match
+
+          version_str = match[1].sub(/\Av/i, "")
+          return nil unless Dependabot::PreCommit::Version.correct?(version_str)
+
+          Dependabot::PreCommit::Version.new(version_str)
         end
 
         sig { returns(Dependabot::PreCommit::Helpers::Githelper) }

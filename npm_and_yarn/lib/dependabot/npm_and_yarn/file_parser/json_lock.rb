@@ -12,15 +12,16 @@ module Dependabot
       class JsonLock
         extend T::Sig
 
-        sig { params(dependency_file: DependencyFile).void }
-        def initialize(dependency_file)
+        sig { params(dependency_file: DependencyFile, dealias_packages: T::Boolean).void }
+        def initialize(dependency_file, dealias_packages: false)
           @dependency_file = dependency_file
+          @dealias_packages = dealias_packages
         end
 
         sig { returns(T::Hash[String, T.untyped]) }
         def parsed
           json_obj = JSON.parse(T.must(@dependency_file.content))
-          @parsed ||= T.let(json_obj, T.untyped)
+          @parsed ||= T.let(json_obj, T.nilable(T::Hash[String, T.untyped]))
         rescue JSON::ParserError
           raise Dependabot::DependencyFileNotParseable, @dependency_file.path
         end
@@ -64,18 +65,20 @@ module Dependabot
             version = Version.semver_for(details["version"])
             next unless version
 
-            package_name = name.split("node_modules/").last
+            package_name = package_name_for(name, details)
             version = version.to_s
 
             dependency_args = {
               name: package_name,
               version: version,
               package_manager: "npm_and_yarn",
-              requirements: [],
-              metadata: {
-                depends_on: details&.fetch("dependencies", {})&.keys || []
-              }
+              requirements: []
             }
+
+            if aliased_package?(name, details)
+              alias_name = name.split("node_modules/").last
+              dependency_args[:metadata] = { alias: alias_name }
+            end
 
             if details["bundled"]
               dependency_args[:subdependency_metadata] =
@@ -94,12 +97,40 @@ module Dependabot
           dependency_set
         end
 
+        sig { params(package_path: String, details: T::Hash[String, T.untyped]).returns(String) }
+        def package_name_for(package_path, details)
+          package_name = T.must(package_path.split("node_modules/").last)
+          return package_name unless dealias_packages?
+
+          real_package_name = details["name"]
+          return package_name unless real_package_name.is_a?(String)
+          return package_name if real_package_name == package_name
+
+          real_package_name
+        end
+
+        sig { params(package_path: String, details: T::Hash[String, T.untyped]).returns(T::Boolean) }
+        def aliased_package?(package_path, details)
+          return false unless dealias_packages?
+
+          real_package_name = details["name"]
+          return false unless real_package_name.is_a?(String)
+
+          package_name = T.must(package_path.split("node_modules/").last)
+          real_package_name != package_name
+        end
+
         sig { params(manifest_name: String, dependency_name: String).returns(String) }
         def node_modules_path(manifest_name, dependency_name)
           return "node_modules/#{dependency_name}" if manifest_name == "package.json"
 
           workspace_path = manifest_name.gsub("/package.json", "")
           File.join(workspace_path, "node_modules", dependency_name)
+        end
+
+        sig { returns(T::Boolean) }
+        def dealias_packages?
+          @dealias_packages
         end
       end
     end

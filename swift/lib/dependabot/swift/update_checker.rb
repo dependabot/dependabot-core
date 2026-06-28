@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/dependency_requirement"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"
@@ -50,7 +51,7 @@ module Dependabot
         )
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         return updated_xcode_requirements if xcode_spm_mode?
 
@@ -66,7 +67,7 @@ module Dependabot
 
       private
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_xcode_requirements
         # If no target version is available (e.g., revision-only or branch-pinned
         # dependency), return old requirements unchanged
@@ -92,7 +93,7 @@ module Dependabot
         ).updated_requirements
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def old_requirements
         dependency.requirements
       end

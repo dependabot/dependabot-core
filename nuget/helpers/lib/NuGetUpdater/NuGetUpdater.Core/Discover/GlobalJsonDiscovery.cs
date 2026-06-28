@@ -1,5 +1,7 @@
 using System.Collections.Immutable;
 
+using NuGet.Versioning;
+
 namespace NuGetUpdater.Core.Discover;
 
 internal static class GlobalJsonDiscovery
@@ -16,15 +18,28 @@ internal static class GlobalJsonDiscovery
 
         logger.Info($"  Discovered [{globalJsonFile.RelativePath}] file.");
 
-        var dependencies = BuildFile.GetDependencies(globalJsonFile)
+        var allDependencies = BuildFile.GetDependencies(globalJsonFile)
             .OrderBy(d => d.Name)
             .ToImmutableArray();
+
+        var dependencies = ImmutableArray.CreateBuilder<Dependency>();
+        foreach (var dependency in allDependencies)
+        {
+            if (NuGetVersion.TryParse(dependency.Version, out _))
+            {
+                dependencies.Add(dependency);
+            }
+            else
+            {
+                logger.Warn($"  Dependency '{dependency.Name}' has an unparseable version: '{dependency.Version}' and will be ignored.");
+            }
+        }
 
         return new()
         {
             FilePath = globalJsonFile.RelativePath,
             IsSuccess = !globalJsonFile.FailedToParse,
-            Dependencies = dependencies,
+            Dependencies = dependencies.ToImmutable(),
         };
     }
 }

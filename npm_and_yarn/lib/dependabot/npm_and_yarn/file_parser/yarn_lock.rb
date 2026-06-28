@@ -12,9 +12,10 @@ module Dependabot
       class YarnLock
         extend T::Sig
 
-        sig { params(dependency_file: Dependabot::DependencyFile).void }
-        def initialize(dependency_file)
+        sig { params(dependency_file: Dependabot::DependencyFile, dealias_packages: T::Boolean).void }
+        def initialize(dependency_file, dealias_packages: false)
           @dependency_file = dependency_file
+          @dealias_packages = dealias_packages
         end
 
         sig { returns(T::Hash[String, T::Hash[String, T.untyped]]) }
@@ -50,16 +51,33 @@ module Dependabot
             reqs.split(", ").each do |req|
               version = Version.semver_for(details["version"])
               next unless version
-              next if alias_package?(req)
               next if workspace_package?(req)
               next if req == "__metadata"
 
-              dependency_set << Dependency.new(
-                name: T.must(req.split(/(?<=\w)\@/).first),
-                version: version.to_s,
-                package_manager: "npm_and_yarn",
-                requirements: []
-              )
+              if alias_package?(req)
+                # Skip unless we are dealiasing packages
+                next unless dealias_packages?
+
+                real_name = extract_real_name_from_yarn_alias(req)
+                next unless real_name
+
+                alias_name = T.must(req.split(/(?<=\w)\@npm:/).first)
+
+                dependency_set << Dependency.new(
+                  name: real_name,
+                  version: version.to_s,
+                  package_manager: "npm_and_yarn",
+                  requirements: [],
+                  metadata: { alias: alias_name }
+                )
+              else
+                dependency_set << Dependency.new(
+                  name: T.must(req.split(/(?<=\w)\@/).first),
+                  version: version.to_s,
+                  package_manager: "npm_and_yarn",
+                  requirements: []
+                )
+              end
             end
           end
 
@@ -92,9 +110,32 @@ module Dependabot
 
         private
 
+        sig { returns(T::Boolean) }
+        def dealias_packages?
+          @dealias_packages
+        end
+
         sig { params(requirement: String).returns(T::Boolean) }
         def alias_package?(requirement)
           requirement.match?(/@npm:(.+@(?!npm))/)
+        end
+
+        # Examples:
+        # - "my-fetch-factory@npm:fetch-factory@^0.0.1" → "fetch-factory"
+        # - "my-pkg@npm:@scope/real-pkg@^1.0.0" → "@scope/real-pkg"
+        sig { params(requirement: String).returns(T.nilable(String)) }
+        def extract_real_name_from_yarn_alias(requirement)
+          match = requirement.match(/@npm:(.+)$/)
+          return nil unless match
+
+          rest = T.must(match[1])
+          if rest.start_with?("@")
+            second_at = rest.index("@", 1)
+            second_at ? rest[0...second_at] : rest
+          else
+            at_index = rest.index("@")
+            at_index ? rest[0...at_index] : rest
+          end
         end
 
         sig { params(requirement: String).returns(T::Boolean) }

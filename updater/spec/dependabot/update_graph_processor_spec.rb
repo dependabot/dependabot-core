@@ -24,7 +24,8 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       Dependabot::Service,
       create_dependency_submission: nil,
       record_update_job_error: nil,
-      record_update_job_warning: nil
+      record_update_job_warning: nil,
+      record_workflow_result: nil
     )
   end
 
@@ -119,6 +120,16 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         dependency2 = lockfile[:resolved]["pkg:gem/dummy-pkg-b@1.1.0"]
         expect(dependency2[:package_url]).to eql("pkg:gem/dummy-pkg-b@1.1.0")
       end
+
+      update_graph_processor.run
+    end
+
+    it "records a workflow result for the directory" do
+      expect(service).to receive(:record_workflow_result).with(
+        directory: "/",
+        status: "ok",
+        details: "Found 2 dependencies"
+      )
 
       update_graph_processor.run
     end
@@ -506,8 +517,9 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     end
   end
 
-  # This is mainly for documentation purposes, this is unlikely to happen in the real world.
-  context "with a set of empty dependency files" do
+  # A manifest file that resolves to no dependencies should still be reported so the snapshot
+  # records that the file was scanned, rather than being omitted from the manifest list.
+  context "with a set of dependency files that resolve to no dependencies" do
     let(:directories) { [directory] }
     let(:directory) { "/" }
     let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
@@ -527,12 +539,22 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       ]
     end
 
-    it "generates a snapshot with metadata and an empty manifest list" do
+    it "generates a snapshot reporting the manifest with an empty resolved collection" do
       expect(service).to receive(:create_dependency_submission) do |args|
         payload = args[:dependency_submission].payload
 
         expect(payload[:job][:correlator]).to eq("dependabot-bundler")
-        expect(payload[:manifests]).to be_empty
+
+        # The manifest is still reported, with no resolved dependencies
+        expect(payload[:manifests].length).to eq(1)
+
+        manifest = payload[:manifests].fetch("/Gemfile.lock")
+        expect(manifest[:name]).to eq("/Gemfile.lock")
+        expect(manifest[:resolved]).to be_empty
+
+        # The snapshot is a successful scan
+        expect(payload[:metadata][:status]).to eq(GithubApi::DependencySubmission::SnapshotStatus::SUCCESS.serialize)
+        expect(payload[:metadata][:scanned_manifest_path]).to eql("rubygems::/")
       end
 
       update_graph_processor.run
@@ -789,6 +811,134 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       expect(service).to receive(:record_update_job_error)
 
       update_graph_processor.run
+    end
+
+    it "records a failed workflow result" do
+      expect(service).to receive(:record_workflow_result).with(
+        directory: "/",
+        status: "failed",
+        details: "Unable to submit data to the Dependency Snapshot API"
+      )
+
+      update_graph_processor.run
+    end
+  end
+
+  context "when external code execution is rejected" do
+    let(:directories) { [dir1, dir2] }
+    let(:dir1) { "/" }
+    let(:dir2) { "/subproject" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: dir1
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler/original/Gemfile.lock"),
+          directory: dir1
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: dir2
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler/original/Gemfile.lock"),
+          directory: dir2
+        )
+      ]
+    end
+
+    before do
+      allow(Dependabot::FileParsers).to receive(:for_package_manager)
+        .and_raise(Dependabot::UnexpectedExternalCode)
+    end
+
+    context "when executing standalone" do
+      before do
+        allow(Dependabot::Environment).to receive(:github_actions?).and_return(false)
+      end
+
+      it "records a warning for each directory" do
+        expect(service).to receive(:record_update_job_warning).with(
+          warn_type: "unexpected_external_code",
+          warn_title: "Refusing to execute external code",
+          warn_description: "Cannot process directory / without external code execution"
+        )
+        expect(service).to receive(:record_update_job_warning).with(
+          warn_type: "unexpected_external_code",
+          warn_title: "Refusing to execute external code",
+          warn_description: "Cannot process directory /subproject without external code execution"
+        )
+
+        update_graph_processor.run
+      end
+
+      it "does not send any dependency submissions" do
+        expect(service).not_to receive(:create_dependency_submission)
+
+        update_graph_processor.run
+      end
+
+      it "does not halt processing of remaining directories" do
+        call_count = 0
+        allow(service).to receive(:record_update_job_warning) { call_count += 1 }
+
+        update_graph_processor.run
+
+        expect(call_count).to eq(2)
+      end
+
+      it "does not record workflow results when not in GitHub Actions" do
+        expect(service).not_to receive(:record_workflow_result)
+
+        update_graph_processor.run
+      end
+    end
+
+    context "when executing in GitHub Actions" do
+      before do
+        allow(Dependabot::Environment).to receive(:github_actions?).and_return(true)
+      end
+
+      it "sends a FAILED empty submission for each directory" do
+        expect(service).to receive(:create_dependency_submission).twice do |args|
+          payload = args[:dependency_submission].payload
+          expect(payload[:metadata][:status]).to eql(
+            GithubApi::DependencySubmission::SnapshotStatus::FAILED.serialize
+          )
+          expect(payload[:metadata][:reason]).to eql("unexpected_external_code")
+        end
+
+        update_graph_processor.run
+      end
+
+      it "records a warning for each directory" do
+        expect(service).to receive(:record_update_job_warning).twice
+
+        update_graph_processor.run
+      end
+
+      it "records a failed workflow result for each directory" do
+        expect(service).to receive(:record_workflow_result).with(
+          directory: "/",
+          status: "failed",
+          details: a_string_including("Dependabot refused to execute external code")
+        )
+        expect(service).to receive(:record_workflow_result).with(
+          directory: "/subproject",
+          status: "failed",
+          details: a_string_including("Dependabot refused to execute external code")
+        )
+
+        update_graph_processor.run
+      end
     end
   end
 end

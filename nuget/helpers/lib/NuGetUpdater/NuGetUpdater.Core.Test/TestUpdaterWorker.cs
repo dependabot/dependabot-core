@@ -11,14 +11,14 @@ internal class TestUpdaterWorker : IUpdaterWorker
         _getResult = getResult;
     }
 
-    public Task<UpdateOperationResult> RunAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTransitive)
+    public Task<UpdateOperationResult> RunAsync(string repoRootPath, string workspacePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion, bool isTopLevel)
     {
-        return _getResult((repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTransitive));
+        return _getResult((repoRootPath, workspacePath, dependencyName, previousDependencyVersion, newDependencyVersion, isTopLevel));
     }
 
-    public static TestUpdaterWorker FromResults(params (string RepoRootPath, string WorkspacePath, string DependencyName, string PreviousDependencyVersion, string NewDependencyVersion, bool IsTransitive, UpdateOperationResult Result)[] results)
+    public static TestUpdaterWorker FromResults(params (string RepoRootPath, string WorkspacePath, string DependencyName, string PreviousDependencyVersion, string NewDependencyVersion, bool IsTopLevel, UpdateOperationResult Result)[] results)
     {
-        return new TestUpdaterWorker(((string RepoRootPath, string WorkspacePath, string DependencyName, string PreviousDependencyVersion, string NewDependencyVersion, bool IsTransitive) input) =>
+        return new TestUpdaterWorker(((string RepoRootPath, string WorkspacePath, string DependencyName, string PreviousDependencyVersion, string NewDependencyVersion, bool IsTopLevel) input) =>
         {
             foreach (var set in results)
             {
@@ -27,7 +27,7 @@ internal class TestUpdaterWorker : IUpdaterWorker
                     set.DependencyName == input.DependencyName &&
                     set.PreviousDependencyVersion == input.PreviousDependencyVersion &&
                     set.NewDependencyVersion == input.NewDependencyVersion &&
-                    set.IsTransitive == input.IsTransitive)
+                    set.IsTopLevel == input.IsTopLevel)
                 {
                     return Task.FromResult(set.Result);
                 }

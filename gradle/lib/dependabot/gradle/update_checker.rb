@@ -62,7 +62,7 @@ module Dependabot
         nil
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         property_names =
           declarations_using_a_property

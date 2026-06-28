@@ -3,7 +3,9 @@
 
 require "sorbet-runtime"
 
+require "dependabot/clients/github_with_retries"
 require "dependabot/errors"
+require "dependabot/git_cooldown_date_resolver"
 require "dependabot/github_actions/file_parser"
 require "dependabot/github_actions/package/package_details_fetcher"
 require "dependabot/github_actions/requirement"
@@ -19,6 +21,7 @@ module Dependabot
     class UpdateChecker
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
+        include Dependabot::GitCooldownDateResolver
 
         sig do
           params(
@@ -100,6 +103,40 @@ module Dependabot
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
         def latest_version_tag
           available_latest_version_tag
+        end
+
+        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        def latest_version_tag_respecting_cooldown
+          return @latest_version_tag_respecting_cooldown if defined?(@latest_version_tag_respecting_cooldown)
+
+          @latest_version_tag_respecting_cooldown = T.let(
+            begin
+              selected_release = latest_release_version
+              if selected_release.nil? || selected_release.is_a?(String)
+                nil
+              else
+                latest_tag = available_latest_version_tag
+                if latest_tag&.fetch(:version) == selected_release
+                  latest_tag
+                else
+                  T.must(package_details_fetcher)
+                   .allowed_version_tags_with_release_dates
+                   .find { |tag_hash| tag_hash.fetch(:version) == selected_release }
+                end
+              end
+            end,
+            T.nilable(T::Hash[Symbol, T.untyped])
+          )
+        end
+
+        sig { override.returns(T.nilable(String)) }
+        def cooldown_source_url
+          @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
+        end
+
+        sig { override.returns(T::Array[Dependabot::Credential]) }
+        def cooldown_credentials
+          @credentials
         end
 
         private
@@ -211,34 +248,68 @@ module Dependabot
           []
         end
 
+        # Returns the release date for the latest version tag.
+        # Priority: GitHub Release published_at > tag creation date > commit date.
+        # This ensures re-tagged or republished releases are evaluated based on
+        # when they were actually made available.
         sig { returns(T.nilable(String)) }
         def commit_metadata_details
           @commit_metadata_details ||= T.let(
-            begin
-              url = @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
-              source = T.must(Source.from_url(url))
-
-              SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
-                repo_contents_path = File.join(temp_dir, File.basename(source.repo))
-
-                SharedHelpers.run_shell_command("git clone --bare --no-recurse-submodules #{url} #{repo_contents_path}")
-                Dir.chdir(repo_contents_path) do
-                  date = SharedHelpers.run_shell_command(
-                    "git show --no-patch --format=\"%cd\" " \
-                    "--date=iso #{commit_ref}"
-                  )
-                  Dependabot.logger.info("Found release date : #{Time.parse(date)}")
-                  return date
-                end
-              end
-            rescue StandardError => e
-              msg = "Error (github actions) while checking release date for #{dependency.name}: #{e.message}"
-              Dependabot.logger.warn(msg)
-
-              nil
-            end,
+            resolve_commit_metadata_details,
             T.nilable(String)
           )
+        end
+
+        sig { returns(T.nilable(String)) }
+        def resolve_commit_metadata_details
+          # First, try GitHub Release published_at via Octokit
+          tag_name = latest_version_tag&.fetch(:tag, nil)
+          normalized_tag = tag_name ? normalize_tag_name(tag_name) : nil
+          if normalized_tag
+            release_date = github_release_published_at(normalized_tag)
+            if release_date
+              Dependabot.logger.info("Found release date from GitHub Release: #{release_date}")
+              return release_date.iso8601
+            end
+          end
+
+          # Fallback to git-based date detection
+          fetch_date_from_git(normalized_tag)
+        rescue StandardError => e
+          msg = "Error (github actions) while checking release date for #{dependency.name}: #{e.message}"
+          Dependabot.logger.warn(msg)
+          nil
+        end
+
+        sig { params(tag_name: T.nilable(String)).returns(T.nilable(String)) }
+        def fetch_date_from_git(tag_name)
+          url = cooldown_source_url
+          source = T.must(Source.from_url(url))
+
+          SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
+            repo_contents_path = File.join(temp_dir, File.basename(source.repo))
+
+            SharedHelpers.run_shell_command("git clone --bare --no-recurse-submodules #{url} #{repo_contents_path}")
+            Dir.chdir(repo_contents_path) do
+              date = if tag_name
+                       tag_date = SharedHelpers.run_shell_command(
+                         "git for-each-ref --format=\"%(creatordate:iso)\" " \
+                         "\"refs/tags/#{tag_name}\"",
+                         fingerprint: "git for-each-ref --format=\"%(creatordate:iso)\" \"refs/tags/<tag_name>\""
+                       ).strip
+                       tag_date.empty? ? nil : tag_date
+                     end
+
+              date ||= SharedHelpers.run_shell_command(
+                "git show --no-patch --format=\"%cd\" " \
+                "--date=iso #{commit_ref}",
+                fingerprint: "git show --no-patch --format=\"%cd\" --date=iso <commit_ref>"
+              ).strip
+
+              Dependabot.logger.info("Found release date : #{Time.parse(date)}")
+              date
+            end
+          end
         end
 
         sig { params(release_date: T.nilable(String)).returns(T::Boolean) }

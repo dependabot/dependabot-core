@@ -1,0 +1,14 @@
+[project]
+name = "test-project"
+version = "0.1.0"
+description = "A test project with poetry plugins"
+
+[tool.poetry]
+requires-poetry = ">=2.0"
+
+[tool.poetry.requires-plugins]
+poetry-plugin-export = ">=1.0"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+requests = "^2.28"

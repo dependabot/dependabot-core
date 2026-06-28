@@ -51,8 +51,8 @@ RSpec.describe Dependabot::Opentofu::UpdateChecker::LatestVersionResolver do
   describe "#filter_versions_in_cooldown_period_from_provider" do
     let(:versions) do
       [
-        instance_double(Dependabot::Version, to_s: "v1.0.0"),
-        instance_double(Dependabot::Version, to_s: "v0.9.0")
+        instance_double(Dependabot::Version, to_s: "1.0.0"),
+        instance_double(Dependabot::Version, to_s: "0.9.0")
       ]
     end
 
@@ -60,23 +60,23 @@ RSpec.describe Dependabot::Opentofu::UpdateChecker::LatestVersionResolver do
       allow(resolver).to receive(:select_tags_which_in_cooldown_from_provider).and_return(["v0.9.0"])
     end
 
-    it "filters out versions in cooldown period" do
+    it "filters out versions in cooldown period despite v prefix mismatch" do
       result = resolver.filter_versions_in_cooldown_period_from_provider(versions)
-      expect(result.map(&:to_s)).to eq(["v1.0.0"])
+      expect(result.map(&:to_s)).to eq(["1.0.0"])
     end
 
     it "returns all versions if an error occurs" do
       allow(resolver).to receive(:select_tags_which_in_cooldown_from_provider).and_raise(StandardError)
       result = resolver.filter_versions_in_cooldown_period_from_provider(versions)
-      expect(result.map(&:to_s)).to eq(["v1.0.0", "v0.9.0"])
+      expect(result.map(&:to_s)).to eq(["1.0.0", "0.9.0"])
     end
   end
 
   describe "#filter_versions_in_cooldown_period_from_module" do
     let(:versions) do
       [
-        instance_double(Dependabot::Version, to_s: "v1.0.0"),
-        instance_double(Dependabot::Version, to_s: "v0.9.0")
+        instance_double(Dependabot::Version, to_s: "1.0.0"),
+        instance_double(Dependabot::Version, to_s: "0.9.0")
       ]
     end
 
@@ -84,15 +84,15 @@ RSpec.describe Dependabot::Opentofu::UpdateChecker::LatestVersionResolver do
       allow(resolver).to receive(:select_tags_which_in_cooldown_from_module).and_return(["v0.9.0"])
     end
 
-    it "filters out versions in cooldown period" do
+    it "filters out versions in cooldown period despite v prefix mismatch" do
       result = resolver.filter_versions_in_cooldown_period_from_module(versions)
-      expect(result.map(&:to_s)).to eq(["v1.0.0"])
+      expect(result.map(&:to_s)).to eq(["1.0.0"])
     end
 
     it "returns all versions if an error occurs" do
       allow(resolver).to receive(:select_tags_which_in_cooldown_from_module).and_raise(StandardError)
       result = resolver.filter_versions_in_cooldown_period_from_module(versions)
-      expect(result.map(&:to_s)).to eq(["v1.0.0", "v0.9.0"])
+      expect(result.map(&:to_s)).to eq(["1.0.0", "0.9.0"])
     end
   end
 
