@@ -193,6 +193,7 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
 
       it "returns the latest version at the same precision" do
         expect(updated_requirements.first[:requirement]).to eq("2")
+        expect(checker.latest_version.to_s).to eq("2.0.0")
       end
     end
 
@@ -204,6 +205,7 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
 
       it "preserves the major-only pin by truncating the latest version" do
         expect(updated_requirements.first[:requirement]).to eq("1")
+        expect(checker.latest_version.to_s).to eq("1.10.0")
       end
     end
 
@@ -215,6 +217,7 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
 
       it "updates the major-only pin to the new major by truncating" do
         expect(updated_requirements.first[:requirement]).to eq("2")
+        expect(checker.latest_version.to_s).to eq("2.0.0")
       end
     end
   end
