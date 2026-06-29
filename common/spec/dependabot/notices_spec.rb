@@ -130,7 +130,7 @@ RSpec.describe Dependabot::Notice do
         let(:raw_version) { Dependabot::Version.new("2.0.1") }
 
         it "returns a deprecation notice using detected_version" do
-          expect(deprecation_notice.to_hash)
+          expect(deprecation_notice.to_h)
             .to eq(
               {
                 mode: "WARN",
@@ -150,7 +150,7 @@ RSpec.describe Dependabot::Notice do
         let(:raw_version) { nil }
 
         it "returns a deprecation notice using detected_version" do
-          expect(deprecation_notice.to_hash)
+          expect(deprecation_notice.to_h)
             .to eq(
               {
                 mode: "WARN",

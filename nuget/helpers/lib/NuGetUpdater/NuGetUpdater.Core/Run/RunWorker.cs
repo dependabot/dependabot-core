@@ -44,7 +44,7 @@ public class RunWorker
     public async Task<int> RunAsync(FileInfo jobFilePath, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha)
     {
         var jobFileContent = await File.ReadAllTextAsync(jobFilePath.FullName);
-        var jobWrapper = Deserialize(jobFileContent);
+        var jobWrapper = Deserialize(jobFileContent, _logger);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
         var result = await RunAsync(jobWrapper.Job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, experimentsManager);
         return result;
@@ -264,7 +264,7 @@ public class RunWorker
         return relativeResolvedName;
     }
 
-    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string repoRoot, ILogger logger, HashSet<string> initiallyExistingLockFiles)
+    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string repoRoot, ILogger logger, HashSet<string> initiallyExistingFiles)
     {
         string GetFullRepoPath(string path)
         {
@@ -272,12 +272,17 @@ public class RunWorker
             return Path.Join(discoveryResult.Path, path).FullyNormalizedRootedPath();
         }
 
+        bool IsInitiallyPresent(string filePath)
+        {
+            return !ModifiedFilesTracker.IsFileNotInitiallyPresent(Path.Join(discoveryResult.Path, filePath).NormalizePathToUnix(), initiallyExistingFiles);
+        }
+
         var auxiliaryFiles = new List<string>();
-        if (discoveryResult.GlobalJson is not null)
+        if (discoveryResult.GlobalJson is not null && IsInitiallyPresent(discoveryResult.GlobalJson.FilePath))
         {
             auxiliaryFiles.Add(GetFullRepoPath(discoveryResult.GlobalJson.FilePath));
         }
-        if (discoveryResult.DotNetToolsJson is not null)
+        if (discoveryResult.DotNetToolsJson is not null && IsInitiallyPresent(discoveryResult.DotNetToolsJson.FilePath))
         {
             auxiliaryFiles.Add(GetFullRepoPath(discoveryResult.DotNetToolsJson.FilePath));
         }
@@ -288,7 +293,7 @@ public class RunWorker
             foreach (var extraFile in project.ImportedFiles.Concat(project.AdditionalFiles))
             {
                 var extraFileFullPath = Path.Join(projectDirectory, extraFile);
-                if (ModifiedFilesTracker.IsLockFileNotInitiallyPresent(Path.Join(discoveryResult.Path, extraFileFullPath).NormalizePathToUnix(), initiallyExistingLockFiles))
+                if (!IsInitiallyPresent(extraFileFullPath))
                 {
                     continue;
                 }
@@ -298,28 +303,30 @@ public class RunWorker
             }
         }
 
-        var allDependenciesWithFilePath = discoveryResult.Projects.SelectMany(p =>
-        {
-            return p.Dependencies
-                .Where(d => d.Version is not null)
-                .Select(d =>
-                    (p.FilePath, new ReportedDependency()
-                    {
-                        Name = d.Name,
-                        Requirements = [new ReportedRequirement()
-                            {
-                                File = GetFullRepoPath(p.FilePath),
-                                Requirement = d.Version!,
-                                Groups = ["dependencies"],
-                            }],
-                        Version = d.Version,
-                    }));
-        }).ToList();
+        var allDependenciesWithFilePath = discoveryResult.Projects
+            .Where(p => IsInitiallyPresent(p.FilePath))
+            .SelectMany(p =>
+            {
+                return p.Dependencies
+                    .Where(d => d.Version is not null)
+                    .Select(d =>
+                        (p.FilePath, new ReportedDependency()
+                        {
+                            Name = d.Name,
+                            Requirements = [new ReportedRequirement()
+                                {
+                                    File = GetFullRepoPath(p.FilePath),
+                                    Requirement = d.Version!,
+                                    Groups = ["dependencies"],
+                                }],
+                            Version = d.Version,
+                        }));
+            }).ToList();
 
         var nonProjectDependencySet = new (string?, IEnumerable<Dependency>)[]
         {
-            (discoveryResult.GlobalJson?.FilePath, discoveryResult.GlobalJson?.Dependencies ?? []),
-            (discoveryResult.DotNetToolsJson?.FilePath, discoveryResult.DotNetToolsJson?.Dependencies ?? []),
+            (discoveryResult.GlobalJson is not null && IsInitiallyPresent(discoveryResult.GlobalJson.FilePath) ? discoveryResult.GlobalJson.FilePath : null, discoveryResult.GlobalJson?.Dependencies ?? []),
+            (discoveryResult.DotNetToolsJson is not null && IsInitiallyPresent(discoveryResult.DotNetToolsJson.FilePath) ? discoveryResult.DotNetToolsJson.FilePath : null, discoveryResult.DotNetToolsJson?.Dependencies ?? []),
         };
 
         foreach (var (filePath, dependencies) in nonProjectDependencySet)
@@ -352,6 +359,7 @@ public class RunWorker
             .ToArray();
 
         var dependencyFiles = discoveryResult.Projects
+            .Where(p => IsInitiallyPresent(p.FilePath))
             .Select(p => GetFullRepoPath(p.FilePath))
             .Concat(auxiliaryFiles)
             .Select(p => EnsureCorrectFileCasing(p, repoRoot, logger))
@@ -367,9 +375,12 @@ public class RunWorker
         return updatedDependencyList;
     }
 
-    public static JobFile Deserialize(string json)
+    public static JobFile Deserialize(string json) => Deserialize(json, new ConsoleLogger());
+
+    public static JobFile Deserialize(string json, ILogger logger)
     {
-        var jobFile = JsonSerializer.Deserialize<JobFile>(json, SerializerOptions);
+        var options = GetDeserializerOptions(logger);
+        var jobFile = JsonSerializer.Deserialize<JobFile>(json, options);
         if (jobFile is null)
         {
             throw new InvalidOperationException("Unable to deserialize job wrapper.");
@@ -381,6 +392,13 @@ public class RunWorker
         }
 
         return jobFile;
+    }
+
+    internal static JsonSerializerOptions GetDeserializerOptions(ILogger logger)
+    {
+        var options = new JsonSerializerOptions(SerializerOptions);
+        options.Converters.Insert(0, new JobCommandConverter(logger));
+        return options;
     }
 
     internal static string AddInsecureConnectionsAttribute(string nugetConfigContents)

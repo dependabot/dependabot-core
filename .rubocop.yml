@@ -96,11 +96,33 @@ Sorbet/BlockMethodDefinition:
   Enabled: true
   Exclude:
     - "**/spec/**/*"
+Sorbet/EnforceSignatures:
+  Enabled: true
+  Exclude:
+    - "**/spec/**/*"
+    - "bin/**/*"
+    - "script/**/*"
+    - "bundler/helpers/**/*"
+    - "rakelib/support/test/**/*"
 Sorbet/ForbidTAnyWithNil:
   Enabled: true
 Sorbet/ForbidTUnsafe:
   Enabled: true
 Sorbet/ForbidTUntyped:
+  Enabled: true
+Sorbet/ForbidIncludeConstLiteral:
+  Enabled: true
+Sorbet/ForbidSuperclassConstLiteral:
+  Enabled: true
+Sorbet/HasSigil:
+  Enabled: true
+Sorbet/ImplicitConversionMethod:
+  Enabled: true
+Sorbet/Refinement:
+  Enabled: true
+Sorbet/SingleLineRbiClassModuleDefinitions:
+  Enabled: true
+Sorbet/VoidCheckedTests:
   Enabled: true
 Sorbet/TrueSigil:
   Enabled: true
@@ -114,6 +136,7 @@ Sorbet/StrictSigil:
     - "bin/**/*"
     - "rakelib/support/test/**/*"
 Sorbet/StrongSigil:
+  Enabled: false
   Exclude:
     - "**/spec/**/*"
     - "rakelib/support/test/**/*"
