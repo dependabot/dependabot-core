@@ -70,10 +70,12 @@ module Dependabot
       # The "packages" field in devbox.json is an array of `name@constraint`
       # strings — the only form supported in beta. Any other shape (e.g. the
       # object form) yields no dependencies.
-      sig { returns(Array) }
+      sig { returns(T::Array[Object]) }
       def package_entries
         packages = Helpers.parse_json_or_jsonc(manifest&.content).fetch("packages", [])
-        packages.is_a?(Array) ? packages : []
+        return [] unless packages.is_a?(Array)
+
+        T.cast(packages, T::Array[Object])
       end
 
       # Splits a package entry on the LAST "@" so future scoped names

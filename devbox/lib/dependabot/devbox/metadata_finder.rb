@@ -37,7 +37,7 @@ module Dependabot
 
       # The versions list for the exact-name package in the Nixhub search
       # response (search is fuzzy, so match the name precisely).
-      sig { returns(Array) }
+      sig { returns(T::Array[Object]) }
       def package_versions
         response = Dependabot::RegistryClient.get(
           url: "#{SEARCH_URL}?q=#{CGI.escape(dependency.name)}"

@@ -25,9 +25,9 @@ module Dependabot
         Regexp
       )
 
-      sig { params(content: T.nilable(String)).returns(Hash) }
+      sig { params(content: T.nilable(String)).returns(T::Hash[String, Object]) }
       def self.parse_json_or_jsonc(content)
-        return {} unless content
+        return T.cast({}, T::Hash[String, Object]) unless content
 
         cleaned = content.gsub(JSONC_TOKEN) { ::Regexp.last_match(1) || "" }
 
@@ -37,7 +37,7 @@ module Dependabot
         # opaque sorbet-runtime type error at the call site.
         raise JSON::ParserError, "Expected a JSON object, got #{parsed.class}" unless parsed.is_a?(Hash)
 
-        parsed
+        T.cast(parsed, T::Hash[String, Object])
       end
 
       # Wraps `devbox <args>` via Dependabot's standard subprocess helper, so
