@@ -165,7 +165,12 @@ module GithubApi
       returns(T::Hash[String, T.untyped])
     end
     def manifests
-      return {} if resolved_dependencies.empty?
+      # We only omit the manifest entry when there is no real manifest file to report, e.g. an empty
+      # submission representing a directory where no manifests were found or a failure occurred.
+      #
+      # A manifest file that genuinely resolves to no dependencies should still be submitted with an
+      # empty `resolved` collection so the snapshot reflects that the file was scanned.
+      return {} if manifest_file.name.empty?
 
       {
         manifest_file.path => {

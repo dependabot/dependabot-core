@@ -103,33 +103,68 @@ module Dependabot
         T::Hash[String, String]
       )
 
-      sig { params(cfg: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Array[IgnoreCondition]) }
+      sig { params(cfg: T.nilable(T::Hash[Symbol, T.anything])).returns(T::Array[IgnoreCondition]) }
       def ignore_conditions(cfg)
-        ignores = cfg&.dig(:ignore) || []
-        ignores.map do |ic|
+        array_values(cfg&.dig(:ignore)).map do |raw|
+          ic = hash_values(raw)
           IgnoreCondition.new(
-            dependency_name: ic[:"dependency-name"],
-            versions: ic[:versions],
-            update_types: ic[:"update-types"]
+            dependency_name: T.must(string_value(ic[:"dependency-name"])),
+            versions: string_array(ic[:versions]),
+            update_types: string_array(ic[:"update-types"])
           )
         end
       end
 
       sig do
-        params(cfg: T.nilable(T::Hash[Symbol, T.untyped])).returns(UpdateConfig::CommitMessageOptions)
+        params(cfg: T.nilable(T::Hash[Symbol, T.anything])).returns(UpdateConfig::CommitMessageOptions)
       end
       def commit_message_options(cfg)
-        commit_message = cfg&.dig(:"commit-message") || {}
+        commit_message = hash_values(cfg&.dig(:"commit-message"))
+        prefix = string_value(commit_message[:prefix])
         UpdateConfig::CommitMessageOptions.new(
-          prefix: commit_message[:prefix],
-          prefix_development: commit_message[:"prefix-development"] || commit_message[:prefix],
-          include: commit_message[:include]
+          prefix: prefix,
+          prefix_development: string_value(commit_message[:"prefix-development"]) || prefix,
+          include: string_value(commit_message[:include])
         )
       end
 
-      sig { params(cfg: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Array[String]) }
+      sig { params(cfg: T.nilable(T::Hash[Symbol, T.anything])).returns(T::Array[String]) }
       def exclude_paths(cfg)
-        Array(cfg&.dig(:"exclude-paths") || [])
+        string_array(cfg&.dig(:"exclude-paths")) || []
+      end
+
+      # The methods below narrow the loosely typed, parsed-YAML config values
+      # (Symbol-keyed hashes whose values are arbitrary) into the specific
+      # types the config objects expect.
+
+      sig { params(value: T.anything).returns(T.nilable(String)) }
+      def string_value(value)
+        case value
+        when String then value
+        end
+      end
+
+      sig { params(value: T.anything).returns(T::Hash[Symbol, T.anything]) }
+      def hash_values(value)
+        case value
+        when Hash then value
+        else {}
+        end
+      end
+
+      sig { params(value: T.anything).returns(T::Array[T.anything]) }
+      def array_values(value)
+        case value
+        when Array then value
+        else []
+        end
+      end
+
+      sig { params(value: T.anything).returns(T.nilable(T::Array[String])) }
+      def string_array(value)
+        case value
+        when Array then value.map(&:to_s)
+        end
       end
     end
   end

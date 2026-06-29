@@ -204,6 +204,39 @@ RSpec.describe GithubApi::DependencySubmission do
     it_behaves_like "dependency_submission", true
   end
 
+  context "with a manifest file but no resolved dependencies" do
+    subject(:dependency_submission) do
+      described_class.new(
+        job_id: "9999",
+        branch: "main",
+        sha: "fake-sha",
+        package_manager: "bundler",
+        manifest_file: lockfile,
+        resolved_dependencies: {}
+      )
+    end
+
+    let(:lockfile) do
+      Dependabot::DependencyFile.new(
+        name: "Gemfile.lock",
+        content: fixture("bundler/original/Gemfile.lock"),
+        directory: "/"
+      )
+    end
+
+    it "still reports the manifest with an empty resolved collection" do
+      payload = dependency_submission.payload
+
+      expect(payload[:manifests].length).to eq(1)
+
+      manifest = payload[:manifests].fetch("/Gemfile.lock")
+      expect(manifest[:name]).to eq("/Gemfile.lock")
+      expect(manifest[:file][:source_location]).to eq("Gemfile.lock")
+      expect(manifest[:metadata][:ecosystem]).to eq("rubygems")
+      expect(manifest[:resolved]).to be_empty
+    end
+  end
+
   context "when the commit SHA is 64 characters (SHA-256 repo)" do
     subject(:dependency_submission) do
       described_class.new(
