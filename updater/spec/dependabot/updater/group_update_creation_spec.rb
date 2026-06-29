@@ -956,4 +956,59 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       end
     end
   end
+
+  describe "#filter_dependencies_for_group" do
+    let(:vite_dependency) do
+      instance_double(Dependabot::Dependency, name: "vite", version: "4.0.0")
+    end
+
+    let(:react_dependency) do
+      instance_double(Dependabot::Dependency, name: "react", version: "18.0.0")
+    end
+
+    let(:group) do
+      Dependabot::DependencyGroup.new(
+        name: "vite-group",
+        rules: { "patterns" => ["vite*"] }
+      )
+    end
+
+    let(:directory) { "/" }
+
+    before do
+      allow(job).to receive_messages(ignore_conditions_for: [], allowed_update?: true)
+      allow(dependency_snapshot).to receive(:groups).and_return([group])
+    end
+
+    it "filters out dependencies that don't match the group pattern" do
+      dependencies = [vite_dependency, react_dependency]
+      result = test_instance.send(:filter_dependencies_for_group, dependencies, group, directory)
+
+      expect(result).to eq([vite_dependency])
+      expect(result).not_to include(react_dependency)
+    end
+
+    it "returns all dependencies when all match the pattern" do
+      dependencies = [vite_dependency]
+      result = test_instance.send(:filter_dependencies_for_group, dependencies, group, directory)
+
+      expect(result).to eq([vite_dependency])
+    end
+
+    it "returns empty array when no dependencies match" do
+      dependencies = [react_dependency]
+      result = test_instance.send(:filter_dependencies_for_group, dependencies, group, directory)
+
+      expect(result).to eq([])
+    end
+
+    it "filters out dependencies not allowed by job config" do
+      dependencies = [vite_dependency]
+      allow(job).to receive(:allowed_update?).with(vite_dependency, check_previous_version: true).and_return(false)
+
+      result = test_instance.send(:filter_dependencies_for_group, dependencies, group, directory)
+
+      expect(result).to eq([])
+    end
+  end
 end
