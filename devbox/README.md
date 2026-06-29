@@ -19,20 +19,20 @@ Devbox support for [`dependabot-core`][core-repo].
 
 ### Implementation Status
 
-This ecosystem is currently under development. See [NEW_ECOSYSTEMS.md](../NEW_ECOSYSTEMS.md) for implementation guidelines.
+Beta implementation complete and gated behind `allow_beta_ecosystems?`. See [NEW_ECOSYSTEMS.md](../NEW_ECOSYSTEMS.md) for implementation guidelines.
 
 #### Required Classes
-- [ ] FileFetcher
-- [ ] FileParser
-- [ ] UpdateChecker
-- [ ] FileUpdater
+- [x] FileFetcher
+- [x] FileParser
+- [x] UpdateChecker
+- [x] FileUpdater
 
 #### Optional Classes
-- [ ] MetadataFinder
-- [ ] Version
-- [ ] Requirement
+- [x] MetadataFinder
+- [x] Version
+- [x] Requirement
 
 #### Supporting Infrastructure
-- [ ] Comprehensive unit tests
-- [ ] CI/CD integration
-- [ ] Documentation
+- [x] Comprehensive unit tests
+- [x] CI/CD integration
+- [x] Documentation
