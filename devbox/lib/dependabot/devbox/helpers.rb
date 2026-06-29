@@ -25,7 +25,7 @@ module Dependabot
         Regexp
       )
 
-      sig { params(content: T.nilable(String)).returns(T::Hash[String, T.anything]) }
+      sig { params(content: T.nilable(String)).returns(Hash) }
       def self.parse_json_or_jsonc(content)
         return {} unless content
 

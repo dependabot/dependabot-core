@@ -52,7 +52,7 @@ module Dependabot
 
         # Nixhub search is fuzzy and can return several packages; keep only the
         # one whose name matches the dependency exactly.
-        sig { returns(T.nilable(T::Hash[String, T.anything])) }
+        sig { returns(T.nilable(Hash)) }
         def fetch_package
           response = Dependabot::RegistryClient.get(
             url: "#{SEARCH_URL}?q=#{CGI.escape(dependency.name)}"
@@ -69,7 +69,7 @@ module Dependabot
         # Approximates a version's release date with the earliest per-system
         # `last_updated` (Unix epoch seconds), falling back to the top-level
         # `last_updated`. `filter_by_cooldown` treats a nil result gracefully.
-        sig { params(version_data: T::Hash[String, T.anything]).returns(T.nilable(Time)) }
+        sig { params(version_data: Hash).returns(T.nilable(Time)) }
         def release_time(version_data)
           timestamps = []
 

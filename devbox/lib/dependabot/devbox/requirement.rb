@@ -25,8 +25,10 @@ module Dependabot
 
       sig { params(requirements: T.nilable(T.any(String, T::Array[String]))).void }
       def initialize(*requirements)
-        constraints = requirements.flatten.compact.map do |req_string|
-          convert_devbox_constraint_to_ruby_constraint(req_string.strip)
+        constraints = requirements.flatten.compact.flat_map do |req_string|
+          req_string.strip.split(/\s*,\s*/).map do |part|
+            convert_devbox_constraint_to_ruby_constraint(part.strip)
+          end
         end
         constraints = [">= 0"] if constraints.empty?
 
