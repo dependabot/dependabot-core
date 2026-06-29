@@ -67,6 +67,7 @@ $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
 $LOAD_PATH << "./conda/lib"
 $LOAD_PATH << "./deno/lib"
+$LOAD_PATH << "./devbox/lib"
 $LOAD_PATH << "./devcontainers/lib"
 $LOAD_PATH << "./docker/lib"
 $LOAD_PATH << "./dotnet_sdk/lib"
@@ -126,6 +127,7 @@ require "dependabot/cargo"
 require "dependabot/composer"
 require "dependabot/conda"
 require "dependabot/deno"
+require "dependabot/devbox"
 require "dependabot/devcontainers"
 require "dependabot/docker"
 require "dependabot/dotnet_sdk"
@@ -378,6 +380,7 @@ valid_package_managers = %w(
   composer
   conda
   deno
+  devbox
   devcontainers
   docker
   docker_compose

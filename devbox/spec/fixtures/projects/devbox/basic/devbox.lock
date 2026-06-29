@@ -1,0 +1,59 @@
+{
+  "lockfile_version": "1",
+  "packages": {
+    "ripgrep@latest": {
+      "last_modified": "2024-05-30T09:12:34Z",
+      "resolved": "github:NixOS/nixpkgs/a1d92660c6b3b7c26fb883500a80ea9d33321be2#ripgrep",
+      "source": "devbox-search",
+      "version": "14.1.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/000ripgrep-14.1.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/000ripgrep-14.1.0"
+        }
+      }
+    },
+    "python@3.10": {
+      "last_modified": "2024-05-28T18:03:11Z",
+      "resolved": "github:NixOS/nixpkgs/a1d92660c6b3b7c26fb883500a80ea9d33321be2#python310",
+      "source": "devbox-search",
+      "version": "3.10.13",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/000python3-3.10.13",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/000python3-3.10.13"
+        }
+      }
+    },
+    "go@1.21.5": {
+      "last_modified": "2024-01-09T11:22:33Z",
+      "resolved": "github:NixOS/nixpkgs/a1d92660c6b3b7c26fb883500a80ea9d33321be2#go_1_21",
+      "source": "devbox-search",
+      "version": "1.21.5",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/000go-1.21.5",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/000go-1.21.5"
+        }
+      }
+    }
+  }
+}

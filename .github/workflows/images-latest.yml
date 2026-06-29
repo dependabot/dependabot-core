@@ -43,6 +43,7 @@ jobs:
           - { name: composer, ecosystem: composer }
           - { name: conda, ecosystem: conda }
           - { name: deno, ecosystem: deno }
+          - { name: devbox, ecosystem: devbox }
           - { name: devcontainers, ecosystem: devcontainers }
           - { name: docker_compose, ecosystem: docker-compose }
           - { name: docker, ecosystem: docker }

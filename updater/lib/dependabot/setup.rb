@@ -33,6 +33,7 @@ Sentry.init do |config|
     composer|
     conda|
     deno|
+    devbox|
     devcontainers|
     docker|
     dotnet_sdk|
@@ -78,6 +79,7 @@ require "dependabot/cargo"
 require "dependabot/composer"
 require "dependabot/conda"
 require "dependabot/deno"
+require "dependabot/devbox"
 require "dependabot/devcontainers"
 require "dependabot/docker"
 require "dependabot/docker_compose"

@@ -1,0 +1,23 @@
+{
+  "lockfile_version": "1",
+  "packages": {
+    "python@3.10": {
+      "last_modified": "2022-01-01T00:00:00Z",
+      "resolved": "github:NixOS/nixpkgs/0000000000000000000000000000000000000000#python310",
+      "source": "devbox-search",
+      "version": "3.10.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/000python3-3.10.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/000python3-3.10.0"
+        }
+      }
+    }
+  }
+}

@@ -28,6 +28,7 @@ jobs:
           - { path: composer, name: composer, ecosystem: composer }
           - { path: conda, name: conda, ecosystem: conda }
           - { path: deno, name: deno, ecosystem: deno }
+          - { path: devbox, name: devbox, ecosystem: devbox }
           - { path: devcontainers, name: devcontainers, ecosystem: devcontainers }
           - { path: docker, name: docker, ecosystem: docker }
           - { path: docker, name: docker_compose, ecosystem: docker-compose, build: docker_compose }

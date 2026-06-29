@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.13.5/.schema/devbox.schema.json",
+  // Tracked packages exercise all three constraint shapes.
+  "packages": [
+    "ripgrep@latest",
+    "python@3.10",
+    "go@1.21.5",
+  ],
+  "shell": {
+    "init_hook": [
+      "echo 'Welcome to devbox!'"
+    ]
+  }
+}

@@ -10,6 +10,9 @@ bazel:
 deno:
   - *common
   - 'deno/**'
+devbox:
+  - *common
+  - 'devbox/**'
 github_actions:
   - *common
   - 'github_actions/**'
