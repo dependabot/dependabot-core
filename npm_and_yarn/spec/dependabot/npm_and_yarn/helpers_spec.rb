@@ -865,6 +865,69 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       end
     end
 
+    describe ".run_pnpm_command integration" do
+      it "automatically injects corepack env variables" do
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
+          expect(options[:env]).not_to be_nil
+          expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+          expect(options[:env]["npm_config_registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+          expect(options[:env]["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+          expect(options[:env]["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
+          ""
+        end
+
+        described_class.run_pnpm_command("install")
+      end
+
+      context "when .npmrc registry has a trailing slash (e.g. CodeArtifact)" do
+        let(:npmrc_file) do
+          Dependabot::DependencyFile.new(
+            name: ".npmrc",
+            content: "registry=https://my-domain.d.codeartifact.amazonaws.com/npm/private/\n"
+          )
+        end
+        let(:credentials) { [] }
+
+        it "strips the trailing slash from COREPACK_NPM_REGISTRY" do
+          expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
+            expect(options[:env]).not_to be_nil
+            expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://my-domain.d.codeartifact.amazonaws.com/npm/private")
+            expect(options[:env]["npm_config_registry"]).to eq("https://my-domain.d.codeartifact.amazonaws.com/npm/private")
+            ""
+          end
+
+          described_class.run_pnpm_command("install")
+        end
+      end
+    end
+
+    describe ".run_single_yarn_command integration" do
+      before { allow(described_class).to receive(:setup_yarn_berry) }
+
+      it "automatically injects corepack env variables" do
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
+          expect(options[:env]).not_to be_nil
+          expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+          expect(options[:env]["npm_config_registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+          expect(options[:env]["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+          expect(options[:env]["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
+          ""
+        end
+
+        described_class.run_yarn_command("install")
+      end
+
+      it "merges manually provided env variables with corepack env" do
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
+          expect(options[:env]["CUSTOM_VAR"]).to eq("custom-value")
+          expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+          ""
+        end
+
+        described_class.run_yarn_command("install", env: { "CUSTOM_VAR" => "custom-value" })
+      end
+    end
+
     describe "thread-local storage" do
       it "isolates dependency_files across threads" do
         thread1_files = [npmrc_file]
