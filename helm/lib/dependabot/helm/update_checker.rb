@@ -5,7 +5,9 @@ require "sorbet-runtime"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/errors"
+require "dependabot/requirements_update_strategy"
 require "dependabot/helm/version"
+require "dependabot/helm/requirement"
 require "dependabot/docker/requirement"
 require "dependabot/shared/utils/credentials_finder"
 require "dependabot/shared_helpers"
@@ -16,10 +18,11 @@ require "dependabot/helm/helpers"
 
 module Dependabot
   module Helm
-    class UpdateChecker < Dependabot::UpdateCheckers::Base
+    class UpdateChecker < Dependabot::UpdateCheckers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
       require_relative "update_checker/latest_version_resolver"
+      require_relative "update_checker/requirements_updater"
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
@@ -41,16 +44,65 @@ module Dependabot
         return dependency.requirements unless latest_version
 
         updated_reqs = dependency.requirements.map do |req|
-          updated_metadata = req.fetch(:metadata).dup
-          updated_req = req.dup
-          updated_req[:requirement] = latest_version.to_s if updated_metadata.key?(:type)
+          next req unless req.fetch(:metadata, {}).key?(:type)
 
-          updated_req
+          if req.dig(:metadata, :type) == :helm_chart
+            updated_chart_requirement(req)
+          else
+            # Image deps keep the exact-overwrite behavior.
+            req.merge(requirement: latest_version.to_s)
+          end
         end
         wrap_requirements(updated_reqs)
       end
 
       private
+
+      # Helm stores the Chart.yaml constraint in dependency.version, not in the
+      # requirement field (the shared parser leaves it nil). Feed that constraint
+      # through the RequirementsUpdater so versioning-strategy is honored. When no
+      # strategy is set we default to BumpVersions, which preserves the authored
+      # operator and bumps the floor (e.g. `^1.0.0` -> `^1.0.5`); exact pins stay
+      # exact (`1.0.0` -> `1.5.0`).
+      sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
+      def updated_chart_requirement(req)
+        current_constraint = req[:requirement] || dependency.version
+        synthetic = T.cast(req.merge(requirement: current_constraint), Dependabot::DependencyRequirement)
+
+        T.must(
+          RequirementsUpdater.new(
+            requirements: [synthetic],
+            update_strategy: resolved_update_strategy,
+            latest_resolvable_version: T.must(latest_version).to_s
+          ).updated_requirements.first
+        )
+      end
+
+      sig { returns(Dependabot::RequirementsUpdateStrategy) }
+      def resolved_update_strategy
+        requirements_update_strategy || RequirementsUpdateStrategy::BumpVersions
+      end
+
+      # Helm stores the Chart.yaml constraint in dependency.version. For single
+      # versions and lenient forms (^1.0.0, ~1.2.0, 1.0.0) this parses directly.
+      # For multi-comparator ranges (">=1.0.0 <2.0.0", "a || b") it can't, so we
+      # anchor candidate filtering on the lowest version named in the constraint
+      # (or 0 for wildcards), letting the RequirementsUpdater decide the rewrite.
+      sig { returns(Dependabot::Version) }
+      def current_version
+        @current_version ||= T.let(
+          begin
+            version_class.new(dependency.version)
+          rescue StandardError
+            named = dependency.version.to_s.scan(/\d+(?:\.\d+)*/).filter_map do |v|
+              s = T.cast(v, String)
+              version_class.new(s) if version_class.correct?(s)
+            end
+            named.min || version_class.new("0")
+          end,
+          T.nilable(Dependabot::Version)
+        )
+      end
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def updated_dependencies_after_full_unlock
@@ -118,7 +170,7 @@ module Dependabot
       sig { params(releases: T::Array[T::Hash[String, T.untyped]]).returns(T::Array[T::Hash[String, T.untyped]]) }
       def filter_valid_releases(releases)
         releases.reject do |release|
-          version_class.new(release["version"]) <= version_class.new(dependency.version) ||
+          version_class.new(release["version"]) <= current_version ||
             ignore_requirements.any? do |r|
               r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(version_class.new(release["version"]))
             end
@@ -141,8 +193,32 @@ module Dependabot
       sig { params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Boolean) }
       def version_can_update?(requirements_to_unlock:) # rubocop:disable Lint/UnusedMethodArgument
         return false unless latest_version
+        return false unless version_class.new(latest_version.to_s) > current_version
 
-        version_class.new(latest_version.to_s) > version_class.new(dependency.version)
+        # Under range-preserving strategies, don't open a PR when the resolved
+        # version already satisfies the authored Chart.yaml constraint.
+        return true unless range_preserving_strategy?
+
+        !chart_requirement_satisfied_by_latest?
+      end
+
+      sig { returns(T::Boolean) }
+      def range_preserving_strategy?
+        [
+          RequirementsUpdateStrategy::BumpVersionsIfNecessary,
+          RequirementsUpdateStrategy::WidenRanges
+        ].include?(resolved_update_strategy)
+      end
+
+      sig { returns(T::Boolean) }
+      def chart_requirement_satisfied_by_latest?
+        return false unless dependency_type == :helm_chart
+
+        constraint = dependency.requirements.first&.dig(:requirement) || dependency.version
+        return false if constraint.nil? || constraint.to_s.strip.empty?
+
+        version = version_class.new(T.must(latest_version).to_s)
+        Helm::Requirement.requirements_array(constraint).any? { |r| r.satisfied_by?(version) }
       end
 
       sig { returns(T.nilable(T.any(String, Gem::Version))) }
@@ -296,7 +372,7 @@ module Dependabot
       sig { params(all_versions: T::Array[String]).returns(T::Array[String]) }
       def filter_valid_versions(all_versions)
         all_versions.reject do |version|
-          version_class.new(version) <= version_class.new(dependency.version) ||
+          version_class.new(version) <= current_version ||
             ignore_requirements.any? do |r|
               r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(version_class.new(version))
             end
