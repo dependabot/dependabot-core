@@ -75,7 +75,7 @@ module Dependabot
         packages = Helpers.parse_json_or_jsonc(manifest&.content).fetch("packages", [])
         return [] unless packages.is_a?(Array)
 
-        T.cast(packages, T::Array[Object])
+        packages
       end
 
       # Splits a package entry on the LAST "@" so future scoped names
