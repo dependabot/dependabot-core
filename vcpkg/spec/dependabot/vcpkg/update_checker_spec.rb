@@ -312,6 +312,62 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
     end
   end
 
+  describe "#latest_resolvable_previous_version" do
+    subject(:latest_resolvable_previous_version) do
+      checker.latest_resolvable_previous_version("2025.06.13")
+    end
+
+    let(:latest_version_finder) { instance_double(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder) }
+
+    before do
+      allow(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder)
+        .to receive(:new)
+        .and_return(latest_version_finder)
+    end
+
+    context "when the baseline is a commit SHA" do
+      let(:dependency_version) { "1111111111111111111111111111111111111111" }
+
+      before do
+        allow(latest_version_finder)
+          .to receive(:tag_for_commit_sha)
+          .with(dependency_version)
+          .and_return(previous_tag)
+      end
+
+      context "when the SHA maps to a release tag" do
+        let(:previous_tag) { "2025.04.09" }
+
+        it "returns the release tag" do
+          expect(latest_resolvable_previous_version).to eq("2025.04.09")
+        end
+      end
+
+      context "when the SHA has no matching release tag" do
+        let(:previous_tag) { nil }
+
+        it "falls back to the commit SHA" do
+          expect(latest_resolvable_previous_version).to eq(dependency_version)
+        end
+      end
+    end
+
+    context "when the version is not a commit SHA" do
+      let(:dependency_version) { "2025.04.09" }
+
+      before { allow(latest_version_finder).to receive(:tag_for_commit_sha) }
+
+      it "returns the current version unchanged" do
+        expect(latest_resolvable_previous_version).to eq("2025.04.09")
+      end
+
+      it "does not query the version finder" do
+        latest_resolvable_previous_version
+        expect(latest_version_finder).not_to have_received(:tag_for_commit_sha)
+      end
+    end
+  end
+
   describe "#latest_version_resolvable_with_full_unlock?" do
     subject(:latest_version_resolvable_with_full_unlock) do
       checker.send(:latest_version_resolvable_with_full_unlock?)
