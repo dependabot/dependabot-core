@@ -180,27 +180,17 @@ module Dependabot
       max_local_tag_for_lower_precision(allowed_refs)
     end
 
-    # Returns the latest allowed version tag. When cooldown_options are provided,
-    # tags still within their cooldown window are skipped, and nil is returned
-    # when every candidate tag is still cooling down. Cooldown is never applied
-    # when cooldown_options is nil (e.g. security updates), which short-circuits
-    # to the standard latest-tag resolution.
+    # Returns the latest allowed version tag, or nil when every candidate tag is
+    # still within its cooldown window. All cooldown handling — the nil /
+    # disabled / excluded short-circuits and the logging — lives in
+    # #apply_cooldown, so this method stays a thin orchestration step.
     sig do
       params(cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions))
         .returns(T.nilable(Dependabot::GitTagDetails))
     end
     def local_tag_for_latest_version(cooldown_options = nil)
-      return max_local_tag(allowed_version_tags) if cooldown_options.nil?
-
-      candidate_tags = allowed_version_tags
-      filtered_tags = apply_cooldown(candidate_tags, cooldown_options)
-
-      if filtered_tags.empty? && candidate_tags.any?
-        Dependabot.logger.info(
-          "All git tags for #{dependency.name} are within their cooldown period; skipping update"
-        )
-        return nil
-      end
+      filtered_tags = apply_cooldown(allowed_version_tags, cooldown_options)
+      return nil if filtered_tags.nil?
 
       max_local_tag(filtered_tags)
     end
@@ -762,17 +752,32 @@ module Dependabot
       T.must(T.must(name.match(VERSION_REGEX)).named_captures.fetch("version"))
     end
 
-    # Returns the candidate tags with any that are still inside their cooldown
-    # window removed, so callers can pick the latest tag that is eligible to be
-    # proposed as an update.
+    # Filters out git tags that are still within their cooldown window. Returns
+    # the candidate tags unchanged when cooldown does not apply (no options,
+    # disabled, or the dependency is excluded), and nil when every candidate tag
+    # is still within its cooldown window, so the caller proposes no update.
     sig do
       params(
         candidate_tags: T::Array[Dependabot::GitRef],
-        cooldown: Dependabot::Package::ReleaseCooldownOptions
-      ).returns(T::Array[Dependabot::GitRef])
+        cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
+      ).returns(T.nilable(T::Array[Dependabot::GitRef]))
     end
-    def apply_cooldown(candidate_tags, cooldown)
-      candidate_tags.reject { |tag| tag_in_cooldown_period?(tag, cooldown) }
+    def apply_cooldown(candidate_tags, cooldown_options)
+      if Dependabot::UpdateCheckers::CooldownCalculation.skip_cooldown?(cooldown_options, dependency.name)
+        return candidate_tags
+      end
+
+      cooldown = T.must(cooldown_options)
+      filtered_tags = candidate_tags.reject { |tag| tag_in_cooldown_period?(tag, cooldown) }
+
+      if filtered_tags.empty? && candidate_tags.any?
+        Dependabot.logger.info(
+          "All git tags for #{dependency.name} are within their cooldown period; skipping update"
+        )
+        return nil
+      end
+
+      filtered_tags
     end
 
     sig do
