@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers"
@@ -35,11 +35,6 @@ module Dependabot
         fetched_files = [manifest_file]
         fetched_files << T.must(lockfile) if lockfile
         fetched_files
-      end
-
-      sig { override.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
-      def ecosystem_versions
-        nil
       end
 
       private
