@@ -156,4 +156,66 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
       it { is_expected.to eq("2.11.0") }
     end
   end
+
+  describe "#updated_requirements" do
+    subject(:updated_requirements) { checker.updated_requirements }
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "ghcr.io/devcontainers/features/docker-outside-of-docker",
+        version: "1.9.1",
+        requirements: [{
+          file: ".devcontainer/devcontainer.json",
+          requirement: "1",
+          groups: ["feature"],
+          source: nil
+        }],
+        package_manager: "devcontainers"
+      )
+    end
+    let(:checker) do
+      described_class.new(
+        dependency: dependency,
+        dependency_files: [],
+        repo_contents_path: nil,
+        credentials: github_credentials,
+        security_advisories: [],
+        ignored_versions: [],
+        raise_on_ignored: false
+      )
+    end
+
+    context "when published tags include precision-matching tags" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .and_return('{"publishedTags": ["1", "1.9.1", "1.10.0", "2", "2.0.0"]}')
+      end
+
+      it "returns the latest version at the same precision" do
+        expect(updated_requirements.first[:requirement]).to eq("2")
+      end
+    end
+
+    context "when published tags only include full semver without precision-matching tags (minor update)" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .and_return('{"publishedTags": ["1.9.1", "1.10.0"]}')
+      end
+
+      it "preserves the major-only pin by truncating the latest version" do
+        expect(updated_requirements.first[:requirement]).to eq("1")
+      end
+    end
+
+    context "when published tags only include full semver without precision-matching tags (major bump)" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .and_return('{"publishedTags": ["1.9.1", "2.0.0"]}')
+      end
+
+      it "updates the major-only pin to the new major by truncating" do
+        expect(updated_requirements.first[:requirement]).to eq("2")
+      end
+    end
+  end
 end

@@ -16,6 +16,16 @@ module Dependabot
         precision == other.precision
       end
 
+      sig { params(target_precision: Integer).returns(Dependabot::Devcontainers::Version) }
+      def truncate(target_precision)
+        self.class.new(segments.first(target_precision).join("."))
+      end
+
+      sig { params(other: Dependabot::Devcontainers::Version).returns(Dependabot::Devcontainers::Version) }
+      def truncate_to_precision_of(other)
+        truncate(other.precision)
+      end
+
       sig { params(requirement: Dependabot::Requirement).returns(T::Boolean) }
       def satisfies?(requirement)
         requirement.satisfied_by?(self)
