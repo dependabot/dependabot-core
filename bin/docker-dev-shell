@@ -176,6 +176,11 @@ docker run --rm -ti \
   -v "$(pwd)/deno/lib:$CODE_DIR/deno/lib" \
   -v "$(pwd)/deno/script:$CODE_DIR/deno/script" \
   -v "$(pwd)/deno/spec:$CODE_DIR/deno/spec" \
+  -v "$(pwd)/devbox/.rubocop.yml:$CODE_DIR/devbox/.rubocop.yml" \
+  -v "$(pwd)/devbox/dependabot-devbox.gemspec:$CODE_DIR/devbox/dependabot-devbox.gemspec" \
+  -v "$(pwd)/devbox/lib:$CODE_DIR/devbox/lib" \
+  -v "$(pwd)/devbox/script:$CODE_DIR/devbox/script" \
+  -v "$(pwd)/devbox/spec:$CODE_DIR/devbox/spec" \
   -v "$(pwd)/devcontainers/.rubocop.yml:$CODE_DIR/devcontainers/.rubocop.yml" \
   -v "$(pwd)/devcontainers/dependabot-devcontainers.gemspec:$CODE_DIR/devcontainers/dependabot-devcontainers.gemspec" \
   -v "$(pwd)/devcontainers/lib:$CODE_DIR/devcontainers/lib" \

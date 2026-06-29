@@ -38,6 +38,9 @@ module Dependabot
       sig { params(constraint: String).returns(String) }
       def convert_devbox_constraint_to_ruby_constraint(constraint)
         return ">= 0" if constraint.empty? || constraint == Version::LATEST
+        # Already a Ruby/Gem requirement string (e.g. ">= 0" from base-class callers
+        # like UpdateChecker::Base#can_update? or ignored_versions entries).
+        return constraint if constraint.match?(/\A[><=~!]/)
 
         segments = constraint.split(".")
         case segments.length

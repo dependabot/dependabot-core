@@ -62,6 +62,19 @@ RSpec.describe Dependabot::Devbox::Requirement do
     end
   end
 
+  describe "a Ruby-style requirement passed through from base-class callers" do
+    it "accepts '>= 0' without error" do
+      req = described_class.new(">= 0")
+      expect(req.satisfied_by?(Gem::Version.new("1.0.0"))).to be true
+    end
+
+    it "accepts a composite ignored-version string" do
+      req = described_class.new(">= 1.0.0, < 2.0.0")
+      expect(req.satisfied_by?(Gem::Version.new("1.5.0"))).to be true
+      expect(req.satisfied_by?(Gem::Version.new("2.0.0"))).to be false
+    end
+  end
+
   describe "a pinned exact constraint" do
     let(:constraint) { "3.10.19" }
 

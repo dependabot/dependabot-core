@@ -127,6 +127,7 @@ require "dependabot/cargo"
 require "dependabot/composer"
 require "dependabot/conda"
 require "dependabot/deno"
+require "dependabot/devbox"
 require "dependabot/devcontainers"
 require "dependabot/docker"
 require "dependabot/dotnet_sdk"
@@ -379,6 +380,7 @@ valid_package_managers = %w(
   composer
   conda
   deno
+  devbox
   devcontainers
   docker
   docker_compose
