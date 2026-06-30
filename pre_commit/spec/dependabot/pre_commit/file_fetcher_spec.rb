@@ -70,6 +70,18 @@ RSpec.describe Dependabot::PreCommit::FileFetcher do
       it { is_expected.to be(true) }
     end
 
+    context "with a prek.toml file" do
+      let(:filenames) { %w(prek.toml README.md) }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "with a .prek.toml file" do
+      let(:filenames) { %w(.prek.toml README.md) }
+
+      it { is_expected.to be(true) }
+    end
+
     context "without a pre-commit config file" do
       let(:filenames) { %w(README.md setup.py) }
 
@@ -83,7 +95,7 @@ RSpec.describe Dependabot::PreCommit::FileFetcher do
     it do
       expect(required_files_message).to eq(
         "Repo must contain a .pre-commit-config.yaml, .pre-commit-config.yml, " \
-        ".pre-commit.yaml, or .pre-commit.yml file."
+        ".pre-commit.yaml, .pre-commit.yml, prek.toml, or .prek.toml file."
       )
     end
   end
@@ -241,6 +253,127 @@ RSpec.describe Dependabot::PreCommit::FileFetcher do
       it "fetches the .pre-commit.yml file" do
         expect(file_fetcher_instance.files.count).to eq(1)
         expect(file_fetcher_instance.files.first.name).to eq(".pre-commit.yml")
+      end
+    end
+
+    context "with a prek.toml file" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: [
+              { "name" => "prek.toml", "path" => "prek.toml", "type" => "file" },
+              { "name" => "README.md", "path" => "README.md", "type" => "file" }
+            ].to_json,
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "prek.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: {
+              "name" => "prek.toml",
+              "path" => "prek.toml",
+              "content" => Base64.encode64(
+                "[[repos]]\nrepo = \"https://github.com/pre-commit/pre-commit-hooks\"\nrev = \"v4.4.0\"\n"
+              ),
+              "encoding" => "base64"
+            }.to_json,
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the prek.toml file" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.first.name).to eq("prek.toml")
+      end
+
+      it "fetches the file content" do
+        content = file_fetcher_instance.files.first.content
+        expect(content).to include("[[repos]]")
+        expect(content).to include("v4.4.0")
+      end
+    end
+
+    context "with a .prek.toml file" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: [
+              { "name" => ".prek.toml", "path" => ".prek.toml", "type" => "file" },
+              { "name" => "README.md", "path" => "README.md", "type" => "file" }
+            ].to_json,
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + ".prek.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: {
+              "name" => ".prek.toml",
+              "path" => ".prek.toml",
+              "content" => Base64.encode64(
+                "[[repos]]\nrepo = \"https://github.com/pre-commit/pre-commit-hooks\"\nrev = \"v4.4.0\"\n"
+              ),
+              "encoding" => "base64"
+            }.to_json,
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the .prek.toml file" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.first.name).to eq(".prek.toml")
+      end
+    end
+
+    context "with both a YAML and a TOML config" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: [
+              { "name" => ".pre-commit-config.yaml", "path" => ".pre-commit-config.yaml", "type" => "file" },
+              { "name" => "prek.toml", "path" => "prek.toml", "type" => "file" },
+              { "name" => "README.md", "path" => "README.md", "type" => "file" }
+            ].to_json,
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + ".pre-commit-config.yaml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: {
+              "name" => ".pre-commit-config.yaml",
+              "path" => ".pre-commit-config.yaml",
+              "content" => Base64.encode64("repos:\n  - repo: https://github.com/pre-commit/pre-commit-hooks\n"),
+              "encoding" => "base64"
+            }.to_json,
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "prek.toml?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: {
+              "name" => "prek.toml",
+              "path" => "prek.toml",
+              "content" => Base64.encode64(
+                "[[repos]]\nrepo = \"https://github.com/pre-commit/pre-commit-hooks\"\nrev = \"v4.4.0\"\n"
+              ),
+              "encoding" => "base64"
+            }.to_json,
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches both config files" do
+        names = file_fetcher_instance.files.map(&:name)
+        expect(names).to contain_exactly(".pre-commit-config.yaml", "prek.toml")
       end
     end
   end
