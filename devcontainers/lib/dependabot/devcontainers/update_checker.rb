@@ -41,11 +41,12 @@ module Dependabot
           # that only publishes full semver like "1.10.0" but the pin is the major-only ":1"),
           # fall back to truncating the latest version to the required precision so that
           # ":1" stays ":1" within the same major and becomes ":2" on a major bump.
-          updated_requirement = if precision_matches.any?
-            precision_matches.last
-          else
-            versions.last&.truncate_to_precision_of(required_version)
-          end
+          updated_requirement =
+            if precision_matches.any?
+              precision_matches.last
+            else
+              versions.last&.truncate_to_precision_of(required_version)
+            end
           {
             file: requirement[:file],
             requirement: updated_requirement&.to_s,

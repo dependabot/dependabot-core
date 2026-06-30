@@ -18,7 +18,7 @@ module Dependabot
 
       sig { params(target_precision: Integer).returns(Dependabot::Devcontainers::Version) }
       def truncate(target_precision)
-        self.class.new(segments.first(target_precision).join("."))
+        T.cast(self.class.new(segments.first(target_precision).join(".")), Dependabot::Devcontainers::Version)
       end
 
       sig { params(other: Dependabot::Devcontainers::Version).returns(Dependabot::Devcontainers::Version) }
