@@ -37,6 +37,7 @@ public sealed record Job
     public required JobSource Source { get; init; }
     public bool UpdateSubdependencies { get; init; } = false;
     public bool UpdatingAPullRequest { get; init; } = false;
+    public bool MultiEcosystemUpdate { get; init; } = false;
     public bool VendorDependencies { get; init; } = false;
     public bool RejectExternalCode { get; init; } = false;
     public bool RepoPrivate { get; init; } = false;
