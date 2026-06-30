@@ -34,8 +34,9 @@ module Dependabot
             release_version = T.must(latest_version_finder).latest_release_version
 
             # For SHA-pinned git refs, surface the resolved commit SHA as the
-            # update target rather than the semantic tag version.
-            if sha_pinned_git_ref?
+            # update target rather than the semantic tag version, unless a
+            # frozen comment provides explicit version-tag intent.
+            if sha_pinned_git_ref? && !version_from_comment
               latest_commit_sha || release_version
             else
               release_version

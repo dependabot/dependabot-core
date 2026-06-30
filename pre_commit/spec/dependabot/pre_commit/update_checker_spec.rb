@@ -167,9 +167,9 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
           .to receive(:local_tag_for_pinned_sha).and_return(nil)
       end
 
-      it "returns the latest commit SHA using the comment version" do
-        expect(latest_version).to be_a(String)
-        expect(latest_version).to match(/\A[0-9a-f]{40}\z/)
+      it "returns the latest tagged version using the comment version" do
+        expect(latest_version).to be_a(Dependabot::PreCommit::Version)
+        expect(latest_version.to_s).to eq("6.0.0")
       end
     end
 
