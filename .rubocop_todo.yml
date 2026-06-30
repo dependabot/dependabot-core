@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 1683
+# Offense count: 1665
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bazel/lib/dependabot/bazel/file_fetcher.rb"
@@ -296,10 +296,8 @@ Sorbet/ForbidTUntyped:
     - "common/lib/dependabot/clients/codecommit.rb"
     - "common/lib/dependabot/clients/github_with_retries.rb"
     - "common/lib/dependabot/clients/gitlab_with_retries.rb"
-    - "common/lib/dependabot/command_helpers.rb"
     - "common/lib/dependabot/dependency.rb"
     - "common/lib/dependabot/errors.rb"
-    - "common/lib/dependabot/experiments.rb"
     - "common/lib/dependabot/file_fetchers/base.rb"
     - "common/lib/dependabot/file_parsers/base.rb"
     - "common/lib/dependabot/file_updaters/base.rb"
@@ -309,16 +307,13 @@ Sorbet/ForbidTUntyped:
     - "common/lib/dependabot/metadata_finders/base/release_finder.rb"
     - "common/lib/dependabot/package/package_latest_version_finder.rb"
     - "common/lib/dependabot/package/package_release.rb"
-    - "common/lib/dependabot/pull_request_creator.rb"
     - "common/lib/dependabot/pull_request_creator/github.rb"
     - "common/lib/dependabot/pull_request_creator/message_builder.rb"
     - "common/lib/dependabot/pull_request_creator/pr_name_prefixer.rb"
     - "common/lib/dependabot/pull_request_updater/azure.rb"
     - "common/lib/dependabot/pull_request_updater/github.rb"
     - "common/lib/dependabot/pull_request_updater/gitlab.rb"
-    - "common/lib/dependabot/registry_client.rb"
     - "common/lib/dependabot/shared_helpers.rb"
-    - "common/lib/dependabot/simple_instrumentor.rb"
     - "common/lib/dependabot/update_checkers/base.rb"
     - "composer/lib/dependabot/composer/file_fetcher.rb"
     - "composer/lib/dependabot/composer/file_fetcher/path_dependency_builder.rb"
