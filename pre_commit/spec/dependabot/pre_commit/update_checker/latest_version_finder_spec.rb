@@ -132,7 +132,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       end
     end
 
-    context "when SHA-pinned without frozen comment (version set by file parser)" do
+    context "when SHA-pinned without frozen comment" do
       let(:reference) { "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e" }
       let(:dependency) do
         Dependabot::Dependency.new(
