@@ -53,7 +53,7 @@ public sealed record Job
             builder.Add(Source.Directory);
         }
 
-        builder.AddRange(Source.Directories ?? []);
+        builder.AddRange((Source.Directories ?? []).Where(d => d is not null));
         if (builder.Count == 0)
         {
             builder.Add("/");
