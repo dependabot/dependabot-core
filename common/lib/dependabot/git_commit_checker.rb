@@ -195,6 +195,22 @@ module Dependabot
       max_local_tag(filtered_tags)
     end
 
+    # Returns the latest allowed version tag, but only when the dependency is
+    # pinned to a ref that looks like a version. Most ecosystems share this
+    # precondition before resolving a newer version tag for a git dependency,
+    # so it lives here instead of being repeated at each call site. Returns nil
+    # for dependencies that aren't pinned to a version (e.g. branch- or
+    # SHA-pinned), which never want a version-tag update.
+    sig do
+      params(cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+        .returns(T.nilable(Dependabot::GitTagDetails))
+    end
+    def local_tag_for_pinned_version_ref(cooldown_options = nil)
+      return nil unless pinned_ref_looks_like_version?
+
+      local_tag_for_latest_version(cooldown_options)
+    end
+
     sig { returns(T::Array[Dependabot::GitTagDetails]) }
     def local_tags_for_allowed_versions_matching_existing_precision
       select_matching_existing_precision(allowed_version_tags).filter_map { |t| to_local_tag(t) }

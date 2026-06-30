@@ -1198,6 +1198,55 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
+  describe "#local_tag_for_pinned_version_ref" do
+    subject(:local_tag_for_pinned_version_ref) { checker.local_tag_for_pinned_version_ref }
+
+    let(:repo_url) { "https://github.com/gocardless/business.git" }
+    let(:upload_pack_fixture) { "business" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+
+    before do
+      stub_request(:get, service_pack_url)
+        .to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
+    end
+
+    context "when the dependency is pinned to a ref that looks like a version" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "v1.0.0"
+        }
+      end
+
+      it "returns the latest version tag" do
+        expect(local_tag_for_pinned_version_ref[:tag]).to eq("v1.13.0")
+      end
+    end
+
+    context "when the dependency is not pinned to a version (e.g. branch-pinned)" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      it "returns nil without resolving a tag" do
+        expect(local_tag_for_pinned_version_ref).to be_nil
+      end
+    end
+  end
+
   describe "#local_tag_for_latest_version with cooldown options" do
     subject(:latest_tag) { checker.local_tag_for_latest_version(cooldown_options) }
 
