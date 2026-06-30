@@ -390,7 +390,13 @@ module Dependabot
         # Resolves the pinned SHA to its corresponding version tag.
         sig { returns(T.nilable(Dependabot::Version)) }
         def version_from_pinned_sha_tag
-          @git_helper.git_commit_checker.version_for_pinned_sha
+          version = @git_helper.git_commit_checker.version_for_pinned_sha
+          return nil unless version
+
+          version_str = version.to_s
+          return nil unless Dependabot::PreCommit::Version.correct?(version_str)
+
+          Dependabot::PreCommit::Version.new(version_str)
         end
 
         sig { returns(Dependabot::PreCommit::Helpers::Githelper) }

@@ -30,7 +30,17 @@ module Dependabot
         return additional_dependency_latest_version if additional_dependency?
 
         @latest_version ||= T.let(
-          T.must(latest_version_finder).latest_release_version,
+          begin
+            release_version = T.must(latest_version_finder).latest_release_version
+
+            # For SHA-pinned git refs, surface the resolved commit SHA as the
+            # update target rather than the semantic tag version.
+            if sha_pinned_git_ref?
+              latest_commit_sha || release_version
+            else
+              release_version
+            end
+          end,
           T.nilable(T.any(String, Gem::Version))
         )
       end
@@ -191,15 +201,20 @@ module Dependabot
       def latest_commit_sha
         new_tag = T.must(latest_version_finder).latest_version_tag
 
-        if new_tag
-          return T.cast(new_tag.fetch(:commit_sha), String)
-        end
+        return T.cast(new_tag.fetch(:commit_sha), String) if new_tag
 
-        # If there's no tag but we have a latest_version (commit SHA), use it
-        latest_ver = latest_version
+        # If there's no tag but the finder resolved a commit SHA, use it.
+        latest_ver = T.must(latest_version_finder).latest_release_version
         return latest_ver if latest_ver.is_a?(String)
 
         nil
+      end
+
+      sig { returns(T::Boolean) }
+      def sha_pinned_git_ref?
+        return false unless git_commit_checker.git_dependency?
+
+        git_commit_checker.pinned_ref_looks_like_commit_sha?
       end
 
       sig { returns(Dependabot::GitCommitChecker) }

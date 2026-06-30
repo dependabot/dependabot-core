@@ -72,9 +72,7 @@ module Dependabot
         def commit_sha_release
           return unless git_commit_checker.pinned_ref_looks_like_commit_sha?
 
-          if latest_version_tag
-            return T.must(latest_version_tag).fetch(:version)
-          end
+          return T.must(latest_version_tag).fetch(:version) if latest_version_tag
 
           latest_commit_for_pinned_ref
         end
