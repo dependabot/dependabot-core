@@ -59,13 +59,11 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        wrap_requirements(
-          RequirementsUpdater.new(
-            requirements: dependency.requirements,
-            updated_source: updated_source,
-            latest_resolvable_version: latest_resolvable_version&.to_s
-          ).updated_requirements
-        )
+        RequirementsUpdater.new(
+          requirements: dependency.requirements,
+          updated_source: updated_source,
+          latest_resolvable_version: latest_resolvable_version&.to_s
+        ).updated_requirements
       end
 
       private

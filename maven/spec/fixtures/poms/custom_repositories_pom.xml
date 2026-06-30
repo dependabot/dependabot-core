@@ -108,6 +108,16 @@ url>http://github.com/davidB/${project.artifactId}</url
         <enabled>true</enabled>
       </snapshots>
     </repository>
+    <repository>
+      <id>disabled-repository</id>
+      <url>https://example.com/disabled</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
   </repositories>
   <pluginRepositories>
     <pluginRepository>

@@ -80,15 +80,13 @@ module Dependabot
         latest_version_for_req_updater = latest_version_details&.fetch(:version)&.to_s
         latest_resolvable_version_for_req_updater = preferred_resolvable_version_details&.fetch(:version)&.to_s
 
-        wrap_requirements(
-          RequirementsUpdater.new(
-            requirements: dependency.requirements,
-            update_strategy: T.must(requirements_update_strategy),
-            updated_source: updated_source,
-            latest_version: latest_version_for_req_updater,
-            latest_resolvable_version: latest_resolvable_version_for_req_updater
-          ).updated_requirements
-        )
+        RequirementsUpdater.new(
+          requirements: dependency.requirements,
+          update_strategy: T.must(requirements_update_strategy),
+          updated_source: updated_source,
+          latest_version: latest_version_for_req_updater,
+          latest_resolvable_version: latest_resolvable_version_for_req_updater
+        ).updated_requirements
       end
 
       sig { returns(T::Boolean) }

@@ -177,14 +177,12 @@ module Dependabot
           end
 
         @updated_requirements ||=
-          wrap_requirements(
-            RequirementsUpdater.new(
-              requirements: dependency.requirements,
-              updated_source: updated_source,
-              latest_resolvable_version: resolvable_version,
-              update_strategy: T.must(requirements_update_strategy)
-            ).updated_requirements
-          )
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            updated_source: updated_source,
+            latest_resolvable_version: resolvable_version,
+            update_strategy: T.must(requirements_update_strategy)
+          ).updated_requirements
       end
 
       sig { returns(T::Boolean) }
@@ -485,7 +483,8 @@ module Dependabot
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
             latest_allowable_version: latest_version,
-            repo_contents_path: repo_contents_path
+            repo_contents_path: repo_contents_path,
+            security_advisories: security_advisories
           )
       end
 
@@ -584,6 +583,12 @@ module Dependabot
       # per-package filtering.
       sig { void }
       def apply_npmrc_min_release_age
+        # Security fixes must not be blocked by a release-age gate the user
+        # configured for regular updates. npm install/update is invoked with
+        # --min-release-age=0 for security updates, so the cooldown floor would
+        # only filter out the security fix version at selection time.
+        return if security_update?
+
         npmrc_days = npmrc_min_release_age_days
         return unless npmrc_days&.positive?
 

@@ -63,12 +63,13 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       .and_return(status: 200, body: registry_tags)
 
     # The fixtures used throughout this spec describe single-platform images, so
-    # the (experiment-independent) digest-content check is a no-op by default:
+    # both the digest-content check and the multi-arch no-op detection are no-ops
+    # by default: single_platform_image? short-circuits same_image_contents?, and
     # an empty platform-digest map means "not a manifest list", so candidates are
-    # never suppressed as same-content. Multi-platform behaviour is exercised by
-    # the dedicated "multi-platform validation" and "digest-content check"
+    # never suppressed as same-content and digest-only refreshes are never
+    # suppressed as no-ops. Multi-platform behaviour is exercised by the dedicated
     # describe blocks, which re-stub these methods with their own platform digests.
-    allow(checker).to receive(:fetch_platform_digests).and_return({})
+    allow(checker).to receive_messages(single_platform_image?: true, fetch_platform_digests: {})
   end
 
   it_behaves_like "an update checker"
@@ -1620,6 +1621,191 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
+    describe "respecting cooldown for digest-only updates" do
+      subject(:can_update) { checker.can_update?(requirements_to_unlock: :own) }
+
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 14)
+      end
+      let(:mock_client) { instance_double(DockerRegistry2::Registry) }
+      let(:blob_headers) { { last_modified: last_modified } }
+      let(:blob_response) { instance_double(RestClient::Response, headers: blob_headers) }
+
+      before do
+        allow(checker).to receive(:docker_registry_client).and_return(mock_client)
+        allow(mock_client).to receive_messages(
+          tags: { "tags" => registry_tag_names },
+          digest: "sha256:newdigest",
+          manifest_digest: "sha256:newdigest",
+          manifest: { "mediaType" => "application/vnd.docker.distribution.manifest.v2+json" }
+        )
+        allow(mock_client).to receive(:dohead).and_return(blob_response)
+        allow(Dependabot.logger).to receive(:info)
+        allow(Dependabot.logger).to receive(:warn)
+      end
+
+      # A non-comparable tag (e.g. "alpine") pinned by digest never reaches the
+      # version-tag cooldown, so a freshly-pushed digest used to slip through.
+      context "with a non-comparable tag pinned by digest" do
+        let(:dependency_name) { "golang" }
+        let(:version) { "alpine" }
+        let(:source) { { tag: "alpine", digest: "old_digest" } }
+        let(:registry_tag_names) { %w(alpine latest) }
+
+        context "when the new digest is newer than the cooldown window" do
+          let(:last_modified) { (Time.now - (2 * 86_400)).httpdate }
+
+          it { is_expected.to be false }
+        end
+
+        context "when the new digest is older than the cooldown window" do
+          let(:last_modified) { (Time.now - (30 * 86_400)).httpdate }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the registry omits the Last-Modified header" do
+          let(:blob_headers) { {} }
+          let(:last_modified) { nil }
+
+          it "fails open and proposes the update" do
+            expect(can_update).to be true
+          end
+        end
+      end
+
+      # A comparable tag (e.g. ruby:4.0.2-alpine3.23@sha256:…) where the version
+      # tag is unchanged and only the digest moved.
+      context "with a comparable tag whose digest moved" do
+        let(:dependency_name) { "ruby" }
+        let(:version) { "4.0.2-alpine3.23" }
+        let(:source) { { tag: "4.0.2-alpine3.23", digest: "old_digest" } }
+        let(:registry_tag_names) { %w(4.0.2-alpine3.23 latest) }
+
+        context "when the new digest is newer than the cooldown window" do
+          let(:last_modified) { (Time.now - (1 * 86_400)).httpdate }
+
+          it { is_expected.to be false }
+        end
+
+        context "when the new digest is older than the cooldown window" do
+          let(:last_modified) { (Time.now - (30 * 86_400)).httpdate }
+
+          it { is_expected.to be true }
+        end
+      end
+    end
+
+    # The OCI index digest changes when only an unconsumed platform (e.g. riscv64)
+    # is rebuilt, even though the consumed platform's image is unchanged.
+    describe "multi-arch no-op digest detection" do
+      subject(:can_update) { checker.can_update?(requirements_to_unlock: :own) }
+
+      let(:mock_client) { instance_double(DockerRegistry2::Registry) }
+      let(:dependency_name) { "ruby" }
+      let(:version) { "alpine" }
+
+      before do
+        allow(checker).to receive(:docker_registry_client).and_return(mock_client)
+        allow(mock_client).to receive_messages(
+          tags: { "tags" => %w(alpine latest) },
+          digest: "sha256:newindex",
+          manifest_digest: "sha256:newindex"
+        )
+        allow(Dependabot.logger).to receive(:info)
+        allow(Dependabot.logger).to receive(:warn)
+
+        allow(checker).to receive(:platform_digests)
+          .with("sha256:oldindex").and_return(current_platform_digests)
+        allow(checker).to receive(:platform_digests)
+          .with("sha256:newindex").and_return(candidate_platform_digests)
+      end
+
+      context "without a pinned --platform" do
+        let(:source) { { tag: "alpine", digest: "oldindex" } }
+
+        context "when only an unconsumed platform changed (riscv64)" do
+          let(:current_platform_digests) do
+            { "linux/amd64" => "sha256:a", "linux/arm64/v8" => "sha256:b", "linux/riscv64" => "sha256:r1" }
+          end
+          let(:candidate_platform_digests) do
+            { "linux/amd64" => "sha256:a", "linux/arm64/v8" => "sha256:b", "linux/riscv64" => "sha256:r2" }
+          end
+
+          it "still proposes the update (cannot prove a no-op without a pinned platform)" do
+            expect(can_update).to be true
+          end
+        end
+
+        context "when every platform digest is identical (index-only churn)" do
+          let(:current_platform_digests) do
+            { "linux/amd64" => "sha256:a", "linux/arm64/v8" => "sha256:b" }
+          end
+          let(:candidate_platform_digests) do
+            { "linux/amd64" => "sha256:a", "linux/arm64/v8" => "sha256:b" }
+          end
+
+          it "treats the digest as up-to-date (no update)" do
+            expect(can_update).to be false
+          end
+        end
+      end
+
+      context "with a pinned --platform" do
+        let(:source) { { tag: "alpine", digest: "oldindex", platform: "linux/amd64" } }
+
+        context "when the pinned platform digest is unchanged" do
+          let(:current_platform_digests) do
+            { "linux/amd64" => "sha256:a", "linux/riscv64" => "sha256:r1" }
+          end
+          let(:candidate_platform_digests) do
+            { "linux/amd64" => "sha256:a", "linux/riscv64" => "sha256:r2" }
+          end
+
+          it "treats the digest as up-to-date (no update)" do
+            expect(can_update).to be false
+          end
+        end
+
+        context "when the pinned platform digest changed" do
+          let(:current_platform_digests) do
+            { "linux/amd64" => "sha256:a1", "linux/riscv64" => "sha256:r1" }
+          end
+          let(:candidate_platform_digests) do
+            { "linux/amd64" => "sha256:a2", "linux/riscv64" => "sha256:r1" }
+          end
+
+          it "proposes the update" do
+            expect(can_update).to be true
+          end
+        end
+
+        context "when the pinned platform is absent from the index" do
+          let(:source) { { tag: "alpine", digest: "oldindex", platform: "linux/ppc64le" } }
+          let(:current_platform_digests) do
+            { "linux/amd64" => "sha256:a", "linux/riscv64" => "sha256:r1" }
+          end
+          let(:candidate_platform_digests) do
+            { "linux/amd64" => "sha256:a", "linux/riscv64" => "sha256:r2" }
+          end
+
+          it "fails open and proposes the update" do
+            expect(can_update).to be true
+          end
+        end
+      end
+
+      context "when the image is single-platform (no manifest list)" do
+        let(:source) { { tag: "alpine", digest: "oldindex" } }
+        let(:current_platform_digests) { nil }
+        let(:candidate_platform_digests) { nil }
+
+        it "fails open and proposes the update" do
+          expect(can_update).to be true
+        end
+      end
+    end
+
     context "when the dependency has a compound suffix with alpine version" do
       let(:dependency_name) { "golang" }
       let(:version) { "1.26.0-alpine3.23" }
@@ -1633,6 +1819,45 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it "updates to the latest version with the same exact suffix" do
         expect(checker.latest_version).to eq("1.27.0-alpine3.23")
+      end
+    end
+
+    # A single pinned "4.0.2-alpine3.23" must resolve to the same variant and not
+    # to a different one such as "4.0.2-slim-bookworm". (Metadata mis-reporting can
+    # arise from multi-stage merging of same-name images, which is a separate
+    # concern from the single-tag variant selection verified here.)
+    context "when a compound variant suffix could collide with another variant" do
+      let(:dependency_name) { "ruby" }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/ruby/" }
+      let(:registry_tags) do
+        { "name" => "library/ruby", "tags" => tag_names }.to_json
+      end
+
+      before do
+        stub_request(:get, repo_url + "tags/list")
+          .and_return(status: 200, body: registry_tags)
+      end
+
+      context "when only the same version exists across variants" do
+        let(:version) { "4.0.2-alpine3.23" }
+        let(:tag_names) do
+          %w(4.0.2-alpine3.23 4.0.2-slim-bookworm 4.0.2-bookworm 4.0.2-slim)
+        end
+
+        it "stays on the pinned alpine variant" do
+          expect(checker.latest_version).to eq("4.0.2-alpine3.23")
+        end
+      end
+
+      context "when a newer patch exists in multiple variants" do
+        let(:version) { "4.0.2-alpine3.23" }
+        let(:tag_names) do
+          %w(4.0.2-alpine3.23 4.0.3-alpine3.23 4.0.3-slim-bookworm 4.0.3-bookworm)
+        end
+
+        it "updates to the newer alpine variant, not a different variant" do
+          expect(checker.latest_version).to eq("4.0.3-alpine3.23")
+        end
       end
     end
 
@@ -2596,7 +2821,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     end
 
     before do
-      allow(checker).to receive_messages(fetch_manifest_platforms: platforms, fetch_platform_digests: {})
+      allow(checker).to receive_messages(
+        single_platform_image?: false,
+        fetch_manifest_platforms: platforms,
+        fetch_platform_digests: {}
+      )
     end
 
     context "when the candidate resolves to the same per-platform digests" do
@@ -2654,6 +2883,111 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it "updates to the candidate tag" do
         expect(checker.latest_version).to eq("1.25.4")
       end
+    end
+  end
+
+  describe "#single_platform_image? (manifest media-type HEAD check)" do
+    let(:mock_client) { instance_double(DockerRegistry2::Registry) }
+
+    before do
+      # The suite-wide stub treats every tag as single-platform; restore the real
+      # implementation so we can exercise the HEAD-based media-type detection.
+      allow(checker).to receive(:single_platform_image?).and_call_original
+      allow(checker).to receive(:docker_registry_client).and_return(mock_client)
+    end
+
+    def head_response_with(content_type)
+      instance_double(RestClient::Response, headers: { content_type: content_type })
+    end
+
+    context "when the registry negotiates a single-platform manifest media type" do
+      before do
+        allow(mock_client).to receive(:dohead)
+          .and_return(head_response_with("application/vnd.docker.distribution.manifest.v2+json"))
+      end
+
+      it "returns true after only a HEAD request" do
+        expect(checker.send(:single_platform_image?, "17.04")).to be(true)
+        expect(mock_client).to have_received(:dohead).with("v2/library/ubuntu/manifests/17.04")
+      end
+
+      it "ignores any parameters on the Content-Type header" do
+        allow(mock_client).to receive(:dohead)
+          .and_return(head_response_with("application/vnd.oci.image.manifest.v1+json; charset=utf-8"))
+        expect(checker.send(:single_platform_image?, "17.04")).to be(true)
+      end
+
+      it "caches the result so repeated calls issue a single HEAD request" do
+        2.times { checker.send(:single_platform_image?, "17.04") }
+        expect(mock_client).to have_received(:dohead).once
+      end
+    end
+
+    context "when the registry negotiates a manifest-list media type" do
+      before do
+        allow(mock_client).to receive(:dohead)
+          .and_return(head_response_with("application/vnd.docker.distribution.manifest.list.v2+json"))
+      end
+
+      it "returns false so the per-platform comparison still runs" do
+        expect(checker.send(:single_platform_image?, "17.04")).to be(false)
+      end
+    end
+
+    context "when the HEAD request fails" do
+      before do
+        allow(mock_client).to receive(:dohead).and_raise(DockerRegistry2::RegistryAuthenticationException)
+      end
+
+      it "falls back to false rather than risk skipping a manifest list" do
+        expect(checker.send(:single_platform_image?, "17.04")).to be(false)
+      end
+    end
+
+    context "when a non-manifest-list result has already been cached for the tag" do
+      before { allow(mock_client).to receive(:dohead) }
+
+      it "reuses the cached manifest instead of issuing a HEAD request" do
+        checker.send(:manifest_list_cache)["17.04"] = nil
+        expect(checker.send(:single_platform_image?, "17.04")).to be(true)
+        expect(mock_client).not_to have_received(:dohead)
+      end
+    end
+  end
+
+  describe "#fetch_manifest_list error handling" do
+    let(:mock_client) { instance_double(DockerRegistry2::Registry) }
+
+    before do
+      allow(checker).to receive(:docker_registry_client).and_return(mock_client)
+    end
+
+    it "returns nil without poisoning manifest_list_cache when the fetch fails" do
+      allow(mock_client).to receive(:manifest)
+        .and_raise(DockerRegistry2::RegistryAuthenticationException)
+
+      expect(checker.send(:fetch_manifest_list, "17.04")).to be_nil
+
+      # A cached nil is reserved for "definitely not a manifest list"
+      # (single-platform). A transient fetch failure must not be cached as nil,
+      # otherwise single_platform_image? would permanently misclassify the tag as
+      # single-platform and short-circuit same-content suppression.
+      expect(checker.send(:manifest_list_cache)).not_to have_key("17.04")
+    end
+  end
+
+  describe "#same_image_contents? with a single-platform current tag" do
+    it "short-circuits without fetching the current tag's platform digests" do
+      # single_platform_image? is stubbed true suite-wide, mirroring the default
+      # single-platform path. The guard must skip fetch_platform_digests, which is
+      # what performs the expensive manifest GET on the current tag.
+      result = checker.send(
+        :same_image_contents?,
+        Dependabot::Docker::Tag.new("17.10"),
+        Dependabot::Docker::Tag.new("17.04")
+      )
+      expect(result).to be(false)
+      expect(checker).not_to have_received(:fetch_platform_digests)
     end
   end
 

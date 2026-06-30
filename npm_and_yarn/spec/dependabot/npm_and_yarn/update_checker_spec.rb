@@ -669,7 +669,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
             latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
-            repo_contents_path: nil
+            repo_contents_path: nil,
+            security_advisories: security_advisories
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)
@@ -734,7 +735,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               dependency_files: dependency_files,
               ignored_versions: ignored_versions,
               latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
-              repo_contents_path: nil
+              repo_contents_path: nil,
+              security_advisories: security_advisories
             ).and_return(dummy_version_resolver)
           expect(dummy_version_resolver)
             .to receive(:latest_resolvable_version)
@@ -902,7 +904,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
             latest_allowable_version: Dependabot::NpmAndYarn::Version.new("1.0.1"),
-            repo_contents_path: nil
+            repo_contents_path: nil,
+            security_advisories: security_advisories
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver)
           .to receive(:latest_resolvable_version)
@@ -2458,6 +2461,22 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     it "creates a cooldown from the npmrc min-release-age value" do
       expect(checker.update_cooldown).to be_a(Dependabot::Package::ReleaseCooldownOptions)
       expect(checker.update_cooldown.default_days).to eq(3)
+    end
+
+    context "when this is a security update" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency.name,
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["< 99.0.0"]
+          )
+        ]
+      end
+
+      it "does not apply the npmrc min-release-age cooldown floor" do
+        expect(checker.update_cooldown).to be_nil
+      end
     end
 
     context "when an explicit update_cooldown already exceeds the npmrc floor" do

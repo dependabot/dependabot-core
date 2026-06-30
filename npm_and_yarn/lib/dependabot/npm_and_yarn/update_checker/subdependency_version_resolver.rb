@@ -11,6 +11,7 @@ require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/update_checker/dependency_files_builder"
 require "dependabot/npm_and_yarn/version"
+require "dependabot/security_advisory"
 require "dependabot/shared_helpers"
 require "sorbet-runtime"
 
@@ -38,6 +39,9 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         attr_reader :repo_contents_path
 
+        sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
+        attr_reader :security_advisories
+
         sig do
           params(
             dependency: Dependency,
@@ -45,7 +49,8 @@ module Dependabot
             dependency_files: T::Array[Dependabot::DependencyFile],
             ignored_versions: T::Array[String],
             latest_allowable_version: T.nilable(T.any(String, Gem::Version)),
-            repo_contents_path: T.nilable(String)
+            repo_contents_path: T.nilable(String),
+            security_advisories: T::Array[Dependabot::SecurityAdvisory]
           ).void
         end
         def initialize(
@@ -54,7 +59,8 @@ module Dependabot
           dependency_files:,
           ignored_versions:,
           latest_allowable_version:,
-          repo_contents_path:
+          repo_contents_path:,
+          security_advisories: []
         )
           @dependency = dependency
           @credentials = credentials
@@ -62,6 +68,7 @@ module Dependabot
           @ignored_versions = ignored_versions
           @latest_allowable_version = latest_allowable_version
           @repo_contents_path = repo_contents_path
+          @security_advisories = security_advisories
         end
 
         sig { returns(T.nilable(T.any(String, Gem::Version))) }
@@ -321,12 +328,15 @@ module Dependabot
             Dir.chdir(path) do
               original_content = File.read(lockfile_name)
 
-              NativeHelpers.run_npm8_subdependency_update_command([dependency.name])
+              NativeHelpers.run_npm8_subdependency_update_command(
+                [dependency.name],
+                security_updates_only: security_updates_only?
+              )
 
               updated_content = File.read(lockfile_name)
               if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
                 begin
-                  NativeHelpers.run_npm_audit_fix_command
+                  NativeHelpers.run_npm_audit_fix_command(security_updates_only: security_updates_only?)
                   dependency.metadata[:audit_fix_used] = true
                 rescue SharedHelpers::HelperSubprocessFailed
                   Dependabot.logger.info("npm audit fix failed or partially fixed — continuing with any changes made")
@@ -355,6 +365,14 @@ module Dependabot
         sig { returns(T.class_of(Dependabot::Version)) }
         def version_class
           dependency.version_class
+        end
+
+        # Security fixes must not be blocked by a min-release-age gate the user
+        # configured in .npmrc for regular updates, so the native npm commands
+        # are invoked with --min-release-age=0 when resolving a security fix.
+        sig { returns(T::Boolean) }
+        def security_updates_only?
+          security_advisories.any?
         end
 
         sig { returns(Dependabot::Dependency) }
