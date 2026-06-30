@@ -166,7 +166,7 @@ RSpec.describe Dependabot::Swift::FileParser::PbxprojParser do
 
       it "parses prerelease versions" do
         req = parser.parse["github.com/apple/swift-nio"]
-        expect(req[:requirement]).to eq(">= 2.54.0.pre.beta.1, < 3.0.0.0")
+        expect(req[:requirement]).to eq(">= 2.54.0.pre.beta.1, < 3.0.0")
         expect(req[:requirement_string]).to eq("from: \"2.54.0-beta.1\"")
         expect(req[:kind]).to eq("upToNextMajorVersion")
       end

@@ -149,7 +149,11 @@ module Dependabot
         params(str: String, block: T.proc.params(s: String, i: Integer).returns(T.any(String, Integer))).returns(String)
       end
       def transform_version(str, &block)
-        str.split(".").map.with_index(&block).join(".")
+        # Strip pre-release and build metadata before bumping numeric parts
+        numeric_part = str.gsub(/[-+].*/, "")
+        raise ArgumentError, "Invalid version format: #{str}" if numeric_part.empty?
+
+        numeric_part.split(".").map.with_index(&block).join(".")
       end
 
       sig { returns(T::Boolean) }

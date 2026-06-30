@@ -4,11 +4,16 @@
 require "dependabot/swift/package/package_details_fetcher"
 require "dependabot/dependency"
 require "dependabot/credential"
-require "dependabot/git_commit_checker"
 require "dependabot/git_tag_with_detail"
-require "excon"
+require "dependabot/source"
+require "dependabot/clients/github_with_retries"
 
 RSpec.describe Dependabot::Swift::Package::PackageDetailsFetcher do
+  def release_stub(tag_name:, published_at:, prerelease:)
+    Struct.new(:tag_name, :published_at, :prerelease)
+          .new(tag_name, published_at, prerelease)
+  end
+
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "github.com/patrick-zippenfenig/SwiftNetCDF",
@@ -28,49 +33,113 @@ RSpec.describe Dependabot::Swift::Package::PackageDetailsFetcher do
       )
     ]
   end
-  let(:git_commit_checker) do
-    Dependabot::GitCommitChecker.new(
-      dependency: dependency,
-      credentials: credentials,
-      ignored_versions: [],
-      raise_on_ignored: false,
-      consider_version_branches_pinned: true
-    )
-  end
+
   let(:fetcher) do
-    described_class.new(dependency: dependency, credentials: credentials, git_commit_checker: git_commit_checker)
+    described_class.new(dependency: dependency, credentials: credentials)
   end
 
   describe "#fetch_tag_and_release_date" do
-    let(:response_body) do
+    let(:github_client) { double("GithubWithRetries") } # rubocop:disable RSpec/VerifiedDoubles
+
+    let(:releases) do
       [
-        { "tag_name" => "v1.0.0", "published_at" => "2025-05-27T12:34:56Z" },
-        { "tag_name" => "v2.0.0", "published_at" => "2025-05-28T12:34:56Z" }
-      ].to_json
+        release_stub(tag_name: "v1.0.0", published_at: Time.parse("2025-05-27T12:34:56Z"), prerelease: false),
+        release_stub(tag_name: "v2.0.0", published_at: Time.parse("2025-05-28T12:34:56Z"), prerelease: false)
+      ]
     end
 
     before do
-      allow(Excon).to receive(:get).and_return(instance_double(Excon::Response, status: 200, body: response_body))
+      allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(github_client)
+      allow(github_client).to receive(:releases).and_return(releases)
     end
 
-    it "removes 'github.com/' from the dependency name" do
-      truncate_github_url = dependency.name.gsub("github.com/", "")
-      expect(truncate_github_url).to eq("patrick-zippenfenig/SwiftNetCDF")
-    end
-
-    it "fetches and parses release details from the GitHub API" do
+    it "fetches and parses release details" do
       result = fetcher.fetch_tag_and_release_date
-      expect(result.map(&:tag)).to eq(["v2.0.0", "v1.0.0"]) # Sorted in descending order
-      expect(result.map(&:release_date)).to eq(["2025-05-28T12:34:56Z", "2025-05-27T12:34:56Z"])
+      expect(result.map(&:tag)).to eq(["v2.0.0", "v1.0.0"])
+    end
+
+    it "sorts by semantic version in descending order" do
+      result = fetcher.fetch_tag_and_release_date
+      expect(result.first.tag).to eq("v2.0.0")
+      expect(result.last.tag).to eq("v1.0.0")
+    end
+
+    context "when releases include prereleases" do
+      let(:releases) do
+        [
+          release_stub(tag_name: "v1.0.0", published_at: Time.parse("2025-05-27T12:34:56Z"), prerelease: false),
+          release_stub(
+            tag_name: "v2.0.0-beta.1",
+            published_at: Time.parse("2025-05-28T12:34:56Z"),
+            prerelease: true
+          ),
+          release_stub(tag_name: "v2.0.0", published_at: Time.parse("2025-05-29T12:34:56Z"), prerelease: false)
+        ]
+      end
+
+      it "excludes prerelease versions" do
+        result = fetcher.fetch_tag_and_release_date
+        tags = result.map(&:tag)
+        expect(tags).to eq(["v2.0.0", "v1.0.0"])
+        expect(tags).not_to include("v2.0.0-beta.1")
+      end
+    end
+
+    context "when releases include non-version tags" do
+      let(:releases) do
+        [
+          release_stub(tag_name: "v1.0.0", published_at: Time.parse("2025-05-27T12:34:56Z"), prerelease: false),
+          release_stub(
+            tag_name: "nightly-2025-05-28",
+            published_at: Time.parse("2025-05-28T12:34:56Z"),
+            prerelease: false
+          )
+        ]
+      end
+
+      it "excludes non-version tags" do
+        result = fetcher.fetch_tag_and_release_date
+        expect(result.map(&:tag)).to eq(["v1.0.0"])
+      end
+    end
+
+    context "when releases include draft releases without tag_name" do
+      let(:releases) do
+        [
+          release_stub(tag_name: nil, published_at: Time.parse("2025-05-27T12:34:56Z"), prerelease: false),
+          release_stub(tag_name: "v1.0.0", published_at: Time.parse("2025-05-28T12:34:56Z"), prerelease: false)
+        ]
+      end
+
+      it "skips releases without a tag name" do
+        result = fetcher.fetch_tag_and_release_date
+        expect(result.map(&:tag)).to eq(["v1.0.0"])
+      end
     end
 
     context "when the API call fails" do
       before do
-        allow(Excon).to receive(:get).and_return(instance_double(Excon::Response, status: 500, body: "Error"))
+        allow(github_client).to receive(:releases).and_raise(Octokit::Error)
       end
 
-      it "returns an empty array and logs an error" do
-        expect(Dependabot.logger).to receive(:error).with("Failed call details: Error")
+      it "returns an empty array and logs a debug message" do
+        expect(Dependabot.logger).to receive(:debug).with(/Error fetching release details/)
+        result = fetcher.fetch_tag_and_release_date
+        expect(result).to eq([])
+      end
+    end
+
+    context "when dependency is not on GitHub" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "gitlab.com/someuser/somerepo",
+          version: "1.0.0",
+          requirements: [],
+          package_manager: "swift"
+        )
+      end
+
+      it "returns an empty array" do
         result = fetcher.fetch_tag_and_release_date
         expect(result).to eq([])
       end

@@ -31,9 +31,15 @@ module Dependabot
         @latest_resolvable_version = T.let(fetch_latest_resolvable_version, T.nilable(Dependabot::Version))
       end
 
-      sig { override.returns(T.noreturn) }
+      sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_resolvable_version_with_no_unlock
-        raise NotImplementedError
+        return xcode_version_resolver.latest_resolvable_version if xcode_spm_mode?
+
+        # For classic SPM, resolve with current requirements (no unlock)
+        latest_resolvable = version_resolver_for(old_requirements).latest_resolvable_version
+        return nil unless latest_resolvable
+
+        Version.new(latest_resolvable)
       end
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
@@ -106,8 +112,7 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::Version)) }
       def fetch_latest_version
         return fetch_xcode_latest_version if xcode_spm_mode?
-
-        return unless git_commit_checker.pinned_ref_looks_like_version? && latest_version_tag
+        return unless git_commit_checker.pinned_ref_looks_like_version?
 
         tag = latest_version_tag
         return unless tag
@@ -130,8 +135,7 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::Version)) }
       def fetch_lowest_security_fix_version
         return fetch_xcode_lowest_security_fix_version if xcode_spm_mode?
-
-        return unless git_commit_checker.pinned_ref_looks_like_version? && latest_version_tag
+        return unless git_commit_checker.pinned_ref_looks_like_version?
 
         tag = lowest_security_fix_version_tag
         return unless tag
@@ -183,7 +187,7 @@ module Dependabot
       end
 
       sig { returns(LatestVersionResolver) }
-      def cooldown_check_version_resolver_for
+      def build_latest_version_resolver
         LatestVersionResolver.new(
           dependency: dependency,
           credentials: credentials,
@@ -239,13 +243,14 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
-        # Full unlock checks aren't implemented for Swift (yet)
+        # Full unlock checks aren't implemented for Swift (yet); SwiftPM requires CLI
+        # which doesn't support multi-dependency unlock
         false
       end
 
-      sig { override.returns(T.noreturn) }
+      sig { override.returns(T::Array[Dependabot::Dependency]) }
       def updated_dependencies_after_full_unlock
-        raise NotImplementedError
+        [] # Not implemented — full unlock is disabled above
       end
 
       sig { returns(Dependabot::GitCommitChecker) }
@@ -264,7 +269,7 @@ module Dependabot
 
       sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def latest_version_tag
-        cooldown_check_version_resolver_for.latest_version_tag
+        build_latest_version_resolver.latest_version_tag
       end
 
       sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
