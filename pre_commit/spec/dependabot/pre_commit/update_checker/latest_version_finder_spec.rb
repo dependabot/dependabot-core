@@ -150,10 +150,10 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
 
       before do
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
-          .to receive(:local_tag_for_pinned_sha).and_return(nil)
+          .to receive(:local_tag_for_pinned_sha).and_return("4.4.0")
       end
 
-      it "returns the latest tagged version even without frozen comment" do
+      it "resolves current version from pinned SHA tag and returns latest tagged version" do
         expect(latest_release_version).to be_a(Dependabot::PreCommit::Version)
         expect(latest_release_version.to_s).to eq("6.0.0")
       end
