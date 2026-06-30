@@ -331,6 +331,58 @@ RSpec.describe Dependabot::Python::Version do
     end
   end
 
+  describe "#placeholder?" do
+    subject { version.placeholder? }
+
+    context "with version 0.0.0" do
+      let(:version_string) { "0.0.0" }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "with version 0.0" do
+      let(:version_string) { "0.0" }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "with version 0" do
+      let(:version_string) { "0" }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "with version 0.0.1" do
+      let(:version_string) { "0.0.1" }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "with version 0.1.0" do
+      let(:version_string) { "0.1.0" }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "with version 1.0.0" do
+      let(:version_string) { "1.0.0" }
+
+      it { is_expected.to be(false) }
+    end
+
+    context "with version 0.0.0-dev1" do
+      let(:version_string) { "0.0.0.dev1" }
+
+      it { is_expected.to be(true) }
+    end
+
+    context "with version 0.0.0a1" do
+      let(:version_string) { "0.0.0a1" }
+
+      it { is_expected.to be(true) }
+    end
+  end
+
   describe "#lowest_prerelease_suffix" do
     subject { version.lowest_prerelease_suffix }
 
