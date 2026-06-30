@@ -96,6 +96,13 @@ public class RunWorker
 
         try
         {
+            // Register MSBuild up front so that the `Microsoft.Build` assembly is loadable for
+            // the rest of the job.  This is required even on the error-handling path:
+            // `JobErrorBase.ErrorFromException` references `Microsoft.Build` exception types, so
+            // if a failure occurs before MSBuild is registered, JIT-compiling the error handler
+            // would itself throw `FileNotFoundException` for `Microsoft.Build` and mask the real
+            // error.
+            MSBuildHelper.RegisterMSBuild(repoContentsPath.FullName, repoContentsPath.FullName, _logger);
             await PatchNuGetConfigFilesAsync(repoContentsPath);
             var handler = GetUpdateHandler(job);
             _logger.Info($"Starting update job of type {handler.TagName}");
@@ -264,7 +271,7 @@ public class RunWorker
         return relativeResolvedName;
     }
 
-    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string repoRoot, ILogger logger, HashSet<string> initiallyExistingLockFiles)
+    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string repoRoot, ILogger logger, HashSet<string> initiallyExistingFiles)
     {
         string GetFullRepoPath(string path)
         {
@@ -272,12 +279,17 @@ public class RunWorker
             return Path.Join(discoveryResult.Path, path).FullyNormalizedRootedPath();
         }
 
+        bool IsInitiallyPresent(string filePath)
+        {
+            return !ModifiedFilesTracker.IsFileNotInitiallyPresent(Path.Join(discoveryResult.Path, filePath).NormalizePathToUnix(), initiallyExistingFiles);
+        }
+
         var auxiliaryFiles = new List<string>();
-        if (discoveryResult.GlobalJson is not null)
+        if (discoveryResult.GlobalJson is not null && IsInitiallyPresent(discoveryResult.GlobalJson.FilePath))
         {
             auxiliaryFiles.Add(GetFullRepoPath(discoveryResult.GlobalJson.FilePath));
         }
-        if (discoveryResult.DotNetToolsJson is not null)
+        if (discoveryResult.DotNetToolsJson is not null && IsInitiallyPresent(discoveryResult.DotNetToolsJson.FilePath))
         {
             auxiliaryFiles.Add(GetFullRepoPath(discoveryResult.DotNetToolsJson.FilePath));
         }
@@ -288,7 +300,7 @@ public class RunWorker
             foreach (var extraFile in project.ImportedFiles.Concat(project.AdditionalFiles))
             {
                 var extraFileFullPath = Path.Join(projectDirectory, extraFile);
-                if (ModifiedFilesTracker.IsLockFileNotInitiallyPresent(Path.Join(discoveryResult.Path, extraFileFullPath).NormalizePathToUnix(), initiallyExistingLockFiles))
+                if (!IsInitiallyPresent(extraFileFullPath))
                 {
                     continue;
                 }
@@ -298,28 +310,30 @@ public class RunWorker
             }
         }
 
-        var allDependenciesWithFilePath = discoveryResult.Projects.SelectMany(p =>
-        {
-            return p.Dependencies
-                .Where(d => d.Version is not null)
-                .Select(d =>
-                    (p.FilePath, new ReportedDependency()
-                    {
-                        Name = d.Name,
-                        Requirements = [new ReportedRequirement()
-                            {
-                                File = GetFullRepoPath(p.FilePath),
-                                Requirement = d.Version!,
-                                Groups = ["dependencies"],
-                            }],
-                        Version = d.Version,
-                    }));
-        }).ToList();
+        var allDependenciesWithFilePath = discoveryResult.Projects
+            .Where(p => IsInitiallyPresent(p.FilePath))
+            .SelectMany(p =>
+            {
+                return p.Dependencies
+                    .Where(d => d.Version is not null)
+                    .Select(d =>
+                        (p.FilePath, new ReportedDependency()
+                        {
+                            Name = d.Name,
+                            Requirements = [new ReportedRequirement()
+                                {
+                                    File = GetFullRepoPath(p.FilePath),
+                                    Requirement = d.Version!,
+                                    Groups = ["dependencies"],
+                                }],
+                            Version = d.Version,
+                        }));
+            }).ToList();
 
         var nonProjectDependencySet = new (string?, IEnumerable<Dependency>)[]
         {
-            (discoveryResult.GlobalJson?.FilePath, discoveryResult.GlobalJson?.Dependencies ?? []),
-            (discoveryResult.DotNetToolsJson?.FilePath, discoveryResult.DotNetToolsJson?.Dependencies ?? []),
+            (discoveryResult.GlobalJson is not null && IsInitiallyPresent(discoveryResult.GlobalJson.FilePath) ? discoveryResult.GlobalJson.FilePath : null, discoveryResult.GlobalJson?.Dependencies ?? []),
+            (discoveryResult.DotNetToolsJson is not null && IsInitiallyPresent(discoveryResult.DotNetToolsJson.FilePath) ? discoveryResult.DotNetToolsJson.FilePath : null, discoveryResult.DotNetToolsJson?.Dependencies ?? []),
         };
 
         foreach (var (filePath, dependencies) in nonProjectDependencySet)
@@ -352,6 +366,7 @@ public class RunWorker
             .ToArray();
 
         var dependencyFiles = discoveryResult.Projects
+            .Where(p => IsInitiallyPresent(p.FilePath))
             .Select(p => GetFullRepoPath(p.FilePath))
             .Concat(auxiliaryFiles)
             .Select(p => EnsureCorrectFileCasing(p, repoRoot, logger))

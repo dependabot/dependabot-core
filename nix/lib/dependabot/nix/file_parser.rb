@@ -8,6 +8,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
+require "dependabot/nix/channel"
 require "dependabot/nix/package_manager"
 
 module Dependabot
@@ -15,8 +16,8 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
 
-      # Source types that are backed by git and can be updated via revision tracking
-      SUPPORTED_SOURCE_TYPES = T.let(%w(github gitlab sourcehut git).freeze, T::Array[String])
+      # Updatable source types: git-backed sources plus NixOS channel tarballs.
+      SUPPORTED_SOURCE_TYPES = T.let(%w(github gitlab sourcehut git tarball).freeze, T::Array[String])
 
       SUPPORTED_LOCK_VERSION = 7
 
@@ -140,6 +141,22 @@ module Dependabot
         rev = locked.fetch("rev", nil)
         return unless rev
 
+        if source_type == "tarball"
+          build_tarball_dependency(input_name, original, rev)
+        else
+          build_git_dependency(input_name, locked, original, rev)
+        end
+      end
+
+      sig do
+        params(
+          input_name: String,
+          locked: T::Hash[String, T.untyped],
+          original: T::Hash[String, T.untyped],
+          rev: String
+        ).returns(T.nilable(Dependabot::Dependency))
+      end
+      def build_git_dependency(input_name, locked, original, rev)
         url = build_url(locked)
         return unless url
 
@@ -161,6 +178,33 @@ module Dependabot
       sig { params(original: T::Hash[String, T.untyped]).returns(T::Boolean) }
       def revision_pinned?(original)
         !original.fetch("rev", nil).nil?
+      end
+
+      # Channel tarballs track a channel in the URL (e.g. nixos-26.05), not a git
+      # ref. Non-channel tarballs aren't updatable, so they're skipped.
+      sig do
+        params(
+          input_name: String,
+          original: T::Hash[String, T.untyped],
+          rev: String
+        ).returns(T.nilable(Dependabot::Dependency))
+      end
+      def build_tarball_dependency(input_name, original, rev)
+        url = original.fetch("url", nil)
+        channel = Channel.channel_name_from_url(url)
+        return unless channel
+
+        Dependency.new(
+          name: input_name,
+          version: rev,
+          package_manager: "nix",
+          requirements: [{
+            requirement: nil,
+            file: "flake.lock",
+            source: { type: "tarball", url: url, branch: nil, ref: channel },
+            groups: []
+          }]
+        )
       end
 
       sig { params(locked: T::Hash[String, T.untyped]).returns(T.nilable(String)) }

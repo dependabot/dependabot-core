@@ -421,8 +421,10 @@ public class JobTests
     }
 
     [Theory]
+    [InlineData("version", JobCommand.Version)]
     [InlineData("update", JobCommand.Update)]
     [InlineData("recreate", JobCommand.Recreate)]
+    [InlineData("security", JobCommand.Security)]
     [InlineData("graph", JobCommand.Graph)]
     [InlineData("", JobCommand.None)]
     public void CommandDeserialization_KnownValues(string commandValue, JobCommand expectedCommand)
