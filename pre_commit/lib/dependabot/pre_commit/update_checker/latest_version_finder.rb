@@ -308,7 +308,7 @@ module Dependabot
           # When pinned to a SHA, precision matching against the SHA is meaningless
           # (a SHA has no dots, so precision=1 matches nothing useful).
           # Use the unfiltered allowed version tags instead.
-          all_tags = if sha_pinned_with_version_comment?
+          all_tags = if sha_pinned?
                        @git_helper.git_commit_checker.local_tags_for_allowed_versions
                      else
                        @git_helper.git_commit_checker.local_tags_for_allowed_versions_matching_existing_precision
@@ -347,7 +347,9 @@ module Dependabot
           return nil unless version_str
 
           stripped = version_str.sub(/\Av/i, "")
-          return version_from_frozen_comment unless Dependabot::PreCommit::Version.correct?(stripped)
+          unless Dependabot::PreCommit::Version.correct?(stripped)
+            return version_from_frozen_comment || version_from_pinned_sha_tag
+          end
 
           Dependabot::PreCommit::Version.new(stripped)
         end
@@ -358,16 +360,15 @@ module Dependabot
         end
 
         # Returns true when the dependency's stored ref isn't a semantic version (e.g., a commit SHA)
-        # but a frozen version comment (e.g. "# frozen: v5.0.0") provides a semantic
-        # version we can use for version ordering and tag selection.
+        # and we have version tags available for ordering and tag selection.
         sig { returns(T::Boolean) }
-        def sha_pinned_with_version_comment?
+        def sha_pinned?
           return false if release_type_sha?
 
           version_str = dependency.version
           return false unless version_str
 
-          !Dependabot::PreCommit::Version.correct?(version_str) && !version_from_frozen_comment.nil?
+          !Dependabot::PreCommit::Version.correct?(version_str)
         end
 
         # Extracts the semantic version from a frozen comment (e.g. "# frozen: v5.0.0")
@@ -384,6 +385,12 @@ module Dependabot
           return nil unless Dependabot::PreCommit::Version.correct?(version_str)
 
           Dependabot::PreCommit::Version.new(version_str)
+        end
+
+        # Resolves the pinned SHA to its corresponding version tag.
+        sig { returns(T.nilable(Dependabot::Version)) }
+        def version_from_pinned_sha_tag
+          @git_helper.git_commit_checker.version_for_pinned_sha
         end
 
         sig { returns(Dependabot::PreCommit::Helpers::Githelper) }
