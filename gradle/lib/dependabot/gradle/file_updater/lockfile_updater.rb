@@ -198,7 +198,9 @@ systemProp.http.proxyHost=#{http_proxy_host}
 systemProp.http.proxyPort=#{http_proxy_port}
 systemProp.https.proxyHost=#{https_proxy_host}
 systemProp.https.proxyPort=#{https_proxy_port}"
-          File.write(file_name, existing_content + proxy_properties)
+
+          separator = !existing_content.empty? && !existing_content.end_with?("\n") ? "\n" : ""
+          File.write(file_name, existing_content + separator + proxy_properties)
         end
 
         sig { params(file_name: String).void }
