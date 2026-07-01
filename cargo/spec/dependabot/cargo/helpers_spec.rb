@@ -327,12 +327,12 @@ RSpec.describe Dependabot::Cargo::Helpers do
         [
           Dependabot::DependencyFile.new(
             name: ".cargo/config.toml",
-            content: root_config_content,
-            directory: "/"
+            content: nested_config_content,
+            directory: "/subcrate"
           ),
           Dependabot::DependencyFile.new(
-            name: ".cargo/config.toml",
-            content: nested_config_content,
+            name: "../.cargo/config.toml",
+            content: root_config_content,
             directory: "/subcrate"
           )
         ]

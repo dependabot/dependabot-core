@@ -19,8 +19,8 @@ module Dependabot
       # These per-registry settings override the global CARGO_REGISTRY_GLOBAL_CREDENTIAL_PROVIDERS env var,
       # causing Cargo to look up tokens locally. Since the dependabot proxy handles all registry authentication
       # transparently, we remove these so Cargo makes plain unauthenticated requests that the proxy can intercept.
-      sig { params(config_content: String).returns(String) }
-      def self.sanitize_cargo_config(config_content)
+      sig { params(config_content: String, file_name: String).returns(String) }
+      def self.sanitize_cargo_config(config_content, file_name: ".cargo/config.toml")
         parsed = TomlRB.parse(config_content)
         return config_content unless parsed.is_a?(Hash)
 
@@ -40,7 +40,7 @@ module Dependabot
         TomlRB.dump(parsed)
       rescue TomlRB::Error => e
         raise Dependabot::DependencyFileNotParseable.new(
-          ".cargo/config.toml",
+          file_name,
           "Failed to parse Cargo config file: #{e.message}"
         )
       end
@@ -112,7 +112,12 @@ module Dependabot
         config_files = dependency_files.select { |f| f.name.end_with?(".cargo/config.toml") }
         return {} if config_files.empty?
 
-        config_files.each_with_object({}) do |config_file, env|
+        # Cargo gives nearer configs precedence over ancestors on key collisions.
+        # A config's `../` depth (how many parent hops appear in its name)
+        # indicates how far up the tree it lives, so merge farthest-first and let
+        # the nearest config (fewest `../`) win.
+        ordered = config_files.sort_by { |f| -f.name.scan("../").count }
+        ordered.each_with_object({}) do |config_file, env|
           env.merge!(registry_token_env(T.must(config_file.content), credentials))
         end
       end
