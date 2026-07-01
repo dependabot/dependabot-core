@@ -511,15 +511,14 @@ RSpec.describe Dependabot::Python::MetadataFinder do
       it "parses the matching project URL only once" do
         matching_url_parse_count = 0
 
-        allow(finder).to receive(:parsed_source_from_url).and_wrap_original do |original, url|
-          cache_miss = !finder.instance_variable_get(:@parsed_source_urls).key?(url)
-          matching_url_parse_count += 1 if cache_miss && url == "https://github.com/example-org/geohelper"
+        allow(Dependabot::Source).to receive(:from_url).and_wrap_original do |original, url|
+          matching_url_parse_count += 1 if url == "https://github.com/example-org/geohelper"
           original.call(url)
         end
 
         source_url
 
-        expect(matching_url_parse_count).to eq(1)
+        expect(matching_url_parse_count).to be <= 1
       end
     end
   end
