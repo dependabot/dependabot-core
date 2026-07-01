@@ -702,6 +702,15 @@ RSpec.describe Dependabot::FileFetcherCommand do
         # Root directory should be skipped since it has no dummy files
         expect(root_files).to be_empty
       end
+
+      it "logs a warning naming the skipped directory and the underlying error" do
+        allow(Dependabot.logger).to receive(:warn)
+
+        command.send(:files_from_multidirectories)
+
+        expect(Dependabot.logger).to have_received(:warn)
+          .with(a_string_matching(%r{Skipping directory '/':.*DependencyFileNotFound}))
+      end
     end
 
     context "when all directories have required files" do
