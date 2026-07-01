@@ -130,7 +130,7 @@ RSpec.describe Dependabot::Python::Version do
     end
 
     context "with leading and trailing whitespace" do
-      let(:version_string) { "\n        2.20.0" }
+      let(:version_string) { "\n        2.20.0   \n" }
 
       it { is_expected.to eq "2.20.0" }
     end

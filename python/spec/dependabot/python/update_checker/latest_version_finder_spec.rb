@@ -145,7 +145,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
 
       it "returns a version with a clean string representation" do
-        expect(subject.to_s).to eq("2.6.0")
+        expect(latest_version.to_s).to eq("2.6.0")
       end
     end
 
