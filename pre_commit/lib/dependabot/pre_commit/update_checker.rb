@@ -71,24 +71,6 @@ module Dependabot
         wrap_requirements(updated_reqs)
       end
 
-      private
-
-      sig { returns(T.nilable(Dependabot::PreCommit::UpdateChecker::LatestVersionFinder)) }
-      def latest_version_finder
-        @latest_version_finder ||=
-          T.let(
-            LatestVersionFinder.new(
-              dependency: dependency,
-              credentials: credentials,
-              dependency_files: dependency_files,
-              ignored_versions: ignored_versions,
-              raise_on_ignored: raise_on_ignored,
-              cooldown_options: update_cooldown
-            ),
-            T.nilable(Dependabot::PreCommit::UpdateChecker::LatestVersionFinder)
-          )
-      end
-
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def current_version
         return super if dependency.numeric_version
@@ -107,6 +89,24 @@ module Dependabot
         return nil unless version_class.correct?(version_string)
 
         version_class.new(version_string)
+      end
+
+      private
+
+      sig { returns(T.nilable(Dependabot::PreCommit::UpdateChecker::LatestVersionFinder)) }
+      def latest_version_finder
+        @latest_version_finder ||=
+          T.let(
+            LatestVersionFinder.new(
+              dependency: dependency,
+              credentials: credentials,
+              dependency_files: dependency_files,
+              ignored_versions: ignored_versions,
+              raise_on_ignored: raise_on_ignored,
+              cooldown_options: update_cooldown
+            ),
+            T.nilable(Dependabot::PreCommit::UpdateChecker::LatestVersionFinder)
+          )
       end
 
       sig { returns(T::Boolean) }
