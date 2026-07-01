@@ -152,17 +152,6 @@ module Dependabot
           )
         end
 
-        sig { returns(T::Boolean) }
-        def cooldown_enabled?
-          # This is a simple check to see if user has put cooldown days.
-          # If not set, then we aassume user does not want cooldown.
-          # Since Terraform does not support Semver versioning, So option left
-          # for the user is to set cooldown default days.
-          return false if @cooldown_options.nil?
-
-          @cooldown_options.default_days.positive?
-        end
-
         sig { returns(Dependabot::GitCommitChecker) }
         attr_reader :git_commit_checker
 
