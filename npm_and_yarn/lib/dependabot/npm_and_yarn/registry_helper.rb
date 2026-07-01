@@ -62,8 +62,9 @@ module Dependabot
             env_variables[COREPACK_NPM_REGISTRY_ENV] = registry # For Corepack
             env_variables[NPM_CONFIG_REGISTRY_ENV] = registry # For npm
             env_variables[REGISTRY_KEY] = registry
-            # Private registries don't provide signatures for corepack to verify
-            env_variables[COREPACK_INTEGRITY_KEYS_ENV] = ""
+            # Disable corepack signature verification only for authenticated
+            # non-default registries (typically private mirrors/proxies).
+            env_variables[COREPACK_INTEGRITY_KEYS_ENV] = "" if registry_info[:auth_token]
           end
         end
 
