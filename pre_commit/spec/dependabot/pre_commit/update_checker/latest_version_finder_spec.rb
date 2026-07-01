@@ -681,6 +681,69 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
     end
   end
 
+  describe "force-moved tag detection" do
+    context "when SHA-pinned with frozen comment and tag is force-moved within the same version" do
+      # Scenario: User is pinned to commit "6f6a02c..." with frozen comment "v6.0.0".
+      # The v6.0.0 tag has been force-moved to a different commit "3e8a8703..."
+      # (which is what the upload pack fixture reports). No higher version exists.
+      let(:reference) { "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "https://github.com/#{dependency_name}",
+          version: "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".pre-commit-config.yaml",
+            source: dependency_source,
+            metadata: { comment: "# frozen: v6.0.0" }
+          }],
+          package_manager: "pre_commit"
+        )
+      end
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7
+        )
+      end
+
+      before do
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tag_for_pinned_sha).and_return(nil)
+
+        # The v6.0.0 tag now points to the new commit (from the upload pack fixture)
+        v6_tag = {
+          tag: "v6.0.0",
+          version: Dependabot::PreCommit::Version.new("6.0.0"),
+          commit_sha: "3e8a8703264a2f4a69428a0aa4dcb512790b2c8c"
+        }
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions)
+          .and_return([v6_tag])
+
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+      end
+
+      it "returns the version (defers to SHA comparison for force-moved tag detection)" do
+        result = finder.latest_release_version
+        # Version equals frozen comment → returned without setting cooldown_rejected_all
+        expect(result).to be_a(Dependabot::PreCommit::Version)
+        expect(result.to_s).to eq("6.0.0")
+      end
+
+      it "does not set cooldown_rejected_all so latest_version_tag remains available" do
+        finder.latest_release_version
+
+        # latest_version_tag must NOT be nil so that sha1_version_up_to_date?
+        # can resolve the new commit SHA and detect the force-moved tag
+        expect(finder.latest_version_tag).not_to be_nil
+        expect(finder.latest_version_tag[:version].to_s).to eq("6.0.0")
+      end
+    end
+  end
+
   describe "version precision" do
     context "with shortened version ref" do
       let(:reference) { "v4.4" }
