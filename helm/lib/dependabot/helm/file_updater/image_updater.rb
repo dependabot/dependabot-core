@@ -125,11 +125,27 @@ module Dependabot
 
             if version_scalar
               line = version_scalar.start_line
-              content[line] = T.must(content[line]).gsub(tag_value, dependency_version)
+              # Preserve the original tag format when updating
+              new_tag_value = preserve_tag_format(tag_value, dependency_version)
+              content[line] = T.must(content[line]).gsub(tag_value, new_tag_value)
             end
           end
 
           content
+        end
+
+        sig { params(original_tag: String, new_version: String).returns(String) }
+        def preserve_tag_format(original_tag, new_version)
+          # If the original tag has a 'v' prefix but the new version doesn't, add it
+          if original_tag.start_with?("v") && !new_version.start_with?("v")
+            "v#{new_version}"
+          # If the original tag doesn't have a 'v' prefix but the new version does, remove it
+          elsif !original_tag.start_with?("v") && new_version.start_with?("v")
+            new_version[1..]
+          else
+            # Keep the new version as-is if formats match
+            new_version
+          end
         end
       end
     end
