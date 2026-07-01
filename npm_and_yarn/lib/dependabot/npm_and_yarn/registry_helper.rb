@@ -23,6 +23,7 @@ module Dependabot
       COREPACK_NPM_REGISTRY_ENV = "COREPACK_NPM_REGISTRY" # For Corepack
       NPM_CONFIG_REGISTRY_ENV = "npm_config_registry" # For npm
       COREPACK_NPM_TOKEN_ENV = "COREPACK_NPM_TOKEN"
+      COREPACK_INTEGRITY_KEYS_ENV = "COREPACK_INTEGRITY_KEYS"
 
       # Default npm registry - no need to set env vars for this
       DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org"
@@ -61,6 +62,8 @@ module Dependabot
             env_variables[COREPACK_NPM_REGISTRY_ENV] = registry # For Corepack
             env_variables[NPM_CONFIG_REGISTRY_ENV] = registry # For npm
             env_variables[REGISTRY_KEY] = registry
+            # Private registries don't provide signatures for corepack to verify
+            env_variables[COREPACK_INTEGRITY_KEYS_ENV] = ""
           end
         end
 
