@@ -20,13 +20,13 @@ module Dependabot
     end
 
     OutputObserver = T.type_alias do
-      T.nilable(T.proc.params(data: String).returns(T::Hash[Symbol, T.untyped]))
+      T.nilable(T.proc.params(data: String).returns(T::Hash[Symbol, T.anything]))
     end
 
     EnvCmdItem = T.type_alias do
       T.any(
         String,
-        T::Hash[T.any(String, Symbol), T.untyped]
+        T::Hash[T.any(String, Symbol), T.anything]
       )
     end
 
