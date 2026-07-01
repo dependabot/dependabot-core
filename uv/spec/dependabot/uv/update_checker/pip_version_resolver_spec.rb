@@ -101,6 +101,38 @@ RSpec.describe Dependabot::Uv::UpdateChecker::PipVersionResolver do
         end
       end
     end
+
+    context "with a pyproject exact requires-python pin" do
+      let(:dependency_files) { [pyproject_file] }
+      let(:pyproject_file) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: <<~TOML
+            [project]
+            name = "demo"
+            version = "0.1.0"
+            requires-python = "==3.12.2"
+            dependencies = ["django==1.2.4"]
+          TOML
+        )
+      end
+      let(:dependency_requirements) do
+        [{
+          file: "pyproject.toml",
+          requirement: "==1.2.4",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it "raises a helpful error for exact requires-python pins" do
+        expect { latest_resolvable_version }.to raise_error(Dependabot::ToolVersionNotSupported) do |err|
+          expect(err.message).to start_with(
+            "Dependabot detected the following Python requirement for your project: '==3.12.2'."
+          )
+        end
+      end
+    end
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do
