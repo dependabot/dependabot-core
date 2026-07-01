@@ -109,10 +109,12 @@ module Dependabot
         ).returns(T::Hash[String, String])
       end
       def self.registry_token_env_from_files(dependency_files, credentials)
-        config_file = dependency_files.find { |f| f.name == ".cargo/config.toml" }
-        return {} unless config_file
+        config_files = dependency_files.select { |f| f.name.end_with?(".cargo/config.toml") }
+        return {} if config_files.empty?
 
-        registry_token_env(T.must(config_file.content), credentials)
+        config_files.each_with_object({}) do |config_file, env|
+          env.merge!(registry_token_env(T.must(config_file.content), credentials))
+        end
       end
 
       # Builds the complete environment variable hash for running cargo commands:

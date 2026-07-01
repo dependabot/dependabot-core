@@ -41,7 +41,7 @@ module Dependabot
           @path_dependency_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
           @lockfile = T.let(nil, T.nilable(Dependabot::DependencyFile))
           @toolchain = T.let(nil, T.nilable(Dependabot::DependencyFile))
-          @config = T.let(nil, T.nilable(Dependabot::DependencyFile))
+          @config_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
         end
 
         sig { returns(T.any(String, T.noreturn)) }
@@ -305,11 +305,10 @@ module Dependabot
 
           File.write(lockfile.name, replace_ssh_urls(T.must(lockfile.content)))
           File.write(T.must(toolchain).name, T.must(toolchain).content) if toolchain
-          config_file = config
-          return unless config_file
-
-          FileUtils.mkdir_p(File.dirname(config_file.name))
-          File.write(config_file.name, Helpers.sanitize_cargo_config(T.must(config_file.content)))
+          config_files.each do |config_file|
+            FileUtils.mkdir_p(File.dirname(config_file.name))
+            File.write(config_file.name, Helpers.sanitize_cargo_config(T.must(config_file.content)))
+          end
         end
 
         sig { void }
@@ -537,9 +536,12 @@ module Dependabot
             dependency_files.find { |f| f.name == "rust-toolchain" }
         end
 
-        sig { returns(T.nilable(Dependabot::DependencyFile)) }
-        def config
-          @config ||= dependency_files.find { |f| f.name == ".cargo/config.toml" }
+        # Cargo merges `.cargo/config.toml` hierarchically (package directory plus
+        # every ancestor up to the repo root), so we materialise all of them and
+        # let Cargo perform the merge with its own precedence rules.
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def config_files
+          @config_files ||= dependency_files.select { |f| f.name.end_with?(".cargo/config.toml") }
         end
 
         sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
