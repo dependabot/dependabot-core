@@ -91,6 +91,8 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
             gradle/wrapper/gradle-wrapper.properties
           )
         )
+        wrapper_jar = file_fetcher_instance.files.find { |f| f.name.end_with?("gradle-wrapper.jar") }
+        expect(wrapper_jar.content_encoding).to eq("base64")
       end
     end
 
