@@ -335,7 +335,7 @@ module Dependabot
         end
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[Dependabot::Requirement]) }
       def ignore_requirements
         ignored_versions.flat_map { |req| requirement_class.requirements_array(req) }
       end
