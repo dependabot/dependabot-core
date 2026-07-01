@@ -72,7 +72,7 @@ module Dependabot
       # rubocop:enable Sorbet/ForbidTUntyped
       def self.from_hash(hash)
         group_name = hash["dependency-group-name"]
-        pr_number = hash["pr_number"]
+        pr_number = hash["pr-number"]
         dependencies = hash["dependencies"]
 
         new(
