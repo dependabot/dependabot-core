@@ -51,7 +51,7 @@ internal static class VersionFinder
         ILogger logger,
         CancellationToken cancellationToken)
     {
-        var versionFilter = CreateVersionFilter(currentVersion);
+        var versionFilter = CreateVersionFilter(currentVersion, dependencyInfo.AllowPrerelease);
 
         return GetVersionsAsync(projectTfms, dependencyInfo, currentVersion, versionFilter, currentTime, nugetContext, logger, cancellationToken);
     }
@@ -81,7 +81,7 @@ internal static class VersionFinder
         ILogger logger,
         CancellationToken cancellationToken)
     {
-        var includePrerelease = currentVersion.IsPrerelease;
+        var includePrerelease = currentVersion.IsPrerelease || dependencyInfo.AllowPrerelease;
         VersionResult result = new(currentVersion);
 
         var sourceMapping = PackageSourceMapping.GetPackageSourceMapping(nugetContext.Settings);
@@ -212,7 +212,8 @@ internal static class VersionFinder
         {
             var versionGreaterThanCurrent = currentVersion is null || version > currentVersion;
             var rangeSatisfies = versionRange.Satisfies(version);
-            var prereleaseTypeMatches = currentVersion is null || !currentVersion.IsPrerelease || !version.IsPrerelease || version.Version == currentVersion.Version;
+            var prereleaseTypeMatches = dependencyInfo.AllowPrerelease
+                || currentVersion is null || !currentVersion.IsPrerelease || !version.IsPrerelease || version.Version == currentVersion.Version;
             var isIgnoredVersion = dependencyInfo.IgnoredVersions.Any(i => i.IsSatisfiedBy(version));
             var isVulnerableVersion = dependencyInfo.Vulnerabilities.Any(v => v.IsVulnerable(version));
             var isSafeVersion = !safeVersions.Any() || safeVersions.Any(s => s.IsSatisfiedBy(version));
@@ -252,10 +253,10 @@ internal static class VersionFinder
         };
     }
 
-    internal static Func<NuGetVersion, bool> CreateVersionFilter(NuGetVersion currentVersion)
+    internal static Func<NuGetVersion, bool> CreateVersionFilter(NuGetVersion currentVersion, bool allowPrerelease = false)
     {
         return version => version > currentVersion
-            && (currentVersion is null || !currentVersion.IsPrerelease || !version.IsPrerelease || version.Version == currentVersion.Version);
+            && (allowPrerelease || !currentVersion.IsPrerelease || !version.IsPrerelease || version.Version == currentVersion.Version);
     }
 
     public static async Task<bool> DoVersionsExistAsync(

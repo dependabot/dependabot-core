@@ -1,4 +1,5 @@
 using NuGetUpdater.Core.Run;
+using NuGetUpdater.Core.Run.ApiModel;
 
 using Xunit;
 
@@ -300,6 +301,103 @@ public class RunWorkerTests
                 """
             },
         };
+    }
+
+    public class GetDependencyInfoTests
+    {
+        [Fact]
+        public void AllowPrerelease_MatchingDependencyName_SetsAllowPrereleaseTrue()
+        {
+            var job = new Job()
+            {
+                AllowedUpdates =
+                [
+                    new AllowedUpdate() { DependencyName = "Some.Package", Prerelease = true },
+                    new AllowedUpdate() { UpdateType = UpdateType.All },
+                ],
+                Source = new() { Provider = "github", Repo = "test/repo" },
+            };
+            var dependency = new Dependency("Some.Package", "1.0.0", DependencyType.PackageReference, IsTopLevel: true);
+
+            var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, groupMatchers: [], allowCooldown: false);
+
+            Assert.True(dependencyInfo.AllowPrerelease);
+        }
+
+        [Fact]
+        public void AllowPrerelease_WildcardMatchingDependencyName_SetsAllowPrereleaseTrue()
+        {
+            var job = new Job()
+            {
+                AllowedUpdates =
+                [
+                    new AllowedUpdate() { DependencyName = "MyCompany.*", Prerelease = true },
+                    new AllowedUpdate() { UpdateType = UpdateType.All },
+                ],
+                Source = new() { Provider = "github", Repo = "test/repo" },
+            };
+            var dependency = new Dependency("MyCompany.Utils", "1.0.0", DependencyType.PackageReference, IsTopLevel: true);
+
+            var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, groupMatchers: [], allowCooldown: false);
+
+            Assert.True(dependencyInfo.AllowPrerelease);
+        }
+
+        [Fact]
+        public void AllowPrerelease_NonMatchingDependencyName_SetsAllowPrereleaseFalse()
+        {
+            var job = new Job()
+            {
+                AllowedUpdates =
+                [
+                    new AllowedUpdate() { DependencyName = "Some.Package", Prerelease = true },
+                    new AllowedUpdate() { UpdateType = UpdateType.All },
+                ],
+                Source = new() { Provider = "github", Repo = "test/repo" },
+            };
+            var dependency = new Dependency("Other.Package", "1.0.0", DependencyType.PackageReference, IsTopLevel: true);
+
+            var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, groupMatchers: [], allowCooldown: false);
+
+            Assert.False(dependencyInfo.AllowPrerelease);
+        }
+
+        [Fact]
+        public void AllowPrerelease_NoPrereleaseRule_SetsAllowPrereleaseFalse()
+        {
+            var job = new Job()
+            {
+                AllowedUpdates =
+                [
+                    new AllowedUpdate() { UpdateType = UpdateType.All },
+                ],
+                Source = new() { Provider = "github", Repo = "test/repo" },
+            };
+            var dependency = new Dependency("Some.Package", "1.0.0", DependencyType.PackageReference, IsTopLevel: true);
+
+            var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, groupMatchers: [], allowCooldown: false);
+
+            Assert.False(dependencyInfo.AllowPrerelease);
+        }
+
+        [Fact]
+        public void AllowPrerelease_NullDependencyName_AppliesToAllDependencies()
+        {
+            // An allowed update with no dependency-name and prerelease: true applies to all dependencies
+            var job = new Job()
+            {
+                AllowedUpdates =
+                [
+                    new AllowedUpdate() { Prerelease = true },
+                ],
+                Source = new() { Provider = "github", Repo = "test/repo" },
+            };
+            var dependency = new Dependency("Any.Package", "1.0.0", DependencyType.PackageReference, IsTopLevel: true);
+
+            var dependencyInfo = RunWorker.GetDependencyInfo(job, dependency, groupMatchers: [], allowCooldown: false);
+
+            Assert.True(dependencyInfo.AllowPrerelease);
+        }
     }
 }
 
