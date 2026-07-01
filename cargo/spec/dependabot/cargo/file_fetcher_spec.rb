@@ -1371,9 +1371,11 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
           cargo_toml: main_cargo_file,
           cargo_lock: nil,
           cargo_config: nil,
-          rust_toolchain: nil,
-          fetch_path_dependency_and_workspace_files: []
+          rust_toolchain: nil
         )
+        allow(file_fetcher_instance).to receive(:fetch_path_dependency_and_workspace_files) do |files = nil|
+          files || []
+        end
         allow(file_fetcher_instance).to receive(:find_workspace_root)
           .with(main_cargo_file)
           .and_return(workspace_root_file)
@@ -1581,6 +1583,601 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         expect(files[0].name).to eq("Cargo.toml")
         expect(files[1].name).to eq("subdir/Cargo.toml")
       end
+    end
+  end
+
+  describe "subdirectory job inside a parent workspace with sibling members" do
+    let(:repo) { "dependabot-fixtures/cargo-workspace-example" }
+    let(:inner_pkg_dir_listing) do
+      [
+        { name: "Cargo.toml", path: "inner-pkg/Cargo.toml", type: "file", size: 1 }
+      ].to_json
+    end
+    let(:root_dir_listing) do
+      [
+        { name: "Cargo.toml", path: "Cargo.toml", type: "file", size: 1 },
+        { name: "inner-pkg", path: "inner-pkg", type: "dir", size: 0 },
+        { name: "shared-pkg", path: "shared-pkg", type: "dir", size: 0 }
+      ].to_json
+    end
+    let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: repo,
+        directory: "/inner-pkg"
+      )
+    end
+
+    let(:root_workspace_toml) do
+      <<~TOML
+        [workspace]
+        members = ["inner-pkg", "shared-pkg"]
+
+        [workspace.dependencies]
+        anyhow = "1.0"
+      TOML
+    end
+
+    let(:inner_pkg_toml) do
+      <<~TOML
+        [package]
+        name = "inner-pkg"
+        version = "0.1.0"
+
+        [dependencies]
+        anyhow = { workspace = true }
+      TOML
+    end
+
+    let(:shared_pkg_toml) do
+      <<~TOML
+        [package]
+        name = "shared-pkg"
+        version = "0.1.0"
+
+        [dependencies]
+        anyhow = { workspace = true }
+      TOML
+    end
+
+    def encoded_contents(path, content)
+      {
+        name: File.basename(path),
+        path: path,
+        type: "file",
+        size: content.bytesize,
+        content: Base64.encode64(content),
+        encoding: "base64"
+      }.to_json
+    end
+
+    before do
+      stub_request(:get, url + "inner-pkg/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: encoded_contents("inner-pkg/Cargo.toml", inner_pkg_toml),
+          headers: json_header
+        )
+
+      stub_request(:get, url + "Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: encoded_contents("Cargo.toml", root_workspace_toml),
+          headers: json_header
+        )
+
+      stub_request(:get, url + "shared-pkg/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: encoded_contents("shared-pkg/Cargo.toml", shared_pkg_toml),
+          headers: json_header
+        )
+
+      # Directory listings (used by fetch_file_if_present for support files)
+      stub_request(:get, url + "inner-pkg?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 200, body: inner_pkg_dir_listing, headers: json_header)
+
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 200, body: root_dir_listing, headers: json_header)
+
+      # No lockfile, no .cargo config, no rust-toolchain at any level
+      [
+        "inner-pkg/Cargo.lock",
+        "inner-pkg/.cargo",
+        "inner-pkg/.cargo/config.toml",
+        "inner-pkg/rust-toolchain",
+        "inner-pkg/rust-toolchain.toml",
+        ".cargo",
+        ".cargo/config.toml",
+        ".cargo/config"
+      ].each do |missing|
+        stub_request(:get, url + "#{missing}?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404, headers: json_header)
+      end
+    end
+
+    it "fetches the workspace root sibling members so cargo can resolve the workspace" do
+      files = file_fetcher_instance.files
+      file_names = files.map(&:name)
+
+      expect(file_names).to include("Cargo.toml")
+      expect(file_names).to include("../Cargo.toml")
+      expect(file_names).to include("../shared-pkg/Cargo.toml")
+
+      # Regression check: the workspace_root must be fetched with a name that
+      # escapes the job directory, not collapsed to the same name as the inner
+      # manifest. We must not produce two files both called "Cargo.toml".
+      cargo_toml_named_files = files.select { |f| f.name == "Cargo.toml" }
+      expect(cargo_toml_named_files.length).to eq(1)
+
+      root_workspace_file = files.find { |f| f.name == "../Cargo.toml" }
+      expect(root_workspace_file&.content).to eq(root_workspace_toml)
+    end
+  end
+
+  describe "subdirectory job whose package.workspace points at a sibling workspace root" do
+    let(:repo) { "dependabot-fixtures/cargo-workspace-example" }
+    let(:inner_pkg_dir_listing) do
+      [
+        { name: "Cargo.toml", path: "inner-pkg/Cargo.toml", type: "file", size: 1 }
+      ].to_json
+    end
+    let(:root_dir_listing) do
+      [
+        { name: "Cargo.toml", path: "Cargo.toml", type: "file", size: 1 },
+        { name: "inner-pkg", path: "inner-pkg", type: "dir", size: 0 },
+        { name: "shared-pkg", path: "shared-pkg", type: "dir", size: 0 }
+      ].to_json
+    end
+    let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: repo,
+        directory: "/inner-pkg"
+      )
+    end
+
+    let(:root_workspace_toml) do
+      <<~TOML
+        [workspace]
+        members = ["inner-pkg", "shared-pkg"]
+      TOML
+    end
+
+    let(:inner_pkg_toml) do
+      <<~TOML
+        [package]
+        name = "inner-pkg"
+        version = "0.1.0"
+        workspace = ".."
+
+        [dependencies]
+        anyhow = "1.0"
+      TOML
+    end
+
+    let(:shared_pkg_toml) do
+      <<~TOML
+        [package]
+        name = "shared-pkg"
+        version = "0.1.0"
+
+        [dependencies]
+        anyhow = "1.0"
+      TOML
+    end
+
+    def encoded_contents(path, content)
+      {
+        name: File.basename(path),
+        path: path,
+        type: "file",
+        size: content.bytesize,
+        content: Base64.encode64(content),
+        encoding: "base64"
+      }.to_json
+    end
+
+    before do
+      stub_request(:get, url + "inner-pkg/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: encoded_contents("inner-pkg/Cargo.toml", inner_pkg_toml),
+          headers: json_header
+        )
+
+      stub_request(:get, url + "Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: encoded_contents("Cargo.toml", root_workspace_toml),
+          headers: json_header
+        )
+
+      stub_request(:get, url + "shared-pkg/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: encoded_contents("shared-pkg/Cargo.toml", shared_pkg_toml),
+          headers: json_header
+        )
+
+      stub_request(:get, url + "inner-pkg?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 200, body: inner_pkg_dir_listing, headers: json_header)
+
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 200, body: root_dir_listing, headers: json_header)
+
+      [
+        "inner-pkg/Cargo.lock",
+        "inner-pkg/.cargo",
+        "inner-pkg/.cargo/config.toml",
+        "inner-pkg/rust-toolchain",
+        "inner-pkg/rust-toolchain.toml",
+        ".cargo",
+        ".cargo/config.toml",
+        ".cargo/config"
+      ].each do |missing|
+        stub_request(:get, url + "#{missing}?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404, headers: json_header)
+      end
+    end
+
+    it "fetches the workspace root with a name that escapes the job directory" do
+      files = file_fetcher_instance.files
+      file_names = files.map(&:name)
+
+      expect(file_names).to include("Cargo.toml")
+      expect(file_names).to include("../Cargo.toml")
+      expect(file_names).to include("../shared-pkg/Cargo.toml")
+
+      cargo_toml_named_files = files.select { |f| f.name == "Cargo.toml" }
+      expect(cargo_toml_named_files.length).to eq(1)
+    end
+  end
+
+  describe "workspace member backed by a directory symlink to a sibling crate" do
+    let(:repo) { "dependabot-fixtures/cargo-workspace-example" }
+    let(:symlink_response) do
+      {
+        name: "shared-pkg",
+        path: "inner-pkg/shared-pkg",
+        type: "symlink",
+        target: "../shared-pkg",
+        size: 0
+      }.to_json
+    end
+    let(:root_dir_listing) do
+      [
+        { name: "Cargo.toml", path: "Cargo.toml", type: "file", size: 1 },
+        { name: "inner-pkg", path: "inner-pkg", type: "dir", size: 0 },
+        { name: "shared-pkg", path: "shared-pkg", type: "dir", size: 0 }
+      ].to_json
+    end
+    let(:shared_pkg_dir_listing) do
+      [
+        { name: "Cargo.toml", path: "shared-pkg/Cargo.toml", type: "file", size: 1 }
+      ].to_json
+    end
+    let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: repo,
+        directory: "/"
+      )
+    end
+
+    let(:nested_workspace_toml) do
+      <<~TOML
+        [workspace]
+        members = ["shared-pkg"]
+      TOML
+    end
+
+    let(:shared_pkg_toml) do
+      <<~TOML
+        [package]
+        name = "shared-pkg"
+        version = "0.1.0"
+
+        [dependencies]
+        anyhow = "1.0"
+      TOML
+    end
+
+    let(:root_workspace_toml) do
+      <<~TOML
+        [workspace]
+        members = ["inner-pkg"]
+      TOML
+    end
+
+    def encoded_contents(path, content)
+      {
+        name: File.basename(path),
+        path: path,
+        type: "file",
+        size: content.bytesize,
+        content: Base64.encode64(content),
+        encoding: "base64"
+      }.to_json
+    end
+
+    before do
+      # Top-level Cargo.toml: workspace including the nested workspace dir
+      stub_request(:get, url + "Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: encoded_contents("Cargo.toml", root_workspace_toml),
+          headers: json_header
+        )
+
+      # inner-pkg/Cargo.toml: a nested workspace with shared-pkg as a member
+      stub_request(:get, url + "inner-pkg/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: encoded_contents("inner-pkg/Cargo.toml", nested_workspace_toml),
+          headers: json_header
+        )
+
+      # The path-through-the-symlink is not directly fetchable; the parent
+      # directory of the file is itself a symlink to ../shared-pkg.
+      stub_request(:get, url + "inner-pkg/shared-pkg/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
+
+      # Querying the symlinked dir itself returns a symlink record (single
+      # object response, which the base file fetcher treats as Octokit::NotFound
+      # after registering the linked path).
+      stub_request(:get, url + "inner-pkg/shared-pkg?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: symlink_response,
+          headers: json_header
+        )
+
+      # The resolved sibling crate's directory listing (after symlink resolution).
+      stub_request(:get, url + "shared-pkg?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: shared_pkg_dir_listing,
+          headers: json_header
+        )
+
+      # The resolved sibling crate's Cargo.toml.
+      stub_request(:get, url + "shared-pkg/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: encoded_contents("shared-pkg/Cargo.toml", shared_pkg_toml),
+          headers: json_header
+        )
+
+      # Top-level dir listing
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 200, body: root_dir_listing, headers: json_header)
+
+      # Inner package dir listing (parent directory of Cargo.toml inside the
+      # nested workspace, used by fetch_file_if_present for support files).
+      stub_request(:get, url + "inner-pkg?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: [
+            { name: "Cargo.toml", path: "inner-pkg/Cargo.toml", type: "file", size: 1 },
+            { name: "shared-pkg", path: "inner-pkg/shared-pkg", type: "symlink", size: 0 }
+          ].to_json,
+          headers: json_header
+        )
+
+      # No lockfile, no .cargo, no rust-toolchain
+      [
+        "Cargo.lock",
+        ".cargo",
+        ".cargo/config.toml",
+        "rust-toolchain",
+        "rust-toolchain.toml"
+      ].each do |missing|
+        stub_request(:get, url + "#{missing}?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404, headers: json_header)
+      end
+    end
+
+    it "fetches the symlinked workspace member's Cargo.toml under its symlink path" do
+      files = file_fetcher_instance.files
+      file_names = files.map(&:name)
+
+      expect(file_names).to include("Cargo.toml")
+      expect(file_names).to include("inner-pkg/Cargo.toml")
+      expect(file_names).to include("inner-pkg/shared-pkg/Cargo.toml")
+
+      symlinked = files.find { |f| f.name == "inner-pkg/shared-pkg/Cargo.toml" }
+      expect(symlinked.content).to include('name = "shared-pkg"')
+    end
+
+    it "marks the symlinked workspace member as a non-support manifest so cargo can use it" do
+      files = file_fetcher_instance.files
+      symlinked = files.find { |f| f.name == "inner-pkg/shared-pkg/Cargo.toml" }
+
+      expect(symlinked).not_to be_support_file
+    end
+  end
+
+  describe "subdirectory job whose own Cargo.toml is a workspace with a symlinked member" do
+    let(:repo) { "dependabot-fixtures/cargo-workspace-example" }
+    let(:nested_symlink_response) do
+      {
+        name: "nested",
+        path: "inner-pkg/nested",
+        type: "symlink",
+        target: "../nested",
+        size: 0
+      }.to_json
+    end
+    let(:nested_dir_listing) do
+      [
+        { name: "Cargo.toml", path: "nested/Cargo.toml", type: "file", size: 1 }
+      ].to_json
+    end
+    let(:inner_pkg_dir_listing) do
+      [
+        { name: "Cargo.toml", path: "inner-pkg/Cargo.toml", type: "file", size: 1 },
+        { name: "nested", path: "inner-pkg/nested", type: "symlink", size: 0 }
+      ].to_json
+    end
+    let(:url) { "https://api.github.com/repos/#{repo}/contents/" }
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: repo,
+        directory: "/inner-pkg"
+      )
+    end
+
+    let(:inner_workspace_toml) do
+      <<~TOML
+        [workspace]
+        members = ["nested"]
+      TOML
+    end
+
+    let(:nested_pkg_toml) do
+      <<~TOML
+        [package]
+        name = "nested"
+        version = "0.1.0"
+
+        [dependencies]
+        anyhow = "1.0"
+      TOML
+    end
+
+    def encoded_contents(path, content)
+      {
+        name: File.basename(path),
+        path: path,
+        type: "file",
+        size: content.bytesize,
+        content: Base64.encode64(content),
+        encoding: "base64"
+      }.to_json
+    end
+
+    before do
+      # The job's own manifest is itself a workspace with one member: nested.
+      stub_request(:get, url + "inner-pkg/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: encoded_contents("inner-pkg/Cargo.toml", inner_workspace_toml),
+          headers: json_header
+        )
+
+      # The workspace member's path lookup fails because `nested` is a symlink.
+      stub_request(:get, url + "inner-pkg/nested/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
+
+      # Fetching the parent dir of the failing path returns the symlink object,
+      # which the base file fetcher uses to populate @linked_paths.
+      stub_request(:get, url + "inner-pkg/nested?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: nested_symlink_response,
+          headers: json_header
+        )
+
+      # After symlink resolution, the contents of the resolved sibling dir.
+      stub_request(:get, url + "nested?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: nested_dir_listing,
+          headers: json_header
+        )
+
+      # The resolved sibling crate manifest.
+      stub_request(:get, url + "nested/Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: encoded_contents("nested/Cargo.toml", nested_pkg_toml),
+          headers: json_header
+        )
+
+      # No root Cargo.toml.
+      stub_request(:get, url + "Cargo.toml?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404, headers: json_header)
+
+      # Inner-pkg dir listing (used by fetch_file_if_present for support files).
+      stub_request(:get, url + "inner-pkg?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 200, body: inner_pkg_dir_listing, headers: json_header)
+
+      stub_request(:get, url + "?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: [
+            { name: "inner-pkg", path: "inner-pkg", type: "dir", size: 0 },
+            { name: "nested", path: "nested", type: "dir", size: 0 }
+          ].to_json,
+          headers: json_header
+        )
+
+      [
+        "inner-pkg/Cargo.lock",
+        "inner-pkg/.cargo",
+        "inner-pkg/.cargo/config.toml",
+        "inner-pkg/rust-toolchain",
+        "inner-pkg/rust-toolchain.toml",
+        ".cargo",
+        ".cargo/config.toml",
+        ".cargo/config",
+        "rust-toolchain",
+        "rust-toolchain.toml",
+        "Cargo.lock"
+      ].each do |missing|
+        stub_request(:get, url + "#{missing}?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404, headers: json_header)
+      end
+    end
+
+    it "fetches the symlinked workspace member under its symlinked path" do
+      file_names = file_fetcher_instance.files.map(&:name)
+
+      expect(file_names).to include("Cargo.toml")
+      expect(file_names).to include("nested/Cargo.toml")
+    end
+
+    it "marks the symlinked workspace member as a non-support manifest" do
+      member = file_fetcher_instance.files.find { |f| f.name == "nested/Cargo.toml" }
+
+      expect(member).not_to be_nil
+      expect(member).not_to be_support_file
+      expect(member.content).to include('name = "nested"')
     end
   end
 end
