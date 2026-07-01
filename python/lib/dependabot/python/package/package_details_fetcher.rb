@@ -416,9 +416,11 @@ module Dependabot
         sig { params(filename: String).returns(T.nilable(String)) }
         def get_version_from_filename(filename)
           filename
+            .strip
             .gsub(/#{name_regex}-/i, "")
             .split(/-|\.tar\.|\.zip|\.whl/)
             .first
+            &.strip
         end
 
         sig do
