@@ -27,6 +27,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   let(:security_advisories) { [] }
   let(:raise_on_ignored) { false }
   let(:ignored_versions) { [] }
+  let(:update_cooldown) { nil }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -43,7 +44,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories,
-      requirements_update_strategy: requirements_update_strategy
+      requirements_update_strategy: requirements_update_strategy,
+      update_cooldown: update_cooldown
     )
   end
 
@@ -159,6 +161,58 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       it { is_expected.to eq("303b8a83c87d5c6d749926cf02620465a5dcd0f2") }
+
+      context "when pinned to a version-like tag" do
+        let(:requirements) do
+          [{
+            requirement: "1.0.*",
+            file: "composer.json",
+            groups: ["runtime"],
+            source: {
+              type: "git",
+              url: "https://github.com/dependabot/monolog.git",
+              branch: "example",
+              ref: "1.16.0"
+            }
+          }]
+        end
+
+        it { is_expected.to eq("1e044bc4b34e91743943479f1be7a1d5eb93add0") }
+
+        context "with a cooldown period configured" do
+          let(:update_cooldown) do
+            Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+          end
+
+          before do
+            allow(checker.send(:git_commit_checker))
+              .to receive(:refs_for_tag_with_detail)
+              .and_return(
+                [
+                  Dependabot::GitTagWithDetail.new(tag: "1.22.0", release_date: "2018-01-02"),
+                  Dependabot::GitTagWithDetail.new(
+                    tag: "1.22.1",
+                    release_date: Time.now.strftime("%Y-%m-%d")
+                  )
+                ]
+              )
+          end
+
+          it "skips the version tag still within its cooldown window" do
+            expect(checker.latest_version)
+              .to eq("bad29cb8d18ab0315e6c477751418a82c850d558")
+          end
+
+          context "when there is no cooldown (e.g. a security update)" do
+            let(:update_cooldown) { nil }
+
+            it "uses the latest version tag" do
+              expect(checker.latest_version)
+                .to eq("1e044bc4b34e91743943479f1be7a1d5eb93add0")
+            end
+          end
+        end
+      end
     end
   end
 
