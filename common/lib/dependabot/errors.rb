@@ -23,7 +23,7 @@ module Dependabot
 
   # rubocop:disable Metrics/MethodLength
   # rubocop:disable Metrics/CyclomaticComplexity
-  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.anything])) }
   def self.fetcher_error_details(error)
     case error
     when Dependabot::ToolVersionNotSupported
@@ -142,7 +142,7 @@ module Dependabot
   end
   # rubocop:enable Metrics/CyclomaticComplexity
 
-  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.anything])) }
   def self.parser_error_details(error)
     case error
     when Dependabot::ToolFeatureNotSupported
@@ -226,7 +226,7 @@ module Dependabot
   # rubocop:disable Lint/RedundantCopDisableDirective
   # rubocop:disable Metrics/CyclomaticComplexity
   # rubocop:disable Metrics/AbcSize
-  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.anything])) }
   def self.updater_error_details(error)
     case error
     when Dependabot::ToolFeatureNotSupported
@@ -416,7 +416,7 @@ module Dependabot
 
     interface!
 
-    sig { abstract.returns(T::Hash[Symbol, T.untyped]) }
+    sig { abstract.returns(T::Hash[Symbol, T.anything]) }
     def sentry_context; end
   end
 
@@ -484,7 +484,7 @@ module Dependabot
       super(message || error_type)
     end
 
-    sig { params(hash: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Hash[Symbol, T.untyped]) }
+    sig { params(hash: T.nilable(T::Hash[Symbol, T.anything])).returns(T::Hash[Symbol, T.anything]) }
     def detail(hash = nil)
       {
         "error-type": error_type,
