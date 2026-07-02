@@ -151,6 +151,36 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     expect(source.url).to eq("https://github.com/hashicorp/terraform-aws-consul")
   end
 
+  it "handles a relative X-Terraform-Get header without a type error" do
+    hostname = "registry.example.org"
+    stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
+      status: 200,
+      body: { "modules.v1": "/v1/modules/" }.to_json
+    )
+    stub_request(:get, "https://#{hostname}/v1/modules/hashicorp/consul/aws/0.9.3/download").and_return(
+      status: 204,
+      headers: { "X-Terraform-Get" => "/v1/modules/hashicorp/consul/aws/0.9.3/download.zip" }
+    )
+    client = described_class.new(hostname: hostname)
+    dependency = Dependabot::Dependency.new(
+      name: "hashicorp/consul/aws",
+      version: "0.9.3",
+      package_manager: "terraform",
+      requirements: [{
+        requirement: "0.9.3",
+        groups: [],
+        file: "main.tf",
+        source: {
+          type: "registry",
+          registry_hostname: hostname,
+          module_identifier: "hashicorp/consul/aws"
+        }
+      }]
+    )
+
+    expect { client.source(dependency: dependency) }.not_to raise_error
+  end
+
   it "fetches the source for a provider dependency", :vcr do
     source = client.source(dependency: module_dependency)
 

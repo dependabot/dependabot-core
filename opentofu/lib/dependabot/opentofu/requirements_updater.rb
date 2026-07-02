@@ -99,7 +99,7 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       attr_reader :requirements
 
-      sig { returns(Dependabot::Opentofu::Version) }
+      sig { returns(T.nilable(Dependabot::Opentofu::Version)) }
       attr_reader :latest_version
 
       sig { returns(T.nilable(String)) }
@@ -133,12 +133,15 @@ module Dependabot
       def update_registry_requirement(req)
         return req if req.fetch(:requirement).nil?
 
+        latest = latest_version
+        return req if latest.nil?
+
         string_req = req.fetch(:requirement).strip
         ruby_req = requirement_class.new(string_req)
-        return req if ruby_req.satisfied_by?(latest_version)
+        return req if ruby_req.satisfied_by?(latest)
 
         new_req =
-          if ruby_req.exact? then latest_version.to_s
+          if ruby_req.exact? then latest.to_s
           elsif string_req.start_with?("~>")
             update_twiddle_version(string_req).to_s
           else
@@ -153,18 +156,19 @@ module Dependabot
       def update_twiddle_version(req_string)
         old_version = requirement_class.new(req_string)
                                        .requirements.first.last
-        updated_version = at_same_precision(latest_version, old_version)
+        updated_version = at_same_precision(T.must(latest_version), old_version)
         req_string.sub(old_version.to_s, updated_version)
       end
 
       sig { params(req_string: String).returns(T::Array[Dependabot::Opentofu::Requirement]) }
       def update_range(req_string)
+        latest = T.must(latest_version)
         requirement_class.new(req_string).requirements.flat_map do |r|
           ruby_req = requirement_class.new(r.join(" "))
-          next ruby_req if ruby_req.satisfied_by?(latest_version)
+          next ruby_req if ruby_req.satisfied_by?(latest)
 
           case op = ruby_req.requirements.first.first
-          when "<", "<=" then [update_greatest_version(ruby_req, latest_version)]
+          when "<", "<=" then [update_greatest_version(ruby_req, latest)]
           when "!=" then []
           else raise "Unexpected operation for unsatisfied req: #{op}"
           end
