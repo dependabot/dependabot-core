@@ -742,22 +742,22 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     end
     let(:local_tag_for_pinned_sha) { false }
     let(:latest_version_tag) { nil }
-    let(:latest_version) { nil }
+    let(:latest_release_version) { nil }
+    let(:finder) do
+      instance_double(
+        Dependabot::GithubActions::UpdateChecker::LatestVersionFinder,
+        latest_version_tag: latest_version_tag,
+        latest_release_version: latest_release_version
+      )
+    end
 
     before do
-      allow(checker).to receive_messages(
-        latest_version_finder: instance_double(
-          Dependabot::GithubActions::UpdateChecker::LatestVersionFinder,
-          latest_version_tag: latest_version_tag
-        ),
-        latest_version: latest_version,
-        latest_commit_for_pinned_ref: "branch-head-sha"
-      )
+      allow(checker).to receive(:latest_commit_for_pinned_ref).and_return("branch-head-sha")
     end
 
     context "when no latest version tag is available" do
       it "returns nil instead of falling back to branch head" do
-        expect(checker.send(:latest_commit_sha, source_checker)).to be_nil
+        expect(checker.send(:latest_commit_sha, source_checker, finder)).to be_nil
       end
     end
 
@@ -765,10 +765,10 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       let(:latest_version_tag) do
         { tag: "v2.7.0", commit_sha: "ee0669bd1cc54295c223e0bb666b733df41de1c5" }
       end
-      let(:latest_version) { "cooldown-filtered-sha" }
+      let(:latest_release_version) { "cooldown-filtered-sha" }
 
-      it "uses the checker latest_version SHA to keep updates aligned" do
-        expect(checker.send(:latest_commit_sha, source_checker)).to eq("cooldown-filtered-sha")
+      it "uses the finder latest_release_version SHA to keep updates aligned" do
+        expect(checker.send(:latest_commit_sha, source_checker, finder)).to eq("cooldown-filtered-sha")
       end
     end
   end
@@ -1091,6 +1091,105 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
 
         it { is_expected.to eq(expected_requirements) }
+      end
+    end
+
+    context "when the same action is referenced at mixed precision across workflows" do
+      let(:dependency_name) { "actions/checkout" }
+      let(:upload_pack_fixture) { "checkout" }
+      # The combined dependency version is the lower of the two refs (v2), exactly
+      # as DependencySet#combined_version resolves it when the parser merges the two
+      # `uses:` occurrences into one dependency.
+      let(:dependency_version) { "2" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: dependency_version,
+          requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/major.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v2", branch: nil },
+              metadata: { declaration_string: "#{dependency_name}@v2" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/patch.yml",
+              source: { type: "git", url: "https://github.com/#{dependency_name}", ref: "v2.3.1", branch: nil },
+              metadata: { declaration_string: "#{dependency_name}@v2.3.1" }
+            }
+          ],
+          package_manager: "github_actions"
+        )
+      end
+      let(:checker) do
+        described_class.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: github_credentials,
+          security_advisories: security_advisories,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: raise_on_ignored,
+          update_cooldown: update_cooldown
+        )
+      end
+
+      def ref_for(reqs, file)
+        reqs.find { |r| r[:file] == file }[:source][:ref]
+      end
+
+      context "without a lockfile (legacy regex path)" do
+        let(:dependency_files) { [] }
+
+        it "flattens both requirements to the combined (coarsest) precision" do
+          expect(ref_for(updated_requirements, ".github/workflows/major.yml")).to eq("v3")
+          expect(ref_for(updated_requirements, ".github/workflows/patch.yml")).to eq("v3")
+        end
+      end
+
+      context "when both workflows are onboarded to the lockfile" do
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: ".github/workflows/actions.lock",
+            content: <<~LOCK
+              version: v0.0.1
+              workflows:
+                ".github/workflows/major.yml":
+                  - "actions/checkout@v2:sha1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                ".github/workflows/patch.yml":
+                  - "actions/checkout@v2.3.1:sha1-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              dependencies:
+                "actions/checkout@v2:sha1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa":
+                  branch: main
+                  commit: sha1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                  owner_id: 44036562
+                  repo_id: 197814280
+                "actions/checkout@v2.3.1:sha1-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb":
+                  branch: main
+                  commit: sha1-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+                  owner_id: 44036562
+                  repo_id: 197814280
+            LOCK
+          )
+        end
+        let(:major_workflow) do
+          Dependabot::DependencyFile.new(
+            name: ".github/workflows/major.yml", content: ""
+          )
+        end
+        let(:patch_workflow) do
+          Dependabot::DependencyFile.new(
+            name: ".github/workflows/patch.yml", content: ""
+          )
+        end
+        let(:dependency_files) { [major_workflow, patch_workflow, lockfile] }
+
+        it "preserves each workflow's own precision" do
+          expect(ref_for(updated_requirements, ".github/workflows/major.yml")).to eq("v3")
+          expect(ref_for(updated_requirements, ".github/workflows/patch.yml")).to eq("v3.5.2")
+        end
       end
     end
 

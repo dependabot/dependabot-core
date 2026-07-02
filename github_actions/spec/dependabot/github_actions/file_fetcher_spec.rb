@@ -90,6 +90,38 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
       end
     end
 
+    context "when an actions.lock is present" do
+      before do
+        # Re-stub the workflows listing to include the lockfile alongside the
+        # workflow files, then stub the lockfile content fetch.
+        stub_request(:get, url + ".github/workflows?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_githubaction_repo_workflows_with_lock.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(
+          :get,
+          File.join(url, ".github/workflows/actions.lock?ref=sha")
+        ).with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_githubaction_lockfile.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "additively fetches the lockfile alongside the workflow files" do
+        expect(file_fetcher_instance.files.map(&:name))
+          .to match_array(
+            %w(.github/workflows/sherlock-workflow.yaml
+               .github/workflows/integration-workflow.yml
+               .github/workflows/actions.lock)
+          )
+      end
+    end
+
     context "when it has an invalid encoding" do
       let(:workflow_file_fixture) { fixture("github", "contents_image.json") }
 

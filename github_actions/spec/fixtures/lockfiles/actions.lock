@@ -1,0 +1,21 @@
+version: v0.0.1
+workflows:
+  ".github/workflows/workflow.yml":
+    - "actions/setup-node@master:sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686"
+  ".github/workflows/unmanaged.yml":
+    - "actions/checkout@v4:sha1-34e1c0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0"
+# Every entry must carry branch, commit, owner_id and repo_id. gh-actions-pin treats
+# the whole lockfile as empty (silently, exit 1) if any one of those keys is missing.
+dependencies:
+  "actions/setup-node@master:sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686":
+    branch: master
+    commit: sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686
+    owner_id: 44036562
+    repo_id: 167274481
+    tag: master
+  "actions/checkout@v4:sha1-34e1c0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0":
+    branch: main
+    commit: sha1-34e1c0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0
+    owner_id: 44036562
+    repo_id: 197814280
+    tag: v4

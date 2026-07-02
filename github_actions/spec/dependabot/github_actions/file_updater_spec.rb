@@ -801,5 +801,104 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         end
       end
     end
+
+    # CliEngine is the only engine; these examples stub the Engine.build boundary so
+    # the wiring stays hermetic. When an actions.lock onboards a changed workflow, the
+    # engine is fed the *rewritten* workflow content and its re-pinned lock is emitted
+    # as an additional file; the workflow YAML still comes from the regex path. The
+    # canned relock result mirrors what the binary writes (asserted in cli_engine_spec).
+    describe "relock through the lockfile engine" do
+      let(:relocked_lock_content) do
+        <<~LOCK
+          version: v0.0.1
+          workflows:
+            ".github/workflows/workflow.yml":
+              - "actions/setup-node@v1.1.0:sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686"
+          dependencies:
+            "actions/setup-node@v1.1.0:sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686":
+              branch: master
+              commit: sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686
+              owner_id: 44036562
+              repo_id: 167274481
+              tag: v1.1.0
+        LOCK
+      end
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: ".github/workflows/actions.lock",
+          content: <<~LOCK
+            version: v0.0.1
+            workflows:
+              ".github/workflows/workflow.yml":
+                - "actions/setup-node@master:sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686"
+            dependencies:
+              "actions/setup-node@master:sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686":
+                branch: master
+                commit: sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686
+                owner_id: 44036562
+                repo_id: 167274481
+                tag: master
+          LOCK
+        )
+      end
+      let(:files) { [workflow_file, lockfile] }
+      let(:fake_engine) do
+        instance_double(
+          Dependabot::GithubActions::Lockfile::Engine,
+          relock: Dependabot::GithubActions::Lockfile::RelockResult.new(
+            lockfile_content: relocked_lock_content
+          )
+        )
+      end
+
+      before do
+        allow(Dependabot::GithubActions::Lockfile::Engine).to receive(:build).and_return(fake_engine)
+      end
+
+      it "emits the re-pinned lockfile alongside the rewritten workflow" do
+        expect(updated_files.map(&:name)).to contain_exactly(
+          ".github/workflows/workflow.yml",
+          ".github/workflows/actions.lock"
+        )
+      end
+
+      it "re-pins the lock to the bumped ref read back from the workflow" do
+        lock = updated_files.find { |f| f.name == ".github/workflows/actions.lock" }
+        expect(lock.content).to include(
+          "actions/setup-node@v1.1.0:sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686"
+        )
+        expect(lock.content).not_to include("actions/setup-node@master:")
+      end
+
+      it "still rewrites the workflow YAML via the regex path, not the engine" do
+        workflow = updated_files.find { |f| f.name == ".github/workflows/workflow.yml" }
+        expect(workflow.content).to include("actions/setup-node@v1.1.0")
+      end
+
+      context "when the lock does not onboard the changed workflow" do
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: ".github/workflows/actions.lock",
+            content: <<~LOCK
+              version: v0.0.1
+              workflows:
+                ".github/workflows/other.yml":
+                  - "actions/checkout@v4:sha1-34e1c0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0"
+              dependencies:
+                "actions/checkout@v4:sha1-34e1c0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0":
+                  branch: main
+                  commit: sha1-34e1c0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0
+                  owner_id: 44036562
+                  repo_id: 197814280
+                  tag: v4
+            LOCK
+          )
+        end
+
+        it "stays on the regex-only path and never emits the lock" do
+          expect(updated_files.map(&:name)).to eq([".github/workflows/workflow.yml"])
+        end
+      end
+    end
   end
 end
