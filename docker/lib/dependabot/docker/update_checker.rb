@@ -470,6 +470,13 @@ module Dependabot
         last_modified = head_response.headers[:last_modified]
         published_date = last_modified ? Time.parse(last_modified) : nil
 
+        # Many registries (notably Docker Hub for multi-arch manifest lists)
+        # omit the Last-Modified header on the manifests endpoint, which would
+        # cause the cooldown check to fail open and propose freshly-pushed tags.
+        # Fall back to the image config blob's "created" timestamp, which
+        # reflects the actual build time, so cooldown is still enforced.
+        published_date ||= fetch_image_config_created(tag.name)
+
         Dependabot::Package::PackageRelease.new(
           version: release_version_for(tag),
           released_at: published_date,
