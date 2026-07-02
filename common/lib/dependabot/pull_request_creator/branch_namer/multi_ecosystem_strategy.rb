@@ -21,7 +21,7 @@ module Dependabot
             prefix: String,
             max_length: T.nilable(Integer),
             word_separator: T.nilable(String),
-            lowercase: T::Boolean
+            branch_name_case: T.nilable(String)
           )
             .void
         end
@@ -35,7 +35,7 @@ module Dependabot
           prefix: "dependabot",
           max_length: nil,
           word_separator: nil,
-          lowercase: false
+          branch_name_case: nil
         )
           super(
             dependencies: dependencies,
@@ -45,7 +45,7 @@ module Dependabot
             prefix: prefix,
             max_length: max_length,
             word_separator: word_separator,
-            lowercase: lowercase,
+            branch_name_case: branch_name_case,
           )
 
           @multi_ecosystem_name = multi_ecosystem_name
