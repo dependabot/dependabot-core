@@ -24,7 +24,7 @@ module Dependabot
           package_type: T.nilable(String),
           language: T.nilable(Dependabot::Package::PackageLanguage),
           tag: T.nilable(String),
-          details: T::Hash[String, T.untyped]
+          details: T::Hash[String, T.anything]
         ).void
       end
       def initialize(
@@ -50,7 +50,7 @@ module Dependabot
         @package_type = T.let(package_type, T.nilable(String))
         @language = T.let(language, T.nilable(Dependabot::Package::PackageLanguage))
         @tag = T.let(tag, T.nilable(String))
-        @details = T.let(details, T::Hash[String, T.untyped])
+        @details = T.let(details, T::Hash[String, T.anything])
       end
 
       sig { returns(Dependabot::Version) }
@@ -83,7 +83,7 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       attr_reader :tag
 
-      sig { returns(T::Hash[String, T.untyped]) }
+      sig { returns(T::Hash[String, T.anything]) }
       attr_reader :details
 
       sig { returns(T::Boolean) }
