@@ -26,7 +26,7 @@ module Dependabot
       sig { returns(T::Array[Dependabot::Credential]) }
       attr_reader :credentials
 
-      sig { returns(T::Hash[Symbol, T.untyped]) }
+      sig { returns(T::Hash[Symbol, T.anything]) }
       attr_reader :options
 
       sig do
@@ -35,7 +35,7 @@ module Dependabot
           dependency_files: T::Array[Dependabot::DependencyFile],
           credentials: T::Array[Dependabot::Credential],
           repo_contents_path: T.nilable(String),
-          options: T::Hash[Symbol, T.untyped]
+          options: T::Hash[Symbol, T.anything]
         ).void
       end
       def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path: nil, options: {})

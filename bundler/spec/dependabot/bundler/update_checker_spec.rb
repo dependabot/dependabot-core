@@ -1029,6 +1029,40 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 .to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
             end
 
+            context "when a cooldown period is configured" do
+              let(:update_cooldown) do
+                Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+              end
+
+              before do
+                allow_any_instance_of(Dependabot::GitCommitChecker)
+                  .to receive(:refs_for_tag_with_detail)
+                  .and_return(
+                    [
+                      Dependabot::GitTagWithDetail.new(tag: "v1.11.1", release_date: "2018-01-02"),
+                      Dependabot::GitTagWithDetail.new(
+                        tag: "v1.13.0",
+                        release_date: Time.now.strftime("%Y-%m-%d")
+                      )
+                    ]
+                  )
+              end
+
+              it "skips the version tag still within its cooldown window" do
+                expect(checker.latest_version)
+                  .to eq("c170ea081c121c00ed6fe8764e3557e731454b9d")
+              end
+
+              context "when there is no cooldown (e.g. a security update)" do
+                let(:update_cooldown) { nil }
+
+                it "uses the latest version tag" do
+                  expect(checker.latest_version)
+                    .to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
+                end
+              end
+            end
+
             context "when the dependency has never been released" do
               let(:dependency_files) { bundler_project_dependency_files("git_source_unreleased") }
               let(:dependency_name) { "dummy-git-dependency" }

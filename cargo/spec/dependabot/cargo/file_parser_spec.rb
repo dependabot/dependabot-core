@@ -516,6 +516,54 @@ RSpec.describe Dependabot::Cargo::FileParser do
         end
       end
 
+      context "with a registry defined only in an ancestor .cargo/config.toml" do
+        let(:manifest) do
+          Dependabot::DependencyFile.new(
+            name: "Cargo.toml",
+            content: <<~TOML
+              [package]
+              name = "test"
+              version = "0.1.0"
+
+              [dependencies]
+              private-dep = { version = "0.1.0", registry = "my-registry" }
+            TOML
+          )
+        end
+        let(:ancestor_config) do
+          Dependabot::DependencyFile.new(
+            name: "../.cargo/config.toml",
+            support_file: true,
+            content: <<~TOML
+              [registries.my-registry]
+              index = "sparse+https://private.example.com/index/"
+            TOML
+          )
+        end
+        let(:files) { [manifest, ancestor_config] }
+
+        before do
+          stub_request(:get, "https://private.example.com/index/config.json")
+            .to_return(
+              status: 200,
+              body: {
+                "dl" => "https://private.example.com/api/v1/crates",
+                "api" => "https://private.example.com"
+              }.to_json
+            )
+        end
+
+        it "resolves the registry from the ancestor config" do
+          dependency = dependencies.find { |dep| dep.name == "private-dep" }
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.requirements.first[:source]).to include(
+            type: "registry",
+            name: "my-registry",
+            index: "sparse+https://private.example.com/index/"
+          )
+        end
+      end
+
       context "when the input is unparseable" do
         let(:manifest_fixture_name) { "unparseable" }
 

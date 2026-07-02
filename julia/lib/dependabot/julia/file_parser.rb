@@ -92,10 +92,11 @@ module Dependabot
       sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def custom_registries
         @custom_registries ||= begin
-          registries = options.dig(:registries, :julia) || []
+          registries_config = T.cast(options[:registries], T.nilable(T::Hash[Symbol, T.anything]))
+          registries = T.cast(registries_config&.dig(:julia), T.nilable(T::Array[T::Hash[Symbol, T.anything]])) || []
           # Convert string keys to symbols if needed
           registries.map do |registry|
-            registry.is_a?(Hash) ? registry.transform_keys(&:to_sym) : registry
+            registry.transform_keys(&:to_sym)
           end
         end
       end

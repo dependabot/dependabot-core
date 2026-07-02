@@ -394,7 +394,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def dealias_packages?
-        options.fetch(:dealias_packages, false) == true
+        options.fetch(:dealias_packages, false) ? true : false
       end
 
       # Resolves an aliased manifest entry to its real package name and requirement.
