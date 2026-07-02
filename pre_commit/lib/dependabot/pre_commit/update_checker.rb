@@ -30,7 +30,18 @@ module Dependabot
         return additional_dependency_latest_version if additional_dependency?
 
         @latest_version ||= T.let(
-          T.must(latest_version_finder).latest_release_version,
+          begin
+            release_version = T.must(latest_version_finder).latest_release_version
+
+            # For SHA-pinned git refs, surface the resolved commit SHA as the
+            # update target rather than the semantic tag version, unless a
+            # frozen comment provides explicit version-tag intent.
+            if sha_pinned_git_ref? && !version_from_comment
+              latest_commit_sha || release_version
+            else
+              release_version
+            end
+          end,
           T.nilable(T.any(String, Gem::Version))
         )
       end
@@ -111,7 +122,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def sha1_version_up_to_date?
-        frozen_ver = version_from_comment
+        frozen_ver = version_from_comment || git_commit_checker.version_for_pinned_sha
         return super unless frozen_ver
 
         # Use latest_version (which respects cooldown) for semantic comparison.
@@ -191,19 +202,20 @@ module Dependabot
       def latest_commit_sha
         new_tag = T.must(latest_version_finder).latest_version_tag
 
-        if new_tag
-          if version_from_comment || git_commit_checker.local_tag_for_pinned_sha
-            return T.cast(new_tag.fetch(:commit_sha), String)
-          end
+        return T.cast(new_tag.fetch(:commit_sha), String) if new_tag
 
-          return latest_commit_for_pinned_ref
-        end
-
-        # If there's no tag but we have a latest_version (commit SHA), use it
-        latest_ver = latest_version
+        # If there's no tag but the finder resolved a commit SHA, use it.
+        latest_ver = T.must(latest_version_finder).latest_release_version
         return latest_ver if latest_ver.is_a?(String)
 
         nil
+      end
+
+      sig { returns(T::Boolean) }
+      def sha_pinned_git_ref?
+        return false unless git_commit_checker.git_dependency?
+
+        git_commit_checker.pinned_ref_looks_like_commit_sha?
       end
 
       sig { returns(Dependabot::GitCommitChecker) }
