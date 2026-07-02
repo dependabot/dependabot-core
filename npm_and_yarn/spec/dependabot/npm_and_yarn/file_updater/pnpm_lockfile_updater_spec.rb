@@ -872,5 +872,62 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         updater.send(:run_pnpm_install)
       end
     end
+
+    context "when update_cooldown sets a release-age floor (regular update)" do
+      let(:updater) do
+        described_class.new(
+          dependency_files: files,
+          dependencies: dependencies,
+          credentials: credentials,
+          repo_contents_path: repo_contents_path,
+          release_age_days: 7
+        )
+      end
+
+      it "passes minimumReleaseAge in minutes (days * 1440) to pnpm update" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          expect(cmd).to include("--config.minimumReleaseAge=10080")
+          expect(cmd).to include("--config.minimumReleaseAgeStrict=false")
+          ""
+        end.at_least(:once)
+
+        updater.send(:run_pnpm_update_packages)
+      end
+
+      it "retries without the gate when pnpm raises ERR_PNPM_MISSING_TIME" do
+        call_count = 0
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          call_count += 1
+          if call_count == 1
+            expect(cmd).to include("--config.minimumReleaseAge=10080")
+            raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "ERR_PNPM_MISSING_TIME  The metadata of etag is missing the \"time\" field",
+              error_context: {}
+            )
+          end
+          expect(cmd).not_to include("--config.minimumReleaseAge")
+          ""
+        end
+
+        updater.send(:run_pnpm_update_packages)
+        expect(call_count).to eq(2)
+      end
+
+      context "when pnpm-workspace.yaml already sets minimumReleaseAge" do
+        let(:files) do
+          project_dependency_files(project_name) +
+            [Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "minimumReleaseAge: 20160\n")]
+        end
+
+        it "leaves the explicit pnpm-workspace.yaml value untouched" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            expect(cmd).not_to include("--config.minimumReleaseAge")
+            ""
+          end.at_least(:once)
+
+          updater.send(:run_pnpm_update_packages)
+        end
+      end
+    end
   end
 end
