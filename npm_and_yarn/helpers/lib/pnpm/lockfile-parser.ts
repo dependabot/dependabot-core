@@ -106,7 +106,7 @@ function nameVerDevFromPkgSnapshot(
     name: name,
     version: version,
     resolved:
-      "tarball" in pkgSnapshot.resolution
+      pkgSnapshot.resolution && "tarball" in pkgSnapshot.resolution
         ? pkgSnapshot.resolution.tarball
         : undefined,
     dev: "dev" in pkgSnapshot && pkgSnapshot.dev === true,
