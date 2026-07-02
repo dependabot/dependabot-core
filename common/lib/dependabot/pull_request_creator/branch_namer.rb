@@ -33,6 +33,12 @@ module Dependabot
       sig { returns(T.nilable(Integer)) }
       attr_reader :max_length
 
+      sig { returns(T.nilable(String)) }
+      attr_reader :word_separator
+
+      sig { returns(T::Boolean) }
+      attr_reader :lowercase
+
       sig { returns(T.nilable(Dependabot::DependencyGroup)) }
       attr_reader :dependency_group
 
@@ -51,6 +57,8 @@ module Dependabot
           separator: String,
           prefix: String,
           max_length: T.nilable(Integer),
+          word_separator: T.nilable(String),
+          lowercase: T::Boolean,
           includes_security_fixes: T::Boolean,
           multi_ecosystem_name: T.nilable(String)
         )
@@ -64,6 +72,8 @@ module Dependabot
         separator: "/",
         prefix: "dependabot",
         max_length: nil,
+        word_separator: nil,
+        lowercase: false,
         includes_security_fixes: false,
         multi_ecosystem_name: nil
       )
@@ -74,6 +84,8 @@ module Dependabot
         @separator     = separator
         @prefix        = prefix
         @max_length    = max_length
+        @word_separator = word_separator
+        @lowercase = lowercase
         @includes_security_fixes = includes_security_fixes
         @multi_ecosystem_name = multi_ecosystem_name
       end
@@ -109,6 +121,8 @@ module Dependabot
           separator: separator,
           prefix: prefix,
           max_length: max_length,
+          word_separator: word_separator,
+          lowercase: lowercase,
           multi_ecosystem_name: T.must(multi_ecosystem_name)
         )
       end
@@ -121,7 +135,9 @@ module Dependabot
           target_branch: target_branch,
           separator: separator,
           prefix: prefix,
-          max_length: max_length
+          max_length: max_length,
+          word_separator: word_separator,
+          lowercase: lowercase
         )
       end
 
@@ -135,7 +151,9 @@ module Dependabot
           includes_security_fixes: includes_security_fixes,
           separator: separator,
           prefix: prefix,
-          max_length: max_length
+          max_length: max_length,
+          word_separator: word_separator,
+          lowercase: lowercase
         )
       end
     end
