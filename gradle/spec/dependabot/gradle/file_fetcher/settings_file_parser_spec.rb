@@ -140,4 +140,41 @@ RSpec.describe Dependabot::Gradle::FileFetcher::SettingsFileParser do
       end
     end
   end
+
+  describe "#version_catalog_paths" do
+    subject(:version_catalog_paths) { finder.version_catalog_paths }
+
+    context "when multiple version catalogs are defined in kotlin" do
+      let(:settings_file_name) { "settings.gradle.kts" }
+      let(:fixture_name) { "multi_catalog_settings.gradle.kts" }
+
+      it "includes all version catalog file paths" do
+        expect(version_catalog_paths).to match_array(
+          %w(gradle/libs.versions.toml gradle/tools.versions.toml gradle/plugins.versions.toml)
+        )
+      end
+    end
+
+    context "when multiple version catalogs are defined in groovy" do
+      let(:settings_file_name) { "settings.gradle" }
+      let(:fixture_name) { "multi_catalog_settings.gradle" }
+
+      it "includes all version catalog file paths" do
+        expect(version_catalog_paths).to match_array(
+          %w(gradle/libs.versions.toml gradle/tools.versions.toml gradle/plugins.versions.toml)
+        )
+      end
+    end
+
+    context "when multiple version catalogs are defined in idiomatic groovy" do
+      let(:settings_file_name) { "settings.gradle" }
+      let(:fixture_name) { "idiomatic_groovy_settings.gradle" }
+
+      it "includes all version catalog file paths" do
+        expect(version_catalog_paths).to match_array(
+          %w(gradle/libs.versions.toml gradle/tools.versions.toml gradle/plugins.versions.toml)
+        )
+      end
+    end
+  end
 end

@@ -63,7 +63,7 @@ module Dependabot
         wrapper_properties_file.each do |properties_file|
           dependency_set += wrapper_properties_dependencies(properties_file)
         end
-        version_catalog_file.each do |toml_file|
+        version_catalog_files.each do |toml_file|
           dependency_set += version_catalog_dependencies(toml_file)
         end
         dependency_set.dependencies.reject do |dependency|
@@ -565,11 +565,9 @@ module Dependabot
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def version_catalog_file
-        @version_catalog_file ||= T.let(
-          dependency_files.select do |f|
-            f.name.end_with?("libs.versions.toml")
-          end,
+      def version_catalog_files
+        @version_catalog_files ||= T.let(
+          dependency_files.select { |f| f.name.end_with?(".toml") },
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
       end

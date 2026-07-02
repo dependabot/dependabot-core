@@ -106,6 +106,33 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       end
     end
 
+    context "with multiple version catalogs defined in settings.gradle.kts" do
+      before do
+        stub_content_request("?ref=sha", "contents_root_with_gradle_dir.json")
+        stub_content_request("build.gradle.kts?ref=sha", "contents_kotlin_basic_buildfile.json")
+        stub_content_request("settings.gradle.kts?ref=sha", "contents_multi_catalog_settings.json")
+        stub_content_request("gradle?ref=sha", "contents_gradle_dir_with_catalogs.json")
+        stub_content_request("gradle/libs.versions.toml?ref=sha", "libs_versions_toml.json")
+        stub_content_request("gradle/tools.versions.toml?ref=sha", "tools_versions_toml.json")
+        stub_content_request("gradle/plugins.versions.toml?ref=sha", "plugins_versions_toml.json")
+        stub_no_content_request("gradle.lockfile?ref=sha")
+      end
+
+      it "fetches the buildfile, settings file, and all declared version catalog files" do
+        fetched_files = file_fetcher_instance.files
+
+        expect(fetched_files.map(&:name)).to match_array(
+          %w(
+            build.gradle.kts
+            settings.gradle.kts
+            gradle/libs.versions.toml
+            gradle/tools.versions.toml
+            gradle/plugins.versions.toml
+          )
+        )
+      end
+    end
+
     context "with a settings.gradle" do
       before do
         stub_content_request("?ref=sha", "contents_java_with_settings.json")

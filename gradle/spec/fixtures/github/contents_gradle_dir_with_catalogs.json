@@ -1,0 +1,50 @@
+[
+  {
+    "name": "libs.versions.toml",
+    "path": "gradle/libs.versions.toml",
+    "sha": "a_sha_for_libs_toml",
+    "size": 100,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/gradle/libs.versions.toml?ref=sha",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/a_sha_for_libs_toml",
+    "html_url": "https://github.com/gocardless/bump/blob/sha/gradle/libs.versions.toml",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/gradle/libs.versions.toml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/gradle/libs.versions.toml?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/a_sha_for_libs_toml",
+      "html": "https://github.com/gocardless/bump/blob/sha/gradle/libs.versions.toml"
+    }
+  },
+  {
+    "name": "tools.versions.toml",
+    "path": "gradle/tools.versions.toml",
+    "sha": "a_sha_for_tools_toml",
+    "size": 100,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/gradle/tools.versions.toml?ref=sha",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/a_sha_for_tools_toml",
+    "html_url": "https://github.com/gocardless/bump/blob/sha/gradle/tools.versions.toml",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/gradle/tools.versions.toml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/gradle/tools.versions.toml?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/a_sha_for_tools_toml",
+      "html": "https://github.com/gocardless/bump/blob/sha/gradle/tools.versions.toml"
+    }
+  },
+  {
+    "name": "plugins.versions.toml",
+    "path": "gradle/plugins.versions.toml",
+    "sha": "a_sha_for_plugins_toml",
+    "size": 100,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/gradle/plugins.versions.toml?ref=sha",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/a_sha_for_plugins_toml",
+    "html_url": "https://github.com/gocardless/bump/blob/sha/gradle/plugins.versions.toml",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/sha/gradle/plugins.versions.toml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/gradle/plugins.versions.toml?ref=sha",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/a_sha_for_plugins_toml",
+      "html": "https://github.com/gocardless/bump/blob/sha/gradle/plugins.versions.toml"
+    }
+  }
+]
