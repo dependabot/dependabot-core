@@ -838,13 +838,13 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
     end
 
-    context "with lowercase enabled" do
+    context "with branch_name_case set to lower" do
       let(:namer) do
         described_class.new(
           dependencies: dependencies,
           files: files,
           target_branch: target_branch,
-          lowercase: true
+          branch_name_case: "lower"
         )
       end
 
@@ -857,14 +857,14 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         end
       end
 
-      context "when the prefix has uppercase and lowercase is true" do
+      context "when the prefix has uppercase" do
         let(:namer) do
           described_class.new(
             dependencies: dependencies,
             files: files,
             target_branch: target_branch,
             prefix: "MyProject",
-            lowercase: true
+            branch_name_case: "lower"
           )
         end
         let(:dependency_name) { "MyPackage" }
@@ -874,26 +874,64 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             .to eq("MyProject/dummy/mypackage-1.5.0")
         end
       end
+    end
 
-      context "when lowercase is false (default)" do
-        let(:dependency_name) { "MyPackage" }
+    context "with branch_name_case set to upper" do
+      let(:namer) do
+        described_class.new(
+          dependencies: dependencies,
+          files: files,
+          target_branch: target_branch,
+          branch_name_case: "upper"
+        )
+      end
 
+      context "when the dependency name has lowercase characters" do
+        let(:dependency_name) { "business" }
+
+        it "upcases content after the prefix" do
+          expect(namer.new_branch_name)
+            .to eq("dependabot/DUMMY/BUSINESS-1.5.0")
+        end
+      end
+
+      context "when the prefix has lowercase" do
         let(:namer) do
           described_class.new(
             dependencies: dependencies,
             files: files,
-            target_branch: target_branch
+            target_branch: target_branch,
+            prefix: "myPrefix",
+            branch_name_case: "upper"
           )
         end
+        let(:dependency_name) { "business" }
 
-        it "preserves original casing" do
+        it "preserves prefix casing but upcases content" do
           expect(namer.new_branch_name)
-            .to eq("dependabot/dummy/MyPackage-1.5.0")
+            .to eq("myPrefix/DUMMY/BUSINESS-1.5.0")
         end
       end
     end
 
-    context "with word_separator, lowercase, and custom separator combined" do
+    context "with branch_name_case nil (default)" do
+      let(:dependency_name) { "MyPackage" }
+
+      let(:namer) do
+        described_class.new(
+          dependencies: dependencies,
+          files: files,
+          target_branch: target_branch
+        )
+      end
+
+      it "preserves original casing" do
+        expect(namer.new_branch_name)
+          .to eq("dependabot/dummy/MyPackage-1.5.0")
+      end
+    end
+
+    context "with word_separator, branch_name_case, and custom separator combined" do
       let(:namer) do
         described_class.new(
           dependencies: dependencies,
@@ -901,7 +939,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
           target_branch: target_branch,
           separator: "-",
           word_separator: "-",
-          lowercase: true
+          branch_name_case: "lower"
         )
       end
 
@@ -939,7 +977,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             target_branch: target_branch,
             separator: "-",
             word_separator: "-",
-            lowercase: true,
+            branch_name_case: "lower",
             prefix: "MyProject-Deps"
           )
         end
@@ -958,7 +996,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             target_branch: target_branch,
             separator: "-",
             word_separator: "-",
-            lowercase: true,
+            branch_name_case: "lower",
             max_length: 30
           )
         end
