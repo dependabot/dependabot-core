@@ -30,16 +30,25 @@ module Dependabot
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Credential],
-            security_updates_only: T::Boolean
+            security_updates_only: T::Boolean,
+            release_age_days: T.nilable(Integer)
           )
             .void
         end
-        def initialize(lockfile:, dependencies:, dependency_files:, credentials:, security_updates_only: false)
+        def initialize(
+          lockfile:,
+          dependencies:,
+          dependency_files:,
+          credentials:,
+          security_updates_only: false,
+          release_age_days: nil
+        )
           @lockfile = lockfile
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
           @security_updates_only = T.let(security_updates_only, T::Boolean)
+          @release_age_days = T.let(release_age_days, T.nilable(Integer))
         end
 
         sig { returns(Dependabot::DependencyFile) }
@@ -404,9 +413,8 @@ module Dependabot
           ]
 
           command_args << "--save-optional" if has_optional_dependencies
-          # Override any min-release-age set in .npmrc: security fixes must not be
-          # blocked by a release-age gate the user configured for regular updates.
-          command_args << "--min-release-age=0" if security_updates_only?
+          min_release_age_arg = min_release_age_install_arg
+          command_args << min_release_age_arg if min_release_age_arg
 
           command = command_args.join(" ")
 
@@ -419,11 +427,41 @@ module Dependabot
           ]
 
           fingerprint_args << "--save-optional" if has_optional_dependencies
-          fingerprint_args << "--min-release-age=0" if security_updates_only?
+          # The cooldown day value varies per job, so keep it out of the fingerprint.
+          fingerprint_args << fingerprint_min_release_age_arg(min_release_age_arg) if min_release_age_arg
 
           fingerprint = fingerprint_args.join(" ")
 
           Helpers.run_npm_command(command, fingerprint: fingerprint)
+        end
+
+        # Returns the `--min-release-age` argument for `npm install`, or nil when
+        # none applies. Security updates pass `=0` so a release-age gate never
+        # blocks a fix. Regular updates pass the dependabot.yml cooldown floor (in
+        # days) so npm holds transitive dependencies back to versions at least that
+        # old. Requires npm >= 11.10 (the updater image ships a supporting version).
+        # An explicit `.npmrc` `min-release-age` always wins, so it is left
+        # untouched when present.
+        sig { returns(T.nilable(String)) }
+        def min_release_age_install_arg
+          return "--min-release-age=0" if security_updates_only?
+          return nil unless @release_age_days
+          return nil if npmrc_sets_min_release_age?
+
+          "--min-release-age=#{@release_age_days}"
+        end
+
+        sig { params(arg: String).returns(String) }
+        def fingerprint_min_release_age_arg(arg)
+          arg == "--min-release-age=0" ? arg : "--min-release-age=<days>"
+        end
+
+        sig { returns(T::Boolean) }
+        def npmrc_sets_min_release_age?
+          dependency_files.any? do |file|
+            File.basename(file.name) == ".npmrc" &&
+              file.content.to_s.match?(/^\s*min-release-age\s*=/)
+          end
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(String) }

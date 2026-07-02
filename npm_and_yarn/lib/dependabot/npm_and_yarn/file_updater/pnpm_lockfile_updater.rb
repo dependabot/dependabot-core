@@ -22,7 +22,8 @@ module Dependabot
             dependency_files: T::Array[Dependabot::DependencyFile],
             repo_contents_path: T.nilable(String),
             credentials: T::Array[Dependabot::Credential],
-            security_updates_only: T::Boolean
+            security_updates_only: T::Boolean,
+            release_age_days: T.nilable(Integer)
           ).void
         end
         def initialize(
@@ -30,13 +31,15 @@ module Dependabot
           dependency_files:,
           repo_contents_path:,
           credentials:,
-          security_updates_only: false
+          security_updates_only: false,
+          release_age_days: nil
         )
           @dependencies = dependencies
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
           @security_updates_only = T.let(security_updates_only, T::Boolean)
+          @release_age_days = T.let(release_age_days, T.nilable(Integer))
           @error_handler = T.let(
             PnpmErrorHandler.new(
               dependencies: dependencies,
@@ -207,24 +210,93 @@ module Dependabot
 
           cmd = "update #{dependency_updates}  --lockfile-only --no-save -r"
           fingerprint = "update <dependency_updates>  --lockfile-only --no-save -r"
-          if security_updates_only?
-            # Override any minimumReleaseAge set in pnpm-workspace.yaml: security fixes must not be
-            # blocked by a release-age gate the user configured for regular updates.
-            cmd += " --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false"
-            fingerprint += " --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false"
-          end
-          Helpers.run_pnpm_command(cmd, fingerprint: fingerprint)
+          run_pnpm_command_with_release_age_gate(cmd, fingerprint)
         end
 
         sig { returns(T.nilable(String)) }
         def run_pnpm_install
-          cmd = "install --lockfile-only"
+          run_pnpm_command_with_release_age_gate("install --lockfile-only")
+        end
+
+        # pnpm's `minimumReleaseAge` needs the registry `time` field, which is
+        # absent from the abbreviated metadata pnpm uses for some packages during
+        # `pnpm update`, raising ERR_PNPM_MISSING_TIME. When that happens for a
+        # cooldown-derived gate we retry without it so the update still succeeds,
+        # rather than failing the whole job. Security bypass (`=0`) never triggers
+        # this because it disables the age lookup entirely.
+        sig { params(cmd: String, fingerprint: T.nilable(String)).returns(T.nilable(String)) }
+        def run_pnpm_command_with_release_age_gate(cmd, fingerprint = nil)
+          gate = release_age_gate_config
+          return execute_pnpm_command(cmd, fingerprint) unless gate
+
+          gate_fingerprint = security_updates_only? ? gate : fingerprint_minimum_release_age_config
+          gated_fingerprint = fingerprint ? "#{fingerprint} #{gate_fingerprint}" : nil
+          begin
+            execute_pnpm_command("#{cmd} #{gate}", gated_fingerprint)
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            raise if security_updates_only? || !e.message.include?("ERR_PNPM_MISSING_TIME")
+
+            Dependabot.logger.warn(
+              "pnpm could not apply the cooldown release-age gate because the registry metadata " \
+              "is missing the \"time\" field (ERR_PNPM_MISSING_TIME); retrying without the " \
+              "transitive cooldown gate so the update is not blocked."
+            )
+            execute_pnpm_command(cmd, fingerprint)
+          end
+        end
+
+        sig { params(cmd: String, fingerprint: T.nilable(String)).returns(T.nilable(String)) }
+        def execute_pnpm_command(cmd, fingerprint)
+          if fingerprint
+            Helpers.run_pnpm_command(cmd, fingerprint: fingerprint)
+          else
+            Helpers.run_pnpm_command(cmd)
+          end
+        end
+
+        # Returns the pnpm `--config.minimumReleaseAge` arguments to apply, or nil.
+        # Security updates disable the gate (`=0`); regular updates apply the
+        # dependabot.yml cooldown floor (in minutes).
+        sig { returns(T.nilable(String)) }
+        def release_age_gate_config
           if security_updates_only?
             # Override any minimumReleaseAge set in pnpm-workspace.yaml: security fixes must not be
             # blocked by a release-age gate the user configured for regular updates.
-            cmd += " --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false"
+            return "--config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false"
           end
-          Helpers.run_pnpm_command(cmd)
+
+          minimum_release_age_config
+        end
+
+        # Applies the dependabot.yml cooldown floor as pnpm's `minimumReleaseAge`
+        # (in minutes) so transitive dependencies are held back to versions at
+        # least that old. `minimumReleaseAgeStrict=false` lets pnpm fall back to
+        # the newest available version rather than erroring when nothing satisfies
+        # the window, and avoids gating the exact direct version Dependabot pins.
+        # An explicit `minimumReleaseAge` in pnpm-workspace.yaml (or `.npmrc`)
+        # always wins, so it is left untouched when present.
+        sig { returns(T.nilable(String)) }
+        def minimum_release_age_config
+          return nil unless @release_age_days
+          return nil if pnpm_config_sets_minimum_release_age?
+
+          minutes = @release_age_days * Helpers::MINUTES_PER_DAY
+          "--config.minimumReleaseAge=#{minutes} --config.minimumReleaseAgeStrict=false"
+        end
+
+        sig { returns(String) }
+        def fingerprint_minimum_release_age_config
+          "--config.minimumReleaseAge=<minutes> --config.minimumReleaseAgeStrict=false"
+        end
+
+        sig { returns(T::Boolean) }
+        def pnpm_config_sets_minimum_release_age?
+          dependency_files.any? do |file|
+            basename = File.basename(file.name)
+            content = file.content.to_s
+            (basename == "pnpm-workspace.yaml" && content.match?(/^\s*minimumReleaseAge\s*:/)) ||
+              (basename == ".npmrc" && content.match?(/^\s*minimum-release-age\s*=/))
+          end
         end
 
         # Tries `pnpm update --depth Infinity <dep>` for each dependency as a

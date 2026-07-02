@@ -527,5 +527,48 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
         )
       end
     end
+
+    context "when update_cooldown sets a release-age floor (regular update)" do
+      let(:updater) do
+        described_class.new(
+          dependency_files: files,
+          dependencies: dependencies,
+          credentials: credentials,
+          repo_contents_path: nil,
+          release_age_days: 7
+        )
+      end
+
+      context "when Yarn supports npmMinimalAgeGate (>= 4.10.0)" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:yarn_berry_supports_minimal_age_gate?).and_return(true)
+        end
+
+        it "sets YARN_NPM_MINIMAL_AGE_GATE to the cooldown floor in minutes (days * 1440)" do
+          expect(updater.send(:yarn_time_gate_env)).to eq({ "YARN_NPM_MINIMAL_AGE_GATE" => "10080" })
+        end
+
+        context "when .yarnrc.yml already sets npmMinimalAgeGate" do
+          let(:files) do
+            project_dependency_files("yarn_berry/workspace_subdependency_update") +
+              [Dependabot::DependencyFile.new(name: ".yarnrc.yml", content: "npmMinimalAgeGate: 20160\n")]
+          end
+
+          it "leaves the explicit .yarnrc.yml value untouched" do
+            expect(updater.send(:yarn_time_gate_env)).to be_nil
+          end
+        end
+      end
+
+      context "when Yarn does not support npmMinimalAgeGate (< 4.10.0)" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:yarn_berry_supports_minimal_age_gate?).and_return(false)
+        end
+
+        it "returns nil from yarn_time_gate_env" do
+          expect(updater.send(:yarn_time_gate_env)).to be_nil
+        end
+      end
+    end
   end
 end

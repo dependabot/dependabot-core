@@ -779,7 +779,10 @@ begin
       dependency_files: $files,
       repo_contents_path: $repo_contents_path,
       credentials: $options[:credentials],
-      options: $options[:updater_options]
+      options: $options[:updater_options].merge(
+        security_updates_only: $options[:security_updates_only],
+        update_cooldown: $options[:security_updates_only] ? nil : update_cooldown
+      )
     )
   end
 

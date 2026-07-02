@@ -69,6 +69,12 @@ module Dependabot
       # corepack supported package managers
       SUPPORTED_COREPACK_PACKAGE_MANAGERS = %w(npm yarn pnpm).freeze
 
+      # pnpm's `minimumReleaseAge` and yarn's `npmMinimalAgeGate` are expressed in
+      # minutes, whereas dependabot.yml cooldown and npm's `min-release-age` use
+      # days. Used to convert a cooldown floor (days) into the minutes those gates
+      # expect.
+      MINUTES_PER_DAY = 1440
+
       sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
       def self.npm_version_numeric(lockfile)
         detected_npm_version = detect_npm_version(lockfile)
@@ -253,10 +259,7 @@ module Dependabot
         version = Version.new(run_single_yarn_command("--version"))
         supported = version >= Version.new("4.10.0")
         if supported
-          Dependabot.logger.info(
-            "Yarn #{version} supports npmMinimalAgeGate. " \
-            "Setting YARN_NPM_MINIMAL_AGE_GATE=0 to bypass the release-age gate for security updates."
-          )
+          Dependabot.logger.info("Yarn #{version} supports npmMinimalAgeGate.")
         else
           Dependabot.logger.info(
             "Yarn #{version} does not support npmMinimalAgeGate (requires 4.10.0+). " \
@@ -268,7 +271,7 @@ module Dependabot
         Dependabot.logger.warn(
           "Could not determine Yarn version to check npmMinimalAgeGate support: #{e.message}. " \
           "Assuming unsupported (returning false). YARN_NPM_MINIMAL_AGE_GATE will not be set, " \
-          "so the registry's release-age gate may still block security updates."
+          "so any release-age gate must be enforced by the registry or .yarnrc.yml instead."
         )
         false
       end

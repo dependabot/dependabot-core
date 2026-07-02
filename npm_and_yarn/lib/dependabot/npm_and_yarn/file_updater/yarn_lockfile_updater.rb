@@ -31,7 +31,8 @@ module Dependabot
             dependency_files: T::Array[Dependabot::DependencyFile],
             repo_contents_path: T.nilable(String),
             credentials: T::Array[Dependabot::Credential],
-            security_updates_only: T::Boolean
+            security_updates_only: T::Boolean,
+            release_age_days: T.nilable(Integer)
           )
             .void
         end
@@ -40,13 +41,15 @@ module Dependabot
           dependency_files:,
           repo_contents_path:,
           credentials:,
-          security_updates_only: false
+          security_updates_only: false,
+          release_age_days: nil
         )
           @dependencies = dependencies
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
           @security_updates_only = T.let(security_updates_only, T::Boolean)
+          @release_age_days = T.let(release_age_days, T.nilable(Integer))
           @error_handler = T.let(
             YarnErrorHandler.new(
               dependencies: dependencies,
@@ -368,17 +371,41 @@ module Dependabot
           @security_updates_only
         end
 
-        # Returns an env hash that disables Yarn Berry's npmMinimalAgeGate for security updates.
-        # npmMinimalAgeGate was introduced in Yarn 4.10.0. Setting the corresponding
-        # YARN_NPM_MINIMAL_AGE_GATE env var on older Yarn Berry releases (or Yarn classic) raises
-        # "Unrecognized or legacy configuration settings found: npmMinimalAgeGate" and aborts the
-        # install, so we gate on a version check.
+        # Returns an env hash that sets Yarn Berry's YARN_NPM_MINIMAL_AGE_GATE.
+        # Security updates set it to 0 so a release-age gate never blocks a fix.
+        # Regular updates set it to the dependabot.yml cooldown floor (in minutes)
+        # so yarn holds transitive dependencies back to versions at least that old.
+        # An explicit `npmMinimalAgeGate` in .yarnrc.yml always wins, so it is left
+        # untouched when present.
+        #
+        # npmMinimalAgeGate was introduced in Yarn 4.10.0. Setting the env var on
+        # older Yarn Berry releases (or Yarn classic) raises "Unrecognized or legacy
+        # configuration settings found: npmMinimalAgeGate" and aborts the install,
+        # so we gate on a version check.
         sig { returns(T.nilable(T::Hash[String, String])) }
         def yarn_time_gate_env
-          return nil unless security_updates_only?
+          gate_value = yarn_minimal_age_gate_value
+          return nil unless gate_value
           return nil unless Helpers.yarn_berry_supports_minimal_age_gate?
 
-          { "YARN_NPM_MINIMAL_AGE_GATE" => "0" }
+          { "YARN_NPM_MINIMAL_AGE_GATE" => gate_value }
+        end
+
+        sig { returns(T.nilable(String)) }
+        def yarn_minimal_age_gate_value
+          return "0" if security_updates_only?
+          return nil unless @release_age_days
+          return nil if yarnrc_sets_minimal_age_gate?
+
+          (@release_age_days * Helpers::MINUTES_PER_DAY).to_s
+        end
+
+        sig { returns(T::Boolean) }
+        def yarnrc_sets_minimal_age_gate?
+          dependency_files.any? do |file|
+            File.basename(file.name) == ".yarnrc.yml" &&
+              file.content.to_s.match?(/^\s*npmMinimalAgeGate\s*:/)
+          end
         end
 
         sig { returns(String) }
