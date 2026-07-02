@@ -22,6 +22,7 @@ module Dependabot
           content = package_json_content
           content = replace_ssh_sources(content)
           content = remove_workspace_path_prefixes(content)
+          content = remove_dev_engines(content)
           content = remove_invalid_characters(content)
           content
         end
@@ -58,6 +59,22 @@ module Dependabot
           paths_array.each { |path| path.gsub!(%r{^\./}, "") }
 
           JSON.pretty_generate(json)
+        end
+
+        # Removes devEngines field from package.json to avoid corepack errors.
+        # Corepack does not currently support the devEngines specification,
+        # particularly when packageManager is an array or uses version ranges.
+        # See: https://github.com/nodejs/corepack/issues/729
+        sig { params(content: String).returns(String) }
+        def remove_dev_engines(content)
+          json = JSON.parse(content)
+          return content unless json.key?("devEngines")
+
+          json.delete("devEngines")
+          JSON.pretty_generate(json)
+        rescue JSON::ParserError
+          # If we can't parse the JSON, return the content unchanged
+          content
         end
 
         sig { params(content: String).returns(String) }
