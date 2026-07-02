@@ -6,6 +6,7 @@ require "dependabot/file_updaters/base"
 require "dependabot/file_updaters/vendor_updater"
 require "dependabot/file_updaters/artifact_updater"
 require "dependabot/errors"
+require "dependabot/package/release_cooldown_options"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 require "sorbet-runtime"
@@ -435,6 +436,28 @@ module Dependabot
           )
       end
 
+      # The number of days from the dependabot.yml `cooldown` config to apply as
+      # a release-age floor for *transitive* dependencies. npm, pnpm and yarn each
+      # enforce this natively at install time, which is the only point at which
+      # Dependabot can constrain the versions the package manager resolves for the
+      # transitive tree. Returns nil for security updates (which must never be
+      # blocked by a release-age gate) or when no positive cooldown is configured.
+      # `default_days` is used because the native gates are a single global value
+      # and cannot express per-semver-type days or include/exclude patterns.
+      sig { returns(T.nilable(Integer)) }
+      def cooldown_release_age_days
+        return nil if options.fetch(:security_updates_only, false)
+
+        cooldown = T.cast(
+          options[:update_cooldown],
+          T.nilable(Dependabot::Package::ReleaseCooldownOptions)
+        )
+        return nil if cooldown.nil?
+
+        days = cooldown.default_days
+        days.positive? ? days : nil
+      end
+
       sig { returns(Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater) }
       def yarn_lockfile_updater
         @yarn_lockfile_updater ||= T.let(
@@ -443,7 +466,8 @@ module Dependabot
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
             credentials: credentials,
-            security_updates_only: options.fetch(:security_updates_only, false) ? true : false
+            security_updates_only: options.fetch(:security_updates_only, false) ? true : false,
+            release_age_days: cooldown_release_age_days
           ),
           T.nilable(Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater)
         )
@@ -457,7 +481,8 @@ module Dependabot
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
             credentials: credentials,
-            security_updates_only: options.fetch(:security_updates_only, false) ? true : false
+            security_updates_only: options.fetch(:security_updates_only, false) ? true : false,
+            release_age_days: cooldown_release_age_days
           ),
           T.nilable(Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater)
         )
@@ -474,7 +499,8 @@ module Dependabot
           dependencies: dependencies,
           dependency_files: dependency_files,
           credentials: credentials,
-          security_updates_only: options.fetch(:security_updates_only, false) ? true : false
+          security_updates_only: options.fetch(:security_updates_only, false) ? true : false,
+          release_age_days: cooldown_release_age_days
         )
       end
 

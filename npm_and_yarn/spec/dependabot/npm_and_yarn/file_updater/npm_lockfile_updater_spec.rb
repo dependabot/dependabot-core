@@ -1398,6 +1398,44 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           updater.send(:run_npm_install_lockfile_only, install_args)
         end
       end
+
+      context "when update_cooldown sets a release-age floor (regular update)" do
+        let(:updater) do
+          described_class.new(
+            lockfile: package_lock,
+            dependency_files: files,
+            dependencies: dependencies,
+            credentials: credentials,
+            release_age_days: 7
+          )
+        end
+
+        it "passes --min-release-age with the cooldown day count" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
+            expect(command).to include("--min-release-age=7")
+            expect(command).to include("--package-lock-only")
+            ""
+          end
+
+          updater.send(:run_npm_install_lockfile_only, install_args)
+        end
+
+        context "when the .npmrc already sets min-release-age" do
+          let(:files) do
+            project_dependency_files("npm8/simple") +
+              [Dependabot::DependencyFile.new(name: ".npmrc", content: "min-release-age=30")]
+          end
+
+          it "leaves the explicit .npmrc value untouched" do
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
+              expect(command).not_to include("--min-release-age")
+              ""
+            end
+
+            updater.send(:run_npm_install_lockfile_only, install_args)
+          end
+        end
+      end
     end
 
     describe "#run_npm8_subdependency_updater" do
