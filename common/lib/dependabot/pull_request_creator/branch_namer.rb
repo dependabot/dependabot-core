@@ -36,8 +36,8 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       attr_reader :word_separator
 
-      sig { returns(T::Boolean) }
-      attr_reader :lowercase
+      sig { returns(T.nilable(String)) }
+      attr_reader :branch_name_case
 
       sig { returns(T.nilable(Dependabot::DependencyGroup)) }
       attr_reader :dependency_group
@@ -58,7 +58,7 @@ module Dependabot
           prefix: String,
           max_length: T.nilable(Integer),
           word_separator: T.nilable(String),
-          lowercase: T::Boolean,
+          branch_name_case: T.nilable(String),
           includes_security_fixes: T::Boolean,
           multi_ecosystem_name: T.nilable(String)
         )
@@ -73,7 +73,7 @@ module Dependabot
         prefix: "dependabot",
         max_length: nil,
         word_separator: nil,
-        lowercase: false,
+        branch_name_case: nil,
         includes_security_fixes: false,
         multi_ecosystem_name: nil
       )
@@ -85,7 +85,7 @@ module Dependabot
         @prefix        = prefix
         @max_length    = max_length
         @word_separator = word_separator
-        @lowercase = lowercase
+        @branch_name_case = branch_name_case
         @includes_security_fixes = includes_security_fixes
         @multi_ecosystem_name = multi_ecosystem_name
       end
@@ -122,7 +122,7 @@ module Dependabot
           prefix: prefix,
           max_length: max_length,
           word_separator: word_separator,
-          lowercase: lowercase,
+          branch_name_case: branch_name_case,
           multi_ecosystem_name: T.must(multi_ecosystem_name)
         )
       end
@@ -137,7 +137,7 @@ module Dependabot
           prefix: prefix,
           max_length: max_length,
           word_separator: word_separator,
-          lowercase: lowercase
+          branch_name_case: branch_name_case
         )
       end
 
@@ -153,7 +153,7 @@ module Dependabot
           prefix: prefix,
           max_length: max_length,
           word_separator: word_separator,
-          lowercase: lowercase
+          branch_name_case: branch_name_case
         )
       end
     end
