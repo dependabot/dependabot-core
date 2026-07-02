@@ -437,21 +437,22 @@ module Dependabot
             options: T::Array[String],
             used_credential_urls: T::Array[String],
             default_index_used: T::Boolean
-          ).void
+          ).returns(T::Boolean)
         end
         def add_fallback_index_options(filtered_credentials:, options:, used_credential_urls:, default_index_used:)
           # Fall back to credential URLs for indices not represented in uv.lock.
           filtered_credentials.each do |credential|
             next if used_credential_urls.include?(credential["index-url"].to_s)
 
-            add_lock_index_option(
+            default_index_used = add_lock_index_option(
               credential: credential,
               url: AuthedUrlBuilder.authed_url(credential: credential),
               options: options,
               default_index_used: default_index_used
             )
-            default_index_used ||= credential.replaces_base?
           end
+
+          default_index_used
         end
 
         sig do
