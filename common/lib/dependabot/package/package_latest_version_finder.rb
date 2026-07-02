@@ -196,9 +196,9 @@ module Dependabot
         filtered
       end
 
-      sig { params(release: T.nilable(Dependabot::Package::PackageRelease)).returns(T::Boolean) }
+      sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
       def in_cooldown_period?(release)
-        return false unless release&.released_at
+        return false unless release.released_at
 
         cooldown = @cooldown_options
         return false if Dependabot::UpdateCheckers::CooldownCalculation.skip_cooldown?(
