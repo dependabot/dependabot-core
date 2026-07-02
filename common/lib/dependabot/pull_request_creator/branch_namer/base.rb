@@ -28,6 +28,12 @@ module Dependabot
         sig { returns(T.nilable(Integer)) }
         attr_reader :max_length
 
+        sig { returns(T.nilable(String)) }
+        attr_reader :word_separator
+
+        sig { returns(T::Boolean) }
+        attr_reader :lowercase
+
         sig do
           params(
             dependencies: T::Array[Dependency],
@@ -35,7 +41,9 @@ module Dependabot
             target_branch: T.nilable(String),
             separator: String,
             prefix: String,
-            max_length: T.nilable(Integer)
+            max_length: T.nilable(Integer),
+            word_separator: T.nilable(String),
+            lowercase: T::Boolean
           )
             .void
         end
@@ -45,7 +53,9 @@ module Dependabot
           target_branch:,
           separator: "/",
           prefix: "dependabot",
-          max_length: nil
+          max_length: nil,
+          word_separator: nil,
+          lowercase: false
         )
           @dependencies      = dependencies
           @files             = files
@@ -53,6 +63,8 @@ module Dependabot
           @separator         = separator
           @prefix            = prefix
           @max_length        = max_length
+          @word_separator    = word_separator
+          @lowercase         = lowercase
         end
 
         sig { overridable.returns(String) }
@@ -69,6 +81,27 @@ module Dependabot
 
           # Some users need branch names without slashes
           sanitized_name = sanitized_name.gsub("/", separator)
+
+          # Apply word_separator and lowercase only to content after the prefix,
+          # preserving the user-configured prefix as-is.
+          if word_separator || lowercase
+            prefix_with_sep = "#{prefix}#{separator}"
+            if sanitized_name.start_with?(prefix_with_sep)
+              prefix_part = prefix_with_sep
+              content = sanitized_name[prefix_with_sep.length..]
+            else
+              prefix_part = ""
+              content = sanitized_name
+            end
+
+            # Replace underscores with word_separator in the content after prefix
+            content = T.must(content).gsub("_", T.must(word_separator)) if word_separator
+
+            # Downcase content after prefix for ACR/K8s compatibility
+            content = T.must(content).downcase if lowercase
+
+            sanitized_name = "#{prefix_part}#{content}"
+          end
 
           # Shorten the ref in case users refs have length limits
           branch_name_max_length = max_length
