@@ -3,6 +3,9 @@
 
 require "spec_helper"
 require "dependabot/dependency"
+require "dependabot/git_commit_checker"
+require "dependabot/git_tag_details"
+require "dependabot/package/release_cooldown_options"
 require "dependabot/opentofu"
 require "dependabot/opentofu/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
@@ -31,6 +34,7 @@ RSpec.describe Dependabot::Opentofu::UpdateChecker do
     )
   end
   let(:ignored_versions) { [] }
+  let(:update_cooldown) { nil }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -44,7 +48,8 @@ RSpec.describe Dependabot::Opentofu::UpdateChecker do
       dependency: dependency,
       dependency_files: [],
       credentials: credentials,
-      ignored_versions: ignored_versions
+      ignored_versions: ignored_versions,
+      update_cooldown: update_cooldown
     )
   end
 
@@ -90,6 +95,40 @@ RSpec.describe Dependabot::Opentofu::UpdateChecker do
       end
 
       it { is_expected.to eq(Gem::Version.new("0.4.1")) }
+
+      context "when the newest tags are within their cooldown window" do
+        let(:update_cooldown) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          # Cooldown filtering itself is covered in git_commit_checker_spec; here we
+          # assert opentofu resolves the git tag through the shared cooldown-aware
+          # helper, which has filtered the brand-new 0.4.x tags back to 0.3.8.
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive_messages(
+            git_dependency?: true,
+            pinned?: true,
+            local_tag_for_pinned_version_ref: Dependabot::GitTagDetails.new(
+              tag: "0.3.8",
+              version: Dependabot::Opentofu::Version.new("0.3.8"),
+              commit_sha: "abc123",
+              tag_sha: "def456"
+            )
+          )
+        end
+
+        it "returns the latest tag left after cooldown filtering" do
+          expect(latest_version).to eq(Gem::Version.new("0.3.8"))
+        end
+
+        it "forwards the configured cooldown window to the git commit checker" do
+          latest_version
+          expect(git_checker).to have_received(:local_tag_for_pinned_version_ref)
+            .with(update_cooldown).at_least(:once)
+        end
+      end
     end
 
     context "with a registry dependency" do

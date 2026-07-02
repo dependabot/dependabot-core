@@ -13,7 +13,6 @@ module Dependabot
       class PackageDetailsFetcher
         extend T::Sig
 
-        RELEASES_URL_GIT = "https://api.github.com/repos/"
         RELEASE_URL_FOR_PROVIDER = "https://api.opentofu.org/registry/docs/providers/"
         RELEASE_URL_FOR_MODULE = "https://api.opentofu.org/registry/docs/modules/"
         APPLICATION_JSON = "JSON"
@@ -43,38 +42,6 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
-
-        sig { returns(T::Array[GitTagWithDetail]) }
-        def fetch_tag_and_release_date
-          truncate_github_url = @dependency.name.gsub("github.com/", "")
-          url = RELEASES_URL_GIT + "#{truncate_github_url}/releases"
-          result_lines = T.let([], T::Array[GitTagWithDetail])
-          # Fetch the releases from the GitHub API
-          response = Excon.get(
-            url,
-            headers: { "User-Agent" => "Dependabot (dependabot.com)",
-                       "Accept" => "application/vnd.github.v3+json" }
-          )
-          Dependabot.logger.error("Failed call details: #{response.body}") unless response.status == 200
-          return result_lines unless response.status == 200
-
-          # Parse the JSON response
-          releases = JSON.parse(response.body)
-
-          # Extract version names and release dates into a hash
-          releases.map do |release|
-            result_lines << GitTagWithDetail.new(
-              tag: release["tag_name"],
-              release_date: release["published_at"]
-            )
-          end
-
-          # sort the result lines by tag in descending order
-          result_lines = result_lines.sort_by(&:tag).reverse
-          # Log the extracted details for debugging
-          Dependabot.logger.info("Extracted release details: #{result_lines}")
-          result_lines
-        end
 
         sig { returns(T::Array[GitTagWithDetail]) }
         def fetch_tag_and_release_date_from_provider
