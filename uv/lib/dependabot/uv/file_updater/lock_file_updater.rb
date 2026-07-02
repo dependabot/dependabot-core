@@ -378,6 +378,7 @@ module Dependabot
 
           options = T.let([], T::Array[String])
           used_credential_urls = T.let([], T::Array[String])
+          default_index_used = T.let(false, T::Boolean)
           credential_matcher = LockIndexCredentialMatcher.new(credentials: filtered_credentials)
 
           uv_lock_registry_urls.each do |registry_url|
@@ -385,7 +386,10 @@ module Dependabot
             next unless credential
 
             used_credential_urls << credential["index-url"].to_s
-            options << option_for_credential_url(credential, authed_registry_url(credential, registry_url))
+            url = authed_registry_url(credential, registry_url)
+            option = option_for_credential_url(credential, url, default_index_used: default_index_used)
+            default_index_used = true if credential.replaces_base?
+            options << option
           end
 
           # Fall back to credential URLs for indices not represented in uv.lock.
@@ -393,15 +397,19 @@ module Dependabot
             next if used_credential_urls.include?(credential["index-url"].to_s)
 
             authed_url = AuthedUrlBuilder.authed_url(credential: credential)
-            options << option_for_credential_url(credential, authed_url)
+            option = option_for_credential_url(credential, authed_url, default_index_used: default_index_used)
+            default_index_used = true if credential.replaces_base?
+            options << option
           end
 
           options.uniq
         end
 
-        sig { params(credential: Dependabot::Credential, url: String).returns(String) }
-        def option_for_credential_url(credential, url)
-          if credential.replaces_base?
+        sig do
+          params(credential: Dependabot::Credential, url: String, default_index_used: T::Boolean).returns(String)
+        end
+        def option_for_credential_url(credential, url, default_index_used:)
+          if credential.replaces_base? && !default_index_used
             "--default-index #{url}"
           else
             "--index #{url}"
