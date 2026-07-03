@@ -211,6 +211,22 @@ module Dependabot
       local_tag_for_latest_version(cooldown_options)
     end
 
+    # Like #local_tag_for_latest_version, but only considers tags whose version
+    # precision matches the currently pinned ref (e.g. a dep pinned to "v1.2"
+    # stays on two-part tags). Tags still within their cooldown window are
+    # filtered out, and nil is returned when every precision-matched candidate
+    # is still cooling down.
+    sig do
+      params(cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+        .returns(T.nilable(Dependabot::GitTagDetails))
+    end
+    def local_tag_for_latest_version_matching_existing_precision(cooldown_options = nil)
+      filtered_tags = apply_cooldown(select_matching_existing_precision(allowed_version_tags), cooldown_options)
+      return nil if filtered_tags.nil?
+
+      max_local_tag(filtered_tags)
+    end
+
     sig { returns(T::Array[Dependabot::GitTagDetails]) }
     def local_tags_for_allowed_versions_matching_existing_precision
       select_matching_existing_precision(allowed_version_tags).filter_map { |t| to_local_tag(t) }

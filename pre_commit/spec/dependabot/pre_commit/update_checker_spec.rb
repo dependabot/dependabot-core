@@ -171,35 +171,16 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
       end
 
       before do
+        # A SHA pinned with a "# frozen: v4.4.0" comment: the finder compares
+        # against the frozen version and delegates cooldown to the shared
+        # GitCommitChecker, which returns nil when every candidate tag is still
+        # within its cooldown window. available_release stays a version so this
+        # isn't treated as a plain SHA release.
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tag_for_pinned_sha).and_return(nil)
-
-        recent_date = Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z")
-
-        v6_tag = {
-          tag: "v6.0.0",
-          version: Dependabot::PreCommit::Version.new("6.0.0"),
-          commit_sha: "3e8a8703264a2f4a69428a0aa4dcb512790b2c8c"
-        }
-
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
-          .to receive(:local_tags_for_allowed_versions)
-          .and_return([v6_tag])
-        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
-          .to receive(:dependency_source_details)
-          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
-                        ref: reference, branch: nil })
-        # Stub GitHub Releases (empty — forces git clone fallback)
-        mock_client = instance_double(Octokit::Client, releases: [])
-        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
-
-        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
-        allow(Dir).to receive(:chdir).and_yield
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(/git clone --bare/, any_args).and_return("")
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(/git for-each-ref/, hash_including(fingerprint: anything))
-          .and_return(recent_date)
+          .to receive(:local_tag_for_latest_version)
+          .and_return(nil)
       end
 
       it "reports the dependency as up to date" do
