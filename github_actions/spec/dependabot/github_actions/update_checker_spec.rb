@@ -444,24 +444,15 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
 
         before do
-          allow(Time).to receive(:now).and_return(Time.parse("2019-08-06 18:29:44 -0400"))
-
-          # Mock GitCommitChecker to return tag data for cooldown_filter
-          allow(Dependabot::GitCommitChecker).to receive(:new).and_wrap_original do |method, **kwargs|
-            instance = method.call(**kwargs)
-
-            allow(instance).to receive_messages(
-              refs_for_tag_with_detail: [
-                Dependabot::GitTagWithDetail.new(tag: "v1.0.1", release_date: "2019-01-01T00:00:00+00:00"),
-                Dependabot::GitTagWithDetail.new(tag: "v1.1.0", release_date: "2019-07-20T00:00:00+00:00")
-              ],
-              local_tags_for_allowed_versions: [
-                { tag: "v1.0.1", version: Dependabot::GithubActions::Version.new("1.0.1") },
-                { tag: "v1.1.0", version: Dependabot::GithubActions::Version.new("1.1.0") }
-              ]
+          # v1.1.0 is still cooling down, so the shared GitCommitChecker
+          # cooldown surfaces v1.0.1 instead. The date-filtering itself is
+          # covered by common/spec git_commit_checker_spec.
+          allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+            .to receive(:local_tag_for_latest_version)
+            .and_return(
+              tag: "v1.0.1",
+              version: Dependabot::GithubActions::Version.new("1.0.1")
             )
-            instance
-          end
         end
 
         it { is_expected.to eq(Gem::Version.new("1.0.1")) }
@@ -1103,13 +1094,16 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
 
       before do
-        finder = checker.send(:latest_version_finder)
-        allow(finder).to receive(:select_version_tags_in_cooldown_period) do |tags_with_dates|
-          tags_with_dates.filter_map do |tag|
-            tag_name = tag.is_a?(Hash) ? tag.fetch(:tag) : tag.tag
-            tag_name if tag_name.start_with?("v3")
-          end
-        end
+        # Cooldown pushes the target down from the latest v3 to v2.7.0; the
+        # shared GitCommitChecker cooldown surfaces that tag. Date resolution
+        # itself is covered by git_commit_checker_spec.
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tag_for_latest_version)
+          .and_return(
+            tag: "v2.7.0",
+            version: Dependabot::GithubActions::Version.new("2.7.0"),
+            commit_sha: "ee0669bd1cc54295c223e0bb666b733df41de1c5"
+          )
       end
 
       it "keeps metadata and rewritten version tag aligned to cooled-down target" do
@@ -1127,13 +1121,15 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
 
       before do
-        finder = checker.send(:latest_version_finder)
-        allow(finder).to receive(:select_version_tags_in_cooldown_period) do |tags_with_dates|
-          tags_with_dates.filter_map do |tag|
-            tag_name = tag.is_a?(Hash) ? tag.fetch(:tag) : tag.tag
-            tag_name if tag_name.start_with?("v3")
-          end
-        end
+        # As above, cooldown selects v2.7.0; because the dependency is pinned to
+        # a SHA the requirement is rewritten to that tag's commit, not its name.
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tag_for_latest_version)
+          .and_return(
+            tag: "v2.7.0",
+            version: Dependabot::GithubActions::Version.new("2.7.0"),
+            commit_sha: "ee0669bd1cc54295c223e0bb666b733df41de1c5"
+          )
       end
 
       it "rewrites SHA to the cooled-down tag commit, not the uncooldowned latest tag commit" do

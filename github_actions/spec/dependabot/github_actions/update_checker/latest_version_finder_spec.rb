@@ -252,12 +252,16 @@ RSpec.describe namespace::LatestVersionFinder do
       end
 
       before do
-        allow(finder).to receive(:select_version_tags_in_cooldown_period) do |tags_with_dates|
-          tags_with_dates.filter_map do |tag|
-            tag_name = tag.is_a?(Hash) ? tag.fetch(:tag) : tag.tag
-            tag_name if tag_name.start_with?("v3")
-          end
-        end
+        # The shared GitCommitChecker cooldown returns the newest tag outside
+        # its window; here the latest v3.x is cooling down so it falls back to
+        # v2.7.0. Date resolution itself is covered by git_commit_checker_spec.
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tag_for_latest_version)
+          .and_return(
+            tag: "v2.7.0",
+            version: Dependabot::GithubActions::Version.new("2.7.0"),
+            commit_sha: "ee0669bd1cc54295c223e0bb666b733df41de1c5"
+          )
       end
 
       it "returns the tag hash for the selected cooled-down release" do
@@ -295,7 +299,12 @@ RSpec.describe namespace::LatestVersionFinder do
       end
 
       before do
-        allow(finder).to receive(:select_version_tags_in_cooldown_period).and_return([])
+        # Nothing is cooling down, so the shared cooldown returns the same tag
+        # as the plain latest_version_tag.
+        latest_tag = finder.latest_version_tag
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tag_for_latest_version)
+          .and_return(latest_tag)
       end
 
       it "returns the same tag as latest_version_tag" do
@@ -372,152 +381,6 @@ RSpec.describe namespace::LatestVersionFinder do
           commit_sha: "b4cc9058ebd2336f73752f9d3c9b3835d52c66de",
           version: Dependabot::GithubActions::Version.new("0.0.24")
         )
-      end
-    end
-
-    describe "#select_version_tags_in_cooldown_period" do
-      subject(:selected_tags) { finder.send(:select_version_tags_in_cooldown_period) }
-
-      # Current time: 2024-04-03T16:00:00Z
-      let(:current_time) { Time.parse("2024-04-03T16:00:00Z") }
-
-      # Test fixtures: tags released at various dates
-      let(:git_tags_with_dates) do
-        [
-          # Within 90-day cooldown (released ~60 days ago)
-          Dependabot::GitTagWithDetail.new(tag: "v1.2.0", release_date: "2024-02-03T16:00:00Z"),
-          # Within 90-day cooldown (released ~30 days ago)
-          Dependabot::GitTagWithDetail.new(tag: "v1.1.5", release_date: "2024-03-04T16:00:00Z"),
-          # Outside 90-day cooldown (released ~100 days ago)
-          Dependabot::GitTagWithDetail.new(tag: "v1.1.0", release_date: "2023-12-25T16:00:00Z"),
-          # Within 90-day cooldown (released ~5 days ago)
-          Dependabot::GitTagWithDetail.new(tag: "v1.3.0", release_date: "2024-03-29T16:00:00Z")
-        ]
-      end
-
-      let(:finder) do
-        described_class.new(
-          dependency: dependency,
-          dependency_files: [],
-          credentials: github_credentials,
-          security_advisories: security_advisories,
-          ignored_versions: ignored_versions,
-          raise_on_ignored: raise_on_ignored,
-          cooldown_options: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
-        )
-      end
-
-      before do
-        allow(Time).to receive(:now).and_return(current_time)
-
-        # Stub the package_details_fetcher to return our test data
-        mock_fetcher = instance_double(Dependabot::GithubActions::Package::PackageDetailsFetcher)
-        allow(mock_fetcher).to receive(:fetch_tag_and_release_date).and_return(git_tags_with_dates)
-        allow(finder).to receive(:package_details_fetcher).and_return(mock_fetcher)
-      end
-
-      context "with 90-day cooldown enabled" do
-        it "returns array of tag names" do
-          expect(selected_tags).to be_an(Array)
-          expect(selected_tags).to all(be_a(String))
-        end
-
-        it "includes only tags released within cooldown period" do
-          # Tags released within 90 days: v1.2.0, v1.1.5, v1.3.0
-          # Tags outside cooldown: v1.1.0 (released 100 days ago)
-          expect(selected_tags).to include("v1.2.0", "v1.1.5", "v1.3.0")
-          expect(selected_tags).not_to include("v1.1.0")
-        end
-
-        it "excludes tags outside cooldown period" do
-          excluded_tags = selected_tags & ["v1.1.0"]
-          expect(excluded_tags).to be_empty
-        end
-
-        it "returns all filtered tags in correct format" do
-          expect(selected_tags.count).to eq(3)
-          expect(selected_tags.sort).to eq(["v1.1.5", "v1.2.0", "v1.3.0"].sort)
-        end
-      end
-
-      context "with 1-day cooldown" do
-        let(:finder) do
-          described_class.new(
-            dependency: dependency,
-            dependency_files: [],
-            credentials: github_credentials,
-            security_advisories: security_advisories,
-            ignored_versions: ignored_versions,
-            raise_on_ignored: raise_on_ignored,
-            cooldown_options: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 1)
-          )
-        end
-
-        it "returns only tags released within 1 day" do
-          # Only v1.3.0 (released ~5 days ago) should be excluded
-          # Only v1.1.5 and v1.3.0 and v1.2.0 and v1.1.0 should ALL be checked
-          # With 1-day cooldown: only v1.3.0 (5 days old) is outside
-          # Actually v1.2.0 (60 days), v1.1.5 (30 days), v1.1.0 (100 days) are all outside
-          # Only newly released tags within 1 day would be included
-          expect(selected_tags).to be_empty
-        end
-      end
-
-      context "when git fetch fails" do
-        let(:finder) do
-          described_class.new(
-            dependency: dependency,
-            dependency_files: [],
-            credentials: github_credentials,
-            security_advisories: security_advisories,
-            ignored_versions: ignored_versions,
-            raise_on_ignored: raise_on_ignored,
-            cooldown_options: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
-          )
-        end
-
-        before do
-          mock_fetcher = instance_double(Dependabot::GithubActions::Package::PackageDetailsFetcher)
-          allow(mock_fetcher).to receive(:fetch_tag_and_release_date).and_raise(StandardError, "git error")
-          allow(finder).to receive(:package_details_fetcher).and_return(mock_fetcher)
-        end
-
-        it "handles error gracefully and returns empty array" do
-          expect(selected_tags).to eq([])
-        end
-
-        it "logs the error" do
-          expect(Dependabot.logger).to receive(:error).with(/Error checking if version is in cooldown/)
-          selected_tags
-        end
-      end
-
-      context "when all tags are in cooldown" do
-        let(:git_tags_with_dates) do
-          [
-            # All released recently
-            Dependabot::GitTagWithDetail.new(tag: "v1.0.0", release_date: "2024-04-01T16:00:00Z"),
-            Dependabot::GitTagWithDetail.new(tag: "v1.0.1", release_date: "2024-04-02T16:00:00Z")
-          ]
-        end
-
-        it "returns all tags" do
-          expect(selected_tags).to eq(["v1.0.0", "v1.0.1"])
-        end
-      end
-
-      context "when no tags are in cooldown" do
-        let(:git_tags_with_dates) do
-          [
-            # All released long ago
-            Dependabot::GitTagWithDetail.new(tag: "v1.0.0", release_date: "2023-01-01T16:00:00Z"),
-            Dependabot::GitTagWithDetail.new(tag: "v1.0.1", release_date: "2023-02-01T16:00:00Z")
-          ]
-        end
-
-        it "returns empty array" do
-          expect(selected_tags).to be_empty
-        end
       end
     end
   end
