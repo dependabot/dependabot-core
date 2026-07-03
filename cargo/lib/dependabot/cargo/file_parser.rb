@@ -332,10 +332,15 @@ module Dependabot
 
       sig { params(key_name: String).returns(T.nilable(String)) }
       def cargo_config_from_file(key_name)
-        config_file = cargo_config
-        return nil unless config_file
+        # Cargo merges `.cargo/config.toml` hierarchically, with nearer configs
+        # taking precedence over ancestors. Search the package-directory config
+        # first, then each ancestor config, returning the first match.
+        cargo_config_files.each do |config_file|
+          value = parsed_file(config_file).dig(*key_name.split("."))
+          return value if value
+        end
 
-        parsed_file(config_file).dig(*key_name.split("."))
+        nil
       end
 
       sig { params(name: String, declaration: T.any(String, T::Hash[String, String])).returns(T.nilable(String)) }
@@ -422,9 +427,18 @@ module Dependabot
         @lockfile ||= T.let(get_original_file("Cargo.lock"), T.nilable(Dependabot::DependencyFile))
       end
 
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def cargo_config
-        @cargo_config ||= T.let(get_original_file(".cargo/config.toml"), T.nilable(Dependabot::DependencyFile))
+      # All `.cargo/config.toml` files in the fetched set, ordered nearest-first
+      # (package directory config, then successive ancestors). Ancestor configs
+      # carry relative `../` names, so we order by `../` depth to reflect Cargo's
+      # nearest-wins precedence.
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def cargo_config_files
+        @cargo_config_files ||= T.let(
+          dependency_files
+            .select { |f| f.name.end_with?(".cargo/config.toml") }
+            .sort_by { |f| f.name.scan("../").count },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
       end
 
       sig { returns(T.class_of(Dependabot::Version)) }

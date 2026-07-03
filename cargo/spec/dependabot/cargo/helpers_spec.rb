@@ -302,6 +302,52 @@ RSpec.describe Dependabot::Cargo::Helpers do
     end
   end
 
+  describe ".registry_token_env_from_files" do
+    let(:creds) do
+      [
+        { "host" => "private.example.com" },
+        { "host" => "another.example.com" }
+      ]
+    end
+
+    context "when multiple .cargo/config.toml files each define a registry" do
+      let(:root_config_content) do
+        <<~TOML
+          [registries.my-private-registry]
+          index = "sparse+https://private.example.com/index/"
+        TOML
+      end
+      let(:nested_config_content) do
+        <<~TOML
+          [registries.another-registry]
+          index = "sparse+https://another.example.com/index/"
+        TOML
+      end
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: ".cargo/config.toml",
+            content: nested_config_content,
+            directory: "/subcrate"
+          ),
+          Dependabot::DependencyFile.new(
+            name: "../.cargo/config.toml",
+            content: root_config_content,
+            directory: "/subcrate"
+          )
+        ]
+      end
+
+      it "returns token env vars for registries defined across all config files" do
+        env = described_class.registry_token_env_from_files(dependency_files, creds)
+        expect(env).to eq(
+          "CARGO_REGISTRIES_MY_PRIVATE_REGISTRY_TOKEN" => "garbage_token",
+          "CARGO_REGISTRIES_ANOTHER_REGISTRY_TOKEN" => "garbage_token"
+        )
+      end
+    end
+  end
+
   describe ".cargo_command_env" do
     let(:config_content) do
       <<~TOML
