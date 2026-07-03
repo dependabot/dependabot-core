@@ -89,8 +89,10 @@ module Dependabot
           selected = cooldown_selected_tag
           return T.cast(selected.fetch(:version), Dependabot::Version) if selected
 
-          # Every candidate version is still within its cooldown window.
-          Dependabot.logger.info("All candidate versions are in cooldown, keeping current version #{current_version}")
+          # No newer version is available outside its cooldown window — either
+          # every candidate is still cooling down, or the only remaining tags
+          # aren't newer than the current pin — so keep the current version.
+          Dependabot.logger.info("No newer version outside cooldown; keeping #{current_version}")
           current_version
         end
 

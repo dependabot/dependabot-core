@@ -867,10 +867,10 @@ module Dependabot
       )
     end
 
-    # Fails open: if the tag-detail fetch is unavailable (e.g. a network or
-    # registry error while resolving tag dates), return no dates so cooldown
-    # treats every tag as outside its window and the latest tag is still
-    # proposed, rather than failing the whole update check.
+    # Fails open: if the tag-detail fetch is unavailable (e.g. a network error
+    # or an error from the git host / GitHub API while resolving tag dates),
+    # return no dates so cooldown treats every tag as outside its window and the
+    # latest tag is still proposed, rather than failing the whole update check.
     sig { returns(T::Hash[String, Time]) }
     def build_release_dates_by_tag_name
       dates = T.let({}, T::Hash[String, Time])
@@ -880,8 +880,9 @@ module Dependabot
       end
       dates
     rescue StandardError => e
-      Dependabot.logger.error(
-        "Error fetching git tag release dates for #{dependency.name}: #{e.message}"
+      Dependabot.logger.warn(
+        "Skipping git tag cooldown for #{dependency.name}: could not resolve tag release dates " \
+        "(#{e.class}: #{e.message})"
       )
       {}
     end
