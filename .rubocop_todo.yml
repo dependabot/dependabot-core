@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 1642
+# Offense count: 1608
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bazel/lib/dependabot/bazel/file_fetcher.rb"
@@ -282,14 +282,6 @@ Sorbet/ForbidTUntyped:
     - "bundler/lib/dependabot/bundler/update_checker/requirements_updater.rb"
     - "bundler/lib/dependabot/bundler/update_checker/shared_bundler_helpers.rb"
     - "bundler/lib/dependabot/bundler/update_checker/version_resolver.rb"
-    - "cargo/lib/dependabot/cargo/file_fetcher.rb"
-    - "cargo/lib/dependabot/cargo/file_parser.rb"
-    - "cargo/lib/dependabot/cargo/file_updater/lockfile_updater.rb"
-    - "cargo/lib/dependabot/cargo/metadata_finder.rb"
-    - "cargo/lib/dependabot/cargo/package/package_details_fetcher.rb"
-    - "cargo/lib/dependabot/cargo/update_checker.rb"
-    - "cargo/lib/dependabot/cargo/update_checker/file_preparer.rb"
-    - "cargo/lib/dependabot/cargo/update_checker/requirements_updater.rb"
     - "common/lib/dependabot/clients/azure.rb"
     - "common/lib/dependabot/clients/bitbucket.rb"
     - "common/lib/dependabot/clients/bitbucket_with_retries.rb"
