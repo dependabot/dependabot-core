@@ -268,6 +268,36 @@ RSpec.describe Dependabot::Bundler::Package::PackageDetailsFetcher do
           end
         end
 
+        context "when dependency has no source but Gemfile has a global source directive" do
+          let(:source) { nil }
+          let(:dependency_files) do
+            [
+              Dependabot::DependencyFile.new(
+                name: "Gemfile",
+                content: "source \"https://rubygems.org\"\n\ngem \"#{dependency_name}\""
+              )
+            ]
+          end
+
+          before do
+            stub_request(:get, json_url)
+              .to_return(
+                status: 200,
+                body: fixture("releases_api", "dependabot_common.json"),
+                headers: { "Content-Type" => "application/json" }
+              )
+          end
+
+          it "uses the Gemfile global source instead of the private registry" do
+            result = fetch
+
+            expect(result).to be_a(Dependabot::Package::PackageDetails)
+            expect(result.releases).not_to be_empty
+            expect(a_request(:get, json_url)).to have_been_made.once
+            expect(a_request(:get, private_registry_url)).not_to have_been_made
+          end
+        end
+
         context "when dependency has explicit source in requirements" do
           let(:source) do
             {

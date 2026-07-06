@@ -129,7 +129,10 @@ module Dependabot
         # ]
         sig { returns(Dependabot::Package::PackageDetails) }
         def rubygems_versions
-          registry_url = get_url_from_dependency(dependency) || replaces_base_registry_url || "https://rubygems.org"
+          registry_url = get_url_from_dependency(dependency) ||
+                         gemfile_global_source_url ||
+                         replaces_base_registry_url ||
+                         "https://rubygems.org"
 
           fetch_and_process_rubygems_response(registry_url)
         end
@@ -205,7 +208,28 @@ module Dependabot
           host = credential.fetch("host", nil)
           return nil unless host.is_a?(String) && !host.empty?
 
-          url = "https://#{host}"
+          strip_trailing_slash("https://#{host}")
+        end
+
+        sig { returns(T.nilable(String)) }
+        def gemfile_global_source_url
+          gemfile = dependency_files.find { |f| f.name == "Gemfile" || f.name == "gems.rb" }
+          return nil unless gemfile
+
+          content = T.let(gemfile.content, T.nilable(String))
+          return nil unless content
+
+          match = content.match(GEMFILE_GLOBAL_SOURCE_REGEX)
+          return nil unless match
+
+          url = T.let(match[1], T.nilable(String))
+          return nil unless url
+
+          strip_trailing_slash(url)
+        end
+
+        sig { params(url: String).returns(String) }
+        def strip_trailing_slash(url)
           url.end_with?("/") ? url.chop : url
         end
 
@@ -219,7 +243,7 @@ module Dependabot
           url = T.let(first_requirement[:source][:url], T.nilable(String))
           return nil unless url
 
-          url.end_with?("/") ? url.chop : url
+          strip_trailing_slash(url)
         end
 
         sig { params(registry_url: T.nilable(String)).returns(Excon::Response) }

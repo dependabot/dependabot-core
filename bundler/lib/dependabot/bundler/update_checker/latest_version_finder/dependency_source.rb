@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "uri"
 
 require "dependabot/registry_client"
 require "dependabot/bundler/native_helpers"
@@ -134,8 +135,29 @@ module Dependabot
 
           sig { returns(String) }
           def dependency_rubygems_uri
-            host = replaces_base_host || "rubygems.org"
+            host = gemfile_global_source_host || replaces_base_host || "rubygems.org"
             "https://#{host}/api/v1/versions/#{dependency.name}.json"
+          end
+
+          sig { returns(T.nilable(String)) }
+          def gemfile_global_source_host
+            content = gemfile&.content
+            return nil unless content
+
+            match = content.match(GEMFILE_GLOBAL_SOURCE_REGEX)
+            return nil unless match
+
+            url = T.let(match[1], T.nilable(String))
+            return nil unless url
+
+            # URI.parse.host returns nil for relative URIs; propagate nil so
+            # callers fall back to replaces_base_host or "rubygems.org".
+            URI.parse(url).host
+          rescue URI::InvalidURIError => e
+            Dependabot.logger.warn(
+              "Invalid URI in Gemfile global source (#{gemfile&.name}): #{e.message}"
+            )
+            nil
           end
 
           sig { returns(T.nilable(String)) }
