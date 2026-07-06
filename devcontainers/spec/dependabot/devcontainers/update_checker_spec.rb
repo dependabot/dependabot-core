@@ -220,5 +220,16 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
         expect(checker.latest_version.to_s).to eq("2.0.0")
       end
     end
+
+    context "when there are no published tags" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .and_return('{"publishedTags": []}')
+      end
+
+      it "keeps the original requirement instead of emitting a nil requirement" do
+        expect(updated_requirements.first[:requirement]).to eq("1")
+      end
+    end
   end
 end
