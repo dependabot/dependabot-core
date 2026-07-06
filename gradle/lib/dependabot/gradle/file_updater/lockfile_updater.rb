@@ -191,12 +191,16 @@ module Dependabot
           http_proxy_port = http_split&.fetch(2) || "1080"
           https_proxy_port = https_split&.fetch(2) || "1080"
 
-          properties_content = "
+          existing_content = File.exist?(file_name) ? File.read(file_name) : ""
+
+          proxy_properties = "
 systemProp.http.proxyHost=#{http_proxy_host}
 systemProp.http.proxyPort=#{http_proxy_port}
 systemProp.https.proxyHost=#{https_proxy_host}
 systemProp.https.proxyPort=#{https_proxy_port}"
-          File.write(file_name, properties_content)
+
+          separator = !existing_content.empty? && !existing_content.end_with?("\n") ? "\n" : ""
+          File.write(file_name, existing_content + separator + proxy_properties)
         end
 
         sig { params(file_name: String).void }

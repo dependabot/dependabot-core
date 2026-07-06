@@ -47,7 +47,7 @@ module Dependabot
       def fetch_files
         fetched_files = T.let([cargo_toml], T::Array[DependencyFile])
         fetched_files << T.must(cargo_lock) if cargo_lock
-        fetched_files << T.must(cargo_config) if cargo_config
+        fetched_files.concat(cargo_configs)
         fetched_files << T.must(rust_toolchain) if rust_toolchain
         fetched_files += fetch_path_dependency_and_workspace_files
         parsed_manifest = parsed_file(cargo_toml)
@@ -428,17 +428,51 @@ module Dependabot
         @cargo_lock ||= T.let(fetch_file_if_present("Cargo.lock"), T.nilable(Dependabot::DependencyFile))
       end
 
+      # Cargo merges configuration hierarchically: it reads `.cargo/config.toml`
+      # from the package directory *and* every ancestor directory up to the repo
+      # root, combining them. We therefore collect all of them so that registries
+      # (and other settings) defined higher up the tree are not dropped.
+      #
+      # The package-directory config keeps the canonical name `.cargo/config.toml`
+      # (single-config consumers rely on this). Ancestor configs keep their
+      # relative `../` paths so they are written to the correct location and can
+      # be merged by Cargo. When the package directory has no config of its own,
+      # the nearest ancestor is promoted to the canonical name to preserve the
+      # historical behaviour that downstream consumers depend on.
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def cargo_configs
+        return T.must(@cargo_configs) if defined?(@cargo_configs)
+
+        configs = T.let([], T::Array[Dependabot::DependencyFile])
+        local = local_cargo_config
+        parents = parent_dir_cargo_configs
+
+        if local
+          configs << local
+          configs.concat(parents)
+        elsif parents.any?
+          effective = T.must(parents.first)
+          effective.name = ".cargo/config.toml"
+          configs << effective
+          configs.concat(parents.drop(1))
+        end
+
+        @cargo_configs = T.let(configs, T.nilable(T::Array[Dependabot::DependencyFile]))
+        configs
+      end
+
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def cargo_config
-        return @cargo_config if defined?(@cargo_config)
+        cargo_configs.find { |f| f.name == ".cargo/config.toml" }
+      end
 
-        @cargo_config = fetch_support_file(".cargo/config.toml")
-        @cargo_config ||= T.let(
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def local_cargo_config
+        return @local_cargo_config if defined?(@local_cargo_config)
+
+        @local_cargo_config = fetch_support_file(".cargo/config.toml")
+        @local_cargo_config ||= T.let(
           fetch_support_file(".cargo/config")&.tap { |f| f.name = ".cargo/config.toml" },
-          T.nilable(Dependabot::DependencyFile)
-        )
-        @cargo_config ||= T.let(
-          fetch_cargo_config_from_parent_dirs,
           T.nilable(Dependabot::DependencyFile)
         )
       end
@@ -470,22 +504,26 @@ module Dependabot
         super.tap { |f| f.name = Pathname.new(f.name).cleanpath.to_s.gsub(%r{^/+}, "") }
       end
 
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def fetch_cargo_config_from_parent_dirs
-        return nil if directory.empty?
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def parent_dir_cargo_configs
+        return T.must(@parent_dir_cargo_configs) if defined?(@parent_dir_cargo_configs)
+
+        configs = T.let([], T::Array[Dependabot::DependencyFile])
+        @parent_dir_cargo_configs = T.let(configs, T.nilable(T::Array[Dependabot::DependencyFile]))
+        return configs if directory.empty?
 
         # Count directory depth to determine how many levels to search up
         depth = directory.split("/").count { |s| !s.empty? }
-        return nil if depth.zero?
+        return configs if depth.zero?
 
-        # Try each parent directory level
+        # Collect a config from every ancestor directory that has one, nearest first
         depth.times do |i|
           parent_path = ([".."] * (i + 1)).join("/")
           config = try_fetch_config_at_path(parent_path)
-          return config if config
+          configs << config if config
         end
 
-        nil
+        configs
       end
 
       sig { params(parent_path: String).returns(T.nilable(Dependabot::DependencyFile)) }
@@ -499,7 +537,9 @@ module Dependabot
           )
           Dependabot.logger.debug("Successfully fetched config from: #{full_path}")
           config.support_file = true
-          config.name = ".cargo/config.toml"
+          # Normalise `.cargo/config` to `.cargo/config.toml` while preserving the
+          # relative `../` path so the file is written to the right location.
+          config.name = Pathname.new(File.join(parent_path, ".cargo/config.toml")).cleanpath.to_s
           return config
         rescue Dependabot::DependencyFileNotFound
           Dependabot.logger.debug("No config found at: #{full_path}")

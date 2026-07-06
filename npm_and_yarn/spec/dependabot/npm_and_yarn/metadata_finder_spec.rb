@@ -85,6 +85,13 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       end
     end
 
+    context "when the npm registry returns a bare JSON string body" do
+      let(:npm_latest_version_response) { '"Not Found"' }
+      let(:npm_all_versions_response) { '"Not Found"' }
+
+      it { is_expected.to be_nil }
+    end
+
     context "when there is a github link in the npm response" do
       let(:npm_latest_version_response) do
         fixture("npm_responses", "etag-1.0.0.json")

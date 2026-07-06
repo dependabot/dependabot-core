@@ -400,10 +400,17 @@ module Dependabot
       end
 
       # Run single pnpm command returning stdout/stderr
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
-      def self.run_pnpm_command(command, fingerprint: nil)
+      sig do
+        params(
+          command: String,
+          fingerprint: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_pnpm_command(command, fingerprint: nil, env: nil)
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          package_manager_run_command(PNPMPackageManager::NAME, command, fingerprint: fingerprint)
+          merged_env = merge_corepack_env(env)
+          package_manager_run_command(PNPMPackageManager::NAME, command, fingerprint: fingerprint, env: merged_env)
         else
           Dependabot::SharedHelpers.run_shell_command(
             "pnpm #{command}",
@@ -422,7 +429,8 @@ module Dependabot
       end
       def self.run_single_yarn_command(command, fingerprint: nil, env: nil)
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          package_manager_run_command(YarnPackageManager::NAME, command, fingerprint: fingerprint, env: env)
+          merged_env = merge_corepack_env(env)
+          package_manager_run_command(YarnPackageManager::NAME, command, fingerprint: fingerprint, env: merged_env)
         else
           Dependabot::SharedHelpers.run_shell_command(
             "yarn #{command}",

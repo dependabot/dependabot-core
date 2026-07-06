@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "json"
@@ -98,17 +98,20 @@ module Dependabot
           }
         end
 
+      error_type = T.cast(error_details.fetch(:"error-type"), T.any(String, Symbol))
+      error_detail = T.cast(error_details[:"error-detail"], T.nilable(T::Hash[Symbol, T.anything]))
+
       service.record_update_job_error(
-        error_type: error_details.fetch(:"error-type"),
-        error_details: error_details[:"error-detail"]
+        error_type: error_type,
+        error_details: error_detail
       )
       # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
       return unless Experiments.enabled?(:record_update_job_unknown_error)
-      return unless error_details.fetch(:"error-type") == ERROR_TYPE_LABEL
+      return unless error_type == ERROR_TYPE_LABEL
 
       service.record_update_job_unknown_error(
-        error_type: error_details.fetch(:"error-type"),
-        error_details: error_details[:"error-detail"]
+        error_type: error_type,
+        error_details: error_detail
       )
     end
   end

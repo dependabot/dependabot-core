@@ -231,6 +231,17 @@ RSpec.describe Dependabot::NpmAndYarn::Package::RegistryFinder do
 
     it { is_expected.to eq("registry.npmjs.org") }
 
+    context "when the yarnrc.yml content is a non-mapping scalar" do
+      let(:yarnrc_yml_file) do
+        Dependabot::DependencyFile.new(
+          name: ".yarnrc.yml",
+          content: 'yarn-path ".yarn/releases/yarn-1.22.21.cjs"'
+        )
+      end
+
+      it { is_expected.to eq("registry.npmjs.org") }
+    end
+
     context "with both a scoped npm registry and a global one" do
       let(:dependency_name) { "@dependabot/some_dep" }
       let(:npmrc_file) do

@@ -517,8 +517,9 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     end
   end
 
-  # This is mainly for documentation purposes, this is unlikely to happen in the real world.
-  context "with a set of empty dependency files" do
+  # A manifest file that resolves to no dependencies should still be reported so the snapshot
+  # records that the file was scanned, rather than being omitted from the manifest list.
+  context "with a set of dependency files that resolve to no dependencies" do
     let(:directories) { [directory] }
     let(:directory) { "/" }
     let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
@@ -538,12 +539,22 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       ]
     end
 
-    it "generates a snapshot with metadata and an empty manifest list" do
+    it "generates a snapshot reporting the manifest with an empty resolved collection" do
       expect(service).to receive(:create_dependency_submission) do |args|
         payload = args[:dependency_submission].payload
 
         expect(payload[:job][:correlator]).to eq("dependabot-bundler")
-        expect(payload[:manifests]).to be_empty
+
+        # The manifest is still reported, with no resolved dependencies
+        expect(payload[:manifests].length).to eq(1)
+
+        manifest = payload[:manifests].fetch("/Gemfile.lock")
+        expect(manifest[:name]).to eq("/Gemfile.lock")
+        expect(manifest[:resolved]).to be_empty
+
+        # The snapshot is a successful scan
+        expect(payload[:metadata][:status]).to eq(GithubApi::DependencySubmission::SnapshotStatus::SUCCESS.serialize)
+        expect(payload[:metadata][:scanned_manifest_path]).to eql("rubygems::/")
       end
 
       update_graph_processor.run

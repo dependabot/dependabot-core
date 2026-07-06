@@ -166,7 +166,8 @@ module Dependabot
       return unless Dependabot::Environment.github_actions?
 
       error_details = Dependabot.updater_error_details(e) || { "error-type": "unknown_error" }
-      detail_message = error_details.dig(:"error-detail", :message)
+      error_detail = T.cast(error_details[:"error-detail"], T.nilable(T::Hash[Symbol, T.anything]))
+      detail_message = T.cast(error_detail&.dig(:message), T.nilable(Object))
       record_workflow_result(
         directory,
         GithubApi::DependencySubmission::SnapshotStatus::FAILED,
@@ -178,7 +179,7 @@ module Dependabot
         branch,
         T.must(directory_source),
         GithubApi::DependencySubmission::SnapshotStatus::FAILED,
-        error_details.fetch(:"error-type")
+        T.cast(error_details.fetch(:"error-type"), String)
       )
       service.create_dependency_submission(dependency_submission: empty_submission)
     end

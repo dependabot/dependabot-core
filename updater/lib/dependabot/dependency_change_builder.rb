@@ -158,8 +158,11 @@ module Dependabot
       # Create file updater and collect notices from it
       file_updater = file_updater_for(relevant_dependencies)
 
-      # Collect regenerated files (including support files); we filter support files out of
-      # the returned updated files below since they are not manifests.
+      # Collect all regenerated files (including support files). When non-support
+      # files exist, we exclude support files since they are contextual (not manifests).
+      # When the updater only modified support files, they ARE the primary update targets
+      # (e.g. provider requirements in Terraform local modules, build-system deps in UV
+      # workspace members) and must be included.
       all_files = file_updater.updated_dependency_files
       @regenerated_dependency_files = all_files
 
@@ -168,6 +171,7 @@ module Dependabot
       @notices.concat(updater_notices)
 
       updated_files = all_files.reject(&:support_file?)
+      updated_files = all_files if updated_files.empty? && all_files.any?
       updated_files
     end
 

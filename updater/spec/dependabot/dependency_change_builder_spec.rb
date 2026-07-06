@@ -279,21 +279,16 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         stub_file_updater(updated_dependency_files: updated_support_files, notices: updater_notices)
       end
 
-      it "raises a generic no-files error" do
-        expect { create_change }
-          .to raise_error(
-            Dependabot::DependabotError,
-            "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0)"
-          )
+      it "includes support files as primary update targets" do
+        dependency_change = create_change
+
+        expect(dependency_change).to be_a(Dependabot::DependencyChange)
+        expect(dependency_change.updated_dependency_files.map(&:name))
+          .to eq(updated_support_files.map(&:name))
       end
 
-      it "collects notices before raising" do
-        expect { create_change }
-          .to raise_error(
-            Dependabot::DependabotError,
-            "FileUpdater failed to update any files for: dummy-pkg-b (1.1.0 → 1.2.0)"
-          )
-
+      it "collects notices" do
+        create_change
         expect(notices).to eq(updater_notices)
       end
     end
@@ -313,12 +308,12 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         stub_file_updater(updated_dependency_files: support_files)
       end
 
-      it "raises a no-files error listing sorted and unique dependency names" do
-        expect { create_change }
-          .to raise_error(
-            Dependabot::DependabotError,
-            "FileUpdater failed to update any files for: dummy-pkg-a, dummy-pkg-b"
-          )
+      it "includes support files as primary update targets" do
+        dependency_change = create_change
+
+        expect(dependency_change).to be_a(Dependabot::DependencyChange)
+        expect(dependency_change.updated_dependency_files.map(&:name))
+          .to eq(support_files.map(&:name))
       end
     end
   end

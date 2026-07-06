@@ -181,5 +181,55 @@ RSpec.describe Dependabot::CommandHelpers do
         expect(logger).to have_received(:info).with(a_string_including("Total execution time"))
       end
     end
+
+    context "when the wait thread reports no process status (child reaped externally)" do
+      let(:logger) { instance_double(Logger, info: nil, debug: nil, warn: nil, error: nil) }
+
+      before do
+        allow(Dependabot).to receive(:logger).and_return(logger)
+      end
+
+      # Simulates the race where `terminate_process` reaps the child via `Process.waitpid`
+      # before `wait_thr.value` is read, so the Open3 wait thread yields `nil` instead of a
+      # `Process::Status`.
+      def stub_popen3_with_nil_status
+        stdin = instance_double(IO, close: nil)
+        wait_thr = instance_double(Process::Waiter, pid: 12_345, value: nil)
+
+        allow(Open3).to receive(:popen3) do |*_args, &block|
+          stdout_read, stdout_write = IO.pipe
+          stderr_read, stderr_write = IO.pipe
+
+          stdout_write.close
+          stderr_write.close
+
+          begin
+            block.call(stdin, stdout_read, stderr_read, wait_thr)
+          ensure
+            stdout_read.close unless stdout_read.closed?
+            stderr_read.close unless stderr_read.closed?
+          end
+        end
+      end
+
+      it "does not raise and returns a nil-safe status" do
+        stub_popen3_with_nil_status
+
+        stdout, stderr, status, elapsed_time = described_class.capture3_with_timeout(
+          ["some-command"],
+          timeout: timeout
+        )
+
+        expect(stdout).to eq("")
+        expect(stderr).to eq("")
+        expect(status).not_to be_nil
+        expect(status.exitstatus).to eq(0)
+        expect(status.success?).to be(false)
+        expect(status.pid).to be_nil
+        expect(status.termsig).to be_nil
+        expect(status.to_s).to eq("unknown status")
+        expect(elapsed_time).to be >= 0
+      end
+    end
   end
 end
