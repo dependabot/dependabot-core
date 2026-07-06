@@ -64,6 +64,10 @@ module Dependabot
 
       sig { override.void }
       def prepare!
+        # Exclude .txt files that don't look like pip manifests before we parse anything to avoid risk of bystander
+        # files in non-pip projects.
+        filter_non_manifest_txt_files!
+
         if poetry_project_without_lockfile?
           # Generating an ephemeral lockfile requires executing `poetry lock`. Strictly speaking, that violates our
           # policy of refusing to run Python tooling when external code execution is disallowed, so fail fast.
@@ -77,6 +81,14 @@ module Dependabot
       end
 
       private
+
+      # Non-.txt files (pyproject.toml, setup.py, Pipfile, lockfiles, .in files, etc.) are always retained.
+      sig { void }
+      def filter_non_manifest_txt_files!
+        file_parser.dependency_files.reject! do |file|
+          file.name.end_with?(".txt") && !python_manifest_txt_filename?(file.name)
+        end
+      end
 
       # Returns the poetry.lock only if it was committed to the repo,
       # not if it was generated ephemerally. This ensures that

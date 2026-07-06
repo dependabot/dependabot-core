@@ -344,6 +344,119 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       end
     end
 
+    context "when a non-manifest .txt file is fetched alongside a real manifest" do
+      let(:requirements_txt) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "requests==2.32.5\n",
+          directory: "/"
+        )
+      end
+
+      # A prose wordlist: one bare token per line. Each line happens to be a valid
+      # pip requirement name, so the file fetcher's content check keeps it,
+      # but it is not a real manifest and must not contribute dependencies.
+      let(:wordlist_txt) do
+        Dependabot::DependencyFile.new(
+          name: "doc/wordlist.txt",
+          content: "alpha\nbravo\ncharlie\n",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [requirements_txt, wordlist_txt] }
+
+      it "graphs dependencies from the real manifest" do
+        expect(grapher.resolved_dependencies.keys).to include("pkg:pypi/requests@2.32.5")
+      end
+
+      it "does not graph tokens from the wordlist" do
+        expect(grapher.resolved_dependencies.keys).not_to include(
+          "pkg:pypi/alpha",
+          "pkg:pypi/bravo",
+          "pkg:pypi/charlie"
+        )
+      end
+    end
+
+    context "when a dependency appears in both a real manifest and a wordlist" do
+      let(:requirements_txt) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "alpha==1.0.0\n",
+          directory: "/"
+        )
+      end
+
+      let(:wordlist_txt) do
+        Dependabot::DependencyFile.new(
+          name: "doc/wordlist.txt",
+          content: "alpha\n",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [requirements_txt, wordlist_txt] }
+
+      it "retains the dependency using the version from the manifest" do
+        keys = grapher.resolved_dependencies.keys
+        expect(keys).to include("pkg:pypi/alpha@1.0.0")
+        expect(keys).not_to include("pkg:pypi/alpha")
+      end
+    end
+
+    context "when a requirements-style .txt variant is present" do
+      let(:requirements_prod_txt) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.prod.txt",
+          content: "requests==2.32.5\n",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [requirements_prod_txt] }
+
+      it "graphs dependencies from the variant manifest" do
+        expect(grapher.resolved_dependencies.keys).to include("pkg:pypi/requests@2.32.5")
+      end
+    end
+
+    context "when a poetry project has a bystander .txt file" do
+      let(:poetry_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("dependency_grapher", "poetry_lock_with_relationships.lock"),
+          directory: "/"
+        )
+      end
+
+      let(:wordlist_txt) do
+        Dependabot::DependencyFile.new(
+          name: "doc/wordlist.txt",
+          content: "alpha\nbravo\ncharlie\n",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pyproject_toml, poetry_lock_file, wordlist_txt] }
+
+      it "graphs the poetry dependencies" do
+        expect(grapher.resolved_dependencies.keys).to include(
+          "pkg:pypi/flask@3.1.3",
+          "pkg:pypi/requests@2.32.5",
+          "pkg:pypi/ruff@0.15.4"
+        )
+      end
+
+      it "does not graph tokens from the bystander .txt file" do
+        expect(grapher.resolved_dependencies.keys).not_to include(
+          "pkg:pypi/alpha",
+          "pkg:pypi/bravo",
+          "pkg:pypi/charlie"
+        )
+      end
+    end
+
     context "when poetry.lock is not present" do
       let(:ephemeral_lockfile) do
         Dependabot::DependencyFile.new(
