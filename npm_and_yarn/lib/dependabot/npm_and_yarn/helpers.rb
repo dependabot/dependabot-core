@@ -565,12 +565,12 @@ module Dependabot
         output_observer: nil,
         env: nil
       )
-        full_command = "corepack #{name} #{command}"
-        fingerprint =  "corepack #{name} #{fingerprint || command}"
+        full_command = T.let("corepack #{name} #{command}", String)
+        command_fingerprint = T.let("corepack #{name} #{fingerprint || command}", String)
 
         run_corepack_shell_command(
           full_command,
-          fingerprint: fingerprint,
+          fingerprint: command_fingerprint,
           output_observer: output_observer,
           env: env
         )
@@ -586,7 +586,7 @@ module Dependabot
 
           return run_corepack_shell_command(
             full_command,
-            fingerprint: fingerprint,
+            fingerprint: command_fingerprint,
             output_observer: output_observer,
             env: retry_env
           )
