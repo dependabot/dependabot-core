@@ -561,6 +561,56 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     end
   end
 
+  # Mirrors the Python grapher's behaviour for a directory whose only fetched file is a bystander (e.g. a
+  # non-manifest .txt): the directory is non-empty, but nothing resolves and there is no owning manifest, so the
+  # grapher reports a nameless manifest. This should be a successful, empty snapshot rather than a failure.
+  context "with a directory that has files but no supported manifest" do
+    let(:directories) { [directory] }
+    let(:directory) { "/" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "notes.txt",
+          content: "Some release notes\n",
+          directory: directory
+        )
+      ]
+    end
+
+    before do
+      original_grapher_class = Dependabot::DependencyGraphers.for_package_manager(job.package_manager)
+
+      empty_manifest_grapher_class = Class.new(original_grapher_class) do
+        def resolved_dependencies
+          {}
+        end
+
+        def relevant_dependency_file
+          Dependabot::DependencyFile.new(name: "", content: "", directory: "/")
+        end
+      end
+
+      allow(Dependabot::DependencyGraphers).to receive(:for_package_manager)
+        .with(job.package_manager).and_return(empty_manifest_grapher_class)
+    end
+
+    it "generates an empty successful snapshot rather than failing" do
+      expect(service).to receive(:create_dependency_submission) do |args|
+        payload = args[:dependency_submission].payload
+
+        expect(payload[:job][:correlator]).to eq("dependabot-bundler")
+
+        # No manifest is reported and nothing resolved, but the scan succeeded
+        expect(payload[:manifests]).to be_empty
+        expect(payload[:metadata][:status]).to eq(GithubApi::DependencySubmission::SnapshotStatus::SUCCESS.serialize)
+      end
+
+      update_graph_processor.run
+    end
+  end
+
   # This is expected for graph updates corresponding to deleted files
   context "with non-existent dependency files" do
     let(:directories) { [directory] }

@@ -262,7 +262,10 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         let(:dependency_files) { [notes_txt] }
 
         it "does not select notes.txt as a pip manifest" do
-          expect { grapher.relevant_dependency_file }.to raise_error(Dependabot::DependabotError)
+          relevant_file = grapher.relevant_dependency_file
+
+          expect(relevant_file.name).to eq("")
+          expect(grapher.resolved_dependencies).to be_empty
         end
       end
 
@@ -278,8 +281,38 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         let(:dependency_files) { [release_notes_txt] }
 
         it "does not select release-notes.txt as a pip manifest" do
-          expect { grapher.relevant_dependency_file }.to raise_error(Dependabot::DependabotError)
+          relevant_file = grapher.relevant_dependency_file
+
+          expect(relevant_file.name).to eq("")
+          expect(grapher.resolved_dependencies).to be_empty
         end
+      end
+    end
+
+    context "when dependencies resolve but no owning manifest can be identified" do
+      let(:notes_txt) do
+        Dependabot::DependencyFile.new(
+          name: "notes.txt",
+          content: "Some release notes\n",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [notes_txt] }
+
+      # A grapher variant that resolves dependencies without an identifiable manifest file - an inconsistent
+      # state that should never occur in practice, but which we still guard against.
+      let(:grapher) do
+        grapher_class = Class.new(Dependabot::Python::DependencyGrapher) do
+          def resolved_dependencies
+            { "pkg:pypi/requests@2.32.5" => nil }
+          end
+        end
+        grapher_class.new(file_parser: parser)
+      end
+
+      it "raises because the resolved state cannot be represented" do
+        expect { grapher.relevant_dependency_file }.to raise_error(Dependabot::DependabotError)
       end
     end
   end

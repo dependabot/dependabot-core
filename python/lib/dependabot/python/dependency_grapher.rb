@@ -59,6 +59,13 @@ module Dependabot
         relevant_file = candidates.compact.first
         return relevant_file if relevant_file
 
+        # If we do not have any dependencies to report, the absence of a relevant manifest file is tolerable, it
+        # means the file fetcher retrieved bystander `txt` files we have filtered out and the correct outcome
+        # is a blank snapshot for this path.
+        return empty_manifest_file if resolved_dependencies.empty?
+
+        # If dependencies resolved but no owning manifest could be identified, we are in an inconsistent state
+        # that we cannot represent.
         raise DependabotError, "No supported dependency file present."
       end
 
@@ -81,6 +88,18 @@ module Dependabot
       end
 
       private
+
+      # An empty, nameless dependency file used to represent a directory that has no supported manifest and
+      # resolves to no dependencies. The submission layer treats a nameless manifest as "nothing to report",
+      # producing a valid, empty snapshot for the directory instead of a failure.
+      sig { returns(Dependabot::DependencyFile) }
+      def empty_manifest_file
+        Dependabot::DependencyFile.new(
+          name: "",
+          content: "",
+          directory: file_parser.source&.directory || "/"
+        )
+      end
 
       # Non-.txt files (pyproject.toml, setup.py, Pipfile, lockfiles, .in files, etc.) are always retained.
       sig { void }
