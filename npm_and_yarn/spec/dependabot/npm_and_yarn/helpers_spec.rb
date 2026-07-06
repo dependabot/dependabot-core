@@ -663,6 +663,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       allow(Dependabot::Experiments).to receive(:enabled?)
         .with(:enable_private_registry_for_corepack).and_return(true)
       allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:disable_corepack_signature_verification).and_return(false)
+      allow(Dependabot::Experiments).to receive(:enabled?)
         .with(:enable_corepack_for_npm_and_yarn).and_return(true)
     end
 

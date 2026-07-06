@@ -32,6 +32,8 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
       .with(:enable_corepack_for_npm_and_yarn).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:disable_corepack_signature_verification).and_return(false)
   end
 
   describe "#generate" do

@@ -77,6 +77,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:disable_corepack_signature_verification).and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_audit_fix_fallback).and_return(true)
   end
 
