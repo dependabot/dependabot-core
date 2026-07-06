@@ -105,8 +105,18 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder::Dependen
         ]
       end
 
-      it "returns the private registry URI" do
-        expect(uri).to eq("https://gems.example.com/api/v1/versions/irrelevant.json")
+      context "when the Gemfile has no global source directive" do
+        let(:project_name) { "gemfile_multiple_requirements" }
+
+        it "returns the private registry URI" do
+          expect(uri).to eq("https://gems.example.com/api/v1/versions/irrelevant.json")
+        end
+      end
+
+      context "when the Gemfile has a global source directive" do
+        it "uses the Gemfile global source instead of the private registry" do
+          expect(uri).to eq("https://rubygems.org/api/v1/versions/irrelevant.json")
+        end
       end
     end
 

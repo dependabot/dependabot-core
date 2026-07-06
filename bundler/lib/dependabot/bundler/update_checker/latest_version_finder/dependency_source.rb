@@ -22,6 +22,10 @@ module Dependabot
           PRIVATE_REGISTRY = "private"
           GIT = "git"
           OTHER = "other"
+          # Matches a top-level non-block `source "url"` directive in a Gemfile.
+          # Gems without an explicit per-gem source inherit this global source,
+          # so the replaces-base credential must not override it.
+          GEMFILE_GLOBAL_SOURCE_REGEX = /^\s*source\s+["']([^"']+)["']\s*$/
 
           sig { returns(Dependabot::Dependency) }
           attr_reader :dependency
@@ -134,8 +138,25 @@ module Dependabot
 
           sig { returns(String) }
           def dependency_rubygems_uri
-            host = replaces_base_host || "rubygems.org"
+            host = gemfile_global_source_host || replaces_base_host || "rubygems.org"
             "https://#{host}/api/v1/versions/#{dependency.name}.json"
+          end
+
+          sig { returns(T.nilable(String)) }
+          def gemfile_global_source_host
+            content = gemfile&.content
+            return nil unless content
+
+            match = content.match(GEMFILE_GLOBAL_SOURCE_REGEX)
+            return nil unless match
+
+            url = T.let(match[1], T.nilable(String))
+            return nil unless url
+
+            host_match = url.match(%r{\Ahttps?://([^/]+)})
+            return nil unless host_match
+
+            T.let(host_match[1], T.nilable(String))
           end
 
           sig { returns(T.nilable(String)) }
