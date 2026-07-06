@@ -105,7 +105,7 @@ module Dependabot
 
         sig { params(info: T.nilable(T::Hash[T.any(String, Symbol), T.anything])).returns(String) }
         def fetch_index(info)
-          T.cast((info && info[:index]) || CRATES_IO_API, String)
+          T.cast((info && (info[:index] || info["index"])) || CRATES_IO_API, String)
         end
 
         sig { returns(T::Hash[String, String]) }
@@ -115,7 +115,7 @@ module Dependabot
 
         sig { params(info: T.nilable(T::Hash[T.any(String, Symbol), T.anything])).returns(T::Hash[String, String]) }
         def auth_headers(info)
-          registry_name = T.cast(info&.fetch(:name, nil), T.nilable(String))
+          registry_name = T.cast(info && (info[:name] || info["name"]), T.nilable(String))
           registry_creds = credentials.find do |cred|
             cred["type"] == "cargo_registry" && cred["registry"] == registry_name
           end

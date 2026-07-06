@@ -72,7 +72,7 @@ module Dependabot
           dependency.requirements.filter_map { |r| r[:source] }.first,
           T.nilable(T::Hash[T.any(String, Symbol), T.anything])
         )
-        index = T.cast((info && info[:index]) || CRATES_IO_API, String)
+        index = T.cast((info && (info[:index] || info["index"])) || CRATES_IO_API, String)
         hdrs = build_headers(index, info)
 
         url = metadata_fetch_url(dependency, index)
