@@ -272,11 +272,14 @@ module Dependabot
         @latest_version_listing = T.let({}, T.nilable(T::Hash[String, T.untyped]))
 
         response = Dependabot::RegistryClient.get(url: "#{dependency_url}/latest", headers: registry_auth_headers)
-        @latest_version_listing = JSON.parse(response.body) if response.status == 200
+        if response.status == 200
+          parsed = JSON.parse(response.body)
+          @latest_version_listing = parsed if parsed.is_a?(Hash)
+        end
 
-        @latest_version_listing
+        T.must(@latest_version_listing)
       rescue JSON::ParserError, Excon::Error::Timeout
-        @latest_version_listing
+        T.must(@latest_version_listing)
       end
 
       sig { returns(T::Array[[String, T::Hash[String, T.untyped]]]) }
@@ -299,14 +302,15 @@ module Dependabot
         return T.must(@npm_listing) if response.status >= 500
 
         begin
-          @npm_listing = JSON.parse(response.body)
+          parsed = JSON.parse(response.body)
+          @npm_listing = parsed if parsed.is_a?(Hash)
         rescue JSON::ParserError
           raise unless non_standard_registry?
         end
 
-        @npm_listing
+        T.must(@npm_listing)
       rescue Excon::Error::Timeout
-        @npm_listing
+        T.must(@npm_listing)
       end
 
       sig { returns(String) }
