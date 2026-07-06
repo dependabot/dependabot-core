@@ -114,13 +114,12 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
 
       it "returns registry from npmrc with trailing slash stripped" do
         helper = described_class.new(registry_config_files, [])
-        env_variables = helper.find_corepack_env_variables(disable_signature_verification: true)
+        env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
           "COREPACK_NPM_REGISTRY" => "https://custom-registry.com",
           "npm_config_registry" => "https://custom-registry.com",
           "COREPACK_NPM_TOKEN" => "custom-token",
-          "registry" => "https://custom-registry.com",
-          "COREPACK_INTEGRITY_KEYS" => ""
+          "registry" => "https://custom-registry.com"
         )
       end
     end
@@ -140,13 +139,12 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
 
       it "returns registry with https scheme" do
         helper = described_class.new(registry_config_files, credentials)
-        env_variables = helper.find_corepack_env_variables(disable_signature_verification: true)
+        env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
           "COREPACK_NPM_REGISTRY" => "https://artifactory.example.com/npm",
           "npm_config_registry" => "https://artifactory.example.com/npm",
           "COREPACK_NPM_TOKEN" => "my-token",
-          "registry" => "https://artifactory.example.com/npm",
-          "COREPACK_INTEGRITY_KEYS" => ""
+          "registry" => "https://artifactory.example.com/npm"
         )
       end
     end
@@ -166,13 +164,12 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
 
       it "strips the trailing slash from the registry URL" do
         helper = described_class.new(registry_config_files, credentials)
-        env_variables = helper.find_corepack_env_variables(disable_signature_verification: true)
+        env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
           "COREPACK_NPM_REGISTRY" => "https://artifactory.example.com/npm",
           "npm_config_registry" => "https://artifactory.example.com/npm",
           "COREPACK_NPM_TOKEN" => "my-token",
-          "registry" => "https://artifactory.example.com/npm",
-          "COREPACK_INTEGRITY_KEYS" => ""
+          "registry" => "https://artifactory.example.com/npm"
         )
       end
     end
@@ -212,7 +209,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
 
       it "does not disable corepack integrity verification" do
         helper = described_class.new(registry_config_files, [])
-        env_variables = helper.find_corepack_env_variables(disable_signature_verification: true)
+        env_variables = helper.find_corepack_env_variables
 
         expect(env_variables).to eq(
           "COREPACK_NPM_TOKEN" => "default-token"
@@ -225,13 +222,12 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
 
       it "returns registry from yarnrc with trailing slash stripped" do
         helper = described_class.new(registry_config_files, [])
-        env_variables = helper.find_corepack_env_variables(disable_signature_verification: true)
+        env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
           "COREPACK_NPM_REGISTRY" => "https://yarn-registry.com",
           "npm_config_registry" => "https://yarn-registry.com",
           "COREPACK_NPM_TOKEN" => "your-auth-token-here",
-          "registry" => "https://yarn-registry.com",
-          "COREPACK_INTEGRITY_KEYS" => ""
+          "registry" => "https://yarn-registry.com"
         )
       end
     end
@@ -255,13 +251,12 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
 
       it "returns registry from yarnrc.yml with trailing slash stripped" do
         helper = described_class.new(registry_config_files, [])
-        env_variables = helper.find_corepack_env_variables(disable_signature_verification: true)
+        env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
           "COREPACK_NPM_REGISTRY" => "https://yarnrc-yml-registry.com",
           "npm_config_registry" => "https://yarnrc-yml-registry.com",
           "COREPACK_NPM_TOKEN" => "yarnrc-yml-token",
-          "registry" => "https://yarnrc-yml-registry.com",
-          "COREPACK_INTEGRITY_KEYS" => ""
+          "registry" => "https://yarnrc-yml-registry.com"
         )
       end
     end

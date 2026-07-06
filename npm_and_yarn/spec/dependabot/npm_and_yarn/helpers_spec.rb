@@ -212,6 +212,47 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
       described_class.package_manager_run_command("npm", "install")
     end
+
+    it "retries once with COREPACK_INTEGRITY_KEYS when corepack signature verification fails" do
+      env = {
+        "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm",
+        "npm_config_registry" => "https://packages.example.com/artifactory/api/npm/npm",
+        "registry" => "https://packages.example.com/artifactory/api/npm/npm"
+      }
+
+      first_error = StandardError.new(
+        "Preparing npm@11.9.0 for immediate activation...\n" \
+        "Internal Error: No compatible signature found in package metadata"
+      )
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: env
+      ).ordered.and_raise(first_error)
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: env.merge("COREPACK_INTEGRITY_KEYS" => "")
+      ).ordered.and_return("11.9.0\n")
+
+      expect(described_class.package_manager_run_command("npm", "-v", env: env)).to eq("11.9.0")
+    end
+
+    it "does not retry for signature errors when no private registry env is configured" do
+      error = StandardError.new("Internal Error: No compatible signature found in package metadata")
+
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: nil
+      ).and_raise(error)
+
+      expect do
+        described_class.package_manager_run_command("npm", "-v")
+      end.to raise_error(StandardError, /No compatible signature found in package metadata/)
+    end
   end
 
   describe "::package_manager_run_command raise registry error" do
@@ -662,8 +703,6 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       described_class.credentials = credentials
       allow(Dependabot::Experiments).to receive(:enabled?)
         .with(:enable_private_registry_for_corepack).and_return(true)
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:disable_corepack_signature_verification).and_return(false)
       allow(Dependabot::Experiments).to receive(:enabled?)
         .with(:enable_corepack_for_npm_and_yarn).and_return(true)
     end

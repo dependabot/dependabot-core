@@ -72,8 +72,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(false)
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:disable_corepack_signature_verification).and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_audit_fix_fallback).and_return(true)
   end
 
@@ -1507,8 +1505,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         before do
           allow(Dependabot::Experiments).to receive(:enabled?)
             .with(:enable_private_registry_for_corepack).and_return(true)
-          allow(Dependabot::Experiments).to receive(:enabled?)
-            .with(:disable_corepack_signature_verification).and_return(true)
         end
 
         context "with npm_registry credentials" do
@@ -1537,8 +1533,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
                 "COREPACK_NPM_REGISTRY" => "https://npm.private.registry",
                 "npm_config_registry" => "https://npm.private.registry",
                 "COREPACK_NPM_TOKEN" => "secret_token",
-                "registry" => "https://npm.private.registry",
-                "COREPACK_INTEGRITY_KEYS" => ""
+                "registry" => "https://npm.private.registry"
               }
             )
           end
@@ -1603,8 +1598,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
                 "COREPACK_NPM_REGISTRY" => "https://custom.registry.com",
                 "npm_config_registry" => "https://custom.registry.com",
                 "COREPACK_NPM_TOKEN" => "custom_token",
-                "registry" => "https://custom.registry.com",
-                "COREPACK_INTEGRITY_KEYS" => ""
+                "registry" => "https://custom.registry.com"
               }
             )
           end
@@ -1632,8 +1626,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
                 "COREPACK_NPM_REGISTRY" => "https://yarn.registry.com",
                 "npm_config_registry" => "https://yarn.registry.com",
                 "COREPACK_NPM_TOKEN" => "yarn_token",
-                "registry" => "https://yarn.registry.com",
-                "COREPACK_INTEGRITY_KEYS" => ""
+                "registry" => "https://yarn.registry.com"
               }
             )
           end
@@ -1661,8 +1654,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
                 "COREPACK_NPM_REGISTRY" => "https://yarn2.registry.com",
                 "npm_config_registry" => "https://yarn2.registry.com",
                 "COREPACK_NPM_TOKEN" => "yarn2_token",
-                "registry" => "https://yarn2.registry.com",
-                "COREPACK_INTEGRITY_KEYS" => ""
+                "registry" => "https://yarn2.registry.com"
               }
             )
           end
@@ -1703,8 +1695,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
                 "COREPACK_NPM_REGISTRY" => "https://creds.registry.com",
                 "npm_config_registry" => "https://creds.registry.com",
                 "COREPACK_NPM_TOKEN" => "creds_token",
-                "registry" => "https://creds.registry.com",
-                "COREPACK_INTEGRITY_KEYS" => ""
+                "registry" => "https://creds.registry.com"
               }
             )
           end
