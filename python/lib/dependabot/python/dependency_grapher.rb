@@ -102,10 +102,15 @@ module Dependabot
       end
 
       # Non-.txt files (pyproject.toml, setup.py, Pipfile, lockfiles, .in files, etc.) are always retained.
+      # A .txt file is kept when either its name looks like a pip requirements/dependencies manifest, or the
+      # pip-compile matcher recognises it as a compiled lockfile.
       sig { void }
       def filter_non_manifest_txt_files!
         file_parser.dependency_files.reject! do |file|
-          file.name.end_with?(".txt") && !python_manifest_txt_filename?(file.name)
+          next false unless file.name.end_with?(".txt")
+
+          !python_manifest_txt_filename?(file.name) &&
+            !pip_compile_file_matcher.lockfile_for_pip_compile_file?(file)
         end
       end
 
