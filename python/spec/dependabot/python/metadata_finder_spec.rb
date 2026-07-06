@@ -518,7 +518,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
         source_url
 
-        expect(matching_url_parse_count).to be <= 1
+        expect(matching_url_parse_count).to eq(1)
       end
     end
   end
