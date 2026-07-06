@@ -47,6 +47,8 @@ module Dependabot
         # Matches a top-level, non-block `source "url"` or `source 'url'` directive.
         # Gems without an explicit per-gem source inherit this global source,
         # so a replaces-base credential must not override it.
+        # Note: In Ruby, `^` and `$` are line-boundary anchors (not string boundaries),
+        # so this correctly matches within multi-line Gemfile content strings.
         GEMFILE_GLOBAL_SOURCE_REGEX = /^\s*source\s+["']([^"']+)["']\s*$/
 
         module BundlerErrorPatterns
