@@ -188,22 +188,6 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
       end
     end
 
-    context "when signature verification flag is disabled" do
-      let(:registry_config_files) { { npmrc: npmrc_file } }
-
-      it "does not set COREPACK_INTEGRITY_KEYS" do
-        helper = described_class.new(registry_config_files, [])
-        env_variables = helper.find_corepack_env_variables
-
-        expect(env_variables).to eq(
-          "COREPACK_NPM_REGISTRY" => "https://custom-registry.com",
-          "npm_config_registry" => "https://custom-registry.com",
-          "COREPACK_NPM_TOKEN" => "custom-token",
-          "registry" => "https://custom-registry.com"
-        )
-      end
-    end
-
     context "when npmrc points to the default npm registry" do
       let(:registry_config_files) { { npmrc: default_registry_npmrc_file } }
 

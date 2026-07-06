@@ -243,11 +243,11 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     it "does not retry for signature errors when no private registry env is configured" do
       error = StandardError.new("Internal Error: No compatible signature found in package metadata")
 
-      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
         "corepack npm -v",
         fingerprint: "corepack npm -v",
         env: nil
-      ).and_raise(error)
+      ).once.and_raise(error)
 
       expect do
         described_class.package_manager_run_command("npm", "-v")
