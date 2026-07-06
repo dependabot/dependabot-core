@@ -478,7 +478,7 @@ RSpec.describe Dependabot::Python::FileParser do
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("requests")
-              expect(dependency.version).to eq("2.0.0")
+              expect(dependency.version).to eq("2.4.1")
               expect(dependency.requirements).to contain_exactly(
                 {
                   requirement: "==2.0.0",
