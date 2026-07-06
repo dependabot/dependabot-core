@@ -96,6 +96,13 @@ public class RunWorker
 
         try
         {
+            // Register MSBuild up front so that the `Microsoft.Build` assembly is loadable for
+            // the rest of the job.  This is required even on the error-handling path:
+            // `JobErrorBase.ErrorFromException` references `Microsoft.Build` exception types, so
+            // if a failure occurs before MSBuild is registered, JIT-compiling the error handler
+            // would itself throw `FileNotFoundException` for `Microsoft.Build` and mask the real
+            // error.
+            MSBuildHelper.RegisterMSBuild(repoContentsPath.FullName, repoContentsPath.FullName, _logger);
             await PatchNuGetConfigFilesAsync(repoContentsPath);
             var handler = GetUpdateHandler(job);
             _logger.Info($"Starting update job of type {handler.TagName}");

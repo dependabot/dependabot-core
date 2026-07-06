@@ -30,6 +30,16 @@ module Dependabot
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_resolvable_version_with_no_unlock = latest_version
 
+      # The release tag for the current baseline commit SHA (else the SHA), so the
+      # PR title's "from" shows the tag, not the "master" ref.
+      sig { params(_updated_version: String).returns(T.nilable(String)) }
+      def latest_resolvable_previous_version(_updated_version)
+        current_version = dependency.version
+        return current_version unless registry_dependency? && current_version&.match?(/\A[0-9a-f]{40}\z/)
+
+        latest_version_finder.tag_for_commit_sha(current_version) || current_version
+      end
+
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         return dependency.requirements unless latest_version
@@ -72,7 +82,10 @@ module Dependabot
       def sha1_version_up_to_date?
         return super unless registry_dependency?
 
-        latest_commit_sha = latest_version_finder.latest_release_info&.details&.dig("commit_sha")
+        latest_commit_sha = T.cast(
+          latest_version_finder.latest_release_info&.details&.dig("commit_sha"),
+          T.nilable(String)
+        )
         return super unless latest_commit_sha
 
         latest_commit_sha.start_with?(T.must(dependency.version))

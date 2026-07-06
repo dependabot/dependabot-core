@@ -30,8 +30,10 @@ public class JobCommandConverter : JsonConverter<JobCommand>
         return value switch
         {
             "" => JobCommand.None,
+            "version" => JobCommand.Version,
             "update" => JobCommand.Update,
             "recreate" => JobCommand.Recreate,
+            "security" => JobCommand.Security,
             "graph" => JobCommand.Graph,
             _ => LogAndDefault(value),
         };
@@ -47,8 +49,10 @@ public class JobCommandConverter : JsonConverter<JobCommand>
     {
         var str = value switch
         {
+            JobCommand.Version => "version",
             JobCommand.Update => "update",
             JobCommand.Recreate => "recreate",
+            JobCommand.Security => "security",
             JobCommand.Graph => "graph",
             _ => "",
         };

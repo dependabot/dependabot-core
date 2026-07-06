@@ -18,7 +18,7 @@ module Dependabot
         sig do
           params(
             feature: String,
-            requirement: T.any(String, Dependabot::Devcontainers::Version),
+            requirement: T.nilable(T.any(String, Dependabot::Devcontainers::Version)),
             version: String,
             manifest: Dependabot::DependencyFile,
             repo_contents_path: String,
@@ -65,7 +65,7 @@ module Dependabot
 
         sig do
           params(
-            target_requirement: T.any(String, Dependabot::Devcontainers::Version),
+            target_requirement: T.nilable(T.any(String, Dependabot::Devcontainers::Version)),
             target_version: String
           )
             .void
@@ -79,8 +79,16 @@ module Dependabot
           force_target_requirement(lockfile_path, from: target_version, to: target_requirement)
         end
 
-        sig { params(file_name: String, from: String, to: T.any(String, Dependabot::Devcontainers::Version)).void }
+        sig do
+          params(
+            file_name: String,
+            from: String,
+            to: T.nilable(T.any(String, Dependabot::Devcontainers::Version))
+          ).void
+        end
         def force_target_requirement(file_name, from:, to:)
+          return if to.nil?
+
           File.write(file_name, File.read(file_name).gsub("#{feature}:#{from}", "#{feature}:#{to}"))
         end
 
@@ -100,7 +108,7 @@ module Dependabot
         sig { returns(String) }
         attr_reader :feature
 
-        sig { returns(T.any(String, Dependabot::Devcontainers::Version)) }
+        sig { returns(T.nilable(T.any(String, Dependabot::Devcontainers::Version))) }
         attr_reader :requirement
 
         sig { returns(String) }

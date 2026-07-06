@@ -420,9 +420,43 @@ public class JobTests
         AssertEx.Equal(expectedDirectories, actualDirectories);
     }
 
+    [Fact]
+    public void ExpandJobDirectoriesIgnoresNullEntries()
+    {
+        // arrange
+        using var tempDir = new TemporaryDirectory();
+        var json = """
+            {
+              "job": {
+                "package-manager": "nuget",
+                "source": {
+                  "provider": "github",
+                  "repo": "test/repo",
+                  "directories": [
+                    null
+                  ]
+                }
+              }
+            }
+            """;
+        var job = RunWorker.Deserialize(json).Job;
+
+        // act - the null entry should be ignored, not cause a NullReferenceException
+        var actualDirectories = job.GetAllDirectories(tempDir.DirectoryPath);
+
+        // assert - null entry was filtered out, falling back to the repo root
+        var expectedDirectories = new[]
+        {
+            "/",
+        }.ToImmutableArray();
+        AssertEx.Equal(expectedDirectories, actualDirectories);
+    }
+
     [Theory]
+    [InlineData("version", JobCommand.Version)]
     [InlineData("update", JobCommand.Update)]
     [InlineData("recreate", JobCommand.Recreate)]
+    [InlineData("security", JobCommand.Security)]
     [InlineData("graph", JobCommand.Graph)]
     [InlineData("", JobCommand.None)]
     public void CommandDeserialization_KnownValues(string commandValue, JobCommand expectedCommand)

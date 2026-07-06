@@ -20,46 +20,46 @@ module Dependabot
     end
 
     OutputObserver = T.type_alias do
-      T.nilable(T.proc.params(data: String).returns(T::Hash[Symbol, T.untyped]))
+      T.nilable(T.proc.params(data: String).returns(T::Hash[Symbol, T.anything]))
     end
 
     EnvCmdItem = T.type_alias do
       T.any(
         String,
-        T::Hash[T.any(String, Symbol), T.untyped]
+        T::Hash[T.any(String, Symbol), T.anything]
       )
     end
 
     class ProcessStatus
       extend T::Sig
 
-      sig { params(process_status: Process::Status, custom_exitstatus: T.nilable(Integer)).void }
+      sig { params(process_status: T.nilable(Process::Status), custom_exitstatus: T.nilable(Integer)).void }
       def initialize(process_status, custom_exitstatus = nil)
-        @process_status = process_status
+        @process_status = T.let(process_status, T.nilable(Process::Status))
         @custom_exitstatus = custom_exitstatus
       end
 
       # Return the exit status, either from the process status or the custom one
       sig { returns(Integer) }
       def exitstatus
-        @custom_exitstatus || @process_status.exitstatus || 0
+        @custom_exitstatus || @process_status&.exitstatus || 0
       end
 
       # Determine if the process was successful
       sig { returns(T::Boolean) }
       def success?
-        @custom_exitstatus.nil? ? @process_status.success? || false : @custom_exitstatus.zero?
+        @custom_exitstatus.nil? ? @process_status&.success? || false : @custom_exitstatus.zero?
       end
 
       # Return the PID of the process (if available)
       sig { returns(T.nilable(Integer)) }
       def pid
-        @process_status.pid
+        @process_status&.pid
       end
 
       sig { returns(T.nilable(Integer)) }
       def termsig
-        @process_status.termsig
+        @process_status&.termsig
       end
 
       # String representation of the status
@@ -68,7 +68,7 @@ module Dependabot
         if @custom_exitstatus
           "pid #{pid || 'unknown'}: exit #{@custom_exitstatus} (custom status)"
         else
-          @process_status.to_s
+          @process_status&.to_s || "unknown status"
         end
       end
     end
