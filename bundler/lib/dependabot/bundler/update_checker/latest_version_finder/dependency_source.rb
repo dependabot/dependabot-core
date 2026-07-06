@@ -150,6 +150,8 @@ module Dependabot
             url = T.let(match[1], T.nilable(String))
             return nil unless url
 
+            # URI.parse.host returns nil for relative URIs; propagate nil so
+            # callers fall back to replaces_base_host or "rubygems.org".
             URI.parse(url).host
           rescue URI::InvalidURIError => e
             Dependabot.logger.warn(
