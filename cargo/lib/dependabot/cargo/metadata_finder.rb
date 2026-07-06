@@ -56,11 +56,12 @@ module Dependabot
       def find_source_from_git_url
         info = T.cast(
           dependency.requirements.filter_map { |r| r[:source] }.first,
-          T::Hash[T.any(String, Symbol), T.anything]
+          T.nilable(T::Hash[T.any(String, Symbol), T.anything])
         )
+        return unless info
 
-        url = T.cast(info[:url] || info.fetch("url"), String)
-        Source.from_url(url)
+        url = info[:url] || info["url"]
+        Source.from_url(T.cast(url, T.nilable(String)))
       end
 
       sig { returns(T.nilable(T::Hash[String, T.anything])) }

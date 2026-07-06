@@ -284,13 +284,22 @@ module Dependabot
         def git_dependency_version
           return unless lockfile
 
-          package = T.cast(
+          version = dependency.version
+          return unless version
+
+          packages = T.cast(
             TomlRB.parse(T.must(lockfile).content).fetch("package", []),
             T::Array[T::Hash[String, T.anything]]
-          ).select { |p| T.cast(p["name"], T.nilable(String)) == dependency.name }
-           .find { |p| T.cast(p["source"], String).end_with?(T.must(dependency.version)) }
+          )
+          package = packages
+                    .select { |p| T.cast(p["name"], T.nilable(String)) == dependency.name }
+                    .find do |p|
+                      source = T.cast(p["source"], T.nilable(String))
+                      source&.end_with?(version)
+                    end
+          return unless package
 
-          T.cast(T.must(package).fetch("version"), String)
+          T.cast(package.fetch("version"), String)
         end
 
         sig { params(parsed_manifest: T::Hash[String, T.anything], type: String).returns(T::Array[String]) }
