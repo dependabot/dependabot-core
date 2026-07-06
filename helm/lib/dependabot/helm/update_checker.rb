@@ -18,6 +18,11 @@ require "dependabot/helm/helpers"
 
 module Dependabot
   module Helm
+    # ClassLength is disabled to match the other ecosystems' update checkers
+    # (docker, npm_and_yarn, python, bun all disable it on the same class). The
+    # version-fetching helpers already delegate to
+    # update_checker/latest_version_resolver; further extraction would fragment
+    # the update-decision flow.
     class UpdateChecker < Dependabot::UpdateCheckers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
@@ -88,7 +93,11 @@ module Dependabot
       # For multi-comparator ranges (">=1.0.0 <2.0.0", "a || b") it can't, so we
       # anchor candidate filtering on the lowest version named in the constraint
       # (or 0 for wildcards), letting the RequirementsUpdater decide the rewrite.
-      sig { returns(Dependabot::Version) }
+      # Overrides Base#current_version (nilable). Helm ranges have no single
+      # numeric_version, so we return a non-nilable anchored floor instead of
+      # nil — a valid covariant narrowing that also gives advisory matching
+      # (active_advisories/vulnerable?) a concrete version to compare against.
+      sig { override.returns(Dependabot::Version) }
       def current_version
         @current_version ||= T.let(
           begin
