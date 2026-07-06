@@ -460,7 +460,9 @@ module Dependabot
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
           env = {}
           if Dependabot::Experiments.enabled?(:enable_private_registry_for_corepack)
-            env = @registry_helper.find_corepack_env_variables
+            env = @registry_helper.find_corepack_env_variables(
+              disable_signature_verification: Dependabot::Experiments.enabled?(:disable_corepack_signature_verification)
+            )
           end
           # Use the Helpers.install method to install the package manager
           return Helpers.install(name, version.to_s, env: env)

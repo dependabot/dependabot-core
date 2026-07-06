@@ -49,8 +49,8 @@ module Dependabot
         @credentials = T.let(credentials, T.nilable(T::Array[Dependabot::Credential]))
       end
 
-      sig { returns(T::Hash[String, String]) }
-      def find_corepack_env_variables
+      sig { params(disable_signature_verification: T::Boolean).returns(T::Hash[String, String]) }
+      def find_corepack_env_variables(disable_signature_verification: false)
         registry_info = find_registry_and_token
 
         env_variables = {}
@@ -62,9 +62,7 @@ module Dependabot
             env_variables[COREPACK_NPM_REGISTRY_ENV] = registry # For Corepack
             env_variables[NPM_CONFIG_REGISTRY_ENV] = registry # For npm
             env_variables[REGISTRY_KEY] = registry
-            # Disable corepack signature verification only for authenticated
-            # non-default registries (typically private mirrors/proxies).
-            env_variables[COREPACK_INTEGRITY_KEYS_ENV] = "" if registry_info[:auth_token]
+            env_variables[COREPACK_INTEGRITY_KEYS_ENV] = "" if disable_signature_verification
           end
         end
 

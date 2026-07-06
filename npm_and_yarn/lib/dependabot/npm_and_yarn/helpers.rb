@@ -617,7 +617,9 @@ module Dependabot
           creds
         )
 
-        registry_helper.find_corepack_env_variables
+        registry_helper.find_corepack_env_variables(
+          disable_signature_verification: Dependabot::Experiments.enabled?(:disable_corepack_signature_verification)
+        )
       end
 
       private_class_method :run_single_yarn_command

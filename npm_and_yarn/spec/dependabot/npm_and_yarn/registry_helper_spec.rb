@@ -114,7 +114,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
 
       it "returns registry from npmrc with trailing slash stripped" do
         helper = described_class.new(registry_config_files, [])
-        env_variables = helper.find_corepack_env_variables
+        env_variables = helper.find_corepack_env_variables(disable_signature_verification: true)
         expect(env_variables).to eq(
           "COREPACK_NPM_REGISTRY" => "https://custom-registry.com",
           "npm_config_registry" => "https://custom-registry.com",
@@ -140,7 +140,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
 
       it "returns registry with https scheme" do
         helper = described_class.new(registry_config_files, credentials)
-        env_variables = helper.find_corepack_env_variables
+        env_variables = helper.find_corepack_env_variables(disable_signature_verification: true)
         expect(env_variables).to eq(
           "COREPACK_NPM_REGISTRY" => "https://artifactory.example.com/npm",
           "npm_config_registry" => "https://artifactory.example.com/npm",
@@ -166,7 +166,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
 
       it "strips the trailing slash from the registry URL" do
         helper = described_class.new(registry_config_files, credentials)
-        env_variables = helper.find_corepack_env_variables
+        env_variables = helper.find_corepack_env_variables(disable_signature_verification: true)
         expect(env_variables).to eq(
           "COREPACK_NPM_REGISTRY" => "https://artifactory.example.com/npm",
           "npm_config_registry" => "https://artifactory.example.com/npm",
@@ -191,12 +191,28 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
       end
     end
 
+    context "when signature verification flag is disabled" do
+      let(:registry_config_files) { { npmrc: npmrc_file } }
+
+      it "does not set COREPACK_INTEGRITY_KEYS" do
+        helper = described_class.new(registry_config_files, [])
+        env_variables = helper.find_corepack_env_variables
+
+        expect(env_variables).to eq(
+          "COREPACK_NPM_REGISTRY" => "https://custom-registry.com",
+          "npm_config_registry" => "https://custom-registry.com",
+          "COREPACK_NPM_TOKEN" => "custom-token",
+          "registry" => "https://custom-registry.com"
+        )
+      end
+    end
+
     context "when npmrc points to the default npm registry" do
       let(:registry_config_files) { { npmrc: default_registry_npmrc_file } }
 
       it "does not disable corepack integrity verification" do
         helper = described_class.new(registry_config_files, [])
-        env_variables = helper.find_corepack_env_variables
+        env_variables = helper.find_corepack_env_variables(disable_signature_verification: true)
 
         expect(env_variables).to eq(
           "COREPACK_NPM_TOKEN" => "default-token"
@@ -209,7 +225,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
 
       it "returns registry from yarnrc with trailing slash stripped" do
         helper = described_class.new(registry_config_files, [])
-        env_variables = helper.find_corepack_env_variables
+        env_variables = helper.find_corepack_env_variables(disable_signature_verification: true)
         expect(env_variables).to eq(
           "COREPACK_NPM_REGISTRY" => "https://yarn-registry.com",
           "npm_config_registry" => "https://yarn-registry.com",
@@ -239,7 +255,7 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
 
       it "returns registry from yarnrc.yml with trailing slash stripped" do
         helper = described_class.new(registry_config_files, [])
-        env_variables = helper.find_corepack_env_variables
+        env_variables = helper.find_corepack_env_variables(disable_signature_verification: true)
         expect(env_variables).to eq(
           "COREPACK_NPM_REGISTRY" => "https://yarnrc-yml-registry.com",
           "npm_config_registry" => "https://yarnrc-yml-registry.com",
