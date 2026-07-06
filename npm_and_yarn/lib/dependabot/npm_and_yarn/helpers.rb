@@ -577,6 +577,8 @@ module Dependabot
       rescue StandardError => e
         Dependabot.logger.error("Error running package manager command: #{full_command}, Error: #{e.message}")
 
+        raise_registry_error_if_not_found(e)
+
         if retry_without_signature_verification?(error: e, env: env)
           retry_env = T.must(env).merge(RegistryHelper::COREPACK_INTEGRITY_KEYS_ENV => "")
           Dependabot.logger.warn(
@@ -591,8 +593,6 @@ module Dependabot
             env: retry_env
           )
         end
-
-        raise_registry_error_if_not_found(e)
 
         raise
       end
@@ -662,10 +662,19 @@ module Dependabot
       sig { params(error: StandardError, env: T.nilable(T::Hash[String, String])).returns(T::Boolean) }
       def self.retry_without_signature_verification?(error:, env:)
         return false unless env
-        return false unless env.key?(RegistryHelper::COREPACK_NPM_REGISTRY_ENV)
+
+        registry = env[RegistryHelper::COREPACK_NPM_REGISTRY_ENV]
+        return false unless registry
+        return false if default_npm_registry?(registry)
         return false unless error.message.include?(COREPACK_SIGNATURE_METADATA_ERROR)
 
         !env.key?(RegistryHelper::COREPACK_INTEGRITY_KEYS_ENV)
+      end
+
+      sig { params(registry: String).returns(T::Boolean) }
+      def self.default_npm_registry?(registry)
+        normalized_registry = RegistryHelper.normalize_registry_url(registry)
+        normalized_registry == RegistryHelper::DEFAULT_NPM_REGISTRY
       end
 
       private_class_method :run_single_yarn_command

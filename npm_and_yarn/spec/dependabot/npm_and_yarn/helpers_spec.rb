@@ -253,6 +253,23 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         described_class.package_manager_run_command("npm", "-v")
       end.to raise_error(StandardError, /No compatible signature found in package metadata/)
     end
+
+    it "does not retry for signature errors when the configured registry is npmjs" do
+      env = {
+        "COREPACK_NPM_REGISTRY" => "https://registry.npmjs.org/"
+      }
+      error = StandardError.new("Internal Error: No compatible signature found in package metadata")
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: env
+      ).once.and_raise(error)
+
+      expect do
+        described_class.package_manager_run_command("npm", "-v", env: env)
+      end.to raise_error(StandardError, /No compatible signature found in package metadata/)
+    end
   end
 
   describe "::package_manager_run_command raise registry error" do
