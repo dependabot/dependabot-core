@@ -585,8 +585,8 @@ module Dependabot
           )
 
           return run_corepack_shell_command(
-            full_command,
-            fingerprint: command_fingerprint,
+            T.must(full_command),
+            fingerprint: T.must(command_fingerprint),
             output_observer: output_observer,
             env: retry_env
           )
