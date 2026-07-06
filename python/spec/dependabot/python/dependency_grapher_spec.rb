@@ -537,6 +537,69 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       end
     end
 
+    context "when a requirements file references child .txt files via -r/-c" do
+      # requirements.txt is a manifest by name, so it is retained and its `-r`/`-c` references are followed.
+      let(:requirements_txt) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "-r base.txt\n-c constraints.txt\n",
+          directory: "/"
+        )
+      end
+
+      # A referenced child requirements file whose name does not match the manifest regexes; it must be
+      # retained because requirements.txt pulls it in via `-r`.
+      let(:base_txt) do
+        Dependabot::DependencyFile.new(
+          name: "base.txt",
+          content: "flask==3.0.0\n",
+          directory: "/"
+        )
+      end
+
+      # A referenced constraints file (via `-c`); it must be retained so the parser can honour the pins.
+      let(:constraints_txt) do
+        Dependabot::DependencyFile.new(
+          name: "constraints.txt",
+          content: "flask==3.0.0\n",
+          directory: "/"
+        )
+      end
+
+      # A bystander wordlist that is not referenced by any requirements file; must be dropped.
+      let(:wordlist_txt) do
+        Dependabot::DependencyFile.new(
+          name: "doc/wordlist.txt",
+          content: "alpha\nbravo\ncharlie\n",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [requirements_txt, base_txt, constraints_txt, wordlist_txt] }
+
+      it "retains referenced child requirement and constraint files for parsing" do
+        grapher.resolved_dependencies
+        expect(parser.dependency_files.map(&:name)).to include("base.txt", "constraints.txt")
+      end
+
+      it "drops the bystander wordlist that nothing references" do
+        grapher.resolved_dependencies
+        expect(parser.dependency_files.map(&:name)).not_to include("doc/wordlist.txt")
+      end
+
+      it "graphs dependencies from the referenced child file" do
+        expect(grapher.resolved_dependencies.keys).to include("pkg:pypi/flask@3.0.0")
+      end
+
+      it "does not graph tokens from the bystander wordlist" do
+        expect(grapher.resolved_dependencies.keys).not_to include(
+          "pkg:pypi/alpha",
+          "pkg:pypi/bravo",
+          "pkg:pypi/charlie"
+        )
+      end
+    end
+
     context "when poetry.lock is not present" do
       let(:ephemeral_lockfile) do
         Dependabot::DependencyFile.new(

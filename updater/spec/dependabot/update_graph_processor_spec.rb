@@ -561,9 +561,11 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     end
   end
 
-  # Mirrors the Python grapher's behaviour for a directory whose only fetched file is a bystander (e.g. a
-  # non-manifest .txt): the directory is non-empty, but nothing resolves and there is no owning manifest, so the
-  # grapher reports a nameless manifest. This should be a successful, empty snapshot rather than a failure.
+  # Emulates the Python grapher's behaviour for a directory that has files but no supported manifest (e.g. only
+  # a bystander non-manifest .txt): nothing resolves and there is no owning manifest, so the grapher reports a
+  # nameless manifest. The processor should emit a successful, empty snapshot rather than a failure. (Bundler
+  # files are used only so the file parser can instantiate; the grapher is stubbed to model the nameless-manifest
+  # outcome without a Python toolchain in this suite.)
   context "with a directory that has files but no supported manifest" do
     let(:directories) { [directory] }
     let(:directory) { "/" }

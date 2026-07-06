@@ -3,6 +3,7 @@
 
 require "json"
 require "sorbet-runtime"
+require "pathname"
 
 require "dependabot/dependency_graphers"
 require "dependabot/dependency_graphers/base"
@@ -11,6 +12,7 @@ require "dependabot/python/language_version_manager"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/pip_compile_file_matcher"
 require "dependabot/python/pipenv_runner"
+require "dependabot/python/shared_file_fetcher"
 require "toml-rb"
 
 module Dependabot
@@ -102,15 +104,81 @@ module Dependabot
       end
 
       # Non-.txt files (pyproject.toml, setup.py, Pipfile, lockfiles, .in files, etc.) are always retained.
-      # A .txt file is kept when either its name looks like a pip requirements/dependencies manifest, or the
-      # pip-compile matcher recognises it as a compiled lockfile.
+      # A .txt file is kept when its name looks like a pip requirements/dependencies manifest, the pip-compile
+      # matcher recognises it as a compiled lockfile, or it is referenced (transitively) via `-r`/`-c` from a
+      # retained requirements file. The last case preserves constraint/child files (e.g. `constraints.txt`) that
+      # the parser needs on disk to resolve a real manifest, while still dropping bystander `.txt` files.
       sig { void }
       def filter_non_manifest_txt_files!
+        keep = txt_files_to_keep
+
         file_parser.dependency_files.reject! do |file|
           next false unless file.name.end_with?(".txt")
 
-          !python_manifest_txt_filename?(file.name) &&
-            !pip_compile_file_matcher.lockfile_for_pip_compile_file?(file)
+          !keep.include?(file.name)
+        end
+      end
+
+      # Names of the `.txt` files that must be retained: those that look like manifests or pip-compile lockfiles,
+      # plus any `.txt` reachable via `-r`/`-c` references from a retained requirements file (`.in` files are
+      # never dropped, so references originating from them are followed too).
+      sig { returns(T::Set[String]) }
+      def txt_files_to_keep
+        files_by_name = dependency_files.to_h { |file| [file.name, file] }
+
+        seeds = dependency_files.select do |file|
+          file.name.end_with?(".txt") &&
+            (python_manifest_txt_filename?(file.name) ||
+              pip_compile_file_matcher.lockfile_for_pip_compile_file?(file))
+        end
+
+        # `.in` files are always retained, so a `.txt` they reference must be kept too.
+        roots = seeds + dependency_files.select { |file| file.name.end_with?(".in") }
+
+        reachable_txt_names(roots, files_by_name, Set.new(seeds.map(&:name)))
+      end
+
+      # Breadth-first closure over `-r`/`-c` references starting from `roots`, adding every referenced `.txt`
+      # file that exists in `files_by_name` to `keep`.
+      sig do
+        params(
+          roots: T::Array[Dependabot::DependencyFile],
+          files_by_name: T::Hash[String, Dependabot::DependencyFile],
+          keep: T::Set[String]
+        ).returns(T::Set[String])
+      end
+      def reachable_txt_names(roots, files_by_name, keep)
+        queue = roots.dup
+        until queue.empty?
+          file = T.must(queue.shift)
+          referenced_txt_names(file).each do |name|
+            referenced_file = files_by_name[name]
+            next if referenced_file.nil? || keep.include?(name)
+
+            keep << name
+            queue << referenced_file
+          end
+        end
+
+        keep
+      end
+
+      # Resolves the `.txt` files referenced from a requirements file via `-r`/`-c`, returning their names
+      # relative to the repo (matching the fetched DependencyFile names) so we can retain them. Reuses
+      # SharedFileFetcher's reference regexes so the grapher keeps exactly the children the fetcher pulled in.
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
+      def referenced_txt_names(file)
+        content = file.content
+        return [] if content.nil?
+
+        current_dir = File.dirname(file.name)
+        referenced_paths = content.scan(Dependabot::Python::SharedFileFetcher::CHILD_REQUIREMENT_REGEX).flatten +
+                           content.scan(Dependabot::Python::SharedFileFetcher::CONSTRAINT_REGEX).flatten
+
+        referenced_paths.filter_map do |path|
+          resolved = current_dir == "." ? path : File.join(current_dir, path)
+          resolved = Pathname.new(resolved).cleanpath.to_path
+          resolved if resolved.end_with?(".txt")
         end
       end
 
