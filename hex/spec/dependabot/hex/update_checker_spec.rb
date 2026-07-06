@@ -226,6 +226,38 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
 
       it { is_expected.to eq("81705318ff929b2bc3c9c1b637c3f801e7371551") }
+
+      context "with a cooldown period configured" do
+        let(:update_cooldown) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+        end
+
+        before do
+          allow(checker.send(:git_commit_checker))
+            .to receive(:refs_for_tag_with_detail)
+            .and_return(
+              [
+                Dependabot::GitTagWithDetail.new(tag: "v1.3.1", release_date: "2017-01-02"),
+                Dependabot::GitTagWithDetail.new(
+                  tag: "v1.3.2",
+                  release_date: Time.now.strftime("%Y-%m-%d")
+                )
+              ]
+            )
+        end
+
+        it "skips the version tag still within its cooldown window" do
+          expect(latest_version).to eq("4ba4a733f1412967209bcaa91603c0e85257dcd1")
+        end
+
+        context "when there is no cooldown (e.g. a security update)" do
+          let(:update_cooldown) { nil }
+
+          it "uses the latest version tag" do
+            expect(latest_version).to eq("81705318ff929b2bc3c9c1b637c3f801e7371551")
+          end
+        end
+      end
     end
   end
 
@@ -378,6 +410,12 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             body: fixture("git", "upload_packs", "phoenix"),
             headers: git_header
           )
+
+        # Without release-date metadata, git-tag cooldown is a no-op, so the
+        # dependency still resolves to its latest version tag.
+        allow(checker.send(:git_commit_checker))
+          .to receive(:refs_for_tag_with_detail)
+          .and_return([])
       end
 
       it { is_expected.to eq("81705318ff929b2bc3c9c1b637c3f801e7371551") }

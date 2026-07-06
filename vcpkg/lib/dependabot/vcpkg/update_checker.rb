@@ -82,7 +82,10 @@ module Dependabot
       def sha1_version_up_to_date?
         return super unless registry_dependency?
 
-        latest_commit_sha = latest_version_finder.latest_release_info&.details&.dig("commit_sha")
+        latest_commit_sha = T.cast(
+          latest_version_finder.latest_release_info&.details&.dig("commit_sha"),
+          T.nilable(String)
+        )
         return super unless latest_commit_sha
 
         latest_commit_sha.start_with?(T.must(dependency.version))
