@@ -79,7 +79,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       end
     end
 
-    context "when pinned to a commit SHA with a known tag" do
+    context "when a bare SHA maps to a tag but has no frozen comment" do
       let(:reference) { "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e" }
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -98,10 +98,13 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       before do
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tag_for_pinned_sha).and_return("v4.4.0")
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:head_commit_for_local_branch).with("HEAD").and_return("abc123def456")
       end
 
-      it "returns the latest tagged version" do
-        expect(latest_release_version).to be_a(Dependabot::PreCommit::Version)
+      it "returns the newest default-branch commit, not the tag" do
+        expect(latest_release_version).to be_a(String)
+        expect(latest_release_version).to eq("abc123def456")
       end
     end
 
@@ -125,11 +128,12 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tag_for_pinned_sha).and_return(nil)
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
-          .to receive(:head_commit_for_pinned_ref).and_return("abc123def456")
+          .to receive(:head_commit_for_local_branch).with("HEAD").and_return("abc123def456")
       end
 
       it "falls back to latest commit SHA" do
         expect(latest_release_version).to be_a(String)
+        expect(latest_release_version).to eq("abc123def456")
       end
     end
 
@@ -157,6 +161,55 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
 
       it "returns the latest tagged version using comment metadata" do
         expect(latest_release_version).to be_a(Dependabot::PreCommit::Version)
+      end
+    end
+
+    context "when a bare SHA is subject to a commit-date cooldown" do
+      let(:reference) { "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e" }
+      let(:head_sha) { "aaaa1111bbbb2222cccc3333dddd4444eeee5555" }
+      let(:update_cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "https://github.com/#{dependency_name}",
+          version: nil,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".pre-commit-config.yaml",
+            source: dependency_source
+          }],
+          package_manager: "pre_commit"
+        )
+      end
+
+      before do
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tag_for_pinned_sha).and_return(nil)
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:head_commit_for_local_branch).with("HEAD").and_return(head_sha)
+
+        commit = Sawyer::Resource.new(
+          Sawyer::Agent.new("https://api.github.com"),
+          committer: { date: commit_date }
+        )
+        client = instance_double(Octokit::Client, git_commit: commit)
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(client)
+      end
+
+      context "when the newest commit is younger than the cooldown window" do
+        let(:commit_date) { (Time.now - (2 * 24 * 60 * 60)).utc }
+
+        it "keeps the currently pinned commit" do
+          expect(latest_release_version).to eq(reference)
+        end
+      end
+
+      context "when the newest commit is older than the cooldown window" do
+        let(:commit_date) { (Time.now - (60 * 24 * 60 * 60)).utc }
+
+        it "bumps to the newest commit" do
+          expect(latest_release_version).to eq(head_sha)
+        end
       end
     end
 

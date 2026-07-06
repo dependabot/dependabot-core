@@ -120,8 +120,10 @@ module Dependabot
         def filter_release_with_cooldown(release)
           return release unless cooldown_enabled?
           return release unless cooldown_options
-          # Commit SHA releases have no version ordering to fall back through
-          return release if release_type_sha?
+
+          # A bare SHA tracks raw commits, so cooldown is measured against the
+          # candidate commit's date rather than a version's release date.
+          return filter_sha_release_with_cooldown(release) if release_type_sha?
 
           Dependabot.logger.info("Applying cooldown filter for #{dependency.name}")
 
@@ -131,6 +133,68 @@ module Dependabot
           Dependabot.logger.info("All candidate versions are in cooldown, keeping current version #{current_version}")
           @cooldown_rejected_all = true
           current_version
+        end
+
+        # Holds a bare-SHA bump when the newest commit is younger than the
+        # cooldown window, keeping the currently pinned commit. There is no
+        # intermediate commit to fall back through, so cooldown either allows
+        # the newest commit or keeps the current one.
+        sig do
+          params(release: T.any(Dependabot::Version, String))
+            .returns(T.nilable(T.any(Dependabot::Version, String)))
+        end
+        def filter_sha_release_with_cooldown(release)
+          sha = T.cast(release, String)
+          cur = current_version
+
+          # Already on the newest commit — nothing to hold back.
+          return release if cur && sha == cur.to_s
+
+          commit_date = commit_date_for_sha(sha)
+          # If the commit date can't be determined, don't block the update.
+          return release unless commit_date
+          return release unless release_in_cooldown_period?(commit_date)
+
+          Dependabot.logger.info(
+            "Newest commit #{sha} for #{dependency.name} is within the cooldown window " \
+            "(committed #{commit_date}); keeping current commit"
+          )
+          @cooldown_rejected_all = true
+          cur
+        end
+
+        # Resolves the committer date for a commit SHA via the GitHub git-data
+        # API (a single request, no clone). Returns nil for non-GitHub sources
+        # or on any error so cooldown fails open.
+        sig { params(sha: String).returns(T.nilable(Time)) }
+        def commit_date_for_sha(sha)
+          url = cooldown_source_url
+          return nil unless url
+
+          source = Source.from_url(url)
+          return nil unless source
+          return nil unless source.provider == "github"
+
+          commit = github_commit(source, sha)
+          date = commit&.committer&.date
+          return nil unless date
+
+          date.is_a?(Time) ? date : Time.parse(date.to_s)
+        rescue StandardError => e
+          Dependabot.logger.debug("Error fetching commit date for #{sha}: #{e.message}")
+          nil
+        end
+
+        # Fetches the git-data commit object for a SHA. Typed as untyped because
+        # its attributes live inside a Sawyer::Resource and are read dynamically,
+        # matching how GitHub release attributes are read for cooldown.
+        sig { params(source: Dependabot::Source, sha: String).returns(T.untyped) }
+        def github_commit(source, sha)
+          client = Dependabot::Clients::GithubWithRetries.for_source(
+            source: source,
+            credentials: cooldown_credentials
+          )
+          client.git_commit(source.repo, sha)
         end
 
         sig { returns(T.nilable(Dependabot::PreCommit::Package::PackageDetailsFetcher)) }

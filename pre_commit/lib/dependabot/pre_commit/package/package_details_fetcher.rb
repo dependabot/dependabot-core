@@ -72,15 +72,13 @@ module Dependabot
         def commit_sha_release
           return unless git_commit_checker.pinned_ref_looks_like_commit_sha?
 
-          if latest_version_tag
-            if git_commit_checker.local_tag_for_pinned_sha || version_comment?
-              return T.must(latest_version_tag).fetch(:version)
-            end
+          # A `# frozen:` version comment is the only opt-in signal for tag
+          # tracking (pre-commit's `autoupdate --freeze`). Without it the user is
+          # tracking raw SHAs, so we bump to the newest commit rather than
+          # promoting to a tag — even when the pinned SHA happens to sit on a tag.
+          return T.must(latest_version_tag).fetch(:version) if version_comment? && latest_version_tag
 
-            return latest_commit_for_pinned_ref
-          end
-
-          latest_commit_for_pinned_ref
+          latest_commit_for_default_branch
         end
 
         sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
@@ -189,6 +187,16 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::Version)) }
         def current_version
           @current_version ||= T.let(dependency.numeric_version, T.nilable(Dependabot::Version))
+        end
+
+        sig { returns(T.nilable(String)) }
+        def latest_commit_for_default_branch
+          # A bare SHA tracks raw commits, so the "latest" is the newest commit
+          # on the repo's default branch — the same revision `pre-commit
+          # autoupdate` (without `--freeze`) would resolve to. Resolve it from
+          # the upload-pack advertisement (no clone), falling back to the
+          # container-branch clone logic only if HEAD isn't advertised.
+          git_commit_checker.head_commit_for_local_branch("HEAD") || latest_commit_for_pinned_ref
         end
 
         sig { returns(T.nilable(String)) }

@@ -138,34 +138,6 @@ module Dependabot
         raise NotImplementedError
       end
 
-      sig { returns(T.nilable(String)) }
-      def latest_commit_for_pinned_ref
-        @latest_commit_for_pinned_ref ||= T.let(
-          begin
-            head_commit_for_ref_sha = git_commit_checker.head_commit_for_pinned_ref
-            if head_commit_for_ref_sha
-              head_commit_for_ref_sha
-            else
-              url = T.cast(git_commit_checker.dependency_source_details&.fetch(:url), T.nilable(String))
-              source = T.must(Source.from_url(T.must(url)))
-
-              SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
-                repo_contents_path = File.join(temp_dir, File.basename(source.repo))
-
-                SharedHelpers.run_shell_command("git clone --no-recurse-submodules #{url} #{repo_contents_path}")
-
-                Dir.chdir(repo_contents_path) do
-                  ref = T.cast(git_commit_checker.dependency_source_details&.fetch(:ref), T.nilable(String))
-                  ref_branch = find_container_branch(T.must(ref))
-                  git_commit_checker.head_commit_for_local_branch(ref_branch) if ref_branch
-                end
-              end
-            end
-          end,
-          T.nilable(String)
-        )
-      end
-
       sig { params(source: T.nilable(T::Hash[Symbol, T.untyped])).returns(T.nilable(String)) }
       def updated_ref(source)
         return unless git_commit_checker.git_dependency?
@@ -191,15 +163,12 @@ module Dependabot
       def latest_commit_sha
         new_tag = T.must(latest_version_finder).latest_version_tag
 
-        if new_tag
-          if version_from_comment || git_commit_checker.local_tag_for_pinned_sha
-            return T.cast(new_tag.fetch(:commit_sha), String)
-          end
+        # Only rewrite to a tag's commit when the user opted into tag tracking
+        # via a `# frozen:` comment. A bare SHA (no comment) tracks raw commits.
+        return T.cast(new_tag.fetch(:commit_sha), String) if new_tag && version_from_comment
 
-          return latest_commit_for_pinned_ref
-        end
-
-        # If there's no tag but we have a latest_version (commit SHA), use it
+        # Otherwise use latest_version, which for a bare SHA is the newest commit
+        # on the default branch (or the current SHA when held back by cooldown).
         latest_ver = latest_version
         return latest_ver if latest_ver.is_a?(String)
 
@@ -282,25 +251,6 @@ module Dependabot
           consider_version_branches_pinned: false,
           dependency_source_details: nil
         )
-      end
-
-      sig { params(sha: String).returns(T.nilable(String)) }
-      def find_container_branch(sha)
-        branches_including_ref = SharedHelpers.run_shell_command(
-          "git branch --remotes --contains #{sha}",
-          fingerprint: "git branch --remotes --contains <sha>"
-        ).split("\n").map { |branch| branch.strip.gsub("origin/", "") }
-        return if branches_including_ref.empty?
-
-        current_branch = branches_including_ref.find { |branch| branch.start_with?("HEAD -> ") }
-
-        if current_branch
-          current_branch.delete_prefix("HEAD -> ")
-        elsif branches_including_ref.size > 1
-          raise "Multiple ambiguous branches (#{branches_including_ref.join(', ')}) include #{sha}!"
-        else
-          branches_including_ref.first
-        end
       end
 
       # Additional dependency support methods
