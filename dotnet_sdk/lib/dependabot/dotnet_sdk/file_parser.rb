@@ -78,7 +78,10 @@ module Dependabot
 
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def dotnetsdk
-        DotnetSDK.new(T.must(sdk_version))
+        version = sdk_version
+        return unless version
+
+        DotnetSDK.new(version)
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
