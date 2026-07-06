@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "uri"
 
 require "dependabot/registry_client"
 require "dependabot/bundler/native_helpers"
@@ -153,10 +154,10 @@ module Dependabot
             url = T.let(match[1], T.nilable(String))
             return nil unless url
 
-            host_match = url.match(%r{\Ahttps?://([^/]+)})
-            return nil unless host_match
-
-            T.let(host_match[1], T.nilable(String))
+            URI.parse(url).host
+          rescue URI::InvalidURIError => e
+            Dependabot.logger.warn("Invalid URI in Gemfile global source: #{e.message}")
+            nil
           end
 
           sig { returns(T.nilable(String)) }

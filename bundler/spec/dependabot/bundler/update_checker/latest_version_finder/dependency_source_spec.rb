@@ -114,6 +114,9 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder::Dependen
       end
 
       context "when the Gemfile has a global source directive" do
+        # git_source has `source "https://rubygems.org"` at the top level
+        let(:project_name) { "git_source" }
+
         it "uses the Gemfile global source instead of the private registry" do
           expect(uri).to eq("https://rubygems.org/api/v1/versions/irrelevant.json")
         end

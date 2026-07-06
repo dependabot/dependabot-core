@@ -212,8 +212,7 @@ module Dependabot
           host = credential.fetch("host", nil)
           return nil unless host.is_a?(String) && !host.empty?
 
-          url = "https://#{host}"
-          url.end_with?("/") ? url.chop : url
+          strip_trailing_slash("https://#{host}")
         end
 
         sig { returns(T.nilable(String)) }
@@ -230,6 +229,11 @@ module Dependabot
           url = T.let(match[1], T.nilable(String))
           return nil unless url
 
+          strip_trailing_slash(url)
+        end
+
+        sig { params(url: String).returns(String) }
+        def strip_trailing_slash(url)
           url.end_with?("/") ? url.chop : url
         end
 
@@ -243,7 +247,7 @@ module Dependabot
           url = T.let(first_requirement[:source][:url], T.nilable(String))
           return nil unless url
 
-          url.end_with?("/") ? url.chop : url
+          strip_trailing_slash(url)
         end
 
         sig { params(registry_url: T.nilable(String)).returns(Excon::Response) }
