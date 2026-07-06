@@ -23,10 +23,6 @@ module Dependabot
           PRIVATE_REGISTRY = "private"
           GIT = "git"
           OTHER = "other"
-          # Matches a top-level non-block `source "url"` directive in a Gemfile.
-          # Gems without an explicit per-gem source inherit this global source,
-          # so the replaces-base credential must not override it.
-          GEMFILE_GLOBAL_SOURCE_REGEX = /^\s*source\s+["']([^"']+)["']\s*$/
 
           sig { returns(Dependabot::Dependency) }
           attr_reader :dependency
@@ -156,7 +152,9 @@ module Dependabot
 
             URI.parse(url).host
           rescue URI::InvalidURIError => e
-            Dependabot.logger.warn("Invalid URI in Gemfile global source: #{e.message}")
+            Dependabot.logger.warn(
+              "Invalid URI in Gemfile global source (#{gemfile&.name}): #{e.message}"
+            )
             nil
           end
 

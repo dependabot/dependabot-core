@@ -44,6 +44,10 @@ module Dependabot
         # user's dependency files are broken.
         REGISTRY_METADATA_ERROR_REGEX =
           /error parsing the metadata for the gem (?<gem>\S+) \((?<version>[^)]+)\)/
+        # Matches a top-level, non-block `source "url"` or `source 'url'` directive.
+        # Gems without an explicit per-gem source inherit this global source,
+        # so a replaces-base credential must not override it.
+        GEMFILE_GLOBAL_SOURCE_REGEX = /^\s*source\s+["']([^"']+)["']\s*$/
 
         module BundlerErrorPatterns
           MISSING_AUTH_REGEX = /bundle config set --global (?<source>.*) username:password/

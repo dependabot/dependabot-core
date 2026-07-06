@@ -28,10 +28,6 @@ module Dependabot
         RUBYGEMS = "rubygems"
         GIT = "git"
         OTHER = "other"
-        # Matches a top-level non-block `source "url"` directive in a Gemfile.
-        # Gems without an explicit per-gem source inherit this global source,
-        # so the replaces-base credential must not override it.
-        GEMFILE_GLOBAL_SOURCE_REGEX = /^\s*source\s+["']([^"']+)["']\s*$/
 
         sig do
           params(
