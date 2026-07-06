@@ -177,9 +177,9 @@ module Dependabot
             elsif !version_class.correct?(old_dep.version)
               new_dep.version
             elsif version_class.new(new_dep.version) > version_class.new(old_dep.version)
-              old_dep.version
-            else
               new_dep.version
+            else
+              old_dep.version
             end
           end
 
