@@ -468,13 +468,19 @@ module Dependabot
         end
 
         last_modified = head_response.headers[:last_modified]
-        published_date = last_modified ? Time.parse(last_modified) : nil
+        published_date = begin
+          Time.parse(last_modified) if last_modified
+        rescue ArgumentError => e
+          Dependabot.logger.info(
+            "Invalid Last-Modified header for #{docker_repo_name}:#{tag.name}: #{e.message}"
+          )
+          nil
+        end
 
         # Many registries (notably Docker Hub for multi-arch manifest lists)
-        # omit the Last-Modified header on the manifests endpoint, which would
-        # cause the cooldown check to fail open and propose freshly-pushed tags.
-        # Fall back to the image config blob's "created" timestamp, which
-        # reflects the actual build time, so cooldown is still enforced.
+        # omit the Last-Modified header on the manifests endpoint. When that
+        # happens, fall back to the image config blob's "created" timestamp as a
+        # best-effort proxy so cooldown can still be enforced.
         published_date ||= fetch_image_config_created(tag.name)
 
         Dependabot::Package::PackageRelease.new(
