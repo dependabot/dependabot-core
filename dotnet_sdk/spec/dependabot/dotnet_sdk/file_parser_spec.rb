@@ -111,6 +111,11 @@ RSpec.describe Dependabot::DotnetSdk::FileParser do
       expect(ecosystem.package_manager.name).to eq("dotnet_sdk")
       expect(ecosystem.language).to be_nil
     end
+
+    it "logs a warning" do
+      expect(Dependabot.logger).to receive(:warn).with(/No .NET SDK version found in global.json/)
+      parser.ecosystem
+    end
   end
 
   context "with a global.json containing UTF-8 BOM" do

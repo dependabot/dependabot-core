@@ -4,6 +4,7 @@
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
+require "dependabot/logger"
 require "sorbet-runtime"
 require "dependabot/dotnet_sdk/package_manager"
 require "dependabot/dotnet_sdk/language"
@@ -79,7 +80,10 @@ module Dependabot
       sig { returns(T.nilable(Ecosystem::VersionManager)) }
       def dotnetsdk
         version = sdk_version
-        return unless version
+        unless version
+          Dependabot.logger.warn("No .NET SDK version found in global.json; no update will be performed.")
+          return
+        end
 
         DotnetSDK.new(version)
       end
