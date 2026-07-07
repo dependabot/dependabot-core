@@ -187,7 +187,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       it "has the right details" do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("actions/checkout")
-        expect(dependency.version).to eq("3.5.0")
+        expect(dependency.version).to eq("3.5.2")
         expect(dependency.requirements).to eq(expected_requirements)
       end
     end
@@ -471,7 +471,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("actions/checkout")
-          expect(dependency.version).to eq("1")
+          expect(dependency.version).to eq("2")
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end

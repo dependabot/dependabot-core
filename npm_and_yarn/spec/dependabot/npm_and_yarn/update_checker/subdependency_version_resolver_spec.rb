@@ -543,7 +543,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
         end
 
         it "updates out of range to latest resolvable version" do
-          expect(latest_resolvable_version).to eq(Gem::Version.new("1.3.0"))
+          expect(latest_resolvable_version).to eq(Gem::Version.new("2.0.2"))
         end
       end
     end

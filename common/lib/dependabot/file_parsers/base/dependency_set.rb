@@ -150,12 +150,16 @@ module Dependabot
               (old_dep.subdependency_metadata || []) +
               (new_dep.subdependency_metadata || [])
             ).uniq
+            metadata = old_dep.metadata.merge(new_dep.metadata)
+            # :all_versions is attached by callers after parsing; keeping nested
+            # values here can recursively bloat metadata when we merge duplicates.
+            metadata.delete(:all_versions)
             Dependency.new(
               name: old_dep.name,
               version: version,
               requirements: requirements,
               package_manager: old_dep.package_manager,
-              metadata: old_dep.metadata,
+              metadata: metadata,
               subdependency_metadata: subdependency_metadata
             )
           end

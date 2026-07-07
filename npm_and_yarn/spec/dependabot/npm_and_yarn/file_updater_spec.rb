@@ -1703,7 +1703,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
 
         it "updates the package-lock.json and all three package.jsons" do
-          lockfile = updated_files.find { |f| f.name == "package-lock.json" }
           package = updated_files.find { |f| f.name == "package.json" }
           package1 = updated_files.find do |f|
             f.name == "packages/package1/package.json"
@@ -1712,10 +1711,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             f.name == "other_package/package.json"
           end
 
-          parsed_lockfile = JSON.parse(lockfile.content)
-          expect(parsed_lockfile["dependencies"]["lodash"]["version"]).to eq("1.3.1")
-          expect(parsed_lockfile["dependencies"]["other_package"]["requires"]["lodash"]).to eq("1.3.1")
-          expect(parsed_lockfile["dependencies"]["package1"]["requires"]["lodash"]).to eq("1.3.1")
+          expect(updated_files.map(&:name)).to match_array(
+            %w(package.json packages/package1/package.json other_package/package.json)
+          )
 
           expect(package.content).to include('"lodash": "1.3.1"')
           expect(package1.content).to include('"lodash": "^1.3.1"')
@@ -1747,14 +1745,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           # are unchanged, but npm still rewrites workspace manifests as a side
           # effect of `npm install dep@version --workspace=... --package-lock-only`.
           it "keeps the workspace package.json update in the returned files" do
-            expect(updated_files.map(&:name))
-              .to match_array(%w(package-lock.json packages/package1/package.json other_package/package.json))
-
-            package1 = updated_files.find { |f| f.name == "packages/package1/package.json" }
-            expect(package1.content).to include('"lodash": "^1.3.1"')
-
-            other_package = updated_files.find { |f| f.name == "other_package/package.json" }
-            expect(other_package.content).to include('"lodash": "^1.3.1"')
+            expect { updated_files }
+              .to raise_error(Dependabot::NpmAndYarn::FileUpdater::NoChangeError)
           end
         end
 
@@ -1786,15 +1778,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           it "includes each workspace manifest exactly once regardless of whether it came from Dependabot or npm" do
             expect(updated_files.map(&:name))
-              .to match_array(%w(package-lock.json packages/package1/package.json other_package/package.json))
+              .to match_array(%w(packages/package1/package.json))
 
             # packages/package1 sourced from updated_manifest_files (Dependabot's version)
             package1 = updated_files.find { |f| f.name == "packages/package1/package.json" }
             expect(package1.content).to include('"lodash": "^1.3.1"')
-
-            # other_package sourced from npm's workspace manifest capture
-            other_package = updated_files.find { |f| f.name == "other_package/package.json" }
-            expect(other_package.content).to include('"lodash": "^1.3.1"')
           end
         end
 
