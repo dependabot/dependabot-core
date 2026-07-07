@@ -17,17 +17,24 @@ module Dependabot
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
-        uv_lock || raise(DependabotError, "No uv.lock present; uv graphing requires a lockfile.")
+        uv_lock || fallback_manifest_file ||
+          raise(DependabotError, "No uv.lock or manifest file present for uv graphing.")
       end
 
-      # uv.lock is guaranteed to be present when graphing runs - the
-      # dependabot-api EcosystemFileDetector only routes UV jobs when it sees
-      # a uv.lock in the repo. We override prepare! to parse uv.lock directly
-      # rather than delegating to FileParser, so the graph reflects only what
-      # uv actually resolved (no requirements.txt / pyproject.toml inputs).
+      # When uv.lock is present we parse it directly to build the full
+      # dependency graph. When it is absent (e.g. a directory scoped via a
+      # broad glob that only contains requirements.txt files) we fall back to
+      # the FileParser so that whatever manifests are available still produce
+      # a valid (though relationship-incomplete) snapshot.
       sig { override.void }
       def prepare!
-        raise DependabotError, "No uv.lock present; uv graphing requires a lockfile." unless uv_lock
+        unless uv_lock
+          Dependabot.logger.info(
+            "No uv.lock found; falling back to FileParser for dependency list (subdependency graph unavailable)."
+          )
+          super
+          return
+        end
 
         parsed = TomlRB.parse(T.must(T.must(uv_lock).content))
         packages = T.cast(parsed.fetch("package", []), T::Array[T.untyped])
@@ -56,6 +63,12 @@ module Dependabot
 
       private
 
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def fallback_manifest_file
+        dependency_files.find { |f| f.name == "pyproject.toml" } ||
+          dependency_files.find { |f| f.name.end_with?(".txt", ".in") }
+      end
+
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def fetch_subdependencies(dependency)
         dependency_names = @dependencies.map(&:name)
@@ -65,7 +78,11 @@ module Dependabot
       sig { returns(T::Hash[String, T::Array[String]]) }
       def package_relationships
         @package_relationships ||= T.let(
-          package_relationships_from_lockfile(T.must(T.must(uv_lock).content)),
+          if uv_lock
+            package_relationships_from_lockfile(T.must(T.must(uv_lock).content))
+          else
+            {}
+          end,
           T.nilable(T::Hash[String, T::Array[String]])
         )
       end

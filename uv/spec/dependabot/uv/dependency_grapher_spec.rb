@@ -46,23 +46,87 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
       expect(grapher.relevant_dependency_file).to eql(uv_lock_file)
     end
 
-    context "when uv.lock is missing" do
+    context "when uv.lock is missing but pyproject.toml is present" do
       let(:dependency_files) { [pyproject_toml] }
 
-      it "raises a DependabotError" do
-        expect { grapher.relevant_dependency_file }
-          .to raise_error(Dependabot::DependabotError, /No uv.lock present/)
+      it "returns the pyproject.toml as fallback" do
+        expect(grapher.relevant_dependency_file).to eql(pyproject_toml)
+      end
+    end
+
+    context "when uv.lock is missing and only requirements.txt is present" do
+      let(:requirements_txt) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "requests==2.32.5\n",
+          directory: "/"
+        )
+      end
+      let(:dependency_files) { [requirements_txt] }
+
+      it "returns the requirements.txt as fallback" do
+        expect(grapher.relevant_dependency_file).to eql(requirements_txt)
       end
     end
   end
 
   describe "#resolved_dependencies" do
-    context "when uv.lock is missing" do
+    context "when uv.lock is missing but pyproject.toml is present" do
       let(:dependency_files) { [pyproject_toml] }
 
-      it "raises a DependabotError" do
-        expect { grapher.resolved_dependencies }
-          .to raise_error(Dependabot::DependabotError, /No uv.lock present/)
+      before do
+        allow(parser).to receive(:parse).and_return(
+          [
+            Dependabot::Dependency.new(
+              name: "flask",
+              version: "3.1.3",
+              requirements: [{ requirement: ">=3.1.3", file: "pyproject.toml", source: nil, groups: ["dependencies"] }],
+              package_manager: "uv"
+            )
+          ]
+        )
+      end
+
+      it "falls back to FileParser without raising" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies).not_to be_nil
+        expect(resolved_dependencies).to include("pkg:pypi/flask@3.1.3")
+        expect(grapher.errored_fetching_subdependencies).to be(false)
+      end
+    end
+
+    context "when uv.lock is missing and only requirements.txt files are present" do
+      let(:requirements_txt) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "requests==2.32.5\n",
+          directory: "/"
+        )
+      end
+      let(:dependency_files) { [requirements_txt] }
+
+      before do
+        allow(parser).to receive(:parse).and_return(
+          [
+            Dependabot::Dependency.new(
+              name: "requests",
+              version: "2.32.5",
+              requirements: [{ requirement: "==2.32.5", file: "requirements.txt", source: nil,
+                               groups: ["dependencies"] }],
+              package_manager: "uv"
+            )
+          ]
+        )
+      end
+
+      it "falls back to FileParser and returns dependencies without subdependency relationships" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies).to include("pkg:pypi/requests@2.32.5")
+        dep = resolved_dependencies.fetch("pkg:pypi/requests@2.32.5")
+        expect(dep.dependencies).to eq([])
+        expect(grapher.errored_fetching_subdependencies).to be(false)
       end
     end
 
