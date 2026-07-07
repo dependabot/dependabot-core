@@ -56,6 +56,9 @@ nix:
 npm_and_yarn:
   - *common
   - 'npm_and_yarn/**'
+nub:
+  - *common
+  - 'nub/**'
 nuget:
   - *common
   - 'nuget/**'

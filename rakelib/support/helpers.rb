@@ -43,6 +43,7 @@ class RakeHelpers
       maven/dependabot-maven.gemspec
       nix/dependabot-nix.gemspec
       npm_and_yarn/dependabot-npm_and_yarn.gemspec
+      nub/dependabot-nub.gemspec
       nuget/dependabot-nuget.gemspec
       omnibus/dependabot-omnibus.gemspec
       opentofu/dependabot-opentofu.gemspec

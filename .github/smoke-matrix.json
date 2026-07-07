@@ -95,6 +95,11 @@
     "ecosystem": "npm"
   },
   {
+    "core": "nub",
+    "test": "nub",
+    "ecosystem": "nub"
+  },
+  {
     "core": "nuget",
     "test": "nuget-resolvability",
     "ecosystem": "nuget"
