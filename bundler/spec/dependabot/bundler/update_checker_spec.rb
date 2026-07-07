@@ -418,6 +418,62 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           )
         )
       end
+
+      context "when the Gemfile source defines a cooldown" do
+        let(:dependency_files) { bundler_project_dependency_files("gemfile_with_cooldown") }
+        let(:expected_cooldown_options) do
+          Dependabot::Package::ReleaseCooldownOptions.new(
+            default_days: 14,
+            semver_major_days: 14,
+            semver_minor_days: 14,
+            semver_patch_days: 14,
+            include: [],
+            exclude: []
+          )
+        end
+
+        context "without a dependabot cooldown configured" do
+          let(:update_cooldown) { nil }
+
+          it "derives cooldown_options from the Gemfile source cooldown" do
+            checker.latest_version
+
+            expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
+              hash_including(
+                cooldown_options: an_object_having_attributes(
+                  default_days: expected_cooldown_options.default_days,
+                  semver_major_days: expected_cooldown_options.semver_major_days,
+                  semver_minor_days: expected_cooldown_options.semver_minor_days,
+                  semver_patch_days: expected_cooldown_options.semver_patch_days,
+                  include: expected_cooldown_options.include,
+                  exclude: expected_cooldown_options.exclude
+                )
+              )
+            )
+          end
+        end
+
+        context "with a security advisory" do
+          let(:update_cooldown) { nil }
+          let(:security_advisories) do
+            [
+              Dependabot::SecurityAdvisory.new(
+                dependency_name: dependency_name,
+                package_manager: "bundler",
+                vulnerable_versions: ["<= 1.4.0"]
+              )
+            ]
+          end
+
+          it "does not derive cooldown_options from the Gemfile source cooldown" do
+            checker.latest_version
+
+            expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
+              hash_including(cooldown_options: nil)
+            )
+          end
+        end
+      end
     end
   end
 
