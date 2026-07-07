@@ -6,6 +6,7 @@
 require "dependabot/github_actions/constants"
 require "dependabot/github_actions/file_fetcher"
 require "dependabot/github_actions/file_parser"
+require "dependabot/github_actions/dependency_grapher"
 require "dependabot/github_actions/update_checker"
 require "dependabot/github_actions/file_updater"
 require "dependabot/github_actions/metadata_finder"
