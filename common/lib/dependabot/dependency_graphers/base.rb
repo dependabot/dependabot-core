@@ -20,6 +20,29 @@ module Dependabot
       const :dependencies, T::Array[String]
     end
 
+    # A manifest group is a subset of a directory's dependency files that stands on its own as a valid
+    # parser input, plus the single file that the group's dependencies should be attributed to.
+    #
+    # - `primary` is the attribution target (the file that owns the group's dependencies in the snapshot).
+    # - `files` is everything the parser needs to resolve the group, including the primary and any sibling
+    #   files pulled in only to satisfy cross-references.
+    #
+    # Most ecosystems have exactly one group per directory (a manifest + optional lockfile).
+    #
+    # Ecosystems where multiple independent manifests routinely share a directory override `manifest_groups`
+    # to return one group per independent manifest using ecosystem-specific rules (e.g. Python layered requirements)
+    class ManifestGroup < T::ImmutableStruct
+      const :primary, Dependabot::DependencyFile
+      const :files, T::Array[Dependabot::DependencyFile]
+    end
+
+    # The resolved output for a single manifest group: the file to attribute to, and the dependencies
+    # resolved from that group's files.
+    class ManifestGroupSnapshot < T::ImmutableStruct
+      const :manifest_file, Dependabot::DependencyFile
+      const :resolved_dependencies, T::Hash[String, ResolvedDependency]
+    end
+
     class Base
       extend T::Sig
       extend T::Helpers
@@ -78,7 +101,61 @@ module Dependabot
         end
       end
 
+      # Partitions the parsed directory into one or more manifest groups.
+      #
+      # The default is a single group spanning the whole directory, attributed to `relevant_dependency_file`.
+      #
+      # Ecosystems where multiple independent manifests share a directory should override this to return
+      # one group per manifest.
+      sig { overridable.returns(T::Array[ManifestGroup]) }
+      def manifest_groups
+        [ManifestGroup.new(primary: relevant_dependency_file, files: dependency_files)]
+      end
+
+      # Resolves each manifest group into a snapshot.
+      #
+      # When there is a single group, the common case for most ecosystems, we attribute all resolved dependencies
+      # to the group's primary without further work required.
+      #
+      # When there are multiple groups, we instantiate a new scoped grapher for the group's files and resolve each
+      # independently.
+      sig { returns(T::Array[ManifestGroupSnapshot]) }
+      def manifest_group_snapshots
+        groups = manifest_groups
+
+        if groups.one?
+          group = T.must(groups.first)
+          return [ManifestGroupSnapshot.new(
+            manifest_file: group.primary,
+            resolved_dependencies: resolved_dependencies
+          )]
+        end
+
+        groups.map do |group|
+          ManifestGroupSnapshot.new(
+            manifest_file: group.primary,
+            resolved_dependencies: scoped_grapher(group.files).resolved_dependencies
+          )
+        end
+      end
+
       private
+
+      # Builds a grapher of the same class scoped to a subset of the directory's files, reusing the current
+      # file parser's configuration. Used to resolve a single manifest group in isolation.
+      sig { params(files: T::Array[Dependabot::DependencyFile]).returns(Dependabot::DependencyGraphers::Base) }
+      def scoped_grapher(files)
+        scoped_parser = file_parser.class.new(
+          dependency_files: files,
+          source: file_parser.source,
+          repo_contents_path: file_parser.repo_contents_path,
+          credentials: file_parser.credentials,
+          reject_external_code: file_parser.reject_external_code?,
+          options: file_parser.options
+        )
+
+        self.class.new(file_parser: scoped_parser)
+      end
 
       sig { returns(Dependabot::FileParsers::Base) }
       attr_reader :file_parser
