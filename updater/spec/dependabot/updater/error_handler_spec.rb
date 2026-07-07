@@ -412,6 +412,25 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
       end
     end
 
+    context "with a push rules blocked error" do
+      let(:error) do
+        Dependabot::PushRulesBlocked.new("The request contains invalid or unauthorized changes")
+      end
+
+      it "records the error with the service and logs it out" do
+        expect(mock_service).to receive(:record_update_job_error).with(
+          error_type: "push_rules_blocked",
+          error_details: { message: "The request contains invalid or unauthorized changes" }
+        )
+
+        expect(Dependabot.logger).to receive(:info).with(
+          a_string_starting_with("Handled error whilst processing job:")
+        )
+
+        handle_job_error
+      end
+    end
+
     context "when a blocked version is enforced" do
       let(:error) do
         Dependabot::BlockedDependencyVersion.new(

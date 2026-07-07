@@ -242,7 +242,7 @@ RSpec.describe Dependabot::ApiClient do
       it "raises the correct error" do
         expect do
           client.create_pull_request(dependency_change, base_commit)
-        end.to raise_error(Dependabot::DependencyFileNotSupported)
+        end.to raise_error(Dependabot::PushRulesBlocked)
       end
     end
 
@@ -379,6 +379,28 @@ RSpec.describe Dependabot::ApiClient do
               expect(data["pr-title"]).to eq("PR name")
               expect(data["pr-body"]).to eq("PR message")
             end)
+    end
+
+    context "when API returns a 400 Bad Request with push rules blocked" do
+      let(:body) do
+        <<~ERROR
+          { "errors": [{
+            "status": 400,
+            "title": "Bad Request",
+            "detail": "The request contains invalid or unauthorized changes"}]
+          }
+        ERROR
+      end
+
+      before do
+        stub_request(:post, update_pull_request_url).to_return(status: 400, body: body)
+      end
+
+      it "raises the correct error" do
+        expect do
+          client.update_pull_request(dependency_change, base_commit)
+        end.to raise_error(Dependabot::PushRulesBlocked)
+      end
     end
   end
 

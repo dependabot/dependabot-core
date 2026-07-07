@@ -271,6 +271,11 @@ module Dependabot
         "error-type": "dependency_file_not_supported",
         "error-detail": { message: error.message }
       }
+    when Dependabot::PushRulesBlocked
+      {
+        "error-type": "push_rules_blocked",
+        "error-detail": { message: error.message }
+      }
     when Dependabot::GitDependenciesNotReachable
       {
         "error-type": "git_dependencies_not_reachable",
@@ -693,6 +698,8 @@ module Dependabot
   class DependencyFileNotResolvable < DependabotError; end
 
   class DependencyFileNotSupported < DependabotError; end
+
+  class PushRulesBlocked < DependabotError; end
 
   class DependencyFileContentNotChanged < DependabotError; end
 

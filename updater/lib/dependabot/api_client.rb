@@ -43,8 +43,8 @@ module Dependabot
         api_url = "#{http_client.params[:path]}/update_jobs/#{job_id}/create_pull_request"
         data = create_pull_request_data(dependency_change, base_commit_sha)
         response = http_client.post(path: api_url, body: { data: data }.to_json)
-        if response.status >= 400 && dependency_file_not_supported_error?(response.body.to_s)
-          raise Dependabot::DependencyFileNotSupported, response.body.to_s
+        if response.status >= 400 && push_rules_blocked_error?(response.body.to_s)
+          raise Dependabot::PushRulesBlocked, response.body.to_s
         elsif response.status >= 400
           raise ApiError, response.body
         end
@@ -76,7 +76,11 @@ module Dependabot
           "pr-body": dependency_change.pr_message.pr_message
         }
         response = http_client.post(path: api_url, body: { data: data }.to_json)
-        raise ApiError, response.body if response.status >= 400
+        if response.status >= 400 && push_rules_blocked_error?(response.body.to_s)
+          raise Dependabot::PushRulesBlocked, response.body.to_s
+        elsif response.status >= 400
+          raise ApiError, response.body
+        end
       rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
         retry_count += 1
@@ -532,7 +536,7 @@ module Dependabot
     end
 
     sig { params(response: String).returns(T::Boolean) }
-    def dependency_file_not_supported_error?(response)
+    def push_rules_blocked_error?(response)
       body = JSON.parse(response)
 
       return false unless body.is_a?(Hash)
