@@ -1741,10 +1741,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             }]
           end
 
-          # This scenario also covers the lockfile-only strategy: requirements
-          # are unchanged, but npm still rewrites workspace manifests as a side
-          # effect of `npm install dep@version --workspace=... --package-lock-only`.
-          it "keeps the workspace package.json update in the returned files" do
+          # This scenario covers lockfile-only behavior with unchanged
+          # requirements: no dependency files are considered updated, so
+          # `updated_dependency_files` raises NoChangeError.
+          it "raises NoChangeError when requirements remain unchanged" do
             expect { updated_files }
               .to raise_error(Dependabot::NpmAndYarn::FileUpdater::NoChangeError)
           end
