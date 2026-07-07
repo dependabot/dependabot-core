@@ -36,5 +36,8 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 COPY --chown=dependabot:dependabot nub/helpers /opt/nub/helpers
 RUN bash /opt/nub/helpers/build
 
-COPY --chown=dependabot:dependabot --parents nub common $DEPENDABOT_HOME/
+# nub depends on dependabot-npm_and_yarn (nub.lock is pnpm-lock v9, so nub reuses its
+# pnpm-format Ruby classes). The updater-core base only stubs sibling ecosystems, so the
+# full npm_and_yarn lib must be copied in — same pattern as pre_commit/Dockerfile.
+COPY --chown=dependabot:dependabot --parents nub npm_and_yarn common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
