@@ -20,14 +20,14 @@ module Dependabot
         lambda do |name|
           /^(\s{2,4}-\s+[a-zA-Z0-9_.-]+::)(#{Regexp.escape(name)})#{VERSION_CONSTRAINT_PATTERN}(\s*)(#.*)?$/
         end,
-        T.proc.params(arg0: T.untyped).returns(Regexp)
+        T.proc.params(arg0: String).returns(Regexp)
       )
 
       CONDA_SIMPLE_PATTERN = T.let(
         lambda do |name|
           /^(\s{2,4}-\s+)(#{Regexp.escape(name)})#{VERSION_CONSTRAINT_PATTERN}(\s*)(#.*)?$/
         end,
-        T.proc.params(arg0: T.untyped).returns(Regexp)
+        T.proc.params(arg0: String).returns(Regexp)
       )
 
       # Bracket syntax: package[version='>=1.0']
@@ -35,21 +35,21 @@ module Dependabot
         lambda do |name|
           /^(\s{2,4}-\s+)(#{Regexp.escape(name)})(\[version=['"])[^'"]+(['"]\])(\s*)(#.*)?$/
         end,
-        T.proc.params(arg0: T.untyped).returns(Regexp)
+        T.proc.params(arg0: String).returns(Regexp)
       )
 
       CONDA_CHANNEL_BRACKET_PATTERN = T.let(
         lambda do |name|
           /^(\s{2,4}-\s+[a-zA-Z0-9_.-]+::)(#{Regexp.escape(name)})(\[version=['"])[^'"]+(['"]\])(\s*)(#.*)?$/
         end,
-        T.proc.params(arg0: T.untyped).returns(Regexp)
+        T.proc.params(arg0: String).returns(Regexp)
       )
 
       PIP_PATTERN = T.let(
         lambda do |name|
           /^(\s{5,}-\s+)(#{Regexp.escape(name)})#{VERSION_CONSTRAINT_PATTERN}(\s*)(#.*)?$/
         end,
-        T.proc.params(arg0: T.untyped).returns(Regexp)
+        T.proc.params(arg0: String).returns(Regexp)
       )
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
@@ -129,7 +129,7 @@ module Dependabot
         params(
           content: String,
           dependency: Dependabot::Dependency
-        ).returns(T::Hash[Symbol, T.untyped])
+        ).returns(T::Hash[Symbol, T.anything])
       end
       def update_dependency_in_content(content, dependency)
         return { updated: false, content: content, not_found: false } unless dependency.version
@@ -150,7 +150,7 @@ module Dependabot
         params(
           content: String,
           dependency: Dependabot::Dependency
-        ).returns(T::Hash[Symbol, T.untyped])
+        ).returns(T::Hash[Symbol, T.anything])
       end
       def update_conda_dependency_in_content(content, dependency)
         # Try standard patterns first (most common)
@@ -202,7 +202,7 @@ module Dependabot
         params(
           content: String,
           dependency: Dependabot::Dependency
-        ).returns(T::Hash[Symbol, T.untyped])
+        ).returns(T::Hash[Symbol, T.anything])
       end
       def update_pip_dependency_in_content(content, dependency)
         pip_pattern = PIP_PATTERN.call(dependency.name)
