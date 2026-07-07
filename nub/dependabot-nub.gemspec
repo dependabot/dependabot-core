@@ -29,6 +29,9 @@ Gem::Specification.new do |spec|
   spec.files        = []
 
   spec.add_dependency "dependabot-common", Dependabot::VERSION
+  # nub.lock is byte-compatible with pnpm-lock v9, so nub reuses npm_and_yarn's
+  # pnpm-format classes (aliased/subclassed) rather than re-cloning them.
+  spec.add_dependency "dependabot-npm_and_yarn", Dependabot::VERSION
 
   common_gemspec.development_dependencies.each do |dep|
     spec.add_development_dependency dep.name, *dep.requirement.as_list
