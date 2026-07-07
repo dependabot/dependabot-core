@@ -1089,6 +1089,49 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
     end
   end
 
+  # Plain pip (no pip-compile *.in files): a directory with a canonical requirements.txt alongside a
+  # peer dev-requirements.txt. Each is its own manifest by name, so layering must emit one snapshot per
+  # file rather than collapsing dev-requirements.txt onto requirements.txt (the alphabetically-first
+  # *.txt). This is the exact case that the dependency-snapshots-api convergence must stop collapsing.
+  describe "attributing dependencies for a plain-pip directory with peer requirements files (no .in)" do
+    let(:app_requirements_txt) do
+      Dependabot::DependencyFile.new(
+        name: "requirements.txt",
+        content: "flask==3.0.0\n",
+        directory: "/"
+      )
+    end
+
+    let(:dev_requirements_txt) do
+      Dependabot::DependencyFile.new(
+        name: "dev-requirements.txt",
+        content: "pytest==8.3.3\n",
+        directory: "/"
+      )
+    end
+
+    # Ordered alphabetically, exactly as the GitHub API returns the directory contents, so
+    # dev-requirements.txt precedes requirements.txt (the pre-fix collapse target).
+    let(:dependency_files) { [dev_requirements_txt, app_requirements_txt] }
+
+    def resolved_package_names(snapshot)
+      snapshot.resolved_dependencies.each_key.map { |purl| purl[%r{\Apkg:pypi/([^@]+)}, 1] }
+    end
+
+    it "produces one manifest group per requirements file" do
+      manifest_names = grapher.manifest_group_snapshots.map { |snapshot| snapshot.manifest_file.name }
+
+      expect(manifest_names).to contain_exactly("requirements.txt", "dev-requirements.txt")
+    end
+
+    it "attributes each dependency only to the file that declares it (no collapse)" do
+      snapshots = grapher.manifest_group_snapshots.to_h { |snapshot| [snapshot.manifest_file.name, snapshot] }
+
+      expect(resolved_package_names(snapshots.fetch("requirements.txt"))).to contain_exactly("flask")
+      expect(resolved_package_names(snapshots.fetch("dev-requirements.txt"))).to contain_exactly("pytest")
+    end
+  end
+
   describe "#manifest_group_snapshots for package managers that do not support layering" do
     context "when the directory is a Poetry project" do
       let(:poetry_lock_file) do
