@@ -1061,24 +1061,114 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       )
     end
 
-    it "collapses the whole directory onto the first .txt file (bootstrap-requirements.txt)" do
-      expect(grapher.relevant_dependency_file.name).to eq("bootstrap-requirements.txt")
+    it "produces one manifest group per requirements layer" do
+      manifest_names = grapher.manifest_group_snapshots.map { |snapshot| snapshot.manifest_file.name }
+
+      expect(manifest_names).to contain_exactly(
+        "bootstrap-requirements.txt",
+        "requirements.txt",
+        "test-requirements.txt"
+      )
     end
 
-    # This assertion currently FAILS: starlette and pytest are attributed to bootstrap-requirements.txt,
-    # which does not declare them. Each dependency should be attributed to the manifest it came from.
-    it "attributes every resolved dependency to a file that actually declares it" do
-      relevant_file = grapher.relevant_dependency_file
-      declared_names = declared_package_names(relevant_file)
+    it "attributes every resolved dependency to a manifest that actually declares it" do
+      grapher.manifest_group_snapshots.each do |snapshot|
+        declared_names = declared_package_names(snapshot.manifest_file)
 
-      resolved_names = grapher.resolved_dependencies.each_key.map do |purl|
-        purl[%r{\Apkg:pypi/([^@]+)}, 1]
+        resolved_names = snapshot.resolved_dependencies.each_key.map do |purl|
+          purl[%r{\Apkg:pypi/([^@]+)}, 1]
+        end
+
+        undeclared = resolved_names - declared_names
+
+        expect(undeclared).to be_empty,
+                              "expected #{snapshot.manifest_file.name} to declare every snapshotted " \
+                              "dependency, but it declares #{declared_names.inspect} while the snapshot " \
+                              "additionally contains #{undeclared.inspect}"
+      end
+    end
+  end
+
+  # Plain pip (no pip-compile *.in files): a directory with a canonical requirements.txt alongside a
+  # peer dev-requirements.txt. Each is its own manifest by name, so layering must emit one snapshot per
+  # file rather than collapsing dev-requirements.txt onto requirements.txt (the alphabetically-first
+  # *.txt). This is the exact case that the dependency-snapshots-api convergence must stop collapsing.
+  describe "attributing dependencies for a plain-pip directory with peer requirements files (no .in)" do
+    let(:app_requirements_txt) do
+      Dependabot::DependencyFile.new(
+        name: "requirements.txt",
+        content: "flask==3.0.0\n",
+        directory: "/"
+      )
+    end
+
+    let(:dev_requirements_txt) do
+      Dependabot::DependencyFile.new(
+        name: "dev-requirements.txt",
+        content: "pytest==8.3.3\n",
+        directory: "/"
+      )
+    end
+
+    # Ordered alphabetically, exactly as the GitHub API returns the directory contents, so
+    # dev-requirements.txt precedes requirements.txt (the pre-fix collapse target).
+    let(:dependency_files) { [dev_requirements_txt, app_requirements_txt] }
+
+    def resolved_package_names(snapshot)
+      snapshot.resolved_dependencies.each_key.map { |purl| purl[%r{\Apkg:pypi/([^@]+)}, 1] }
+    end
+
+    it "produces one manifest group per requirements file" do
+      manifest_names = grapher.manifest_group_snapshots.map { |snapshot| snapshot.manifest_file.name }
+
+      expect(manifest_names).to contain_exactly("requirements.txt", "dev-requirements.txt")
+    end
+
+    it "attributes each dependency only to the file that declares it (no collapse)" do
+      snapshots = grapher.manifest_group_snapshots.to_h { |snapshot| [snapshot.manifest_file.name, snapshot] }
+
+      expect(resolved_package_names(snapshots.fetch("requirements.txt"))).to contain_exactly("flask")
+      expect(resolved_package_names(snapshots.fetch("dev-requirements.txt"))).to contain_exactly("pytest")
+    end
+  end
+
+  describe "#manifest_group_snapshots for package managers that do not support layering" do
+    context "when the directory is a Poetry project" do
+      let(:poetry_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("dependency_grapher", "poetry_lock_with_relationships.lock"),
+          directory: "/"
+        )
       end
 
-      expect(resolved_names).to all(be_in(declared_names)),
-                                "expected #{relevant_file.name} to declare every snapshotted dependency, " \
-                                "but it only declares #{declared_names.inspect} while the snapshot contains " \
-                                "#{resolved_names.inspect}"
+      let(:dependency_files) { [pyproject_toml, poetry_lock_file] }
+
+      it "emits a single manifest group attributed to poetry.lock" do
+        snapshots = grapher.manifest_group_snapshots
+
+        expect(snapshots.length).to eq(1)
+        expect(snapshots.first.manifest_file).to eql(poetry_lock_file)
+      end
+    end
+
+    context "when the directory is a Pipenv project" do
+      let(:pipfile_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "Pipfile.lock",
+          content: fixture("dependency_grapher", "pipfile_lock_with_dependencies.json"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pipfile, pipfile_lock_file] }
+
+      it "emits a single manifest group attributed to Pipfile.lock" do
+        snapshots = grapher.manifest_group_snapshots
+
+        expect(snapshots.length).to eq(1)
+        expect(snapshots.first.manifest_file).to eql(pipfile_lock_file)
+      end
     end
   end
 end
