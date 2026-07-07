@@ -56,7 +56,7 @@ RSpec/AnyInstance:
     - "updater/spec/dependabot/dependency_change_builder_spec.rb"
     - "updater/spec/dependabot/file_fetcher_command_spec.rb"
 
-# Offense count: 1642
+# Offense count: 1613
 # Configuration parameters: CountAsOne.
 RSpec/ExampleLength:
   Max: 98
@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 1608
+# Offense count: 1579
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bazel/lib/dependabot/bazel/file_fetcher.rb"
@@ -309,14 +309,6 @@ Sorbet/ForbidTUntyped:
     - "composer/lib/dependabot/composer/metadata_finder.rb"
     - "composer/lib/dependabot/composer/package/package_details_fetcher.rb"
     - "composer/lib/dependabot/composer/update_checker/version_resolver.rb"
-    - "conda/lib/dependabot/conda/conda_registry_client.rb"
-    - "conda/lib/dependabot/conda/file_fetcher.rb"
-    - "conda/lib/dependabot/conda/file_parser.rb"
-    - "conda/lib/dependabot/conda/file_updater.rb"
-    - "conda/lib/dependabot/conda/requirement.rb"
-    - "conda/lib/dependabot/conda/update_checker.rb"
-    - "conda/lib/dependabot/conda/update_checker/latest_version_finder.rb"
-    - "conda/lib/dependabot/conda/version.rb"
     - "deno/lib/dependabot/deno/file_fetcher.rb"
     - "deno/lib/dependabot/deno/file_parser.rb"
     - "deno/lib/dependabot/deno/file_updater/manifest_updater.rb"
