@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base"
+require "dependabot/nub/nub_package_manager"
 require "dependabot/nub/native_helpers"
 require "dependabot/shared_helpers"
 
