@@ -3,7 +3,7 @@
 
 require "bundler/endpoint_specification"
 
-# Bundler 4 parses the metadata a registry's compact index (`/info/<gem>`)
+# Bundler parses the metadata a registry's compact index (`/info/<gem>`)
 # returns per gem version. Its guard is `next unless v`, but an empty array
 # `[]` is truthy, so for an empty `checksum` it calls `Checksum.from_api(nil)`
 # -> `nil.match?(...)` and raises `Bundler::GemspecError` ("There was an error
