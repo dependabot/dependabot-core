@@ -46,7 +46,7 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
       attr_reader :update_cooldown
 
-      sig { returns(T::Hash[Symbol, T.untyped]) }
+      sig { returns(T::Hash[Symbol, T.anything]) }
       attr_reader :options
 
       sig do
@@ -61,7 +61,7 @@ module Dependabot
           requirements_update_strategy: T.nilable(Dependabot::RequirementsUpdateStrategy),
           dependency_group: T.nilable(Dependabot::DependencyGroup),
           update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
-          options: T::Hash[Symbol, T.untyped]
+          options: T::Hash[Symbol, T.anything]
         )
           .void
       end
@@ -233,7 +233,7 @@ module Dependabot
       # instances are returned as-is; plain hashes are wrapped. Re-wrapping
       # would produce a value-equal copy, so skipping it avoids needless
       # allocations.
-      sig { params(requirements: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Array[Dependabot::DependencyRequirement]) }
+      sig { params(requirements: T::Array[T::Hash[Symbol, T.anything]]).returns(T::Array[Dependabot::DependencyRequirement]) }
       def wrap_requirements(requirements)
         requirements.map do |requirement|
           requirement.is_a?(Dependabot::DependencyRequirement) ? requirement : Dependabot::DependencyRequirement.create(requirement)
@@ -406,7 +406,7 @@ module Dependabot
           version_class.correct?(latest_version.to_s)) || false
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def changed_requirements
         (updated_requirements - dependency.requirements)
       end

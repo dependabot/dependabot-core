@@ -18,7 +18,6 @@ module Dependabot
 
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_resolver"
-      require_relative "update_checker/latest_version_resolver"
       require_relative "update_checker/xcode_version_resolver"
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
@@ -182,14 +181,9 @@ module Dependabot
         )
       end
 
-      sig { returns(LatestVersionResolver) }
-      def cooldown_check_version_resolver_for
-        LatestVersionResolver.new(
-          dependency: dependency,
-          credentials: credentials,
-          cooldown_options: update_cooldown,
-          git_commit_checker: git_commit_checker
-        )
+      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def latest_version_tag
+        git_commit_checker.local_tag_for_latest_version(update_cooldown)
       end
 
       sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
@@ -260,11 +254,6 @@ module Dependabot
           ),
           T.nilable(Dependabot::GitCommitChecker)
         )
-      end
-
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
-      def latest_version_tag
-        cooldown_check_version_resolver_for.latest_version_tag
       end
 
       sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }

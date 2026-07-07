@@ -97,10 +97,10 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     attr_reader :signature_key
 
-    sig { returns(T::Hash[Symbol, T.untyped]) }
+    sig { returns(T::Hash[Symbol, T.anything]) }
     attr_reader :commit_message_options
 
-    sig { returns(T::Hash[String, String]) }
+    sig { returns(T::Hash[String, T::Array[T::Hash[String, String]]]) }
     attr_reader :vulnerabilities_fixed
 
     AzureReviewers = T.type_alias { T.nilable(T::Array[String]) }
@@ -132,7 +132,7 @@ module Dependabot
     sig { returns(T.nilable(T::Hash[String, String])) }
     attr_reader :custom_headers
 
-    sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+    sig { returns(T.nilable(T::Hash[Symbol, T.anything])) }
     attr_reader :provider_metadata
 
     sig { returns(T.nilable(Dependabot::DependencyGroup)) }
@@ -156,8 +156,8 @@ module Dependabot
         custom_labels: T.nilable(T::Array[String]),
         author_details: T.nilable(T::Hash[Symbol, String]),
         signature_key: T.nilable(String),
-        commit_message_options: T::Hash[Symbol, T.untyped],
-        vulnerabilities_fixed: T::Hash[String, String],
+        commit_message_options: T::Hash[Symbol, T.anything],
+        vulnerabilities_fixed: T::Hash[String, T::Array[T::Hash[String, String]]],
         reviewers: Reviewers,
         assignees: T.nilable(T.any(T::Array[String], T::Array[Integer])),
         milestone: T.nilable(T.any(T::Array[String], Integer)),
@@ -169,7 +169,7 @@ module Dependabot
         github_redirection_service: String,
         custom_headers: T.nilable(T::Hash[String, String]),
         require_up_to_date_base: T::Boolean,
-        provider_metadata: T.nilable(T::Hash[Symbol, T.untyped]),
+        provider_metadata: T.nilable(T::Hash[Symbol, T.anything]),
         message: T.nilable(
           T.any(Dependabot::PullRequestCreator::Message, Dependabot::PullRequestCreator::MessageBuilder)
         ),
@@ -253,7 +253,7 @@ module Dependabot
     # TODO: This returns client-specific objects.
     # We should create a standard interface (`Dependabot::PullRequest`) and
     # then convert to that
-    sig { returns(T.untyped) }
+    sig { returns(T.anything) }
     def create
       case source.provider
       when "github" then github_creator.create
