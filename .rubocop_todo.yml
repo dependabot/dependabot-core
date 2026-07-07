@@ -239,12 +239,9 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 1531
+# Offense count: 1499
 Sorbet/ForbidTUntyped:
   Exclude:
-    - "bazel/lib/dependabot/bazel/file_fetcher.rb"
-    - "bazel/lib/dependabot/bazel/file_parser/starlark_parser.rb"
-    - "bazel/lib/dependabot/bazel/update_checker/registry_client.rb"
     - "bun/lib/dependabot/bun.rb"
     - "bun/lib/dependabot/bun/dependency_files_filterer.rb"
     - "bun/lib/dependabot/bun/file_fetcher.rb"
@@ -333,10 +330,6 @@ Sorbet/ForbidTUntyped:
     - "gradle/lib/dependabot/gradle/update_checker/multi_dependency_updater.rb"
     - "gradle/lib/dependabot/gradle/update_checker/version_finder.rb"
     - "gradle/lib/dependabot/gradle/version.rb"
-    - "helm/lib/dependabot/helm/file_parser.rb"
-    - "helm/lib/dependabot/helm/file_updater/chart_updater.rb"
-    - "helm/lib/dependabot/helm/update_checker.rb"
-    - "helm/lib/dependabot/helm/update_checker/latest_version_resolver.rb"
     - "hex/lib/dependabot/hex/credential_helpers.rb"
     - "hex/lib/dependabot/hex/file_parser.rb"
     - "hex/lib/dependabot/hex/metadata_finder.rb"
