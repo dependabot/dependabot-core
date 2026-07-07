@@ -70,8 +70,6 @@ module Dependabot
               "BUNDLE_PATH" => File.join(Dependabot::Utils::BUMP_TMP_DIR_PATH, ".bundle"),
               # Set GEM_HOME to where the proper version of Bundler is installed
               "GEM_HOME" => File.join(helpers_path, ".bundle"),
-              # Disable Bundler's cooldown feature (introduced in Bundler 4.0.13) so
-              # that Gemfile-defined per-source cooldowns do not block Dependabot updates.
               "BUNDLE_COOLDOWN" => "0"
             }
           )
