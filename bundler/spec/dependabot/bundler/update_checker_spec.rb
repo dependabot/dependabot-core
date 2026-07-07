@@ -453,6 +453,36 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           end
         end
 
+        context "with a dependabot cooldown configured" do
+          let(:update_cooldown) do
+            Dependabot::Package::ReleaseCooldownOptions.new(
+              default_days: 7,
+              semver_major_days: 30,
+              semver_minor_days: 10,
+              semver_patch_days: 3,
+              include: ["business"],
+              exclude: ["statesman"]
+            )
+          end
+
+          it "uses the maximum cooldown days per tier while preserving include and exclude" do
+            checker.latest_version
+
+            expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
+              hash_including(
+                cooldown_options: an_object_having_attributes(
+                  default_days: 14,
+                  semver_major_days: 30,
+                  semver_minor_days: 14,
+                  semver_patch_days: 14,
+                  include: ["business"],
+                  exclude: ["statesman"]
+                )
+              )
+            )
+          end
+        end
+
         context "with a security advisory" do
           let(:update_cooldown) { nil }
           let(:security_advisories) do

@@ -20,7 +20,7 @@ module Dependabot
       extend T::Sig
 
       SOURCE_COOLDOWN_REGEX =
-        %r{^\s*source\s*(?:\(\s*)?["'][^"']+["']\s*,[^\n#]*?\bcooldown:\s*(\d+)}.freeze
+        %r{^\s*source\s*(?:\(\s*)?["'][^"']+["']\s*,[^\n#]*?\bcooldown:\s*(\d+)}
 
       sig do
         params(
