@@ -465,7 +465,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             )
           end
 
-          it "uses the maximum cooldown days per tier while preserving include and exclude" do
+          it "uses the maximum default cooldown while preserving semver tiers and include/exclude" do
             checker.latest_version
 
             expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
@@ -473,8 +473,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 cooldown_options: an_object_having_attributes(
                   default_days: 14,
                   semver_major_days: 30,
-                  semver_minor_days: 14,
-                  semver_patch_days: 14,
+                  semver_minor_days: 10,
+                  semver_patch_days: 3,
                   include: ["business"],
                   exclude: ["statesman"]
                 )

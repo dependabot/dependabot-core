@@ -183,9 +183,9 @@ module Dependabot
           else
             Dependabot::Package::ReleaseCooldownOptions.new(
               default_days: [update_cooldown.default_days, bundle_cooldown_days].max,
-              semver_major_days: [update_cooldown.semver_major_days, bundle_cooldown_days].max,
-              semver_minor_days: [update_cooldown.semver_minor_days, bundle_cooldown_days].max,
-              semver_patch_days: [update_cooldown.semver_patch_days, bundle_cooldown_days].max,
+              semver_major_days: update_cooldown.semver_major_days,
+              semver_minor_days: update_cooldown.semver_minor_days,
+              semver_patch_days: update_cooldown.semver_patch_days,
               include: update_cooldown.include.to_a,
               exclude: update_cooldown.exclude.to_a
             )
