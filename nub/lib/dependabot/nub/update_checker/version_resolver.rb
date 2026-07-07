@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "json"
 require "sorbet-runtime"
 
 require "dependabot/errors"
@@ -634,19 +635,38 @@ module Dependabot
           ).returns(T.untyped)
         end
         def run_nub_checker(path:, version:)
-          # TODO(nub-grammar): nub is pnpm-compatible and rejects `update <pkg>@<pinned-version>`
-          # ("not supported by `update` — use `--latest`/`<pkg>@latest`"). This inherited-from-bun
-          # peer-dependency probe needs re-grounding against nub's grammar: pin the target version
-          # into package.json and re-resolve with `nub install --lockfile-only`, then classify the
-          # resolution failure. Requires the dependabot dev env to validate the peer-dep error
-          # extraction, so it is left as-is (documented) pending that pass.
+          # nub is pnpm-compatible and rejects `update <pkg>@<pinned-version>`, so pin the candidate
+          # version into the manifests and re-resolve lockfile-only — a peer-dependency conflict then
+          # surfaces as a subprocess failure the caller classifies (same pin approach the FileUpdater
+          # uses; nub has no `install <pkg>@<ver>` / `update <pkg>@<ver>` add-a-specific-version form).
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
+              pin_dependency_version_in_manifests(version)
               Helpers.run_nub_command(
-                "update #{dependency.name}@#{version} --lockfile-only --ignore-scripts",
-                fingerprint: "update <dependency_name>@<version> --lockfile-only --ignore-scripts"
+                "install --lockfile-only --ignore-scripts",
+                fingerprint: "install --lockfile-only --ignore-scripts"
               )
             end
+          end
+        end
+
+        sig { params(version: T.nilable(T.any(String, Gem::Version))).void }
+        def pin_dependency_version_in_manifests(version)
+          return unless version
+
+          Dir.glob("**/package.json").each do |manifest|
+            parsed = JSON.parse(File.read(manifest))
+            changed = false
+
+            %w(dependencies devDependencies optionalDependencies peerDependencies).each do |group|
+              group_deps = parsed[group]
+              next unless group_deps.is_a?(Hash) && group_deps.key?(dependency.name)
+
+              group_deps[dependency.name] = version.to_s
+              changed = true
+            end
+
+            File.write(manifest, JSON.pretty_generate(parsed)) if changed
           end
         end
 
