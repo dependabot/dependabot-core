@@ -594,9 +594,26 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
               expect(error.message)
                 .to eq(
                   "Invalid gem metadata returned for failbot (2.0.1) " \
-                  "by the source: rubygems.pkg.github.com"
+                  "by the source: rubygems.pkg.github.com " \
+                  "(Gem::Requirement::BadRequirementError; " \
+                  "Illformed requirement [\">= notaruby\"]; " \
+                  "The metadata was [[\"checksum\", [\"abc123\"]], [\"ruby\", [\">= notaruby\"]]])"
                 )
             end
+        end
+
+        it "logs the original Bundler error so the offending gem is diagnosable" do
+          allow(Dependabot.logger).to receive(:error)
+
+          expect { finder.latest_version_details }
+            .to raise_error(Dependabot::PrivateSourceBadResponse)
+
+          expect(Dependabot.logger)
+            .to have_received(:error)
+            .with(a_string_including(
+                    "unparseable compact-index metadata for failbot (2.0.1)",
+                    "Illformed requirement [\">= notaruby\"]"
+                  ))
         end
       end
 
