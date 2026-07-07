@@ -493,7 +493,7 @@ module Dependabot
         last_modified = headers[:last_modified]
         published_date = begin
           Time.parse(last_modified) if last_modified
-        rescue ArgumentError => e
+        rescue ArgumentError, TypeError => e
           Dependabot.logger.info(
             "Invalid Last-Modified header for #{docker_repo_name}:#{tag_name}: #{e.message}"
           )
