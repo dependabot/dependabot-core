@@ -49,7 +49,7 @@ module Dependabot
             end
           {
             file: requirement[:file],
-            requirement: updated_requirement&.to_s,
+            requirement: updated_requirement&.to_s || requirement[:requirement],
             groups: requirement[:groups],
             source: requirement[:source]
           }

@@ -251,6 +251,38 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "when a gradle.properties file is present" do
+      let(:gradle_properties) do
+        Dependabot::DependencyFile.new(
+          name: "gradle.properties",
+          directory: "/",
+          content: "GROUP=com.example\nVERSION=1.0.0\n"
+        )
+      end
+
+      let(:dependency_files) do
+        [root_settings, root_buildfile, root_lockfile, gradle_properties]
+      end
+
+      let(:observed_properties) { [] }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+          properties_path = File.join(cwd, "gradle.properties")
+          observed_properties << File.read(properties_path) if File.exist?(properties_path)
+          File.write(File.join(cwd, "gradle.lockfile"), "# updated lockfile\n")
+        end
+      end
+
+      it "preserves existing gradle.properties content and appends proxy settings" do
+        lockfile_updater.update_lockfiles(root_buildfile)
+
+        expect(observed_properties.last).to include("GROUP=com.example")
+        expect(observed_properties.last).to include("VERSION=1.0.0")
+        expect(observed_properties.last).to include("systemProp.http.proxyHost=")
+      end
+    end
+
     context "when files have a non-root source directory" do
       let(:subdir_settings) do
         Dependabot::DependencyFile.new(

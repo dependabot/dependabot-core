@@ -73,15 +73,20 @@ module Dependabot
 
           pyproject_object = TomlRB.parse(T.must(pyproject).content)
 
-          # Check for PEP621 requires-python
-          pep621_python = pyproject_object.dig("project", "requires-python")
-          return pep621_python if pep621_python
-
-          # Fallback to Poetry configuration
+          # Check for PEP621 requires-python, falling back to Poetry configuration.
           poetry_object = pyproject_object.dig("tool", "poetry")
-
-          poetry_object&.dig("dependencies", "python") ||
+          value =
+            pyproject_object.dig("project", "requires-python") ||
+            poetry_object&.dig("dependencies", "python") ||
             poetry_object&.dig("dev-dependencies", "python")
+
+          # A manifest can declare the python constraint as a non-string (e.g. an
+          # unquoted TOML float `3.12`, or an array/inline-table for multiple
+          # constraints). Coerce scalars to a String and ignore unsupported shapes.
+          case value
+          when String then value
+          when Numeric then value.to_s
+          end
         end
 
         sig { returns(T.nilable(String)) }
