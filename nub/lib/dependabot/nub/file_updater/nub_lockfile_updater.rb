@@ -7,6 +7,7 @@ require "sorbet-runtime"
 require "dependabot/nub/helpers"
 require "dependabot/nub/package/registry_finder"
 require "dependabot/nub/registry_parser"
+require "dependabot/npm_and_yarn/file_updater/pnpm_lockfile_updater"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -149,10 +150,20 @@ module Dependabot
             ).parse
         end
 
-        sig { params(error: Dependabot::DependabotError, _nub_lock: Dependabot::DependencyFile).returns(T.noreturn) }
+        sig do
+          params(error: SharedHelpers::HelperSubprocessFailed, _nub_lock: Dependabot::DependencyFile)
+            .returns(T.noreturn)
+        end
         def handle_nub_lock_updater_error(error, _nub_lock)
-          error_message = error.message
+          # nub.lock is pnpm-lock v9 and nub surfaces pnpm-format engine errors, so map them
+          # through npm_and_yarn's pnpm handler (duplicates, no-versions, ECONNRESET, ...) before
+          # falling back to nub's own registry/network patterns below.
+          Dependabot::NpmAndYarn::PnpmErrorHandler.new(
+            dependencies: dependencies,
+            dependency_files: dependency_files
+          ).handle_pnpm_error(error)
 
+          error_message = error.message
           ERR_PATTERNS.each do |pattern, error_class|
             raise error_class, error_message if error_message.match?(pattern)
           end

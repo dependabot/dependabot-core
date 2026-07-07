@@ -3,8 +3,6 @@
 
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
-require "dependabot/file_updaters/vendor_updater"
-require "dependabot/file_updaters/artifact_updater"
 require "dependabot/errors"
 require "dependabot/nub/dependency_files_filterer"
 require "dependabot/nub/sub_dependency_files_filterer"
@@ -57,28 +55,10 @@ module Dependabot
           )
         end
 
-        vendor_updated_files(updated_files)
-      end
-
-      private
-
-      sig { params(updated_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile]) }
-      def vendor_updated_files(updated_files)
-        base_dir = T.must(updated_files.first).directory
-        pnp_updater.updated_files(base_directory: base_dir, only_paths: [".pnp.cjs", ".pnp.data.json"]).each do |file|
-          updated_files << file
-        end
-
         updated_files
       end
 
-      sig { returns(Dependabot::FileUpdaters::ArtifactUpdater) }
-      def pnp_updater
-        Dependabot::FileUpdaters::ArtifactUpdater.new(
-          repo_contents_path: repo_contents_path,
-          target_directory: "./"
-        )
-      end
+      private
 
       sig { returns(T::Array[DependencyFile]) }
       def filtered_dependency_files
