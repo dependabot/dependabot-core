@@ -1,0 +1,10 @@
+{
+  "name": "foo",
+  "version": "0.0.1",
+  "dependencies": {
+    "lodash": "^1.2.1"
+  },
+  "devDependencies": {
+    "etag": "^1.0.0"
+  }
+}

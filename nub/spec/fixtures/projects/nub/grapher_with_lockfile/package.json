@@ -1,0 +1,11 @@
+{
+  "name": "grapher-test",
+  "version": "1.0.0",
+  "dependencies": {
+    "is-number": "^7.0.0",
+    "@scope/package": "^1.0.0"
+  },
+  "devDependencies": {
+    "etag": "^1.0.0"
+  }
+}

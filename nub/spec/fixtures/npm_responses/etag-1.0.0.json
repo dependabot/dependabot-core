@@ -1,0 +1,40 @@
+{
+    "_from": ".",
+    "_id": "etag@1.0.0",
+    "_npmUser": {
+        "email": "david.bjorklund@gmail.com",
+        "name": "kesla"
+    },
+    "_npmVersion": "1.4.3",
+    "author": {
+        "email": "david.bjorklund@gmail.com",
+        "name": "David Björklund"
+    },
+    "bugs": {
+        "url": "https://github.com/jshttp/etag/issues"
+    },
+    "description": "Small thingy to create an etag from a String or Buffer",
+    "directories": {},
+    "dist": {
+        "shasum": "db9f9610cc2bf22036d713012dff4aa7e0c96162",
+        "tarball": "https://registry.npmjs.org/etag/-/etag-1.0.0.tgz"
+    },
+    "homepage": "https://github.com/jshttp/etag",
+    "license": "MIT",
+    "main": "etag.js",
+    "maintainers": [
+        {
+            "email": "david.bjorklund@gmail.com",
+            "name": "kesla"
+        }
+    ],
+    "name": "etag",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/jshttp/etag.git"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "version": "1.0.0"
+}

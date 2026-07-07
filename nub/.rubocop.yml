@@ -1,0 +1,7 @@
+inherit_from: ../.rubocop.yml
+
+Sorbet/ForbidTUnsafe:
+  Exclude:
+    - lib/dependabot/nub/update_checker.rb
+    - lib/dependabot/nub/update_checker/latest_version_finder.rb
+    - lib/dependabot/nub/update_checker/version_resolver.rb
