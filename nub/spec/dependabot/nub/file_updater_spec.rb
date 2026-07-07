@@ -229,7 +229,30 @@ RSpec.describe Dependabot::Nub::FileUpdater do
       let(:previous_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
       let(:version) { "0c6b15a88bc10cd47f67a09506399dfc9ddc075d" }
 
-      context "without a requirement or reference" do
+      context "when the git ref changes (e.g. a version-tag bump)" do
+        # The Dependabot-chosen update moves the manifest ref, so PackageJsonUpdater rewrites
+        # `#2.0.0` -> `#2.1.0` in package.json and nub's lockfile-only install re-resolves the
+        # git dep to the new tag's commit. This is the supported git-dependency update path.
+        let(:req) { nil }
+        let(:ref) { "2.1.0" }
+        let(:old_req) { nil }
+        let(:old_ref) { "2.0.0" }
+        let(:previous_version) { "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8" }
+        let(:version) { "0024f0f6552b6375712d93a7eadaa48810588736" }
+
+        let(:files) { project_dependency_files("nub/github_dependency_versioned") }
+        let(:repo_contents_path) { build_tmp_repo("nub/github_dependency_versioned", path: "projects") }
+
+        it "re-resolves the git dependency to the new ref's commit in the lockfile" do
+          expect(updated_files.map(&:name)).to include("nub.lock")
+          expect(updated_nub_lock.content)
+            .to include("codeload.github.com/jonschlinkert/is-number/tar.gz/0024f0f6")
+          expect(updated_nub_lock.content)
+            .not_to include("tar.gz/d5ac0584")
+        end
+      end
+
+      context "without a requirement or reference (same-branch SHA advance)" do
         let(:req) { nil }
         let(:ref) { "master" }
         let(:old_req) { nil }
@@ -239,15 +262,17 @@ RSpec.describe Dependabot::Nub::FileUpdater do
         let(:repo_contents_path) { build_tmp_repo("nub/github_dependency_no_ref", path: "projects") }
 
         it "only updates the lockfile" do
-          skip("git-dependency updates are a follow-up: nub's lockfile-only install conservatively " \
-               "keeps the already-locked git SHA, so forcing re-resolution to a Dependabot-chosen " \
-               "ref is not yet wired.")
+          skip("Unsupported by nub's CLI: the manifest ref is unchanged (master -> master), so " \
+               "PackageJsonUpdater produces no manifest edit and nub's conservative lockfile-only " \
+               "install keeps the already-locked SHA. Advancing a git dep on the same branch needs " \
+               "a nub-side force-re-resolution capability (`update <pkg>@<sha>` / a targeted refresh) " \
+               "that nub does not yet expose. Ref-CHANGE git updates DO work (see the context above).")
           expect(updated_files.map(&:name))
             .to match_array(%w(nub.lock))
         end
 
         it "correctly update the lockfiles" do
-          skip("git-dependency updates are a follow-up (see above).")
+          skip("Unsupported by nub's CLI: same-branch SHA advance, see the sibling example above.")
           # nub records a github dependency by its resolved codeload tarball URL (pnpm-v9 form).
           expect(updated_nub_lock.content)
             .to include("codeload.github.com/jonschlinkert/is-number/tar.gz/98e8ff1")

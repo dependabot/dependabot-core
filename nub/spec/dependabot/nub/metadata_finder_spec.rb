@@ -111,7 +111,9 @@ RSpec.describe Dependabot::Nub::MetadataFinder do
         end
 
         it "includes details of the directory" do
-          skip("monorepo source-directory extraction from the npm registry response is a follow-up.")
+          skip("monorepo source-directory extraction needs the GitHub default-branch stub the " \
+               "npm_and_yarn spec sets up; the metadata_finder logic is present but the spec " \
+               "harness for it is a follow-up.")
           expect(source_url).to eq(
             "https://github.com/facebook/react/tree/HEAD/packages/react-dom"
           )
