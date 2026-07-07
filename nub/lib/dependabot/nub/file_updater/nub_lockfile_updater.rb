@@ -75,8 +75,9 @@ module Dependabot
             File.write(".npmrc", npmrc_content(nub_lock))
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              run_nub_updater
-
+              # nub is pnpm-compatible: `install` re-resolves from package.json (there is no
+              # bun-style `install <pkg>@<ver>` positional add). So write the already-bumped
+              # package.json, then regenerate nub.lock from it with a single lockfile-only install.
               write_final_package_json_files
 
               run_nub_install
@@ -87,21 +88,10 @@ module Dependabot
         end
 
         sig { void }
-        def run_nub_updater
-          dependency_updates = dependencies.map do |d|
-            "#{d.name}@#{d.version}"
-          end.join(" ")
-
-          Helpers.run_nub_command(
-            "install #{dependency_updates} --lockfile-only --ignore-scripts",
-            fingerprint: "install <dependency_updates> --lockfile-only --ignore-scripts"
-          )
-        end
-
-        sig { void }
         def run_nub_install
           Helpers.run_nub_command(
-            "install --lockfile-only --ignore-scripts"
+            "install --lockfile-only --ignore-scripts",
+            fingerprint: "install --lockfile-only --ignore-scripts"
           )
         end
 

@@ -3,7 +3,6 @@
 
 # These all need to be required so the various classes can be registered in a
 # lookup table of package manager names to concrete classes.
-require "dependabot/nub/dependency_grapher"
 require "dependabot/nub/file_fetcher"
 require "dependabot/nub/file_parser"
 require "dependabot/nub/update_checker"

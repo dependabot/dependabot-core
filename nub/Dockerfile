@@ -2,7 +2,7 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Check for updates at https://github.com/nubjs/nub/releases
-ARG NUB_VERSION=0.0.6
+ARG NUB_VERSION=0.3.1
 
 # See https://github.com/nodesource/distributions#installation-instructions
 ARG NODEJS_VERSION=24

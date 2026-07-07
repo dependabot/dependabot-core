@@ -634,6 +634,12 @@ module Dependabot
           ).returns(T.untyped)
         end
         def run_nub_checker(path:, version:)
+          # TODO(nub-grammar): nub is pnpm-compatible and rejects `update <pkg>@<pinned-version>`
+          # ("not supported by `update` — use `--latest`/`<pkg>@latest`"). This inherited-from-bun
+          # peer-dependency probe needs re-grounding against nub's grammar: pin the target version
+          # into package.json and re-resolve with `nub install --lockfile-only`, then classify the
+          # resolution failure. Requires the dependabot dev env to validate the peer-dep error
+          # extraction, so it is left as-is (documented) pending that pass.
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               Helpers.run_nub_command(

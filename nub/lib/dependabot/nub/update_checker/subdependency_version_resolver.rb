@@ -193,7 +193,7 @@ module Dependabot
         sig { returns(T::Boolean) }
         def bundled_dependency?
           dependency.subdependency_metadata
-                    &.any? { |h| h.fetch(:npm_nubdled, false) } ||
+                    &.any? { |h| h.fetch(:npm_bundled, false) } ||
             false
         end
       end

@@ -46,34 +46,52 @@ module Dependabot
           )
         end
 
+        # rubocop:disable Metrics/MethodLength
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def dependencies
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
+
+          # Two passes, mirroring the pnpm parser: DependencySet de-dupes by name and keeps the
+          # FIRST-inserted entry's metadata, so specifier-bearing (direct) deps must go in before
+          # bare ones — otherwise an aliased package inserted after a same-name plain entry would
+          # lose its `{ alias: name }` tag on the merge.
+          with_specifiers = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
+          without_specifiers = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
 
           parsed.each do |details|
             next if details["aliased"] && !dealias_packages?
 
             name = T.cast(details["name"], String)
-            version = T.cast(details["version"], T.nilable(String))
-
-            dependency_args = {
+            args = {
               name: name,
-              version: version,
+              version: T.cast(details["version"], T.nilable(String)),
               package_manager: NubPackageManager::NAME,
               requirements: []
             }
+            args[:metadata] = { alias: name } if details["aliased"]
+            args[:subdependency_metadata] = [{ production: !details["dev"] }] if details["dev"]
 
-            # Tag aliased packages so the grapher can identify them as direct.
-            dependency_args[:metadata] = { alias: name } if details["aliased"]
+            if details["specifiers"]&.any?
+              with_specifiers << args
+            else
+              without_specifiers << args
+            end
+          end
 
-            # Mark subdependency production/dev status.
-            dependency_args[:subdependency_metadata] = [{ production: !details["dev"] }] if details["dev"]
-
-            dependency_set << Dependency.new(**dependency_args)
+          (with_specifiers + without_specifiers).each do |args|
+            dependency_set << Dependency.new(
+              name: args[:name],
+              version: args[:version],
+              package_manager: args[:package_manager],
+              requirements: args[:requirements],
+              subdependency_metadata: args[:subdependency_metadata],
+              metadata: args[:metadata]
+            )
           end
 
           dependency_set
         end
+        # rubocop:enable Metrics/MethodLength
 
         sig do
           params(
