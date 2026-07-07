@@ -1,18 +1,18 @@
 [
   {
-    "name": "bun.lock",
-    "path": "bun.lock",
+    "name": "nub.lock",
+    "path": "nub.lock",
     "sha": "5b0a45fe1229f38af2dedd390b9c531458b07262",
     "size": 102275,
-    "url": "https://api.github.com/repos/toddledev/toddle/contents/bun.lock?ref=main",
-    "html_url": "https://github.com/toddledev/toddle/blob/main/bun.lock",
+    "url": "https://api.github.com/repos/toddledev/toddle/contents/nub.lock?ref=main",
+    "html_url": "https://github.com/toddledev/toddle/blob/main/nub.lock",
     "git_url": "https://api.github.com/repos/toddledev/toddle/git/blobs/5b0a45fe1229f38af2dedd390b9c531458b07262",
-    "download_url": "https://raw.githubusercontent.com/toddledev/toddle/main/bun.lock",
+    "download_url": "https://raw.githubusercontent.com/toddledev/toddle/main/nub.lock",
     "type": "file",
     "_links": {
-      "self": "https://api.github.com/repos/toddledev/toddle/contents/bun.lock?ref=main",
+      "self": "https://api.github.com/repos/toddledev/toddle/contents/nub.lock?ref=main",
       "git": "https://api.github.com/repos/toddledev/toddle/git/blobs/5b0a45fe1229f38af2dedd390b9c531458b07262",
-      "html": "https://github.com/toddledev/toddle/blob/main/bun.lock"
+      "html": "https://github.com/toddledev/toddle/blob/main/nub.lock"
     }
   },
   {
