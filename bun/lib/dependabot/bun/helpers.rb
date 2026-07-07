@@ -84,7 +84,17 @@ module Dependabot
       sig { params(dependency_set: Dependabot::FileParsers::Base::DependencySet).returns(T::Array[Dependency]) }
       def self.dependencies_with_all_versions_metadata(dependency_set)
         dependency_set.dependencies.map do |dependency|
-          dependency.metadata[:all_versions] = dependency_set.all_versions_for_name(dependency.name)
+          all_versions = dependency_set.all_versions_for_name(dependency.name).flat_map do |dep|
+            nested_versions = T.cast(dep.metadata[:all_versions], T.nilable(T::Array[Dependency]))
+            if nested_versions&.any?
+              nested_versions
+            else
+              dep.metadata.delete(:all_versions)
+              dep
+            end
+          end
+
+          dependency.metadata[:all_versions] = all_versions
           dependency
         end
       end

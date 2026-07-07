@@ -1702,7 +1702,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           }]
         end
 
-        it "updates the package-lock.json and all three package.jsons" do
+        it "updates all three package.jsons" do
           package = updated_files.find { |f| f.name == "package.json" }
           package1 = updated_files.find do |f|
             f.name == "packages/package1/package.json"
