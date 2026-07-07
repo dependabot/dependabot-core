@@ -121,6 +121,16 @@ module Dependabot
       # independently.
       sig { returns(T::Array[ManifestGroupSnapshot]) }
       def manifest_group_snapshots
+        @manifest_group_snapshots ||= T.let(
+          build_manifest_group_snapshots,
+          T.nilable(T::Array[ManifestGroupSnapshot])
+        )
+      end
+
+      private
+
+      sig { returns(T::Array[ManifestGroupSnapshot]) }
+      def build_manifest_group_snapshots
         groups = manifest_groups
 
         if groups.one?
@@ -132,14 +142,28 @@ module Dependabot
         end
 
         groups.map do |group|
-          ManifestGroupSnapshot.new(
+          scoped = scoped_grapher(group.files)
+          snapshot = ManifestGroupSnapshot.new(
             manifest_file: group.primary,
-            resolved_dependencies: scoped_grapher(group.files).resolved_dependencies
+            resolved_dependencies: scoped.resolved_dependencies
           )
+          # Ensure we propagate any error flags from the scoped grapher.
+          absorb_error_state(scoped)
+          snapshot
         end
       end
 
-      private
+      # Propagates a scoped grapher's subdependency error state onto this grapher so callers can inspect the
+      # aggregate result of resolving every group.
+      sig { params(scoped: Dependabot::DependencyGraphers::Base).void }
+      def absorb_error_state(scoped)
+        return unless scoped.errored_fetching_subdependencies
+
+        errored_fetching_subdependencies!
+        # For now, last subdependency error wins - the full error dialogue will be present in the logs,
+        # this ensures we have something for job summary dialogues.
+        @subdependency_error = scoped.subdependency_error if @subdependency_error.nil?
+      end
 
       # Builds a grapher of the same class scoped to a subset of the directory's files, reusing the current
       # file parser's configuration. Used to resolve a single manifest group in isolation.
