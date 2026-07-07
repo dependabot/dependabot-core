@@ -182,18 +182,18 @@ RSpec.describe Dependabot::Nub::FileUpdater do
             .to include("etag@1.2.0")
         end
 
-        it "runs nub install commands with --ignore-scripts" do
+        it "runs nub install with --lockfile-only --ignore-scripts (pin, then restore)" do
           allow(Dependabot::Nub::Helpers).to receive(:run_nub_command).and_call_original
 
           updated_files
 
+          # nub is pnpm-compatible with no `install <pkg>@<ver>`: the exact version is pinned in
+          # package.json and installed, then the final requirement is restored and installed again —
+          # two lockfile-only installs.
           expect(Dependabot::Nub::Helpers).to have_received(:run_nub_command).with(
-            a_string_matching(/^install .+ --save-text-lockfile --ignore-scripts$/),
-            fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
-          )
-          expect(Dependabot::Nub::Helpers).to have_received(:run_nub_command).with(
-            "install --save-text-lockfile --ignore-scripts"
-          )
+            "install --lockfile-only --ignore-scripts",
+            fingerprint: "install --lockfile-only --ignore-scripts"
+          ).twice
         end
       end
     end
@@ -244,8 +244,9 @@ RSpec.describe Dependabot::Nub::FileUpdater do
         end
 
         it "correctly update the lockfiles" do
+          # nub records a github dependency by its resolved codeload tarball URL (pnpm-v9 form).
           expect(updated_nub_lock.content)
-            .to include("is-number@github:jonschlinkert/is-number#98e8ff1")
+            .to include("codeload.github.com/jonschlinkert/is-number/tar.gz/98e8ff1")
         end
       end
     end

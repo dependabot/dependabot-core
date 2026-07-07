@@ -58,8 +58,8 @@ RSpec.describe Dependabot::Nub::UpdateChecker::SubdependencyVersionResolver do
     expect(latest_resolvable_version).to eq(Gem::Version.new("1.0.1"))
 
     expect(Dependabot::Nub::Helpers).to have_received(:run_nub_command).with(
-      "update @dependabot-fixtures/npm-transitive-dependency --save-text-lockfile --ignore-scripts",
-      fingerprint: "update <dependency_name> --save-text-lockfile --ignore-scripts"
+      "update @dependabot-fixtures/npm-transitive-dependency --lockfile-only --ignore-scripts",
+      fingerprint: "update <dependency_name> --lockfile-only --ignore-scripts"
     )
   end
 end
