@@ -25,7 +25,7 @@ rescue LoadError
     class Response
       extend T::Sig
 
-      sig { returns(T::Hash[T.untyped, T.untyped]) }
+      sig { returns(T::Hash[Symbol, String]) }
       def headers
         {}
       end
@@ -79,6 +79,18 @@ module Dependabot
       # Each validation can require 1 + 1 + N*2 registry API calls for N platforms,
       # so we cap the attempts to avoid rate limiting or excessive latency.
       MAX_PLATFORM_VALIDATION_ATTEMPTS = T.let(5, Integer)
+
+      DockerSource = T.type_alias do
+        T::Hash[Symbol, T.nilable(String)]
+      end
+
+      ManifestHash = T.type_alias do
+        T::Hash[T.any(String, Symbol), Object]
+      end
+
+      ManifestList = T.type_alias do
+        T::Array[ManifestHash]
+      end
 
       # Legacy patterns used when docker_created_timestamp_validation experiment is disabled.
       # The broad alphanumeric regex matches tokens like "alpine3", "ltsc2022", "rc1"
@@ -220,7 +232,7 @@ module Dependabot
         digest_requirements.all? { |req| digest_requirement_up_to_date?(req) }
       end
 
-      sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
+      sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
       def digest_requirement_up_to_date?(req)
         source = req.fetch(:source)
         source_digest = source.fetch(:digest)
@@ -506,7 +518,7 @@ module Dependabot
 
       sig do
         params(
-          digest_info: T.untyped,
+          digest_info: Object,
           tag: Dependabot::Docker::Tag
         ).returns(T.nilable(String))
       end
@@ -520,7 +532,8 @@ module Dependabot
             )
             return nil
           end
-          digest_info.first&.fetch("digest")
+          digest = digest_info.first&.fetch("digest")
+          digest if digest.is_a?(String)
         when String
           digest_info
         else
@@ -533,11 +546,11 @@ module Dependabot
       end
 
       sig do
-        params(
+        type_parameters(:Result).params(
           max_attempts: Integer,
           errors: T::Array[T.class_of(StandardError)],
-          _blk: T.proc.returns(T.untyped)
-        ).returns(T.untyped)
+          _blk: T.proc.returns(T.type_parameter(:Result))
+        ).returns(T.type_parameter(:Result))
       end
       def with_retries(max_attempts: 3, errors: [], &_blk)
         attempt = 0
@@ -927,7 +940,7 @@ module Dependabot
         end
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def digest_requirements
         dependency.requirements.select do |requirement|
           requirement.dig(:source, :digest)
@@ -1042,7 +1055,7 @@ module Dependabot
       # digest moved; otherwise this is a genuine version/digest change.
       sig do
         params(
-          source: T::Hash[Symbol, T.untyped],
+          source: DockerSource,
           current_digest: String,
           expected_digest: String,
           digest_only_refresh: T::Boolean
@@ -1060,7 +1073,7 @@ module Dependabot
       # Fails open (returns false) whenever a confident comparison isn't possible.
       sig do
         params(
-          source: T::Hash[Symbol, T.untyped],
+          source: DockerSource,
           current_digest: String,
           candidate_digest: String
         ).returns(T::Boolean)
@@ -1124,8 +1137,11 @@ module Dependabot
         resolved = resolve_platform_manifest(manifest)
         return nil unless resolved
 
-        config_digest = resolved.dig("config", "digest")
-        return nil unless config_digest
+        config = resolved["config"]
+        return nil unless config.is_a?(Hash)
+
+        config_digest = config["digest"]
+        return nil unless config_digest.is_a?(String)
 
         parse_created_from_config_blob(config_digest)
       end
@@ -1152,13 +1168,11 @@ module Dependabot
       # Resolves a manifest to a single platform-specific manifest.
       # If the manifest is a manifest list (multi-arch), selects the most
       # appropriate platform (preferring linux/amd64).
-      sig { params(manifest: T.untyped).returns(T.nilable(T::Hash[String, T.untyped])) }
+      sig { params(manifest: ManifestHash).returns(T.nilable(ManifestHash)) }
       def resolve_platform_manifest(manifest)
         media_type = manifest["mediaType"] || manifest[:mediaType]
 
-        unless MANIFEST_LIST_TYPES.include?(media_type)
-          return manifest.is_a?(Hash) ? manifest : manifest.to_h
-        end
+        return manifest unless MANIFEST_LIST_TYPES.include?(media_type)
 
         platform_digest = select_platform_digest(manifest)
         return nil unless platform_digest
@@ -1172,19 +1186,25 @@ module Dependabot
 
       # Selects the digest of the best platform-specific manifest from a manifest list,
       # preferring linux/amd64.
-      sig { params(manifest: T.untyped).returns(T.nilable(String)) }
+      sig { params(manifest: ManifestHash).returns(T.nilable(String)) }
       def select_platform_digest(manifest)
         manifests = manifest["manifests"] || manifest[:manifests] || []
+        return nil unless manifests.is_a?(Array)
         return nil if manifests.empty?
 
         selected = find_amd64_manifest(manifests) || manifests.first
-        selected&.dig("digest") || selected&.dig(:digest)
+        return nil unless selected.is_a?(Hash)
+
+        digest = selected["digest"] || selected[:digest]
+        digest if digest.is_a?(String)
       end
 
-      sig { params(manifests: T.untyped).returns(T.untyped) }
+      sig { params(manifests: ManifestList).returns(T.nilable(ManifestHash)) }
       def find_amd64_manifest(manifests)
         manifests.find do |m|
           platform = m["platform"] || m[:platform] || {}
+          next false unless platform.is_a?(Hash)
+
           (platform["architecture"] || platform[:architecture]) == "amd64"
         end
       end
@@ -1353,7 +1373,7 @@ module Dependabot
       # array of per-platform manifest entries, or nil for single-platform images
       # (not a manifest list). Cached so the platform-inspection methods below
       # share a single registry GET per tag.
-      sig { params(tag_name: String).returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+      sig { params(tag_name: String).returns(T.nilable(ManifestList)) }
       def fetch_manifest_list(tag_name)
         return manifest_list_cache[tag_name] if manifest_list_cache.key?(tag_name)
 
@@ -1371,7 +1391,7 @@ module Dependabot
         nil
       end
 
-      sig { params(tag_name: String).returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+      sig { params(tag_name: String).returns(T.nilable(ManifestList)) }
       def fetch_manifest_list_from_registry(tag_name)
         manifest = with_retries(max_attempts: 3, errors: transient_docker_errors) do
           docker_registry_client.manifest(docker_repo_name, tag_name)
@@ -1380,7 +1400,10 @@ module Dependabot
         media_type = manifest["mediaType"] || manifest[:mediaType]
         return nil unless MANIFEST_LIST_TYPES.include?(media_type)
 
-        manifest["manifests"] || manifest[:manifests] || []
+        manifests = manifest["manifests"] || manifest[:manifests] || []
+        return [] unless manifests.is_a?(Array)
+
+        manifests.grep(Hash)
       end
 
       # Fetches a map of platform key (e.g. "linux/amd64") to platform manifest
@@ -1410,7 +1433,7 @@ module Dependabot
         collect_platform_digests(manifests)
       end
 
-      sig { params(manifests: T.untyped).returns(T::Hash[String, String]) }
+      sig { params(manifests: ManifestList).returns(T::Hash[String, String]) }
       def collect_platform_digests(manifests)
         digests = {}
 
@@ -1419,7 +1442,7 @@ module Dependabot
           next unless platform
 
           digest = m["digest"] || m[:digest]
-          next unless digest
+          next unless digest.is_a?(String)
 
           digests[platform_key(platform)] = digest
         end
@@ -1429,7 +1452,7 @@ module Dependabot
 
       # Fetches the platform entries from a manifest list for a given tag.
       # Returns nil if the tag is a single-platform image (not a manifest list).
-      sig { params(tag_name: String).returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+      sig { params(tag_name: String).returns(T.nilable(ManifestList)) }
       def fetch_manifest_platforms(tag_name)
         return manifest_platforms_cache[tag_name] if manifest_platforms_cache.key?(tag_name)
 
@@ -1445,7 +1468,7 @@ module Dependabot
         nil
       end
 
-      sig { params(tag_name: String).returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+      sig { params(tag_name: String).returns(T.nilable(ManifestList)) }
       def fetch_manifest_platforms_from_registry(tag_name)
         manifests = fetch_manifest_list(tag_name)
         return nil unless manifests
@@ -1467,10 +1490,10 @@ module Dependabot
         digests
       end
 
-      sig { params(manifest_entry: T.untyped).returns(T.nilable(T::Hash[String, T.untyped])) }
+      sig { params(manifest_entry: ManifestHash).returns(T.nilable(ManifestHash)) }
       def extract_platform(manifest_entry)
         platform = manifest_entry["platform"] || manifest_entry[:platform]
-        return unless platform
+        return unless platform.is_a?(Hash)
 
         os = platform["os"] || platform[:os]
         arch = platform["architecture"] || platform[:architecture]
@@ -1480,7 +1503,7 @@ module Dependabot
       end
 
       # Builds a normalized string key from a platform hash, e.g. "linux/amd64" or "linux/arm64/v8"
-      sig { params(platform: T::Hash[T.any(String, Symbol), T.untyped]).returns(String) }
+      sig { params(platform: ManifestHash).returns(String) }
       def platform_key(platform)
         os = platform["os"] || platform[:os]
         arch = platform["architecture"] || platform[:architecture]
@@ -1517,7 +1540,7 @@ module Dependabot
         collect_platform_timestamps(manifests)
       end
 
-      sig { params(manifests: T.untyped).returns(T::Hash[String, T.nilable(Time)]) }
+      sig { params(manifests: ManifestList).returns(T::Hash[String, T.nilable(Time)]) }
       def collect_platform_timestamps(manifests)
         timestamps = {}
 
@@ -1526,7 +1549,7 @@ module Dependabot
           next unless platform
 
           digest = m["digest"] || m[:digest]
-          next unless digest
+          next unless digest.is_a?(String)
 
           key = platform_key(platform)
           timestamps[key] = fetch_platform_created_timestamp(digest)
@@ -1548,11 +1571,11 @@ module Dependabot
         parse_created_from_config_blob(config_digest)
       end
 
-      sig { returns(T::Hash[String, T.nilable(T::Array[T::Hash[String, T.untyped]])]) }
+      sig { returns(T::Hash[String, T.nilable(ManifestList)]) }
       def manifest_list_cache
         @manifest_list_cache ||= T.let(
           {},
-          T.nilable(T::Hash[String, T.nilable(T::Array[T::Hash[String, T.untyped]])])
+          T.nilable(T::Hash[String, T.nilable(ManifestList)])
         )
       end
 
@@ -1564,11 +1587,11 @@ module Dependabot
         )
       end
 
-      sig { returns(T::Hash[String, T.nilable(T::Array[T::Hash[String, T.untyped]])]) }
+      sig { returns(T::Hash[String, T.nilable(ManifestList)]) }
       def manifest_platforms_cache
         @manifest_platforms_cache ||= T.let(
           {},
-          T.nilable(T::Hash[String, T.nilable(T::Array[T::Hash[String, T.untyped]])])
+          T.nilable(T::Hash[String, T.nilable(ManifestList)])
         )
       end
 
