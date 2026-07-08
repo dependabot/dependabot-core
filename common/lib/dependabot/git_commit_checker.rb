@@ -745,7 +745,9 @@ module Dependabot
             source: T.must(source),
             credentials: credentials
           )
-          client.releases(T.must(source).repo, per_page: 100)
+          # The Octokit RBI types this as non-nil, but it can be nil at runtime
+          # (e.g. an empty/unexpected registry response), so guard against it.
+          T.unsafe(client.releases(T.must(source).repo, per_page: 100)) || []
         rescue Octokit::Error
           []
         end,

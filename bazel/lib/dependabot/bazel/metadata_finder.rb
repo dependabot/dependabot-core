@@ -57,7 +57,7 @@ module Dependabot
         return nil unless version
 
         source_info = registry_client.get_source(dependency.name, version)
-        url = source_info&.dig("url")
+        url = T.cast(source_info&.dig("url"), T.nilable(String))
         return nil unless url
 
         source_from_url(url)

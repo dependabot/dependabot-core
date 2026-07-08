@@ -68,6 +68,7 @@ module Dependabot
 
       # corepack supported package managers
       SUPPORTED_COREPACK_PACKAGE_MANAGERS = %w(npm yarn pnpm).freeze
+      COREPACK_SIGNATURE_METADATA_ERROR = "No compatible signature found in package metadata"
 
       # pnpm's `minimumReleaseAge` and yarn's `npmMinimalAgeGate` are expressed in
       # minutes, whereas dependabot.yml cooldown and npm's `min-release-age` use
@@ -586,28 +587,33 @@ module Dependabot
         output_observer: nil,
         env: nil
       )
-        full_command = "corepack #{name} #{command}"
-        fingerprint =  "corepack #{name} #{fingerprint || command}"
+        full_command = T.let("corepack #{name} #{command}", String)
+        command_fingerprint = T.let("corepack #{name} #{fingerprint || command}", String)
 
-        if output_observer
-          return Dependabot::SharedHelpers.run_shell_command(
-            full_command,
-            fingerprint: fingerprint,
-            output_observer: output_observer,
-            env: env
-          ).strip
-        else
-          Dependabot::SharedHelpers.run_shell_command(
-            full_command,
-            fingerprint: fingerprint,
-            env: env
-          )
-        end.strip
+        run_corepack_shell_command(
+          full_command,
+          fingerprint: command_fingerprint,
+          output_observer: output_observer,
+          env: env
+        )
       rescue StandardError => e
         Dependabot.logger.error("Error running package manager command: #{full_command}, Error: #{e.message}")
-        if e.message.match?(/Response Code.*:.*404.*\(Not Found\)/) &&
-           e.message.include?("The remote server failed to provide the requested resource")
-          raise RegistryError.new(404, "The remote server failed to provide the requested resource")
+
+        raise_registry_error_if_not_found(e)
+
+        if retry_without_signature_verification?(error: e, env: env)
+          retry_env = T.must(env).merge(RegistryHelper::COREPACK_INTEGRITY_KEYS_ENV => "")
+          Dependabot.logger.warn(
+            "Corepack signature verification failed against the configured private registry. " \
+            "Retrying once with COREPACK_INTEGRITY_KEYS disabled for this command only."
+          )
+
+          return run_corepack_shell_command(
+            T.must(full_command),
+            fingerprint: T.must(command_fingerprint),
+            output_observer: output_observer,
+            env: retry_env
+          )
         end
 
         raise
@@ -640,6 +646,57 @@ module Dependabot
         )
 
         registry_helper.find_corepack_env_variables
+      end
+
+      sig do
+        params(
+          full_command: String,
+          fingerprint: String,
+          output_observer: CommandHelpers::OutputObserver,
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_corepack_shell_command(full_command, fingerprint:, output_observer:, env: nil)
+        if output_observer
+          return Dependabot::SharedHelpers.run_shell_command(
+            full_command,
+            fingerprint: fingerprint,
+            output_observer: output_observer,
+            env: env
+          ).strip
+        end
+
+        Dependabot::SharedHelpers.run_shell_command(
+          full_command,
+          fingerprint: fingerprint,
+          env: env
+        ).strip
+      end
+
+      sig { params(error: StandardError).void }
+      def self.raise_registry_error_if_not_found(error)
+        if error.message.match?(/Response Code.*:.*404.*\(Not Found\)/) &&
+           error.message.include?("The remote server failed to provide the requested resource")
+          raise RegistryError.new(404, "The remote server failed to provide the requested resource")
+        end
+      end
+
+      sig { params(error: StandardError, env: T.nilable(T::Hash[String, String])).returns(T::Boolean) }
+      def self.retry_without_signature_verification?(error:, env:)
+        return false unless env
+
+        registry = env[RegistryHelper::COREPACK_NPM_REGISTRY_ENV]
+        return false unless registry
+        return false if default_npm_registry?(registry)
+        return false unless error.message.include?(COREPACK_SIGNATURE_METADATA_ERROR)
+
+        !env.key?(RegistryHelper::COREPACK_INTEGRITY_KEYS_ENV)
+      end
+
+      sig { params(registry: String).returns(T::Boolean) }
+      def self.default_npm_registry?(registry)
+        normalized_registry = RegistryHelper.normalize_registry_url(registry)
+        normalized_registry == RegistryHelper::DEFAULT_NPM_REGISTRY
       end
 
       private_class_method :run_single_yarn_command
