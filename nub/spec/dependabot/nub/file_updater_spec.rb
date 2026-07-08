@@ -182,18 +182,21 @@ RSpec.describe Dependabot::Nub::FileUpdater do
             .to include("etag@1.2.0")
         end
 
-        it "runs nub install with --lockfile-only --ignore-scripts (pin, then restore)" do
+        it "updates the lockfile via a single `nub update <pkg>@<ver>` then settles" do
           allow(Dependabot::Nub::Helpers).to receive(:run_nub_command).and_call_original
 
           updated_files
 
-          # nub is pnpm-compatible with no `install <pkg>@<ver>`: the exact version is pinned in
-          # package.json and installed, then the final requirement is restored and installed again —
-          # two lockfile-only installs.
+          # One `nub update <pkg>@<ver> --no-save` pins the chosen versions in the lockfile (nub >= 0.4.1,
+          # works for transitive deps too); a plain lockfile-only install settles the rest.
+          expect(Dependabot::Nub::Helpers).to have_received(:run_nub_command).with(
+            a_string_matching(/^update .+ --lockfile-only --no-save --ignore-scripts$/),
+            fingerprint: "update <dependency_updates> --lockfile-only --no-save --ignore-scripts"
+          )
           expect(Dependabot::Nub::Helpers).to have_received(:run_nub_command).with(
             "install --lockfile-only --ignore-scripts",
             fingerprint: "install --lockfile-only --ignore-scripts"
-          ).twice
+          )
         end
       end
     end
@@ -301,6 +304,29 @@ RSpec.describe Dependabot::Nub::FileUpdater do
 
         expect(updated_nub_lock.content)
           .to include("fetch-factory@0.2.0")
+      end
+    end
+
+    context "with a transitive (sub-)dependency security update" do
+      # lodash is a transitive dep of fetch-factory, not present in package.json. Dependabot drives
+      # these for security advisories; `nub update lodash@<ver>` bumps it in the lockfile only.
+      let(:files) { project_dependency_files("nub/transitive_update") }
+      let(:repo_contents_path) { build_tmp_repo("nub/transitive_update", path: "projects") }
+      let(:dependencies) do
+        [Dependabot::Dependency.new(
+          name: "lodash",
+          version: "4.17.21",
+          previous_version: "3.10.1",
+          requirements: [],
+          previous_requirements: [],
+          package_manager: "nub"
+        )]
+      end
+
+      it "bumps the transitive dependency in the lockfile" do
+        expect(updated_files.map(&:name)).to match_array(%w(nub.lock))
+        expect(updated_nub_lock.content).to include("lodash@4.17.21")
+        expect(updated_nub_lock.content).not_to include("lodash@3.10.1")
       end
     end
   end
