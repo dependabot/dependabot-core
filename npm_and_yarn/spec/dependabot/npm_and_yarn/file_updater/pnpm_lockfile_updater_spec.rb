@@ -913,19 +913,77 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         expect(call_count).to eq(2)
       end
 
+      # Regression coverage for dependabot/dependabot-core#13165: when a repo sets
+      # `minimumReleaseAge` in pnpm-workspace.yaml *and* a Dependabot `cooldown`,
+      # the longest release-age of the two takes precedence so neither policy is
+      # silently weakened.
       context "when pnpm-workspace.yaml already sets minimumReleaseAge" do
-        let(:files) do
-          project_dependency_files(project_name) +
-            [Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "minimumReleaseAge: 20160\n")]
+        context "when the user's gate is longer than the cooldown" do
+          let(:files) do
+            project_dependency_files(project_name) +
+              [Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "minimumReleaseAge: 20160\n")]
+          end
+
+          it "leaves the explicit pnpm-workspace.yaml value untouched" do
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+              # User's 20160 (14 days) is longer than the 10080 (7 day) cooldown, so pnpm
+              # keeps the user's own value and no CLI override is injected.
+              expect(cmd).not_to include("--config.minimumReleaseAge")
+              ""
+            end.at_least(:once)
+
+            updater.send(:run_pnpm_update_packages)
+          end
         end
 
-        it "leaves the explicit pnpm-workspace.yaml value untouched" do
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-            expect(cmd).not_to include("--config.minimumReleaseAge")
-            ""
-          end.at_least(:once)
+        context "when the cooldown is longer than the user's gate" do
+          let(:files) do
+            project_dependency_files(project_name) +
+              [Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "minimumReleaseAge: 4320\n")]
+          end
 
-          updater.send(:run_pnpm_update_packages)
+          it "overrides with the longer cooldown value" do
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+              # Cooldown 10080 (7 days) is longer than the user's 4320 (3 days), so it wins.
+              expect(cmd).to include("--config.minimumReleaseAge=10080")
+              expect(cmd).to include("--config.minimumReleaseAgeStrict=false")
+              ""
+            end.at_least(:once)
+
+            updater.send(:run_pnpm_update_packages)
+          end
+        end
+
+        context "when the user's gate is set via .npmrc and is shorter than the cooldown" do
+          let(:files) do
+            project_dependency_files(project_name) +
+              [Dependabot::DependencyFile.new(name: ".npmrc", content: "minimum-release-age=1440\n")]
+          end
+
+          it "overrides with the longer cooldown value" do
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+              expect(cmd).to include("--config.minimumReleaseAge=10080")
+              ""
+            end.at_least(:once)
+
+            updater.send(:run_pnpm_update_packages)
+          end
+        end
+
+        context "when the cooldown equals the user's gate" do
+          let(:files) do
+            project_dependency_files(project_name) +
+              [Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "minimumReleaseAge: 10080\n")]
+          end
+
+          it "leaves the shared value untouched (no redundant override)" do
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+              expect(cmd).not_to include("--config.minimumReleaseAge")
+              ""
+            end.at_least(:once)
+
+            updater.send(:run_pnpm_update_packages)
+          end
         end
       end
     end

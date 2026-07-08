@@ -273,17 +273,22 @@ module Dependabot
         # to versions at least that old. `minimumReleaseAgeStrict=false` lets pnpm
         # fall back to the newest available version rather than erroring when
         # nothing satisfies the window, and avoids gating the exact direct version
-        # Dependabot pins. For regular updates an explicit `minimumReleaseAge` in
-        # pnpm-workspace.yaml (or `.npmrc`) takes precedence, so it is left
-        # untouched when present. (Security updates bypass the gate entirely with
+        # Dependabot pins. (Security updates bypass the gate entirely with
         # `minimumReleaseAge=0`; see `release_age_gate_config`.)
+        #
+        # When the repo also sets an explicit `minimumReleaseAge` in
+        # pnpm-workspace.yaml (or `.npmrc`), the longest release-age wins: the
+        # cooldown floor is only injected on the CLI when it exceeds the user's
+        # configured value, otherwise the user's (equal or longer) gate is left
+        # untouched so neither policy is silently weakened
+        # (dependabot/dependabot-core#13165).
         sig { returns(T.nilable(String)) }
         def minimum_release_age_config
-          return nil unless @release_age_days
-          return nil if pnpm_config_sets_minimum_release_age?
+          cooldown_minutes = (@release_age_days || 0) * Helpers::MINUTES_PER_DAY
+          return nil if cooldown_minutes.zero?
+          return nil if cooldown_minutes <= user_configured_minimum_release_age_minutes
 
-          minutes = @release_age_days * Helpers::MINUTES_PER_DAY
-          "--config.minimumReleaseAge=#{minutes} --config.minimumReleaseAgeStrict=false"
+          "--config.minimumReleaseAge=#{cooldown_minutes} --config.minimumReleaseAgeStrict=false"
         end
 
         sig { returns(String) }
@@ -291,14 +296,22 @@ module Dependabot
           "--config.minimumReleaseAge=<minutes> --config.minimumReleaseAgeStrict=false"
         end
 
-        sig { returns(T::Boolean) }
-        def pnpm_config_sets_minimum_release_age?
-          dependency_files.any? do |file|
-            basename = File.basename(file.name)
-            content = file.content.to_s
-            (basename == "pnpm-workspace.yaml" && content.match?(/^\s*minimumReleaseAge\s*:/)) ||
-              (basename == ".npmrc" && content.match?(/^\s*minimum-release-age\s*=/))
-          end
+        # The largest `minimumReleaseAge` (in minutes) the repo configures for pnpm,
+        # read from pnpm-workspace.yaml (`minimumReleaseAge:`) or `.npmrc`
+        # (`minimum-release-age=`). Returns 0 when the user has not configured one.
+        sig { returns(Integer) }
+        def user_configured_minimum_release_age_minutes
+          dependency_files.filter_map { |file| configured_minimum_release_age_minutes(file) }.max || 0
+        end
+
+        sig { params(file: Dependabot::DependencyFile).returns(T.nilable(Integer)) }
+        def configured_minimum_release_age_minutes(file)
+          content = file.content.to_s
+          match = case File.basename(file.name)
+                  when "pnpm-workspace.yaml" then content.match(/^\s*minimumReleaseAge\s*:\s*(\d+)/)
+                  when ".npmrc" then content.match(/^\s*minimum-release-age\s*=\s*(\d+)/)
+                  end
+          match && T.must(match[1]).to_i
         end
 
         # Tries `pnpm update --depth Infinity <dep>` for each dependency as a
