@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/shared/shared_file_parser"
@@ -120,7 +120,7 @@ module Dependabot
         end
       end
 
-      sig { params(json_object: T::Hash[T.untyped, T.untyped]).returns(T::Array[String]) }
+      sig { params(json_object: T::Hash[Object, Object]).returns(T::Array[String]) }
       def deep_fetch_images_from_hash(json_object)
         img = json_object.fetch("image", nil)
 
@@ -136,13 +136,13 @@ module Dependabot
         images + json_object.values.flat_map { |obj| deep_fetch_images(obj) }
       end
 
-      sig { params(img_hash: T::Hash[String, T.nilable(String)]).returns(T::Array[String]) }
+      sig { params(img_hash: T::Hash[Object, Object]).returns(T::Array[String]) }
       def parse_helm(img_hash)
         tag_value = img_hash.key?("tag") ? img_hash.fetch("tag", nil) : img_hash.fetch("version", nil)
         return [] unless tag_value
 
         repo = img_hash.fetch("repository", nil)
-        return [] unless repo
+        return [] unless repo.is_a?(String)
 
         match = tag_value.to_s.match(TAG_WITH_DIGEST)
         return [] unless match

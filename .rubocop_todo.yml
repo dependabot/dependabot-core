@@ -56,7 +56,7 @@ RSpec/AnyInstance:
     - "updater/spec/dependabot/dependency_change_builder_spec.rb"
     - "updater/spec/dependabot/file_fetcher_command_spec.rb"
 
-# Offense count: 1642
+# Offense count: 1613
 # Configuration parameters: CountAsOne.
 RSpec/ExampleLength:
   Max: 98
@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 1642
+# Offense count: 1549
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bazel/lib/dependabot/bazel/file_fetcher.rb"
@@ -282,14 +282,6 @@ Sorbet/ForbidTUntyped:
     - "bundler/lib/dependabot/bundler/update_checker/requirements_updater.rb"
     - "bundler/lib/dependabot/bundler/update_checker/shared_bundler_helpers.rb"
     - "bundler/lib/dependabot/bundler/update_checker/version_resolver.rb"
-    - "cargo/lib/dependabot/cargo/file_fetcher.rb"
-    - "cargo/lib/dependabot/cargo/file_parser.rb"
-    - "cargo/lib/dependabot/cargo/file_updater/lockfile_updater.rb"
-    - "cargo/lib/dependabot/cargo/metadata_finder.rb"
-    - "cargo/lib/dependabot/cargo/package/package_details_fetcher.rb"
-    - "cargo/lib/dependabot/cargo/update_checker.rb"
-    - "cargo/lib/dependabot/cargo/update_checker/file_preparer.rb"
-    - "cargo/lib/dependabot/cargo/update_checker/requirements_updater.rb"
     - "common/lib/dependabot/clients/azure.rb"
     - "common/lib/dependabot/clients/bitbucket.rb"
     - "common/lib/dependabot/clients/bitbucket_with_retries.rb"
@@ -317,14 +309,6 @@ Sorbet/ForbidTUntyped:
     - "composer/lib/dependabot/composer/metadata_finder.rb"
     - "composer/lib/dependabot/composer/package/package_details_fetcher.rb"
     - "composer/lib/dependabot/composer/update_checker/version_resolver.rb"
-    - "conda/lib/dependabot/conda/conda_registry_client.rb"
-    - "conda/lib/dependabot/conda/file_fetcher.rb"
-    - "conda/lib/dependabot/conda/file_parser.rb"
-    - "conda/lib/dependabot/conda/file_updater.rb"
-    - "conda/lib/dependabot/conda/requirement.rb"
-    - "conda/lib/dependabot/conda/update_checker.rb"
-    - "conda/lib/dependabot/conda/update_checker/latest_version_finder.rb"
-    - "conda/lib/dependabot/conda/version.rb"
     - "deno/lib/dependabot/deno/file_fetcher.rb"
     - "deno/lib/dependabot/deno/file_parser.rb"
     - "deno/lib/dependabot/deno/file_updater/manifest_updater.rb"
@@ -333,11 +317,6 @@ Sorbet/ForbidTUntyped:
     - "devcontainers/lib/dependabot/devcontainers/file_parser/feature_dependency_parser.rb"
     - "devcontainers/lib/dependabot/devcontainers/file_updater.rb"
     - "devcontainers/lib/dependabot/devcontainers/update_checker/latest_version_finder.rb"
-    - "docker/lib/dependabot/docker/file_parser.rb"
-    - "docker/lib/dependabot/docker/metadata_finder.rb"
-    - "docker/lib/dependabot/docker/update_checker.rb"
-    - "docker/lib/dependabot/docker_compose/file_parser.rb"
-    - "docker/lib/dependabot/shared/shared_file_updater.rb"
     - "dotnet_sdk/lib/dependabot/dotnet_sdk/package/package_details_fetcher.rb"
     - "elm/lib/dependabot/elm/file_parser.rb"
     - "elm/lib/dependabot/elm/update_checker/latest_version_finder.rb"
