@@ -127,7 +127,7 @@ module Dependabot
         PLATFORM_PACAKGE_DEP = /Unsupported platform for (?<dep>.*)\: wanted/
         PLATFORM_VERSION_REQUIREMENT = /wanted {(?<supported_ver>.*)} \(current: (?<detected_ver>.*)\)/
         PLATFORM_PACAKGE_MANAGER = "pnpm"
-
+        ERR_PNPM_STRICT_MIN_RELEASE_AGE_REQUIRES_SAVE = /ERR_PNPM_STRICT_MIN_RELEASE_AGE_REQUIRES_SAVE/
         INVALID_PACKAGE_SPEC = /Invalid package manager specification/
 
         # Metadata inconsistent error codes
@@ -420,6 +420,11 @@ module Dependabot
                   "A previously published version had provenance attestation, but the target version does not."
             Dependabot.logger.warn(error_message)
             raise Dependabot::InconsistentRegistryResponse, msg
+          end
+
+          if error_message.match?(ERR_PNPM_STRICT_MIN_RELEASE_AGE_REQUIRES_SAVE)
+            msg = "minimumReleaseAgeStrict in pnpm-workspace.yaml is incompatible with Dependabot."
+            raise Dependabot::DependencyFileNotResolvable, msg
           end
 
           error_handler.handle_pnpm_error(error)
