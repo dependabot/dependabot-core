@@ -180,6 +180,81 @@ RSpec.describe Dependabot::Helm::UpdateChecker::RequirementsUpdater do
       end
     end
 
+    context "with an OR range where no alternative permits the version" do
+      let(:chart_req) { "^0.5.0 || ^1.0.0" }
+      let(:latest_resolvable_version) { "3.0.0" }
+
+      context "with WidenRanges" do
+        let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+
+        it "adds a new alternative (npm widen semantics)" do
+          expect(updated_req).to eq("^0.5.0 || ^1.0.0 || ^3.0.0")
+        end
+      end
+
+      context "with BumpVersions" do
+        let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
+
+        it "collapses to the bumped first alternative" do
+          expect(updated_req).to eq("^3.0.0")
+        end
+      end
+    end
+
+    context "with a hyphen range" do
+      let(:chart_req) { "1.0.0 - 1.4.0" }
+
+      context "with BumpVersions, out of range" do
+        let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
+        let(:latest_resolvable_version) { "1.6.0" }
+
+        it "widens the upper bound to permit the version" do
+          expect(updated_req).to eq("1.0.0 - 1.7.0")
+        end
+      end
+
+      context "with BumpVersionsIfNecessary, in range" do
+        let(:chart_req) { "1.0.0 - 2.0.0" }
+        let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
+        let(:latest_resolvable_version) { "1.5.0" }
+
+        it "leaves it unchanged" do
+          expect(updated_req).to eq("1.0.0 - 2.0.0")
+        end
+      end
+    end
+
+    context "with a prerelease constraint (BumpVersions)" do
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
+      let(:latest_resolvable_version) { "1.5.0" }
+
+      context "with a caret prerelease" do
+        let(:chart_req) { "^1.2.3-rc1" }
+
+        it "bumps to the release caret" do
+          expect(updated_req).to eq("^1.5.0")
+        end
+      end
+
+      context "with an exact prerelease pin" do
+        let(:chart_req) { "1.2.3-rc1" }
+
+        it "bumps to the release version" do
+          expect(updated_req).to eq("1.5.0")
+        end
+      end
+    end
+
+    context "with an x-range (BumpVersions)" do
+      let(:chart_req) { "1.x" }
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
+      let(:latest_resolvable_version) { "4.5.0" }
+
+      it "bumps the major while preserving the wildcard" do
+        expect(updated_req).to eq("4.x")
+      end
+    end
+
     context "when there is no resolvable version" do
       let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
       let(:latest_resolvable_version) { nil }

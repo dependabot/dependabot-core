@@ -22,11 +22,30 @@ RSpec.describe Dependabot::Helm::Requirement do
         it { expect(satisfied?("^0.2.0", "0.2.9")).to be(true) }
         it { expect(satisfied?("^0.2.0", "0.3.0")).to be(false) }
       end
+
+      context "with a 0.0.x version (caret pins the patch)" do
+        it { expect(satisfied?("^0.0.3", "0.0.3")).to be(true) }
+        it { expect(satisfied?("^0.0.3", "0.0.4")).to be(false) }
+        it { expect(satisfied?("^0.0.3", "0.1.0")).to be(false) }
+      end
     end
 
     context "with a tilde requirement" do
       it { expect(satisfied?("~1.2.0", "1.2.9")).to be(true) }
       it { expect(satisfied?("~1.2.0", "1.3.0")).to be(false) }
+
+      context "with the ~> spelling" do
+        it { expect(satisfied?("~>1.2.0", "1.2.9")).to be(true) }
+        it { expect(satisfied?("~>1.2.0", "1.3.0")).to be(false) }
+      end
+    end
+
+    context "with a hyphen range (inclusive both ends)" do
+      it { expect(satisfied?("1.0.0 - 2.0.0", "1.5.0")).to be(true) }
+      it { expect(satisfied?("1.0.0 - 2.0.0", "1.0.0")).to be(true) }
+      it { expect(satisfied?("1.0.0 - 2.0.0", "2.0.0")).to be(true) }
+      it { expect(satisfied?("1.0.0 - 2.0.0", "2.0.1")).to be(false) }
+      it { expect(satisfied?("1.0.0 - 2.0.0", "0.9.0")).to be(false) }
     end
 
     context "with an explicit range (space-AND)" do

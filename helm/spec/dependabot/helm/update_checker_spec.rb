@@ -316,6 +316,30 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
         expect(checker.updated_requirements.first[:requirement]).to eq(">=1.0.0 <3.0.0")
       end
     end
+
+    context "with widen and an OR range where every alternative is out of range" do
+      # Regression: widen must actually widen (append an alternative). Reporting
+      # can_update? while leaving the constraint unchanged would crash the file
+      # updater with "Expected content to change!".
+      let(:version) { "^0.5.0 || ^1.0.0" }
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+      let(:latest) { Dependabot::Helm::Version.new("3.0.0") }
+
+      it "reports an update and appends a new alternative" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        expect(checker.updated_requirements.first[:requirement]).to eq("^0.5.0 || ^1.0.0 || ^3.0.0")
+      end
+    end
+
+    context "with widen and an OR range already satisfied" do
+      let(:version) { "^1.0.0 || ^2.0.0" }
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+      let(:latest) { Dependabot::Helm::Version.new("1.5.0") }
+
+      it "does not report an update" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+      end
+    end
   end
 
   describe "#filter_valid_releases" do

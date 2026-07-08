@@ -204,50 +204,27 @@ module Dependabot
         return false unless latest_version
         return false unless version_class.new(latest_version.to_s) > current_version
 
-        # A comparator/hyphen range that already permits the latest version is
-        # left untouched by the RequirementsUpdater under *every* strategy
-        # (including the default BumpVersions, which only rewrites the floor for
-        # caret/tilde/exact forms). Reporting an update here would hand the file
-        # updater an unchanged Chart.yaml and raise "Expected content to change!".
-        return false if range_constraint? && chart_requirement_satisfied_by_latest?
+        # For a chart dependency, an "update" means the authored Chart.yaml
+        # constraint actually changes. The RequirementsUpdater deliberately
+        # leaves some constraints untouched (an in-range comparator/hyphen range,
+        # or an OR range already satisfied by the latest version), so gate on
+        # whether it would produce a different constraint. Otherwise can_update?
+        # promises a change the file updater can't make, and it raises
+        # "Expected content to change!" on the unchanged Chart.yaml.
+        return true unless dependency_type == :helm_chart
 
-        # Under range-preserving strategies, don't open a PR when the resolved
-        # version already satisfies the authored Chart.yaml constraint.
-        return true unless range_preserving_strategy?
-
-        !chart_requirement_satisfied_by_latest?
+        chart_requirement_changes?
       end
 
+      # Whether running the authored chart constraint through the
+      # RequirementsUpdater yields a different constraint string.
       sig { returns(T::Boolean) }
-      def range_preserving_strategy?
-        [
-          RequirementsUpdateStrategy::BumpVersionsIfNecessary,
-          RequirementsUpdateStrategy::WidenRanges
-        ].include?(resolved_update_strategy)
-      end
+      def chart_requirement_changes?
+        req = dependency.requirements.first
+        return true unless req
 
-      sig { returns(T::Boolean) }
-      def chart_requirement_satisfied_by_latest?
-        return false unless dependency_type == :helm_chart
-
-        constraint = dependency.requirements.first&.dig(:requirement) || dependency.version
-        return false if constraint.nil? || constraint.to_s.strip.empty?
-
-        version = version_class.new(T.must(latest_version).to_s)
-        Helm::Requirement.requirements_array(constraint).any? { |r| r.satisfied_by?(version) }
-      end
-
-      # True when the authored constraint is a comparator (`<`) or hyphen range.
-      # These are the forms the RequirementsUpdater only rewrites when they fall
-      # *out* of range; matches its own `/(<|-\s)/i` detection.
-      sig { returns(T::Boolean) }
-      def range_constraint?
-        return false unless dependency_type == :helm_chart
-
-        constraint = dependency.requirements.first&.dig(:requirement) || dependency.version
-        return false if constraint.nil?
-
-        constraint.to_s.match?(/(<|-\s)/i)
+        current = req[:requirement] || dependency.version
+        updated_chart_requirement(req)[:requirement].to_s != current.to_s
       end
 
       sig { returns(T.nilable(T.any(String, Gem::Version))) }

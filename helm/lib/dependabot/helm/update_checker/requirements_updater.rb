@@ -139,10 +139,13 @@ module Dependabot
           updated_requirement =
             if reqs.any? { |r| r.match?(/(<|-\s)/i) }
               update_range_requirement(current_requirement)
-            elsif current_requirement.strip.split(SEPARATOR).one?
+            elsif reqs.one?
               update_version_string(current_requirement)
             else
-              current_requirement
+              # An OR of caret/tilde/exact alternatives, none of which permit the
+              # latest version: widen by adding a new alternative rather than
+              # rewriting the authored ones (npm's widen_ranges behavior).
+              "#{current_requirement} || ^#{latest_resolvable_version}"
             end
 
           T.cast(req.merge(requirement: updated_requirement), Dependabot::DependencyRequirement)
