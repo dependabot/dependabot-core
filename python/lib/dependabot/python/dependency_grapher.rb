@@ -73,13 +73,33 @@ module Dependabot
 
         groups = RequirementsLayers.new(dependency_files: dependency_files).groups
         # If we try to apply grouping, but find there is only one group, we prefer
-        # to fallback to the base method.
+        # to fallback to the base method (the whole directory parsed as one manifest,
+        # which naturally includes any setup.py/setup.cfg/pyproject.toml present).
         return super if groups.length < 2
 
-        groups
+        groups + non_requirements_manifest_groups
       end
 
       private
+
+      # When a pip/pip-compile directory is split into requirements layers, any non-requirements manifest
+      # sharing that directory (setup.py, setup.cfg, pyproject.toml) would otherwise fall outside every layer
+      # group and have its dependencies dropped.
+      #
+      # We instead emit each as its own self-attributed group so its dependencies are preserved and attributed
+      # the file itself. This matches existing static analysis behaviour.
+      #
+      # NOTE:
+      # This logic is only applied on the pip/pip-compile path, so poetry.lock/Pipfile.lock are absent as they would
+      # select the poetry/pipenv path which does not support layering.
+      #
+      # If a pyproject.toml is present it is as a pip-context manifest.
+      sig { returns(T::Array[Dependabot::DependencyGraphers::ManifestGroup]) }
+      def non_requirements_manifest_groups
+        [setup_file, setup_cfg_file, pyproject_toml].compact.map do |file|
+          Dependabot::DependencyGraphers::ManifestGroup.new(primary: file, files: [file])
+        end
+      end
 
       # An empty, nameless dependency file used to represent a directory that has no supported manifest and
       # resolves to no dependencies. The submission layer treats a nameless manifest as "nothing to report",

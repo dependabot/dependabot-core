@@ -1132,6 +1132,49 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
     end
   end
 
+  # A pip/pip-compile directory can hold requirements layers AND a non-requirements manifest
+  # (setup.py/setup.cfg/pyproject.toml).
+  #
+  # When layering splits the directory, those non-requirements manifests must still be emitted as their own
+  # self-attributed snapshots rather than dropped.
+  describe "attributing dependencies when a non-requirements manifest shares the layered directory" do
+    let(:app_requirements_txt) do
+      Dependabot::DependencyFile.new(
+        name: "requirements.txt",
+        content: "flask==3.0.0\n",
+        directory: "/"
+      )
+    end
+
+    let(:dev_requirements_txt) do
+      Dependabot::DependencyFile.new(
+        name: "dev-requirements.txt",
+        content: "pytest==8.3.3\n",
+        directory: "/"
+      )
+    end
+
+    let(:dependency_files) { [dev_requirements_txt, app_requirements_txt, setup_py] }
+
+    def resolved_package_names(snapshot)
+      snapshot.resolved_dependencies.each_key.map { |purl| purl[%r{\Apkg:pypi/([^@]+)}, 1] }
+    end
+
+    it "emits a self-attributed group for the non-requirements manifest alongside each layer (no drop)" do
+      manifest_names = grapher.manifest_group_snapshots.map { |snapshot| snapshot.manifest_file.name }
+
+      expect(manifest_names).to contain_exactly("requirements.txt", "dev-requirements.txt", "setup.py")
+    end
+
+    it "attributes each manifest's dependencies only to itself" do
+      snapshots = grapher.manifest_group_snapshots.to_h { |snapshot| [snapshot.manifest_file.name, snapshot] }
+
+      expect(resolved_package_names(snapshots.fetch("requirements.txt"))).to contain_exactly("flask")
+      expect(resolved_package_names(snapshots.fetch("dev-requirements.txt"))).to contain_exactly("pytest")
+      expect(resolved_package_names(snapshots.fetch("setup.py"))).to contain_exactly("requests")
+    end
+  end
+
   describe "#manifest_group_snapshots for package managers that do not support layering" do
     context "when the directory is a Poetry project" do
       let(:poetry_lock_file) do
