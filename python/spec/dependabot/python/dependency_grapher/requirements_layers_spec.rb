@@ -20,10 +20,13 @@ RSpec.describe Dependabot::Python::DependencyGrapher::RequirementsLayers do
       "dev-requirements.txt",
       "require.txt",
       "require-test.txt",
+      "py3-require.txt",
+      "pyenv_require_e2e.txt",
       "dependencies.txt",
       "my-dependencies.txt",
       "depend.txt",
-      "depends.txt"
+      "depends.txt",
+      "py3-depends.txt"
     ].each do |name|
       it "treats #{name} as a manifest" do
         expect(described_class.manifest_txt_filename?(name)).to be(true)
@@ -35,7 +38,10 @@ RSpec.describe Dependabot::Python::DependencyGrapher::RequirementsLayers do
       "notes.txt",
       "output.txt",
       "constraints.txt",
-      "LICENSE.txt"
+      "LICENSE.txt",
+      "prequire.txt",
+      "acquire.txt",
+      "independ.txt"
     ].each do |name|
       it "does not treat #{name} as a manifest" do
         expect(described_class.manifest_txt_filename?(name)).to be(false)
