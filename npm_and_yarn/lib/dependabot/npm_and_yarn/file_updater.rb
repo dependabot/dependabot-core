@@ -444,6 +444,10 @@ module Dependabot
       # blocked by a release-age gate) or when no positive cooldown is configured.
       # `default_days` is used because the native gates are a single global value
       # and cannot express per-semver-type days or include/exclude patterns.
+      #
+      # The gate is also skipped when none of the dependencies being updated are
+      # subject to the cooldown (per its `include`/`exclude` patterns), so an
+      # update the user explicitly opted out of cooldown for is not gated.
       sig { returns(T.nilable(Integer)) }
       def cooldown_release_age_days
         return nil if options.fetch(:security_updates_only, false)
@@ -453,6 +457,7 @@ module Dependabot
           T.nilable(Dependabot::Package::ReleaseCooldownOptions)
         )
         return nil if cooldown.nil?
+        return nil unless dependencies.any? { |dep| cooldown.included?(dep.name) }
 
         days = cooldown.default_days
         days.positive? ? days : nil
