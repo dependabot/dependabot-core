@@ -168,6 +168,46 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
         expect(latest_release_version.to_s.split(".").first.to_i).to be < 6
       end
     end
+
+    context "with a prerelease tag newer than the latest stable" do
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "pre-commit-hooks-with-prerelease.txt"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+
+      it "excludes the prerelease and returns the latest stable version" do
+        expect(latest_release_version).to be_a(Dependabot::PreCommit::Version)
+        expect(latest_release_version.to_s).to eq("6.0.0")
+      end
+
+      context "when the current version is itself a prerelease" do
+        let(:reference) { "v7.0.0-rc1" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "https://github.com/#{dependency_name}",
+            version: "7.0.0-rc1",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".pre-commit-config.yaml",
+              source: dependency_source
+            }],
+            package_manager: "pre_commit"
+          )
+        end
+
+        it "allows a newer prerelease as an update" do
+          expect(latest_release_version).to be_a(Dependabot::PreCommit::Version)
+          expect(latest_release_version.to_s).to eq("7.0.0.pre.rc2")
+        end
+      end
+    end
   end
 
   describe "cooldown filtering" do
