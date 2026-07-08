@@ -986,7 +986,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       it "logs version and support decision, returns true" do
         allow(described_class).to receive(:run_single_yarn_command).with("--version").and_return("4.10.0")
         expect(Dependabot.logger).to receive(:info)
-          .with(a_string_including("Yarn 4.10.0").and(including("bypass the release-age gate for security updates")))
+          .with(a_string_including("Yarn 4.10.0").and(including("supports npmMinimalAgeGate")))
         expect(described_class.yarn_berry_supports_minimal_age_gate?).to be(true)
       end
     end
