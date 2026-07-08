@@ -42,23 +42,25 @@ module Dependabot
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
         sig do
           returns(T.nilable(Dependabot::Package::PackageDetails))
         end
         def fetch
-          package_releases = crates_listing.fetch("versions", []).reject { |v| v["yanked"] }.map do |release|
+          releases = T.cast(crates_listing.fetch("versions", []), T::Array[T::Hash[String, T.anything]])
+          package_releases = releases.reject { |v| v["yanked"] }.map do |release|
+            created_at = T.cast(release["created_at"], T.nilable(String))
             package_release(
-              version: release["num"] || release["vers"],
-              released_at: release["created_at"] ? Time.parse(release["created_at"]) : nil,
-              downloads: release["downloads"],
-              url: "#{CRATES_IO_API}/#{release['dl_path']}",
-              rust_version: release["rust"]
+              version: T.cast(release["num"], T.nilable(String)) || T.cast(release["vers"], String),
+              released_at: created_at ? Time.parse(created_at) : nil,
+              downloads: T.cast(release["downloads"], T.nilable(Integer)),
+              url: "#{CRATES_IO_API}/#{T.cast(release['dl_path'], T.nilable(String))}",
+              rust_version: T.cast(release["rust"], T.nilable(String))
             )
           end
 
@@ -68,7 +70,7 @@ module Dependabot
         private
 
         sig do
-          returns(T.untyped)
+          returns(T::Hash[String, T.anything])
         end
         def crates_listing
           return @crates_listing unless @crates_listing.nil?
@@ -86,41 +88,45 @@ module Dependabot
           response = fetch_response(url, hdrs)
           return {} if response.status == 404
 
-          @crates_listing = T.let(parse_response(response, index), T.nilable(T::Hash[T.untyped, T.untyped]))
+          @crates_listing = T.let(parse_response(response, index), T.nilable(T::Hash[String, T.anything]))
 
           Dependabot.logger.info("Fetched metadata for #{dependency.name} from #{index} successfully")
 
-          @crates_listing
+          T.must(@crates_listing)
         end
 
-        sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
+        sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.anything])) }
         def fetch_dependency_info
-          dependency.requirements.filter_map { |r| r[:source] }.first
+          T.cast(
+            dependency.requirements.filter_map { |r| r[:source] }.first,
+            T.nilable(T::Hash[T.any(String, Symbol), T.anything])
+          )
         end
 
-        sig { params(info: T.untyped).returns(String) }
+        sig { params(info: T.nilable(T::Hash[T.any(String, Symbol), T.anything])).returns(String) }
         def fetch_index(info)
-          (info && info[:index]) || CRATES_IO_API
+          T.cast((info && (info[:index] || info["index"])) || CRATES_IO_API, String)
         end
 
-        sig { returns(T::Hash[T.untyped, T.untyped]) }
+        sig { returns(T::Hash[String, String]) }
         def default_headers
           { "User-Agent" => "Dependabot (dependabot.com)" }
         end
 
-        sig { params(info: T.untyped).returns(T::Hash[T.untyped, T.untyped]) }
+        sig { params(info: T.nilable(T::Hash[T.any(String, Symbol), T.anything])).returns(T::Hash[String, String]) }
         def auth_headers(info)
+          registry_name = T.cast(info && (info[:name] || info["name"]), T.nilable(String))
           registry_creds = credentials.find do |cred|
-            cred["type"] == "cargo_registry" && cred["registry"] == info[:name]
+            cred["type"] == "cargo_registry" && cred["registry"] == registry_name
           end
 
-          return {} if registry_creds.nil?
+          return {} unless registry_creds
 
           token = registry_creds["token"] || "placeholder_token"
           { "Authorization" => token }
         end
 
-        sig { params(url: String, headers: T.untyped).returns(Excon::Response) }
+        sig { params(url: String, headers: T::Hash[String, String]).returns(Excon::Response) }
         def fetch_response(url, headers)
           Excon.get(
             url,
@@ -129,7 +135,7 @@ module Dependabot
           )
         end
 
-        sig { params(response: Excon::Response, index: T.untyped).returns(T::Hash[T.untyped, T.untyped]) }
+        sig { params(response: Excon::Response, index: String).returns(T::Hash[String, T.anything]) }
         def parse_response(response, index)
           if index.start_with?("sparse+")
             parsed_response = response.body.lines
@@ -148,7 +154,7 @@ module Dependabot
           end
         end
 
-        sig { params(dependency: T.untyped, index: T.untyped).returns(String) }
+        sig { params(dependency: Dependabot::Dependency, index: String).returns(String) }
         def metadata_fetch_url(dependency, index)
           return "#{index}/#{dependency.name}" if index == CRATES_IO_API
 
