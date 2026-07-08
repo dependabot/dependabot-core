@@ -4,6 +4,8 @@
 require "digest"
 require "sorbet-runtime"
 
+require "dependabot/pull_request_creator/branch_name_template"
+
 module Dependabot
   class PullRequestCreator
     class BranchNamer
@@ -34,6 +36,9 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         attr_reader :branch_name_case
 
+        sig { returns(T.nilable(String)) }
+        attr_reader :template
+
         sig do
           params(
             dependencies: T::Array[Dependency],
@@ -43,7 +48,8 @@ module Dependabot
             prefix: String,
             max_length: T.nilable(Integer),
             word_separator: T.nilable(String),
-            branch_name_case: T.nilable(String)
+            branch_name_case: T.nilable(String),
+            template: T.nilable(String)
           )
             .void
         end
@@ -55,7 +61,8 @@ module Dependabot
           prefix: "dependabot",
           max_length: nil,
           word_separator: nil,
-          branch_name_case: nil
+          branch_name_case: nil,
+          template: nil
         )
           @dependencies      = dependencies
           @files             = files
@@ -65,6 +72,7 @@ module Dependabot
           @max_length        = max_length
           @word_separator    = word_separator
           @branch_name_case  = branch_name_case
+          @template          = template
         end
 
         sig { overridable.returns(String) }
@@ -73,6 +81,50 @@ module Dependabot
         end
 
         private
+
+        sig do
+          params(
+            vars: T::Hash[String, String],
+            strategy: Symbol,
+            digest: T.nilable(String)
+          ).returns(String)
+        end
+        def render_from_template(vars:, strategy:, digest: nil)
+          rendered = BranchNameTemplate.render(
+            T.must(template),
+            vars,
+            strategy: strategy,
+            digest: digest,
+            max_length: max_length
+          )
+
+          # Apply post-processing: separator, word_separator, case
+          rendered = rendered.gsub("/", separator)
+
+          if word_separator || branch_name_case
+            prefix_with_sep = "#{prefix}#{separator}"
+            if rendered.start_with?(prefix_with_sep)
+              prefix_part = prefix_with_sep
+              content = rendered[prefix_with_sep.length..]
+            else
+              prefix_part = ""
+              content = rendered
+            end
+
+            content = T.must(content).gsub("_", T.must(word_separator)) if word_separator
+
+            case branch_name_case
+            when "lower"
+              content = T.must(content).downcase
+            when "upper"
+              content = T.must(content).upcase
+            end
+
+            rendered = "#{prefix_part}#{content}"
+          end
+
+          rendered
+        end
 
         sig { params(ref_name: String).returns(String) }
         def sanitize_branch_name(ref_name)

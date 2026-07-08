@@ -9,6 +9,7 @@ require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/branch_namer/solo_strategy"
 require "dependabot/pull_request_creator/branch_namer/dependency_group_strategy"
 require "dependabot/pull_request_creator/branch_namer/multi_ecosystem_strategy"
+require "dependabot/pull_request_creator/branch_name_template"
 
 module Dependabot
   class PullRequestCreator
@@ -39,6 +40,9 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       attr_reader :branch_name_case
 
+      sig { returns(T.nilable(String)) }
+      attr_reader :template
+
       sig { returns(T.nilable(Dependabot::DependencyGroup)) }
       attr_reader :dependency_group
 
@@ -59,6 +63,7 @@ module Dependabot
           max_length: T.nilable(Integer),
           word_separator: T.nilable(String),
           branch_name_case: T.nilable(String),
+          template: T.nilable(String),
           includes_security_fixes: T::Boolean,
           multi_ecosystem_name: T.nilable(String)
         )
@@ -74,6 +79,7 @@ module Dependabot
         max_length: nil,
         word_separator: nil,
         branch_name_case: nil,
+        template: nil,
         includes_security_fixes: false,
         multi_ecosystem_name: nil
       )
@@ -86,6 +92,7 @@ module Dependabot
         @max_length    = max_length
         @word_separator = word_separator
         @branch_name_case = branch_name_case
+        @template      = template
         @includes_security_fixes = includes_security_fixes
         @multi_ecosystem_name = multi_ecosystem_name
       end
@@ -123,6 +130,7 @@ module Dependabot
           max_length: max_length,
           word_separator: word_separator,
           branch_name_case: branch_name_case,
+          template: template,
           multi_ecosystem_name: T.must(multi_ecosystem_name)
         )
       end
@@ -137,7 +145,8 @@ module Dependabot
           prefix: prefix,
           max_length: max_length,
           word_separator: word_separator,
-          branch_name_case: branch_name_case
+          branch_name_case: branch_name_case,
+          template: template
         )
       end
 
@@ -153,7 +162,8 @@ module Dependabot
           prefix: prefix,
           max_length: max_length,
           word_separator: word_separator,
-          branch_name_case: branch_name_case
+          branch_name_case: branch_name_case,
+          template: template
         )
       end
     end

@@ -15,6 +15,13 @@ module Dependabot
 
         sig { override.returns(String) }
         def new_branch_name
+          if template
+            return render_from_template(
+              vars: template_vars,
+              strategy: :solo
+            )
+          end
+
           return short_branch_name if branch_name_might_be_long?
 
           @name ||=
@@ -51,6 +58,23 @@ module Dependabot
             files.first&.directory&.tr(" ", "-"),
             target_branch
           ].compact
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def template_vars
+          dep_name = dependencies.map(&:name).join("-and-").tr(":[]", "-").tr("@", "")
+          version = branch_version_suffix || ""
+
+          vars = {
+            "prefix" => prefix,
+            "package_manager" => package_manager,
+            "directory" => files.first&.directory&.tr(" ", "-") || "/",
+            "dependency" => dep_name,
+            "version" => version,
+            "name" => "#{dep_name}-#{version}"
+          }
+          vars["target_branch"] = target_branch if target_branch
+          vars
         end
 
         sig { returns(String) }
