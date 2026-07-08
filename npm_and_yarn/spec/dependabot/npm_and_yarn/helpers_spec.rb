@@ -1066,6 +1066,46 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         expect(Dependabot.logger).to receive(:warn).with(a_string_including("command failed"))
         expect(described_class.yarn_berry_supports_minimal_age_gate?).to be(false)
       end
+
+      it "warns that a configured gate may still block security updates" do
+        allow(described_class).to receive(:run_single_yarn_command)
+          .with("--version")
+          .and_raise(StandardError, "command failed")
+        expect(Dependabot.logger).to receive(:warn)
+          .with(a_string_including("may still block security updates"))
+        described_class.yarn_berry_supports_minimal_age_gate?
+      end
+    end
+  end
+
+  describe "::higher_release_age_gate" do
+    it "returns the cooldown when no user gate is configured" do
+      expect(described_class.higher_release_age_gate(7, nil)).to eq(7)
+    end
+
+    it "returns nil when the cooldown is nil" do
+      expect(described_class.higher_release_age_gate(nil, 10)).to be_nil
+    end
+
+    it "returns nil when the cooldown is zero" do
+      expect(described_class.higher_release_age_gate(0, nil)).to be_nil
+    end
+
+    it "returns nil when the cooldown is negative" do
+      expect(described_class.higher_release_age_gate(-5, nil)).to be_nil
+    end
+
+    it "overrides with the cooldown when it exceeds the user gate" do
+      expect(described_class.higher_release_age_gate(14, 7)).to eq(14)
+    end
+
+    it "leaves the user gate untouched when it is equal or longer" do
+      expect(described_class.higher_release_age_gate(7, 7)).to be_nil
+      expect(described_class.higher_release_age_gate(7, 30)).to be_nil
+    end
+
+    it "never overrides a non-numeric (Float::INFINITY) user gate" do
+      expect(described_class.higher_release_age_gate(10_000, Float::INFINITY)).to be_nil
     end
   end
 end

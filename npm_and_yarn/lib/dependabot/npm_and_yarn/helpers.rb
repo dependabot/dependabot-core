@@ -89,7 +89,7 @@ module Dependabot
         params(cooldown: T.nilable(Integer), user_gate: T.nilable(T.any(Integer, Float))).returns(T.nilable(Integer))
       end
       def self.higher_release_age_gate(cooldown, user_gate)
-        return nil if cooldown.nil? || cooldown.zero?
+        return nil if cooldown.nil? || !cooldown.positive?
         return nil if user_gate && cooldown <= user_gate
 
         cooldown
@@ -290,8 +290,9 @@ module Dependabot
       rescue StandardError => e
         Dependabot.logger.warn(
           "Could not determine Yarn version to check npmMinimalAgeGate support: #{e.message}. " \
-          "Assuming unsupported (returning false). YARN_NPM_MINIMAL_AGE_GATE will not be set, " \
-          "so any release-age gate must be enforced by the registry or .yarnrc.yml instead."
+          "Assuming unsupported (returning false). YARN_NPM_MINIMAL_AGE_GATE will not be set, so the " \
+          "security-update `=0` bypass cannot be applied — any release-age gate configured in " \
+          ".yarnrc.yml (npmMinimalAgeGate) or enforced by the registry may still block security updates."
         )
         false
       end
