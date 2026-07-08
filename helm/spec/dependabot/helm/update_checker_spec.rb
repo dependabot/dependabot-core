@@ -290,6 +290,32 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
         expect(checker.updated_requirements.first[:requirement]).to eq(">=1.0.0 <3.0.0")
       end
     end
+
+    context "with the default strategy (increase) and an in-range comparator range" do
+      # Regression: the updater leaves a comparator range untouched when the
+      # latest version already satisfies it, so can_update? must not report an
+      # update (otherwise the file updater raises "Expected content to change!").
+      let(:version) { ">=1.0.0 <2.0.0" }
+      let(:latest) { Dependabot::Helm::Version.new("1.5.0") }
+
+      it "does not report an update" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+      end
+
+      it "leaves the requirement unchanged" do
+        expect(checker.updated_requirements.first[:requirement]).to eq(">=1.0.0 <2.0.0")
+      end
+    end
+
+    context "with the default strategy (increase) and an out-of-range comparator range" do
+      let(:version) { ">=1.0.0 <2.0.0" }
+      let(:latest) { Dependabot::Helm::Version.new("2.5.0") }
+
+      it "reports an update and widens the upper bound" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        expect(checker.updated_requirements.first[:requirement]).to eq(">=1.0.0 <3.0.0")
+      end
+    end
   end
 
   describe "#filter_valid_releases" do

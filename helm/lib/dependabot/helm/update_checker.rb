@@ -204,6 +204,13 @@ module Dependabot
         return false unless latest_version
         return false unless version_class.new(latest_version.to_s) > current_version
 
+        # A comparator/hyphen range that already permits the latest version is
+        # left untouched by the RequirementsUpdater under *every* strategy
+        # (including the default BumpVersions, which only rewrites the floor for
+        # caret/tilde/exact forms). Reporting an update here would hand the file
+        # updater an unchanged Chart.yaml and raise "Expected content to change!".
+        return false if range_constraint? && chart_requirement_satisfied_by_latest?
+
         # Under range-preserving strategies, don't open a PR when the resolved
         # version already satisfies the authored Chart.yaml constraint.
         return true unless range_preserving_strategy?
@@ -228,6 +235,19 @@ module Dependabot
 
         version = version_class.new(T.must(latest_version).to_s)
         Helm::Requirement.requirements_array(constraint).any? { |r| r.satisfied_by?(version) }
+      end
+
+      # True when the authored constraint is a comparator (`<`) or hyphen range.
+      # These are the forms the RequirementsUpdater only rewrites when they fall
+      # *out* of range; matches its own `/(<|-\s)/i` detection.
+      sig { returns(T::Boolean) }
+      def range_constraint?
+        return false unless dependency_type == :helm_chart
+
+        constraint = dependency.requirements.first&.dig(:requirement) || dependency.version
+        return false if constraint.nil?
+
+        constraint.to_s.match?(/(<|-\s)/i)
       end
 
       sig { returns(T.nilable(T.any(String, Gem::Version))) }
