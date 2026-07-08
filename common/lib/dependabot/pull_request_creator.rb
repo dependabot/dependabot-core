@@ -153,7 +153,7 @@ module Dependabot
     sig { returns(T.nilable(Encoding)) }
     attr_reader :pr_message_encoding
 
-    sig do
+    sig do # rubocop:disable Metrics/BlockLength
       params(
         source: Dependabot::Source,
         base_commit: String,

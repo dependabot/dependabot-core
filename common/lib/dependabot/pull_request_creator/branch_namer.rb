@@ -92,7 +92,7 @@ module Dependabot
         @max_length    = max_length
         @word_separator = word_separator
         @branch_name_case = branch_name_case
-        @template      = template
+        @template = template
         @includes_security_fixes = includes_security_fixes
         @multi_ecosystem_name = multi_ecosystem_name
       end

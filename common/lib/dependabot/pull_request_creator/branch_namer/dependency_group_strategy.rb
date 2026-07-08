@@ -75,10 +75,13 @@ module Dependabot
 
         sig { returns(T::Hash[String, String]) }
         def template_vars
+          directory_part = (directory || "/").sub(%r{^/}, "")
+          directory_part = "root" if directory_part.empty?
+
           vars = {
             "prefix" => prefix,
             "package_manager" => package_manager,
-            "directory" => directory || "/",
+            "directory" => directory_part,
             "group_name" => dependency_group.name,
             "name" => dependency_group.name
           }

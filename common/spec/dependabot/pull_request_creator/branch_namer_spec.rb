@@ -1007,5 +1007,200 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         end
       end
     end
+
+    context "with template" do
+      context "for solo strategy" do
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            template: "{prefix}/{package_manager}/{dependency}-{version}"
+          )
+        end
+
+        it "renders the template with placeholder values" do
+          expect(namer.new_branch_name).to eq("dependabot/dummy/business-1.5.0")
+        end
+      end
+
+      context "for solo strategy with custom prefix" do
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            prefix: "deps",
+            template: "{prefix}/{package_manager}/{dependency}-{version}"
+          )
+        end
+
+        it "uses the custom prefix in the template" do
+          expect(namer.new_branch_name).to eq("deps/dummy/business-1.5.0")
+        end
+      end
+
+      context "for solo strategy with separator post-processing" do
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            separator: "-",
+            template: "{prefix}/{package_manager}/{dependency}-{version}"
+          )
+        end
+
+        it "replaces slashes with the configured separator" do
+          expect(namer.new_branch_name).to eq("dependabot-dummy-business-1.5.0")
+        end
+      end
+
+      context "for solo strategy with word_separator and case" do
+        let(:dependency_name) { "my_package" }
+
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            word_separator: "-",
+            branch_name_case: "lower",
+            template: "{prefix}/{package_manager}/{dependency}-{version}"
+          )
+        end
+
+        it "applies word_separator and case after template rendering" do
+          expect(namer.new_branch_name).to eq("dependabot/dummy/my-package-1.5.0")
+        end
+      end
+
+      context "for solo strategy with target_branch" do
+        let(:target_branch) { "develop" }
+
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            template: "{prefix}/{target_branch}/{dependency}-{version}"
+          )
+        end
+
+        it "includes the target branch" do
+          expect(namer.new_branch_name).to eq("dependabot/develop/business-1.5.0")
+        end
+      end
+
+      context "for solo strategy with directory" do
+        let(:gemfile) do
+          Dependabot::DependencyFile.new(
+            name: "Gemfile",
+            content: fixture("ruby", "gemfiles", "Gemfile"),
+            directory: "/backend"
+          )
+        end
+
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            template: "{prefix}/{package_manager}/{directory}/{dependency}-{version}"
+          )
+        end
+
+        it "sanitizes directory (strips leading slash)" do
+          expect(namer.new_branch_name).to eq("dependabot/dummy/backend/business-1.5.0")
+        end
+      end
+
+      context "for solo strategy with root directory" do
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            template: "{prefix}/{package_manager}/{directory}/{dependency}-{version}"
+          )
+        end
+
+        it "uses 'root' for the root directory" do
+          expect(namer.new_branch_name).to eq("dependabot/dummy/root/business-1.5.0")
+        end
+      end
+
+      context "for group strategy" do
+        let(:dependency_group) { double("DependencyGroup", name: "frontend-deps") }
+
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            dependency_group: dependency_group,
+            template: "{prefix}/{package_manager}/{group_name}"
+          )
+        end
+
+        it "renders template and auto-appends digest" do
+          branch_name = namer.new_branch_name
+          expect(branch_name).to match(%r{^dependabot/dummy/frontend-deps-[a-f0-9]{10}$})
+        end
+      end
+
+      context "for group strategy with separator" do
+        let(:dependency_group) { double("DependencyGroup", name: "frontend-deps") }
+
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            dependency_group: dependency_group,
+            separator: "-",
+            template: "{prefix}/{package_manager}/{group_name}"
+          )
+        end
+
+        it "applies separator after template rendering" do
+          branch_name = namer.new_branch_name
+          expect(branch_name).to match(/^dependabot-dummy-frontend-deps-[a-f0-9]{10}$/)
+        end
+      end
+
+      context "for multi_ecosystem strategy" do
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            multi_ecosystem_name: "all-security",
+            template: "{prefix}/security/{group_name}"
+          )
+        end
+
+        it "renders template and auto-appends digest" do
+          branch_name = namer.new_branch_name
+          expect(branch_name).to match(%r{^dependabot/security/all-security-[a-f0-9]{10}$})
+        end
+      end
+
+      context "for solo strategy with max_length" do
+        let(:namer) do
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            max_length: 30,
+            template: "{prefix}/{package_manager}/{dependency}-{version}"
+          )
+        end
+
+        it "truncates to max_length" do
+          expect(namer.new_branch_name.length).to eq(30)
+        end
+      end
+    end
   end
 end

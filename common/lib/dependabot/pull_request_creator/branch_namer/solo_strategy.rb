@@ -62,19 +62,36 @@ module Dependabot
 
         sig { returns(T::Hash[String, String]) }
         def template_vars
-          dep_name = dependencies.map(&:name).join("-and-").tr(":[]", "-").tr("@", "")
+          dep_name = template_dependency_name
           version = branch_version_suffix || ""
 
           vars = {
             "prefix" => prefix,
             "package_manager" => package_manager,
-            "directory" => files.first&.directory&.tr(" ", "-") || "/",
+            "directory" => sanitized_directory,
             "dependency" => dep_name,
             "version" => version,
             "name" => "#{dep_name}-#{version}"
           }
           vars["target_branch"] = target_branch if target_branch
           vars
+        end
+
+        sig { returns(String) }
+        def template_dependency_name
+          if dependencies.count > 1 && updating_a_property?
+            property_name
+          elsif dependencies.count > 1 && updating_a_dependency_set?
+            dependency_set.fetch(:group)
+          else
+            dependencies.map(&:name).join("-and-").tr(":[]", "-").tr("@", "")
+          end
+        end
+
+        sig { returns(String) }
+        def sanitized_directory
+          dir = (files.first&.directory&.tr(" ", "-") || "/").sub(%r{^/}, "")
+          dir.empty? ? "root" : dir
         end
 
         sig { returns(String) }

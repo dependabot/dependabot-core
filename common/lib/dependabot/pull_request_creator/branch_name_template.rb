@@ -15,15 +15,15 @@ module Dependabot
       class Error < Dependabot::DependabotError; end
 
       SOLO_PLACEHOLDERS = T.let(
-        %w[prefix package_manager directory target_branch dependency version name].freeze,
+        %w(prefix package_manager directory target_branch dependency version name).freeze,
         T::Array[String]
       )
       GROUP_PLACEHOLDERS = T.let(
-        %w[prefix package_manager directory target_branch group_name name].freeze,
+        %w(prefix package_manager directory target_branch group_name name).freeze,
         T::Array[String]
       )
       MULTI_ECO_PLACEHOLDERS = T.let(
-        %w[prefix target_branch group_name name].freeze,
+        %w(prefix target_branch group_name name).freeze,
         T::Array[String]
       )
 
@@ -33,17 +33,30 @@ module Dependabot
       #    brackets are well-formed, and no forbidden placeholders used.
       # ---------------------------------------------------------------
       sig { params(template: String, strategy: Symbol).returns(T::Boolean) }
-      def self.validate_template(template, strategy:)
+      def self.validate_template(template, strategy:) # rubocop:disable Naming/PredicateMethod
         raise Error, "Template must be a non-empty string." if template.empty?
 
-        allowed = case strategy
-                  when :solo then SOLO_PLACEHOLDERS
-                  when :group then GROUP_PLACEHOLDERS
-                  when :multi_ecosystem then MULTI_ECO_PLACEHOLDERS
-                  else
-                    raise Error, "Unknown strategy: #{strategy}"
-                  end
+        allowed = allowed_placeholders(strategy)
+        messages = collect_template_errors(template, allowed, strategy)
 
+        raise Error, "#{messages.join("\n")}\nAllowed: #{allowed.map { |v| "{#{v}}" }.join(', ')}" if messages.any?
+
+        true
+      end
+
+      sig { params(strategy: Symbol).returns(T::Array[String]) }
+      def self.allowed_placeholders(strategy)
+        case strategy
+        when :solo then SOLO_PLACEHOLDERS
+        when :group then GROUP_PLACEHOLDERS
+        when :multi_ecosystem then MULTI_ECO_PLACEHOLDERS
+        else
+          raise Error, "Unknown strategy: #{strategy}"
+        end
+      end
+
+      sig { params(template: String, allowed: T::Array[String], strategy: Symbol).returns(T::Array[String]) }
+      def self.collect_template_errors(template, allowed, strategy)
         used = template.scan(/\{(\w+)\}/).flatten
         unknown = used.uniq.reject { |t| allowed.include?(t) }
         malformed = template.gsub(/\{\w+\}/, "").match?(/[{}]/)
@@ -56,11 +69,7 @@ module Dependabot
           messages << "{package_manager} is not available for multi-ecosystem groups (spans multiple ecosystems)."
         end
 
-        if messages.any?
-          raise Error, "#{messages.join("\n")}\nAllowed: #{allowed.map { |v| "{#{v}}" }.join(', ')}"
-        end
-
-        true
+        messages
       end
 
       # ---------------------------------------------------------------
@@ -68,12 +77,13 @@ module Dependabot
       #    Validates the final branch name against Git ref rules.
       # ---------------------------------------------------------------
       sig { params(name: String).returns(T::Boolean) }
-      def self.validate_ref_name(name)
+      def self.validate_ref_name(name) # rubocop:disable Naming/PredicateMethod
         illegal = %r{
           [\x00-\x1F\x7F\ ~^:?*\[\\] |
           \.\.                         |
           @\{                          |
           //                           |
+          /\.                          |
           \A/                          |
           /\z                          |
           \.lock\z                     |
@@ -82,9 +92,7 @@ module Dependabot
           \A@\z
         }x
 
-        if name.match?(illegal)
-          raise Error, "Resolved branch name \"#{name}\" is not a valid Git ref."
-        end
+        raise Error, "Resolved branch name \"#{name}\" is not a valid Git ref." if name.match?(illegal)
 
         true
       end
@@ -115,12 +123,7 @@ module Dependabot
         end
 
         # Auto-append digest for Group/MultiEcosystem
-        if digest && strategy != :solo
-          name = "#{name}-#{digest}"
-        end
-
-        # Validate git ref
-        validate_ref_name(name)
+        name = "#{name}-#{digest}" if digest && strategy != :solo
 
         # Max-length truncation (preserve digest at tail)
         if max_length && name.length > max_length
@@ -134,6 +137,9 @@ module Dependabot
             name = "#{name[0...(max_length - 41)]}-#{sha}"
           end
         end
+
+        # Validate git ref after all transformations (including truncation)
+        validate_ref_name(name)
 
         name
       end

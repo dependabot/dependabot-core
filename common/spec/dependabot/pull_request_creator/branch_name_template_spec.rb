@@ -155,6 +155,17 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNameTemplate do
         )
       end
     end
+
+    context "with a ref containing slash-dot" do
+      it "raises an error" do
+        expect do
+          described_class.validate_ref_name("branch/.hidden")
+        end.to raise_error(
+          Dependabot::PullRequestCreator::BranchNameTemplate::Error,
+          /is not a valid Git ref/
+        )
+      end
+    end
   end
 
   describe ".render" do

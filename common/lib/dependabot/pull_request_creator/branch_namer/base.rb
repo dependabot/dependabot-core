@@ -94,36 +94,11 @@ module Dependabot
             T.must(template),
             vars,
             strategy: strategy,
-            digest: digest,
-            max_length: max_length
+            digest: digest
           )
 
-          # Apply post-processing: separator, word_separator, case
-          rendered = rendered.gsub("/", separator)
-
-          if word_separator || branch_name_case
-            prefix_with_sep = "#{prefix}#{separator}"
-            if rendered.start_with?(prefix_with_sep)
-              prefix_part = prefix_with_sep
-              content = rendered[prefix_with_sep.length..]
-            else
-              prefix_part = ""
-              content = rendered
-            end
-
-            content = T.must(content).gsub("_", T.must(word_separator)) if word_separator
-
-            case branch_name_case
-            when "lower"
-              content = T.must(content).downcase
-            when "upper"
-              content = T.must(content).upcase
-            end
-
-            rendered = "#{prefix_part}#{content}"
-          end
-
-          rendered
+          # Apply post-processing (separator, word_separator, case) and max-length
+          sanitize_branch_name(rendered)
         end
 
         sig { params(ref_name: String).returns(String) }
