@@ -500,7 +500,7 @@ module Dependabot
         nil
       end
 
-      sig { params(headers: T.untyped, tag_name: String).returns(T.nilable(Time)) }
+      sig { params(headers: T::Hash[Symbol, String], tag_name: String).returns(T.nilable(Time)) }
       def published_date_from_response_headers(headers, tag_name)
         last_modified = headers[:last_modified]
         published_date = begin
