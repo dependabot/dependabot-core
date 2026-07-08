@@ -601,10 +601,10 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     end
 
     # The other directory has no manifests so it is reported without needing to
-    # parse an ecosystem, keeping the focus on the degraded-fetch behaviour.
+    # parse an ecosystem, keeping the focus on the skipped-fetch behaviour.
     let(:dependency_files) { [] }
 
-    it "submits a degraded snapshot describing the unreachable path dependency" do
+    it "submits a skipped snapshot describing the unreachable path dependency" do
       submissions = []
       allow(service).to receive(:create_dependency_submission) do |args|
         submissions << args[:dependency_submission]
@@ -612,15 +612,16 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
       update_graph_processor.run
 
-      degraded = submissions.find do |s|
-        s.payload[:metadata][:status] == GithubApi::DependencySubmission::SnapshotStatus::DEGRADED.serialize
+      skipped = submissions.find do |s|
+        s.payload[:metadata][:scanned_manifest_path] == "rubygems::/broken"
       end
 
-      expect(degraded).not_to be_nil
-      expect(degraded.payload[:metadata][:reason])
-        .to eq(GithubApi::DependencySubmission::DEGRADED_REASON_PATH_DEPENDENCIES_NOT_REACHABLE)
-      expect(degraded.payload[:metadata][:scanned_manifest_path]).to eq("rubygems::/broken")
-      expect(degraded.payload[:manifests]).to be_empty
+      expect(skipped).not_to be_nil
+      expect(skipped.payload[:metadata][:status])
+        .to eq(GithubApi::DependencySubmission::SnapshotStatus::SKIPPED.serialize)
+      expect(skipped.payload[:metadata][:reason])
+        .to eq(GithubApi::DependencySubmission::SKIPPED_REASON_PATH_DEPENDENCIES_NOT_REACHABLE)
+      expect(skipped.payload[:manifests]).to be_empty
     end
 
     it "does not mislabel the affected directory as having no manifests" do
@@ -628,7 +629,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         payload = args[:dependency_submission].payload
         if payload[:metadata][:scanned_manifest_path] == "rubygems::/broken"
           expect(payload[:metadata][:status])
-            .to eq(GithubApi::DependencySubmission::SnapshotStatus::DEGRADED.serialize)
+            .to eq(GithubApi::DependencySubmission::SnapshotStatus::SKIPPED.serialize)
           expect(payload[:metadata][:reason])
             .not_to eq(GithubApi::DependencySubmission::EMPTY_REASON_NO_MANIFESTS)
         end
@@ -637,12 +638,12 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       update_graph_processor.run
     end
 
-    it "records a degraded workflow result for the affected directory" do
+    it "records a skipped workflow result for the affected directory" do
       allow(service).to receive(:record_workflow_result)
       expect(service).to receive(:record_workflow_result).with(
         directory: dir_broken,
-        status: GithubApi::DependencySubmission::SnapshotStatus::DEGRADED.serialize,
-        details: GithubApi::DependencySubmission::DEGRADED_REASON_PATH_DEPENDENCIES_NOT_REACHABLE
+        status: GithubApi::DependencySubmission::SnapshotStatus::SKIPPED.serialize,
+        details: GithubApi::DependencySubmission::SKIPPED_REASON_PATH_DEPENDENCIES_NOT_REACHABLE
       )
 
       update_graph_processor.run

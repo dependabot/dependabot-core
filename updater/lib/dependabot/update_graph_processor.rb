@@ -104,10 +104,10 @@ module Dependabot
 
       # A non-fatal fetch error (e.g. an unresolvable path dependency) means we
       # could not fetch this directory's files, but the rest of the job proceeded.
-      # Report it as a degraded snapshot describing the failure rather than a
+      # Report it as a skipped snapshot describing the failure rather than a
       # misleading "no manifests" skip.
       if (fetch_error = directory_fetch_errors[directory])
-        submit_degraded_fetch_error(branch, directory, directory_source, fetch_error)
+        submit_skipped_fetch_error(branch, directory, directory_source, fetch_error)
         return
       end
 
@@ -214,7 +214,7 @@ module Dependabot
       dependency_files.select { |f| f.directory == directory }
     end
 
-    # Submits a degraded snapshot for a directory whose files could not be fetched
+    # Submits a skipped snapshot for a directory whose files could not be fetched
     # due to a non-fatal error (e.g. an unresolvable path dependency). The snapshot
     # carries the failure reason so consumers can distinguish it from a directory
     # that genuinely has no manifests.
@@ -226,8 +226,8 @@ module Dependabot
         error: Dependabot::DependabotError
       ).void
     end
-    def submit_degraded_fetch_error(branch, directory, source, error)
-      reason = degraded_reason_for(error)
+    def submit_skipped_fetch_error(branch, directory, source, error)
+      reason = skipped_reason_for(error)
 
       Dependabot.logger.warn("Dependency graph incomplete in directory #{directory}: #{error.message}")
 
@@ -240,7 +240,7 @@ module Dependabot
       submission = empty_submission(
         branch,
         source,
-        GithubApi::DependencySubmission::SnapshotStatus::DEGRADED,
+        GithubApi::DependencySubmission::SnapshotStatus::SKIPPED,
         reason
       )
       Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
@@ -248,16 +248,16 @@ module Dependabot
 
       record_workflow_result(
         directory,
-        GithubApi::DependencySubmission::SnapshotStatus::DEGRADED,
+        GithubApi::DependencySubmission::SnapshotStatus::SKIPPED,
         reason
       )
     end
 
     sig { params(error: Dependabot::DependabotError).returns(String) }
-    def degraded_reason_for(error)
+    def skipped_reason_for(error)
       case error
       when Dependabot::PathDependenciesNotReachable
-        GithubApi::DependencySubmission::DEGRADED_REASON_PATH_DEPENDENCIES_NOT_REACHABLE
+        GithubApi::DependencySubmission::SKIPPED_REASON_PATH_DEPENDENCIES_NOT_REACHABLE
       else
         error.message
       end

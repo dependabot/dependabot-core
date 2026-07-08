@@ -208,7 +208,7 @@ RSpec.describe GithubApi::DependencySubmission do
     it_behaves_like "dependency_submission", true
   end
 
-  context "with a degraded status and an unresolvable path dependency reason" do
+  context "with a skipped status and an unresolvable path dependency reason" do
     subject(:dependency_submission) do
       described_class.new(
         job_id: "9999",
@@ -217,8 +217,8 @@ RSpec.describe GithubApi::DependencySubmission do
         package_manager: "bundler",
         manifest_file: empty_file,
         resolved_dependencies: {},
-        status: described_class::SnapshotStatus::DEGRADED,
-        reason: described_class::DEGRADED_REASON_PATH_DEPENDENCIES_NOT_REACHABLE
+        status: described_class::SnapshotStatus::SKIPPED,
+        reason: described_class::SKIPPED_REASON_PATH_DEPENDENCIES_NOT_REACHABLE
       )
     end
 
@@ -226,12 +226,12 @@ RSpec.describe GithubApi::DependencySubmission do
       Dependabot::DependencyFile.new(name: "", content: "", directory: "/broken")
     end
 
-    it "surfaces the degraded status and reason in the payload metadata" do
+    it "surfaces the skipped status and reason in the payload metadata" do
       payload = dependency_submission.payload
 
       expect(payload[:manifests]).to be_empty
       expect(payload[:metadata][:status])
-        .to eq(described_class::SnapshotStatus::DEGRADED.serialize)
+        .to eq(described_class::SnapshotStatus::SKIPPED.serialize)
       expect(payload[:metadata][:reason]).to eq("unresolvable path dependency")
     end
   end
