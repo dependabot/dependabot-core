@@ -87,13 +87,13 @@ module Dependabot
       # group and have its dependencies dropped.
       #
       # We instead emit each as its own self-attributed group so its dependencies are preserved and attributed
-      # the file itself. This matches existing static analysis behaviour.
+      # to the file itself. This matches existing static analysis behaviour.
       #
       # NOTE:
       # This logic is only applied on the pip/pip-compile path, so poetry.lock/Pipfile.lock are absent as they would
       # select the poetry/pipenv path which does not support layering.
       #
-      # If a pyproject.toml is present it is as a pip-context manifest.
+      # If a pyproject.toml is present, it is treated as a pip-context manifest.
       sig { returns(T::Array[Dependabot::DependencyGraphers::ManifestGroup]) }
       def non_requirements_manifest_groups
         [setup_file, setup_cfg_file, pyproject_toml].compact.map do |file|

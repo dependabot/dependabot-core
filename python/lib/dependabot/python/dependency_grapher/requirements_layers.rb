@@ -150,12 +150,32 @@ module Dependabot
           requirement_family_files.select { |f| File.basename(f.name).include?("constraint") }
         end
 
-        # Finds sibling files referenced by a requirements file via `-r`/`-c`.
+        # Finds sibling files referenced by a requirements file via `-r`/`-c`, following the chain transitively.
+        #
+        # A referenced file can itself reference further files (e.g. `develop.in -r test.in`, `test.in -r base.in`),
+        # so we walk the whole closure to gather every sibling the layer needs on disk to parse in isolation.
         sig { params(file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
         def referenced_requirement_files(file)
-          self.class.referenced_paths(file).filter_map do |path|
-            requirement_family_files.find { |f| f.name == path }
+          by_name = requirement_family_files.to_h { |f| [f.name, f] }
+          seen = T.let(Set.new, T::Set[String])
+          queue = [file]
+          collected = T.let([], T::Array[Dependabot::DependencyFile])
+
+          until queue.empty?
+            current = T.must(queue.shift)
+            self.class.referenced_paths(current).each do |path|
+              next if seen.include?(path)
+
+              seen << path
+              referenced = by_name[path]
+              next if referenced.nil?
+
+              collected << referenced
+              queue << referenced
+            end
           end
+
+          collected
         end
 
         # Returns a support-file copy of the given file so it can be parsed for cross-reference resolution

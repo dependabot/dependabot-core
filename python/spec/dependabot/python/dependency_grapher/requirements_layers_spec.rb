@@ -126,6 +126,24 @@ RSpec.describe Dependabot::Python::DependencyGrapher::RequirementsLayers do
       end
     end
 
+    context "with a transitive -r chain three files deep" do
+      let(:dependency_files) do
+        [
+          file("base.in", "foo==1.0\n"),
+          file("test.in", "-r base.in\nbar==2.0\n"),
+          file("develop.in", "-r test.in\nbaz==3.0\n")
+        ]
+      end
+
+      it "includes every transitively referenced file in the referencing group as support files" do
+        develop_group = layers.groups.find { |g| g.primary.name == "develop.in" }
+        names = develop_group.files.map(&:name)
+
+        expect(names).to include("test.in", "base.in")
+        expect(develop_group.files.select(&:support_file?).map(&:name)).to include("test.in", "base.in")
+      end
+    end
+
     context "with a shared constraints file" do
       let(:dependency_files) do
         [
