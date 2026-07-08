@@ -60,11 +60,11 @@ module Dependabot
           )
         end
 
-        sig { params(source: T.nilable(T::Hash[Symbol, String])).returns(Dependabot::GitCommitChecker) }
+        sig { params(source: T.nilable(T::Hash[Symbol, Object])).returns(Dependabot::GitCommitChecker) }
         def git_commit_checker_for(source)
           @git_commit_checkers ||= T.let(
             {},
-            T.nilable(T::Hash[T.nilable(T::Hash[Symbol, String]), Dependabot::GitCommitChecker])
+            T.nilable(T::Hash[T.nilable(T::Hash[Symbol, Object]), Dependabot::GitCommitChecker])
           )
 
           @git_commit_checkers[source] ||= Dependabot::GitCommitChecker.new(
@@ -73,7 +73,7 @@ module Dependabot
             ignored_versions: ignored_versions,
             raise_on_ignored: raise_on_ignored,
             consider_version_branches_pinned: @consider_version_branches_pinned,
-            dependency_source_details: source || @dependency_source_details
+            dependency_source_details: T.cast(source, T.nilable(T::Hash[Symbol, String])) || @dependency_source_details
           )
         end
       end
