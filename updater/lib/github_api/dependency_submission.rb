@@ -78,7 +78,11 @@ module GithubApi
       @package_manager = package_manager
 
       # A submission always covers a single directory, and every ecosystem produces at least one manifest
-      # group snapshot, even in the case of
+      # group snapshot.
+      #
+      # A directory with no supported manifest is represented by a single snapshot for a
+      # nameless sentinel manifest, so an empty array here is a programming error rather than "nothing to
+      # report".
       raise ArgumentError, "manifest_snapshots must not be empty" if manifest_snapshots.empty?
 
       @manifest_snapshots = manifest_snapshots
@@ -98,7 +102,9 @@ module GithubApi
     # empty-submission checks; the payload itself is built per-manifest from `manifest_snapshots`.
     sig { returns(T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency]) }
     def resolved_dependencies
-      @manifest_snapshots.each_with_object({}) do |snapshot, aggregate|
+      @manifest_snapshots.each_with_object(
+        T.let({}, T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency])
+      ) do |snapshot, aggregate|
         aggregate.merge!(snapshot.resolved_dependencies)
       end
     end
