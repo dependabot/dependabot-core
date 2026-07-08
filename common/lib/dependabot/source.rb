@@ -130,7 +130,7 @@ module Dependabot
 
     sig { void }
     def self.reset_github_enterprise_cache!
-      @github_enterprise_cache = {}
+      @github_enterprise_cache.clear
     end
 
     sig { params(base_url: String).returns(T::Boolean) }
@@ -140,6 +140,8 @@ module Dependabot
       result = detect_github_enterprise(base_url)
       @github_enterprise_cache[base_url] = result
       result
+    rescue StandardError
+      false
     end
 
     sig { params(base_url: String).returns(T::Boolean) }
@@ -149,8 +151,6 @@ module Dependabot
         # Alternatively: resp.headers["Server"] == "GitHub.com", but this
         # currently doesn't work with development environments
         ((resp.headers["X-GitHub-Request-Id"] && !resp.headers["X-GitHub-Request-Id"]&.empty?) || false)
-    rescue StandardError
-      false
     end
     private_class_method :detect_github_enterprise
 

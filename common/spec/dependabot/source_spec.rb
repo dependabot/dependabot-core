@@ -402,11 +402,11 @@ RSpec.describe Dependabot::Source do
         stub_request(:get, "https://unreachable.example.com/status").to_raise(Excon::Error::Timeout)
       end
 
-      it "returns false and caches the result" do
+      it "returns false and retries on subsequent calls" do
         expect(described_class.github_enterprise?("https://unreachable.example.com")).to be false
         described_class.github_enterprise?("https://unreachable.example.com")
 
-        expect(WebMock).to have_requested(:get, "https://unreachable.example.com/status").once
+        expect(WebMock).to have_requested(:get, "https://unreachable.example.com/status").twice
       end
     end
   end
