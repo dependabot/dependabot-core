@@ -160,9 +160,9 @@ module Dependabot
         return unless scoped.errored_fetching_subdependencies
 
         errored_fetching_subdependencies!
-        # For now, last subdependency error wins - the full error dialogue will be present in the logs,
-        # this ensures we have something for job summary dialogues.
-        @subdependency_error = scoped.subdependency_error if @subdependency_error.nil?
+        # We keep the last subdependency error we see - the full error dialogue will be present in the logs,
+        # this just ensures job summary dialogues have something to show.
+        @subdependency_error = scoped.subdependency_error unless scoped.subdependency_error.nil?
       end
 
       # Builds a grapher of the same class scoped to a subset of the directory's files, reusing the current
