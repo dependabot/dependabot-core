@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -67,7 +67,14 @@ module Dependabot
         sig { returns(T::Array[DependencyFile]) }
         attr_reader :dependency_files
 
-        sig { abstract.returns(T.untyped) }
+        sig do
+          abstract.returns(
+            T.any(
+              Dependabot::Gradle::FileParser::PropertyValueFinder,
+              Dependabot::Sbt::FileParser::PropertyValueFinder
+            )
+          )
+        end
         def property_value_finder; end
 
         sig { params(previous_value: String).returns(Regexp) }
