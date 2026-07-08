@@ -8,6 +8,7 @@ require "uri"
 require "dependabot/bundler/update_checker"
 require "dependabot/bundler/native_helpers"
 require "dependabot/bundler/helpers"
+require "dependabot/logger"
 require "dependabot/registry_client"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -41,9 +42,11 @@ module Dependabot
         # Raised by Bundler when a registry's compact index (`/info/<gem>`) returns
         # gem metadata it can't parse (e.g. an illformed `ruby:`/`rubygems:`
         # requirement). This means the *registry* served bad data, not that the
-        # user's dependency files are broken.
+        # user's dependency files are broken. The trailing `detail` capture keeps
+        # Bundler's own explanation (e.g. `Illformed requirement [...]`) so the
+        # exact parse failure is preserved rather than discarded.
         REGISTRY_METADATA_ERROR_REGEX =
-          /error parsing the metadata for the gem (?<gem>\S+) \((?<version>[^)]+)\)/
+          /error parsing the metadata for the gem (?<gem>\S+) \((?<version>[^)]+)\):?\s*(?<detail>.*)/m
 
         module BundlerErrorPatterns
           MISSING_AUTH_REGEX = /bundle config set --global (?<source>.*) username:password/
@@ -217,8 +220,22 @@ module Dependabot
           source = private_registry_source
           return nil unless source
 
+          # Bundler's original message identifies which gem/version the registry
+          # served unparseable metadata for, and why (e.g. the illformed
+          # requirement string). The structured job error only records the source
+          # host, so log the full message here to keep the offending gem
+          # diagnosable from the updater logs.
+          Dependabot.logger.error(
+            "Registry #{source} returned unparseable compact-index metadata for " \
+            "#{match[:gem]} (#{match[:version]}); raising PrivateSourceBadResponse. " \
+            "Original Bundler error: #{error.message.strip}"
+          )
+
+          parse_detail = match[:detail].to_s.strip.gsub(/\s*\n\s*/, "; ")
           detail = "Invalid gem metadata returned for #{match[:gem]} (#{match[:version]}) " \
                    "by the source: #{source}"
+          detail += " (#{parse_detail})" unless parse_detail.empty?
+
           Dependabot::PrivateSourceBadResponse.new(source, detail)
         end
 
