@@ -17,7 +17,7 @@ require "toml-rb"
 
 module Dependabot
   module Python
-    class DependencyGrapher < Dependabot::DependencyGraphers::Base # rubocop:disable Metrics/ClassLength
+    class DependencyGrapher < Dependabot::DependencyGraphers::Base
       require_relative "dependency_grapher/lockfile_generator"
       require_relative "dependency_grapher/requirements_layers"
 
@@ -154,22 +154,11 @@ module Dependabot
       end
 
       # Resolves the `.txt` files referenced from a requirements file via `-r`/`-c`, returning their names
-      # relative to the repo (matching the fetched DependencyFile names) so we can retain them. Reuses
-      # SharedFileFetcher's reference regexes so the grapher keeps exactly the children the fetcher pulled in.
+      # relative to the repo (matching the fetched DependencyFile names) so we can retain them. Delegates to
+      # RequirementsLayers.referenced_paths so grouping and the bystander filter resolve references identically.
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
       def referenced_txt_names(file)
-        content = file.content
-        return [] if content.nil?
-
-        current_dir = File.dirname(file.name)
-        referenced_paths = content.scan(Dependabot::Python::SharedFileFetcher::CHILD_REQUIREMENT_REGEX).flatten +
-                           content.scan(Dependabot::Python::SharedFileFetcher::CONSTRAINT_REGEX).flatten
-
-        referenced_paths.filter_map do |path|
-          resolved = current_dir == "." ? path : File.join(current_dir, path)
-          resolved = Pathname.new(resolved).cleanpath.to_path
-          resolved if resolved.end_with?(".txt")
-        end
+        RequirementsLayers.referenced_paths(file).select { |path| path.end_with?(".txt") }
       end
 
       sig { returns(T::Boolean) }
