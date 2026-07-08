@@ -1175,6 +1175,68 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
     end
   end
 
+  # A pip `-c` constraints file installs nothing; it only pins versions of packages required elsewhere. Neither
+  # the legacy dependency-graph-api nor the snapshots API treats constraints.txt as a manifest, so a package that
+  # originates only from a constraints file must not be attributed to any snapshot - and definitely not duplicated
+  # across every layer that shares the constraints file.
+  describe "excluding dependencies that originate only from a pip constraints file" do
+    let(:constraints_txt) do
+      Dependabot::DependencyFile.new(
+        name: "constraints.txt",
+        content: "urllib3==2.0.0\n",
+        directory: "/"
+      )
+    end
+
+    def resolved_package_names(snapshot)
+      snapshot.resolved_dependencies.each_key.map { |purl| purl[%r{\Apkg:pypi/([^@]+)}, 1] }
+    end
+
+    context "with a single requirements file that references a constraints file" do
+      let(:requirements_with_constraint) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "-c constraints.txt\nflask==3.0.0\n",
+          directory: "/"
+        )
+      end
+      let(:dependency_files) { [requirements_with_constraint, constraints_txt] }
+
+      it "attributes the real dependency but drops the constraint-only package" do
+        names = grapher.manifest_group_snapshots.flat_map { |snapshot| resolved_package_names(snapshot) }
+
+        expect(names).to include("flask")
+        expect(names).not_to include("urllib3")
+      end
+    end
+
+    context "with multiple requirements layers sharing a constraints file" do
+      let(:app_requirements) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "-c constraints.txt\nflask==3.0.0\n",
+          directory: "/"
+        )
+      end
+      let(:dev_requirements) do
+        Dependabot::DependencyFile.new(
+          name: "dev-requirements.txt",
+          content: "-c constraints.txt\npytest==8.3.3\n",
+          directory: "/"
+        )
+      end
+      let(:dependency_files) { [dev_requirements, app_requirements, constraints_txt] }
+
+      it "does not attribute the constraint-only package to any layer" do
+        snapshots = grapher.manifest_group_snapshots.to_h { |snapshot| [snapshot.manifest_file.name, snapshot] }
+
+        expect(resolved_package_names(snapshots.fetch("requirements.txt"))).to contain_exactly("flask")
+        expect(resolved_package_names(snapshots.fetch("dev-requirements.txt"))).to contain_exactly("pytest")
+        expect(snapshots.values.flat_map { |snapshot| resolved_package_names(snapshot) }).not_to include("urllib3")
+      end
+    end
+  end
+
   describe "#manifest_group_snapshots for package managers that do not support layering" do
     context "when the directory is a Poetry project" do
       let(:poetry_lock_file) do

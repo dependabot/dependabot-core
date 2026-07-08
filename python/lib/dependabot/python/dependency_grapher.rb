@@ -17,7 +17,7 @@ require "toml-rb"
 
 module Dependabot
   module Python
-    class DependencyGrapher < Dependabot::DependencyGraphers::Base
+    class DependencyGrapher < Dependabot::DependencyGraphers::Base # rubocop:disable Metrics/ClassLength
       require_relative "dependency_grapher/lockfile_generator"
       require_relative "dependency_grapher/requirements_layers"
 
@@ -64,6 +64,7 @@ module Dependabot
           emit_missing_lockfile_warning! if @ephemeral_lockfile_generated
         end
         super
+        exclude_constraint_dependencies!
       end
 
       # Layering is specific to pip / pip-compile for Python.
@@ -98,6 +99,20 @@ module Dependabot
       def non_requirements_manifest_groups
         [setup_file, setup_cfg_file, pyproject_toml].compact.map do |file|
           Dependabot::DependencyGraphers::ManifestGroup.new(primary: file, files: [file])
+        end
+      end
+
+      # pip constraint files (referenced via `-c`) install nothing - they only pin versions of packages required
+      # elsewhere - so neither the legacy dependency-graph-api nor the dependency-snapshots-api treats them as
+      # manifests. We keep the file on disk so `-c` references resolve, but after parsing we drop any dependency
+      # whose requirements ALL originate from a constraint file (a package also declared in a real requirement
+      # file keeps that origin and survives). This runs on every grapher, including the scoped per-layer graphers,
+      # so a shared constraints.txt is not over-attributed as a direct dependency of each layer.
+      sig { void }
+      def exclude_constraint_dependencies!
+        @dependencies = @dependencies.reject do |dep|
+          origin_files = dep.requirements.filter_map { |r| r[:file] }
+          origin_files.any? && origin_files.all? { |name| File.basename(name).include?("constraint") }
         end
       end
 
