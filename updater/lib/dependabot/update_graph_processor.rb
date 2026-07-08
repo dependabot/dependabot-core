@@ -253,13 +253,16 @@ module Dependabot
       )
     end
 
+    # Maps a per-directory fetch error to a stable snapshot reason. An unresolvable
+    # path dependency gets a specific reason; any other error falls back to a
+    # generic reason so we never leak an unexpected raw error message.
     sig { params(error: Dependabot::DependabotError).returns(String) }
     def skipped_reason_for(error)
       case error
       when Dependabot::PathDependenciesNotReachable
         GithubApi::DependencySubmission::SKIPPED_REASON_PATH_DEPENDENCIES_NOT_REACHABLE
       else
-        error.message
+        GithubApi::DependencySubmission::SKIPPED_REASON_FILE_FETCH_ERROR
       end
     end
 

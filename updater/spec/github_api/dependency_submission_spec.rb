@@ -208,7 +208,7 @@ RSpec.describe GithubApi::DependencySubmission do
     it_behaves_like "dependency_submission", true
   end
 
-  context "with a skipped status and an unresolvable path dependency reason" do
+  context "with a skipped status and a file fetch error reason" do
     subject(:dependency_submission) do
       described_class.new(
         job_id: "9999",
@@ -218,7 +218,7 @@ RSpec.describe GithubApi::DependencySubmission do
         manifest_file: empty_file,
         resolved_dependencies: {},
         status: described_class::SnapshotStatus::SKIPPED,
-        reason: described_class::SKIPPED_REASON_PATH_DEPENDENCIES_NOT_REACHABLE
+        reason: described_class::SKIPPED_REASON_FILE_FETCH_ERROR
       )
     end
 
@@ -232,7 +232,7 @@ RSpec.describe GithubApi::DependencySubmission do
       expect(payload[:manifests]).to be_empty
       expect(payload[:metadata][:status])
         .to eq(described_class::SnapshotStatus::SKIPPED.serialize)
-      expect(payload[:metadata][:reason]).to eq("unresolvable path dependency")
+      expect(payload[:metadata][:reason]).to eq("unable to fetch files")
     end
   end
 

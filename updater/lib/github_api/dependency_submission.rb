@@ -21,6 +21,7 @@ module GithubApi
     # Expected reasons for empty, skipped or degraded snapshots
     DEGRADED_REASON_SUBDEPENDENCY_ERR = "error fetching sub-dependencies"
     SKIPPED_REASON_PATH_DEPENDENCIES_NOT_REACHABLE = "unresolvable path dependency"
+    SKIPPED_REASON_FILE_FETCH_ERROR = "unable to fetch files"
     EMPTY_REASON_NO_MANIFESTS = "missing manifest files"
 
     class SnapshotStatus < T::Enum

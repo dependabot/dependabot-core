@@ -670,6 +670,47 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     end
   end
 
+  context "with a directory that failed to fetch due to an unspecified file fetch error" do
+    let(:directories) { [dir_ok, dir_broken] }
+    let(:dir_ok) { "/" }
+    let(:dir_broken) { "/broken" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
+
+    let(:directory_fetch_errors) do
+      { dir_broken => Dependabot::DependabotError.new("something went wrong") }
+    end
+
+    let(:dependency_files) { [] }
+
+    it "submits a skipped snapshot with a generic file fetch error reason" do
+      submissions = []
+      allow(service).to receive(:create_dependency_submission) do |args|
+        submissions << args[:dependency_submission]
+      end
+
+      update_graph_processor.run
+
+      skipped = submissions.find do |s|
+        s.payload[:metadata][:scanned_manifest_path] == "rubygems::/broken"
+      end
+
+      expect(skipped).not_to be_nil
+      expect(skipped.payload[:metadata][:status])
+        .to eq(GithubApi::DependencySubmission::SnapshotStatus::SKIPPED.serialize)
+      expect(skipped.payload[:metadata][:reason])
+        .to eq(GithubApi::DependencySubmission::SKIPPED_REASON_FILE_FETCH_ERROR)
+    end
+
+    it "does not leak the raw error message into the snapshot reason" do
+      allow(service).to receive(:create_dependency_submission) do |args|
+        payload = args[:dependency_submission].payload
+        expect(payload[:metadata][:reason]).not_to include("something went wrong")
+      end
+
+      update_graph_processor.run
+    end
+  end
+
   context "with non-existent dependency files in a subpath" do
     let(:directories) { [directory] }
     let(:directory) { "/subproject/" }
