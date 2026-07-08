@@ -88,7 +88,7 @@ module Dependabot
 
     # Records non-fatal, per-directory fetch errors encountered while listing a
     # multi-directory graph job (e.g. an unresolvable path dependency). These are
-    # surfaced downstream as degraded snapshots rather than aborting the whole job.
+    # surfaced downstream as skipped snapshots rather than aborting the whole job.
     sig { returns(T::Hash[String, Dependabot::DependabotError]) }
     def directory_fetch_errors
       @directory_fetch_errors ||= T.let({}, T.nilable(T::Hash[String, Dependabot::DependabotError]))
@@ -181,7 +181,7 @@ module Dependabot
         rescue Dependabot::PathDependenciesNotReachable => e
           # For graph jobs, an unreachable path dependency in one directory must not
           # abort the whole multi-directory job. Record it so the directory is later
-          # reported as a degraded snapshot, and continue with the other directories.
+          # reported as a skipped snapshot, and continue with the other directories.
           raise unless job.update_graph?
 
           directory_fetch_errors[dir] = e

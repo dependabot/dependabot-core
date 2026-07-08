@@ -15,7 +15,7 @@ module Dependabot
 
     # Maps a directory to the non-fatal fetch error encountered while fetching it
     # (e.g. an unresolvable path dependency for a graph job). The directory is
-    # still reported, but with a degraded snapshot describing the failure.
+    # still reported, but with a skipped snapshot describing the failure.
     sig { returns(T::Hash[String, Dependabot::DependabotError]) }
     attr_reader :directory_fetch_errors
 

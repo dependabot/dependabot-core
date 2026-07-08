@@ -34,7 +34,7 @@ module Dependabot
     # - The Dependabot::DependencyFile list retrieved by the file fetcher
     # - The base_commit_sha being processed
     # - Optionally, a map of directory to a non-fatal fetch error (e.g. an
-    #   unresolvable path dependency) to report as a degraded snapshot
+    #   unresolvable path dependency) to report as a skipped snapshot
     sig do
       params(
         service: Dependabot::Service,
