@@ -392,21 +392,41 @@ module Dependabot
           { "YARN_NPM_MINIMAL_AGE_GATE" => gate_value }
         end
 
+        # Returns the YARN_NPM_MINIMAL_AGE_GATE value (in minutes) for a regular
+        # update, or nil when none applies. Security updates pass "0" so a
+        # release-age gate never blocks a fix (this intentionally overrides any
+        # `.yarnrc.yml` gate).
+        #
+        # When the repo also sets an explicit `npmMinimalAgeGate` in `.yarnrc.yml`,
+        # the longest release-age wins: the cooldown floor is only injected via the
+        # env var when it exceeds the user's configured value, otherwise the user's
+        # (equal or longer) gate is left untouched so neither policy is silently
+        # weakened.
         sig { returns(T.nilable(String)) }
         def yarn_minimal_age_gate_value
           return "0" if security_updates_only?
-          return nil unless @release_age_days
-          return nil if yarnrc_sets_minimal_age_gate?
 
-          (@release_age_days * Helpers::MINUTES_PER_DAY).to_s
+          cooldown_minutes = @release_age_days && (@release_age_days * Helpers::MINUTES_PER_DAY)
+          effective = Helpers.higher_release_age_gate(cooldown_minutes, yarnrc_minimal_age_gate)
+          effective&.to_s
         end
 
-        sig { returns(T::Boolean) }
-        def yarnrc_sets_minimal_age_gate?
-          dependency_files.any? do |file|
-            File.basename(file.name) == ".yarnrc.yml" &&
-              file.content.to_s.match?(/^\s*npmMinimalAgeGate\s*:/)
+        # The `npmMinimalAgeGate` (in minutes) configured across the repo's
+        # `.yarnrc.yml` files, or nil when unset. A value we cannot parse as a bare
+        # integer is reported as Float::INFINITY so an explicit-but-non-numeric user
+        # gate is never overridden by the cooldown floor.
+        sig { returns(T.nilable(T.any(Integer, Float))) }
+        def yarnrc_minimal_age_gate
+          values = dependency_files.filter_map do |file|
+            next unless File.basename(file.name) == ".yarnrc.yml"
+
+            content = file.content.to_s
+            next unless content.match?(/^\s*npmMinimalAgeGate\s*:/)
+
+            match = content.match(/^\s*npmMinimalAgeGate\s*:\s*(\d+)\s*$/)
+            match ? T.must(match[1]).to_i : Float::INFINITY
           end
+          values.max
         end
 
         sig { returns(String) }

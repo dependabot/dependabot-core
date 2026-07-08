@@ -284,11 +284,11 @@ module Dependabot
         # (dependabot/dependabot-core#13165).
         sig { returns(T.nilable(String)) }
         def minimum_release_age_config
-          cooldown_minutes = (@release_age_days || 0) * Helpers::MINUTES_PER_DAY
-          return nil if cooldown_minutes.zero?
-          return nil if cooldown_minutes <= user_configured_minimum_release_age_minutes
+          cooldown_minutes = @release_age_days && (@release_age_days * Helpers::MINUTES_PER_DAY)
+          effective = Helpers.higher_release_age_gate(cooldown_minutes, pnpm_configured_minimum_release_age)
+          return nil unless effective
 
-          "--config.minimumReleaseAge=#{cooldown_minutes} --config.minimumReleaseAgeStrict=false"
+          "--config.minimumReleaseAge=#{effective} --config.minimumReleaseAgeStrict=false"
         end
 
         sig { returns(String) }
@@ -298,20 +298,27 @@ module Dependabot
 
         # The largest `minimumReleaseAge` (in minutes) the repo configures for pnpm,
         # read from pnpm-workspace.yaml (`minimumReleaseAge:`) or `.npmrc`
-        # (`minimum-release-age=`). Returns 0 when the user has not configured one.
-        sig { returns(Integer) }
-        def user_configured_minimum_release_age_minutes
-          dependency_files.filter_map { |file| configured_minimum_release_age_minutes(file) }.max || 0
+        # (`minimum-release-age=`), or nil when unset. A value we cannot parse as a
+        # bare integer is reported as Float::INFINITY so an explicit-but-non-numeric
+        # user gate is never overridden by the cooldown floor.
+        sig { returns(T.nilable(T.any(Integer, Float))) }
+        def pnpm_configured_minimum_release_age
+          dependency_files.filter_map { |file| configured_minimum_release_age_minutes(file) }.max
         end
 
-        sig { params(file: Dependabot::DependencyFile).returns(T.nilable(Integer)) }
+        sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T.any(Integer, Float))) }
         def configured_minimum_release_age_minutes(file)
           content = file.content.to_s
-          match = case File.basename(file.name)
-                  when "pnpm-workspace.yaml" then content.match(/^\s*minimumReleaseAge\s*:\s*(\d+)/)
-                  when ".npmrc" then content.match(/^\s*minimum-release-age\s*=\s*(\d+)/)
-                  end
-          match && T.must(match[1]).to_i
+          presence, value = case File.basename(file.name)
+                            when "pnpm-workspace.yaml"
+                              [/^\s*minimumReleaseAge\s*:/, /^\s*minimumReleaseAge\s*:\s*(\d+)\s*$/]
+                            when ".npmrc"
+                              [/^\s*minimum-release-age\s*=/, /^\s*minimum-release-age\s*=\s*(\d+)\s*$/]
+                            end
+          return nil unless presence && content.match?(presence)
+
+          match = content.match(T.must(value))
+          match ? T.must(match[1]).to_i : Float::INFINITY
         end
 
         # Tries `pnpm update --depth Infinity <dep>` for each dependency as a

@@ -75,6 +75,25 @@ module Dependabot
       # expect.
       MINUTES_PER_DAY = 1440
 
+      # Resolves the release-age gate value a lockfile updater should enforce for a
+      # regular update, applying "highest precedence wins" between the Dependabot
+      # cooldown floor and any explicit native gate the user configured (both given
+      # in the same package-manager unit). Returns the value to pass on the CLI/env
+      # (overriding the user's config) when the cooldown is longer, or nil to leave
+      # the user's own (equal-or-longer) gate — or the absence of one — untouched.
+      # A non-numeric user gate should be passed as Float::INFINITY so it is never
+      # overridden. Security updates handle their own `=0` bypass and must not use
+      # this method.
+      sig do
+        params(cooldown: T.nilable(Integer), user_gate: T.nilable(T.any(Integer, Float))).returns(T.nilable(Integer))
+      end
+      def self.higher_release_age_gate(cooldown, user_gate)
+        return nil if cooldown.nil? || cooldown.zero?
+        return nil if user_gate && cooldown <= user_gate
+
+        cooldown
+      end
+
       sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
       def self.npm_version_numeric(lockfile)
         detected_npm_version = detect_npm_version(lockfile)

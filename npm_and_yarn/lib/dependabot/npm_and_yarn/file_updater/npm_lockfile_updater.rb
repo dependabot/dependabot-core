@@ -440,16 +440,20 @@ module Dependabot
         # blocks a fix (this intentionally overrides any `.npmrc` gate). Regular
         # updates pass the dependabot.yml cooldown floor (in days) so npm holds
         # transitive dependencies back to versions at least that old. Requires
-        # npm >= 11.10 (the updater image ships a supporting version). For regular
-        # updates an explicit `.npmrc` `min-release-age` takes precedence, so it is
-        # left untouched when present.
+        # npm >= 11.10 (the updater image ships a supporting version).
+        #
+        # When the repo also sets an explicit `min-release-age` in `.npmrc`, the
+        # longest release-age wins: the cooldown floor is only injected on the CLI
+        # when it exceeds the user's configured value, otherwise the user's (equal
+        # or longer) gate is left untouched so neither policy is silently weakened.
         sig { returns(T.nilable(String)) }
         def min_release_age_install_arg
           return "--min-release-age=0" if security_updates_only?
-          return nil unless @release_age_days
-          return nil if npmrc_sets_min_release_age?
 
-          "--min-release-age=#{@release_age_days}"
+          effective = Helpers.higher_release_age_gate(@release_age_days, npmrc_min_release_age)
+          return nil unless effective
+
+          "--min-release-age=#{effective}"
         end
 
         sig { params(arg: String).returns(String) }
@@ -457,12 +461,22 @@ module Dependabot
           arg == "--min-release-age=0" ? arg : "--min-release-age=<days>"
         end
 
-        sig { returns(T::Boolean) }
-        def npmrc_sets_min_release_age?
-          dependency_files.any? do |file|
-            File.basename(file.name) == ".npmrc" &&
-              file.content.to_s.match?(/^\s*min-release-age\s*=/)
+        # The `min-release-age` (in days) configured across the repo's `.npmrc`
+        # files, or nil when unset. A value we cannot parse as a bare integer is
+        # reported as Float::INFINITY so an explicit-but-non-numeric user gate is
+        # never overridden by the cooldown floor.
+        sig { returns(T.nilable(T.any(Integer, Float))) }
+        def npmrc_min_release_age
+          values = dependency_files.filter_map do |file|
+            next unless File.basename(file.name) == ".npmrc"
+
+            content = file.content.to_s
+            next unless content.match?(/^\s*min-release-age\s*=/)
+
+            match = content.match(/^\s*min-release-age\s*=\s*(\d+)\s*$/)
+            match ? T.must(match[1]).to_i : Float::INFINITY
           end
+          values.max
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(String) }

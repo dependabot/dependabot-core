@@ -1420,19 +1420,41 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           updater.send(:run_npm_install_lockfile_only, install_args)
         end
 
+        # Regression coverage for the cooldown-vs-min-release-age conflict
+        # (dependabot/dependabot-core#13165): the longest release-age wins.
         context "when the .npmrc already sets min-release-age" do
-          let(:files) do
-            project_dependency_files("npm8/simple") +
-              [Dependabot::DependencyFile.new(name: ".npmrc", content: "min-release-age=30")]
-          end
-
-          it "leaves the explicit .npmrc value untouched" do
-            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
-              expect(command).not_to include("--min-release-age")
-              ""
+          context "when the user's gate is longer than the cooldown" do
+            let(:files) do
+              project_dependency_files("npm8/simple") +
+                [Dependabot::DependencyFile.new(name: ".npmrc", content: "min-release-age=30")]
             end
 
-            updater.send(:run_npm_install_lockfile_only, install_args)
+            it "leaves the explicit .npmrc value untouched" do
+              expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
+                # User's 30 days is longer than the 7 day cooldown, so no CLI override is injected.
+                expect(command).not_to include("--min-release-age")
+                ""
+              end
+
+              updater.send(:run_npm_install_lockfile_only, install_args)
+            end
+          end
+
+          context "when the cooldown is longer than the user's gate" do
+            let(:files) do
+              project_dependency_files("npm8/simple") +
+                [Dependabot::DependencyFile.new(name: ".npmrc", content: "min-release-age=3")]
+            end
+
+            it "overrides with the longer cooldown value" do
+              expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
+                # Cooldown 7 days is longer than the user's 3 days, so it wins.
+                expect(command).to include("--min-release-age=7")
+                ""
+              end
+
+              updater.send(:run_npm_install_lockfile_only, install_args)
+            end
           end
         end
       end

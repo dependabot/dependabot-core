@@ -548,14 +548,31 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
           expect(updater.send(:yarn_time_gate_env)).to eq({ "YARN_NPM_MINIMAL_AGE_GATE" => "10080" })
         end
 
+        # Regression coverage for the cooldown-vs-npmMinimalAgeGate conflict
+        # (dependabot/dependabot-core#13165): the longest release-age wins.
         context "when .yarnrc.yml already sets npmMinimalAgeGate" do
-          let(:files) do
-            project_dependency_files("yarn_berry/workspace_subdependency_update") +
-              [Dependabot::DependencyFile.new(name: ".yarnrc.yml", content: "npmMinimalAgeGate: 20160\n")]
+          context "when the user's gate is longer than the cooldown" do
+            let(:files) do
+              project_dependency_files("yarn_berry/workspace_subdependency_update") +
+                [Dependabot::DependencyFile.new(name: ".yarnrc.yml", content: "npmMinimalAgeGate: 20160\n")]
+            end
+
+            it "leaves the explicit .yarnrc.yml value untouched" do
+              # User's 20160 minutes is longer than the 10080 (7 day) cooldown.
+              expect(updater.send(:yarn_time_gate_env)).to be_nil
+            end
           end
 
-          it "leaves the explicit .yarnrc.yml value untouched" do
-            expect(updater.send(:yarn_time_gate_env)).to be_nil
+          context "when the cooldown is longer than the user's gate" do
+            let(:files) do
+              project_dependency_files("yarn_berry/workspace_subdependency_update") +
+                [Dependabot::DependencyFile.new(name: ".yarnrc.yml", content: "npmMinimalAgeGate: 4320\n")]
+            end
+
+            it "overrides with the longer cooldown value (in minutes)" do
+              # Cooldown 10080 minutes (7 days) is longer than the user's 4320 (3 days).
+              expect(updater.send(:yarn_time_gate_env)).to eq({ "YARN_NPM_MINIMAL_AGE_GATE" => "10080" })
+            end
           end
         end
       end
