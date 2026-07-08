@@ -41,7 +41,7 @@ module Dependabot
           @path_dependency_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
           @lockfile = T.let(nil, T.nilable(Dependabot::DependencyFile))
           @toolchain = T.let(nil, T.nilable(Dependabot::DependencyFile))
-          @config = T.let(nil, T.nilable(Dependabot::DependencyFile))
+          @config_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
         end
 
         sig { returns(T.any(String, T.noreturn)) }
@@ -305,11 +305,13 @@ module Dependabot
 
           File.write(lockfile.name, replace_ssh_urls(T.must(lockfile.content)))
           File.write(T.must(toolchain).name, T.must(toolchain).content) if toolchain
-          config_file = config
-          return unless config_file
-
-          FileUtils.mkdir_p(File.dirname(config_file.name))
-          File.write(config_file.name, Helpers.sanitize_cargo_config(T.must(config_file.content)))
+          config_files.each do |config_file|
+            FileUtils.mkdir_p(File.dirname(config_file.name))
+            File.write(
+              config_file.name,
+              Helpers.sanitize_cargo_config(T.must(config_file.content), file_name: config_file.name)
+            )
+          end
         end
 
         sig { void }
@@ -390,20 +392,31 @@ module Dependabot
           TomlRB.dump(parsed_manifest)
         end
 
-        sig { params(parsed_manifest: T::Hash[String, T.untyped]).void }
+        sig { params(parsed_manifest: T::Hash[String, T.anything]).void }
         def pin_target_specific_dependencies!(parsed_manifest)
-          parsed_manifest.fetch("target", {}).each do |target, t_details|
+          toml_table_or_empty(parsed_manifest.fetch("target", {})).each do |target, t_details|
+            t_details = toml_table_or_empty(t_details)
             Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
-              t_details.fetch(type, {}).each do |name, requirement|
+              toml_table_or_empty(t_details.fetch(type, {})).each do |name, requirement|
                 next unless name == dependency.name
 
                 updated_req = "=#{dependency.version}"
 
-                if requirement.is_a?(Hash)
-                  parsed_manifest["target"][target][type][name]["version"] =
+                if T.cast(requirement, T.nilable(Object)).is_a?(Hash)
+                  toml_table_or_empty(
+                    toml_table_or_empty(
+                      toml_table_or_empty(
+                        toml_table_or_empty(parsed_manifest["target"])[target]
+                      )[type]
+                    )[name]
+                  )["version"] =
                     updated_req
                 else
-                  parsed_manifest["target"][target][type][name] = updated_req
+                  toml_table_or_empty(
+                    toml_table_or_empty(
+                      toml_table_or_empty(parsed_manifest["target"])[target]
+                    )[type]
+                  )[name] = updated_req
                 end
               end
             end
@@ -496,6 +509,12 @@ module Dependabot
           lockfile_content
         end
 
+        sig { params(value: T.anything).returns(T::Hash[String, T.anything]) }
+        def toml_table_or_empty(value)
+          obj = T.cast(value, T.nilable(Object))
+          obj.is_a?(Hash) ? obj : {}
+        end
+
         sig { returns(String) }
         def dummy_app_content
           %{fn main() {\nprintln!("Hello, world!");\n}}
@@ -537,9 +556,12 @@ module Dependabot
             dependency_files.find { |f| f.name == "rust-toolchain" }
         end
 
-        sig { returns(T.nilable(Dependabot::DependencyFile)) }
-        def config
-          @config ||= dependency_files.find { |f| f.name == ".cargo/config.toml" }
+        # Cargo merges `.cargo/config.toml` hierarchically (package directory plus
+        # every ancestor up to the repo root), so we materialise all of them and
+        # let Cargo perform the merge with its own precedence rules.
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def config_files
+          @config_files ||= dependency_files.select { |f| f.name.end_with?(".cargo/config.toml") }
         end
 
         sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }

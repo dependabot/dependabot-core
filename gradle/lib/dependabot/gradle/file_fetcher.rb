@@ -81,7 +81,8 @@ module Dependabot
 
       sig { params(root_dir: String).returns(T::Array[DependencyFile]) }
       def all_buildfiles_in_build(root_dir)
-        files = [buildfile(root_dir), settings_file(root_dir), version_catalog_file(root_dir), lockfile(root_dir)]
+        files = [buildfile(root_dir), settings_file(root_dir), version_catalog_file(root_dir), lockfile(root_dir),
+                 properties_file(root_dir)]
                 .compact
         files += wrapper_files(root_dir)
         files += subproject_buildfiles(root_dir)
@@ -249,6 +250,11 @@ module Dependabot
       sig { params(dir: String).returns(T.nilable(DependencyFile)) }
       def lockfile(dir)
         fetch_file_if_present(File.join(dir, @lockfile_name))
+      end
+
+      sig { params(dir: String).returns(T.nilable(DependencyFile)) }
+      def properties_file(dir)
+        fetch_file_if_present(File.join(dir, "gradle.properties"))
       end
 
       sig { params(dir: String).returns(T.nilable(DependencyFile)) }

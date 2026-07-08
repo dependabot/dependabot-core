@@ -34,7 +34,7 @@ module Dependabot
 
       sig { void }
       def initialize
-        @cache = T.let({}, T::Hash[String, T.untyped])
+        @cache = T.let({}, T::Hash[String, T::Hash[String, Object]])
         @not_found_cache = T.let(Set.new, T::Set[String])
       end
 
@@ -43,7 +43,7 @@ module Dependabot
         params(
           package_name: String,
           channel: String
-        ).returns(T.nilable(T::Hash[String, T.untyped]))
+        ).returns(T.nilable(T::Hash[String, Object]))
       end
       def fetch_package_metadata(package_name, channel = DEFAULT_CHANNEL)
         cache_key = "#{channel}/#{package_name}"
@@ -147,7 +147,7 @@ module Dependabot
           package_name: String,
           channel: String,
           cache_key: String
-        ).returns(T.nilable(T::Hash[String, T.untyped]))
+        ).returns(T.nilable(T::Hash[String, Object]))
       end
       def fetch_from_api(package_name, channel, cache_key)
         # Normalize channel name for API (e.g., 'defaults' -> 'anaconda')
@@ -187,7 +187,7 @@ module Dependabot
           response: Excon::Response,
           package_name: String,
           cache_key: String
-        ).returns(T.nilable(T::Hash[String, T.untyped]))
+        ).returns(T.nilable(T::Hash[String, Object]))
       end
       def handle_response(response, package_name, cache_key)
         case response.status

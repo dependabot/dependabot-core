@@ -610,6 +610,39 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       expect(lock_index_options).to include("--index https://token@example.com/simple")
     end
 
+    context "when multiple credentials have replaces-base true" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://first.example.com/simple",
+              "token" => "first_token",
+              "replaces-base" => true
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://second.example.com/simple",
+              "token" => "second_token",
+              "replaces-base" => true
+            }
+          )
+        ]
+      end
+
+      it "only emits --default-index once and uses --index for additional replaces-base credentials" do
+        default_index_options = lock_index_options.select { |opt| opt.start_with?("--default-index") }
+        index_options = lock_index_options.select { |opt| opt.start_with?("--index") }
+
+        expect(default_index_options.length).to eq(1)
+        expect(default_index_options.first).to include("first_token@first.example.com/simple")
+        expect(index_options.length).to eq(1)
+        expect(index_options.first).to include("second_token@second.example.com/simple")
+      end
+    end
+
     context "with an explicit index in pyproject.toml" do
       let(:pyproject_content) { fixture("pyproject_files", "uv_explicit_index.toml") }
 

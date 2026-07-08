@@ -100,7 +100,7 @@ module Dependabot
     sig { returns(T::Hash[Symbol, T.anything]) }
     attr_reader :commit_message_options
 
-    sig { returns(T::Hash[String, String]) }
+    sig { returns(T::Hash[String, T::Array[T::Hash[String, String]]]) }
     attr_reader :vulnerabilities_fixed
 
     AzureReviewers = T.type_alias { T.nilable(T::Array[String]) }
@@ -163,7 +163,7 @@ module Dependabot
         author_details: T.nilable(T::Hash[Symbol, String]),
         signature_key: T.nilable(String),
         commit_message_options: T::Hash[Symbol, T.anything],
-        vulnerabilities_fixed: T::Hash[String, String],
+        vulnerabilities_fixed: T::Hash[String, T::Array[T::Hash[String, String]]],
         reviewers: Reviewers,
         assignees: T.nilable(T.any(T::Array[String], T::Array[Integer])),
         milestone: T.nilable(T.any(T::Array[String], Integer)),
