@@ -57,6 +57,27 @@ module Dependabot
             path.match?(DEPEND_TXT_REGEX)
         end
 
+        # Resolves the sibling paths a requirements file references via `-r`/`-c`, returning repo-relative
+        # cleanpaths (matching fetched DependencyFile names). Single home for reference resolution, shared by the
+        # grapher's bystander filter and the layering group builder so reference-syntax handling never drifts.
+        #
+        # Reuses SharedFileFetcher's reference regexes so callers keep exactly the children the file fetcher pulled in.
+        sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
+        def self.referenced_paths(file)
+          content = file.content
+          return [] if content.nil?
+
+          current_dir = File.dirname(file.name)
+          referenced =
+            content.scan(Dependabot::Python::SharedFileFetcher::CHILD_REQUIREMENT_REGEX).flatten +
+            content.scan(Dependabot::Python::SharedFileFetcher::CONSTRAINT_REGEX).flatten
+
+          referenced.map do |path|
+            resolved = current_dir == "." ? path : File.join(current_dir, path)
+            Pathname.new(resolved).cleanpath.to_path
+          end
+        end
+
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
         def initialize(dependency_files:)
           @dependency_files = dependency_files
@@ -130,23 +151,10 @@ module Dependabot
         end
 
         # Finds sibling files referenced by a requirements file via `-r`/`-c`.
-        #
-        # Reuses SharedFileFetcher's reference regexes so grouping keeps exactly the children the file fetcher
-        # pulled in (and that the grapher's bystander filter retains), resolving paths relative to the referencing file.
         sig { params(file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
         def referenced_requirement_files(file)
-          content = file.content
-          return [] if content.nil?
-
-          current_dir = File.dirname(file.name)
-          referenced_paths =
-            content.scan(Dependabot::Python::SharedFileFetcher::CHILD_REQUIREMENT_REGEX).flatten +
-            content.scan(Dependabot::Python::SharedFileFetcher::CONSTRAINT_REGEX).flatten
-
-          referenced_paths.filter_map do |path|
-            resolved = current_dir == "." ? path : File.join(current_dir, path)
-            resolved = Pathname.new(resolved).cleanpath.to_path
-            requirement_family_files.find { |f| f.name == resolved }
+          self.class.referenced_paths(file).filter_map do |path|
+            requirement_family_files.find { |f| f.name == path }
           end
         end
 
