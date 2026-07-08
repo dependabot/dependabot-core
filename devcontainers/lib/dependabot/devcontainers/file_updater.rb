@@ -77,14 +77,14 @@ module Dependabot
       sig do
         params(
           manifest: Dependabot::DependencyFile,
-          requirement: T::Hash[Symbol, T.untyped]
+          requirement: T::Hash[Symbol, T.anything]
         )
           .returns(T::Array[String])
       end
       def update(manifest, requirement)
         ConfigUpdater.new(
           feature: dependency.name,
-          requirement: requirement[:requirement],
+          requirement: T.cast(requirement[:requirement], T.nilable(String)),
           version: T.must(dependency.version),
           manifest: manifest,
           repo_contents_path: T.must(repo_contents_path),

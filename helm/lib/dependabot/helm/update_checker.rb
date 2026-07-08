@@ -138,11 +138,20 @@ module Dependabot
           valid_releases =  latest_version_resolver
                             .fetch_tag_and_release_date_helm_chart(valid_releases, repo_name, chart_name)
         end
-        highest_release = valid_releases.max_by { |release| version_class.new(release["version"]) }
+        highest_release = valid_releases.max_by { |release| version_class.new(T.cast(release["version"], String)) }
         Dependabot.logger.info(
           "Found latest version #{T.must(highest_release)['version']} for #{chart_name} using helm search"
         )
-        version_class.new(T.must(highest_release)["version"])
+        version_class.new(T.cast(T.must(highest_release)["version"], String))
+      end
+
+      sig do
+        params(index: T.nilable(T::Hash[String, Object]), chart_name: String)
+          .returns(T.nilable(T::Array[T::Hash[String, Object]]))
+      end
+      def chart_entries_from_index(index, chart_name)
+        entries = T.cast(index&.fetch("entries", nil), T.nilable(T::Hash[String, Object]))
+        T.cast(entries&.fetch(chart_name, nil), T.nilable(T::Array[T::Hash[String, Object]]))
       end
 
       sig { params(chart_name: String, repo_url: T.nilable(String)).returns(T.nilable(Gem::Version)) }
@@ -152,9 +161,10 @@ module Dependabot
 
         index_url = build_index_url(repo_url)
         index = fetch_helm_chart_index(index_url)
-        return nil unless index && index["entries"] && index["entries"][chart_name]
+        chart_entries = chart_entries_from_index(index, chart_name)
+        return nil unless chart_entries
 
-        all_versions = index["entries"][chart_name].map { |entry| entry["version"] }
+        all_versions = chart_entries.map { |entry| T.cast(entry["version"], String) }
         Dependabot.logger.info("Found #{all_versions.length} versions for #{chart_name} in index.yaml")
 
         valid_versions = filter_valid_versions(all_versions)
@@ -176,12 +186,16 @@ module Dependabot
         highest_version
       end
 
-      sig { params(releases: T::Array[T::Hash[String, T.untyped]]).returns(T::Array[T::Hash[String, T.untyped]]) }
+      sig { params(releases: T::Array[T::Hash[String, Object]]).returns(T::Array[T::Hash[String, Object]]) }
       def filter_valid_releases(releases)
         releases.reject do |release|
-          version_class.new(release["version"]) <= current_version ||
+          release_version = version_class.new(T.cast(release["version"], String))
+          # Compare against current_version (the anchored floor) rather than
+          # dependency.version: for a range constraint (">=1.0.0 <2.0.0") the raw
+          # version string isn't a single parseable version.
+          release_version <= current_version ||
             ignore_requirements.any? do |r|
-              r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(version_class.new(release["version"]))
+              r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(release_version)
             end
         end
       end
@@ -252,7 +266,7 @@ module Dependabot
           chart_name: String,
           repo_name: T.nilable(String),
           repo_url: T.nilable(String)
-        ).returns(T.nilable(T::Array[T::Hash[String, T.untyped]]))
+        ).returns(T.nilable(T::Array[T::Hash[String, Object]]))
       end
       def fetch_chart_releases(chart_name, repo_name = nil, repo_url = nil)
         Dependabot.logger.info("Fetching releases for Helm chart: #{chart_name}")
@@ -349,7 +363,7 @@ module Dependabot
         name
       end
 
-      sig { params(index_url: String).returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
+      sig { params(index_url: String).returns(T.nilable(T::Hash[String, Object])) }
       def fetch_helm_chart_index(index_url)
         Dependabot.logger.info("Fetching Helm chart index from #{index_url}")
 
