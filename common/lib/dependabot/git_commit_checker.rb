@@ -211,6 +211,22 @@ module Dependabot
       local_tag_for_latest_version(cooldown_options)
     end
 
+    # Like #local_tag_for_latest_version, but only considers tags whose version
+    # precision matches the currently pinned ref (e.g. a dep pinned to "v1.2"
+    # stays on two-part tags). Tags still within their cooldown window are
+    # filtered out, and nil is returned when every precision-matched candidate
+    # is still cooling down.
+    sig do
+      params(cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+        .returns(T.nilable(Dependabot::GitTagDetails))
+    end
+    def local_tag_for_latest_version_matching_existing_precision(cooldown_options = nil)
+      filtered_tags = apply_cooldown(select_matching_existing_precision(allowed_version_tags), cooldown_options)
+      return nil if filtered_tags.nil?
+
+      max_local_tag(filtered_tags)
+    end
+
     sig { returns(T::Array[Dependabot::GitTagDetails]) }
     def local_tags_for_allowed_versions_matching_existing_precision
       select_matching_existing_precision(allowed_version_tags).filter_map { |t| to_local_tag(t) }
@@ -851,6 +867,10 @@ module Dependabot
       )
     end
 
+    # Fails open: if the tag-detail fetch is unavailable (e.g. a network error
+    # or an error from the git host / GitHub API while resolving tag dates),
+    # return no dates so cooldown treats every tag as outside its window and the
+    # latest tag is still proposed, rather than failing the whole update check.
     sig { returns(T::Hash[String, Time]) }
     def build_release_dates_by_tag_name
       dates = T.let({}, T::Hash[String, Time])
@@ -859,6 +879,12 @@ module Dependabot
         dates[detail.tag] = released_at if released_at
       end
       dates
+    rescue StandardError => e
+      Dependabot.logger.warn(
+        "Skipping git tag cooldown for #{dependency.name}: could not resolve tag release dates " \
+        "(#{e.class}: #{e.message})"
+      )
+      {}
     end
 
     sig { params(release_date: T.nilable(String)).returns(T.nilable(Time)) }
