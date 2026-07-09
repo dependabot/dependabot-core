@@ -78,12 +78,14 @@ module Dependabot
           directory_part = (directory || "/").sub(%r{^/}, "")
           directory_part = "root" if directory_part.empty?
 
+          group_name = sanitize_ref(dependency_group.name.tr(" ", "-"))
+
           vars = {
             "prefix" => prefix,
             "package_manager" => package_manager,
             "directory" => directory_part,
-            "group_name" => dependency_group.name,
-            "name" => dependency_group.name,
+            "group_name" => group_name,
+            "name" => group_name,
             "target_branch" => target_branch || ""
           }
           vars

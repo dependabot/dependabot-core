@@ -58,6 +58,7 @@ module Dependabot
       def self.collect_template_errors(template, allowed, strategy)
         used = template.scan(/\{(\w+)\}/).flatten
         unknown = used.uniq.reject { |t| allowed.include?(t) }
+        unknown -= ["package_manager"] if strategy == :multi_ecosystem && used.include?("package_manager")
         malformed = template.gsub(/\{\w+\}/, "").match?(/[{}]/)
 
         messages = T.let([], T::Array[String])
@@ -122,6 +123,10 @@ module Dependabot
 
         # Auto-append digest for Group/MultiEcosystem
         name = "#{name}-#{digest}" if digest && strategy != :solo
+
+        # Collapse empty path segments (e.g. {target_branch} when nil) and strip edge slashes
+        name = name.squeeze("/").gsub(%r{\A/|/\z}, "")
+        raise Error, "Resolved branch name is empty." if name.empty?
 
         # Validate git ref after all transformations
         validate_ref_name(name)

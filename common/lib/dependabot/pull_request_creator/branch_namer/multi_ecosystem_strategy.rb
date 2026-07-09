@@ -75,10 +75,12 @@ module Dependabot
 
         sig { returns(T::Hash[String, String]) }
         def template_vars
+          multi_name = sanitize_ref(multi_ecosystem_name.tr(" ", "-"))
+
           vars = {
             "prefix" => prefix,
-            "group_name" => multi_ecosystem_name,
-            "name" => multi_ecosystem_name,
+            "group_name" => multi_name,
+            "name" => multi_name,
             "target_branch" => target_branch || ""
           }
           vars
