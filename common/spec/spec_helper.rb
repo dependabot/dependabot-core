@@ -64,7 +64,7 @@ RSpec.configure do |config|
     Dependabot::RegistryClient.clear_cache!
 
     # Ensure process-wide GitHub Enterprise probes do not leak between examples
-    Dependabot::Source.reset_github_enterprise_cache!
+    Dependabot::Source.reset_github_enterprise_cache! if defined?(Dependabot::Source)
 
     # Ensure we reset any experiments between tests
     Dependabot::Experiments.reset!

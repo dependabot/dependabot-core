@@ -13,8 +13,6 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
     described_class.new(dependency: dependency, credentials: credentials)
   end
 
-  before { Dependabot::Source.reset_github_enterprise_cache! }
-
   let(:dependency_name) { "etag" }
   let(:credentials) do
     [Dependabot::Credential.new(
