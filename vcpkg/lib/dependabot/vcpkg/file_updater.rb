@@ -117,9 +117,32 @@ module Dependabot
       sig { params(content: T::Hash[String, T.untyped], dependency: Dependabot::Dependency, filename: String).void }
       def update_default_registry(content, dependency, filename)
         default_registry = content["default-registry"]
-        return unless default_registry.is_a?(Hash)
+        if default_registry.is_a?(Hash)
+          update_baseline_field(default_registry, dependency, filename, "baseline")
+        elsif dependency.metadata[:create_default_registry]
+          created_registry = build_default_registry(dependency, filename)
+          content["default-registry"] = created_registry if created_registry
+        end
+      end
 
-        update_baseline_field(default_registry, dependency, filename, "baseline")
+      sig do
+        params(dependency: Dependabot::Dependency, filename: String)
+          .returns(T.nilable(T::Hash[String, String]))
+      end
+      def build_default_registry(dependency, filename)
+        requirement = dependency.requirements.find { |r| r[:file] == filename }
+        return unless requirement
+
+        case requirement[:source]
+        in { ref: String => baseline }
+          {
+            "kind" => "git",
+            "repository" => VCPKG_DEFAULT_REGISTRY_REPOSITORY,
+            "baseline" => baseline
+          }
+        else
+          nil
+        end
       end
 
       sig { params(content: T::Hash[String, T.untyped], dependency: Dependabot::Dependency, filename: String).void }

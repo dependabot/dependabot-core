@@ -8,6 +8,7 @@
 
 require "sorbet-runtime"
 
+require "dependabot/dependency_requirement"
 require "dependabot/opentofu/version"
 require "dependabot/opentofu/requirement"
 
@@ -50,18 +51,21 @@ module Dependabot
     class RequirementsUpdater
       extend T::Sig
 
-      # @param requirements [Hash{Symbol => String, Array, Hash}]
+      # @param requirements [Array<Dependabot::DependencyRequirement>]
       # @param latest_version [Dependabot::Opentofu::Version]
       # @param tag_for_latest_version [String, NilClass]
       sig do
         params(
-          requirements: T::Array[T::Hash[Symbol, T.untyped]],
+          requirements: T::Array[Dependabot::DependencyRequirement],
           latest_version: T.nilable(Dependabot::Version::VersionParameter),
           tag_for_latest_version: T.nilable(String)
         ).void
       end
       def initialize(requirements:, latest_version:, tag_for_latest_version:)
-        @requirements = requirements
+        @requirements = T.let(
+          requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
+          T::Array[Dependabot::DependencyRequirement]
+        )
         @tag_for_latest_version = tag_for_latest_version
 
         return unless latest_version
@@ -70,12 +74,12 @@ module Dependabot
         @latest_version = T.let(version_class.new(latest_version), Dependabot::Opentofu::Version)
       end
 
-      # @return requirements [Hash{Symbol => String, Array, Hash}]
+      # @return requirements [Array<Dependabot::DependencyRequirement>]
       #   * requirement [String, NilClass] the updated version constraint
       #   * groups [Array] no-op for OpenTofu
       #   * file [String] the file that specified this dependency
       #   * source [Hash{Symbol => String}] The updated git or registry source details
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         # NOTE: Order is important here. The FileUpdater needs the updated
         # requirement at index `i` to correspond to the previous requirement
@@ -92,24 +96,24 @@ module Dependabot
 
       private
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       attr_reader :requirements
 
-      sig { returns(Dependabot::Opentofu::Version) }
+      sig { returns(T.nilable(Dependabot::Opentofu::Version)) }
       attr_reader :latest_version
 
       sig { returns(T.nilable(String)) }
       attr_reader :tag_for_latest_version
 
-      sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+      sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
       def update_git_requirement(req)
         return req unless req.dig(:source, :ref)
         return req unless tag_for_latest_version
 
-        req.merge(source: req[:source].merge(ref: tag_for_latest_version))
+        Dependabot::DependencyRequirement.create(req.merge(source: req[:source].merge(ref: tag_for_latest_version)))
       end
 
-      sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+      sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
       def update_oci_requirement(req)
         return req unless defined?(@latest_version) && @latest_version
         return req if req.dig(:source, :digest)
@@ -118,28 +122,33 @@ module Dependabot
         new_tag = latest_version.to_s
         return req if req.dig(:source, :tag) == new_tag
 
-        req.merge(
-          source: req[:source].merge(tag: new_tag, version: new_tag)
+        Dependabot::DependencyRequirement.create(
+          req.merge(
+            source: req[:source].merge(tag: new_tag, version: new_tag)
+          )
         )
       end
 
-      sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+      sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
       def update_registry_requirement(req)
         return req if req.fetch(:requirement).nil?
 
+        latest = latest_version
+        return req if latest.nil?
+
         string_req = req.fetch(:requirement).strip
         ruby_req = requirement_class.new(string_req)
-        return req if ruby_req.satisfied_by?(latest_version)
+        return req if ruby_req.satisfied_by?(latest)
 
         new_req =
-          if ruby_req.exact? then latest_version.to_s
+          if ruby_req.exact? then latest.to_s
           elsif string_req.start_with?("~>")
             update_twiddle_version(string_req).to_s
           else
             update_range(string_req).join(", ")
           end
 
-        req.merge(requirement: new_req)
+        Dependabot::DependencyRequirement.create(req.merge(requirement: new_req))
       end
 
       # Updates the version in a "~>" constraint to allow the given version
@@ -147,18 +156,19 @@ module Dependabot
       def update_twiddle_version(req_string)
         old_version = requirement_class.new(req_string)
                                        .requirements.first.last
-        updated_version = at_same_precision(latest_version, old_version)
+        updated_version = at_same_precision(T.must(latest_version), old_version)
         req_string.sub(old_version.to_s, updated_version)
       end
 
       sig { params(req_string: String).returns(T::Array[Dependabot::Opentofu::Requirement]) }
       def update_range(req_string)
+        latest = T.must(latest_version)
         requirement_class.new(req_string).requirements.flat_map do |r|
           ruby_req = requirement_class.new(r.join(" "))
-          next ruby_req if ruby_req.satisfied_by?(latest_version)
+          next ruby_req if ruby_req.satisfied_by?(latest)
 
           case op = ruby_req.requirements.first.first
-          when "<", "<=" then [update_greatest_version(ruby_req, latest_version)]
+          when "<", "<=" then [update_greatest_version(ruby_req, latest)]
           when "!=" then []
           else raise "Unexpected operation for unsatisfied req: #{op}"
           end

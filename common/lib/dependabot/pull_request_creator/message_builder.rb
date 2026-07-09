@@ -45,10 +45,10 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       attr_reader :pr_message_footer
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { returns(T.nilable(T::Hash[Symbol, T.anything])) }
       attr_reader :commit_message_options
 
-      sig { returns(T::Hash[String, T.untyped]) }
+      sig { returns(T::Hash[String, T::Array[T::Hash[String, String]]]) }
       attr_reader :vulnerabilities_fixed
 
       sig { returns(T.nilable(String)) }
@@ -79,8 +79,8 @@ module Dependabot
           credentials: T::Array[Dependabot::Credential],
           pr_message_header: T.nilable(String),
           pr_message_footer: T.nilable(String),
-          commit_message_options: T.nilable(T::Hash[Symbol, T.untyped]),
-          vulnerabilities_fixed: T::Hash[String, T.untyped],
+          commit_message_options: T.nilable(T::Hash[Symbol, T.anything]),
+          vulnerabilities_fixed: T::Hash[String, T::Array[T::Hash[String, String]]],
           github_redirection_service: T.nilable(String),
           dependency_group: T.nilable(Dependabot::DependencyGroup),
           pr_message_max_length: T.nilable(Integer),
@@ -379,7 +379,7 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def custom_trailers
-        trailers = commit_message_options&.dig(:trailers)
+        trailers = T.cast(commit_message_options&.dig(:trailers), T.nilable(Object))
         return if trailers.nil?
         raise("Commit trailers must be a Hash object") unless trailers.is_a?(Hash)
 
@@ -395,7 +395,7 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def signoff_message
-        signoff_details = commit_message_options&.dig(:signoff_details)
+        signoff_details = T.cast(commit_message_options&.dig(:signoff_details), T.nilable(Object))
         return unless signoff_details.is_a?(Hash)
         return unless signoff_details[:name] && signoff_details[:email]
 
@@ -404,7 +404,7 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def on_behalf_of_message
-        signoff_details = commit_message_options&.dig(:signoff_details)
+        signoff_details = T.cast(commit_message_options&.dig(:signoff_details), T.nilable(Object))
         return unless signoff_details.is_a?(Hash)
         return unless signoff_details[:org_name] && signoff_details[:org_email]
 

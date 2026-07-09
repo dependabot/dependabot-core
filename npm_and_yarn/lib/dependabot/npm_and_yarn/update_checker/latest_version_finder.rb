@@ -242,7 +242,7 @@ module Dependabot
             .sort_by(&:version).reverse
         end
 
-        sig { returns(T::Array[[Dependabot::Version, T::Hash[String, T.nilable(String)]]]) }
+        sig { returns(T::Array[[Dependabot::Version, T::Hash[String, T.anything]]]) }
         def possible_previous_versions_with_details
           possible_previous_releases.map do |r|
             [r.version, r.details]

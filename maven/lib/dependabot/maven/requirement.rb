@@ -29,7 +29,7 @@ module Dependabot
         RUBY_STYLE_PATTERN
       end
 
-      sig { params(obj: T.any(String, Gem::Version)).returns(T::Array[T.any(String, T.untyped)]) }
+      sig { params(obj: T.any(String, Gem::Version)).returns(T::Array[T.any(String, Gem::Version)]) }
       def self.parse(obj)
         return ["=", Maven::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
@@ -50,7 +50,7 @@ module Dependabot
         end
       end
 
-      sig { params(version: T.untyped).returns(T::Boolean) }
+      sig { params(version: Object).returns(T::Boolean) }
       def satisfied_by?(version)
         version = Maven::Version.new(version.to_s)
         super

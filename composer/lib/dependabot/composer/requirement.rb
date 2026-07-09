@@ -31,7 +31,7 @@ module Dependabot
         end
       end
 
-      sig { params(requirements: T.untyped).void }
+      sig { params(requirements: T.any(String, T::Array[String])).void }
       def initialize(*requirements)
         requirements =
           requirements.flatten

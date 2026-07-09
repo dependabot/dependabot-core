@@ -199,6 +199,46 @@ try {
             '  </packageSources>',
             '</configuration>'
         )
+
+    Test-NuGetConfig `
+        -scenarioName "feed-without-url-is-ignored" `
+        -jobString @"
+{
+  "credentials-metadata": [
+    {"type":"nuget_feed", "url":"https://nuget.example.com/v3/index.json"},
+    {"type":"nuget_feed", "host":"nuget.host.example.com"}
+  ]
+}
+"@ `
+        -expectedLines @(
+            '<?xml version="1.0" encoding="utf-8"?>'
+            '<configuration>',
+            '  <packageSources>',
+            '    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />',
+            '    <add key="nuget_source_1" value="https://nuget.example.com/v3/index.json" />',
+            '  </packageSources>',
+            '</configuration>'
+        )
+
+    Test-NuGetConfig `
+        -scenarioName "feed-with-null-url-is-ignored" `
+        -jobString @"
+{
+  "credentials-metadata": [
+    {"type":"nuget_feed", "url":"https://nuget.example.com/v3/index.json"},
+    {"type":"nuget_feed", "url":null}
+  ]
+}
+"@ `
+        -expectedLines @(
+            '<?xml version="1.0" encoding="utf-8"?>'
+            '<configuration>',
+            '  <packageSources>',
+            '    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />',
+            '    <add key="nuget_source_1" value="https://nuget.example.com/v3/index.json" />',
+            '  </packageSources>',
+            '</configuration>'
+        )
 }
 catch {
     Write-Host $_

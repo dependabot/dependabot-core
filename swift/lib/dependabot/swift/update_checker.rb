@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/dependency_requirement"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/version_filters"
@@ -17,7 +18,6 @@ module Dependabot
 
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_resolver"
-      require_relative "update_checker/latest_version_resolver"
       require_relative "update_checker/xcode_version_resolver"
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
@@ -52,23 +52,21 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        return wrap_requirements(updated_xcode_requirements) if xcode_spm_mode?
+        return updated_xcode_requirements if xcode_spm_mode?
 
         # If no target version is available, return old requirements unchanged
         target = preferred_resolvable_version
-        return wrap_requirements(old_requirements) unless target
+        return old_requirements unless target
 
-        wrap_requirements(
-          RequirementsUpdater.new(
-            requirements: old_requirements,
-            target_version: target
-          ).updated_requirements
-        )
+        RequirementsUpdater.new(
+          requirements: old_requirements,
+          target_version: target
+        ).updated_requirements
       end
 
       private
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_xcode_requirements
         # If no target version is available (e.g., revision-only or branch-pinned
         # dependency), return old requirements unchanged
@@ -94,7 +92,7 @@ module Dependabot
         ).updated_requirements
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def old_requirements
         dependency.requirements
       end
@@ -183,14 +181,9 @@ module Dependabot
         )
       end
 
-      sig { returns(LatestVersionResolver) }
-      def cooldown_check_version_resolver_for
-        LatestVersionResolver.new(
-          dependency: dependency,
-          credentials: credentials,
-          cooldown_options: update_cooldown,
-          git_commit_checker: git_commit_checker
-        )
+      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      def latest_version_tag
+        git_commit_checker.local_tag_for_latest_version(update_cooldown)
       end
 
       sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
@@ -261,11 +254,6 @@ module Dependabot
           ),
           T.nilable(Dependabot::GitCommitChecker)
         )
-      end
-
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
-      def latest_version_tag
-        cooldown_check_version_resolver_for.latest_version_tag
       end
 
       sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
