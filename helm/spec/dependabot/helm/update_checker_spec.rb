@@ -341,6 +341,32 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       end
     end
 
+    context "when the dependency carries several requirements (same chart, different constraints)" do
+      # DependencySet merges same-named occurrences into one dependency with
+      # multiple requirements; each must be updated by its own source[:tag],
+      # not the single combined dependency.version.
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "common",
+          version: "^1.0.0",
+          requirements: [
+            { requirement: nil, groups: [], file: "Chart.yaml",
+              source: { tag: "^1.0.0" }, metadata: { type: :helm_chart } },
+            { requirement: nil, groups: [], file: "Chart.yaml",
+              source: { tag: "1.2.0" }, metadata: { type: :helm_chart } }
+          ],
+          package_manager: "helm"
+        )
+      end
+      let(:latest) { Dependabot::Helm::Version.new("1.5.0") }
+
+      it "updates each requirement by its own authored constraint" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        updated = checker.updated_requirements.map { |r| [r.dig(:source, :tag), r[:requirement]] }
+        expect(updated).to contain_exactly(["^1.0.0", "^1.5.0"], ["1.2.0", "1.5.0"])
+      end
+    end
+
     context "with an upper-only range whose latest equals the ceiling" do
       # Regression: "<2.0.0" must anchor at 0, not at its ceiling. A latest of
       # exactly 2.0.0 is outside the range, so widen should report and widen it.

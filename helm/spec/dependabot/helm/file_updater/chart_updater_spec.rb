@@ -190,5 +190,36 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
         expect(YAML.safe_load(updated_content)).to be_a(Hash)
       end
     end
+
+    context "when the same chart appears twice with different constraints" do
+      let(:fixture_name) { "chart_with_duplicate_dependency.yaml" }
+      let(:dependency_name) { "common" }
+      let(:dependency_version) { "1.5.0" }
+      let(:dependency_previous_version) { "1.0.0" }
+      let(:dependency_requirements) do
+        [
+          { file: "Chart.yaml", requirement: "^1.5.0", groups: [],
+            source: { tag: "^1.0.0" }, metadata: { type: :helm_chart } },
+          { file: "Chart.yaml", requirement: "1.5.0", groups: [],
+            source: { tag: "1.2.0" }, metadata: { type: :helm_chart } }
+        ]
+      end
+      let(:dependency_previous_requirements) do
+        [
+          { file: "Chart.yaml", requirement: "^1.0.0", groups: [],
+            source: { tag: "^1.0.0" }, metadata: { type: :helm_chart } },
+          { file: "Chart.yaml", requirement: "1.2.0", groups: [],
+            source: { tag: "1.2.0" }, metadata: { type: :helm_chart } }
+        ]
+      end
+
+      it "updates each entry by its own authored constraint" do
+        updated_content = updater.updated_chart_yaml_content(chart_yaml_file)
+        expect(updated_content).to include("version: ^1.5.0")
+        expect(updated_content).to include("version: 1.5.0")
+        expect(updated_content).not_to include("version: ^1.0.0")
+        expect(updated_content).not_to include("version: 1.2.0")
+      end
+    end
   end
 end

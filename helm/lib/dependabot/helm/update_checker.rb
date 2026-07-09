@@ -63,15 +63,15 @@ module Dependabot
 
       private
 
-      # Helm stores the Chart.yaml constraint in dependency.version, not in the
-      # requirement field (the shared parser leaves it nil). Feed that constraint
-      # through the RequirementsUpdater so versioning-strategy is honored. When no
-      # strategy is set we default to BumpVersions, which preserves the authored
-      # operator and bumps the floor (e.g. `^1.0.0` -> `^1.0.5`); exact pins stay
-      # exact (`1.0.0` -> `1.5.0`).
+      # Helm stores each occurrence's constraint in the requirement's
+      # source[:tag], not the requirement field (the shared parser leaves it
+      # nil). Feed that constraint through the RequirementsUpdater so
+      # versioning-strategy is honored. When no strategy is set we default to
+      # BumpVersions, which preserves the authored operator and bumps the floor
+      # (e.g. `^1.0.0` -> `^1.0.5`); exact pins stay exact (`1.0.0` -> `1.5.0`).
       sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
       def updated_chart_requirement(req)
-        current_constraint = req[:requirement] || dependency.version
+        current_constraint = chart_constraint_for(req)
         synthetic = T.cast(req.merge(requirement: current_constraint), Dependabot::DependencyRequirement)
 
         T.must(
@@ -81,6 +81,15 @@ module Dependabot
             latest_resolvable_version: T.must(latest_version).to_s
           ).updated_requirements.first
         )
+      end
+
+      # The authored constraint for a single requirement. Prefer the
+      # requirement's own source[:tag] over dependency.version, since
+      # DependencySet may merge several same-named occurrences (different files
+      # or ranges) into one dependency with a single combined version.
+      sig { params(req: Dependabot::DependencyRequirement).returns(String) }
+      def chart_constraint_for(req)
+        (req[:requirement] || req.dig(:source, :tag) || dependency.version).to_s
       end
 
       sig { returns(Dependabot::RequirementsUpdateStrategy) }
@@ -247,14 +256,18 @@ module Dependabot
       end
 
       # Whether running the authored chart constraint through the
-      # RequirementsUpdater yields a different constraint string.
+      # RequirementsUpdater yields a different constraint string for *any*
+      # requirement. A dependency may carry several requirements (same chart
+      # name across files/entries); an update is warranted if even one changes.
       sig { returns(T::Boolean) }
       def chart_requirement_changes?
-        req = dependency.requirements.first
-        return true unless req
+        chart_reqs = dependency.requirements.select { |r| r.dig(:metadata, :type) == :helm_chart }
+        chart_reqs = dependency.requirements if chart_reqs.empty?
+        return true if chart_reqs.empty?
 
-        current = req[:requirement] || dependency.version
-        updated_chart_requirement(req)[:requirement].to_s != current.to_s
+        chart_reqs.any? do |req|
+          updated_chart_requirement(req)[:requirement].to_s != chart_constraint_for(req)
+        end
       end
 
       sig { returns(T.nilable(T.any(String, Gem::Version))) }

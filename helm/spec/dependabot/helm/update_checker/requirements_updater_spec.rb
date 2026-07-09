@@ -307,6 +307,16 @@ RSpec.describe Dependabot::Helm::UpdateChecker::RequirementsUpdater do
       end
     end
 
+    context "with a strict lower-bound (>) constraint (BumpVersions)" do
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
+      let(:chart_req) { ">1.0.0" }
+      let(:latest_resolvable_version) { "2.0.0" }
+
+      it "leaves it unchanged (rewriting would exclude the target)" do
+        expect(updated_req).to eq(">1.0.0")
+      end
+    end
+
     context "when there is no resolvable version" do
       let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
       let(:latest_resolvable_version) { nil }
