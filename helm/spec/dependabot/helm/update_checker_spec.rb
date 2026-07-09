@@ -340,6 +340,19 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
         expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
       end
     end
+
+    context "with an upper-only range whose latest equals the ceiling" do
+      # Regression: "<2.0.0" must anchor at 0, not at its ceiling. A latest of
+      # exactly 2.0.0 is outside the range, so widen should report and widen it.
+      let(:version) { "<2.0.0" }
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+      let(:latest) { Dependabot::Helm::Version.new("2.0.0") }
+
+      it "reports an update and widens the upper bound" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        expect(checker.updated_requirements.first[:requirement]).to eq("<3.0.0")
+      end
+    end
   end
 
   describe "#filter_valid_releases" do

@@ -120,8 +120,11 @@ module Dependabot
         upper_bound_parts = upper_bound.split(".")
         upper_bound_range =
           if upper_bound_parts.length < 3
-            # When upper bound is a partial version treat these as an X-range
-            upper_bound_parts[-1] = upper_bound_parts[-1].to_i + 1 if upper_bound_parts[-1].to_i.positive?
+            # When upper bound is a partial version treat these as an X-range:
+            # "1.0 - 2.0" includes the whole 2.0.x series, so always increment
+            # the last specified component (even when it is 0) before padding —
+            # otherwise the bound becomes "< 2.0.0.a" and excludes 2.0.0.
+            upper_bound_parts[-1] = (T.must(upper_bound_parts[-1]).to_i + 1).to_s
             upper_bound_parts.fill("0", upper_bound_parts.length...3)
             "< #{upper_bound_parts.join('.')}.a"
           else

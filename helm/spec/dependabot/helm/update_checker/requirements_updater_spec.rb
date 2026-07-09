@@ -286,6 +286,27 @@ RSpec.describe Dependabot::Helm::UpdateChecker::RequirementsUpdater do
       end
     end
 
+    context "with a != exclusion constraint (BumpVersions)" do
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
+      let(:latest_resolvable_version) { "2.0.0" }
+
+      context "when the latest version is already permitted" do
+        let(:chart_req) { "!=1.0.0" }
+
+        it "leaves it unchanged (does not rewrite the excluded version)" do
+          expect(updated_req).to eq("!=1.0.0")
+        end
+      end
+
+      context "when != is part of a compound constraint" do
+        let(:chart_req) { ">=1.0.0 !=1.5.0" }
+
+        it "preserves the whole constraint" do
+          expect(updated_req).to eq(">=1.0.0 !=1.5.0")
+        end
+      end
+    end
+
     context "when there is no resolvable version" do
       let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
       let(:latest_resolvable_version) { nil }

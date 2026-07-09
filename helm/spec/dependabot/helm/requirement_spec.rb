@@ -46,6 +46,16 @@ RSpec.describe Dependabot::Helm::Requirement do
       it { expect(satisfied?("1.0.0 - 2.0.0", "2.0.0")).to be(true) }
       it { expect(satisfied?("1.0.0 - 2.0.0", "2.0.1")).to be(false) }
       it { expect(satisfied?("1.0.0 - 2.0.0", "0.9.0")).to be(false) }
+
+      context "with a partial upper bound (x-range semantics)" do
+        # "1.0 - 2.0" includes the whole 2.0.x series, so 2.0.0 must satisfy it
+        # (regression: a zero last component was previously not incremented).
+        it { expect(satisfied?("1.0 - 2.0", "2.0.0")).to be(true) }
+        it { expect(satisfied?("1.0 - 2.0", "2.0.5")).to be(true) }
+        it { expect(satisfied?("1.0 - 2.0", "2.1.0")).to be(false) }
+        it { expect(satisfied?("1.2.3 - 2", "2.9.9")).to be(true) }
+        it { expect(satisfied?("1.2.3 - 2", "3.0.0")).to be(false) }
+      end
     end
 
     context "with an explicit range (space-AND)" do

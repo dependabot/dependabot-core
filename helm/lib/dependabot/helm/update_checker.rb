@@ -88,29 +88,45 @@ module Dependabot
         requirements_update_strategy || RequirementsUpdateStrategy::BumpVersions
       end
 
-      # Helm stores the Chart.yaml constraint in dependency.version. For single
-      # versions and lenient forms (^1.0.0, ~1.2.0, 1.0.0) this parses directly.
-      # For multi-comparator ranges (">=1.0.0 <2.0.0", "a || b") it can't, so we
-      # anchor candidate filtering on the lowest version named in the constraint
-      # (or 0 for wildcards), letting the RequirementsUpdater decide the rewrite.
+      # Helm stores the Chart.yaml constraint in dependency.version. Anchor
+      # candidate filtering on the constraint's lower bound. Single/lenient forms
+      # (^1.0.0, ~1.2.0, 1.0.0, >=1.0.0) parse directly. Comparator/hyphen/OR
+      # ranges do not, so we take the lowest lower-bound version named in the
+      # constraint (0 when there is none), letting the RequirementsUpdater decide
+      # the rewrite.
       # Overrides Base#current_version (nilable). Helm ranges have no single
       # numeric_version, so we return a non-nilable anchored floor instead of
       # nil — a valid covariant narrowing that also gives advisory matching
       # (active_advisories/vulnerable?) a concrete version to compare against.
       sig { override.returns(Dependabot::Version) }
       def current_version
-        @current_version ||= T.let(
-          begin
-            version_class.new(dependency.version)
-          rescue StandardError
-            named = dependency.version.to_s.scan(/\d+(?:\.\d+)*/).filter_map do |v|
-              s = T.cast(v, String)
-              version_class.new(s) if version_class.correct?(s)
-            end
-            named.min || version_class.new("0")
-          end,
-          T.nilable(Dependabot::Version)
-        )
+        @current_version ||= T.let(anchor_version, T.nilable(Dependabot::Version))
+      end
+
+      sig { returns(Dependabot::Version) }
+      def anchor_version
+        raw = dependency.version.to_s
+        # Comparator/hyphen/OR forms have no single parseable version, and a
+        # naive parse of an upper-only range like "<2.0.0" would wrongly anchor
+        # at the ceiling. Route them to the lower-bound anchor.
+        return lower_bound_anchor(raw) if raw.match?(/[<>]|\s-\s|\|\|/)
+
+        begin
+          version_class.new(raw)
+        rescue StandardError
+          lower_bound_anchor(raw)
+        end
+      end
+
+      # Lowest lower-bound version in a range constraint, with upper-bound
+      # comparators (< / <=) stripped so "<2.0.0" anchors at 0, not 2.0.0.
+      sig { params(raw: String).returns(Dependabot::Version) }
+      def lower_bound_anchor(raw)
+        named = raw.gsub(/<=?\s*\S+/, "").scan(/\d+(?:\.\d+)*/).filter_map do |v|
+          s = T.cast(v, String)
+          version_class.new(s) if version_class.correct?(s)
+        end
+        named.min || version_class.new("0")
       end
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }

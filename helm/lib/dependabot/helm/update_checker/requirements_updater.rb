@@ -112,6 +112,12 @@ module Dependabot
             return T.cast(req.merge(requirement: updated_req), Dependabot::DependencyRequirement)
           end
 
+          # A `!=` exclusion is already permitted by the resolved version (the
+          # resolver never selects an excluded version), so leave it untouched.
+          # Rewriting the numeric part would exclude the very version we want
+          # (`!=1.0.0` -> `!=2.0.0`) and drop any sibling comparators.
+          return req if current_requirement.include?("!=")
+
           reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
           T.cast(req.merge(requirement: update_version_string(reqs.first)), Dependabot::DependencyRequirement)
         end
