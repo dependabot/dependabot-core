@@ -383,13 +383,20 @@ module Dependabot
         # older Yarn Berry releases (or Yarn classic) raises "Unrecognized or legacy
         # configuration settings found: npmMinimalAgeGate" and aborts the install,
         # so we gate on a version check.
+        #
+        # Memoized (including a nil result): the value is deterministic for the
+        # updater's lifetime and this is invoked from several yarn command sites,
+        # so we avoid running `yarn --version` (and emitting duplicate log lines)
+        # more than once per update.
         sig { returns(T.nilable(T::Hash[String, String])) }
         def yarn_time_gate_env
-          gate_value = yarn_minimal_age_gate_value
-          return nil unless gate_value
-          return nil unless Helpers.yarn_berry_supports_minimal_age_gate?
+          return @yarn_time_gate_env if defined?(@yarn_time_gate_env)
 
-          { "YARN_NPM_MINIMAL_AGE_GATE" => gate_value }
+          gate_value = yarn_minimal_age_gate_value
+          env = if gate_value && Helpers.yarn_berry_supports_minimal_age_gate?
+                  { "YARN_NPM_MINIMAL_AGE_GATE" => gate_value }
+                end
+          @yarn_time_gate_env = T.let(env, T.nilable(T::Hash[String, String]))
         end
 
         # Returns the YARN_NPM_MINIMAL_AGE_GATE value (in minutes) for a regular
