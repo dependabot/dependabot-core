@@ -392,20 +392,31 @@ module Dependabot
           TomlRB.dump(parsed_manifest)
         end
 
-        sig { params(parsed_manifest: T::Hash[String, T.untyped]).void }
+        sig { params(parsed_manifest: T::Hash[String, T.anything]).void }
         def pin_target_specific_dependencies!(parsed_manifest)
-          parsed_manifest.fetch("target", {}).each do |target, t_details|
+          toml_table_or_empty(parsed_manifest.fetch("target", {})).each do |target, t_details|
+            t_details = toml_table_or_empty(t_details)
             Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
-              t_details.fetch(type, {}).each do |name, requirement|
+              toml_table_or_empty(t_details.fetch(type, {})).each do |name, requirement|
                 next unless name == dependency.name
 
                 updated_req = "=#{dependency.version}"
 
-                if requirement.is_a?(Hash)
-                  parsed_manifest["target"][target][type][name]["version"] =
+                if T.cast(requirement, T.nilable(Object)).is_a?(Hash)
+                  toml_table_or_empty(
+                    toml_table_or_empty(
+                      toml_table_or_empty(
+                        toml_table_or_empty(parsed_manifest["target"])[target]
+                      )[type]
+                    )[name]
+                  )["version"] =
                     updated_req
                 else
-                  parsed_manifest["target"][target][type][name] = updated_req
+                  toml_table_or_empty(
+                    toml_table_or_empty(
+                      toml_table_or_empty(parsed_manifest["target"])[target]
+                    )[type]
+                  )[name] = updated_req
                 end
               end
             end
@@ -496,6 +507,12 @@ module Dependabot
             end
 
           lockfile_content
+        end
+
+        sig { params(value: T.anything).returns(T::Hash[String, T.anything]) }
+        def toml_table_or_empty(value)
+          obj = T.cast(value, T.nilable(Object))
+          obj.is_a?(Hash) ? obj : {}
         end
 
         sig { returns(String) }
