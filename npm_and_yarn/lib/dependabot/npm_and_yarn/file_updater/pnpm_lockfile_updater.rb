@@ -215,7 +215,7 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def run_pnpm_install
-          run_pnpm_command_with_release_age_gate("install --lockfile-only")
+          run_pnpm_command_with_release_age_gate("install --lockfile-only", "install --lockfile-only")
         end
 
         # pnpm's `minimumReleaseAge` needs the registry `time` field, which is
