@@ -180,6 +180,7 @@ module Dependabot
         latest_source = source_from_listing(latest_version_listing)
         return latest_source if latest_source
 
+        require "set"
         seen_urls = T.let(Set.new, T::Set[String])
         all_version_listings.each do |_, listing|
           listing_source = source_from_listing(listing, seen_urls)
