@@ -1009,7 +1009,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
     end
 
     context "with template" do
-      context "for solo strategy" do
+      context "with solo strategy" do
         let(:namer) do
           described_class.new(
             dependencies: dependencies,
@@ -1024,7 +1024,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         end
       end
 
-      context "for solo strategy with custom prefix" do
+      context "with solo strategy and custom prefix" do
         let(:namer) do
           described_class.new(
             dependencies: dependencies,
@@ -1040,7 +1040,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         end
       end
 
-      context "for solo strategy with separator post-processing" do
+      context "with solo strategy and separator post-processing" do
         let(:namer) do
           described_class.new(
             dependencies: dependencies,
@@ -1056,7 +1056,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         end
       end
 
-      context "for solo strategy with word_separator and case" do
+      context "with solo strategy and word_separator and case" do
         let(:dependency_name) { "my_package" }
 
         let(:namer) do
@@ -1075,7 +1075,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         end
       end
 
-      context "for solo strategy with target_branch" do
+      context "with solo strategy and target_branch" do
         let(:target_branch) { "develop" }
 
         let(:namer) do
@@ -1092,7 +1092,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         end
       end
 
-      context "for solo strategy with directory" do
+      context "with solo strategy and directory" do
         let(:gemfile) do
           Dependabot::DependencyFile.new(
             name: "Gemfile",
@@ -1115,7 +1115,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         end
       end
 
-      context "for solo strategy with root directory" do
+      context "with solo strategy and root directory" do
         let(:namer) do
           described_class.new(
             dependencies: dependencies,
@@ -1130,7 +1130,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         end
       end
 
-      context "for group strategy" do
+      context "with group strategy" do
         let(:dependency_group) { double("DependencyGroup", name: "frontend-deps") }
 
         let(:namer) do
@@ -1149,7 +1149,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         end
       end
 
-      context "for group strategy with separator" do
+      context "with group strategy and separator" do
         let(:dependency_group) { double("DependencyGroup", name: "frontend-deps") }
 
         let(:namer) do
@@ -1169,7 +1169,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         end
       end
 
-      context "for multi_ecosystem strategy" do
+      context "with multi_ecosystem strategy" do
         let(:namer) do
           described_class.new(
             dependencies: dependencies,
@@ -1186,7 +1186,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         end
       end
 
-      context "for solo strategy with max_length" do
+      context "with solo strategy and max_length" do
         let(:namer) do
           described_class.new(
             dependencies: dependencies,

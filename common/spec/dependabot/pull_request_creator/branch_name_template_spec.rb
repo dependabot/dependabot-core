@@ -234,43 +234,6 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNameTemplate do
       end
     end
 
-    context "with max_length truncation for solo" do
-      it "truncates using SHA1 when branch exceeds max_length" do
-        result = described_class.render(
-          "{prefix}/{package_manager}/{dependency}-{version}",
-          {
-            "prefix" => "dependabot",
-            "package_manager" => "npm_and_yarn",
-            "dependency" => "very-long-dependency-name-that-will-exceed-the-limit",
-            "version" => "1.0.0"
-          },
-          strategy: :solo,
-          max_length: 50
-        )
-
-        expect(result.length).to be <= 50
-      end
-    end
-
-    context "with max_length truncation for group (preserves digest)" do
-      it "truncates while preserving the digest suffix" do
-        result = described_class.render(
-          "{prefix}/{package_manager}/{group_name}",
-          {
-            "prefix" => "dependabot",
-            "package_manager" => "npm_and_yarn",
-            "group_name" => "very-long-group-name-that-will-exceed-the-limit"
-          },
-          strategy: :group,
-          digest: "fc93691fd4",
-          max_length: 50
-        )
-
-        expect(result.length).to be <= 50
-        expect(result).to end_with("-fc93691fd4")
-      end
-    end
-
     context "with solo strategy and no digest" do
       it "does not append a digest" do
         result = described_class.render(

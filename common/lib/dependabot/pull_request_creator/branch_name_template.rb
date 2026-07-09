@@ -1,7 +1,6 @@
 # typed: strong
 # frozen_string_literal: true
 
-require "digest"
 require "sorbet-runtime"
 
 require "dependabot/errors"
@@ -98,20 +97,19 @@ module Dependabot
       end
 
       # ---------------------------------------------------------------
-      # 3. render(template, vars, strategy:, digest: nil, max_length: nil)
+      # 3. render(template, vars, strategy:, digest: nil)
       #    Full pipeline: validate template -> substitute -> append digest
-      #    -> validate ref -> apply max-length.
+      #    -> validate ref.
       # ---------------------------------------------------------------
       sig do
         params(
           template: String,
           vars: T::Hash[String, String],
           strategy: Symbol,
-          digest: T.nilable(String),
-          max_length: T.nilable(Integer)
+          digest: T.nilable(String)
         ).returns(String)
       end
-      def self.render(template, vars, strategy:, digest: nil, max_length: nil)
+      def self.render(template, vars, strategy:, digest: nil)
         validate_template(template, strategy: strategy)
 
         # Substitute placeholders
@@ -125,20 +123,7 @@ module Dependabot
         # Auto-append digest for Group/MultiEcosystem
         name = "#{name}-#{digest}" if digest && strategy != :solo
 
-        # Max-length truncation (preserve digest at tail)
-        if max_length && name.length > max_length
-          if digest && strategy != :solo
-            suffix = "-#{digest}"
-            available = max_length - suffix.length - 11
-            sha = T.must(Digest::SHA1.hexdigest(name)[0, 10])
-            name = "#{name[0...available]}-#{sha}#{suffix}"
-          else
-            sha = Digest::SHA1.hexdigest(name)
-            name = "#{name[0...(max_length - 41)]}-#{sha}"
-          end
-        end
-
-        # Validate git ref after all transformations (including truncation)
+        # Validate git ref after all transformations
         validate_ref_name(name)
 
         name

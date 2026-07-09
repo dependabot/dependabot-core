@@ -26,22 +26,7 @@ module Dependabot
 
           @name ||=
             T.let(
-              begin
-                dependency_name_part =
-                  if dependencies.count > 1 && updating_a_property?
-                    property_name
-                  elsif dependencies.count > 1 && updating_a_dependency_set?
-                    dependency_set.fetch(:group)
-                  else
-                    dependencies
-                      .map(&:name)
-                      .join("-and-")
-                      .tr(":[]", "-")
-                      .tr("@", "")
-                  end
-
-                "#{dependency_name_part}-#{branch_version_suffix}"
-              end,
+              "#{template_dependency_name}-#{branch_version_suffix}",
               T.nilable(String)
             )
 

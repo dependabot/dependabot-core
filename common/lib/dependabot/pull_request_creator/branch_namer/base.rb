@@ -113,23 +113,18 @@ module Dependabot
           # preserving the user-configured prefix as-is.
           if word_separator || branch_name_case
             prefix_with_sep = "#{prefix}#{separator}"
-            if sanitized_name.start_with?(prefix_with_sep)
-              prefix_part = prefix_with_sep
-              content = sanitized_name[prefix_with_sep.length..]
-            else
-              prefix_part = ""
-              content = sanitized_name
-            end
+            prefix_part = sanitized_name.start_with?(prefix_with_sep) ? prefix_with_sep : ""
+            content = sanitized_name.delete_prefix(prefix_with_sep)
 
             # Replace underscores with word_separator in the content after prefix
-            content = T.must(content).gsub("_", T.must(word_separator)) if word_separator
+            content = content.gsub("_", T.must(word_separator)) if word_separator
 
             # Apply case transformation to content after prefix
             case branch_name_case
             when "lower"
-              content = T.must(content).downcase
+              content = content.downcase
             when "upper"
-              content = T.must(content).upcase
+              content = content.upcase
             end
 
             sanitized_name = "#{prefix_part}#{content}"
