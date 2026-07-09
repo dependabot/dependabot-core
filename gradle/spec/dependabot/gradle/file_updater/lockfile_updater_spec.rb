@@ -514,14 +514,14 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
           FileUtils.chmod("+x", outside_wrapper)
 
           begin
+            stub_const("Dependabot::Utils::BUMP_TMP_DIR_PATH", outside_root)
+
             allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
               observed_commands << command
               File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
               FileUtils.mkdir_p(File.join(cwd, "app"))
               File.write(File.join(cwd, "app/gradle.lockfile"), "# updated app lockfile\n")
             end
-
-            allow(Dir).to receive(:tmpdir).and_return(outside_root)
 
             updater = described_class.new(
               dependency_files: [subdir_settings, subdir_buildfile, subdir_root_lockfile, subdir_app_lockfile]
