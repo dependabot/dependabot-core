@@ -255,6 +255,37 @@ RSpec.describe Dependabot::Helm::UpdateChecker::RequirementsUpdater do
       end
     end
 
+    context "with build metadata / digest (BumpVersions)" do
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
+
+      context "when the old constraint carries a stale digest" do
+        let(:chart_req) { "1.2.3+old" }
+        let(:latest_resolvable_version) { "1.5.0" }
+
+        it "replaces the whole version, dropping the stale suffix" do
+          expect(updated_req).to eq("1.5.0")
+        end
+      end
+
+      context "when the latest version carries a digest" do
+        let(:chart_req) { "1.2.3" }
+        let(:latest_resolvable_version) { "1.5.0+new" }
+
+        it "adopts the new digest" do
+          expect(updated_req).to eq("1.5.0+new")
+        end
+      end
+
+      context "with a caret constraint carrying a stale digest" do
+        let(:chart_req) { "^1.2.3+old" }
+        let(:latest_resolvable_version) { "1.5.0" }
+
+        it "bumps the caret floor without the stale suffix" do
+          expect(updated_req).to eq("^1.5.0")
+        end
+      end
+    end
+
     context "when there is no resolvable version" do
       let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
       let(:latest_resolvable_version) { nil }

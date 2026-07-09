@@ -24,8 +24,11 @@ module Dependabot
 
         # Possessive quantifiers (++) keep these linear on pathological input
         # (no catastrophic/polynomial backtracking) while matching identically
-        # to the greedy forms for real version constraints.
-        VERSION_REGEX = /[0-9]++(?:\.[A-Za-z0-9\-_]++)*/
+        # to the greedy forms for real version constraints. The trailing group
+        # consumes an optional '+<build metadata/digest>' suffix so rewrites
+        # replace it wholesale instead of leaving a stale suffix behind
+        # (e.g. "1.2.3+old" -> "1.5.0", not "1.5.0+old").
+        VERSION_REGEX = /[0-9]++(?:\.[A-Za-z0-9\-_]++)*+(?:\+[A-Za-z0-9\-_.]++)?/
         SEPARATOR = /(?<=[a-zA-Z0-9*])[\s|]++(?![\s|-])/
         ALLOWED_UPDATE_STRATEGIES = T.let(
           [

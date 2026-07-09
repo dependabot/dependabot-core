@@ -25,9 +25,12 @@ module Dependabot
       AND_SEPARATOR = T.let(/(?<=[a-zA-Z0-9*])\s+(?:&+\s+)?(?!\s*[|-])/, Regexp)
       OR_SEPARATOR = T.let(/(?<=[a-zA-Z0-9*])\s*\|+/, Regexp)
 
-      # Allow an optional 'v' prefix on versions.
+      # Allow an optional 'v' prefix and an optional '+<build metadata/digest>'
+      # suffix. Helm::Version supports the latter (e.g. "1.0.119807+<digest>"
+      # from OCI charts), so the requirement parser must accept it too or
+      # constraints containing it raise BadRequirementError.
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
-      version_pattern = "v?#{Gem::Version::VERSION_PATTERN}"
+      version_pattern = "v?#{Gem::Version::VERSION_PATTERN}(?:\\+[0-9A-Za-z\\-.]+)?"
 
       PATTERN_RAW = T.let("\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze, String)
       PATTERN = T.let(/\A#{PATTERN_RAW}\z/, Regexp)

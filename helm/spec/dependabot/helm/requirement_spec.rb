@@ -78,6 +78,17 @@ RSpec.describe Dependabot::Helm::Requirement do
       it { expect(satisfied?("*", "9.9.9")).to be(true) }
     end
 
+    context "with build metadata / digest (Helm OCI charts)" do
+      it "parses an exact +digest constraint without raising" do
+        expect { described_class.requirements_array("1.0.119807+abc123") }.not_to raise_error
+      end
+
+      it { expect(satisfied?("1.0.119807+abc123", "1.0.119807+abc123")).to be(true) }
+      it { expect(satisfied?(">=1.0.0+abc", "1.5.0")).to be(true) }
+      it { expect(satisfied?("^1.0.0+abc", "1.5.0")).to be(true) }
+      it { expect(satisfied?("^1.0.0+abc", "2.0.0")).to be(false) }
+    end
+
     context "with a nil requirement" do
       it "matches anything (does not raise)" do
         req = described_class.requirements_array(nil).first
