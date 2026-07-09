@@ -175,6 +175,8 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_registry
+        # Attempt to use the latest version listing first, as fetching the
+        # entire listing array can be slow (if it's large)
         latest_source = source_from_listing(latest_version_listing)
         return latest_source if latest_source
 
