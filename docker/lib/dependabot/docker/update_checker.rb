@@ -479,8 +479,7 @@ module Dependabot
           client.dohead "v2/#{docker_repo_name}/#{endpoint}/#{first_digest}"
         end
 
-        last_modified = head_response.headers[:last_modified]
-        published_date = last_modified ? Time.parse(last_modified) : nil
+        published_date = published_date_from_response_headers(head_response.headers, tag.name)
 
         Dependabot::Package::PackageRelease.new(
           version: release_version_for(tag),
@@ -499,6 +498,22 @@ module Dependabot
           "skipping cooldown: #{e.class} - #{e.message}"
         )
         nil
+      end
+
+      sig { params(headers: T::Hash[Symbol, String], tag_name: String).returns(T.nilable(Time)) }
+      def published_date_from_response_headers(headers, tag_name)
+        last_modified = headers[:last_modified]
+        published_date = begin
+          Time.parse(last_modified) if last_modified
+        rescue ArgumentError, TypeError => e
+          Dependabot.logger.info(
+            "Invalid Last-Modified header for #{docker_repo_name}:#{tag_name}: #{e.message}"
+          )
+          nil
+        end
+        # Fall back to the image config blob's "created" timestamp when Last-Modified
+        # is absent (e.g., Docker Hub multi-arch manifest lists).
+        published_date || fetch_image_config_created(tag_name)
       end
 
       sig do
