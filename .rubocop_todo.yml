@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 1499
+# Offense count: 1421
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bun/lib/dependabot/bun.rb"
@@ -343,22 +343,6 @@ Sorbet/ForbidTUntyped:
     - "julia/lib/dependabot/julia/registry_client.rb"
     - "julia/lib/dependabot/julia/update_checker.rb"
     - "julia/lib/dependabot/julia/update_checker/latest_version_finder.rb"
-    - "maven/lib/dependabot/maven/file_parser.rb"
-    - "maven/lib/dependabot/maven/file_parser/maven_dependency_parser.rb"
-    - "maven/lib/dependabot/maven/file_parser/property_value_finder.rb"
-    - "maven/lib/dependabot/maven/file_parser/repositories_finder.rb"
-    - "maven/lib/dependabot/maven/file_updater.rb"
-    - "maven/lib/dependabot/maven/file_updater/declaration_finder.rb"
-    - "maven/lib/dependabot/maven/package/package_details_fetcher.rb"
-    - "maven/lib/dependabot/maven/shared/base_version_finder.rb"
-    - "maven/lib/dependabot/maven/shared/shared_package_details_fetcher.rb"
-    - "maven/lib/dependabot/maven/shared/shared_property_value_updater.rb"
-    - "maven/lib/dependabot/maven/shared/shared_requirement.rb"
-    - "maven/lib/dependabot/maven/token_bucket.rb"
-    - "maven/lib/dependabot/maven/update_checker.rb"
-    - "maven/lib/dependabot/maven/update_checker/property_updater.rb"
-    - "maven/lib/dependabot/maven/update_checker/version_finder.rb"
-    - "maven/lib/dependabot/maven/utils/auth_headers_finder.rb"
     - "nix/lib/dependabot/nix/file_fetcher.rb"
     - "nix/lib/dependabot/nix/file_parser.rb"
     - "nix/lib/dependabot/nix/flake_nix_parser.rb"
