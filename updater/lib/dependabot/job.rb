@@ -50,6 +50,7 @@ module Dependabot
         ignore_conditions
         lockfile_only
         package_manager
+        insecure_external_code_execution
         reject_external_code
         repo_contents_path
         requirements_update_strategy
@@ -221,6 +222,10 @@ module Dependabot
         T::Array[Job::IgnoreCondition]
       )
       @package_manager                =  T.let(attributes.fetch(:package_manager), String)
+      @insecure_external_code_execution = T.let(
+        attributes.fetch(:insecure_external_code_execution, nil),
+        T.nilable(String)
+      )
       @reject_external_code           =  T.let(attributes.fetch(:reject_external_code, false), T::Boolean)
       @repo_contents_path             =  T.let(attributes.fetch(:repo_contents_path, nil), T.nilable(String))
 
@@ -329,6 +334,16 @@ module Dependabot
     sig { returns(T::Boolean) }
     def reject_external_code?
       @reject_external_code
+    end
+
+    sig { returns(T::Boolean) }
+    def insecure_external_code_execution_allowed?
+      @insecure_external_code_execution == "allow"
+    end
+
+    sig { returns(T::Boolean) }
+    def insecure_external_code_execution_disallowed?
+      @insecure_external_code_execution == "deny"
     end
 
     # TODO: Remove vulnerability checking
