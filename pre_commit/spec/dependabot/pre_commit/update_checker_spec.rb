@@ -87,18 +87,22 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
       end
     end
 
-    context "when the dependency is pinned to a commit SHA with a known tag" do
+    context "when the dependency is a bare SHA mapping to a tag (no frozen comment)" do
       let(:reference) { "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e" }
       let(:dependency_version) { nil }
 
       before do
+        # SHA maps to a tag, but without a `# frozen:` comment we track raw SHAs.
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tag_for_pinned_sha).and_return("v4.4.0")
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:head_commit_for_local_branch).with("HEAD")
+          .and_return("headsha0000000000000000000000000000000000")
       end
 
-      it "returns the latest tagged version" do
-        expect(latest_version).to be_a(Dependabot::PreCommit::Version)
-        expect(latest_version.to_s).to eq("6.0.0")
+      it "returns the newest default-branch commit, not the tag" do
+        expect(latest_version).to be_a(String)
+        expect(latest_version).to eq("headsha0000000000000000000000000000000000")
       end
     end
 
@@ -110,10 +114,10 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tag_for_pinned_sha).and_return(nil)
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
-          .to receive(:head_commit_for_pinned_ref).and_return("abc123def456")
+          .to receive(:head_commit_for_local_branch).with("HEAD").and_return("abc123def456")
       end
 
-      it "falls back to latest commit SHA" do
+      it "falls back to the newest default-branch commit" do
         expect(latest_version).to be_a(String)
         expect(latest_version).to eq("abc123def456")
       end

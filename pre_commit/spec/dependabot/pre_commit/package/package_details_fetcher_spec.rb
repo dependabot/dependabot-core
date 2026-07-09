@@ -205,7 +205,7 @@ RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
   describe "#commit_sha_release" do
     subject(:commit_sha_release) { fetcher.commit_sha_release }
 
-    context "when SHA maps to a known version tag" do
+    context "when a bare SHA maps to a tag but has no frozen comment" do
       let(:reference) { "f71fa2c1f9cf5cb705f73dffe4b21f7c61470ba9" }
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -222,13 +222,17 @@ RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
       end
 
       before do
+        # Even though the SHA sits on a tag, without a `# frozen:` comment the
+        # user tracks raw SHAs, so we must not promote to the tag.
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tag_for_pinned_sha).and_return("v4.4.0")
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:head_commit_for_local_branch).with("HEAD")
+          .and_return("headsha0000000000000000000000000000000000")
       end
 
-      it "returns the latest tagged version" do
-        expect(commit_sha_release).to be_a(Dependabot::PreCommit::Version)
-        expect(commit_sha_release.to_s).to eq("6.0.0")
+      it "returns the newest commit on the default branch, not the tag" do
+        expect(commit_sha_release).to eq("headsha0000000000000000000000000000000000")
       end
     end
 
@@ -252,10 +256,10 @@ RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tag_for_pinned_sha).and_return(nil)
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
-          .to receive(:head_commit_for_pinned_ref).and_return("abc123def456")
+          .to receive(:head_commit_for_local_branch).with("HEAD").and_return("abc123def456")
       end
 
-      it "falls back to latest commit for pinned ref" do
+      it "returns the newest commit on the default branch" do
         expect(commit_sha_release).to eq("abc123def456")
       end
     end
