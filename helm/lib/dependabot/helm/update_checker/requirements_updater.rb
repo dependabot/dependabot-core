@@ -177,17 +177,17 @@ module Dependabot
           if range_requirements.one?
             range_requirement = T.must(range_requirements.first)
             versions = range_requirement.scan(VERSION_REGEX)
-            version_objects = versions.map { |v| version_class.new(v.to_s) }
-            upper_bound = T.must(version_objects.max)
+            # Substitute using the *original* matched text, not the parsed
+            # version's normalized #to_s: Helm::Version normalizes a prerelease
+            # like "2.0.0-rc1" to "2.0.0", so subbing the normalized form would
+            # match the wrong span and leave a stale suffix ("<3.0.0-rc1").
+            original_upper = T.cast(T.must(versions.max_by { |v| version_class.new(v.to_s) }), String)
             new_upper_bound = update_greatest_version(
-              upper_bound.to_s,
+              version_class.new(original_upper).to_s,
               T.must(latest_resolvable_version)
             )
 
-            req_string.sub(
-              upper_bound.to_s,
-              new_upper_bound.to_s
-            )
+            req_string.sub(original_upper, new_upper_bound.to_s)
           else
             req_string + " || ^#{T.must(latest_resolvable_version)}"
           end
@@ -205,7 +205,10 @@ module Dependabot
                 new_parts = latest.split(".")
                                   .first(old_parts.count)
                 new_parts.map.with_index do |part, i|
-                  old_parts[i]&.match?(/^x\b/) ? "x" : part
+                  old = old_parts[i]
+                  # Preserve an authored wildcard segment, keeping its case
+                  # ("1.x" -> "4.x", "1.X" -> "4.X").
+                  old&.match?(/\A[xX]/) ? old : part
                 end.join(".")
               end
             end

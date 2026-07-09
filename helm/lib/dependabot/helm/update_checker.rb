@@ -115,10 +115,10 @@ module Dependabot
       sig { returns(Dependabot::Version) }
       def anchor_version
         raw = dependency.version.to_s
-        # Comparator/hyphen/OR forms have no single parseable version, and a
-        # naive parse of an upper-only range like "<2.0.0" would wrongly anchor
-        # at the ceiling. Route them to the lower-bound anchor.
-        return lower_bound_anchor(raw) if raw.match?(/[<>]|\s-\s|\|\|/)
+        # Comparator/hyphen/OR/exclusion forms have no single parseable version,
+        # and a naive parse of "<2.0.0" or "!=9.0.0" would wrongly anchor at that
+        # operand. Route them to the lower-bound anchor.
+        return lower_bound_anchor(raw) if raw.match?(/[<>]|!=|\s-\s|\|\|/)
 
         begin
           version_class.new(raw)
@@ -128,10 +128,11 @@ module Dependabot
       end
 
       # Lowest lower-bound version in a range constraint, with upper-bound
-      # comparators (< / <=) stripped so "<2.0.0" anchors at 0, not 2.0.0.
+      # comparators (< / <=) and exclusions (!=) stripped so neither "<2.0.0"
+      # nor "!=9.0.0" is mistaken for a floor (both would otherwise anchor high).
       sig { params(raw: String).returns(Dependabot::Version) }
       def lower_bound_anchor(raw)
-        named = raw.gsub(/<=?\s*\S+/, "").scan(/\d+(?:\.\d+)*/).filter_map do |v|
+        named = raw.gsub(/(?:<=?|!=)\s*\S+/, "").scan(/\d+(?:\.\d+)*/).filter_map do |v|
           s = T.cast(v, String)
           version_class.new(s) if version_class.correct?(s)
         end

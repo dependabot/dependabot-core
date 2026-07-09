@@ -379,6 +379,19 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
         expect(checker.updated_requirements.first[:requirement]).to eq("<3.0.0")
       end
     end
+
+    context "with a != exclusion combined with an upper bound" do
+      # Regression: the anchor must not treat the excluded operand (9.0.0) as a
+      # lower bound, or a new 2.0.0 would be filtered out before widening.
+      let(:version) { "!=9.0.0 <2.0.0" }
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+      let(:latest) { Dependabot::Helm::Version.new("2.0.0") }
+
+      it "anchors below the exclusion and reports an update" do
+        expect(checker.send(:current_version)).to eq(Dependabot::Helm::Version.new("0"))
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+      end
+    end
   end
 
   describe "#filter_valid_releases" do

@@ -246,12 +246,33 @@ RSpec.describe Dependabot::Helm::UpdateChecker::RequirementsUpdater do
     end
 
     context "with an x-range (BumpVersions)" do
-      let(:chart_req) { "1.x" }
       let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
       let(:latest_resolvable_version) { "4.5.0" }
 
-      it "bumps the major while preserving the wildcard" do
-        expect(updated_req).to eq("4.x")
+      context "with a lowercase wildcard" do
+        let(:chart_req) { "1.x" }
+
+        it "bumps the major while preserving the wildcard" do
+          expect(updated_req).to eq("4.x")
+        end
+      end
+
+      context "with an uppercase wildcard" do
+        let(:chart_req) { "1.X" }
+
+        it "preserves the authored uppercase wildcard" do
+          expect(updated_req).to eq("4.X")
+        end
+      end
+    end
+
+    context "with a prerelease upper bound in a range (WidenRanges)" do
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+      let(:chart_req) { ">=1.0.0 <2.0.0-rc1" }
+      let(:latest_resolvable_version) { "2.5.0" }
+
+      it "widens without leaving a stale prerelease suffix" do
+        expect(updated_req).to eq(">=1.0.0 <3.0.0")
       end
     end
 
