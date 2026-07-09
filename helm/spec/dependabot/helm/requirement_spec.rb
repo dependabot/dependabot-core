@@ -95,5 +95,27 @@ RSpec.describe Dependabot::Helm::Requirement do
         expect(req.satisfied_by?(Dependabot::Helm::Version.new("9.9.9"))).to be(true)
       end
     end
+
+    # Round-trip invariant: any version string Helm::Version accepts as an exact
+    # pin must parse as a requirement and be satisfied by itself. This guards the
+    # class of bug where one component supports a version shape (prerelease,
+    # +digest, multi-part) that the requirement parser does not.
+    #
+    # NOTE: a capital-"V" prefix (e.g. "V1.2.3") is deliberately excluded — like
+    # npm, the parser only accepts a lowercase "v", and the updater treats
+    # capital-prefixed strings as dist-tags and leaves them untouched.
+    describe "round-trip: Helm::Version-valid pins parse and self-satisfy" do
+      %w(
+        1.0.0 1.2 1 1.2.3.4
+        1.2.3-rc1 1.2.3-alpha.1 1.0.0-beta1
+        1.0.119807+abc123 1.2.3-rc1+build.5 1.2.3+21AF26D3
+        v1.2.3
+      ).each do |ver|
+        it "round-trips #{ver}" do
+          expect { described_class.requirements_array(ver) }.not_to raise_error
+          expect(satisfied?(ver, ver)).to be(true)
+        end
+      end
+    end
   end
 end
