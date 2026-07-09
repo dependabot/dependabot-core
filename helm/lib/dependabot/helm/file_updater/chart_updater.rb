@@ -43,13 +43,13 @@ module Dependabot
         sig do
           params(
             content: String,
-            yaml_obj: T::Hash[T.untyped, T.untyped],
+            yaml_obj: T::Hash[String, Object],
             file: Dependabot::DependencyFile
           ).returns(String)
         end
         def update_chart_dependencies(content, yaml_obj, file)
           if update_chart_dependency?(file) && yaml_obj["dependencies"]
-            yaml_obj["dependencies"].each do |dep|
+            T.cast(yaml_obj["dependencies"], T::Array[T::Hash[String, Object]]).each do |dep|
               next unless dep["name"] == dependency.name
 
               old_version = dep["version"].to_s
