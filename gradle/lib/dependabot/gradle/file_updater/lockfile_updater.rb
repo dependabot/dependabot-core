@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "fileutils"
+require "pathname"
 require "shellwords"
 require "sorbet-runtime"
 
@@ -47,9 +48,7 @@ module Dependabot
               "--write-locks",
               "--no-daemon"
             ]
-            command = Shellwords.join(command_parts)
-
-            SharedHelpers.run_shell_command(command, cwd: cwd)
+            run_lockfile_update_command(command_parts: command_parts, cwd: cwd)
 
             update_lockfiles_content(temp_dir, lockfiles, updated_files)
           rescue SharedHelpers::HelperSubprocessFailed => e
@@ -176,7 +175,7 @@ module Dependabot
             relative_dir = file.directory == "/" ? "" : file.directory
             in_path_name = File.join(temp_dir, relative_dir, file.name)
             FileUtils.mkdir_p(File.dirname(in_path_name))
-            File.write(in_path_name, file.content)
+            File.binwrite(in_path_name, file.decoded_content)
           end
         end
 
@@ -223,11 +222,45 @@ systemProp.https.proxyPort=#{https_proxy_port}"
 
         sig { params(cwd: String).returns(String) }
         def gradle_executable_for(cwd)
-          wrapper_script = File.join(cwd, "gradlew")
-          return "gradle" unless File.exist?(wrapper_script)
+          cwd_path = Pathname.new(cwd)
+          search_path = cwd_path
 
-          FileUtils.chmod("+x", wrapper_script)
-          "./gradlew"
+          loop do
+            wrapper_script = search_path.join("gradlew")
+            if File.file?(wrapper_script)
+              wrapper_script_path = wrapper_script.to_s
+              FileUtils.chmod("+x", wrapper_script_path)
+
+              relative_path = wrapper_script.relative_path_from(cwd_path).to_s
+              return relative_path.start_with?(".") ? relative_path : "./#{relative_path}"
+            end
+
+            parent_path = search_path.parent
+            break if parent_path == search_path
+
+            search_path = parent_path
+          end
+
+          "gradle"
+        end
+
+        sig { params(command_parts: T::Array[String], cwd: String).void }
+        def run_lockfile_update_command(command_parts:, cwd:)
+          command = Shellwords.join(command_parts)
+          SharedHelpers.run_shell_command(command, cwd: cwd)
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          raise e unless local_wrapper_command?(command_parts[0])
+
+          display_command = command_parts.join(" ")
+          Dependabot.logger.warn("Running #{display_command} failed, retrying with system Gradle: #{e.message}")
+
+          fallback_command = Shellwords.join(["gradle"] + command_parts.drop(1))
+          SharedHelpers.run_shell_command(fallback_command, cwd: cwd)
+        end
+
+        sig { params(executable: String).returns(T::Boolean) }
+        def local_wrapper_command?(executable)
+          executable != "gradle" && File.basename(executable) == "gradlew"
         end
 
         sig { params(build_file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }

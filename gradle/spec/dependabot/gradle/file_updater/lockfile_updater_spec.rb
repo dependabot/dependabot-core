@@ -1,6 +1,8 @@
 # typed: false
 # frozen_string_literal: true
 
+require "base64"
+
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/gradle/file_updater"
@@ -45,6 +47,17 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
       name: "gradlew",
       directory: "/",
       content: "#!/bin/sh\necho wrapper\n"
+    )
+  end
+
+  let(:gradle_wrapper_jar_raw) { "fake-gradle-wrapper\x00bytes" }
+
+  let(:gradle_wrapper_jar) do
+    Dependabot::DependencyFile.new(
+      name: "gradle/wrapper/gradle-wrapper.jar",
+      directory: "/",
+      content: Base64.strict_encode64(gradle_wrapper_jar_raw),
+      content_encoding: Dependabot::DependencyFile::ContentEncoding::BASE64
     )
   end
 
@@ -102,10 +115,12 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
       end
 
       let(:observed_cwds) { [] }
+      let(:observed_commands) { [] }
 
       before do
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
           observed_cwds << cwd
+          observed_commands << command
           File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
           FileUtils.mkdir_p(File.join(cwd, "app"))
           File.write(File.join(cwd, "app/gradle.lockfile"), "# updated app lockfile\n")
@@ -151,6 +166,59 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
 
           expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
           expect(observed_command.last).to include("./gradlew")
+        end
+
+        it "falls back to system gradle when wrapper execution fails" do
+          allow(Dependabot.logger).to receive(:warn)
+          observed_command = []
+
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
+            observed_command << command
+
+            if command.start_with?("./gradlew")
+              raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "Error: Invalid or corrupt jarfile gradle/wrapper/gradle-wrapper.jar",
+                error_context: { command: command }
+              )
+            end
+
+            File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+          end
+
+          result = lockfile_updater.update_lockfiles(root_buildfile)
+
+          expect(observed_command[0]).to start_with("./gradlew")
+          expect(observed_command[1]).to start_with("gradle ")
+          expect(result.find { |f| f.name == "gradle.lockfile" }.content).to eq("# updated root lockfile\n")
+          expect(Dependabot.logger).to have_received(:warn).with(include("dependabotResolveAll --write-locks"))
+        end
+      end
+
+      context "when gradle-wrapper.jar is base64 encoded" do
+        let(:dependency_files) do
+          [
+            gradlew,
+            gradle_wrapper_jar,
+            root_settings,
+            root_buildfile,
+            root_lockfile
+          ]
+        end
+
+        let(:observed_wrapper_jar_content) { [] }
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+            wrapper_jar_path = File.join(cwd, "gradle/wrapper/gradle-wrapper.jar")
+            observed_wrapper_jar_content << File.binread(wrapper_jar_path)
+            File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+          end
+        end
+
+        it "writes decoded binary wrapper jar content to disk" do
+          lockfile_updater.update_lockfiles(root_buildfile)
+
+          expect(observed_wrapper_jar_content.last).to eq(gradle_wrapper_jar_raw)
         end
       end
 
@@ -233,10 +301,12 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
       end
 
       let(:observed_cwds) { [] }
+      let(:observed_commands) { [] }
 
       before do
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
           observed_cwds << cwd
+          observed_commands << command
           File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
           FileUtils.mkdir_p(File.join(cwd, "app"))
           File.write(File.join(cwd, "app/gradle.lockfile"), "# updated app lockfile\n")
@@ -382,10 +452,12 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
       end
 
       let(:observed_cwds) { [] }
+      let(:observed_commands) { [] }
 
       before do
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
           observed_cwds << cwd
+          observed_commands << command
           File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
           FileUtils.mkdir_p(File.join(cwd, "app"))
           File.write(File.join(cwd, "app/gradle.lockfile"), "# updated app lockfile\n")
@@ -399,6 +471,19 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
 
         expect(result.find { |f| f.name == "gradle.lockfile" }.content).to eq("# updated root lockfile\n")
         expect(result.find { |f| f.name == "app/gradle.lockfile" }.content).to eq("# updated app lockfile\n")
+      end
+
+      context "when gradlew exists at the repository root" do
+        let(:dependency_files) do
+          [gradlew, subdir_settings, subdir_buildfile, subdir_root_lockfile, subdir_app_lockfile]
+        end
+
+        it "uses the parent-directory wrapper script" do
+          lockfile_updater.update_lockfiles(subdir_buildfile)
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          expect(observed_commands.last).to start_with("../gradlew ")
+        end
       end
     end
   end
