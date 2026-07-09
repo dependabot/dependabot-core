@@ -265,11 +265,13 @@ RSpec.describe Dependabot::Nub::FileUpdater do
         let(:repo_contents_path) { build_tmp_repo("nub/github_dependency_no_ref", path: "projects") }
 
         it "only updates the lockfile" do
-          skip("Unsupported by nub's CLI: the manifest ref is unchanged (master -> master), so " \
-               "PackageJsonUpdater produces no manifest edit and nub's conservative lockfile-only " \
-               "install keeps the already-locked SHA. Advancing a git dep on the same branch needs " \
-               "a nub-side force-re-resolution capability (`update <pkg>@<sha>` / a targeted refresh) " \
-               "that nub does not yet expose. Ref-CHANGE git updates DO work (see the context above).")
+          skip(
+            "Unsupported by nub's CLI: the manifest ref is unchanged (master -> master), so " \
+            "PackageJsonUpdater produces no manifest edit and nub's conservative lockfile-only " \
+            "install keeps the already-locked SHA. Advancing a git dep on the same branch needs " \
+            "a nub-side force-re-resolution capability (`update <pkg>@<sha>` / a targeted refresh) " \
+            "that nub does not yet expose. Ref-CHANGE git updates DO work (see the context above)."
+          )
           expect(updated_files.map(&:name))
             .to match_array(%w(nub.lock))
         end

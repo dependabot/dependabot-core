@@ -115,7 +115,12 @@ module Dependabot
 
         sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
         def git_dependency?(dependency)
-          dependency.requirements.any? { |req| req[:source] && req[:source][:type] == "git" }
+          dependency.requirements.any? do |req|
+            source = req.source
+            next false if source.nil?
+
+            T.cast(source[:type], T.nilable(String)) == "git"
+          end
         end
 
         sig { params(lockfile: Dependabot::DependencyFile).returns(T::Array[Dependabot::Dependency]) }

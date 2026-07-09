@@ -35,6 +35,13 @@ module Dependabot
           T::Hash[String, T::Array[String]]
         )
 
+        # Manifest groups the candidate version is pinned into before re-resolving; includes
+        # peerDependencies (unlike FileParser::DEPENDENCY_TYPES) so a peer-only dep is pinned too.
+        PINNABLE_DEPENDENCY_GROUPS = T.let(
+          %w(dependencies devDependencies optionalDependencies peerDependencies).freeze,
+          T::Array[String]
+        )
+
         # Error message returned by `npm install` (for NPM 6):
         # react-dom@15.2.0 requires a peer of react@^15.2.0 \
         # but none is installed. You must install peer dependencies yourself.
@@ -656,9 +663,9 @@ module Dependabot
 
           Dir.glob("**/package.json").each do |manifest|
             parsed = JSON.parse(File.read(manifest))
-            changed = false
+            changed = T.let(false, T::Boolean)
 
-            %w(dependencies devDependencies optionalDependencies peerDependencies).each do |group|
+            PINNABLE_DEPENDENCY_GROUPS.each do |group|
               group_deps = parsed[group]
               next unless group_deps.is_a?(Hash) && group_deps.key?(dependency.name)
 

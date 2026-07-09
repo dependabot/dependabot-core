@@ -47,7 +47,6 @@ module Dependabot
           )
         end
 
-        # rubocop:disable Metrics/MethodLength
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def dependencies
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
@@ -62,21 +61,8 @@ module Dependabot
           parsed.each do |details|
             next if details["aliased"] && !dealias_packages?
 
-            name = T.cast(details["name"], String)
-            args = {
-              name: name,
-              version: T.cast(details["version"], T.nilable(String)),
-              package_manager: NubPackageManager::NAME,
-              requirements: []
-            }
-            args[:metadata] = { alias: name } if details["aliased"]
-            args[:subdependency_metadata] = [{ production: !details["dev"] }] if details["dev"]
-
-            if details["specifiers"]&.any?
-              with_specifiers << args
-            else
-              without_specifiers << args
-            end
+            args = dependency_args(details)
+            (details["specifiers"]&.any? ? with_specifiers : without_specifiers) << args
           end
 
           (with_specifiers + without_specifiers).each do |args|
@@ -92,7 +78,6 @@ module Dependabot
 
           dependency_set
         end
-        # rubocop:enable Metrics/MethodLength
 
         sig do
           params(
@@ -114,6 +99,22 @@ module Dependabot
         end
 
         private
+
+        # Builds the Dependency.new kwargs for one parsed lockfile entry. Metadata/subdependency
+        # keys are set only when present so Dependency.new applies its own defaults.
+        sig { params(details: T::Hash[String, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+        def dependency_args(details)
+          name = T.cast(details["name"], String)
+          args = {
+            name: name,
+            version: T.cast(details["version"], T.nilable(String)),
+            package_manager: NubPackageManager::NAME,
+            requirements: []
+          }
+          args[:metadata] = { alias: name } if details["aliased"]
+          args[:subdependency_metadata] = [{ production: !details["dev"] }] if details["dev"]
+          args
+        end
 
         sig { returns(T::Boolean) }
         def dealias_packages?
