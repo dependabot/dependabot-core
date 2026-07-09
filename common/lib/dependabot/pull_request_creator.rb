@@ -126,6 +126,12 @@ module Dependabot
     sig { returns(T.nilable(Integer)) }
     attr_reader :branch_name_max_length
 
+    sig { returns(T.nilable(String)) }
+    attr_reader :branch_name_word_separator
+
+    sig { returns(T.nilable(String)) }
+    attr_reader :branch_name_case
+
     sig { returns(String) }
     attr_reader :github_redirection_service
 
@@ -164,6 +170,8 @@ module Dependabot
         branch_name_separator: String,
         branch_name_prefix: String,
         branch_name_max_length: T.nilable(Integer),
+        branch_name_word_separator: T.nilable(String),
+        branch_name_case: T.nilable(String),
         label_language: T::Boolean,
         automerge_candidate: T::Boolean,
         github_redirection_service: String,
@@ -198,6 +206,8 @@ module Dependabot
       branch_name_separator: "/",
       branch_name_prefix: "dependabot",
       branch_name_max_length: 100,
+      branch_name_word_separator: nil,
+      branch_name_case: nil,
       label_language: false,
       automerge_candidate: false,
       github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE,
@@ -227,6 +237,8 @@ module Dependabot
       @branch_name_separator      = branch_name_separator
       @branch_name_prefix         = branch_name_prefix
       @branch_name_max_length     = branch_name_max_length
+      @branch_name_word_separator = branch_name_word_separator
+      @branch_name_case = branch_name_case
       @label_language             = label_language
       @automerge_candidate        = automerge_candidate
       @github_redirection_service = github_redirection_service
@@ -420,6 +432,8 @@ module Dependabot
           separator: branch_name_separator,
           prefix: branch_name_prefix,
           max_length: branch_name_max_length,
+          word_separator: branch_name_word_separator,
+          branch_name_case: branch_name_case,
           includes_security_fixes: includes_security_fixes?
         ),
         T.nilable(Dependabot::PullRequestCreator::BranchNamer)
