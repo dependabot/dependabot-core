@@ -25,5 +25,8 @@
     "eslint-config-prettier": "^9.1.0",
     "jest": "^29.7.0",
     "prettier": "^3.4.2"
+  },
+  "overrides": {
+    "form-data": "2.5.6"
   }
 }
