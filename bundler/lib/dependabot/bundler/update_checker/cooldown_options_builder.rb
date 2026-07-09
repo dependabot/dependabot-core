@@ -55,7 +55,7 @@ module Dependabot
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def manifest_files
           dependency_files.reject(&:support_file?)
-                          .reject { |file| file.name.end_with?(".lock", ".gemspec", ".specification") }
+                          .reject { |file| file.name.end_with?(".lock", ".locked", ".gemspec", ".specification") }
         end
       end
     end
