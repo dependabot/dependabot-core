@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/dependency_file"
+require "dependabot/maven/shared/property_value_finding"
 
 module Dependabot
   module Maven
@@ -67,14 +68,7 @@ module Dependabot
         sig { returns(T::Array[DependencyFile]) }
         attr_reader :dependency_files
 
-        sig do
-          abstract.returns(
-            T.any(
-              Dependabot::Gradle::FileParser::PropertyValueFinder,
-              Dependabot::Sbt::FileParser::PropertyValueFinder
-            )
-          )
-        end
+        sig { abstract.returns(Dependabot::Maven::Shared::PropertyValueFinding) }
         def property_value_finder; end
 
         sig { params(previous_value: String).returns(Regexp) }
