@@ -41,7 +41,7 @@ module Dependabot
             write_init_script(init_script_path)
 
             command_parts = [
-              "gradle",
+              gradle_executable_for(cwd),
               "--init-script", init_script_path,
               INIT_SCRIPT_TASK_NAME,
               "--write-locks",
@@ -219,6 +219,15 @@ systemProp.https.proxyPort=#{https_proxy_port}"
             }
           GRADLE
           File.write(file_name, script_content)
+        end
+
+        sig { params(cwd: String).returns(String) }
+        def gradle_executable_for(cwd)
+          wrapper_script = File.join(cwd, "gradlew")
+          return "gradle" unless File.exist?(wrapper_script)
+
+          FileUtils.chmod("+x", wrapper_script)
+          "./gradlew"
         end
 
         sig { params(build_file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }

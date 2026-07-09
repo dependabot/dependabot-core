@@ -40,6 +40,14 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
     )
   end
 
+  let(:gradlew) do
+    Dependabot::DependencyFile.new(
+      name: "gradlew",
+      directory: "/",
+      content: "#!/bin/sh\necho wrapper\n"
+    )
+  end
+
   let(:included_buildfile) do
     Dependabot::DependencyFile.new(
       name: "included/build.gradle",
@@ -117,6 +125,59 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
         expect(result.find { |f| f.name == "gradle.lockfile" }.content).to eq("# updated root lockfile\n")
         expect(result.find { |f| f.name == "app/gradle.lockfile" }.content).to eq("# updated app lockfile\n")
         expect(result.find { |f| f.name == "external/gradle.lockfile" }.content).to eq("# external lockfile\n")
+      end
+
+      context "when a local gradlew script is available" do
+        let(:dependency_files) do
+          [
+            gradlew,
+            root_settings,
+            root_buildfile,
+            root_lockfile
+          ]
+        end
+
+        let(:observed_command) { [] }
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
+            File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+            observed_command << command
+          end
+        end
+
+        it "prefers the local wrapper executable" do
+          lockfile_updater.update_lockfiles(root_buildfile)
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          expect(observed_command.last).to include("./gradlew")
+        end
+      end
+
+      context "when a local gradlew script is not available" do
+        let(:dependency_files) do
+          [
+            root_settings,
+            root_buildfile,
+            root_lockfile
+          ]
+        end
+
+        let(:observed_command) { [] }
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
+            File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+            observed_command << command
+          end
+        end
+
+        it "falls back to system gradle" do
+          lockfile_updater.update_lockfiles(root_buildfile)
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          expect(observed_command.last).to start_with("gradle ")
+        end
       end
     end
 
