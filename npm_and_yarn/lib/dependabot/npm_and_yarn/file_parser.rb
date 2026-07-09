@@ -3,6 +3,7 @@
 
 # See https://docs.npmjs.com/files/package.json for package.json format docs.
 
+require "cgi/escape"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -393,7 +394,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def dealias_packages?
-        options.fetch(:dealias_packages, false) == true
+        options.fetch(:dealias_packages, false) ? true : false
       end
 
       # Resolves an aliased manifest entry to its real package name and requirement.

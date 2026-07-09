@@ -21,8 +21,8 @@ module Dependabot
     sig do
       params(
         url: String,
-        headers: T::Hash[T.any(String, Symbol), T.untyped],
-        options: T::Hash[Symbol, T.untyped]
+        headers: T::Hash[T.any(String, Symbol), T.anything],
+        options: T::Hash[Symbol, T.anything]
       )
         .returns(Excon::Response)
     end
@@ -43,8 +43,8 @@ module Dependabot
     sig do
       params(
         url: String,
-        headers: T::Hash[T.any(String, Symbol), T.untyped],
-        options: T::Hash[Symbol, T.untyped]
+        headers: T::Hash[T.any(String, Symbol), T.anything],
+        options: T::Hash[Symbol, T.anything]
       )
         .returns(Excon::Response)
     end

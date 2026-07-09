@@ -443,7 +443,7 @@ module Dependabot
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
             credentials: credentials,
-            security_updates_only: options.fetch(:security_updates_only, false)
+            security_updates_only: options.fetch(:security_updates_only, false) ? true : false
           ),
           T.nilable(Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater)
         )
@@ -457,7 +457,7 @@ module Dependabot
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
             credentials: credentials,
-            security_updates_only: options.fetch(:security_updates_only, false)
+            security_updates_only: options.fetch(:security_updates_only, false) ? true : false
           ),
           T.nilable(Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater)
         )
@@ -474,7 +474,7 @@ module Dependabot
           dependencies: dependencies,
           dependency_files: dependency_files,
           credentials: credentials,
-          security_updates_only: options.fetch(:security_updates_only, false)
+          security_updates_only: options.fetch(:security_updates_only, false) ? true : false
         )
       end
 

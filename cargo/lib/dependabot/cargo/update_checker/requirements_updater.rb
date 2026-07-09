@@ -36,7 +36,7 @@ module Dependabot
         sig do
           params(
             requirements: T::Array[Dependabot::DependencyRequirement],
-            updated_source: T.nilable(T::Hash[T.any(String, Symbol), T.untyped]),
+            updated_source: T.nilable(T::Hash[T.any(String, Symbol), T.anything]),
             update_strategy: Dependabot::RequirementsUpdateStrategy,
             target_version: T.nilable(T.any(String, Gem::Version))
           ).void
@@ -51,7 +51,7 @@ module Dependabot
             requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
             T::Array[Dependabot::DependencyRequirement]
           )
-          @updated_source = T.let(updated_source, T.nilable(T::Hash[T.any(String, Symbol), T.untyped]))
+          @updated_source = T.let(updated_source, T.nilable(T::Hash[T.any(String, Symbol), T.anything]))
           @update_strategy = T.let(update_strategy, Dependabot::RequirementsUpdateStrategy)
 
           check_update_strategy
@@ -87,7 +87,7 @@ module Dependabot
         sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :requirements
 
-        sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped])) }
+        sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.anything])) }
         attr_reader :updated_source
 
         sig { returns(Dependabot::RequirementsUpdateStrategy) }

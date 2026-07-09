@@ -231,6 +231,26 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
         expect(result.ref).to eq("nixos-24.11")
       end
     end
+
+    context "with a NixOS channel tarball URL" do
+      let(:content) do
+        <<~NIX
+          {
+            inputs.nixpkgs.url = "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz";
+            outputs = { self, nixpkgs }: { };
+          }
+        NIX
+      end
+
+      it "parses the channel name as the ref" do
+        result = described_class.find_input_url(content, "nixpkgs")
+
+        expect(result).not_to be_nil
+        expect(result.scheme).to eq("tarball")
+        expect(result.ref).to eq("nixos-26.05")
+        expect(result.full_url).to eq("https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz")
+      end
+    end
   end
 
   describe ".update_input_ref" do
@@ -319,6 +339,24 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
 
         expect(updated).to include('"nixpkgs/nixos-25.05"')
         expect(updated).not_to include("nixos-24.11")
+      end
+    end
+
+    context "with a NixOS channel tarball URL" do
+      let(:content) do
+        <<~NIX
+          {
+            inputs.nixpkgs.url = "https://channels.nixos.org/nixos-25.05/nixexprs.tar.xz";
+            outputs = { self, nixpkgs }: { };
+          }
+        NIX
+      end
+
+      it "rewrites the channel segment in the URL" do
+        updated = described_class.update_input_ref(content, "nixpkgs", "nixos-26.05")
+
+        expect(updated).to include('"https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz"')
+        expect(updated).not_to include("nixos-25.05")
       end
     end
   end

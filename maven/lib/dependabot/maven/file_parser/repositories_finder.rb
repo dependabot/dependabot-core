@@ -103,6 +103,11 @@ module Dependabot
         end
 
         sig { params(entry: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
+        def disabled_repo?(entry)
+          entry[:releases] == "false" && entry[:snapshots] == "false"
+        end
+
+        sig { params(entry: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
         def snapshot_repo(entry)
           entry[:releases] == "false" && (entry[:snapshots].nil? || entry[:snapshots] == "true")
         end
@@ -168,6 +173,7 @@ module Dependabot
 
           return if property_blocked?(entry)
           return unless http_url?(entry)
+          return if disabled_repo?(entry)
 
           serialize_urls(entry, pom)
         end
