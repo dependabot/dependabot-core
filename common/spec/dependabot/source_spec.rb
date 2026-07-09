@@ -400,11 +400,24 @@ RSpec.describe Dependabot::Source do
         stub_request(:get, "https://unreachable.example.com/status").to_raise(Excon::Error::Timeout)
       end
 
-      it "returns false and caches the failed probe" do
+      it "returns false and retries the probe on subsequent calls" do
         expect(described_class.github_enterprise?("https://unreachable.example.com")).to be false
         described_class.github_enterprise?("https://unreachable.example.com")
 
-        expect(WebMock).to have_requested(:get, "https://unreachable.example.com/status").once
+        expect(WebMock).to have_requested(:get, "https://unreachable.example.com/status").twice
+      end
+    end
+
+    context "when the request returns a transient server error" do
+      before do
+        stub_request(:get, "https://flaky-ghes.example.com/status").to_return(status: 502)
+      end
+
+      it "returns false and retries the probe on subsequent calls" do
+        expect(described_class.github_enterprise?("https://flaky-ghes.example.com")).to be false
+        described_class.github_enterprise?("https://flaky-ghes.example.com")
+
+        expect(WebMock).to have_requested(:get, "https://flaky-ghes.example.com/status").twice
       end
     end
   end
