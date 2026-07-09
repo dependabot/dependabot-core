@@ -22,7 +22,7 @@ module Dependabot
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
             ignored_versions: T::Array[String],
-            target_version_details: T.nilable(T::Hash[T.untyped, T.untyped]),
+            target_version_details: T.nilable(UpdateChecker::VersionDetails),
             update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
@@ -38,8 +38,10 @@ module Dependabot
           @dependency_files = dependency_files
           @credentials      = credentials
           @ignored_versions = ignored_versions
-          @target_version   = T.let(target_version_details&.fetch(:version), T.nilable(Dependabot::Maven::Version))
-          @source_url       = T.let(target_version_details&.fetch(:source_url), T.nilable(String))
+          target_version = target_version_details&.fetch(:version)
+          target_version = nil unless target_version.is_a?(Dependabot::Maven::Version)
+          @target_version = T.let(target_version, T.nilable(Dependabot::Maven::Version))
+          @source_url = T.let(target_version_details&.fetch(:source_url), T.nilable(String))
           @update_cooldown = update_cooldown
           @property_value_finder = T.let(nil, T.nilable(Dependabot::Maven::FileParser::PropertyValueFinder))
         end
@@ -206,7 +208,7 @@ module Dependabot
           raise DependencyFileNotEvaluatable, "Property not found: #{property_name}"
         end
 
-        sig { params(dep: Dependabot::Dependency).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(dep: Dependabot::Dependency).returns(Dependabot::DependencyRequirement) }
         def declaring_property_requirement(dep)
           declaring_requirement =
             dep.requirements.find do |r|
@@ -221,9 +223,9 @@ module Dependabot
                 "Requirement not found for property #{property_name} from #{property_source || 'unknown source'}"
         end
 
-        sig { params(dep: Dependabot::Dependency).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { params(dep: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_requirements(dep)
-          @updated_requirements ||= T.let({}, T.nilable(T::Hash[String, T::Array[T::Hash[Symbol, T.untyped]]]))
+          @updated_requirements ||= T.let({}, T.nilable(T::Hash[String, T::Array[Dependabot::DependencyRequirement]]))
           @updated_requirements[dep.name] ||=
             RequirementsUpdater.new(
               requirements: dep.requirements,
