@@ -46,7 +46,7 @@ module Dependabot
         raise Dependabot::DependencyFileNotFound.new(nil, self.class.required_files_message)
       end
 
-      sig { override.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { override.returns(T.nilable(T::Hash[Symbol, T.anything])) }
       def ecosystem_versions
         bazel_version = "unknown"
 
@@ -75,14 +75,14 @@ module Dependabot
         files = T.let([], T::Array[DependencyFile])
 
         module_file_items.each do |item|
-          file = fetch_file_if_present(item.name)
+          file = fetch_file_if_present(T.must(item.name))
           files << file if file
         end
 
         files
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[Dependabot::FileFetchers::RepositoryContent]) }
       def module_file_items
         repo_contents(raise_errors: false).select { |f| f.type == "file" && f.name.end_with?(MODULE_FILE) }
       end
@@ -140,8 +140,8 @@ module Dependabot
 
         all_module_files.each do |module_file|
           module_refs = fetch_module_referenced_files(module_file, directories_with_files)
-          files += module_refs[:files]
-          module_refs[:local_override_dirs].each { |dir| local_override_directories.add(dir) }
+          files += T.cast(module_refs[:files], T::Array[DependencyFile])
+          T.cast(module_refs[:local_override_dirs], T::Array[String]).each { |dir| local_override_directories.add(dir) }
         end
 
         tree_fetcher = DirectoryTreeFetcher.new(fetcher: self)
@@ -156,7 +156,7 @@ module Dependabot
         params(
           module_file: DependencyFile,
           directories_with_files: T::Set[String]
-        ).returns(T::Hash[Symbol, T.untyped])
+        ).returns(T::Hash[Symbol, T.anything])
       end
       def fetch_module_referenced_files(module_file, directories_with_files)
         files = T.let([], T::Array[DependencyFile])

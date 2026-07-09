@@ -19,7 +19,9 @@ module Dependabot
             includes_security_fixes: T::Boolean,
             separator: String,
             prefix: String,
-            max_length: T.nilable(Integer)
+            max_length: T.nilable(Integer),
+            word_separator: T.nilable(String),
+            branch_name_case: T.nilable(String)
           )
             .void
         end
@@ -31,7 +33,9 @@ module Dependabot
           includes_security_fixes:,
           separator: "/",
           prefix: "dependabot",
-          max_length: nil
+          max_length: nil,
+          word_separator: nil,
+          branch_name_case: nil
         )
           super(
             dependencies: dependencies,
@@ -40,6 +44,8 @@ module Dependabot
             separator: separator,
             prefix: prefix,
             max_length: max_length,
+            word_separator: word_separator,
+            branch_name_case: branch_name_case,
           )
 
           @dependency_group = dependency_group

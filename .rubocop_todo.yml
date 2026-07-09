@@ -239,12 +239,9 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 1549
+# Offense count: 1499
 Sorbet/ForbidTUntyped:
   Exclude:
-    - "bazel/lib/dependabot/bazel/file_fetcher.rb"
-    - "bazel/lib/dependabot/bazel/file_parser/starlark_parser.rb"
-    - "bazel/lib/dependabot/bazel/update_checker/registry_client.rb"
     - "bun/lib/dependabot/bun.rb"
     - "bun/lib/dependabot/bun/dependency_files_filterer.rb"
     - "bun/lib/dependabot/bun/file_fetcher.rb"
@@ -309,18 +306,7 @@ Sorbet/ForbidTUntyped:
     - "composer/lib/dependabot/composer/metadata_finder.rb"
     - "composer/lib/dependabot/composer/package/package_details_fetcher.rb"
     - "composer/lib/dependabot/composer/update_checker/version_resolver.rb"
-    - "deno/lib/dependabot/deno/file_fetcher.rb"
-    - "deno/lib/dependabot/deno/file_parser.rb"
-    - "deno/lib/dependabot/deno/file_updater/manifest_updater.rb"
-    - "deno/lib/dependabot/deno/helpers.rb"
-    - "devcontainers/lib/dependabot/devcontainers/file_fetcher.rb"
-    - "devcontainers/lib/dependabot/devcontainers/file_parser/feature_dependency_parser.rb"
-    - "devcontainers/lib/dependabot/devcontainers/file_updater.rb"
-    - "devcontainers/lib/dependabot/devcontainers/update_checker/latest_version_finder.rb"
     - "dotnet_sdk/lib/dependabot/dotnet_sdk/package/package_details_fetcher.rb"
-    - "elm/lib/dependabot/elm/file_parser.rb"
-    - "elm/lib/dependabot/elm/update_checker/latest_version_finder.rb"
-    - "elm/lib/dependabot/elm/update_checker/requirements_updater.rb"
     - "git_submodules/lib/dependabot/git_submodules/package/package_details_fetcher.rb"
     - "github_actions/lib/dependabot/github_actions/file_parser.rb"
     - "github_actions/lib/dependabot/github_actions/package/package_details_fetcher.rb"
@@ -344,10 +330,6 @@ Sorbet/ForbidTUntyped:
     - "gradle/lib/dependabot/gradle/update_checker/multi_dependency_updater.rb"
     - "gradle/lib/dependabot/gradle/update_checker/version_finder.rb"
     - "gradle/lib/dependabot/gradle/version.rb"
-    - "helm/lib/dependabot/helm/file_parser.rb"
-    - "helm/lib/dependabot/helm/file_updater/chart_updater.rb"
-    - "helm/lib/dependabot/helm/update_checker.rb"
-    - "helm/lib/dependabot/helm/update_checker/latest_version_resolver.rb"
     - "hex/lib/dependabot/hex/credential_helpers.rb"
     - "hex/lib/dependabot/hex/file_parser.rb"
     - "hex/lib/dependabot/hex/metadata_finder.rb"
