@@ -36,11 +36,17 @@ module Dependabot
           raise_on_ignored: false
         )
           @forbidden_urls      = T.let([], T::Array[String])
-          @dependency_metadata = T.let({}, T::Hash[T.untyped, Nokogiri::XML::Document])
+          @dependency_metadata = T.let({}, T::Hash[Integer, Nokogiri::XML::Document])
           @auth_headers_finder = T.let(nil, T.nilable(Utils::AuthHeadersFinder))
-          @pom_repository_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
+          @pom_repository_details = T.let(
+            nil,
+            T.nilable(T::Array[Dependabot::Maven::Shared::SharedPackageDetailsFetcher::RepositoryDetails])
+          )
           @repository_finder = T.let(nil, T.nilable(Maven::FileParser::RepositoriesFinder))
-          @repositories = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
+          @repositories = T.let(
+            nil,
+            T.nilable(T::Array[Dependabot::Maven::Shared::SharedPackageDetailsFetcher::RepositoryDetails])
+          )
           @released_check = T.let({}, T::Hash[Version, T::Boolean])
           @package_details_fetcher = T.let(nil, T.nilable(Package::PackageDetailsFetcher))
           @package_details = T.let(nil, T.nilable(Dependabot::Package::PackageDetails))
