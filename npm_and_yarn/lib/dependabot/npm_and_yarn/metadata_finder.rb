@@ -175,27 +175,35 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_registry
-        # Attempt to use version_listing first, as fetching the entire listing
-        # array can be slow (if it's large)
-        potential_sources =
-          [
-            get_source(latest_version_listing["repository"]),
-            get_source(latest_version_listing["homepage"]),
-            get_source(latest_version_listing["bugs"])
-          ].compact
+        latest_source = source_from_listing(latest_version_listing)
+        return latest_source if latest_source
 
-        return potential_sources.first if potential_sources.any?
+        seen_urls = T.let(Set.new, T::Set[String])
+        all_version_listings.each do |_, listing|
+          listing_source = source_from_listing(listing, seen_urls)
+          return listing_source if listing_source
+        end
 
-        potential_sources =
-          all_version_listings.flat_map do |_, listing|
-            [
-              get_source(listing["repository"]),
-              get_source(listing["homepage"]),
-              get_source(listing["bugs"])
-            ]
-          end.compact
+        nil
+      end
 
-        potential_sources.first
+      sig do
+        params(
+          listing: T::Hash[String, T.untyped],
+          seen_urls: T.nilable(T::Set[String])
+        ).returns(T.nilable(Dependabot::Source))
+      end
+      def source_from_listing(listing, seen_urls = nil)
+        [listing["repository"], listing["homepage"], listing["bugs"]].each do |details|
+          url = get_url(details)
+          next unless url
+          next if seen_urls && !seen_urls.add?(url)
+
+          source = get_source(details)
+          return source if source
+        end
+
+        nil
       end
 
       sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped])) }

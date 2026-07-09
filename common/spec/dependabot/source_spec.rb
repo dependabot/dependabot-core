@@ -5,8 +5,6 @@ require "spec_helper"
 require "dependabot/source"
 
 RSpec.describe Dependabot::Source do
-  before { described_class.reset_github_enterprise_cache! }
-
   describe ".new" do
     subject(:source) { described_class.new(**attrs) }
 
@@ -402,11 +400,11 @@ RSpec.describe Dependabot::Source do
         stub_request(:get, "https://unreachable.example.com/status").to_raise(Excon::Error::Timeout)
       end
 
-      it "returns false and retries on subsequent calls" do
+      it "returns false and caches the failed probe" do
         expect(described_class.github_enterprise?("https://unreachable.example.com")).to be false
         described_class.github_enterprise?("https://unreachable.example.com")
 
-        expect(WebMock).to have_requested(:get, "https://unreachable.example.com/status").twice
+        expect(WebMock).to have_requested(:get, "https://unreachable.example.com/status").once
       end
     end
   end

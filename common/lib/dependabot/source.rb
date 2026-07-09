@@ -137,11 +137,11 @@ module Dependabot
     def self.github_enterprise?(base_url)
       return T.must(@github_enterprise_cache[base_url]) if @github_enterprise_cache.key?(base_url)
 
-      result = detect_github_enterprise(base_url)
-      @github_enterprise_cache[base_url] = result
-      result
-    rescue StandardError
-      false
+      @github_enterprise_cache[base_url] = begin
+        detect_github_enterprise(base_url)
+      rescue StandardError
+        false
+      end
     end
 
     sig { params(base_url: String).returns(T::Boolean) }
