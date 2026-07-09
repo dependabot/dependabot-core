@@ -259,10 +259,10 @@ module Dependabot
         # brand-new commit bypass the cooldown window.
         sig { params(commit_sha: String).returns(T.nilable(String)) }
         def commit_metadata_details(commit_sha)
-          cache = (@commit_metadata_details ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)])))
-          return cache[commit_sha] if cache.key?(commit_sha)
+          @commit_metadata_details ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
+          return @commit_metadata_details[commit_sha] if @commit_metadata_details.key?(commit_sha)
 
-          cache[commit_sha] = resolve_commit_metadata_details(commit_sha)
+          @commit_metadata_details[commit_sha] = resolve_commit_metadata_details(commit_sha)
         end
 
         sig { params(commit_sha: String).returns(T.nilable(String)) }
