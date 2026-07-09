@@ -78,9 +78,9 @@ module Dependabot
           vars = {
             "prefix" => prefix,
             "group_name" => multi_ecosystem_name,
-            "name" => multi_ecosystem_name
+            "name" => multi_ecosystem_name,
+            "target_branch" => target_branch || ""
           }
-          vars["target_branch"] = target_branch if target_branch
           vars
         end
 

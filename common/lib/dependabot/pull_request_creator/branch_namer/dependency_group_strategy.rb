@@ -83,9 +83,9 @@ module Dependabot
             "package_manager" => package_manager,
             "directory" => directory_part,
             "group_name" => dependency_group.name,
-            "name" => dependency_group.name
+            "name" => dependency_group.name,
+            "target_branch" => target_branch || ""
           }
-          vars["target_branch"] = target_branch if target_branch
           vars
         end
 

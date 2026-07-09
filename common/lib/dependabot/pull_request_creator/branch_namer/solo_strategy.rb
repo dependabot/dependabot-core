@@ -56,9 +56,9 @@ module Dependabot
             "directory" => sanitized_directory,
             "dependency" => dep_name,
             "version" => version,
-            "name" => "#{dep_name}-#{version}"
+            "name" => "#{dep_name}-#{version}",
+            "target_branch" => target_branch || ""
           }
-          vars["target_branch"] = target_branch if target_branch
           vars
         end
 
