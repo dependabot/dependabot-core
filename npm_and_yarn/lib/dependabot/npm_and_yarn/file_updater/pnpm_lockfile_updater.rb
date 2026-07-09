@@ -215,7 +215,10 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def run_pnpm_install
-          run_pnpm_command_with_release_age_gate("install --lockfile-only", "install --lockfile-only")
+          # `install --lockfile-only` has no dynamic content, so it needs no
+          # fingerprint of its own. Passing nil lets the release-age gate handle
+          # fingerprinting only when it appends the (dynamic) minimumReleaseAge.
+          run_pnpm_command_with_release_age_gate("install --lockfile-only")
         end
 
         # pnpm's `minimumReleaseAge` needs the registry `time` field, which is
@@ -230,7 +233,7 @@ module Dependabot
           return execute_pnpm_command(cmd, fingerprint) unless gate
 
           gate_fingerprint = security_updates_only? ? gate : fingerprint_minimum_release_age_config
-          gated_fingerprint = fingerprint ? "#{fingerprint} #{gate_fingerprint}" : nil
+          gated_fingerprint = "#{fingerprint || cmd} #{gate_fingerprint}"
           begin
             execute_pnpm_command("#{cmd} #{gate}", gated_fingerprint)
           rescue SharedHelpers::HelperSubprocessFailed => e
