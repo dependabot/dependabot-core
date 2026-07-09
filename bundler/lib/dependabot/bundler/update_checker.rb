@@ -10,49 +10,15 @@ require "dependabot/update_checkers/base"
 
 module Dependabot
   module Bundler
-    class UpdateChecker < Dependabot::UpdateCheckers::Base
+    class UpdateChecker < Dependabot::UpdateCheckers::Base # rubocop:disable Metrics/ClassLength
       require_relative "update_checker/force_updater"
       require_relative "update_checker/file_preparer"
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_resolver"
       require_relative "update_checker/latest_version_finder"
       require_relative "update_checker/conflicting_dependency_resolver"
+      require_relative "update_checker/cooldown_options_builder"
       extend T::Sig
-
-      SOURCE_COOLDOWN_REGEX =
-        %r{^\s*source\s*(?:\(\s*)?["'][^"']+["']\s*,[^\n#]*?\bcooldown:\s*(\d+)}
-
-      sig do
-        params(
-          dependency: Dependabot::Dependency,
-          dependency_files: T::Array[Dependabot::DependencyFile],
-          credentials: T::Array[Dependabot::Credential],
-          repo_contents_path: T.nilable(String),
-          ignored_versions: T::Array[String],
-          raise_on_ignored: T::Boolean,
-          security_advisories: T::Array[Dependabot::SecurityAdvisory],
-          requirements_update_strategy: T.nilable(Dependabot::RequirementsUpdateStrategy),
-          dependency_group: T.nilable(Dependabot::DependencyGroup),
-          update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
-          options: T::Hash[Symbol, T.untyped]
-        ).void
-      end
-      def initialize(
-        dependency:,
-        dependency_files:,
-        credentials:,
-        repo_contents_path: nil,
-        ignored_versions: [],
-        raise_on_ignored: false,
-        security_advisories: [],
-        requirements_update_strategy: nil,
-        dependency_group: nil,
-        update_cooldown: nil,
-        options: {}
-      )
-        super
-        apply_bundle_source_cooldown
-      end
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Bundler::Version))) }
       def latest_version
@@ -155,6 +121,13 @@ module Dependabot
         end
       end
 
+      sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+      def update_cooldown
+        return @update_cooldown if security_advisories.any?
+
+        CooldownOptionsBuilder.new(dependency_files: dependency_files).build(@update_cooldown)
+      end
+
       sig { override.returns(T::Array[T::Hash[String, String]]) }
       def conflicting_dependencies
         ConflictingDependencyResolver.new(
@@ -169,52 +142,6 @@ module Dependabot
       end
 
       private
-
-      sig { void }
-      def apply_bundle_source_cooldown
-        return if security_update?
-
-        bundle_cooldown_days = bundler_source_cooldown_days
-        return unless bundle_cooldown_days&.positive?
-
-        @update_cooldown =
-          if update_cooldown.nil?
-            Dependabot::Package::ReleaseCooldownOptions.new(default_days: bundle_cooldown_days)
-          else
-            Dependabot::Package::ReleaseCooldownOptions.new(
-              default_days: [update_cooldown.default_days, bundle_cooldown_days].max,
-              semver_major_days: update_cooldown.semver_major_days,
-              semver_minor_days: update_cooldown.semver_minor_days,
-              semver_patch_days: update_cooldown.semver_patch_days,
-              include: update_cooldown.include.to_a,
-              exclude: update_cooldown.exclude.to_a
-            )
-          end
-      end
-
-      sig { returns(T::Boolean) }
-      def security_update?
-        security_advisories.any?
-      end
-
-      sig { returns(T.nilable(Integer)) }
-      def bundler_source_cooldown_days
-        cooldowns = bundler_manifest_files.flat_map do |file|
-          T.must(file.content).scan(SOURCE_COOLDOWN_REGEX).flatten.filter_map do |days|
-            Integer(days, 10)
-          rescue ArgumentError
-            nil
-          end
-        end
-
-        cooldowns.max
-      end
-
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def bundler_manifest_files
-        dependency_files.reject(&:support_file?)
-                        .reject { |file| file.name.end_with?(".lock", ".gemspec", ".specification") }
-      end
 
       sig { returns(T::Boolean) }
       def requirements_unlocked?
