@@ -42,13 +42,14 @@ module Dependabot
             write_init_script(init_script_path)
 
             command_parts = [
-              gradle_executable_for(cwd),
+              gradle_executable_for(cwd: cwd, workspace_root: temp_dir.to_s),
               "--init-script", init_script_path,
               INIT_SCRIPT_TASK_NAME,
               "--write-locks",
               "--no-daemon"
             ]
-            run_lockfile_update_command(command_parts: command_parts, cwd: cwd)
+            command = Shellwords.join(command_parts)
+            SharedHelpers.run_shell_command(command, cwd: cwd)
 
             update_lockfiles_content(temp_dir, lockfiles, updated_files)
           rescue SharedHelpers::HelperSubprocessFailed => e
@@ -220,9 +221,10 @@ systemProp.https.proxyPort=#{https_proxy_port}"
           File.write(file_name, script_content)
         end
 
-        sig { params(cwd: String).returns(String) }
-        def gradle_executable_for(cwd)
+        sig { params(cwd: String, workspace_root: String).returns(String) }
+        def gradle_executable_for(cwd:, workspace_root:)
           cwd_path = Pathname.new(cwd)
+          workspace_root_path = Pathname.new(workspace_root)
           search_path = cwd_path
 
           loop do
@@ -236,31 +238,12 @@ systemProp.https.proxyPort=#{https_proxy_port}"
             end
 
             parent_path = search_path.parent
-            break if parent_path == search_path
+            break if parent_path == search_path || search_path == workspace_root_path
 
             search_path = parent_path
           end
 
           "gradle"
-        end
-
-        sig { params(command_parts: T::Array[String], cwd: String).void }
-        def run_lockfile_update_command(command_parts:, cwd:)
-          command = Shellwords.join(command_parts)
-          SharedHelpers.run_shell_command(command, cwd: cwd)
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          raise e unless local_wrapper_command?(command_parts[0])
-
-          display_command = command_parts.join(" ")
-          Dependabot.logger.warn("Running #{display_command} failed, retrying with system Gradle: #{e.message}")
-
-          fallback_command = Shellwords.join(["gradle"] + command_parts.drop(1))
-          SharedHelpers.run_shell_command(fallback_command, cwd: cwd)
-        end
-
-        sig { params(executable: String).returns(T::Boolean) }
-        def local_wrapper_command?(executable)
-          executable != "gradle" && File.basename(executable) == "gradlew"
         end
 
         sig { params(build_file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
