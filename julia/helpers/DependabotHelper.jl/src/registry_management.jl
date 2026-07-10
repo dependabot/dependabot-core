@@ -6,6 +6,16 @@ Handles Git-based custom Julia registries following Julia's standard patterns.
 using Pkg
 
 """
+    normalize_registry_url(url)
+
+Normalize a registry URL for comparison: case-insensitive, ignoring a
+trailing ".git" suffix and trailing slashes.
+"""
+function normalize_registry_url(url::AbstractString)
+    return lowercase(rstrip(replace(String(url), r"\.git$" => ""), '/'))
+end
+
+"""
     add_custom_registries(registry_urls::Vector{String})
 
 Add custom registries if they don't already exist (idempotent operation).
@@ -13,23 +23,17 @@ Checks if registries are already added to avoid duplicate registry errors.
 """
 function add_custom_registries(registry_urls::Vector{String})
     for url in registry_urls
-        # Check if already added to avoid duplicate registry errors
-        existing = Pkg.Registry.reachable_registries()
-        # Check if registry with this URL already exists
-        # Note: Registry URLs are stored in the path field, not url
-        already_exists = false
-        for reg in existing
-            try
-                # Try to check if this registry corresponds to our URL
-                # This is a simplified check - in practice Julia manages this internally
-                if reg.name != "General" && occursin(basename(url), reg.path)
-                    already_exists = true
-                    break
-                end
+        # Compare against the URL each installed registry was cloned from.
+        # (The old check matched basename(url) as a substring of the depot
+        # path, which never matched ".git" URLs and could false-positive on
+        # unrelated registries.)
+        already_exists = any(Pkg.Registry.reachable_registries()) do reg
+            repo = try
+                reg.repo
             catch
-                # If we can't determine, just skip the check
-                continue
+                nothing
             end
+            repo !== nothing && normalize_registry_url(repo) == normalize_registry_url(url)
         end
 
         if !already_exists
@@ -37,7 +41,7 @@ function add_custom_registries(registry_urls::Vector{String})
                 Pkg.Registry.add(RegistrySpec(url=url))
                 @info "Successfully added registry: $url"
             catch e
-                @error "Failed to add registry $url: $(e.msg)"
+                @error "Failed to add registry $url: $(sprint(showerror, e))"
                 rethrow(e)
             end
         else
@@ -57,8 +61,40 @@ function update_registries()
         Pkg.Registry.update()
         @info "Successfully updated all registries"
     catch e
-        @error "Failed to update registries: $(e.msg)"
+        @error "Failed to update registries: $(sprint(showerror, e))"
         rethrow(e)
+    end
+end
+
+# How long a registry update stays fresh. Production containers are
+# ephemeral, so in practice this means one update per job.
+const REGISTRY_UPDATE_TTL_SECONDS = 60 * 60
+
+"""
+    ensure_registries_fresh()
+
+Refresh all installed registries at most once per REGISTRY_UPDATE_TTL_SECONDS
+(tracked by a marker file in the depot). Version discovery otherwise reads
+whatever registry state was baked into the Docker image at build time, so new
+releases would be invisible until the image is rebuilt. A failed refresh is
+logged but never fails the lookup — stale data is better than none. Set
+DEPENDABOT_SKIP_REGISTRY_UPDATE=1 to disable (used by the test suite).
+"""
+function ensure_registries_fresh()
+    get(ENV, "DEPENDABOT_SKIP_REGISTRY_UPDATE", "") == "1" && return
+
+    try
+        registries_dir = joinpath(first(Base.DEPOT_PATH), "registries")
+        isdir(registries_dir) || mkpath(registries_dir)
+        marker = joinpath(registries_dir, ".dependabot_registry_updated")
+        if isfile(marker) && time() - mtime(marker) < REGISTRY_UPDATE_TTL_SECONDS
+            return
+        end
+
+        Pkg.Registry.update()
+        touch(marker)
+    catch e
+        @warn "Registry refresh failed; using existing registry state" exception=(e, catch_backtrace())
     end
 end
 
@@ -89,13 +125,7 @@ function manage_registry_state(registry_urls::Vector{String})
 
         return true
     catch e
-        if e isa Pkg.Types.GitError
-            @error "Git authentication or network error: $(e.msg)"
-        elseif e isa Pkg.Types.RegistryError
-            @error "Registry format or compatibility error: $(e.msg)"
-        else
-            @error "Unknown error managing registries: $(e.msg)"
-        end
+        @error "Failed to manage registries: $(sprint(showerror, e))"
 
         # For debugging, list currently available registries
         @info "Currently available registries:"

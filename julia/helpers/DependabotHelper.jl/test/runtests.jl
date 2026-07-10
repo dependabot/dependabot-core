@@ -2,6 +2,9 @@ using Test
 using JSON
 using DependabotHelper
 
+# Keep tests hermetic: don't hit the network to refresh registries
+ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
+
 @testset "DependabotHelper.jl Tests" begin
     # Define UUIDs once for reuse throughout all tests
     json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"

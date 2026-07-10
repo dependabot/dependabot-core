@@ -30,11 +30,30 @@ function run()
     end
 end
 
+# Functions whose results come from registry state; they trigger a
+# TTL-gated registry refresh so new releases are visible without a
+# Docker image rebuild.
+const REGISTRY_READING_FUNCTIONS = Set([
+    "get_latest_version",
+    "get_package_metadata",
+    "get_available_versions",
+    "get_version_release_date",
+    "fetch_package_versions",
+    "fetch_package_info",
+    "find_package_source_url",
+    "batch_get_package_info",
+    "batch_get_version_release_dates",
+    "batch_get_available_versions",
+    "update_manifest"
+])
+
 function run(input::String)
     result = try
         input = JSON.parse(input)
         func_name = input["function"]
         args = input["args"]
+
+        func_name in REGISTRY_READING_FUNCTIONS && ensure_registries_fresh()
 
         # Project and manifest operations (core parsing)
         function_result = if func_name == "parse_project"
