@@ -88,8 +88,17 @@ module Dependabot
         # Leave dist-tags / non-numeric leading tokens untouched.
         return req_string if req_string.match?(/^([A-Za-uw-z]|v[^\d])/)
 
-        req_string = req_string.gsub(/(?:\.|^)[xX*]/, "")
+        # Wildcards combined with an operator need dedicated handling before the
+        # generic wildcard strip below (which would corrupt them).
+        wildcard = wildcard_ruby_constraint(req_string)
+        return wildcard if wildcard
 
+        dispatch_ruby_constraint(req_string.gsub(/(?:\.|^)[xX*]/, ""))
+      end
+
+      # Dispatches a wildcard-stripped constraint token to its converter.
+      sig { params(req_string: String).returns(T.any(String, T::Array[String])) }
+      def dispatch_ruby_constraint(req_string)
         if req_string.empty? then ">= 0"
         elsif req_string.start_with?("~>") then req_string
         elsif req_string.start_with?("=") then req_string.gsub(/^=*/, "")
@@ -98,6 +107,44 @@ module Dependabot
         elsif req_string.include?(" - ") then convert_hyphen_req(req_string)
         elsif req_string.match?(/[<>]/) then req_string
         else ruby_range(req_string)
+        end
+      end
+
+      # Handles wildcard constraints that a leading operator would otherwise
+      # corrupt. Returns nil when there is no operator+wildcard to expand.
+      #   - "<=1.x"/">1.2.x": expand from the wildcard's [floor, ceiling) span
+      #     (stripping the wildcard first would turn "<=1.x" into "<=1", which
+      #     wrongly rejects 1.5.0 that Masterminds accepts).
+      #   - "*"/"^*"/"~*": a bare wildcard means "any version"; any other
+      #     conversion yields an empty bound.
+      sig { params(req_string: String).returns(T.nilable(String)) }
+      def wildcard_ruby_constraint(req_string)
+        if (m = req_string.match(/\A(<=|>=|<|>)\s*(\d+(?:\.\d+)*)\.[xX*]\z/))
+          return convert_wildcard_comparator(T.must(m[1]), T.must(m[2]))
+        end
+
+        return ">= 0" if req_string.match?(%r{\A[\^~<>=/\s]*[xX*]+\z})
+
+        nil
+      end
+
+      # Expands a comparator applied to a wildcard version ("1.x" spans
+      # [1.0.0, 2.0.0); "1.2.x" spans [1.2.0, 1.3.0)) per Masterminds semantics:
+      #   >= X.x -> >= floor    > X.x -> >= ceiling
+      #   <  X.x -> <  floor    <= X.x -> <  ceiling
+      sig { params(operator: String, prefix: String).returns(String) }
+      def convert_wildcard_comparator(operator, prefix)
+        parts = prefix.split(".").map(&:to_i)
+        floor = (parts + [0, 0, 0]).first(3)
+        ceiling_parts = parts.dup
+        ceiling_parts[-1] = T.must(ceiling_parts[-1]) + 1
+        ceiling = (ceiling_parts + [0, 0, 0]).first(3)
+
+        case operator
+        when ">=" then ">= #{floor.join('.')}"
+        when ">" then ">= #{ceiling.join('.')}"
+        when "<" then "< #{floor.join('.')}"
+        else "< #{ceiling.join('.')}" # "<="
         end
       end
 

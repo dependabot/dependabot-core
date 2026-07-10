@@ -84,8 +84,28 @@ RSpec.describe Dependabot::Helm::Requirement do
       it { expect(satisfied?("1.x", "2.0.0")).to be(false) }
     end
 
+    context "with a comparator applied to a wildcard (Masterminds semantics)" do
+      # Boundaries verified against the Go Masterminds/semver library.
+      it { expect(satisfied?("<=1.x", "1.5.0")).to be(true) }
+      it { expect(satisfied?("<=1.x", "1.9.9")).to be(true) }
+      it { expect(satisfied?("<=1.x", "2.0.0")).to be(false) }
+      it { expect(satisfied?("<1.x", "0.9.0")).to be(true) }
+      it { expect(satisfied?("<1.x", "1.0.0")).to be(false) }
+      it { expect(satisfied?(">=1.x", "1.0.0")).to be(true) }
+      it { expect(satisfied?(">=1.x", "0.9.0")).to be(false) }
+      it { expect(satisfied?(">1.x", "2.0.0")).to be(true) }
+      it { expect(satisfied?(">1.x", "1.9.9")).to be(false) }
+      it { expect(satisfied?("<=1.2.x", "1.2.9")).to be(true) }
+      it { expect(satisfied?("<=1.2.x", "1.3.0")).to be(false) }
+    end
+
     context "with a wildcard" do
       it { expect(satisfied?("*", "9.9.9")).to be(true) }
+
+      it "treats an operator-prefixed bare wildcard as match-anything" do
+        expect { described_class.requirements_array("^*") }.not_to raise_error
+        expect(satisfied?("^*", "9.9.9")).to be(true)
+      end
     end
 
     context "with build metadata / digest (Helm OCI charts)" do

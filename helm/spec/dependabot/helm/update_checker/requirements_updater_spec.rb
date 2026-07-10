@@ -338,6 +338,18 @@ RSpec.describe Dependabot::Helm::UpdateChecker::RequirementsUpdater do
       end
     end
 
+    context "with a comma-AND exclusion plus an upper bound (BumpVersions)" do
+      # The upper bound to widen is the < operand, not the numerically-largest
+      # token (the != operand is larger here).
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
+      let(:chart_req) { "!=9.0.0,<2.0.0" }
+      let(:latest_resolvable_version) { "2.0.0" }
+
+      it "widens the < bound and leaves the exclusion intact" do
+        expect(updated_req).to eq("!=9.0.0,<3.0.0")
+      end
+    end
+
     context "when there is no resolvable version" do
       let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
       let(:latest_resolvable_version) { nil }

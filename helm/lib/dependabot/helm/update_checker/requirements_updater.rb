@@ -30,6 +30,10 @@ module Dependabot
         # (e.g. "1.2.3+old" -> "1.5.0", not "1.5.0+old").
         VERSION_REGEX = /[0-9]++(?:\.[A-Za-z0-9\-_]++)*+(?:\+[A-Za-z0-9\-_.]++)?/
         SEPARATOR = /(?<=[a-zA-Z0-9*])[\s|]++(?![\s|-])/
+        # The version attached to an upper comparator (`<`/`<=`) or a hyphen
+        # endpoint — the bound that widening moves.
+        UPPER_COMPARATOR_REGEX = /<=?\s*(#{VERSION_REGEX})/
+        HYPHEN_UPPER_REGEX = /\s-\s+(#{VERSION_REGEX})/
         ALLOWED_UPDATE_STRATEGIES = T.let(
           [
             RequirementsUpdateStrategy::LockfileOnly,
@@ -177,11 +181,20 @@ module Dependabot
           if range_requirements.one?
             range_requirement = T.must(range_requirements.first)
             versions = range_requirement.scan(VERSION_REGEX)
-            # Substitute using the *original* matched text, not the parsed
-            # version's normalized #to_s: Helm::Version normalizes a prerelease
-            # like "2.0.0-rc1" to "2.0.0", so subbing the normalized form would
-            # match the wrong span and leave a stale suffix ("<3.0.0-rc1").
-            original_upper = T.cast(T.must(versions.max_by { |v| version_class.new(v.to_s) }), String)
+            # The bound to move is the operand of `<`/`<=` (or the hyphen
+            # endpoint), NOT the numerically-largest token — a comma-AND `!=`
+            # operand can be larger (e.g. "!=9.0.0,<2.0.0"). Substitute the
+            # *original* matched text, not the parsed version's normalized
+            # #to_s: Helm::Version normalizes "2.0.0-rc1" to "2.0.0", so subbing
+            # the normalized form would match the wrong span and leave a stale
+            # suffix ("<3.0.0-rc1"). Fall back to the max token only if neither
+            # an upper comparator nor a hyphen endpoint is present.
+            original_upper = T.cast(
+              range_requirement[UPPER_COMPARATOR_REGEX, 1] ||
+                range_requirement[HYPHEN_UPPER_REGEX, 1] ||
+                T.must(versions.max_by { |v| version_class.new(v.to_s) }),
+              String
+            )
             new_upper_bound = update_greatest_version(
               version_class.new(original_upper).to_s,
               T.must(latest_resolvable_version)
