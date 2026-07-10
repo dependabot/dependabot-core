@@ -59,22 +59,41 @@ module Dependabot
             next unless dep["name"] == dependency.name
 
             old_version = dep["version"].to_s
-            new_version = yaml_safe_value(updated_requirement_string(file, old_version) || dependency.version.to_s)
-            content, cursor = replace_next_entry_version(content, cursor, old_version, new_version)
+            new_requirement = updated_requirement_string(file, old_version) || dependency.version.to_s
+            # This occurrence's constraint is unchanged (the strategy left it
+            # alone) — nothing to write for it.
+            next if new_requirement == old_version
+
+            new_content, cursor = replace_next_entry_version(
+              content,
+              cursor,
+              old_version,
+              yaml_safe_value(new_requirement)
+            )
+            # A changed constraint that produced no textual edit means the entry
+            # wasn't matched (e.g. an unusual name/version layout). Surface it
+            # rather than silently emitting a partial update.
+            if new_content == content
+              raise "Expected to update #{dependency.name} from #{old_version} to " \
+                    "#{new_requirement} in #{file.name}, but no matching entry was found"
+            end
+
+            content = new_content
           end
           content
         end
 
         # Replaces this chart's next `version:` occurrence (at/after cursor) with
         # new_version, returning the updated content and the position just past
-        # the rewrite so later entries match their own line.
+        # the rewrite so later entries match their own line. The name may be
+        # quoted; returns the content unchanged when no entry matches.
         sig do
           params(content: String, cursor: Integer, old_version: String, new_version: String)
             .returns([String, Integer])
         end
         def replace_next_entry_version(content, cursor, old_version, new_version)
           pattern = /
-            (\s+-\s+name:\s+#{Regexp.escape(dependency.name)}.*?\n\s+version:\s+)
+            (\s+-\s+name:\s+["']?#{Regexp.escape(dependency.name)}["']?.*?\n\s+version:\s+)
             ["']?#{Regexp.escape(old_version)}["']?
           /mx
           match = pattern.match(content, cursor)

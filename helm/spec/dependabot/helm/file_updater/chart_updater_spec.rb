@@ -248,5 +248,41 @@ RSpec.describe Dependabot::Helm::FileUpdater::ChartUpdater do
         expect(updated_content).to include("- name: common\n    version: 2.5.0")
       end
     end
+
+    context "when the dependency name is quoted" do
+      let(:dependency_name) { "mysql" }
+      let(:dependency_version) { "8.2.0" }
+      let(:dependency_previous_version) { "8.1.0" }
+      let(:chart_yaml_file) do
+        Dependabot::DependencyFile.new(
+          name: "Chart.yaml",
+          content: "apiVersion: v2\ndependencies:\n  - name: \"mysql\"\n    version: 8.1.0\n"
+        )
+      end
+
+      it "still updates the entry" do
+        expect(updater.updated_chart_yaml_content(chart_yaml_file))
+          .to include("version: 8.2.0")
+      end
+    end
+
+    context "when a changed constraint has no matching entry layout" do
+      # A changed requirement that the writer can't locate (here, version listed
+      # before name) must be surfaced, not silently dropped into a partial PR.
+      let(:dependency_name) { "mysql" }
+      let(:dependency_version) { "8.2.0" }
+      let(:dependency_previous_version) { "8.1.0" }
+      let(:chart_yaml_file) do
+        Dependabot::DependencyFile.new(
+          name: "Chart.yaml",
+          content: "apiVersion: v2\ndependencies:\n  - version: 8.1.0\n    name: mysql\n"
+        )
+      end
+
+      it "raises rather than emitting a partial update" do
+        expect { updater.updated_chart_yaml_content(chart_yaml_file) }
+          .to raise_error(/Expected to update mysql/)
+      end
+    end
   end
 end
