@@ -429,6 +429,59 @@ using DependabotHelper
             @test samefile(manifest_a, manifest_b)
         end
 
+        @testset "workspace discovery without committed manifest" begin
+            mktempdir() do tmpdir
+                write(joinpath(tmpdir, "Project.toml"), """
+                name = "Root"
+                uuid = "1234e567-e89b-12d3-a456-789012345678"
+                version = "0.1.0"
+
+                [workspace]
+                projects = ["docs"]
+                """)
+                mkpath(joinpath(tmpdir, "docs"))
+                write(joinpath(tmpdir, "docs", "Project.toml"), """
+                [deps]
+                Example = "7876af07-990d-54b4-ab0e-23690620f79a"
+                """)
+
+                result = DependabotHelper.find_workspace_project_files(joinpath(tmpdir, "docs"))
+
+                @test !haskey(result, "error")
+                names = [relpath(realpath(p), realpath(tmpdir)) for p in result["project_files"]]
+                @test "Project.toml" in names
+                @test joinpath("docs", "Project.toml") in names
+                @test result["manifest_file"] == ""
+            end
+        end
+
+        @testset "workspace discovery survives membership cycles" begin
+            mktempdir() do tmpdir
+                write(joinpath(tmpdir, "Project.toml"), """
+                name = "Root"
+                uuid = "1234e567-e89b-12d3-a456-789012345678"
+                version = "0.1.0"
+
+                [workspace]
+                projects = ["sub"]
+                """)
+                mkpath(joinpath(tmpdir, "sub"))
+                write(joinpath(tmpdir, "sub", "Project.toml"), """
+                name = "Sub"
+                uuid = "9999e567-e89b-12d3-a456-789012345678"
+                version = "0.1.0"
+
+                [workspace]
+                projects = [".."]
+                """)
+
+                project_files = String[]
+                DependabotHelper.collect_workspace_projects!(project_files, tmpdir)
+
+                @test length(project_files) == 2
+            end
+        end
+
         @testset "update_manifest does not promote weakdeps" begin
             mktempdir() do tmpdir
                 write(joinpath(tmpdir, "Project.toml"), """
