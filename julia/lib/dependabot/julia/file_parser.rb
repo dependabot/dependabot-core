@@ -179,7 +179,13 @@ module Dependabot
       sig { params(proj_file: Dependabot::DependencyFile, dependencies_map: T::Hash[String, Dependabot::Dependency]).void }
       def parse_single_project_file(proj_file, dependencies_map)
         temp_dir = Dir.mktmpdir("julia_project")
-        project_path = File.join(temp_dir, proj_file.name)
+        # File names like "../Project.toml" (a workspace root fetched from a
+        # member directory) must not escape the temp dir; fall back to the
+        # basename since each project file gets its own directory anyway.
+        project_path = File.expand_path(File.join(temp_dir, proj_file.name))
+        unless project_path.start_with?("#{File.expand_path(temp_dir)}#{File::SEPARATOR}")
+          project_path = File.join(temp_dir, File.basename(proj_file.name))
+        end
         FileUtils.mkdir_p(File.dirname(project_path))
         File.write(project_path, proj_file.content)
 
@@ -227,6 +233,19 @@ module Dependabot
           if dependencies_map.key?(name)
             # Merge requirements from additional project files
             existing_dep = T.must(dependencies_map[name])
+
+            # UUID is a package's identity in Julia: two same-named entries
+            # with different UUIDs are different packages, and merging them
+            # would run updates against the wrong UUID.
+            existing_uuid = T.cast(existing_dep.metadata[:julia_uuid], T.nilable(String))
+            if uuid && existing_uuid && uuid != existing_uuid
+              Dependabot.logger.warn(
+                "Skipping #{name} in #{file_name}: UUID #{uuid} conflicts with #{existing_uuid} " \
+                "from another project file"
+              )
+              next
+            end
+
             existing_requirements = existing_dep.requirements + [new_requirement]
             dependencies_map[name] = Dependabot::Dependency.new(
               name: name,

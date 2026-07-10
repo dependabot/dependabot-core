@@ -47,6 +47,9 @@ module Dependabot
 
       sig { params(workspace_info: T::Hash[String, T.untyped]).void }
       def validate_workspace_info!(workspace_info)
+        # Only domain errors ("no project file found") reach here; helper
+        # crashes raise from RegistryClient rather than being misreported as
+        # a missing Project.toml.
         error_value = T.cast(workspace_info["error"], T.nilable(String))
         has_error = !error_value.nil?
         project_files = T.cast(workspace_info["project_files"], T.nilable(T::Array[String]))

@@ -87,6 +87,43 @@ RSpec.describe Dependabot::Julia::FileUpdater do
       end
     end
 
+    context "when no dependency files are given" do
+      let(:dependency_files) { [] }
+
+      it "raises DependencyFileNotFound" do
+        expect { updater }.to raise_error(Dependabot::DependencyFileNotFound)
+      end
+    end
+
+    context "when the dependency has no UUID metadata" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Example",
+          version: "0.5.5",
+          previous_version: "0.4.1",
+          package_manager: "julia",
+          requirements: [{
+            requirement: "0.4, 0.5",
+            file: "Project.toml",
+            groups: ["deps"],
+            source: nil
+          }],
+          previous_requirements: [{
+            requirement: "0.4",
+            file: "Project.toml",
+            groups: ["deps"],
+            source: nil
+          }]
+        )
+      end
+
+      it "still updates the Project.toml instead of raising" do
+        updated_files = updater.updated_dependency_files
+        project_toml = updated_files.find { |f| f.name == "Project.toml" }
+        expect(project_toml.content).to include('Example = "0.4, 0.5"')
+      end
+    end
+
     context "when preserving UUID in [deps] section" do
       let(:project_file_content) do
         <<~TOML

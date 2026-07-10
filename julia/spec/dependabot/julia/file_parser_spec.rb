@@ -107,6 +107,47 @@ RSpec.describe Dependabot::Julia::FileParser do
       end
     end
 
+    context "when a project file name contains ../ (workspace root from member dir)" do
+      let(:dependency_files) { [parent_project_file] }
+      let(:parent_project_file) do
+        Dependabot::DependencyFile.new(
+          name: "../Project.toml",
+          directory: "/docs",
+          content: fixture("projects", "basic", "Project.toml")
+        )
+      end
+
+      it "parses without writing outside the temp directory" do
+        expect(dependencies.map(&:name)).to eq(["Example"])
+      end
+    end
+
+    context "when two project files declare the same name with different UUIDs" do
+      let(:dependency_files) { [project_file, conflicting_project_file] }
+      let(:conflicting_project_file) do
+        Dependabot::DependencyFile.new(
+          name: "sub/Project.toml",
+          content: <<~TOML
+            name = "SubProject"
+            uuid = "9999e567-e89b-12d3-a456-789012345678"
+            version = "0.1.0"
+
+            [deps]
+            Example = "00000000-1111-2222-3333-444444444444"
+
+            [compat]
+            Example = "2"
+          TOML
+        )
+      end
+
+      it "keeps the first package and does not merge the conflicting UUID" do
+        example_dep = dependencies.find { |d| d.name == "Example" }
+        expect(example_dep.metadata[:julia_uuid]).to eq("7876af07-990d-54b4-ab0e-23690620f79a")
+        expect(example_dep.requirements.length).to eq(1)
+      end
+    end
+
     describe "#ecosystem" do
       it "returns the Julia ecosystem with package manager and language" do
         ecosystem = parser.ecosystem

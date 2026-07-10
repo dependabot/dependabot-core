@@ -58,6 +58,10 @@ module Dependabot
 
           return all_projects_only_update(updated_project_files) if actual_manifest.nil?
 
+          # Requirement-only updates (no target versions) have nothing to tell
+          # Pkg; ship the Project.toml changes on their own.
+          return all_projects_only_update(updated_project_files) if build_updates_hash.empty?
+
           # Write all updated project files to disk for Julia's Pkg
           write_all_temporary_files(updated_project_files, actual_manifest)
           result = call_julia_helper
@@ -232,19 +236,30 @@ module Dependabot
 
       private
 
-      sig { returns(T::Hash[String, String]) }
+      sig { returns(T::Hash[String, T::Hash[String, String]]) }
       def build_updates_hash
-        updates = {}
-        dependencies.each do |dependency|
-          next unless dependency.version
+        @build_updates_hash ||= T.let(
+          begin
+            updates = T.let({}, T::Hash[String, T::Hash[String, String]])
+            dependencies.each do |dependency|
+              version = dependency.version
+              next unless version
 
-          uuid = T.cast(dependency.metadata[:julia_uuid], String)
-          updates[uuid] = {
-            "name" => dependency.name,
-            "version" => dependency.version
-          }
-        end
-        updates
+              uuid = dependency.metadata[:julia_uuid]
+              unless uuid.is_a?(String)
+                Dependabot.logger.warn("Skipping manifest update for #{dependency.name}: no UUID available")
+                next
+              end
+
+              updates[uuid] = {
+                "name" => dependency.name,
+                "version" => version
+              }
+            end
+            updates
+          end,
+          T.nilable(T::Hash[String, T::Hash[String, String]])
+        )
       end
 
       # Helper methods for DependabotHelper.jl integration
@@ -253,9 +268,22 @@ module Dependabot
       def registry_client
         @registry_client ||= T.let(
           Dependabot::Julia::RegistryClient.new(
-            credentials: credentials
+            credentials: credentials,
+            custom_registries: custom_registries
           ),
           T.nilable(Dependabot::Julia::RegistryClient)
+        )
+      end
+
+      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      def custom_registries
+        @custom_registries ||= T.let(
+          begin
+            registries_config = T.cast(options[:registries], T.nilable(T::Hash[Symbol, T.anything]))
+            registries = T.cast(registries_config&.dig(:julia), T.nilable(T::Array[T::Hash[Symbol, T.anything]])) || []
+            registries.map { |registry| registry.transform_keys(&:to_sym) }
+          end,
+          T.nilable(T::Array[T::Hash[Symbol, T.untyped]])
         )
       end
 
@@ -270,8 +298,15 @@ module Dependabot
         dependency_files.find do |f|
           # Use basename to get just the filename, not the full path with ../
           is_manifest = File.basename(f.name).match?(/^(Julia)?Manifest(?:-v[\d.]+)?\.toml$/i)
-          is_manifest && (f.directory == project_dir || project_dir.start_with?(f.directory))
+          is_manifest && (f.directory == project_dir || parent_directory_of?(f.directory, project_dir))
         end
+      end
+
+      sig { params(candidate: String, dir: String).returns(T::Boolean) }
+      def parent_directory_of?(candidate, dir)
+        # Segment-aware prefix check so "/doc" is not treated as a parent of "/docs"
+        prefix = candidate.end_with?("/") ? candidate : "#{candidate}/"
+        dir.start_with?(prefix)
       end
 
       sig { params(manifest_path: String).returns(Dependabot::DependencyFile) }
@@ -288,10 +323,11 @@ module Dependabot
 
         # Find the matching manifest file in dependency_files
         found_manifest = dependency_files.find do |f|
-          next unless f.name.match?(/^(Julia)?Manifest(?:-v[\d.]+)?\.toml$/i)
+          next unless File.basename(f.name).match?(/^(Julia)?Manifest(?:-v[\d.]+)?\.toml$/i)
 
-          # Construct the full path for this file and normalize it
-          file_path = File.join(f.directory, f.name).sub(%r{^/}, "")
+          # Construct the full path for this file, resolving ".." segments
+          # (workspace manifests are named e.g. "../Manifest.toml")
+          file_path = Pathname.new(File.join(f.directory, f.name)).cleanpath.to_s.sub(%r{^/}, "")
           file_path == resolved_manifest_path
         end
 
@@ -311,8 +347,6 @@ module Dependabot
 
       sig { override.void }
       def check_required_files
-        return if dependency_files.empty?
-
         return if dependency_files.any? { |f| f.name.match?(/^(Julia)?Project\.toml$/i) }
 
         raise Dependabot::DependencyFileNotFound, "No Project.toml or JuliaProject.toml found."

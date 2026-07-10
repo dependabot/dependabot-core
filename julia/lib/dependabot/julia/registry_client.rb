@@ -121,9 +121,6 @@ module Dependabot
           "project_file" => result["project_file"],
           "manifest_file" => result["manifest_file"]
         }
-      rescue StandardError => e
-        Dependabot.logger.warn("Failed to find environment files in #{directory}: #{e.message}")
-        {}
       end
 
       sig { params(directory: String).returns(T::Hash[String, T.untyped]) }
@@ -140,9 +137,6 @@ module Dependabot
           "manifest_file" => result["manifest_file"] || "",
           "workspace_root" => result["workspace_root"] || ""
         }
-      rescue StandardError => e
-        Dependabot.logger.warn("Failed to find workspace project files in #{directory}: #{e.message}")
-        { "error" => e.message }
       end
 
       sig do
