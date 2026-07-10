@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -12,8 +12,8 @@ module Dependabot
 
         class FunctionCall < T::Struct
           const :name, String
-          const :arguments, T::Hash[String, T.untyped]
-          const :positional_arguments, T::Array[T.untyped]
+          const :arguments, T::Hash[String, Object]
+          const :positional_arguments, T::Array[Object]
           const :line, Integer
         end
 
@@ -128,10 +128,10 @@ module Dependabot
           identifier.empty? ? nil : identifier
         end
 
-        sig { returns([T::Hash[String, T.untyped], T::Array[T.untyped]]) }
+        sig { returns([T::Hash[String, Object], T::Array[Object]]) }
         def parse_function_arguments
-          keyword_arguments = T.let({}, T::Hash[String, T.untyped])
-          positional_arguments = T.let([], T::Array[T.untyped])
+          keyword_arguments = T.let({}, T::Hash[String, Object])
+          positional_arguments = T.let([], T::Array[Object])
 
           skip_whitespace_and_comments
 
@@ -161,7 +161,7 @@ module Dependabot
           [keyword_arguments, positional_arguments]
         end
 
-        sig { returns(T.nilable(T::Hash[String, T.untyped])) }
+        sig { returns(T.nilable(T::Hash[String, Object])) }
         def parse_keyword_argument
           start_pos = @position
           start_line = @line
@@ -186,7 +186,7 @@ module Dependabot
           { param_name => value }
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T.nilable(Object)) }
         def parse_value
           skip_whitespace_and_comments
 
@@ -256,7 +256,7 @@ module Dependabot
           end
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T.nilable(T.any(Integer, Float))) }
         def parse_number
           number_str = T.let("", String)
 
@@ -271,13 +271,13 @@ module Dependabot
           number_str.include?(".") ? number_str.to_f : number_str.to_i
         end
 
-        sig { returns(T.nilable(T::Array[T.untyped])) }
+        sig { returns(T.nilable(T::Array[Object])) }
         def parse_array
           return nil unless current_char == "["
 
           move_to_next_char
 
-          array_items = T.let([], T::Array[T.untyped])
+          array_items = T.let([], T::Array[Object])
 
           skip_whitespace_and_comments
 
