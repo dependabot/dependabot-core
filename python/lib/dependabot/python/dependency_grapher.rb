@@ -111,7 +111,7 @@ module Dependabot
       sig { void }
       def exclude_constraint_dependencies!
         @dependencies = @dependencies.reject do |dep|
-          origin_files = dep.requirements.filter_map { |r| r[:file] }
+          origin_files = dep.requirements.filter_map(&:file)
           origin_files.any? && origin_files.all? { |name| File.basename(name).include?("constraint") }
         end
       end
