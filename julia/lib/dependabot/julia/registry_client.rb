@@ -3,6 +3,8 @@
 # frozen_string_literal: true
 
 require "time"
+require "uri"
+require "fileutils"
 require "dependabot/credential"
 require "dependabot/julia/version"
 require "dependabot/shared_helpers"
@@ -373,20 +375,59 @@ module Dependabot
 
         if ENV["DEPENDABOT_NATIVE_HELPERS_PATH"]
           # In production/CI, use the shared depot where packages were precompiled
-          user_depot = File.join(ENV.fetch("HOME", "/home/dependabot"), ".julia")
           # Trailing : is intentional. It automatically includes the bundled stdlibs
-          env["JULIA_DEPOT_PATH"] = "#{user_depot}:"
+          env["JULIA_DEPOT_PATH"] = "#{julia_user_depot}:"
         end
         # In development use the default Julia depot
 
-        # Add Julia-specific environment variables for registry authentication
-        julia_credentials = credentials.select { |c| c["type"] == "julia_registry" }
-        julia_credentials.each_with_index do |cred, index|
-          env["JULIA_PKG_SERVER_REGISTRY_PREFERENCE_#{index}"] = cred.fetch("url")
-          env["JULIA_PKG_SERVER_#{index}_TOKEN"] = cred.fetch("token") if cred["token"]
+        # Pkg supports a single package server via JULIA_PKG_SERVER;
+        # authentication uses an auth.toml in the depot, not env vars.
+        pkg_server = pkg_server_credential
+        if pkg_server
+          env["JULIA_PKG_SERVER"] = pkg_server.fetch("url")
+          configure_pkg_server_auth(pkg_server)
         end
 
         env
+      end
+
+      sig { returns(T.nilable(Dependabot::Credential)) }
+      def pkg_server_credential
+        julia_credentials = credentials.select { |c| c["type"] == "julia_registry" && c["url"] }
+        if julia_credentials.length > 1
+          Dependabot.logger.warn(
+            "Multiple julia_registry credentials configured; Julia's Pkg supports a single " \
+            "package server, using the first"
+          )
+        end
+        julia_credentials.first
+      end
+
+      # Write the package server token where Pkg actually reads it:
+      # <depot>/servers/<host>/auth.toml
+      sig { params(credential: Dependabot::Credential).void }
+      def configure_pkg_server_auth(credential)
+        token = credential["token"]
+        return unless token
+
+        host = URI.parse(credential.fetch("url")).host
+        return unless host
+
+        auth_dir = File.join(julia_user_depot, "servers", host)
+        FileUtils.mkdir_p(auth_dir)
+        escaped_token = token.gsub("\\", "\\\\\\\\").gsub("\"", "\\\"")
+        File.write(File.join(auth_dir, "auth.toml"), "access_token = \"#{escaped_token}\"\n")
+      rescue URI::InvalidURIError => e
+        Dependabot.logger.warn("Invalid julia_registry URL: #{e.message}")
+      end
+
+      sig { returns(String) }
+      def julia_user_depot
+        if ENV["DEPENDABOT_NATIVE_HELPERS_PATH"]
+          File.join(ENV.fetch("HOME", "/home/dependabot"), ".julia")
+        else
+          File.join(Dir.home, ".julia")
+        end
       end
     end
   end
