@@ -102,6 +102,10 @@ module Dependabot
         # Convert to versions for further filtering
         versions = releases.map(&:version).sort
 
+        # Filter out prereleases unless the dependency is already on one
+        versions = filter_prerelease_versions(versions)
+        return [] if versions.empty?
+
         # Filter out ignored versions
         versions = filter_ignored_versions(versions)
         return [] if versions.empty?
@@ -129,6 +133,21 @@ module Dependabot
         releases.reject do |release|
           cooldown_active_for_release?(release)
         end
+      end
+
+      sig { params(versions: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
+      def filter_prerelease_versions(versions)
+        return versions if wants_prerelease?
+
+        versions.reject(&:prerelease?)
+      end
+
+      sig { returns(T::Boolean) }
+      def wants_prerelease?
+        version = dependency.version
+        return false unless version
+
+        Dependabot::Julia::Version.new(version).prerelease?
       end
 
       sig { params(versions: T::Array[Gem::Version]).returns(T::Array[Gem::Version]) }
@@ -185,12 +204,20 @@ module Dependabot
         excludes = T.cast(config[:exclude], T.nilable(T::Array[String]))
 
         # Check exclusions first
-        return false if excludes&.any? { |pattern| dependency.name.match?(Regexp.new(pattern.gsub("*", ".*"))) }
+        return false if excludes&.any? { |pattern| dependency.name.match?(cooldown_pattern_regex(pattern)) }
 
         # Check inclusions (if specified, dependency must match)
-        return includes.any? { |pattern| dependency.name.match?(Regexp.new(pattern.gsub("*", ".*"))) } if includes&.any?
+        return includes.any? { |pattern| dependency.name.match?(cooldown_pattern_regex(pattern)) } if includes&.any?
 
         true # Include by default if no include patterns specified
+      end
+
+      # Cooldown include/exclude entries are shell-style globs where only "*"
+      # is a wildcard; everything else matches literally and the whole name
+      # must match (so "JSON" doesn't also cover "JSON3" or "LazyJSON").
+      sig { params(pattern: String).returns(Regexp) }
+      def cooldown_pattern_regex(pattern)
+        Regexp.new("\\A#{pattern.split('*', -1).map { |part| Regexp.escape(part) }.join('.*')}\\z")
       end
 
       sig { params(version: Gem::Version).returns(T.nilable(Integer)) }
