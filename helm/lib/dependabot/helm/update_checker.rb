@@ -104,13 +104,25 @@ module Dependabot
         @current_version ||= T.let(chart_anchor_version, T.nilable(Dependabot::Version))
       end
 
-      # A concrete version to anchor a chart constraint on. Single/lenient forms
+      # A concrete version to anchor candidate filtering on. A dependency may
+      # merge several same-named occurrences with different constraints, so anchor
+      # on the *lowest* occurrence — otherwise a higher-floored occurrence would
+      # gate out a release that a lower one still needs updated to.
+      sig { returns(Dependabot::Version) }
+      def chart_anchor_version
+        constraints = dependency.requirements
+                                .select { |r| r.dig(:metadata, :type) == :helm_chart }
+                                .map { |r| chart_constraint_for(r) }
+        constraints = [dependency.version.to_s] if constraints.empty?
+        T.must(constraints.map { |c| anchor_for_constraint(c) }.min)
+      end
+
+      # Anchors a single constraint on a concrete version. Single/lenient forms
       # (^1.0.0, ~1.2.0, 1.0.0) parse directly; comparator/hyphen/OR ranges do
       # not, so anchor on the lowest lower bound the Requirement parser reports
       # (0 when the constraint has no lower bound, e.g. "<2.0.0").
-      sig { returns(Dependabot::Version) }
-      def chart_anchor_version
-        raw = dependency.version.to_s
+      sig { params(raw: String).returns(Dependabot::Version) }
+      def anchor_for_constraint(raw)
         # A comparator/hyphen/OR constraint has no single version, and
         # version_class.new would silently mis-read it ("<2.0.0" -> 2.0.0), so
         # route those to the parser's lower bound.

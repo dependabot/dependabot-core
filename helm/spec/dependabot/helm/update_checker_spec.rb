@@ -385,6 +385,30 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
         updated = checker.updated_requirements.map { |r| [r.dig(:source, :tag), r[:requirement]] }
         expect(updated).to contain_exactly(["^1.0.0", "^1.5.0"], ["1.2.0", "1.5.0"])
       end
+
+      context "when a lower occurrence needs an update the highest one does not" do
+        # Regression: the anchor is the lowest occurrence (1.0.0), not the
+        # combined dependency.version (^5.0.0). Otherwise latest 5.0.0 would gate
+        # out as "not newer" and the ^1.0.0 occurrence would never be widened.
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "common",
+            version: "^5.0.0",
+            requirements: [
+              { requirement: nil, groups: [], file: "Chart.yaml",
+                source: { tag: "^5.0.0" }, metadata: { type: :helm_chart } },
+              { requirement: nil, groups: [], file: "sub/Chart.yaml",
+                source: { tag: "^1.0.0" }, metadata: { type: :helm_chart } }
+            ],
+            package_manager: "helm"
+          )
+        end
+        let(:latest) { Dependabot::Helm::Version.new("5.0.0") }
+
+        it "still reports the update" do
+          expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        end
+      end
     end
 
     context "with an upper-only range whose latest equals the ceiling" do
