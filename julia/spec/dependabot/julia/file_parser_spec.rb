@@ -48,7 +48,7 @@ RSpec.describe Dependabot::Julia::FileParser do
       example_dep = dependencies.find { |d| d.name == "Example" }
       expect(example_dep).to be_a(Dependabot::Dependency)
       expect(example_dep.name).to eq("Example")
-      expect(example_dep.version).to be_nil # No version - use compat requirement
+      expect(example_dep.version).to eq("0.4.1") # Installed version from Manifest.toml
       expect(example_dep.package_manager).to eq("julia")
 
       requirement = example_dep.requirements.first
@@ -93,7 +93,7 @@ RSpec.describe Dependabot::Julia::FileParser do
         example_dep = dependencies.find { |d| d.name == "Example" }
         expect(example_dep).to be_a(Dependabot::Dependency)
         expect(example_dep.name).to eq("Example")
-        expect(example_dep.version).to be_nil # No version - use compat requirement
+        expect(example_dep.version).to eq("0.4.1") # Installed version from Manifest.toml
         expect(example_dep.requirements.first[:groups]).to eq(["deps"])
         expect(example_dep.requirements.first[:requirement]).to eq("0.4")
 
@@ -101,7 +101,7 @@ RSpec.describe Dependabot::Julia::FileParser do
         json_dep = dependencies.find { |d| d.name == "JSON" }
         expect(json_dep).to be_a(Dependabot::Dependency)
         expect(json_dep.name).to eq("JSON")
-        expect(json_dep.version).to be_nil # No version - use compat requirement
+        expect(json_dep.version).to eq("0.21.4") # Weakdeps also get manifest versions
         expect(json_dep.requirements.first[:groups]).to eq(["weakdeps"])
         expect(json_dep.requirements.first[:requirement]).to eq("0.21")
       end

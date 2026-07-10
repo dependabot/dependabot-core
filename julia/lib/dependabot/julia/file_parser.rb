@@ -110,7 +110,70 @@ module Dependabot
           parse_single_project_file(proj_file, dependencies_map)
         end
 
+        apply_manifest_versions(dependencies_map)
+
         dependencies_map.values
+      end
+
+      # Resolve the installed version of each dependency from the manifest
+      # (Julia's lockfile), matching by UUID.
+      sig { params(dependencies_map: T::Hash[String, Dependabot::Dependency]).void }
+      def apply_manifest_versions(dependencies_map)
+        versions = manifest_versions_by_uuid
+        return if versions.empty?
+
+        dependencies_map.transform_values! do |dep|
+          uuid = T.cast(dep.metadata[:julia_uuid], T.nilable(String))
+          version = uuid && versions[uuid]
+          next dep unless version
+
+          Dependabot::Dependency.new(
+            name: dep.name,
+            version: version,
+            requirements: dep.requirements,
+            package_manager: "julia",
+            metadata: dep.metadata
+          )
+        end
+      end
+
+      sig { returns(T::Hash[String, String]) }
+      def manifest_versions_by_uuid
+        manifest = manifest_file
+        return {} unless manifest
+
+        result = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+        Dir.mktmpdir("julia_manifest") do |temp_dir|
+          # Written under a fixed name: version-suffixed manifests
+          # (Manifest-v1.11.toml) would otherwise be skipped by Pkg when the
+          # helper's Julia version doesn't match.
+          manifest_path = File.join(temp_dir, "Manifest.toml")
+          File.write(manifest_path, manifest.content)
+          result = registry_client.parse_manifest(manifest_path)
+        end
+        result = T.must(result)
+
+        if result["error"]
+          Dependabot.logger.warn("Failed to parse Julia manifest: #{result['error']}")
+          return {}
+        end
+
+        deps = T.cast(result["dependencies"] || [], T::Array[T.untyped])
+        deps.each_with_object({}) do |dep_info, map|
+          dep_hash = T.cast(dep_info, T::Hash[String, T.untyped])
+          uuid = T.cast(dep_hash["uuid"], T.nilable(String))
+          version = T.cast(dep_hash["version"], T.nilable(String)).to_s
+          next if uuid.nil? || version.empty?
+
+          map[uuid] = version
+        end
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def manifest_file
+        dependency_files.find do |f|
+          File.basename(f.name).match?(/^(Julia)?Manifest(?:-v[\d.]+)?\.toml$/i)
+        end
       end
 
       sig { params(proj_file: Dependabot::DependencyFile, dependencies_map: T::Hash[String, Dependabot::Dependency]).void }
