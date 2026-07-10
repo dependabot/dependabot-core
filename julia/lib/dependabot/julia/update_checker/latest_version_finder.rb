@@ -148,7 +148,7 @@ module Dependabot
       def filter_lower_versions(versions)
         return versions unless dependency.version
 
-        current_version = Gem::Version.new(dependency.version)
+        current_version = Dependabot::Julia::Version.new(dependency.version)
         versions.select { |v| v > current_version }
       end
 
@@ -192,7 +192,7 @@ module Dependabot
       def determine_cooldown_days(version)
         return nil unless cooldown_config
 
-        current_version = dependency.version ? Gem::Version.new(dependency.version) : nil
+        current_version = dependency.version ? Dependabot::Julia::Version.new(dependency.version) : nil
         return nil unless current_version
 
         version_bump_type = determine_version_bump_type(version, current_version)
