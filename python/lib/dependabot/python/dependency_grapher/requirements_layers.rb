@@ -44,7 +44,7 @@ module Dependabot
 
         # More lenient: matches "depend" / "depends" at the start of the filename or after a hyphen/period/
         # underscore/slash delimiter, with an optional hyphen/underscore/slash suffix. The leading delimiter
-        # prevents matching "depend" as a substring of another word (e.g. "independ.txt").
+        # prevents matching "depend" as a substring of another word (e.g. "codependent.txt").
         # Examples: depend.txt, depends.txt, depend-test.txt, py3-depends.txt
         DEPEND_TXT_REGEX = T.let(%r{(?:[-._]|^|/)depend(?:s)?(?:[-_/][^\s.]*)?\.txt$}i, Regexp)
 

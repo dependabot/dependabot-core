@@ -215,8 +215,12 @@ RSpec.describe GithubApi::DependencySubmission do
         branch: "main",
         sha: "fake-sha",
         package_manager: "bundler",
-        manifest_file: empty_file,
-        resolved_dependencies: {},
+        manifest_snapshots: [
+          Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(
+            manifest_file: empty_file,
+            resolved_dependencies: {}
+          )
+        ],
         status: described_class::SnapshotStatus::SKIPPED,
         reason: described_class::SKIPPED_REASON_FILE_FETCH_ERROR
       )

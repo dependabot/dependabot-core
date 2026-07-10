@@ -712,6 +712,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
         File.write(File.join(repo_contents_path, "tools/a.dummy"), "dummy content")
 
         allow(command.job).to receive(:update_graph?).and_return(true)
+        allow(command).to receive(:base_commit_sha).and_return("sha")
 
         allow(command).to receive(:file_fetcher_for_directory) do |dir|
           fetcher = double("FileFetcher")
@@ -728,7 +729,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
 
       it "does not abort the whole job and still returns the other directory's files" do
-        files = command.send(:files_from_multidirectories)
+        files = command.files.dependency_files
 
         tools_files = files.select { |f| f.directory == "/tools" }
         root_files = files.select { |f| f.directory == "/" }
@@ -737,18 +738,9 @@ RSpec.describe Dependabot::FileFetcherCommand do
         expect(root_files).to be_empty
       end
 
-      it "records the fetch error for the affected directory" do
-        command.send(:files_from_multidirectories)
-
-        errors = command.send(:directory_fetch_errors)
-        expect(errors).to have_key("/")
-        expect(errors["/"]).to be_a(Dependabot::PathDependenciesNotReachable)
-      end
-
-      it "surfaces the fetch error on the returned FetchedFiles" do
-        allow(command).to receive(:base_commit_sha).and_return("sha")
-
+      it "surfaces the fetch error for the affected directory on the returned FetchedFiles" do
         fetched = command.files
+
         expect(fetched.directory_fetch_errors).to have_key("/")
         expect(fetched.directory_fetch_errors["/"]).to be_a(Dependabot::PathDependenciesNotReachable)
       end
@@ -778,7 +770,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
 
       it "propagates the error so the update job surfaces it" do
-        expect { command.send(:files_from_multidirectories) }
+        expect { command.files }
           .to raise_error(Dependabot::PathDependenciesNotReachable)
       end
     end
