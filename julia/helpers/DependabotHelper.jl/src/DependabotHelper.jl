@@ -20,15 +20,14 @@ function run()
     result = run(input)
     println(result)
 
-    # Exit with error code only for unexpected errors, not resolver errors
-    # Resolver errors are expected and handled by Ruby - they return a dict with "error" key
+    # Exit non-zero only for unexpected failures (a top-level "error" key,
+    # produced by the catch block in run(::String)). Expected domain errors —
+    # package not found, resolver conflicts, missing files — are returned by
+    # the helper functions as Dicts with an "error" key and delivered under
+    # "result" with exit 0, so the Ruby side can inspect and handle them.
     parsed_result = JSON.parse(result)
     if haskey(parsed_result, "error")
-        error_msg = parsed_result["error"]
-        # Pkg resolver errors are expected/handled - don't exit with error code
-        if !startswith(error_msg, "Pkg resolver error:")
-            exit(1)
-        end
+        exit(1)
     end
 end
 
@@ -111,22 +110,12 @@ function run(input::String)
         elseif func_name == "find_workspace_project_files"
             find_workspace_project_files(args)
         else
-            Dict("error" => "Unknown function: $func_name")
+            # A protocol error, not a domain error: fail the process via the
+            # catch block below.
+            error("Unknown function: $func_name")
         end
 
-        # Check if the function result itself contains an error
-        if isa(function_result, Dict) && haskey(function_result, "error")
-            error_msg = function_result["error"]
-            # Pkg resolver errors are expected/handled by Ruby - wrap them in result
-            # Other errors should fail the process
-            if startswith(error_msg, "Pkg resolver error:")
-                Dict("result" => function_result)
-            else
-                function_result  # Return error dict as-is, will cause exit(1)
-            end
-        else
-            Dict("result" => function_result)
-        end
+        Dict("result" => function_result)
     catch err
         Dict(
             "error" => string(err),

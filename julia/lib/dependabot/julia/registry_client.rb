@@ -35,18 +35,18 @@ module Dependabot
         )
 
         # Check if the result itself contains an error (package not found)
-        return nil if result["error"]
+        if result["error"]
+          Dependabot.logger.warn(
+            "Failed to fetch latest version for #{package_name}: #{result['error']}"
+          )
+          return nil
+        end
 
         # Extract version from the result structure
         # The Julia helper returns version directly in the result
         return nil unless result["version"]
 
         Gem::Version.new(result["version"])
-      rescue StandardError => e
-        Dependabot.logger.warn(
-          "Failed to fetch latest version for #{package_name}: #{e.message}"
-        )
-        nil
       end
 
       sig { params(package_name: String, package_uuid: T.nilable(String)).returns(T.nilable(Gem::Version)) }
@@ -63,17 +63,17 @@ module Dependabot
         )
 
         # Check if the result itself contains an error (package not found)
-        return nil if result["error"]
+        if result["error"]
+          Dependabot.logger.warn(
+            "Failed to fetch latest version with custom registries for #{package_name}: #{result['error']}"
+          )
+          return nil
+        end
 
         # Extract version from the result structure
         return nil unless result["version"]
 
         Gem::Version.new(result["version"])
-      rescue StandardError => e
-        Dependabot.logger.warn(
-          "Failed to fetch latest version with custom registries for #{package_name}: #{e.message}"
-        )
-        nil
       end
 
       sig { params(package_name: String, package_uuid: String).returns(T.nilable(T::Hash[String, T.untyped])) }
@@ -82,9 +82,6 @@ module Dependabot
           function: "get_package_metadata",
           args: { package_name: package_name, package_uuid: package_uuid }
         )
-      rescue StandardError => e
-        Dependabot.logger.warn("Failed to fetch metadata for #{package_name}: #{e.message}")
-        nil
       end
 
       sig do
@@ -213,8 +210,8 @@ module Dependabot
         return nil unless result["release_date"]
 
         Time.parse(result["release_date"])
-      rescue StandardError => e
-        Dependabot.logger.warn("Failed to fetch release date for #{package_name} v#{version}: #{e.message}")
+      rescue ArgumentError => e
+        Dependabot.logger.warn("Failed to parse release date for #{package_name} v#{version}: #{e.message}")
         nil
       end
 
@@ -232,16 +229,16 @@ module Dependabot
         )
 
         # Check if the result contains an error
-        return [] if result["error"]
+        if result["error"]
+          Dependabot.logger.warn("Failed to fetch available versions for #{package_name}: #{result['error']}")
+          return []
+        end
 
         # Extract versions array from the result
         versions = result["versions"]
         return [] unless versions.is_a?(Array)
 
         versions.map(&:to_s)
-      rescue StandardError => e
-        Dependabot.logger.warn("Failed to fetch available versions for #{package_name}: #{e.message}")
-        []
       end
 
       sig { params(package_name: String, package_uuid: T.nilable(String)).returns(T::Array[String]) }
@@ -258,18 +255,18 @@ module Dependabot
         )
 
         # Check if the result contains an error
-        return [] if result["error"]
+        if result["error"]
+          Dependabot.logger.warn(
+            "Failed to fetch available versions with custom registries for #{package_name}: #{result['error']}"
+          )
+          return []
+        end
 
         # Extract versions array from the result
         versions = result["versions"]
         return [] unless versions.is_a?(Array)
 
         versions.map(&:to_s)
-      rescue StandardError => e
-        Dependabot.logger.warn(
-          "Failed to fetch available versions with custom registries for #{package_name}: #{e.message}"
-        )
-        []
       end
 
       # ============================================================================
@@ -278,6 +275,8 @@ module Dependabot
 
       sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, T.untyped]) }
       def batch_fetch_package_info(dependencies)
+        return {} if dependencies.empty?
+
         packages = dependencies.map do |dep|
           {
             name: dep.name,
@@ -289,9 +288,6 @@ module Dependabot
           function: "batch_get_package_info",
           args: { packages: packages }
         )
-      rescue StandardError => e
-        Dependabot.logger.error("Failed to batch fetch package info: #{e.message}")
-        {}
       end
 
       sig do
@@ -300,6 +296,8 @@ module Dependabot
         ).returns(T::Hash[String, T::Hash[String, T.nilable(String)]])
       end
       def batch_fetch_version_release_dates(packages_versions)
+        return {} if packages_versions.empty?
+
         result = call_julia_helper(
           function: "batch_get_version_release_dates",
           args: { packages_versions: packages_versions }
@@ -311,13 +309,12 @@ module Dependabot
 
           dates.is_a?(Hash) ? dates : {}
         end
-      rescue StandardError => e
-        Dependabot.logger.error("Failed to batch fetch version release dates: #{e.message}")
-        {}
       end
 
       sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, T.untyped]) }
       def batch_fetch_available_versions(dependencies)
+        return {} if dependencies.empty?
+
         packages = dependencies.map do |dep|
           {
             name: dep.name,
@@ -329,9 +326,6 @@ module Dependabot
           function: "batch_get_available_versions",
           args: { packages: packages }
         )
-      rescue StandardError => e
-        Dependabot.logger.error("Failed to batch fetch available versions: #{e.message}")
-        {}
       end
 
       private

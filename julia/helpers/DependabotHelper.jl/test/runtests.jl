@@ -107,6 +107,34 @@ using DependabotHelper
         @test occursin("Unknown function", result["error"])
     end
 
+    @testset "JSON error contract" begin
+        # Expected domain errors are wrapped under "result" (exit 0 on the
+        # subprocess side) so Ruby can inspect result["error"].
+        input = """{"function": "get_latest_version", "args": {"package_name": "NonExistentPackage12345", "package_uuid": "00000000-0000-0000-0000-000000000000"}}"""
+        result = JSON.parse(DependabotHelper.run(input))
+        @test haskey(result, "result")
+        @test !haskey(result, "error")
+        @test haskey(result["result"], "error")
+        @test occursin("not found", result["result"]["error"])
+
+        # Missing-argument validation errors are also domain errors.
+        input = """{"function": "get_latest_version", "args": {"package_name": "JSON"}}"""
+        result = JSON.parse(DependabotHelper.run(input))
+        @test haskey(result, "result")
+        @test haskey(result["result"], "error")
+
+        # Unknown functions are protocol errors: top-level "error" (exit 1).
+        input = """{"function": "no_such_function", "args": {}}"""
+        result = JSON.parse(DependabotHelper.run(input))
+        @test haskey(result, "error")
+        @test !haskey(result, "result")
+        @test occursin("Unknown function", result["error"])
+
+        # Malformed input is a protocol error.
+        result = JSON.parse(DependabotHelper.run("{not json"))
+        @test haskey(result, "error")
+    end
+
     @testset "Integration Tests" begin
         # Test that all main functions return proper error handling
         functions_to_test = [
