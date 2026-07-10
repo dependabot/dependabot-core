@@ -122,16 +122,30 @@ module Dependabot
           setting = settings.find { |candidate| candidate.filename == File.basename(file.name) }
           next unless setting
 
-          content = file.content.to_s
-          key = Regexp.escape(setting.key)
-          separator = Regexp.escape(setting.separator)
-          next unless content.match?(/^\s*#{key}\s*#{separator}/)
-
-          match = content.match(/^\s*#{key}\s*#{separator}\s*(\d+)\s*$/)
-          match ? T.must(match[1]).to_i : Float::INFINITY
+          configured_release_age(file.content.to_s, setting)
         end
         values.max
       end
+
+      # Resolves the effective release-age value a single file sets for `setting`,
+      # or nil when the key is absent. npmrc/INI and YAML both let the *last*
+      # occurrence of a key win, so we read the last matching line rather than the
+      # first (e.g. `min-release-age=30` then `min-release-age=3` resolves to 3). A
+      # present-but-non-numeric value is reported as Float::INFINITY.
+      sig { params(content: String, setting: ReleaseAgeGateSetting).returns(T.nilable(T.any(Integer, Float))) }
+      def self.configured_release_age(content, setting)
+        key = Regexp.escape(setting.key)
+        separator = Regexp.escape(setting.separator)
+        presence = /^\s*#{key}\s*#{separator}/
+        value = /^\s*#{key}\s*#{separator}\s*(\d+)\s*$/
+
+        last_line = content.lines.reverse_each.find { |line| line.match?(presence) }
+        return unless last_line
+
+        match = last_line.match(value)
+        match ? T.must(match[1]).to_i : Float::INFINITY
+      end
+      private_class_method :configured_release_age
 
       sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
       def self.npm_version_numeric(lockfile)
@@ -202,6 +216,25 @@ module Dependabot
         return PNPM_V7 if pnpm_lockfile_version >= 5.4
 
         PNPM_FALLBACK_VERSION
+      end
+
+      # The concrete pnpm version that will run for this update — resolved via
+      # Corepack when the corepack experiment is enabled (honouring the repo's
+      # `packageManager` pin), otherwise the pnpm on PATH. Returns nil when the
+      # version can't be determined. Used to gate version-specific config such as
+      # `minimumReleaseAge` (added in pnpm 10.16) and `minimumReleaseAgeStrict`
+      # (added in pnpm 11.0), which older pnpm versions silently ignore.
+      sig { returns(T.nilable(Dependabot::Version)) }
+      def self.pnpm_version
+        raw = if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
+                package_manager_version(PNPMPackageManager::NAME)
+              else
+                local_package_manager_version(PNPMPackageManager::NAME)
+              end
+        Version.new(raw)
+      rescue StandardError => e
+        Dependabot.logger.warn("Could not determine pnpm version to gate release-age settings: #{e.message}")
+        nil
       end
 
       sig { params(key: String, default_value: String).returns(T.untyped) }
@@ -362,11 +395,11 @@ module Dependabot
       # set to false. Yarn commands should _not_ be ran outside of this helper
       # to ensure that postinstall scripts are never executed, as they could
       # contain malicious code.
-      sig { params(commands: T::Array[String]).void }
-      def self.run_yarn_commands(*commands)
+      sig { params(commands: T::Array[String], env: T.nilable(T::Hash[String, String])).void }
+      def self.run_yarn_commands(*commands, env: nil)
         setup_yarn_berry
         commands.each do |cmd, fingerprint|
-          run_single_yarn_command(cmd, fingerprint: fingerprint) if cmd
+          run_single_yarn_command(cmd, fingerprint: fingerprint, env: env) if cmd
         end
       end
 

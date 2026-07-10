@@ -352,7 +352,7 @@ module Dependabot
 
           NativeHelpers.run_npm8_subdependency_update_command(
             dependency_names,
-            security_updates_only: security_updates_only?
+            min_release_age_arg: effective_min_release_age_arg
           )
 
           updated_content = File.read(lockfile_basename)
@@ -363,7 +363,7 @@ module Dependabot
             # npm audit fix exits non-zero when vulnerabilities remain, so we
             # rescue and use whatever lockfile changes it managed to make.
             begin
-              NativeHelpers.run_npm_audit_fix_command(security_updates_only: security_updates_only?)
+              NativeHelpers.run_npm_audit_fix_command(min_release_age_arg: effective_min_release_age_arg)
               sub_dependencies.each { |dep| dep.metadata[:audit_fix_used] = true }
             rescue SharedHelpers::HelperSubprocessFailed
               Dependabot.logger.info("npm audit fix failed or partially fixed — continuing with any changes made")
@@ -413,7 +413,7 @@ module Dependabot
           ]
 
           command_args << "--save-optional" if has_optional_dependencies
-          min_release_age_arg = min_release_age_install_arg
+          min_release_age_arg = effective_min_release_age_arg
           command_args << min_release_age_arg if min_release_age_arg
 
           command = command_args.join(" ")
@@ -435,19 +435,20 @@ module Dependabot
           Helpers.run_npm_command(command, fingerprint: fingerprint)
         end
 
-        # Returns the `--min-release-age` argument for `npm install`, or nil when
-        # none applies. Security updates pass `=0` so a release-age gate never
-        # blocks a fix (this intentionally overrides any `.npmrc` gate). Regular
-        # updates pass the dependabot.yml cooldown floor (in days) so npm holds
-        # transitive dependencies back to versions at least that old. Requires
-        # npm >= 11.10 (the updater image ships a supporting version).
+        # Returns the `--min-release-age` argument to pass to npm (`install`,
+        # `update`, or `audit fix`), or nil when none applies. Security updates pass
+        # `=0` so a release-age gate never blocks a fix (this intentionally
+        # overrides any `.npmrc` gate). Regular updates pass the dependabot.yml
+        # cooldown floor (in days) so npm holds transitive dependencies back to
+        # versions at least that old. Requires npm >= 11.10 (the updater image
+        # ships a supporting version).
         #
         # When the repo also sets an explicit `min-release-age` in `.npmrc`, the
         # longest release-age wins: the cooldown floor is only injected on the CLI
         # when it exceeds the user's configured value, otherwise the user's (equal
         # or longer) gate is left untouched so neither policy is silently weakened.
         sig { returns(T.nilable(String)) }
-        def min_release_age_install_arg
+        def effective_min_release_age_arg
           return "--min-release-age=0" if security_updates_only?
 
           effective = Helpers.higher_release_age_gate(@release_age_days, npmrc_min_release_age)

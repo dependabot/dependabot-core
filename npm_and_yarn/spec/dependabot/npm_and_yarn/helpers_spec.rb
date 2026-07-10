@@ -1160,5 +1160,15 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       files = [file("pnpm-workspace.yaml", "minimumReleaseAge: 45\n")]
       expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(45)
     end
+
+    it "uses the last occurrence within a file (npmrc/INI last-key-wins)" do
+      files = [file(".npmrc", "min-release-age=30\nmin-release-age=3\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(3)
+    end
+
+    it "resolves the effective value from the last occurrence, even when non-numeric" do
+      files = [file(".npmrc", "min-release-age=30\nmin-release-age=soon\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(Float::INFINITY)
+    end
   end
 end

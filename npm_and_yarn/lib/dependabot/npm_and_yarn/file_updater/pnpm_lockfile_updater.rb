@@ -4,6 +4,7 @@
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package/registry_finder"
 require "dependabot/npm_and_yarn/registry_parser"
+require "dependabot/npm_and_yarn/version"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -95,6 +96,12 @@ module Dependabot
 
         IRRESOLVABLE_PACKAGE = "ERR_PNPM_NO_MATCHING_VERSION"
         INVALID_REQUIREMENT = "ERR_PNPM_SPEC_NOT_SUPPORTED_BY_ANY_RESOLVER"
+
+        # pnpm introduced the `minimumReleaseAge` release-age gate in 10.16 and the
+        # `minimumReleaseAgeStrict` toggle in 11.0; older versions ignore them.
+        PNPM_MINIMUM_RELEASE_AGE_VERSION = "10.16"
+        PNPM_MINIMUM_RELEASE_AGE_STRICT_VERSION = "11.0"
+
         UNREACHABLE_GIT = %r{Command failed with exit code 128: git ls-remote (?<url>.*github\.com/[^/]+/[^ ]+)}
         UNREACHABLE_GIT_V8 = %r{ERR_PNPM_FETCH_404[ [^:print]]+GET (?<url>https://codeload\.github\.com/[^/]+/[^/]+)/}
         FORBIDDEN_PACKAGE = /ERR_PNPM_FETCH_403[ [^:print]]+GET (?<dependency_url>.*): Forbidden - 403/
@@ -259,44 +266,120 @@ module Dependabot
 
         # Returns the pnpm `--config.minimumReleaseAge` arguments to apply, or nil.
         # Security updates disable the gate (`=0`); regular updates apply the
-        # dependabot.yml cooldown floor (in minutes).
+        # dependabot.yml cooldown floor (in minutes). `minimumReleaseAge` was added
+        # in pnpm 10.16, so older pnpm silently ignores it — rather than give a
+        # false guarantee we skip the gate (and warn) when the running pnpm is too
+        # old to enforce it.
         sig { returns(T.nilable(String)) }
         def release_age_gate_config
-          if security_updates_only?
-            # Override any minimumReleaseAge set in pnpm-workspace.yaml: security fixes must not be
-            # blocked by a release-age gate the user configured for regular updates.
-            return "--config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false"
+          minutes = effective_release_age_minutes
+          return nil if minutes.nil?
+
+          unless pnpm_supports_minimum_release_age?
+            Dependabot.logger.warn(
+              "pnpm #{pnpm_version || '(unknown version)'} does not support minimumReleaseAge " \
+              "(added in pnpm 10.16); the release-age cooldown cannot be enforced for transitive " \
+              "dependencies on this pnpm version."
+            )
+            return nil
           end
 
-          minimum_release_age_config
+          minimum_release_age_gate_args(minutes)
         end
 
-        # Applies the dependabot.yml cooldown floor as pnpm's `minimumReleaseAge`
-        # (in minutes) on regular updates so transitive dependencies are held back
-        # to versions at least that old. `minimumReleaseAgeStrict=false` lets pnpm
-        # fall back to the newest available version rather than erroring when
-        # nothing satisfies the window, and avoids gating the exact direct version
-        # Dependabot pins. (Security updates bypass the gate entirely with
-        # `minimumReleaseAge=0`; see `release_age_gate_config`.)
+        # The pnpm `minimumReleaseAge` value (in minutes) to enforce for this
+        # update, independent of the pnpm version: 0 to bypass the gate for
+        # security fixes (which must not be blocked by a release-age gate the user
+        # configured for regular updates), the dependabot.yml cooldown floor for
+        # regular updates, or nil when no gate applies.
         #
         # When the repo also sets an explicit `minimumReleaseAge` in
         # pnpm-workspace.yaml (or `.npmrc`), the longest release-age wins: the
-        # cooldown floor is only injected on the CLI when it exceeds the user's
-        # configured value, otherwise the user's (equal or longer) gate is left
-        # untouched so neither policy is silently weakened
-        # (dependabot/dependabot-core#13165).
-        sig { returns(T.nilable(String)) }
-        def minimum_release_age_config
-          cooldown_minutes = @release_age_days && (@release_age_days * Helpers::MINUTES_PER_DAY)
-          effective = Helpers.higher_release_age_gate(cooldown_minutes, pnpm_configured_minimum_release_age)
-          return nil unless effective
+        # cooldown floor is only injected when it exceeds the user's configured
+        # value, otherwise the user's (equal or longer) gate is left untouched so
+        # neither policy is silently weakened (dependabot/dependabot-core#13165).
+        sig { returns(T.nilable(Integer)) }
+        def effective_release_age_minutes
+          return 0 if security_updates_only?
 
-          "--config.minimumReleaseAge=#{effective} --config.minimumReleaseAgeStrict=false"
+          cooldown_minutes = @release_age_days && (@release_age_days * Helpers::MINUTES_PER_DAY)
+          Helpers.higher_release_age_gate(cooldown_minutes, pnpm_configured_minimum_release_age)
+        end
+
+        # Builds the pnpm `--config.minimumReleaseAge` args for `minutes`, adding
+        # the strict toggle only when appropriate (see `disable_strict_release_age?`).
+        sig { params(minutes: Integer).returns(String) }
+        def minimum_release_age_gate_args(minutes)
+          args = "--config.minimumReleaseAge=#{minutes}"
+          args += " --config.minimumReleaseAgeStrict=false" if disable_strict_release_age?
+          args
+        end
+
+        # pnpm defaults `minimumReleaseAgeStrict` to *on* when `minimumReleaseAge`
+        # is set via the CLI, which fails resolution when no version satisfies the
+        # window (and would gate the exact direct version Dependabot pins). We
+        # disable strict so pnpm falls back to the newest version instead of
+        # erroring — but only on pnpm >= 11.0, where the toggle exists, and only
+        # when the repo has not itself opted into strict enforcement, which we must
+        # not silently weaken.
+        sig { returns(T::Boolean) }
+        def disable_strict_release_age?
+          pnpm_supports_minimum_release_age_strict? && !pnpm_strict_release_age_configured?
         end
 
         sig { returns(String) }
         def fingerprint_minimum_release_age_config
-          "--config.minimumReleaseAge=<minutes> --config.minimumReleaseAgeStrict=false"
+          args = "--config.minimumReleaseAge=<minutes>"
+          args += " --config.minimumReleaseAgeStrict=false" if disable_strict_release_age?
+          args
+        end
+
+        # The concrete pnpm version that will run, memoized (including a nil result)
+        # so the version subprocess runs at most once per update.
+        sig { returns(T.nilable(Dependabot::Version)) }
+        def pnpm_version
+          return @pnpm_version if defined?(@pnpm_version)
+
+          @pnpm_version = T.let(Helpers.pnpm_version, T.nilable(Dependabot::Version))
+        end
+
+        sig { returns(T::Boolean) }
+        def pnpm_supports_minimum_release_age?
+          version = pnpm_version
+          !version.nil? && version >= Version.new(PNPM_MINIMUM_RELEASE_AGE_VERSION)
+        end
+
+        sig { returns(T::Boolean) }
+        def pnpm_supports_minimum_release_age_strict?
+          version = pnpm_version
+          !version.nil? && version >= Version.new(PNPM_MINIMUM_RELEASE_AGE_STRICT_VERSION)
+        end
+
+        # True when the repo explicitly enables pnpm's `minimumReleaseAgeStrict`, in
+        # pnpm-workspace.yaml (`minimumReleaseAgeStrict: true`) or `.npmrc`
+        # (`minimum-release-age-strict=true`). The last occurrence wins, matching
+        # how pnpm/INI resolve a repeated key.
+        sig { returns(T::Boolean) }
+        def pnpm_strict_release_age_configured?
+          dependency_files.any? do |file|
+            case File.basename(file.name)
+            when "pnpm-workspace.yaml"
+              strict_release_age_enabled?(file.content.to_s, "minimumReleaseAgeStrict", ":")
+            when ".npmrc"
+              strict_release_age_enabled?(file.content.to_s, "minimum-release-age-strict", "=")
+            else
+              false
+            end
+          end
+        end
+
+        sig { params(content: String, key: String, separator: String).returns(T::Boolean) }
+        def strict_release_age_enabled?(content, key, separator)
+          presence = /^\s*#{Regexp.escape(key)}\s*#{Regexp.escape(separator)}/
+          last_line = content.lines.reverse_each.find { |line| line.match?(presence) }
+          return false unless last_line
+
+          last_line.match?(/^\s*#{Regexp.escape(key)}\s*#{Regexp.escape(separator)}\s*true\s*$/)
         end
 
         # The largest `minimumReleaseAge` (in minutes) the repo configures for pnpm,

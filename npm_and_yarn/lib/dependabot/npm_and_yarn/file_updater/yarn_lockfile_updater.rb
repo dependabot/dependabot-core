@@ -348,7 +348,7 @@ module Dependabot
           ]
 
           original_content = File.read(yarn_lock.name)
-          Helpers.run_yarn_commands(*commands)
+          Helpers.run_yarn_commands(*commands, env: yarn_time_gate_env)
 
           updated_content = File.read(yarn_lock.name)
           if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)

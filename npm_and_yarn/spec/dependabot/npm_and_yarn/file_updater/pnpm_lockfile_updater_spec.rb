@@ -819,6 +819,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
     let(:project_name) { "pnpm/simple" }
     let(:files) { project_dependency_files(project_name) }
 
+    # Default the running pnpm to 11.0.0, where both `minimumReleaseAge` (added in
+    # 10.16) and `minimumReleaseAgeStrict` (added in 11.0) are supported. Version
+    # gating is exercised in "when the running pnpm version gates the release-age gate".
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers)
+        .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.0.0"))
+    end
+
     context "when security_updates_only is true" do
       let(:updater) do
         described_class.new(
@@ -984,6 +992,97 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
             updater.send(:run_pnpm_update_packages)
           end
+        end
+      end
+    end
+
+    context "when the running pnpm version gates the release-age gate" do
+      let(:updater) do
+        described_class.new(
+          dependency_files: files,
+          dependencies: dependencies,
+          credentials: credentials,
+          repo_contents_path: repo_contents_path,
+          release_age_days: 7
+        )
+      end
+
+      context "when pnpm is 10.16 (minimumReleaseAge but not the strict toggle)" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("10.16.0"))
+        end
+
+        it "applies minimumReleaseAge without the strict toggle (added in pnpm 11.0)" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            expect(cmd).to include("--config.minimumReleaseAge=10080")
+            expect(cmd).not_to include("minimumReleaseAgeStrict")
+            ""
+          end.at_least(:once)
+
+          updater.send(:run_pnpm_update_packages)
+        end
+      end
+
+      context "when pnpm predates minimumReleaseAge (< 10.16)" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("10.15.0"))
+        end
+
+        it "skips the gate and warns that the cooldown can't be enforced" do
+          allow(Dependabot.logger).to receive(:warn)
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            expect(cmd).not_to include("minimumReleaseAge")
+            ""
+          end.at_least(:once)
+
+          updater.send(:run_pnpm_update_packages)
+
+          expect(Dependabot.logger).to have_received(:warn).with(/does not support minimumReleaseAge/)
+        end
+      end
+
+      context "when the pnpm version can't be determined" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:pnpm_version).and_return(nil)
+        end
+
+        it "skips the gate rather than guessing" do
+          allow(Dependabot.logger).to receive(:warn)
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            expect(cmd).not_to include("minimumReleaseAge")
+            ""
+          end.at_least(:once)
+
+          updater.send(:run_pnpm_update_packages)
+        end
+      end
+
+      context "when pnpm is 11.0+ and the repo enables minimumReleaseAgeStrict" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.0.0"))
+        end
+
+        let(:files) do
+          project_dependency_files(project_name) +
+            [Dependabot::DependencyFile.new(
+              name: "pnpm-workspace.yaml",
+              content: "minimumReleaseAge: 4320\nminimumReleaseAgeStrict: true\n"
+            )]
+        end
+
+        it "preserves the user's strict setting rather than forcing strict=false" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            # Cooldown (10080) wins over the user's 4320, but their explicit
+            # strict=true must not be overridden with strict=false.
+            expect(cmd).to include("--config.minimumReleaseAge=10080")
+            expect(cmd).not_to include("minimumReleaseAgeStrict")
+            ""
+          end.at_least(:once)
+
+          updater.send(:run_pnpm_update_packages)
         end
       end
     end

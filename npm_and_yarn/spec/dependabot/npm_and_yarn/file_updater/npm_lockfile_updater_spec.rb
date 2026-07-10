@@ -1484,22 +1484,42 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           )
         end
 
-        it "passes --min-release-age=0 to override the .npmrc setting" do
+        it "passes --min-release-age=0 to override any .npmrc gate" do
           updated_npm_lock_content
 
           expect(Dependabot::NpmAndYarn::NativeHelpers)
             .to have_received(:run_npm8_subdependency_update_command)
-            .with(["acorn"], security_updates_only: true)
+            .with(["acorn"], min_release_age_arg: "--min-release-age=0")
         end
       end
 
       context "when security_updates_only is false (default)" do
-        it "does not request the .npmrc override" do
+        it "does not request a release-age gate" do
           updated_npm_lock_content
 
           expect(Dependabot::NpmAndYarn::NativeHelpers)
             .to have_received(:run_npm8_subdependency_update_command)
-            .with(["acorn"], security_updates_only: false)
+            .with(["acorn"], min_release_age_arg: nil)
+        end
+      end
+
+      context "when update_cooldown sets a release-age floor (regular update)" do
+        let(:updater) do
+          described_class.new(
+            lockfile: package_lock,
+            dependency_files: files,
+            dependencies: dependencies,
+            credentials: credentials,
+            release_age_days: 7
+          )
+        end
+
+        it "passes the cooldown floor so transitive updates are held back too" do
+          updated_npm_lock_content
+
+          expect(Dependabot::NpmAndYarn::NativeHelpers)
+            .to have_received(:run_npm8_subdependency_update_command)
+            .with(["acorn"], min_release_age_arg: "--min-release-age=7")
         end
       end
     end

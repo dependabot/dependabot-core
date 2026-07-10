@@ -469,6 +469,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
             yarn_lock: yarn_lock_file
           )
         end
+
+        it "passes YARN_NPM_MINIMAL_AGE_GATE=0 to yarn commands in run_yarn_berry_subdependency_updater" do
+          allow(File).to receive(:read).and_return("")
+          allow(Dependabot::NpmAndYarn::NativeHelpers).to receive(:run_yarn_audit_fix_command).and_return("")
+
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_commands) do |*_commands, **kwargs|
+            expect(kwargs[:env]).to include("YARN_NPM_MINIMAL_AGE_GATE" => "0")
+            ""
+          end
+
+          yarn_lock_file = files.find { |f| f.name == "yarn.lock" }
+          updater.send(:run_yarn_berry_subdependency_updater, yarn_lock: yarn_lock_file)
+        end
       end
 
       context "when Yarn does not support npmMinimalAgeGate (< 4.10.0)" do
