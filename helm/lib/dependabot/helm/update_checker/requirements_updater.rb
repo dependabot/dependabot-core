@@ -201,7 +201,12 @@ module Dependabot
               T.must(latest_resolvable_version)
             )
 
-            req_string.sub(original_upper, new_upper_bound.to_s)
+            # Anchor the substitution to the upper-bound operator (`<`/`<=`) or
+            # hyphen so it can't replace an earlier lower-bound operand that
+            # happens to share the same version string.
+            req_string.sub(/(<=?\s*|\s-\s+)#{Regexp.escape(original_upper)}/) do
+              "#{Regexp.last_match(1)}#{new_upper_bound}"
+            end
           else
             req_string + " || ^#{T.must(latest_resolvable_version)}"
           end
