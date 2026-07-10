@@ -1108,4 +1108,57 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(described_class.higher_release_age_gate(10_000, Float::INFINITY)).to be_nil
     end
   end
+
+  describe "::max_configured_release_age" do
+    def file(name, content)
+      Dependabot::DependencyFile.new(name: name, content: content)
+    end
+
+    let(:npmrc_setting) do
+      described_class::ReleaseAgeGateSetting.new(filename: ".npmrc", key: "min-release-age", separator: "=")
+    end
+    let(:pnpm_settings) do
+      [
+        described_class::ReleaseAgeGateSetting.new(
+          filename: "pnpm-workspace.yaml", key: "minimumReleaseAge", separator: ":"
+        ),
+        described_class::ReleaseAgeGateSetting.new(
+          filename: ".npmrc", key: "minimum-release-age", separator: "="
+        )
+      ]
+    end
+
+    it "returns nil when no file matches a setting" do
+      files = [file("package.json", "{}")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to be_nil
+    end
+
+    it "returns nil when the matching file does not set the key" do
+      files = [file(".npmrc", "registry=https://example.com\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to be_nil
+    end
+
+    it "parses a bare integer value" do
+      files = [file(".npmrc", "min-release-age=30\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(30)
+    end
+
+    it "returns Float::INFINITY for a present-but-non-numeric value" do
+      files = [file(".npmrc", "min-release-age=7d\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(Float::INFINITY)
+    end
+
+    it "returns the largest value across multiple matching files" do
+      files = [
+        file("pnpm-workspace.yaml", "minimumReleaseAge: 60\n"),
+        file(".npmrc", "minimum-release-age=120\n")
+      ]
+      expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(120)
+    end
+
+    it "matches the key/separator per setting (YAML colon vs npmrc equals)" do
+      files = [file("pnpm-workspace.yaml", "minimumReleaseAge: 45\n")]
+      expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(45)
+    end
+  end
 end

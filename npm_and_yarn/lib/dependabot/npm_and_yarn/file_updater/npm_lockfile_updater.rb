@@ -467,16 +467,10 @@ module Dependabot
         # never overridden by the cooldown floor.
         sig { returns(T.nilable(T.any(Integer, Float))) }
         def npmrc_min_release_age
-          values = dependency_files.filter_map do |file|
-            next unless File.basename(file.name) == ".npmrc"
-
-            content = file.content.to_s
-            next unless content.match?(/^\s*min-release-age\s*=/)
-
-            match = content.match(/^\s*min-release-age\s*=\s*(\d+)\s*$/)
-            match ? T.must(match[1]).to_i : Float::INFINITY
-          end
-          values.max
+          Helpers.max_configured_release_age(
+            dependency_files,
+            [Helpers::ReleaseAgeGateSetting.new(filename: ".npmrc", key: "min-release-age", separator: "=")]
+          )
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(String) }

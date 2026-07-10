@@ -306,22 +306,17 @@ module Dependabot
         # user gate is never overridden by the cooldown floor.
         sig { returns(T.nilable(T.any(Integer, Float))) }
         def pnpm_configured_minimum_release_age
-          dependency_files.filter_map { |file| configured_minimum_release_age_minutes(file) }.max
-        end
-
-        sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T.any(Integer, Float))) }
-        def configured_minimum_release_age_minutes(file)
-          content = file.content.to_s
-          presence, value = case File.basename(file.name)
-                            when "pnpm-workspace.yaml"
-                              [/^\s*minimumReleaseAge\s*:/, /^\s*minimumReleaseAge\s*:\s*(\d+)\s*$/]
-                            when ".npmrc"
-                              [/^\s*minimum-release-age\s*=/, /^\s*minimum-release-age\s*=\s*(\d+)\s*$/]
-                            end
-          return nil unless presence && content.match?(presence)
-
-          match = content.match(T.must(value))
-          match ? T.must(match[1]).to_i : Float::INFINITY
+          Helpers.max_configured_release_age(
+            dependency_files,
+            [
+              Helpers::ReleaseAgeGateSetting.new(
+                filename: "pnpm-workspace.yaml", key: "minimumReleaseAge", separator: ":"
+              ),
+              Helpers::ReleaseAgeGateSetting.new(
+                filename: ".npmrc", key: "minimum-release-age", separator: "="
+              )
+            ]
+          )
         end
 
         # Tries `pnpm update --depth Infinity <dep>` for each dependency as a

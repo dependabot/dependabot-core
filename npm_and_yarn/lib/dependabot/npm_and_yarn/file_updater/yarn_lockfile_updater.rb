@@ -424,16 +424,10 @@ module Dependabot
         # gate is never overridden by the cooldown floor.
         sig { returns(T.nilable(T.any(Integer, Float))) }
         def yarnrc_minimal_age_gate
-          values = dependency_files.filter_map do |file|
-            next unless File.basename(file.name) == ".yarnrc.yml"
-
-            content = file.content.to_s
-            next unless content.match?(/^\s*npmMinimalAgeGate\s*:/)
-
-            match = content.match(/^\s*npmMinimalAgeGate\s*:\s*(\d+)\s*$/)
-            match ? T.must(match[1]).to_i : Float::INFINITY
-          end
-          values.max
+          Helpers.max_configured_release_age(
+            dependency_files,
+            [Helpers::ReleaseAgeGateSetting.new(filename: ".yarnrc.yml", key: "npmMinimalAgeGate", separator: ":")]
+          )
         end
 
         sig { returns(String) }

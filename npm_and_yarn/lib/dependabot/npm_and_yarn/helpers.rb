@@ -95,6 +95,44 @@ module Dependabot
         cooldown
       end
 
+      # Describes where a native release-age gate can be configured: the file it
+      # may appear in, the setting key, and the separator between key and value
+      # ("=" for npmrc/ini-style files, ":" for YAML). Passed to
+      # `max_configured_release_age` so each ecosystem parses its user-configured
+      # gate through the same logic.
+      class ReleaseAgeGateSetting < T::Struct
+        const :filename, String
+        const :key, String
+        const :separator, String
+      end
+
+      # The largest explicitly-configured native release-age gate across the repo's
+      # dependency files, or nil when none is set. Each file whose basename matches
+      # one of `settings` is parsed for a bare integer value; a present-but-non-
+      # numeric value is reported as Float::INFINITY so an explicit user gate is
+      # never overridden by the cooldown floor (see `higher_release_age_gate`).
+      sig do
+        params(
+          dependency_files: T::Array[DependencyFile],
+          settings: T::Array[ReleaseAgeGateSetting]
+        ).returns(T.nilable(T.any(Integer, Float)))
+      end
+      def self.max_configured_release_age(dependency_files, settings)
+        values = dependency_files.filter_map do |file|
+          setting = settings.find { |candidate| candidate.filename == File.basename(file.name) }
+          next unless setting
+
+          content = file.content.to_s
+          key = Regexp.escape(setting.key)
+          separator = Regexp.escape(setting.separator)
+          next unless content.match?(/^\s*#{key}\s*#{separator}/)
+
+          match = content.match(/^\s*#{key}\s*#{separator}\s*(\d+)\s*$/)
+          match ? T.must(match[1]).to_i : Float::INFINITY
+        end
+        values.max
+      end
+
       sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
       def self.npm_version_numeric(lockfile)
         detected_npm_version = detect_npm_version(lockfile)
