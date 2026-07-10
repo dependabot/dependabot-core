@@ -3,6 +3,8 @@
 
 require "sorbet-runtime"
 
+require "dependabot/dependency_file"
+
 module Dependabot
   module DependencyGraphers
     # This is a small value class that specifies the information we expect to be returned for each
