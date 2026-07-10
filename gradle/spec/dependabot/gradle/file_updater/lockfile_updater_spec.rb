@@ -533,6 +533,122 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
             FileUtils.rm_rf(outside_root)
           end
         end
+
+        it "falls back to system gradle when the build path escapes the temporary workspace" do
+          require "tmpdir"
+
+          outside_root = Dir.mktmpdir("outside-gradle-wrapper")
+          outside_wrapper = File.join(outside_root, "gradlew")
+          File.write(outside_wrapper, "#!/bin/sh\necho outside\n")
+          FileUtils.chmod("+x", outside_wrapper)
+
+          escaped_settings = Dependabot::DependencyFile.new(
+            name: "settings.gradle",
+            directory: "/gradle-lockfile/sub/../../../../shared",
+            content: "include(':app')\n"
+          )
+
+          escaped_buildfile = Dependabot::DependencyFile.new(
+            name: "app/build.gradle",
+            directory: "/gradle-lockfile/sub/../../../../shared",
+            content: "plugins { id 'java' }\n"
+          )
+
+          escaped_root_lockfile = Dependabot::DependencyFile.new(
+            name: "gradle.lockfile",
+            directory: "/gradle-lockfile/sub/../../../../shared",
+            content: "# old root lockfile\n"
+          )
+
+          escaped_app_lockfile = Dependabot::DependencyFile.new(
+            name: "app/gradle.lockfile",
+            directory: "/gradle-lockfile/sub/../../../../shared",
+            content: "# old app lockfile\n"
+          )
+
+          begin
+            stub_const("Dependabot::Utils::BUMP_TMP_DIR_PATH", outside_root)
+
+            allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
+              observed_commands << command
+              File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+              FileUtils.mkdir_p(File.join(cwd, "app"))
+              File.write(File.join(cwd, "app/gradle.lockfile"), "# updated app lockfile\n")
+            end
+
+            updater = described_class.new(
+              dependency_files: [escaped_settings, escaped_buildfile, escaped_root_lockfile, escaped_app_lockfile]
+            )
+            updater.update_lockfiles(escaped_buildfile)
+
+            expect(observed_commands.last).to start_with("gradle ")
+          ensure
+            FileUtils.rm_rf(outside_root)
+          end
+        end
+      end
+
+      context "when the build path contains parent traversal" do
+        let(:traversal_settings) do
+          Dependabot::DependencyFile.new(
+            name: "settings.gradle",
+            directory: "/gradle-lockfile/sub/../../build-logic",
+            content: "include(':app')\n"
+          )
+        end
+
+        let(:traversal_buildfile) do
+          Dependabot::DependencyFile.new(
+            name: "app/build.gradle",
+            directory: "/gradle-lockfile/sub/../../build-logic",
+            content: "plugins { id 'java' }\n"
+          )
+        end
+
+        let(:traversal_root_lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "gradle.lockfile",
+            directory: "/gradle-lockfile/sub/../../build-logic",
+            content: "# old root lockfile\n"
+          )
+        end
+
+        let(:traversal_app_lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "app/gradle.lockfile",
+            directory: "/gradle-lockfile/sub/../../build-logic",
+            content: "# old app lockfile\n"
+          )
+        end
+
+        let(:sibling_gradlew) do
+          Dependabot::DependencyFile.new(
+            name: "gradlew",
+            directory: "/gradle-lockfile/sub",
+            content: "#!/bin/sh\necho sibling wrapper\n"
+          )
+        end
+
+        let(:dependency_files) do
+          [sibling_gradlew, traversal_settings, traversal_buildfile, traversal_root_lockfile, traversal_app_lockfile]
+        end
+
+        let(:observed_commands) { [] }
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
+            observed_commands << command
+            File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+            FileUtils.mkdir_p(File.join(cwd, "app"))
+            File.write(File.join(cwd, "app/gradle.lockfile"), "# updated app lockfile\n")
+          end
+        end
+
+        it "ignores wrappers that are only reachable through lexical parent traversal" do
+          lockfile_updater.update_lockfiles(traversal_buildfile)
+
+          expect(observed_commands.last).to start_with("gradle ")
+        end
       end
     end
   end

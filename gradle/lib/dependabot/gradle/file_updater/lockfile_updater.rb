@@ -223,8 +223,11 @@ systemProp.https.proxyPort=#{https_proxy_port}"
 
         sig { params(cwd: String, workspace_root: String).returns(String) }
         def gradle_executable_for(cwd:, workspace_root:)
-          cwd_path = Pathname.new(cwd)
-          workspace_root_path = Pathname.new(workspace_root)
+          cwd_path = Pathname.new(cwd).expand_path
+          workspace_root_path = Pathname.new(workspace_root).expand_path
+
+          return "gradle" unless cwd_path == workspace_root_path || cwd_path.to_s.start_with?("#{workspace_root_path}/")
+
           search_path = cwd_path
 
           loop do
