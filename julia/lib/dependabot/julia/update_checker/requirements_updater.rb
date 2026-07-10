@@ -69,8 +69,8 @@ module Dependabot
 
       sig { params(requirement_string: String, target_version: Dependabot::Julia::Version).returns(String) }
       def updated_version_requirement(requirement_string, target_version)
-        # Don't update range requirements (e.g., "0.34-0.35") - these are explicit manual constraints
-        return requirement_string if requirement_string.match?(/^\d+(?:\.\d+)*-\d+(?:\.\d+)*$/)
+        # Don't update range requirements (e.g., "0.34 - 0.35") - these are explicit manual constraints
+        return requirement_string if requirement_string.match?(Dependabot::Julia::Requirement::HYPHEN_RANGE_PATTERN)
 
         # Parse all constraints in the requirement string
         reqs = Dependabot::Julia::Requirement.requirements_array(requirement_string)

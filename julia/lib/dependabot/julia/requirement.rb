@@ -11,7 +11,7 @@ module Dependabot
       def self.requirements_array(requirement_string)
         # Julia version specifiers can be:
         # - Exact: "1.2.3"
-        # - Range: "1.2-1.3", ">=1.0, <2.0"
+        # - Range: "1.2 - 1.3", ">=1.0, <2.0"
         # - Caret: "^1.2" (compatible within major version)
         # - Tilde: "~1.2.3" (compatible within minor version)
         # Note: Missing compat entry (nil/empty) means any version is acceptable
@@ -35,6 +35,13 @@ module Dependabot
         # Separate constraints (e.g., "^1.10, 2" or "0.34, 0.35") use version specs
         # (with or without ^/~) as OR conditions - any matching spec is acceptable.
         # Only treat as compound if ALL constraints use explicit comparison operators.
+        #
+        # NOTE: Julia's Pkg unions *all* comma-separated compat specs, including
+        # operator-style ones, so ">= 1.0, < 2.0" is `*` to the resolver. We keep
+        # intersection semantics for operator-style lists anyway because this
+        # method also parses Dependabot ignore conditions (e.g. ">= 2.a, < 3"),
+        # which are always intersections; treating those as unions would make
+        # every ignore condition match all versions.
         return false if constraints.length <= 1
 
         constraints.all? { |c| c.match?(/^[<>=]/) }
@@ -65,11 +72,15 @@ module Dependabot
         version
       end
 
+      # Julia hyphen ranges require whitespace around the hyphen ("1.2 - 3.4");
+      # without spaces the hyphen introduces a prerelease tag instead.
+      HYPHEN_RANGE_PATTERN = T.let(/^(\d+(?:\.\d+)*)\s+-\s+(\d+(?:\.\d+)*)$/, Regexp)
+
       sig { params(constraint: String).returns(T::Array[String]) }
       def self.normalize_julia_constraint(constraint)
         return normalize_caret_constraint(constraint) if constraint.match?(/^\^(\d+(?:\.\d+)*)/)
         return normalize_tilde_constraint(constraint) if constraint.match?(/^~(\d+(?:\.\d+)*)/)
-        return normalize_range_constraint(constraint) if constraint.match?(/^(\d+(?:\.\d+)*)-(\d+(?:\.\d+)*)$/)
+        return normalize_range_constraint(constraint) if constraint.match?(HYPHEN_RANGE_PATTERN)
 
         # Julia treats plain version numbers as caret constraints (implicit ^)
         # e.g., "1.2.3" is equivalent to "^1.2.3" which means ">= 1.2.3, < 2.0.0"
@@ -134,18 +145,21 @@ module Dependabot
 
       sig { params(constraint: String).returns(T::Array[String]) }
       private_class_method def self.normalize_range_constraint(constraint)
-        start_version, end_version = constraint.split("-")
-        end_parts = T.must(end_version).split(".")
+        match = T.must(constraint.match(HYPHEN_RANGE_PATTERN))
+        start_version = T.must(match[1])
+        end_version = T.must(match[2])
+        end_parts = end_version.split(".")
 
-        next_minor = if end_parts.length >= 2
-                       major = T.must(end_parts[0])
-                       minor = T.must(end_parts[1])
-                       "#{major}.#{minor.to_i + 1}.0"
-                     else
-                       "#{T.must(end_parts[0]).to_i + 1}.0.0"
-                     end
+        # Julia hyphen-range semantics (https://pkgdocs.julialang.org/v1/compatibility/):
+        # a fully-specified end is inclusive ("1.2.3 - 4.5.6" admits exactly 4.5.6),
+        # while a partial end acts as a wildcard ("0.2 - 0.5" means up to 0.5.*).
+        upper_bound = case end_parts.length
+                      when 1 then "< #{T.must(end_parts[0]).to_i + 1}.0.0"
+                      when 2 then "< #{T.must(end_parts[0])}.#{T.must(end_parts[1]).to_i + 1}.0"
+                      else "<= #{end_version}"
+                      end
 
-        [">= #{start_version}", "< #{next_minor}"]
+        [">= #{start_version}", upper_bound]
       end
     end
   end

@@ -86,11 +86,20 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
       end
 
       context "with range requirement" do
-        let(:requirement_string) { "0.34-0.35" }
+        let(:requirement_string) { "0.34 - 0.35" }
         let(:target_version) { "0.36.0" }
 
         it "keeps range unchanged" do
-          expect(result).to eq("0.34-0.35")
+          expect(result).to eq("0.34 - 0.35")
+        end
+      end
+
+      context "with a union containing a range" do
+        let(:requirement_string) { "0.34 - 0.35, 1" }
+        let(:target_version) { "2.0.0" }
+
+        it "appends a spec for the target version" do
+          expect(result).to eq("0.34 - 0.35, 1, 2.0")
         end
       end
     end
