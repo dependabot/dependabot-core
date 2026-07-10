@@ -362,73 +362,75 @@ module Dependabot
         )
       end
 
+      # Matches a [compat] table header, tolerating indentation and a trailing
+      # comment ("[compat]  # pins")
+      COMPAT_HEADER_PATTERN = T.let(/^\s*\[compat\]\s*(?:#.*)?$/, Regexp)
+
       sig { params(content: String, dependency_name: String, new_requirement: String).returns(String) }
       def update_dependency_requirement_in_content(content, dependency_name, new_requirement)
-        # Extract the [compat] section to update it specifically
-        # The regex handles files with or without trailing newlines
-        compat_section_match = content.match(/^\[compat\]\s*\n((?:(?!\[)[^\n]*(?:\n|\z))*?)(?=^\[|\z)/m)
+        lines = content.lines
+        header_idx = lines.index { |line| line.match?(COMPAT_HEADER_PATTERN) }
 
-        if compat_section_match
-          compat_section = T.must(compat_section_match[1])
-          # Pattern to match the dependency in the compat section
-          pattern = /^(\s*#{Regexp.escape(dependency_name)}\s*=\s*)(?:"[^"]*"|'[^']*'|[^\s#\n]+)(\s*(?:\#.*)?)$/
-
-          if compat_section.match?(pattern)
-            # Replace existing entry in compat section
-            updated_compat = compat_section.gsub(pattern, "\\1\"#{new_requirement}\"\\2")
-            content.sub(T.must(compat_section_match[0]), "[compat]\n#{updated_compat}")
-          else
-            # Add new entry to existing [compat] section
-            add_compat_entry_to_content(content, dependency_name, new_requirement)
-          end
-        else
-          # Add new [compat] section
-          add_compat_entry_to_content(content, dependency_name, new_requirement)
+        unless header_idx
+          # Add a new [compat] section at the end of the file
+          separator = content.end_with?("\n") ? "" : "\n"
+          return "#{content}#{separator}\n[compat]\n#{dependency_name} = \"#{new_requirement}\"\n"
         end
-      end
 
-      sig { params(content: String, dependency_name: String, requirement: String).returns(String) }
-      def add_compat_entry_to_content(content, dependency_name, requirement)
-        if content.match?(/^\s*\[compat\]\s*$/m)
-          compat_section_match = content.match(/^\[compat\]\s*\n((?:(?!\[)[^\n]*(?:\n|\z))*?)(?=^\[|\z)/m)
-          return content unless compat_section_match
+        section_end = ((header_idx + 1)...lines.length).find { |i| T.must(lines[i]).match?(/^\s*\[/) } ||
+                      lines.length
 
-          compat_section = T.must(compat_section_match[1])
-          entries = parse_compat_entries(compat_section)
-          entries[dependency_name] = requirement
-          sorted_entries = sort_compat_entries(entries)
-          new_compat_section = build_compat_section(sorted_entries)
+        # Replace an existing entry in place, preserving surrounding lines
+        entry_pattern =
+          /^(\s*#{Regexp.escape(dependency_name)}\s*=\s*)(?:"[^"]*"|'[^']*'|[^\s#\n]+)(\s*(?:\#.*)?)$/
+        ((header_idx + 1)...section_end).each do |i|
+          line = T.must(lines[i])
+          next unless line.match?(entry_pattern)
 
-          content.sub(T.must(compat_section_match[0]), "[compat]\n#{new_compat_section}")
-        else
-          content + "\n[compat]\n#{dependency_name} = \"#{requirement}\"\n"
+          lines[i] = line.sub(entry_pattern) { "#{Regexp.last_match(1)}\"#{new_requirement}\"#{Regexp.last_match(2)}" }
+          return lines.join
         end
+
+        insert_compat_entry(lines, header_idx, section_end, dependency_name, new_requirement)
       end
 
-      sig { params(compat_section: String).returns(T::Hash[String, String]) }
-      def parse_compat_entries(compat_section)
-        entries = {}
-        compat_section.each_line do |line|
-          next if line.strip.empty? || line.strip.start_with?("#")
+      # Insert a new compat entry in alphabetical position without rewriting
+      # the rest of the section, so comments, blank lines and any custom
+      # ordering of the existing entries survive.
+      sig do
+        params(
+          lines: T::Array[String],
+          header_idx: Integer,
+          section_end: Integer,
+          dependency_name: String,
+          requirement: String
+        ).returns(String)
+      end
+      def insert_compat_entry(lines, header_idx, section_end, dependency_name, requirement)
+        insert_at = T.let(nil, T.nilable(Integer))
 
-          match = line.match(/^\s*([^=\s]+)\s*=\s*(.+?)(?:\s*#.*)?$/)
-          next unless match
+        ((header_idx + 1)...section_end).each do |i|
+          key = T.must(lines[i])[/^\s*([^#\s=][^=\s]*)\s*=/, 1]
+          next unless key && key > dependency_name
 
-          key = T.must(match[1]).strip
-          value = T.must(match[2]).strip.gsub(/^["']|["']$/, "")
-          entries[key] = value
+          insert_at = i
+          # Comment lines directly above an entry belong to it
+          insert_at -= 1 while insert_at > header_idx + 1 && T.must(lines[insert_at - 1]).strip.start_with?("#")
+          break
         end
-        entries
-      end
 
-      sig { params(entries: T::Hash[String, String]).returns(T::Hash[String, String]) }
-      def sort_compat_entries(entries)
-        entries.sort.to_h
-      end
+        unless insert_at
+          # Append at the end of the section, before any trailing blank lines
+          insert_at = section_end
+          insert_at -= 1 while insert_at > header_idx + 1 && T.must(lines[insert_at - 1]).strip.empty?
+        end
 
-      sig { params(entries: T::Hash[String, String]).returns(String) }
-      def build_compat_section(entries)
-        entries.map { |name, requirement| "#{name} = \"#{requirement}\"\n" }.join
+        # The preceding line may lack a newline when the section ends the file
+        prev = lines[insert_at - 1]
+        lines[insert_at - 1] = "#{prev}\n" if prev && !prev.end_with?("\n")
+
+        lines.insert(insert_at, "#{dependency_name} = \"#{requirement}\"\n")
+        lines.join
       end
     end
   end
