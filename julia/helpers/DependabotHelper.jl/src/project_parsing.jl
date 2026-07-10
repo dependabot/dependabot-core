@@ -41,10 +41,12 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
             # Get project information
             project_info = ctx.env.project
 
-            # Extract basic information
+            # Extract basic information. Non-package environments (a plain
+            # [deps]/[compat] Project.toml) have no name/version/uuid; emit
+            # JSON null rather than the literal string "nothing".
             name = project_info.name
-            version = string(project_info.version)
-            uuid = string(project_info.uuid)
+            version = project_info.version === nothing ? nothing : string(project_info.version)
+            uuid = project_info.uuid === nothing ? nothing : string(project_info.uuid)
 
             # Note: Following CompatHelper.jl's approach, we don't use Manifest.toml
             # for version information. Dependabot should update based on [compat]

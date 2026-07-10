@@ -751,13 +751,16 @@ ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
         result = @test_nowarn DependabotHelper.get_version_release_date("JSON", test_version, json_uuid)
         @test result["release_date"] == "2025-10-17T01:08:11"
 
-        # Test get_version_release_date with non-existent package
+        # A non-existent package yields no date rather than an error
         result = @test_nowarn DependabotHelper.get_version_release_date("NonExistentPackage12345", "1.0.0", "00000000-0000-0000-0000-000000000000")
-        @test haskey(result, "error")
+        @test !haskey(result, "error")
+        @test result["release_date"] === nothing
 
-        # Test get_version_release_date with invalid version
+        # An unknown version yields no date rather than an error (dates of
+        # yanked or old locked versions remain queryable)
         result = @test_nowarn DependabotHelper.get_version_release_date("JSON", "999.999.999", json_uuid)
-        @test haskey(result, "error")
+        @test !haskey(result, "error")
+        @test result["release_date"] === nothing
 
         # Test helper functions for General registry
         @testset "General Registry Helper Functions" begin
@@ -873,11 +876,37 @@ ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
         result = @test_nowarn DependabotHelper.extract_package_metadata_from_url("JSON", "invalid-url")
         @test haskey(result, "error") || haskey(result, "source_url")
 
-        # Test with a GitHub URL format that might be expected
-        github_url = "https://github.com/JuliaIO/JSON.jl.git"
-        result = @test_nowarn DependabotHelper.extract_package_metadata_from_url("JSON", github_url)
-        # This should either succeed or fail gracefully
+        # Repo names keep their ".jl" suffix; only trailing ".git" is stripped
+        for url in [
+            "https://github.com/JuliaIO/JSON.jl.git",
+            "https://github.com/JuliaIO/JSON.jl",
+            "git@github.com:JuliaIO/JSON.jl.git"
+        ]
+            result = @test_nowarn DependabotHelper.extract_package_metadata_from_url("JSON", url)
+            @test result["owner"] == "JuliaIO"
+            @test result["repo"] == "JSON.jl"
+        end
+    end
+
+    @testset "parse_project of non-package environment" begin
+        mktempdir() do tmpdir
+            write(joinpath(tmpdir, "Project.toml"), """
+            [deps]
+            Example = "7876af07-990d-54b4-ab0e-23690620f79a"
+            """)
+            result = DependabotHelper.parse_project(joinpath(tmpdir, "Project.toml"))
+            @test !haskey(result, "error")
+            @test result["version"] === nothing
+            @test result["uuid"] === nothing
+        end
+    end
+
+    @testset "get_version_release_date with null uuid" begin
+        result = @test_nowarn DependabotHelper.get_version_release_date(
+            Dict{String,Any}("package_name" => "JSON", "version" => "0.21.4", "package_uuid" => nothing)
+        )
         @test isa(result, Dict)
+        @test !haskey(result, "error")
     end
 
     @testset "Args Wrapper Function Tests" begin
