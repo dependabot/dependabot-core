@@ -15,6 +15,10 @@ module Dependabot
       require_relative "file_updater/declaration_finder"
       require_relative "file_updater/property_value_updater"
 
+      IndentConfig = T.type_alias do
+        { base: String, is_tabs: T::Boolean, levels: T::Hash[Symbol, String] }
+      end
+
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = T.let(dependency_files.dup, T::Array[Dependabot::DependencyFile])
@@ -86,7 +90,7 @@ module Dependabot
       sig do
         params(
           pomfiles: T::Array[Dependabot::DependencyFile],
-          req: T::Hash[Symbol, T.untyped]
+          req: Dependabot::DependencyRequirement
         )
           .returns(T::Array[Dependabot::DependencyFile])
       end
@@ -105,8 +109,8 @@ module Dependabot
         params(
           dependency: Dependabot::Dependency,
           file: Dependabot::DependencyFile,
-          previous_req: T::Hash[Symbol, T.untyped],
-          requirement: T::Hash[Symbol, T.untyped]
+          previous_req: Dependabot::DependencyRequirement,
+          requirement: Dependabot::DependencyRequirement
         )
           .returns(Dependabot::DependencyFile)
       end
@@ -137,7 +141,7 @@ module Dependabot
         params(
           content: String,
           dependency: Dependabot::Dependency,
-          requirement: T::Hash[Symbol, T.untyped]
+          requirement: Dependabot::DependencyRequirement
         ).returns(String)
       end
       def add_new_declaration(content, dependency, requirement) # rubocop:disable Metrics/AbcSize
@@ -190,7 +194,7 @@ module Dependabot
         params(
           dep: Dependabot::Dependency,
           pom: Dependabot::DependencyFile,
-          req: T::Hash[Symbol, T.untyped]
+          req: Dependabot::DependencyRequirement
         )
           .returns(Dependabot::DependencyFile)
       end
@@ -216,7 +220,7 @@ module Dependabot
       sig do
         params(
           dependency: Dependabot::Dependency,
-          requirement: T::Hash[Symbol, T.untyped]
+          requirement: Dependabot::DependencyRequirement
         )
           .returns(T::Array[String])
       end
@@ -227,7 +231,7 @@ module Dependabot
       sig do
         params(
           dependency: Dependabot::Dependency,
-          requirement: T::Hash[Symbol, T.untyped]
+          requirement: Dependabot::DependencyRequirement
         )
           .returns(DeclarationFinder)
       end
@@ -244,8 +248,8 @@ module Dependabot
       sig do
         params(
           old_declaration: String,
-          previous_req: T::Hash[Symbol, T.untyped],
-          requirement: T::Hash[Symbol, T.untyped]
+          previous_req: Dependabot::DependencyRequirement,
+          requirement: Dependabot::DependencyRequirement
         )
           .returns(String)
       end
@@ -269,7 +273,7 @@ module Dependabot
       sig do
         params(
           project: REXML::Element,
-          indent_config: T::Hash[Symbol, T.untyped]
+          indent_config: IndentConfig
         ).returns([REXML::Element, T::Boolean])
       end
       def ensure_dependency_management_element(project, indent_config)
@@ -288,7 +292,7 @@ module Dependabot
       sig do
         params(
           dependency_management: REXML::Element,
-          indent_config: T::Hash[Symbol, T.untyped]
+          indent_config: IndentConfig
         ).returns([REXML::Element, T::Boolean])
       end
       def ensure_dependencies_element(dependency_management, indent_config)
@@ -307,7 +311,7 @@ module Dependabot
       sig do
         params(
           dependency: Dependabot::Dependency,
-          requirement: T::Hash[Symbol, T.untyped],
+          requirement: Dependabot::DependencyRequirement,
           dependencies_node: REXML::Element,
           current_indentation_level: String,
           parent_indentation_level: String
@@ -343,7 +347,7 @@ module Dependabot
         end
       end
 
-      sig { params(project: REXML::Element).returns(T::Hash[Symbol, T.untyped]) }
+      sig { params(project: REXML::Element).returns(IndentConfig) }
       def detect_indentation_config(project)
         sample_indent = project.children.find do |child|
           child.to_s.match?(/\n(\t+| +)$/)
