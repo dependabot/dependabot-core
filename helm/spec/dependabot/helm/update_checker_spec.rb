@@ -503,6 +503,18 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
           expect(result.map { |r| r["version"] }).to contain_exactly("0.5.0", "1.5.0", "2.5.0")
         end
       end
+
+      context "with an OR of exact pins" do
+        # Regression: an exact branch has a real floor (its version), even though
+        # min_version reports nil for "=", so the anchor is the lowest pin (1.0.0)
+        # and 0.5.0 is filtered out.
+        let(:version) { "1.0.0 || 2.0.0" }
+
+        it "anchors on the lowest pinned version" do
+          result = checker.send(:filter_valid_releases, releases)
+          expect(result.map { |r| r["version"] }).to contain_exactly("1.5.0", "2.5.0")
+        end
+      end
     end
   end
 

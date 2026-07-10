@@ -130,11 +130,20 @@ module Dependabot
       # accepts Helm operands.
       sig { params(raw: String).returns(Dependabot::Version) }
       def min_bound_anchor(raw)
-        floors = Helm::Requirement.requirements_array(raw).map(&:min_version)
+        floors = Helm::Requirement.requirements_array(raw).map { |req| branch_lower_bound(req) }
+        # A nil floor means some OR branch permits arbitrarily low versions
+        # (an upper-only or exclusion branch), so anchor at 0.
         return version_class.new("0") if floors.any?(&:nil?)
 
-        floor = floors.compact.min
+        floor = floors.min
         floor ? version_class.new(floor.to_s) : version_class.new("0")
+      end
+
+      # The lowest version an OR branch permits: its >=/>/~> lower bound, or an
+      # exact (=) pin's version. Nil when the branch has no lower bound (</<=/!=).
+      sig { params(req: Dependabot::Requirement).returns(T.nilable(Gem::Version)) }
+      def branch_lower_bound(req)
+        req.min_version || req.requirements.filter_map { |op, v| v if op == "=" }.min
       end
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
