@@ -6,6 +6,7 @@ require "sorbet-runtime"
 
 require "dependabot/dependency_file"
 require "dependabot/dependency_graphers/base"
+require "dependabot/python/pip_compile_file_matcher"
 require "dependabot/python/shared_file_fetcher"
 
 module Dependabot
@@ -103,31 +104,32 @@ module Dependabot
         attr_reader :dependency_files
 
         # The set of files that act as the owning manifest for a layer: every requirements `.txt` that looks
-        # like a real manifest, plus any `.in` file that has no compiled `.txt` counterpart.
+        # like a real manifest or is a pip-compile compiled output (`--output-file` header or a matching `.in`
+        # basename), plus any `.in` file that is not the compiled input of one of those `.txt` files.
+        #
+        # Using PipCompileFileMatcher (rather than filename stems alone) means a pip-compile input compiled to a
+        # differently-named output - e.g. `base.in` -> `requirements.txt` - is attributed to its compiled `.txt`
+        # instead of wrongly surfacing the `.in` as its own separate primary.
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def layer_primaries
           txt_primaries = requirement_family_files.select do |f|
-            f.name.end_with?(".txt") && self.class.manifest_txt_filename?(f.name)
+            f.name.end_with?(".txt") &&
+              (self.class.manifest_txt_filename?(f.name) || pip_compile_matcher.lockfile_for_pip_compile_file?(f))
           end
-          compiled_stems = txt_primaries.map { |f| requirements_stem(f.name) }
 
-          in_primaries = requirement_family_files.select do |f|
-            f.name.end_with?(".in") && !compiled_stems.include?(requirements_stem(f.name))
-          end
+          compiled_inputs = txt_primaries.filter_map { |f| pip_compile_matcher.manifest_for_pip_compile_lockfile(f) }
+
+          in_primaries = in_files.reject { |f| compiled_inputs.include?(f) }
 
           txt_primaries + in_primaries
         end
 
-        # All the files a single layer needs to parse: the primary, its paired `.in`/`.txt`, constraints
-        # files and any `-r`/`-c` referenced siblings (added as support files so they never win attribution).
+        # All the files a single layer needs to parse: the primary, its compiled input `.in` (for a pip-compile
+        # `.txt` output), constraints files and any `-r`/`-c` referenced siblings (added as support files so they
+        # never win attribution).
         sig { params(primary: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
         def files_for_layer(primary)
-          stem = requirements_stem(primary.name)
-
-          paired = requirement_family_files.select do |f|
-            f != primary && requirements_stem(f.name) == stem
-          end
-
+          paired = compiled_input_for(primary)
           referenced = referenced_requirement_files(primary)
 
           support = (paired + referenced + constraints_files).uniq.map do |f|
@@ -137,11 +139,37 @@ module Dependabot
           [primary] + support
         end
 
+        # The pip-compile input `.in` that produced a `.txt` primary, if any. `.in` primaries are orphans (they
+        # have no compiled `.txt`), so they have no paired input to add.
+        sig { params(primary: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
+        def compiled_input_for(primary)
+          return [] unless primary.name.end_with?(".txt")
+
+          input = pip_compile_matcher.manifest_for_pip_compile_lockfile(primary)
+          input ? [input] : []
+        end
+
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def requirement_family_files
           @requirement_family_files ||= T.let(
             dependency_files.select { |f| f.name.end_with?(".txt", ".in") },
             T.nilable(T::Array[Dependabot::DependencyFile])
+          )
+        end
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def in_files
+          @in_files ||= T.let(
+            requirement_family_files.select { |f| f.name.end_with?(".in") },
+            T.nilable(T::Array[Dependabot::DependencyFile])
+          )
+        end
+
+        sig { returns(PipCompileFileMatcher) }
+        def pip_compile_matcher
+          @pip_compile_matcher ||= T.let(
+            PipCompileFileMatcher.new(in_files),
+            T.nilable(PipCompileFileMatcher)
           )
         end
 
@@ -197,12 +225,6 @@ module Dependabot
             operation: file.operation,
             mode: file.mode
           )
-        end
-
-        # The stem shared by a pip-compile `.in` and its compiled `.txt` (e.g. "base-requirements").
-        sig { params(name: String).returns(String) }
-        def requirements_stem(name)
-          name.sub(/\.(txt|in)\z/, "")
         end
       end
     end

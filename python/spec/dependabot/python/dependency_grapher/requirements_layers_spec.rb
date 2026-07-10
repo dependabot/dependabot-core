@@ -95,6 +95,30 @@ RSpec.describe Dependabot::Python::DependencyGrapher::RequirementsLayers do
       end
     end
 
+    context "with a pip-compile .in compiled to a differently-named .txt" do
+      let(:dependency_files) do
+        [
+          file("base.in", "foo\n"),
+          file(
+            "requirements.txt",
+            "# pip-compile --output-file=requirements.txt base.in\nfoo==1.0\n"
+          )
+        ]
+      end
+
+      it "emits a single group attributed to the compiled .txt (not a second .in primary)" do
+        expect(layers.groups.map { |g| g.primary.name }).to eq(["requirements.txt"])
+      end
+
+      it "includes the compiled input .in as a support file" do
+        group = layers.groups.first
+        in_file = group.files.find { |f| f.name == "base.in" }
+
+        expect(in_file).not_to be_nil
+        expect(in_file).to be_support_file
+      end
+    end
+
     context "with a bare .in that has no compiled .txt" do
       let(:dependency_files) do
         [
