@@ -106,6 +106,7 @@ module Dependabot
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_version_requirement(req)
           current_requirement = req[:requirement]
+          return req if current_requirement.strip == ""
 
           if current_requirement.match?(/(<|-\s)/i)
             # Check every OR alternative, not just the first — a later branch may
@@ -130,27 +131,27 @@ module Dependabot
           T.cast(req.merge(requirement: update_version_string(reqs.first)), Dependabot::DependencyRequirement)
         end
 
+        # Blank, or already permitted by the resolved version, under any strategy.
+        sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
+        def already_satisfied?(req)
+          current_requirement = req[:requirement]
+          return true if current_requirement.strip == ""
+
+          ruby_requirements(current_requirement).any? { |r| r.satisfied_by?(latest_resolvable_version) }
+        end
+
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_version_requirement_if_needed(req)
-          current_requirement = req[:requirement]
-          version = latest_resolvable_version
-          return req if current_requirement.strip == ""
-
-          ruby_reqs = ruby_requirements(current_requirement)
-          return req if ruby_reqs.any? { |r| r.satisfied_by?(version) }
+          return req if already_satisfied?(req)
 
           update_version_requirement(req)
         end
 
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def widen_requirement(req)
+          return req if already_satisfied?(req)
+
           current_requirement = req[:requirement]
-          version = latest_resolvable_version
-          return req if current_requirement.strip == ""
-
-          ruby_reqs = ruby_requirements(current_requirement)
-          return req if ruby_reqs.any? { |r| r.satisfied_by?(version) }
-
           reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
 
           updated_requirement =
@@ -216,12 +217,13 @@ module Dependabot
               else
                 old_parts = old_version.split(".")
                 new_parts = latest.split(".")
-                                  .first(old_parts.count)
-                new_parts.map.with_index do |part, i|
-                  old = old_parts[i]
+                # Iterate the authored segments so the constraint's shape is
+                # preserved even when the latest version has fewer segments
+                # (e.g. "1.2.x" + latest "4.5" -> "4.5.x", not "4.5").
+                old_parts.map.with_index do |old, i|
                   # Preserve an authored wildcard segment, keeping its case
                   # ("1.x" -> "4.x", "1.X" -> "4.X").
-                  old&.match?(/\A[xX]/) ? old : part
+                  old.match?(/\A[xX]/) ? old : (new_parts[i] || "0")
                 end.join(".")
               end
             end
@@ -238,14 +240,22 @@ module Dependabot
           version.segments.map.with_index do |_, index|
             segment_value =
               if index < index_to_update
-                T.cast(version_to_be_permitted.segments[index], Integer)
+                permitted_segment(version_to_be_permitted, index)
               elsif index == index_to_update
-                T.cast(version_to_be_permitted.segments[index], Integer) + 1
+                permitted_segment(version_to_be_permitted, index) + 1
               else
                 0
               end
             segment_value.to_s
           end.join(".")
+        end
+
+        # A version segment as an Integer, treating missing trailing segments as
+        # 0 (the permitted version may have fewer segments than the old bound).
+        sig { params(version: Dependabot::Version, index: Integer).returns(Integer) }
+        def permitted_segment(version, index)
+          seg = version.segments[index]
+          seg.nil? ? 0 : T.cast(seg, Integer)
         end
 
         sig { returns(T.class_of(Helm::Version)) }

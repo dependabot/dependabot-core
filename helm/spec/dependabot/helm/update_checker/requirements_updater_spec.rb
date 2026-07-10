@@ -358,5 +358,57 @@ RSpec.describe Dependabot::Helm::UpdateChecker::RequirementsUpdater do
         expect(updated_req).to eq("^1.0.0")
       end
     end
+
+    context "with LockfileOnly" do
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+      let(:chart_req) { "^1.0.0" }
+      let(:latest_resolvable_version) { "2.0.0" }
+
+      it "leaves the requirement unchanged" do
+        expect(updated_req).to eq("^1.0.0")
+      end
+    end
+
+    context "with a dist-tag / non-numeric constraint" do
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
+      let(:chart_req) { "stable" }
+      let(:latest_resolvable_version) { "2.0.0" }
+
+      it "leaves it untouched" do
+        expect(updated_req).to eq("stable")
+      end
+    end
+
+    context "when the latest version has fewer segments than the constraint" do
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
+      let(:latest_resolvable_version) { "4.5" }
+
+      context "with an x-range" do
+        let(:chart_req) { "1.2.x" }
+
+        it "preserves the wildcard rather than dropping it" do
+          expect(updated_req).to eq("4.5.x")
+        end
+      end
+
+      context "with a widened upper bound" do
+        let(:chart_req) { ">=1.0.0 <1.2.3" }
+        let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+
+        it "does not raise" do
+          expect { updated_req }.not_to raise_error
+        end
+      end
+    end
+
+    context "with an empty constraint (BumpVersions)" do
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
+      let(:chart_req) { "" }
+      let(:latest_resolvable_version) { "1.5.0" }
+
+      it "leaves it unchanged without raising" do
+        expect(updated_req).to eq("")
+      end
+    end
   end
 end

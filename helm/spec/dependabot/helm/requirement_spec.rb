@@ -108,12 +108,9 @@ RSpec.describe Dependabot::Helm::Requirement do
       end
     end
 
+    # Exact +digest parsing/self-satisfaction is covered by the round-trip block
+    # below; these cover the operator-carrying forms it doesn't.
     context "with build metadata / digest (Helm OCI charts)" do
-      it "parses an exact +digest constraint without raising" do
-        expect { described_class.requirements_array("1.0.119807+abc123") }.not_to raise_error
-      end
-
-      it { expect(satisfied?("1.0.119807+abc123", "1.0.119807+abc123")).to be(true) }
       it { expect(satisfied?(">=1.0.0+abc", "1.5.0")).to be(true) }
       it { expect(satisfied?("^1.0.0+abc", "1.5.0")).to be(true) }
       it { expect(satisfied?("^1.0.0+abc", "2.0.0")).to be(false) }

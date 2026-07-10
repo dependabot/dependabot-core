@@ -123,7 +123,7 @@ module Dependabot
           return convert_wildcard_comparator(T.must(m[1]), T.must(m[2]))
         end
 
-        return ">= 0" if req_string.match?(%r{\A[\^~<>=/\s]*[xX*]+\z})
+        return ">= 0" if req_string.match?(/\A[\^~<>=\s]*[xX*]+\z/)
 
         nil
       end
@@ -207,7 +207,7 @@ module Dependabot
           if i < first_non_zero_index then part
           elsif i == first_non_zero_index then (part.to_i + 1).to_s
           elsif i > first_non_zero_index && i == 2 then "0.a"
-          else 0
+          else "0"
           end
         end.join(".")
 

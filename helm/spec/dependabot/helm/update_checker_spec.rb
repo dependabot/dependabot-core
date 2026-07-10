@@ -219,6 +219,26 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
         end
       end
     end
+
+    context "with a docker-image dependency" do
+      let(:dependency_type) { { type: :docker_image } }
+
+      before { allow(checker).to receive(:latest_version).and_return(Dependabot::Helm::Version.new("20.11.3")) }
+
+      it "overwrites the requirement with the exact latest version" do
+        expect(checker.updated_requirements.first[:requirement]).to eq("20.11.3")
+      end
+    end
+
+    context "when a requirement has no metadata type" do
+      let(:dependency_type) { {} }
+
+      before { allow(checker).to receive(:latest_version).and_return(Dependabot::Helm::Version.new("20.11.3")) }
+
+      it "leaves the requirement unchanged" do
+        expect(checker.updated_requirements.first[:requirement]).to be_nil
+      end
+    end
   end
 
   describe "versioning-strategy (range-preserving updates)" do
@@ -390,6 +410,17 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       it "anchors below the exclusion and reports an update" do
         expect(checker.send(:current_version)).to eq(Dependabot::Helm::Version.new("0"))
         expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+      end
+    end
+
+    context "with an upper-bound-first comma-AND range" do
+      # Regression: the anchor must read the >= lower bound, not be confused by
+      # the leading < operand ("<2.0.0,>=1.0.0" anchors at 1.0.0, not 0).
+      let(:version) { "<2.0.0,>=1.0.0" }
+      let(:latest) { Dependabot::Helm::Version.new("1.5.0") }
+
+      it "anchors on the lower bound" do
+        expect(checker.send(:current_version)).to eq(Dependabot::Helm::Version.new("1.0.0"))
       end
     end
   end

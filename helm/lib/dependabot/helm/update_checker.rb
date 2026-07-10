@@ -18,11 +18,10 @@ require "dependabot/helm/helpers"
 
 module Dependabot
   module Helm
-    # ClassLength is disabled to match the other ecosystems' update checkers
-    # (docker, npm_and_yarn, python, bun all disable it on the same class). The
-    # version-fetching helpers already delegate to
-    # update_checker/latest_version_resolver; further extraction would fragment
-    # the update-decision flow.
+    # ClassLength is disabled to match sibling ecosystems' update checkers
+    # (npm_and_yarn and bun disable it on the same class). The version-fetching
+    # helpers already delegate to update_checker/latest_version_resolver;
+    # further extraction would fragment the update-decision flow.
     class UpdateChecker < Dependabot::UpdateCheckers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
@@ -49,13 +48,10 @@ module Dependabot
         return dependency.requirements unless latest_version
 
         updated_reqs = dependency.requirements.map do |req|
-          next req unless req.fetch(:metadata, {}).key?(:type)
-
-          if req.dig(:metadata, :type) == :helm_chart
-            updated_chart_requirement(req)
-          else
-            # Image deps keep the exact-overwrite behavior.
-            req.merge(requirement: latest_version.to_s)
+          case req.dig(:metadata, :type)
+          when nil then req
+          when :helm_chart then updated_chart_requirement(req)
+          else req.merge(requirement: latest_version.to_s) # image deps: exact overwrite
           end
         end
         wrap_requirements(updated_reqs)
@@ -97,46 +93,43 @@ module Dependabot
         requirements_update_strategy || RequirementsUpdateStrategy::BumpVersions
       end
 
-      # Helm stores the Chart.yaml constraint in dependency.version. Anchor
-      # candidate filtering on the constraint's lower bound. Single/lenient forms
-      # (^1.0.0, ~1.2.0, 1.0.0, >=1.0.0) parse directly. Comparator/hyphen/OR
-      # ranges do not, so we take the lowest lower-bound version named in the
-      # constraint (0 when there is none), letting the RequirementsUpdater decide
-      # the rewrite.
-      # Overrides Base#current_version (nilable). Helm ranges have no single
-      # numeric_version, so we return a non-nilable anchored floor instead of
-      # nil — a valid covariant narrowing that also gives advisory matching
-      # (active_advisories/vulnerable?) a concrete version to compare against.
-      sig { override.returns(Dependabot::Version) }
+      # Overrides Base#current_version. For chart deps the Chart.yaml constraint
+      # lives in dependency.version, which may be a range with no single version;
+      # we anchor on its lower bound so candidate filtering has a concrete
+      # baseline. Non-chart deps (docker images) keep the base behavior.
+      sig { override.returns(T.nilable(Dependabot::Version)) }
       def current_version
-        @current_version ||= T.let(anchor_version, T.nilable(Dependabot::Version))
+        return super unless dependency_type == :helm_chart
+
+        @current_version ||= T.let(chart_anchor_version, T.nilable(Dependabot::Version))
       end
 
+      # A concrete version to anchor a chart constraint on. Single/lenient forms
+      # (^1.0.0, ~1.2.0, 1.0.0) parse directly; comparator/hyphen/OR ranges do
+      # not, so anchor on the lowest lower bound the Requirement parser reports
+      # (0 when the constraint has no lower bound, e.g. "<2.0.0").
       sig { returns(Dependabot::Version) }
-      def anchor_version
+      def chart_anchor_version
         raw = dependency.version.to_s
-        # Comparator/hyphen/OR/exclusion forms have no single parseable version,
-        # and a naive parse of "<2.0.0" or "!=9.0.0" would wrongly anchor at that
-        # operand. Route them to the lower-bound anchor.
-        return lower_bound_anchor(raw) if raw.match?(/[<>]|!=|\s-\s|\|\|/)
+        # A comparator/hyphen/OR constraint has no single version, and
+        # version_class.new would silently mis-read it ("<2.0.0" -> 2.0.0), so
+        # route those to the parser's lower bound.
+        return min_bound_anchor(raw) if raw.match?(/[<>]|!=|\s-\s|\|\|/)
 
         begin
           version_class.new(raw)
         rescue StandardError
-          lower_bound_anchor(raw)
+          min_bound_anchor(raw)
         end
       end
 
-      # Lowest lower-bound version in a range constraint, with upper-bound
-      # comparators (< / <=) and exclusions (!=) stripped so neither "<2.0.0"
-      # nor "!=9.0.0" is mistaken for a floor (both would otherwise anchor high).
+      # The lowest lower-bound version the Requirement parser reports (0 when the
+      # constraint has none). Re-wrapped as a Helm::Version — min_version yields a
+      # base Dependabot::Version, but Helm::Version#<=> only accepts Helm operands.
       sig { params(raw: String).returns(Dependabot::Version) }
-      def lower_bound_anchor(raw)
-        named = raw.gsub(/(?:<=?|!=)\s*\S+/, "").scan(/\d+(?:\.\d+)*/).filter_map do |v|
-          s = T.cast(v, String)
-          version_class.new(s) if version_class.correct?(s)
-        end
-        named.min || version_class.new("0")
+      def min_bound_anchor(raw)
+        floor = Helm::Requirement.requirements_array(raw).filter_map(&:min_version).min
+        floor ? version_class.new(floor.to_s) : version_class.new("0")
       end
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
@@ -240,9 +233,13 @@ module Dependabot
       end
 
       sig { params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Boolean) }
-      def version_can_update?(requirements_to_unlock:) # rubocop:disable Lint/UnusedMethodArgument
+      def version_can_update?(requirements_to_unlock:)
         return false unless latest_version
-        return false unless version_class.new(latest_version.to_s) > current_version
+        # Non-chart deps (docker images) keep the base behavior — including its
+        # nilable current_version handling.
+        return super unless dependency_type == :helm_chart
+
+        return false unless version_class.new(latest_version.to_s) > T.must(current_version)
 
         # For a chart dependency, an "update" means the authored Chart.yaml
         # constraint actually changes. The RequirementsUpdater deliberately
@@ -251,8 +248,6 @@ module Dependabot
         # whether it would produce a different constraint. Otherwise can_update?
         # promises a change the file updater can't make, and it raises
         # "Expected content to change!" on the unchanged Chart.yaml.
-        return true unless dependency_type == :helm_chart
-
         chart_requirement_changes?
       end
 

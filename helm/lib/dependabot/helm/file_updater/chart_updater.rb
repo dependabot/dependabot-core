@@ -23,16 +23,16 @@ module Dependabot
           @dependency = dependency
         end
 
+        # Returns the file content with this dependency's entries rewritten. May
+        # return the content unchanged (e.g. a strategy that leaves an in-range
+        # constraint alone, or a dependency not present in this file); the file
+        # updater decides whether a file actually changed.
         sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
         def updated_chart_yaml_content(file)
           content = file.content
           yaml_obj = YAML.safe_load(T.must(content))
 
-          content = update_chart_dependencies(T.must(content), yaml_obj, file)
-
-          raise "Expected content to change!" if content == file.content
-
-          content
+          update_chart_dependencies(T.must(content), yaml_obj, file)
         end
 
         private
@@ -48,24 +48,41 @@ module Dependabot
           ).returns(String)
         end
         def update_chart_dependencies(content, yaml_obj, file)
-          if update_chart_dependency?(file) && yaml_obj["dependencies"]
-            T.cast(yaml_obj["dependencies"], T::Array[T::Hash[String, Object]]).each do |dep|
-              next unless dep["name"] == dependency.name
+          return content unless update_chart_dependency?(file) && yaml_obj["dependencies"]
 
-              old_version = dep["version"].to_s
-              new_version = yaml_safe_value(updated_requirement_string(file, old_version) || dependency.version.to_s)
+          # Rewrite each entry once, scanning forward so repeated occurrences of
+          # the same chart update independently. A whole-file gsub per entry can
+          # alias — after entry A is rewritten to entry B's old version, B's pass
+          # would re-match the just-updated A.
+          cursor = 0
+          T.cast(yaml_obj["dependencies"], T::Array[T::Hash[String, Object]]).each do |dep|
+            next unless dep["name"] == dependency.name
 
-              pattern = /
-              (\s+-\s+name:\s+#{Regexp.escape(dependency.name)}.*?\n\s+)
-              (version:\s+)
-              ["']?#{Regexp.escape(old_version)}["']?
-            /mx
-              content = content.gsub(pattern) do |match|
-                match.gsub(/version: ["']?#{Regexp.escape(old_version)}["']?/, "version: #{new_version}")
-              end
-            end
+            old_version = dep["version"].to_s
+            new_version = yaml_safe_value(updated_requirement_string(file, old_version) || dependency.version.to_s)
+            content, cursor = replace_next_entry_version(content, cursor, old_version, new_version)
           end
           content
+        end
+
+        # Replaces this chart's next `version:` occurrence (at/after cursor) with
+        # new_version, returning the updated content and the position just past
+        # the rewrite so later entries match their own line.
+        sig do
+          params(content: String, cursor: Integer, old_version: String, new_version: String)
+            .returns([String, Integer])
+        end
+        def replace_next_entry_version(content, cursor, old_version, new_version)
+          pattern = /
+            (\s+-\s+name:\s+#{Regexp.escape(dependency.name)}.*?\n\s+version:\s+)
+            ["']?#{Regexp.escape(old_version)}["']?
+          /mx
+          match = pattern.match(content, cursor)
+          return [content, cursor] unless match
+
+          rewritten = "#{match[1]}#{new_version}"
+          updated = T.must(content[0...match.begin(0)]) + rewritten + T.must(content[match.end(0)..])
+          [updated, match.begin(0) + rewritten.length]
         end
 
         # Wrap a requirement in double quotes when it would otherwise be
