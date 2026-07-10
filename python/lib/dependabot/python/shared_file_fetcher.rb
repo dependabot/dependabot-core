@@ -39,6 +39,25 @@ module Dependabot
         false
       end
 
+      # Scans the given requirement files for pip `-c` references and returns the de-duplicated set of
+      # constraint file paths, each resolved relative to the referencing file.
+      #
+      # Exposed as a class method so the DependencyGrapher can identify constraint files from
+      # already-fetched dependency files.
+      sig { params(files: T::Array[Dependabot::DependencyFile]).returns(T::Array[String]) }
+      def self.constraint_file_paths(files)
+        files.flat_map do |file|
+          content = file.content
+          next [] if content.nil?
+
+          current_dir = File.dirname(file.name)
+          content.scan(CONSTRAINT_REGEX).flatten.map do |path|
+            path = File.join(current_dir, path) unless current_dir == "."
+            Pathname.new(path).cleanpath.to_path
+          end
+        end.uniq
+      end
+
       sig { override.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def ecosystem_versions
         python_requirement_parser = FileParser::PythonRequirementParser.new(dependency_files: files)
@@ -272,18 +291,7 @@ module Dependabot
                                 child_requirement_txt_files +
                                 requirements_in_files
 
-        constraints_paths = all_requirement_files.map do |req_file|
-          current_dir = File.dirname(req_file.name)
-          content = req_file.content
-          next [] if content.nil?
-
-          paths = content.scan(CONSTRAINT_REGEX).flatten
-
-          paths.map do |path|
-            path = File.join(current_dir, path) unless current_dir == "."
-            clean_path(path)
-          end
-        end.flatten.uniq
+        constraints_paths = self.class.constraint_file_paths(all_requirement_files)
 
         already_fetched_names = child_requirement_files.map(&:name)
         constraints_paths

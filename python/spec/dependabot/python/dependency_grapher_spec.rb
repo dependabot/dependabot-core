@@ -1235,6 +1235,48 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         expect(snapshots.values.flat_map { |snapshot| resolved_package_names(snapshot) }).not_to include("urllib3")
       end
     end
+
+    context "with an arbitrarily named constraints file referenced via `-c`" do
+      let(:pins_txt) do
+        Dependabot::DependencyFile.new(
+          name: "pins.txt",
+          content: "urllib3==2.0.0\n",
+          directory: "/"
+        )
+      end
+      let(:requirements_with_arbitrary_constraint) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "-c pins.txt\nflask==3.0.0\n",
+          directory: "/"
+        )
+      end
+      let(:dependency_files) { [requirements_with_arbitrary_constraint, pins_txt] }
+
+      it "drops the constraint-only package even though the filename does not contain 'constraint'" do
+        names = grapher.manifest_group_snapshots.flat_map { |snapshot| resolved_package_names(snapshot) }
+
+        expect(names).to include("flask")
+        expect(names).not_to include("urllib3")
+      end
+    end
+
+    context "with a real manifest whose name merely contains 'constraint'" do
+      let(:requirements_constraints_txt) do
+        Dependabot::DependencyFile.new(
+          name: "requirements-constraints.txt",
+          content: "flask==3.0.0\n",
+          directory: "/"
+        )
+      end
+      let(:dependency_files) { [requirements_constraints_txt] }
+
+      it "retains its dependencies because it is not referenced via `-c`" do
+        names = grapher.manifest_group_snapshots.flat_map { |snapshot| resolved_package_names(snapshot) }
+
+        expect(names).to include("flask")
+      end
+    end
   end
 
   describe "#manifest_group_snapshots for package managers that do not support layering" do

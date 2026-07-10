@@ -105,14 +105,21 @@ module Dependabot
       # pip constraint files (referenced via `-c`) install nothing - they only pin versions of packages required
       # elsewhere - so neither the legacy dependency-graph-api nor the dependency-snapshots-api treats them as
       # manifests. We keep the file on disk so `-c` references resolve, but after parsing we drop any dependency
-      # whose requirements ALL originate from a constraint file (a package also declared in a real requirement
-      # file keeps that origin and survives). This runs on every grapher, including the scoped per-layer graphers,
-      # so a shared constraints.txt is not over-attributed as a direct dependency of each layer.
+      # whose requirements ALL originate from a `-c`-referenced file (a package also declared in a real
+      # requirement file keeps that origin and survives). This runs on every grapher, including the scoped
+      # per-layer graphers, so a shared constraints file is not over-attributed as a direct dependency of each
+      # layer.
+      #
+      # Constraint status is determined by `-c` references, not by filename: pip permits arbitrary names (e.g.
+      # `-c pins.txt`), and a real manifest such as `requirements-constraints.txt` must not be mistaken for one.
       sig { void }
       def exclude_constraint_dependencies!
+        constraint_paths = SharedFileFetcher.constraint_file_paths(dependency_files)
+        return if constraint_paths.empty?
+
         @dependencies = @dependencies.reject do |dep|
           origin_files = dep.requirements.filter_map(&:file)
-          origin_files.any? && origin_files.all? { |name| File.basename(name).include?("constraint") }
+          origin_files.any? && origin_files.all? { |path| constraint_paths.include?(path) }
         end
       end
 
