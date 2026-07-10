@@ -142,8 +142,7 @@ using DependabotHelper
             () -> DependabotHelper.get_latest_version("NonExistentPackage12345", "00000000-0000-0000-0000-000000000000"),
             () -> DependabotHelper.parse_project("/nonexistent/Project.toml"),
             () -> DependabotHelper.get_package_metadata("NonExistentPackage12345", "00000000-0000-0000-0000-000000000000"),
-            () -> DependabotHelper.parse_manifest("/nonexistent/Manifest.toml"),
-            () -> DependabotHelper.check_update_compatibility("/nonexistent/Project.toml", "JSON", "0.21.0", json_uuid)
+            () -> DependabotHelper.parse_manifest("/nonexistent/Manifest.toml")
         ]
 
         for test_func in functions_to_test
@@ -878,12 +877,6 @@ using DependabotHelper
         @test isa(result, Dict)
     end
 
-    @testset "Dependency Resolution Tests" begin
-        # Test resolve_dependencies_with_constraints with non-existent project
-        result = @test_nowarn DependabotHelper.resolve_dependencies_with_constraints("/nonexistent/Project.toml", Dict(json_uuid => Dict("name" => "JSON", "version" => "0.21.4")))
-        @test haskey(result, "error")
-    end
-
     @testset "Args Wrapper Function Tests" begin
 
         # Test get_available_versions args wrapper
@@ -937,8 +930,7 @@ using DependabotHelper
             """{"function": "get_version_release_date", "args": {"package_name": "JSON", "version": "0.21.4", "package_uuid": "$json_uuid"}}""",
             """{"function": "get_version_from_manifest", "args": {"manifest_path": "/nonexistent/Manifest.toml", "name": "JSON", "uuid": "$json_uuid"}}""",
             """{"function": "update_manifest", "args": {"project_path": "/nonexistent/Project.toml", "updates": {"JSON": "0.21.4"}}}""",
-            """{"function": "extract_package_metadata_from_url", "args": {"package_name": "JSON", "source_url": "https://github.com/JuliaIO/JSON.jl.git"}}""",
-            """{"function": "resolve_dependencies_with_constraints", "args": {"project_path": "/nonexistent/Project.toml", "target_updates": {"JSON": "0.21.4"}}}"""
+            """{"function": "extract_package_metadata_from_url", "args": {"package_name": "JSON", "source_url": "https://github.com/JuliaIO/JSON.jl.git"}}"""
         ]
 
         for test_input in new_test_cases

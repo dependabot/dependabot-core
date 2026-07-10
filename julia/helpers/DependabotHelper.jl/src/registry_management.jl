@@ -63,41 +63,6 @@ function update_registries()
 end
 
 """
-    resolve_dependencies_with_custom_registries(project_toml_path::String, registry_urls::Vector{String})
-
-Resolve dependencies using custom registries.
-First ensures custom registries are available, then resolves dependencies.
-"""
-function resolve_dependencies_with_custom_registries(project_toml_path::String, registry_urls::Vector{String})
-    # First ensure custom registries are available
-    add_custom_registries(registry_urls)
-
-    # Update registries to get latest package information
-    update_registries()
-
-    # Activate project and resolve dependencies
-    Pkg.activate(dirname(project_toml_path))
-
-    try
-        Pkg.resolve()
-
-        # Return resolved manifest information using Pkg's Context
-        Pkg.activate(dirname(project_toml_path)) do
-            ctx = Pkg.Types.Context()
-            if isfile(ctx.env.manifest_file)
-                # Use the existing parse_manifest functionality to get structured data
-                return parse_manifest(Dict("manifest_path" => ctx.env.manifest_file))
-            end
-        end
-
-        return Dict()
-    catch e
-        @error "Dependency resolution failed: $(e.msg)"
-        rethrow(e)
-    end
-end
-
-"""
     list_available_registries()
 
 List all currently available registries for debugging.

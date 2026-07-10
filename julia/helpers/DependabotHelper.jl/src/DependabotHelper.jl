@@ -11,7 +11,6 @@ include("utilities.jl")
 include("project_parsing.jl")
 include("version_constraints.jl")
 include("package_discovery.jl")
-include("dependency_resolution.jl")
 include("registry_management.jl")
 
 # Main entry point that processes the input JSON and calls the appropriate function
@@ -81,23 +80,13 @@ function run(input::String)
         elseif func_name == "batch_get_available_versions"
             batch_get_available_versions(args)
 
-        # Dependency resolution and compatibility checking
-        elseif func_name == "check_update_compatibility"
-            check_update_compatibility(args["project_path"], args["package_name"], args["target_version"])
-        elseif func_name == "resolve_dependencies_with_constraints"
-            resolve_dependencies_with_constraints(args["project_path"], args["target_updates"])
-
         # Custom registry management
         elseif func_name == "add_custom_registries"
             add_custom_registries(Vector{String}(args["registry_urls"]))
         elseif func_name == "update_registries"
             update_registries()
-        elseif func_name == "resolve_dependencies_with_custom_registries"
-            resolve_dependencies_with_custom_registries(args["project_toml_path"], Vector{String}(args["registry_urls"]))
         elseif func_name == "list_available_registries"
             list_available_registries()
-        elseif func_name == "manage_registry_state"
-            manage_registry_state(Vector{String}(args["registry_urls"]))
         elseif func_name == "get_latest_version_with_custom_registries"
             get_latest_version_with_custom_registries(args["package_name"], args["package_uuid"], Vector{String}(args["registry_urls"]))
         elseif func_name == "get_available_versions_with_custom_registries"
