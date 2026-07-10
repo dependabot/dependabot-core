@@ -170,7 +170,28 @@ RSpec.describe Dependabot::Julia::RegistryClient do
       registry_client.send(:julia_env)
 
       auth_file = File.join(depot_dir, "servers", "pkg.example.com", "auth.toml")
-      expect(File.read(auth_file)).to eq(%(access_token = "s3cret"\n))
+      expect(TomlRB.parse(File.read(auth_file))).to eq("access_token" => "s3cret")
+    end
+
+    context "when the token contains TOML metacharacters" do
+      let(:registry_client) do
+        described_class.new(
+          credentials: [
+            Dependabot::Credential.new(
+              "type" => "julia_registry",
+              "url" => "https://pkg.example.com",
+              "token" => %(we"ird\\to"ken)
+            )
+          ]
+        )
+      end
+
+      it "escapes them so the token round-trips" do
+        registry_client.send(:julia_env)
+
+        auth_file = File.join(depot_dir, "servers", "pkg.example.com", "auth.toml")
+        expect(TomlRB.parse(File.read(auth_file))).to eq("access_token" => %(we"ird\\to"ken))
+      end
     end
 
     it "does not set the unrecognized indexed env vars" do

@@ -5,6 +5,7 @@
 require "time"
 require "uri"
 require "fileutils"
+require "toml-rb"
 require "dependabot/credential"
 require "dependabot/julia/version"
 require "dependabot/shared_helpers"
@@ -415,8 +416,7 @@ module Dependabot
 
         auth_dir = File.join(julia_user_depot, "servers", host)
         FileUtils.mkdir_p(auth_dir)
-        escaped_token = token.gsub("\\", "\\\\\\\\").gsub("\"", "\\\"")
-        File.write(File.join(auth_dir, "auth.toml"), "access_token = \"#{escaped_token}\"\n")
+        File.write(File.join(auth_dir, "auth.toml"), TomlRB.dump({ "access_token" => token }))
       rescue URI::InvalidURIError => e
         Dependabot.logger.warn("Invalid julia_registry URL: #{e.message}")
       end
