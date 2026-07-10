@@ -36,6 +36,7 @@
 # - hex
 # - maven
 # - npm_and_yarn
+# - nub
 # - nuget
 # - pip (includes pipenv)
 # - pre_commit
@@ -140,6 +141,7 @@ require "dependabot/hex"
 require "dependabot/julia"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
+require "dependabot/nub"
 require "dependabot/nuget"
 require "dependabot/pre_commit"
 require "dependabot/pub"
@@ -392,6 +394,7 @@ valid_package_managers = %w(
   hex
   maven
   npm_and_yarn
+  nub
   nuget
   pip
   pre_commit
