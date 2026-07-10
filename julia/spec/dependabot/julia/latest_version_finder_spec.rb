@@ -18,6 +18,7 @@ RSpec.describe Dependabot::Julia::LatestVersionFinder do
       cooldown_config: cooldown_config
     )
   end
+  let(:release_dates) { Hash.new(Time.now - (365 * 24 * 60 * 60)) }
 
   let(:cooldown_config) { nil }
   let(:current_version) { "1.0.0" }
@@ -50,8 +51,6 @@ RSpec.describe Dependabot::Julia::LatestVersionFinder do
         end
       )
   end
-
-  let(:release_dates) { Hash.new(Time.now - (365 * 24 * 60 * 60)) }
 
   describe "#latest_version prerelease handling" do
     let(:available_versions) { %w(1.9.0 2.0.0-beta1) }

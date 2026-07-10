@@ -143,9 +143,6 @@ RSpec.describe Dependabot::Julia::RegistryClient do
 
   describe "#julia_env registry authentication" do
     let(:depot_dir) { Dir.mktmpdir("julia-depot") }
-
-    after { FileUtils.rm_rf(depot_dir) }
-
     let(:registry_client) do
       described_class.new(
         credentials: [
@@ -157,6 +154,8 @@ RSpec.describe Dependabot::Julia::RegistryClient do
         ]
       )
     end
+
+    after { FileUtils.rm_rf(depot_dir) }
 
     before do
       allow(registry_client).to receive(:julia_user_depot).and_return(depot_dir)

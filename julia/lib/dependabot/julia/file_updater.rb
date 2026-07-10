@@ -15,6 +15,10 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
+      # Matches a [compat] table header, tolerating indentation and a trailing
+      # comment ("[compat]  # pins")
+      COMPAT_HEADER_PATTERN = T.let(/^\s*\[compat\]\s*(?:#.*)?$/, Regexp)
+
       sig { returns(T::Array[Regexp]) }
       def self.updated_files_regex
         [/(?:Julia)?Project\.toml$/i, /(?:Julia)?Manifest(?:-v[\d.]+)?\.toml$/i]
@@ -362,10 +366,6 @@ module Dependabot
         )
       end
 
-      # Matches a [compat] table header, tolerating indentation and a trailing
-      # comment ("[compat]  # pins")
-      COMPAT_HEADER_PATTERN = T.let(/^\s*\[compat\]\s*(?:#.*)?$/, Regexp)
-
       sig { params(content: String, dependency_name: String, new_requirement: String).returns(String) }
       def update_dependency_requirement_in_content(content, dependency_name, new_requirement)
         lines = content.lines
@@ -407,17 +407,7 @@ module Dependabot
         ).returns(String)
       end
       def insert_compat_entry(lines, header_idx, section_end, dependency_name, requirement)
-        insert_at = T.let(nil, T.nilable(Integer))
-
-        ((header_idx + 1)...section_end).each do |i|
-          key = T.must(lines[i])[/^\s*([^#\s=][^=\s]*)\s*=/, 1]
-          next unless key && key > dependency_name
-
-          insert_at = i
-          # Comment lines directly above an entry belong to it
-          insert_at -= 1 while insert_at > header_idx + 1 && T.must(lines[insert_at - 1]).strip.start_with?("#")
-          break
-        end
+        insert_at = alphabetical_insert_position(lines, header_idx, section_end, dependency_name)
 
         unless insert_at
           # Append at the end of the section, before any trailing blank lines
@@ -431,6 +421,28 @@ module Dependabot
 
         lines.insert(insert_at, "#{dependency_name} = \"#{requirement}\"\n")
         lines.join
+      end
+
+      sig do
+        params(
+          lines: T::Array[String],
+          header_idx: Integer,
+          section_end: Integer,
+          dependency_name: String
+        ).returns(T.nilable(Integer))
+      end
+      def alphabetical_insert_position(lines, header_idx, section_end, dependency_name)
+        ((header_idx + 1)...section_end).each do |i|
+          key = T.must(lines[i])[/^\s*([^#\s=][^=\s]*)\s*=/, 1]
+          next unless key && key > dependency_name
+
+          insert_at = i
+          # Comment lines directly above an entry belong to it
+          insert_at -= 1 while insert_at > header_idx + 1 && T.must(lines[insert_at - 1]).strip.start_with?("#")
+          return insert_at
+        end
+
+        nil
       end
     end
   end

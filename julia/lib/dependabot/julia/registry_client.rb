@@ -175,7 +175,7 @@ module Dependabot
       sig do
         params(
           project_path: String,
-          updates: T::Hash[String, String]
+          updates: T::Hash[String, T::Hash[String, String]]
         ).returns(T::Hash[String, T.untyped])
       end
       def update_manifest(project_path:, updates:)

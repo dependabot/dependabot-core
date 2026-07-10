@@ -142,16 +142,7 @@ module Dependabot
         manifest = manifest_file
         return {} unless manifest
 
-        result = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
-        Dir.mktmpdir("julia_manifest") do |temp_dir|
-          # Written under a fixed name: version-suffixed manifests
-          # (Manifest-v1.11.toml) would otherwise be skipped by Pkg when the
-          # helper's Julia version doesn't match.
-          manifest_path = File.join(temp_dir, "Manifest.toml")
-          File.write(manifest_path, manifest.content)
-          result = registry_client.parse_manifest(manifest_path)
-        end
-        result = T.must(result)
+        result = parse_manifest_content(T.must(manifest.content))
 
         if result["error"]
           Dependabot.logger.warn("Failed to parse Julia manifest: #{result['error']}")
@@ -167,6 +158,20 @@ module Dependabot
 
           map[uuid] = version
         end
+      end
+
+      sig { params(content: String).returns(T::Hash[String, T.untyped]) }
+      def parse_manifest_content(content)
+        result = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+        Dir.mktmpdir("julia_manifest") do |temp_dir|
+          # Written under a fixed name: version-suffixed manifests
+          # (Manifest-v1.11.toml) would otherwise be skipped by Pkg when the
+          # helper's Julia version doesn't match.
+          manifest_path = File.join(temp_dir, "Manifest.toml")
+          File.write(manifest_path, content)
+          result = registry_client.parse_manifest(manifest_path)
+        end
+        T.must(result)
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -233,18 +238,7 @@ module Dependabot
           if dependencies_map.key?(name)
             # Merge requirements from additional project files
             existing_dep = T.must(dependencies_map[name])
-
-            # UUID is a package's identity in Julia: two same-named entries
-            # with different UUIDs are different packages, and merging them
-            # would run updates against the wrong UUID.
-            existing_uuid = T.cast(existing_dep.metadata[:julia_uuid], T.nilable(String))
-            if uuid && existing_uuid && uuid != existing_uuid
-              Dependabot.logger.warn(
-                "Skipping #{name} in #{file_name}: UUID #{uuid} conflicts with #{existing_uuid} " \
-                "from another project file"
-              )
-              next
-            end
+            next if uuid_conflict?(existing_dep, uuid, file_name)
 
             existing_requirements = existing_dep.requirements + [new_requirement]
             dependencies_map[name] = Dependabot::Dependency.new(
@@ -265,6 +259,27 @@ module Dependabot
             )
           end
         end
+      end
+
+      # UUID is a package's identity in Julia: two same-named entries with
+      # different UUIDs are different packages, and merging them would run
+      # updates against the wrong UUID.
+      sig do
+        params(
+          existing_dep: Dependabot::Dependency,
+          uuid: T.nilable(String),
+          file_name: String
+        ).returns(T::Boolean)
+      end
+      def uuid_conflict?(existing_dep, uuid, file_name)
+        existing_uuid = T.cast(existing_dep.metadata[:julia_uuid], T.nilable(String))
+        return false unless uuid && existing_uuid && uuid != existing_uuid
+
+        Dependabot.logger.warn(
+          "Skipping #{existing_dep.name} in #{file_name}: UUID #{uuid} conflicts with #{existing_uuid} " \
+          "from another project file"
+        )
+        true
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
