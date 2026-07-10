@@ -19,30 +19,7 @@ module Dependabot
   module Python
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
       require_relative "dependency_grapher/lockfile_generator"
-
-      # Regex patterns for detecting Python requirements / dependencies .txt manifest variants.
-      # Used by the dependency grapher to filter out unrelated .txt files (e.g. README-style notes,
-      # tool output, etc.) from being treated as pip manifests.
-
-      # Matches "requirements" preceded by a hyphen, period, underscore, start-of-string, or slash,
-      # followed by non-whitespace chars and ".txt".
-      # Examples: requirements.txt, requirements.prod.txt, requirements/production.txt
-      REQUIREMENTS_TXT_REGEX = T.let(%r{(?:[-._]|^|/)requirements[^\s]*\.txt$}i, Regexp)
-
-      # More lenient: matches "require" with optional prefix (no dots/whitespace)
-      # and optional hyphen/underscore/slash suffix. Does not match "require" as a substring.
-      # Examples: require.txt, require-test.txt, py3-require.txt, pyenv_require_e2e.txt
-      REQUIRE_TXT_REGEX = T.let(%r{[^\s|.]*require(?:[-_/][^\s|.]*)?\.txt$}i, Regexp)
-
-      # Matches "dependencies" / "dependency" preceded by a hyphen, period, underscore,
-      # start-of-string, or slash, followed by non-whitespace chars and ".txt".
-      # Examples: dependencies.txt, my-dependencies.txt, dependencies/python/ansible-lint.txt
-      DEPENDENCIES_TXT_REGEX = T.let(%r{(?:[-._]|^|/)dependenc(?:y|ies)[^\s]*\.txt$}i, Regexp)
-
-      # More lenient: matches "depend" / "depends" with optional prefix (no dots/whitespace)
-      # and optional hyphen/underscore/slash suffix. Does not match "depend" as a substring.
-      # Examples: depend.txt, depends.txt, depend-test.txt, py3-depends.txt
-      DEPEND_TXT_REGEX = T.let(%r{[^\s|.]*depend(?:s)?(?:[-_/][^\s|.]*)?\.txt$}i, Regexp)
+      require_relative "dependency_grapher/requirements_layers"
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
@@ -89,7 +66,40 @@ module Dependabot
         super
       end
 
+      # Layering is specific to pip / pip-compile for Python.
+      sig { override.returns(T::Array[Dependabot::DependencyGraphers::ManifestGroup]) }
+      def manifest_groups
+        return super unless supports_layering?
+
+        groups = RequirementsLayers.new(dependency_files: dependency_files).groups
+        # If we try to apply grouping, but find there is only one group, we prefer
+        # to fallback to the base method (the whole directory parsed as one manifest,
+        # which naturally includes any setup.py/setup.cfg/pyproject.toml present).
+        return super if groups.length < 2
+
+        groups + non_requirements_manifest_groups
+      end
+
       private
+
+      # When a pip/pip-compile directory is split into requirements layers, any non-requirements manifest
+      # sharing that directory (setup.py, setup.cfg, pyproject.toml) would otherwise fall outside every layer
+      # group and have its dependencies dropped.
+      #
+      # We instead emit each as its own self-attributed group so its dependencies are preserved and attributed
+      # to the file itself. This matches existing static analysis behaviour.
+      #
+      # NOTE:
+      # This logic is only applied on the pip/pip-compile path, so poetry.lock/Pipfile.lock are absent as they would
+      # select the poetry/pipenv path which does not support layering.
+      #
+      # If a pyproject.toml is present, it is treated as a pip-context manifest.
+      sig { returns(T::Array[Dependabot::DependencyGraphers::ManifestGroup]) }
+      def non_requirements_manifest_groups
+        [setup_file, setup_cfg_file, pyproject_toml].compact.map do |file|
+          Dependabot::DependencyGraphers::ManifestGroup.new(primary: file, files: [file])
+        end
+      end
 
       # An empty, nameless dependency file used to represent a directory that has no supported manifest and
       # resolves to no dependencies. The submission layer treats a nameless manifest as "nothing to report",
@@ -128,7 +138,7 @@ module Dependabot
 
         seeds = dependency_files.select do |file|
           file.name.end_with?(".txt") &&
-            (python_manifest_txt_filename?(file.name) ||
+            (RequirementsLayers.manifest_txt_filename?(file.name) ||
               pip_compile_file_matcher.lockfile_for_pip_compile_file?(file))
         end
 
@@ -164,22 +174,16 @@ module Dependabot
       end
 
       # Resolves the `.txt` files referenced from a requirements file via `-r`/`-c`, returning their names
-      # relative to the repo (matching the fetched DependencyFile names) so we can retain them. Reuses
-      # SharedFileFetcher's reference regexes so the grapher keeps exactly the children the fetcher pulled in.
+      # relative to the repo (matching the fetched DependencyFile names) so we can retain them. Delegates to
+      # RequirementsLayers.referenced_paths so grouping and the bystander filter resolve references identically.
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
       def referenced_txt_names(file)
-        content = file.content
-        return [] if content.nil?
+        RequirementsLayers.referenced_paths(file).select { |path| path.end_with?(".txt") }
+      end
 
-        current_dir = File.dirname(file.name)
-        referenced_paths = content.scan(Dependabot::Python::SharedFileFetcher::CHILD_REQUIREMENT_REGEX).flatten +
-                           content.scan(Dependabot::Python::SharedFileFetcher::CONSTRAINT_REGEX).flatten
-
-        referenced_paths.filter_map do |path|
-          resolved = current_dir == "." ? path : File.join(current_dir, path)
-          resolved = Pathname.new(resolved).cleanpath.to_path
-          resolved if resolved.end_with?(".txt")
-        end
+      sig { returns(T::Boolean) }
+      def supports_layering?
+        [PipPackageManager::NAME, PipCompilePackageManager::NAME].include?(python_package_manager)
       end
 
       # Returns the poetry.lock only if it was committed to the repo,
@@ -484,17 +488,9 @@ module Dependabot
 
         @pip_requirements_file = T.let(
           dependency_files.find { |f| f.name == "requirements.txt" } ||
-            dependency_files.find { |f| f.name.end_with?(".txt") && python_manifest_txt_filename?(f.name) },
+            dependency_files.find { |f| f.name.end_with?(".txt") && RequirementsLayers.manifest_txt_filename?(f.name) },
           T.nilable(Dependabot::DependencyFile)
         )
-      end
-
-      sig { params(path: String).returns(T::Boolean) }
-      def python_manifest_txt_filename?(path)
-        path.match?(REQUIREMENTS_TXT_REGEX) ||
-          path.match?(REQUIRE_TXT_REGEX) ||
-          path.match?(DEPENDENCIES_TXT_REGEX) ||
-          path.match?(DEPEND_TXT_REGEX)
       end
 
       sig { params(filename: String).returns(T.nilable(Dependabot::DependencyFile)) }
