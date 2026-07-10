@@ -45,7 +45,14 @@ module Dependabot
 
       sig { returns(T.nilable(Gem::Version)) }
       def latest_version
-        @latest_version ||= T.let(fetch_latest_version, T.nilable(Gem::Version))
+        @latest_version ||= T.let(available_versions.max, T.nilable(Gem::Version))
+      end
+
+      # All selectable versions after cooldown, ignored-version and
+      # vulnerability filtering, in ascending order.
+      sig { returns(T::Array[Gem::Version]) }
+      def available_versions
+        @available_versions ||= T.let(fetch_available_versions, T.nilable(T::Array[Gem::Version]))
       end
 
       private
@@ -74,8 +81,8 @@ module Dependabot
       sig { returns(T::Array[T::Hash[Symbol, String]]) }
       attr_reader :custom_registries
 
-      sig { returns(T.nilable(Gem::Version)) }
-      def fetch_latest_version
+      sig { returns(T::Array[Gem::Version]) }
+      def fetch_available_versions
         # Fetch all package releases using the PackageDetailsFetcher
         package_fetcher = Julia::Package::PackageDetailsFetcher.new(
           dependency: dependency,
@@ -84,12 +91,12 @@ module Dependabot
         )
 
         releases = package_fetcher.fetch_package_releases
-        return nil if releases.empty?
+        return [] if releases.empty?
 
         # Filter releases based on cooldown
         if cooldown_config
           releases = filter_releases_by_cooldown(releases)
-          return nil if releases.empty?
+          return [] if releases.empty?
         end
 
         # Convert to versions for further filtering
@@ -97,19 +104,17 @@ module Dependabot
 
         # Filter out ignored versions
         versions = filter_ignored_versions(versions)
-        return nil if versions.empty?
+        return [] if versions.empty?
 
         # Filter out lower versions
         versions = filter_lower_versions(versions)
-        return nil if versions.empty?
+        return [] if versions.empty?
 
         # Filter out vulnerable versions
-        filtered_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
+        Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
           versions,
           security_advisories
         )
-
-        filtered_versions.max
       end
 
       sig do
