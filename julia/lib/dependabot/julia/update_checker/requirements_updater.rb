@@ -23,12 +23,15 @@ module Dependabot
           T::Array[Dependabot::DependencyRequirement]
         )
         @target_version = target_version
-        @update_strategy = T.let(update_strategy || :bump_versions, Symbol)
+        # Julia's ecosystem convention (CompatHelper) is to append a new spec
+        # to the existing compat entry, i.e. widen, so that is the default.
+        @update_strategy = T.let(update_strategy || :widen_ranges, Symbol)
       end
 
       sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         return requirements unless target_version
+        return requirements if update_strategy == :lockfile_only
 
         target_version_obj = Dependabot::Julia::Version.new(target_version)
 
@@ -77,9 +80,21 @@ module Dependabot
 
         # Check if any requirement is satisfied by the target version
         # Note: This uses the implicit caret semantics from the Requirement class
-        return requirement_string if reqs.any? { |req| req.satisfied_by?(target_version) }
+        satisfied = reqs.any? { |req| req.satisfied_by?(target_version) }
 
-        # Otherwise, append a new requirement that includes the target version
+        case update_strategy
+        when :bump_versions
+          simplified_version_spec(target_version)
+        when :bump_versions_if_necessary
+          satisfied ? requirement_string : simplified_version_spec(target_version)
+        else # :widen_ranges
+          satisfied ? requirement_string : append_spec(requirement_string, target_version)
+        end
+      end
+
+      sig { params(requirement_string: String, target_version: Dependabot::Julia::Version).returns(String) }
+      def append_spec(requirement_string, target_version)
+        # Append a new requirement that includes the target version
         # Following CompatHelper.jl's approach: use major.minor for versions >= 1.0,
         # 0.minor for 0.x versions, and 0.0.patch for 0.0.x versions
         new_spec = simplified_version_spec(target_version)

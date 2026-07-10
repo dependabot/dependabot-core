@@ -6,11 +6,13 @@ require "dependabot/julia/update_checker/requirements_updater"
 require "dependabot/julia/version"
 
 RSpec.describe Dependabot::Julia::RequirementsUpdater do
+  let(:update_strategy) { nil }
+
   let(:updater) do
     described_class.new(
       requirements: requirements,
       target_version: target_version,
-      update_strategy: :bump_versions
+      update_strategy: update_strategy
     )
   end
 
@@ -100,6 +102,67 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
 
         it "appends a spec for the target version" do
           expect(result).to eq("0.34 - 0.35, 1, 2.0")
+        end
+      end
+    end
+
+    context "with update strategies" do
+      let(:requirement_string) { "0.34" }
+      let(:target_version) { "0.36.0" }
+
+      context "with lockfile_only" do
+        let(:update_strategy) { :lockfile_only }
+
+        it "leaves the compat entry untouched" do
+          expect(result).to eq("0.34")
+        end
+      end
+
+      context "with widen_ranges" do
+        let(:update_strategy) { :widen_ranges }
+
+        it "appends a spec covering the target version" do
+          expect(result).to eq("0.34, 0.36")
+        end
+
+        context "when the target is already satisfied" do
+          let(:target_version) { "0.34.9" }
+
+          it "keeps the requirement unchanged" do
+            expect(result).to eq("0.34")
+          end
+        end
+      end
+
+      context "with bump_versions" do
+        let(:update_strategy) { :bump_versions }
+
+        it "replaces the compat entry with the new version spec" do
+          expect(result).to eq("0.36")
+        end
+
+        context "when the target is already satisfied" do
+          let(:target_version) { "0.34.9" }
+
+          it "still bumps the requirement" do
+            expect(result).to eq("0.34")
+          end
+        end
+      end
+
+      context "with bump_versions_if_necessary" do
+        let(:update_strategy) { :bump_versions_if_necessary }
+
+        it "replaces the compat entry when not satisfied" do
+          expect(result).to eq("0.36")
+        end
+
+        context "when the target is already satisfied" do
+          let(:target_version) { "0.34.9" }
+
+          it "keeps the requirement unchanged" do
+            expect(result).to eq("0.34")
+          end
         end
       end
     end
