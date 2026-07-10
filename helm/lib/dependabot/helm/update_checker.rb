@@ -123,12 +123,17 @@ module Dependabot
         end
       end
 
-      # The lowest lower-bound version the Requirement parser reports (0 when the
-      # constraint has none). Re-wrapped as a Helm::Version — min_version yields a
-      # base Dependabot::Version, but Helm::Version#<=> only accepts Helm operands.
+      # The lowest lower-bound version across the constraint's OR branches, or 0
+      # when any branch has no lower bound (that branch permits arbitrarily low
+      # versions, e.g. "<=2.0.0 || >=10.0.0"). Re-wrapped as a Helm::Version —
+      # min_version yields a base Dependabot::Version, but Helm::Version#<=> only
+      # accepts Helm operands.
       sig { params(raw: String).returns(Dependabot::Version) }
       def min_bound_anchor(raw)
-        floor = Helm::Requirement.requirements_array(raw).filter_map(&:min_version).min
+        floors = Helm::Requirement.requirements_array(raw).map(&:min_version)
+        return version_class.new("0") if floors.any?(&:nil?)
+
+        floor = floors.compact.min
         floor ? version_class.new(floor.to_s) : version_class.new("0")
       end
 

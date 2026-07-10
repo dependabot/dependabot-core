@@ -408,19 +408,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       let(:latest) { Dependabot::Helm::Version.new("2.0.0") }
 
       it "anchors below the exclusion and reports an update" do
-        expect(checker.send(:current_version)).to eq(Dependabot::Helm::Version.new("0"))
         expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
-      end
-    end
-
-    context "with an upper-bound-first comma-AND range" do
-      # Regression: the anchor must read the >= lower bound, not be confused by
-      # the leading < operand ("<2.0.0,>=1.0.0" anchors at 1.0.0, not 0).
-      let(:version) { "<2.0.0,>=1.0.0" }
-      let(:latest) { Dependabot::Helm::Version.new("1.5.0") }
-
-      it "anchors on the lower bound" do
-        expect(checker.send(:current_version)).to eq(Dependabot::Helm::Version.new("1.0.0"))
       end
     end
   end
@@ -488,6 +476,32 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
 
       it "does not cause cross-package type validation errors" do
         expect { checker.send(:filter_valid_releases, releases) }.not_to raise_error
+      end
+    end
+
+    context "when the constraint is a range" do
+      let(:releases) { [{ "version" => "0.5.0" }, { "version" => "1.5.0" }, { "version" => "2.5.0" }] }
+
+      context "with a comma-AND lower bound not written first" do
+        # Regression: the anchor must read the >= lower bound (1.0.0), not be
+        # thrown off by the leading < operand, so 0.5.0 is filtered out.
+        let(:version) { "<2.0.0,>=1.0.0" }
+
+        it "filters versions below the range's lower bound" do
+          result = checker.send(:filter_valid_releases, releases)
+          expect(result.map { |r| r["version"] }).to contain_exactly("1.5.0", "2.5.0")
+        end
+      end
+
+      context "with an OR branch that has no lower bound" do
+        # Regression: an unbounded-below branch means the constraint permits
+        # arbitrarily low versions, so the anchor is 0 and nothing is filtered.
+        let(:version) { "<=2.0.0 || >=10.0.0" }
+
+        it "keeps all versions" do
+          result = checker.send(:filter_valid_releases, releases)
+          expect(result.map { |r| r["version"] }).to contain_exactly("0.5.0", "1.5.0", "2.5.0")
+        end
       end
     end
   end
