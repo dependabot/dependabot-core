@@ -53,9 +53,16 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
             # Parse Project.toml directly to get weakdeps (Julia's Pkg may not populate this field)
             project_toml = TOML.parsefile(project_path)
 
+            # Packages pinned to a path or git source via [sources] (Julia 1.11+)
+            # are not registry-updatable; Dependabot must not propose version
+            # updates for them.
+            sources = get(project_toml, "sources", Dict{String,Any}())
+
             # Get dependencies and add compat requirements
             dependencies = []
             for (dep_name, dep_uuid) in project_info.deps
+                haskey(sources, dep_name) && continue
+
                 dep_info = Dict{String,Any}(
                     "name" => dep_name,
                     "uuid" => string(dep_uuid)
@@ -87,6 +94,8 @@ function parse_project(project_path::String, manifest_path::Union{String,Nothing
             if haskey(project_toml, "weakdeps")
                 weakdeps_section = project_toml["weakdeps"]
                 for (dep_name, dep_uuid_str) in weakdeps_section
+                    haskey(sources, dep_name) && continue
+
                     weak_dep_info = Dict{String,Any}(
                         "name" => dep_name,
                         "uuid" => dep_uuid_str
@@ -275,20 +284,34 @@ function update_manifest(project_path::String, updates::Dict)
         # constraints. The Ruby FileUpdater should update the project file first, then call
         # this function to update the manifest file based on the new constraints.
 
-        # Activate the project directory and update directly
-        Pkg.activate(project_path) do
-            with_autoprecompilation_disabled() do
-                # Process each update - updates is keyed by UUID
-                pkg_specs = Pkg.PackageSpec[]
-                for (uuid_str, update_info) in updates
-                    package_name = update_info["name"]
-                    target_version = update_info["version"]
-                    uuid_obj = Base.UUID(uuid_str)
+        # Pkg.add promotes packages into [deps], so it must only ever see
+        # packages that are already direct dependencies of this project.
+        # Updates for weakdeps (or [sources]-pinned packages) only change
+        # Project.toml; the manifest doesn't lock them for the root project.
+        project_toml = TOML.parsefile(project_file)
+        direct_deps = get(project_toml, "deps", Dict{String,Any}())
+        sources = get(project_toml, "sources", Dict{String,Any}())
 
-                    push!(pkg_specs, Pkg.PackageSpec(name=package_name, uuid=uuid_obj, version=target_version))
+        pkg_specs = Pkg.PackageSpec[]
+        for (uuid_str, update_info) in updates
+            package_name = update_info["name"]
+            target_version = update_info["version"]
+
+            if get(direct_deps, package_name, nothing) != uuid_str || haskey(sources, package_name)
+                @info "update_manifest: skipping $(package_name) (not a registry-sourced direct dependency)"
+                continue
+            end
+
+            push!(pkg_specs, Pkg.PackageSpec(name=package_name, uuid=Base.UUID(uuid_str), version=target_version))
+        end
+
+        if !isempty(pkg_specs)
+            # Activate the project directory and update directly
+            Pkg.activate(project_path) do
+                with_autoprecompilation_disabled() do
+                    # Try to add/update the packages with the specific versions
+                    Pkg.add(pkg_specs)
                 end
-                # Try to add/update the packages with the specific versions
-                Pkg.add(pkg_specs)
             end
         end
 

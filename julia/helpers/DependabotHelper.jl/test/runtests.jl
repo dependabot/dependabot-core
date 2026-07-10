@@ -429,6 +429,67 @@ using DependabotHelper
             @test samefile(manifest_a, manifest_b)
         end
 
+        @testset "update_manifest does not promote weakdeps" begin
+            mktempdir() do tmpdir
+                write(joinpath(tmpdir, "Project.toml"), """
+                name = "WeakdepProject"
+                uuid = "1234e567-e89b-12d3-a456-789012345678"
+                version = "0.1.0"
+
+                [weakdeps]
+                JSON = "$json_uuid"
+
+                [compat]
+                JSON = "0.21"
+                """)
+                original_manifest = """
+                julia_version = "1.12.0"
+                manifest_format = "2.0"
+                """
+                write(joinpath(tmpdir, "Manifest.toml"), original_manifest)
+
+                result = DependabotHelper.update_manifest(
+                    tmpdir,
+                    Dict{String, Any}(json_uuid => Dict("name" => "JSON", "version" => "0.21.4"))
+                )
+
+                @test isa(result, Dict)
+                @test !haskey(result, "error")
+                # The weakdep must not be Pkg.add'ed into [deps] or the manifest
+                project_after = read(joinpath(tmpdir, "Project.toml"), String)
+                @test !occursin("[deps]", project_after)
+                @test !occursin("JSON", result["manifest_content"])
+            end
+        end
+
+        @testset "parse_project skips [sources]-pinned packages" begin
+            mktempdir() do tmpdir
+                write(joinpath(tmpdir, "Project.toml"), """
+                name = "SourcesProject"
+                uuid = "1234e567-e89b-12d3-a456-789012345678"
+                version = "0.1.0"
+
+                [deps]
+                JSON = "$json_uuid"
+                Example = "7876af07-990d-54b4-ab0e-23690620f79a"
+
+                [sources]
+                JSON = {url = "https://github.com/JuliaIO/JSON.jl", rev = "main"}
+
+                [compat]
+                JSON = "0.21"
+                Example = "0.4"
+                """)
+
+                result = DependabotHelper.parse_project(joinpath(tmpdir, "Project.toml"))
+
+                @test !haskey(result, "error")
+                names = [d["name"] for d in result["dependencies"]]
+                @test "Example" in names
+                @test !("JSON" in names)
+            end
+        end
+
         @testset "WorkspaceTwo update simulation" begin
             # This test simulates what happens when trying to update one workspace member
             # when workspace members have conflicting compat requirements
