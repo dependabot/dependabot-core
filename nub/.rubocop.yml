@@ -15,7 +15,6 @@ Sorbet/ForbidTUntyped:
   Exclude:
     - lib/dependabot/nub/dependency_files_filterer.rb
     - lib/dependabot/nub/file_fetcher.rb
-    - lib/dependabot/nub/file_fetcher/path_dependency_builder.rb
     - lib/dependabot/nub/file_parser.rb
     - lib/dependabot/nub/file_parser/lockfile_parser.rb
     - lib/dependabot/nub/file_parser/nub_lock.rb

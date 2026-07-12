@@ -17,7 +17,6 @@ module Dependabot
       require_relative "update_checker/latest_version_finder"
       require_relative "update_checker/version_resolver"
       require_relative "update_checker/subdependency_version_resolver"
-      require_relative "update_checker/conflicting_dependency_resolver"
       require_relative "update_checker/vulnerability_auditor"
 
       sig do
@@ -200,20 +199,15 @@ module Dependabot
 
       sig { override.returns(T::Array[T::Hash[String, String]]) }
       def conflicting_dependencies
-        conflicts = ConflictingDependencyResolver.new(
-          dependency_files: dependency_files,
-          credentials: credentials
-        ).conflicting_dependencies(
-          dependency: dependency,
-          target_version: lowest_security_fix_version
-        )
-        return conflicts unless vulnerability_audit_performed?
+        # The inherited yarn-based ConflictingDependencyResolver was inert for nub: DependencyFilesBuilder
+        # only ever writes nub.lock while the yarn helper reads yarn.lock, so every call failed into a
+        # rescue -> []. The live signal is the vulnerability audit's unfixable-conflict explanation;
+        # pnpm-lock-aware conflict detection over nub.lock is a follow-up.
+        return [] unless vulnerability_audit_performed?
 
-        vulnerable = [vulnerability_audit].select do |hash|
+        [vulnerability_audit].select do |hash|
           !hash["fix_available"] && hash["explanation"]
         end
-
-        conflicts + vulnerable
       end
 
       private
