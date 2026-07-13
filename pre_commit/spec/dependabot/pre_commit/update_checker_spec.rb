@@ -96,9 +96,9 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
           .to receive(:local_tag_for_pinned_sha).and_return("v4.4.0")
       end
 
-      it "returns the latest tagged version" do
-        expect(latest_version).to be_a(Dependabot::PreCommit::Version)
-        expect(latest_version.to_s).to eq("6.0.0")
+      it "returns the latest commit SHA for the latest tag" do
+        expect(latest_version).to be_a(String)
+        expect(latest_version).to match(/\A[0-9a-f]{40}\z/)
       end
     end
 
@@ -109,13 +109,38 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
       before do
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tag_for_pinned_sha).and_return(nil)
-        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
-          .to receive(:head_commit_for_pinned_ref).and_return("abc123def456")
       end
 
-      it "falls back to latest commit SHA" do
+      it "returns the latest commit SHA for the latest tag" do
         expect(latest_version).to be_a(String)
-        expect(latest_version).to eq("abc123def456")
+        expect(latest_version).to match(/\A[0-9a-f]{40}\z/)
+      end
+    end
+
+    context "when SHA-pinned without frozen comment" do
+      let(:reference) { "6f6a02c2c85a1b45e39c1aa5e6cc40f7a3d6df5e" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "https://github.com/#{dependency_name}",
+          version: reference,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".pre-commit-config.yaml",
+            source: dependency_source
+          }],
+          package_manager: "pre_commit"
+        )
+      end
+
+      before do
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tag_for_pinned_sha).and_return(nil)
+      end
+
+      it "returns the latest commit SHA even without frozen comment" do
+        expect(latest_version).to be_a(String)
+        expect(latest_version).to match(/\A[0-9a-f]{40}\z/)
       end
     end
 

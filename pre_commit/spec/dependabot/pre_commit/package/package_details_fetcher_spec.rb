@@ -251,12 +251,11 @@ RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
       before do
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tag_for_pinned_sha).and_return(nil)
-        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
-          .to receive(:head_commit_for_pinned_ref).and_return("abc123def456")
       end
 
-      it "falls back to latest commit for pinned ref" do
-        expect(commit_sha_release).to eq("abc123def456")
+      it "returns the latest tagged version" do
+        expect(commit_sha_release).to be_a(Dependabot::PreCommit::Version)
+        expect(commit_sha_release.to_s).to eq("6.0.0")
       end
     end
 
