@@ -284,37 +284,15 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(described_class.package_manager_run_command("npm", "-v", env: env)).to eq("11.9.0")
     end
 
-    it "still retries when merged COREPACK_INTEGRITY_KEYS are present but cannot verify" do
-      merged_keys = JSON.generate("npm" => [{ "keyid" => "SHA256:merged" }])
+    it "fails closed without retrying when merged COREPACK_INTEGRITY_KEYS are present" do
+      merged_keys = JSON.generate("npm" => [{ "keyid" => "SHA256:merged", "key" => "abc" }])
       env = {
         "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm",
         "COREPACK_INTEGRITY_KEYS" => merged_keys
       }
-
-      first_error = StandardError.new("Internal Error: No compatible signature found in package metadata")
-
-      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-        "corepack npm -v",
-        fingerprint: "corepack npm -v",
-        env: env
-      ).ordered.and_raise(first_error)
-
-      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-        "corepack npm -v",
-        fingerprint: "corepack npm -v",
-        env: env.merge("COREPACK_INTEGRITY_KEYS" => "")
-      ).ordered.and_return("11.9.0\n")
-
-      expect(described_class.package_manager_run_command("npm", "-v", env: env)).to eq("11.9.0")
-    end
-
-    it "does not retry when COREPACK_INTEGRITY_KEYS verification is already disabled" do
-      env = {
-        "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm",
-        "COREPACK_INTEGRITY_KEYS" => ""
-      }
       error = StandardError.new("Internal Error: No compatible signature found in package metadata")
 
+      # Only one attempt: with merged keys already set we never disable verification.
       expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
         "corepack npm -v",
         fingerprint: "corepack npm -v",

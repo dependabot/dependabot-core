@@ -196,6 +196,56 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
       end
     end
 
+    context "when credentials are provided as Dependabot::Credential objects" do
+      let(:registry_config_files) { {} }
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            "type" => "npm_registry",
+            "registry" => "artifactory.example.com/npm",
+            "token" => "my-token",
+            "replaces-base" => true
+          )
+        ]
+      end
+
+      before do
+        stub_request(:get, "https://registry.npmjs.org/-/npm/v1/keys")
+          .to_return(status: 200, body: JSON.generate({ "keys" => npm_signing_keys }))
+        stub_request(:get, "https://artifactory.example.com/npm/-/npm/v1/keys")
+          .with(headers: { "Authorization" => "Bearer my-token" })
+          .to_return(status: 200, body: JSON.generate({ "keys" => registry_signing_keys }))
+      end
+
+      it "uses the replaces_base? predicate and sets merged Corepack integrity keys" do
+        helper = described_class.new(registry_config_files, credentials)
+        env_variables = helper.find_corepack_env_variables
+        expect(env_variables["COREPACK_INTEGRITY_KEYS"])
+          .to eq(JSON.generate("npm" => npm_signing_keys + registry_signing_keys))
+      end
+    end
+
+    context "when a credential has replaces-base as a non-boolean truthy value" do
+      let(:registry_config_files) { {} }
+      let(:credentials) do
+        [
+          {
+            "type" => "npm_registry",
+            "registry" => "artifactory.example.com/npm",
+            "token" => "my-token",
+            "replaces-base" => "false"
+          }
+        ]
+      end
+
+      it "does not treat the registry as replaces-base" do
+        helper = described_class.new(registry_config_files, credentials)
+        env_variables = helper.find_corepack_env_variables
+        expect(env_variables).not_to have_key("COREPACK_INTEGRITY_KEYS")
+        expect(env_variables).not_to have_key("COREPACK_NPM_REGISTRY")
+      end
+    end
+
     context "when credentials are provided with a trailing slash in the registry URL" do
       let(:registry_config_files) { {} }
       let(:credentials) do

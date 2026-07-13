@@ -3,6 +3,7 @@
 
 require "json"
 require "yaml"
+require "dependabot/credential"
 require "dependabot/dependency_file"
 require "dependabot/registry_client"
 require "sorbet-runtime"
@@ -82,10 +83,11 @@ module Dependabot
       end
 
       # Fetch the `keys` array from an npm-compatible `/-/npm/v1/keys` endpoint.
-      # Returns nil on any failure so the caller can fall back gracefully.
+      # Returns nil on any failure (including a malformed response) so the caller
+      # can fall back gracefully rather than emitting an invalid key payload.
       sig do
         params(url: String, auth_token: T.nilable(String))
-          .returns(T.nilable(T::Array[T::Hash[String, T.untyped]]))
+          .returns(T.nilable(T::Array[T::Hash[String, Object]]))
       end
       private_class_method def self.fetch_signing_keys(url, auth_token = nil)
         headers = auth_token ? { "Authorization" => "Bearer #{auth_token}" } : {}
@@ -93,7 +95,11 @@ module Dependabot
         return nil unless response.status == 200
 
         keys = JSON.parse(response.body)["keys"]
-        keys.is_a?(Array) ? keys : nil
+        return nil unless keys.is_a?(Array)
+        # Each entry must be a signing-key object with at least a keyid and key.
+        return nil unless keys.all? { |k| k.is_a?(Hash) && k["keyid"].is_a?(String) && k["key"].is_a?(String) }
+
+        keys
       rescue StandardError => e
         Dependabot.logger.warn("Failed to fetch Corepack signing keys from #{url}: #{e.message}")
         nil
@@ -194,12 +200,14 @@ module Dependabot
       end
 
       # Whether a credential is a reverse-proxy registry that replaces the base.
-      # Handles both Credential objects and plain hashes.
-      sig { params(cred: T.untyped).returns(T.untyped) }
+      # Handles both Credential objects and plain hashes; mirrors Credential's own
+      # `replaces-base == true` check so a truthy non-boolean (e.g. "false") does
+      # not enable replaces-base behaviour.
+      sig { params(cred: T.any(Dependabot::Credential, T::Hash[String, Object])).returns(T::Boolean) }
       def credential_replaces_base?(cred)
-        return cred.replaces_base? if cred.respond_to?(:replaces_base?)
+        return cred.replaces_base? if cred.is_a?(Dependabot::Credential)
 
-        cred["replaces-base"]
+        cred["replaces-base"] == true
       end
       sig do
         params(
