@@ -62,8 +62,8 @@ module Dependabot
         def version_tag_release
           return unless git_commit_checker.pinned_ref_looks_like_version? && latest_version_tag
 
-          latest_version = latest_version_tag&.fetch(:version)
-          return unless latest_version.is_a?(String) || latest_version.is_a?(Dependabot::Version)
+          latest_version = pre_commit_version(latest_version_tag&.fetch(:version))
+          return unless latest_version
 
           return current_version if shortened_semver_eq?(dependency.version, latest_version.to_s)
 
@@ -76,10 +76,7 @@ module Dependabot
 
           if latest_version_tag
             if git_commit_checker.local_tag_for_pinned_sha || version_comment?
-              version = T.must(latest_version_tag).fetch(:version)
-              return version if version.is_a?(String) || version.is_a?(Dependabot::Version)
-
-              return nil
+              return pre_commit_version(T.must(latest_version_tag).fetch(:version))
             end
 
             return latest_commit_for_pinned_ref
@@ -106,6 +103,11 @@ module Dependabot
         end
 
         private
+
+        sig { params(version: Object).returns(T.nilable(Dependabot::Version)) }
+        def pre_commit_version(version)
+          Dependabot::PreCommit::Version.new(version.to_s) if version.is_a?(Gem::Version)
+        end
 
         sig { returns(T.nilable(T::Hash[Symbol, Object])) }
         def constrained_latest_version_tag

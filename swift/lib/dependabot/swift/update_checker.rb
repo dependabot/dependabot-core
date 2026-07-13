@@ -289,7 +289,7 @@ module Dependabot
       sig { params(tag: T::Hash[Symbol, Object]).returns(T.nilable(Dependabot::Version)) }
       def tag_version(tag)
         version = tag[:version]
-        version if version.is_a?(Dependabot::Version)
+        Dependabot::Swift::Version.new(version.to_s) if version.is_a?(Gem::Version)
       end
 
       sig { returns(XcodeVersionResolver) }

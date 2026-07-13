@@ -88,7 +88,7 @@ module Dependabot
           @forbidden_urls = forbidden_urls
           @cooldown_options = T.let(cooldown_options, T.nilable(Dependabot::Package::ReleaseCooldownOptions))
           @repositories = T.let(nil, T.nilable(T::Array[T::Hash[String, Object]]))
-          @google_version_details = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, Object]]))
+          @google_version_details = T.let(nil, T.nilable(Nokogiri::XML::Document))
           @dependency_repository_details = T.let(nil, T.nilable(T::Array[T::Hash[String, Object]]))
           @release_details = T.let(nil, T.nilable(T::Hash[String, T::Hash[Symbol, Object]]))
           @version_release_date_fallback_fetcher = T.let(nil, T.nilable(VersionReleaseDateFallbackFetcher))

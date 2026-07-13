@@ -205,12 +205,12 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
 
         latest_tag = {
           tag: "v6.0.0",
-          version: Dependabot::PreCommit::Version.new("6.0.0"),
+          version: Gem::Version.new("6.0.0"),
           commit_sha: "latest_sha"
         }
         older_tag = {
           tag: "v5.0.0",
-          version: Dependabot::PreCommit::Version.new("5.0.0"),
+          version: Gem::Version.new("5.0.0"),
           commit_sha: "older_sha"
         }
 
@@ -230,6 +230,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
           .and_return(recent_date, old_date)
 
         result = finder.latest_release_version
+        expect(result).to be_a(Dependabot::PreCommit::Version)
         expect(result.to_s).to eq("5.0.0")
       end
 
