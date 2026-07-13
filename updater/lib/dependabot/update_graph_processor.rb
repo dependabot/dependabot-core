@@ -210,8 +210,12 @@ module Dependabot
         branch: branch,
         sha: base_commit_sha,
         package_manager: job.package_manager,
-        manifest_file: DependencyFile.new(name: "", content: "", directory: T.must(source.directory)),
-        resolved_dependencies: {},
+        manifest_snapshots: [
+          Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(
+            manifest_file: DependencyFile.new(name: "", content: "", directory: T.must(source.directory)),
+            resolved_dependencies: {}
+          )
+        ],
         status: status,
         reason: reason
       )
@@ -236,9 +240,10 @@ module Dependabot
 
       grapher = Dependabot::DependencyGraphers.for_package_manager(job.package_manager).new(file_parser: parser)
 
-      # Build resolved dependencies first so subdependency fetching can set the error flag if it fails.
-      resolved = grapher.resolved_dependencies
+      # Produce the manifest snapshots so any error flags are set on the grapher
+      manifest_group_snapshots = grapher.manifest_group_snapshots
 
+      # If any non-fatal errors were captured during the parse, mark the snapshot as degraded.
       if grapher.errored_fetching_subdependencies
         handle_subdependency_error(grapher.subdependency_error, source)
         status = GithubApi::DependencySubmission::SnapshotStatus::DEGRADED
@@ -250,8 +255,7 @@ module Dependabot
         branch: branch,
         sha: base_commit_sha,
         package_manager: job.package_manager,
-        manifest_file: grapher.relevant_dependency_file,
-        resolved_dependencies: resolved,
+        manifest_snapshots: manifest_group_snapshots,
         status: status || GithubApi::DependencySubmission::SnapshotStatus::SUCCESS,
         reason: reason || nil
       )
