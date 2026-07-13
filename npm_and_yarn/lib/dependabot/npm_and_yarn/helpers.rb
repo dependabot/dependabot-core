@@ -686,7 +686,12 @@ module Dependabot
         return false if default_npm_registry?(registry)
         return false unless error.message.include?(COREPACK_SIGNATURE_METADATA_ERROR)
 
-        !env.key?(RegistryHelper::COREPACK_INTEGRITY_KEYS_ENV)
+        # Allow the retry as long as verification is not already disabled. Merged
+        # integrity keys (a non-empty JSON value set for replaces-base registries)
+        # must not suppress this fallback: if the merged keys still cannot verify a
+        # package (e.g. a registry that strips signatures), we retry once with
+        # verification disabled. Only an already-disabled value ("") stops the retry.
+        env[RegistryHelper::COREPACK_INTEGRITY_KEYS_ENV] != ""
       end
 
       sig { params(registry: String).returns(T::Boolean) }

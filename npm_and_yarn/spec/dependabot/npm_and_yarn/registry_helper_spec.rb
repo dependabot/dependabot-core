@@ -129,8 +129,10 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
       }]
     end
 
-    # Reset the per-job integrity-keys cache so each example fetches afresh.
+    # Reset the per-job integrity-keys cache around each example so fetches are
+    # fresh and no fake keys leak into other specs in the same process.
     before { described_class.instance_variable_set(:@integrity_keys_cache, {}) }
+    after { described_class.instance_variable_set(:@integrity_keys_cache, {}) }
 
     context "when npmrc is provided" do
       let(:registry_config_files) { { npmrc: npmrc_file } }
