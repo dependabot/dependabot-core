@@ -68,6 +68,29 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
         expect(grapher.relevant_dependency_file).to eql(requirements_txt)
       end
     end
+
+    context "when uv.lock is missing and support files appear before the primary requirements file" do
+      let(:constraints_txt) do
+        Dependabot::DependencyFile.new(
+          name: "constraints.txt",
+          content: "urllib3==2.5.0\n",
+          directory: "/",
+          support_file: true
+        )
+      end
+      let(:requirements_txt) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "requests==2.32.5\n",
+          directory: "/"
+        )
+      end
+      let(:dependency_files) { [constraints_txt, requirements_txt] }
+
+      it "ignores support files and returns the primary requirements manifest" do
+        expect(grapher.relevant_dependency_file).to eql(requirements_txt)
+      end
+    end
   end
 
   describe "#resolved_dependencies" do

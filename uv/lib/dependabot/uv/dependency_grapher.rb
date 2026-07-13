@@ -14,6 +14,10 @@ module Dependabot
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
       RUNTIME_GROUP = T.let("dependencies", String)
       DEV_GROUP = T.let("dev-dependencies", String)
+      PRIMARY_MANIFEST_FILENAMES = T.let(
+        ["pyproject.toml", "requirements.txt", "requirements.in"].freeze,
+        T::Array[String]
+      )
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
@@ -65,8 +69,9 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def fallback_manifest_file
-        dependency_files.find { |f| f.name == "pyproject.toml" } ||
-          dependency_files.find { |f| f.name.end_with?(".txt", ".in") }
+        PRIMARY_MANIFEST_FILENAMES.filter_map do |filename|
+          dependency_files.find { |file| file.name == filename && !file.support_file? }
+        end.first
       end
 
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
