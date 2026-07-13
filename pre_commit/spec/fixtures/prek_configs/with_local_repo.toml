@@ -1,0 +1,10 @@
+[[repos]]
+repo = "https://github.com/pre-commit/pre-commit-hooks"
+rev = "v4.4.0"
+hooks = [{ id = "trailing-whitespace" }]
+
+[[repos]]
+repo = "local"
+hooks = [
+  { id = "my-hook", name = "My Hook", entry = "echo", language = "system" },
+]
