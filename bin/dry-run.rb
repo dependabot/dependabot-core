@@ -36,6 +36,7 @@
 # - hex
 # - maven
 # - npm_and_yarn
+# - nub
 # - nuget
 # - pip (includes pipenv)
 # - pre_commit
@@ -81,6 +82,7 @@ $LOAD_PATH << "./julia/lib"
 $LOAD_PATH << "./maven/lib"
 $LOAD_PATH << "./nix/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
+$LOAD_PATH << "./nub/lib"
 $LOAD_PATH << "./nuget/lib"
 $LOAD_PATH << "./pre_commit/lib"
 $LOAD_PATH << "./pub/lib"
@@ -139,6 +141,7 @@ require "dependabot/hex"
 require "dependabot/julia"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
+require "dependabot/nub"
 require "dependabot/nuget"
 require "dependabot/pre_commit"
 require "dependabot/pub"
@@ -391,6 +394,7 @@ valid_package_managers = %w(
   hex
   maven
   npm_and_yarn
+  nub
   nuget
   pip
   pre_commit

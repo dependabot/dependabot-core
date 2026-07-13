@@ -51,6 +51,7 @@
   - any-glob-to-any-file:
     - bun/**
     - npm_and_yarn/**
+    - nub/**
 
 "L: java:gradle":
 - changed-files:
