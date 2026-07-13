@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/logger"
@@ -14,7 +14,7 @@ module Dependabot
         sig do
           params(
             dependency_name: String,
-            repositories: T::Array[T::Hash[String, T.untyped]],
+            repositories: T::Array[T::Hash[String, Object]],
             forbidden_urls: T::Array[String],
             pom_url_builder: T.proc.params(repository_url: String, version: String).returns(String)
           ).void
@@ -35,10 +35,14 @@ module Dependabot
 
           ordered_repositories.each do |repo|
             repository_url = repo.fetch("url")
+            next unless repository_url.is_a?(String)
+
             pom_url = @pom_url_builder.call(repository_url, version)
 
             begin
-              response = Dependabot::RegistryClient.head(url: pom_url, headers: repo["auth_headers"])
+              headers = repo["auth_headers"]
+              headers = {} unless headers.is_a?(Hash)
+              response = Dependabot::RegistryClient.head(url: pom_url, headers: headers)
               last_modified = response.headers["Last-Modified"] || response.headers["last-modified"]
               next unless last_modified
 
@@ -63,10 +67,10 @@ module Dependabot
 
         private
 
-        sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+        sig { returns(T::Array[T::Hash[String, Object]]) }
         def ordered_repositories
           candidates = @repositories.reject do |repo|
-            @forbidden_urls.include?(repo.fetch("url"))
+            @forbidden_urls.include?(repo.fetch("url").to_s)
           end
 
           preferred, remaining = candidates.partition do |repo|

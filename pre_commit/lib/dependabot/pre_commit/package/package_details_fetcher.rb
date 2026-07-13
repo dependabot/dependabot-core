@@ -62,7 +62,9 @@ module Dependabot
         def version_tag_release
           return unless git_commit_checker.pinned_ref_looks_like_version? && latest_version_tag
 
-          latest_version = latest_version_tag&.fetch(:version)
+          latest_version = pre_commit_version(latest_version_tag&.fetch(:version))
+          return unless latest_version
+
           return current_version if shortened_semver_eq?(dependency.version, latest_version.to_s)
 
           latest_version
@@ -74,7 +76,7 @@ module Dependabot
 
           if latest_version_tag
             if git_commit_checker.local_tag_for_pinned_sha || version_comment?
-              return T.must(latest_version_tag).fetch(:version)
+              return pre_commit_version(T.must(latest_version_tag).fetch(:version))
             end
 
             return latest_commit_for_pinned_ref
@@ -83,7 +85,7 @@ module Dependabot
           latest_commit_for_pinned_ref
         end
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { returns(T.nilable(T::Hash[Symbol, Object])) }
         def latest_version_tag
           @latest_version_tag ||= T.let(
             begin
@@ -96,13 +98,20 @@ module Dependabot
 
               git_commit_checker.local_ref_for_latest_version_lower_precision
             end,
-            T.nilable(T::Hash[Symbol, T.untyped])
+            T.nilable(T::Hash[Symbol, Object])
           )
         end
 
         private
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { params(version: Object).returns(T.nilable(Dependabot::Version)) }
+        def pre_commit_version(version)
+          return unless version.is_a?(String) || version.is_a?(Gem::Version)
+
+          Dependabot::PreCommit::Version.new(version.to_s)
+        end
+
+        sig { returns(T.nilable(T::Hash[Symbol, Object])) }
         def constrained_latest_version_tag
           frozen_ref = frozen_comment_ref
           return nil unless frozen_ref
@@ -238,12 +247,15 @@ module Dependabot
         end
 
         sig do
-          params(tags_array: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Array[T::Hash[Symbol, T.untyped]])
+          params(tags_array: T::Array[T::Hash[Symbol, Object]]).returns(T::Array[T::Hash[Symbol, Object]])
         end
         def filter_lower_tags(tags_array)
           return tags_array unless current_version
 
-          tags_array.select { |tag| tag.fetch(:version) > current_version }
+          tags_array.select do |tag|
+            version = tag.fetch(:version)
+            version.is_a?(Gem::Version) && version > current_version
+          end
         end
 
         sig { returns(T::Boolean) }
