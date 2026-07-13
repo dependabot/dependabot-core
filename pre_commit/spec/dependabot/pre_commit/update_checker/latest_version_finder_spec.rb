@@ -210,7 +210,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
         }
         older_tag = {
           tag: "v5.0.0",
-          version: Gem::Version.new("5.0.0"),
+          version: "5.0.0",
           commit_sha: "older_sha"
         }
 

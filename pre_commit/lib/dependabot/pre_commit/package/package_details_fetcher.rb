@@ -106,7 +106,9 @@ module Dependabot
 
         sig { params(version: Object).returns(T.nilable(Dependabot::Version)) }
         def pre_commit_version(version)
-          Dependabot::PreCommit::Version.new(version.to_s) if version.is_a?(Gem::Version)
+          return unless version.is_a?(String) || version.is_a?(Gem::Version)
+
+          Dependabot::PreCommit::Version.new(version.to_s)
         end
 
         sig { returns(T.nilable(T::Hash[Symbol, Object])) }

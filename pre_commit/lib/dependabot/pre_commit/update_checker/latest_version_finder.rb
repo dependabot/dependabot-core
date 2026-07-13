@@ -304,7 +304,9 @@ module Dependabot
         sig { params(tag: T::Hash[Symbol, Object]).returns(T.nilable(Dependabot::Version)) }
         def version_from_tag(tag)
           version = tag[:version]
-          Dependabot::PreCommit::Version.new(version.to_s) if version.is_a?(Gem::Version)
+          return unless version.is_a?(String) || version.is_a?(Gem::Version)
+
+          Dependabot::PreCommit::Version.new(version.to_s)
         end
 
         # Returns all version tags > current_version, sorted descending (latest first).
@@ -321,11 +323,12 @@ module Dependabot
                      end
           cur_version = current_version
 
-          all_tags
-            .select { |tag| tag[:version].is_a?(Gem::Version) }
-            .select { |tag| cur_version.nil? || tag[:version] > cur_version }
-            .sort_by { |tag| tag[:version] }
-            .reverse
+          candidates = all_tags.select do |tag|
+            version = version_from_tag(tag)
+            version && (cur_version.nil? || version > cur_version)
+          end
+
+          candidates.sort_by { |tag| T.must(version_from_tag(tag)) }.reverse
         end
 
         sig { params(release_date: Time).returns(T::Boolean) }
