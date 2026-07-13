@@ -21,13 +21,20 @@ module Dependabot
           (package_details&.releases || []).reverse
         end
 
-        sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
+        VersionDetails = T.type_alias do
+          {
+            version: Dependabot::Version,
+            source_url: T.nilable(String)
+          }
+        end
+
+        sig { returns(T.nilable(VersionDetails)) }
         def latest_version_details
           release = fetch_latest_release
           release&.version ? { version: release.version, source_url: release.url } : nil
         end
 
-        sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
+        sig { returns(T.nilable(VersionDetails)) }
         def lowest_security_fix_version_details
           release = fetch_lowest_security_fix_release
           release&.version ? { version: release.version, source_url: release.url } : nil
