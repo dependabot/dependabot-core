@@ -6,6 +6,7 @@ require "toml-rb"
 require "sorbet-runtime"
 
 require "dependabot/dependency"
+require "dependabot/dependency_requirement"
 require "dependabot/errors"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/requirement_parser"
@@ -95,16 +96,14 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        return wrap_requirements(updated_git_requirements) if git_dependency?
+        return updated_git_requirements if git_dependency?
 
-        wrap_requirements(
-          RequirementsUpdater.new(
-            requirements: requirements,
-            latest_resolvable_version: preferred_resolvable_version&.to_s,
-            update_strategy: requirements_update_strategy,
-            has_lockfile: !(pipfile_lock || poetry_lock).nil?
-          ).updated_requirements
-        )
+        RequirementsUpdater.new(
+          requirements: dependency.requirements,
+          latest_resolvable_version: preferred_resolvable_version&.to_s,
+          update_strategy: requirements_update_strategy,
+          has_lockfile: !(pipfile_lock || poetry_lock).nil?
+        ).updated_requirements
       end
 
       sig { override.returns(T::Boolean) }
@@ -139,13 +138,13 @@ module Dependabot
         latest_version_for_git_dependency
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_git_requirements
         updated_source = updated_git_source
-        return requirements unless updated_source
+        return dependency.requirements unless updated_source
 
-        requirements.map do |req|
-          req.merge(source: updated_source)
+        dependency.requirements.map do |req|
+          Dependabot::DependencyRequirement.create(req.merge(source: updated_source))
         end
       end
 
@@ -165,7 +164,7 @@ module Dependabot
       sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def latest_git_version_details
         @latest_git_version_details ||= T.let(
-          latest_version_finder.latest_version_tag(git_commit_checker: git_commit_checker),
+          git_commit_checker.local_tag_for_latest_version(@update_cooldown),
           T.nilable(T::Hash[Symbol, T.untyped])
         )
       end

@@ -441,8 +441,9 @@ module Dependabot
           .returns(T::Boolean)
       end
       def semver_rules_allow_grouping?(group, dependency, checker)
+        update_types = group.update_types
         # There are no group rules defined, so this dependency can be included in the group.
-        return true unless group.rules["update-types"]
+        return true unless update_types
 
         version_class = Dependabot::Utils.version_class_for_package_manager(job.package_manager)
         unless version_class.correct?(dependency.version.to_s) && version_class.correct?(checker.latest_version)
@@ -461,9 +462,9 @@ module Dependabot
         # Ensure that semver components are of the same type and can be compared with each other.
         return false unless %i(major minor patch).all? { |k| current[k].instance_of?(latest[k].class) }
 
-        return T.must(group.rules["update-types"]).include?("major") if T.must(latest[:major]) > T.must(current[:major])
-        return T.must(group.rules["update-types"]).include?("minor") if T.must(latest[:minor]) > T.must(current[:minor])
-        return T.must(group.rules["update-types"]).include?("patch") if T.must(latest[:patch]) > T.must(current[:patch])
+        return update_types.include?("major") if T.must(latest[:major]) > T.must(current[:major])
+        return update_types.include?("minor") if T.must(latest[:minor]) > T.must(current[:minor])
+        return update_types.include?("patch") if T.must(latest[:patch]) > T.must(current[:patch])
 
         # some ecosystems don't do semver exactly, so anything lower gets individual for now
         false
@@ -484,7 +485,7 @@ module Dependabot
         return true unless Dependabot::Cargo::Version.respond_to?(:update_type)
 
         actual_update_type = Dependabot::Cargo::Version.update_type(version.to_s, latest_version.to_s)
-        group_update_types = T.cast(group.rules["update-types"], T.nilable(T::Array[String]))
+        group_update_types = group.update_types
         return true unless group_update_types
 
         group_update_types.include?(actual_update_type)
@@ -585,8 +586,12 @@ module Dependabot
         normalized_job_dirs = job_directories.map { |d| Pathname.new(d).cleanpath.to_s }.uniq
         normalized_pr_dirs = pr_directories.map { |d| Pathname.new(d).cleanpath.to_s }.uniq
 
-        # Match only when the PR directories exactly match the job directories
-        normalized_job_dirs.sort == normalized_pr_dirs.sort
+        # Match when the PR's directories are a subset of the job's directories.
+        # A PR only records the directories that actually had updates, so it can
+        # legitimately cover fewer directories than the job is configured with.
+        # A PR covering directories outside the job's scope is stale or belongs
+        # to a different configuration, so it is not a match.
+        (normalized_pr_dirs - normalized_job_dirs).empty?
       end
 
       sig do

@@ -7,7 +7,13 @@ require "dependabot/dependency"
 require "dependabot/gradle/file_updater"
 
 RSpec.describe Dependabot::Gradle::FileUpdater::WrapperUpdater do
-  subject(:command_args) { updater.send(:command_args, target_requirements, nil) }
+  subject(:command_args) do
+    Dependabot::Gradle::FileUpdater::Wrapper::CommandBuilder.new(
+      requirements: target_requirements,
+      original_properties: nil,
+      gradle_version: nil
+    ).build
+  end
 
   let(:updater) do
     described_class.new(
@@ -167,6 +173,168 @@ RSpec.describe Dependabot::Gradle::FileUpdater::WrapperUpdater do
         expect(updated_files.first.content).to eq(Base64.encode64(updated_raw_jar_content))
         expect(updated_files.first.decoded_content).to eq(updated_raw_jar_content)
       end
+    end
+  end
+
+  describe "#update_files reconciliation" do
+    subject(:updated_properties) do
+      updater.update_files(properties_file)
+             .find { |f| f.name == "gradle/wrapper/gradle-wrapper.properties" }
+             &.content
+    end
+
+    let(:dependency_files) { [properties_file] }
+    let(:properties_file) do
+      Dependabot::DependencyFile.new(
+        name: "gradle/wrapper/gradle-wrapper.properties",
+        content: original_properties,
+        directory: "/"
+      )
+    end
+
+    let(:original_properties) do
+      <<~PROPS
+        # Keep my settings - managed by the platform team
+        distributionBase=GRADLE_USER_HOME
+        distributionPath=wrapper/dists
+        distributionUrl=https\\://services.gradle.org/distributions/gradle-8.14.2-bin.zip
+        networkTimeout=30000
+        retries=3
+        retryBackOffMs=1000
+        validateDistributionUrl=true
+        zipStoreBase=GRADLE_USER_HOME
+        zipStorePath=wrapper/dists
+        myCompany.customKey=keep-me
+      PROPS
+    end
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "gradle-wrapper",
+        version: "9.0.0",
+        requirements: [{
+          file: "gradle/wrapper/gradle-wrapper.properties",
+          requirement: "9.0.0",
+          groups: [],
+          source: {
+            type: "gradle-distribution",
+            url: "https\\://services.gradle.org/distributions/gradle-9.0.0-bin.zip",
+            property: "distributionUrl"
+          }
+        }],
+        package_manager: "gradle"
+      )
+    end
+
+    # Simulate Gradle's wrapper task regenerating the file from hardcoded defaults
+    # (https://github.com/gradle/gradle/issues/36172): comments, ordering, custom keys and
+    # user-customized values are all lost, recognized keys reset to defaults.
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:, **|
+        File.write(
+          File.join(cwd, "gradle/wrapper/gradle-wrapper.properties"),
+          <<~DEFAULTS
+            distributionBase=GRADLE_USER_HOME
+            distributionPath=wrapper/dists
+            distributionUrl=https\\://services.gradle.org/distributions/gradle-9.0.0-bin.zip
+            networkTimeout=10000
+            retries=0
+            retryBackOffMs=500
+            validateDistributionUrl=false
+            zipStoreBase=GRADLE_USER_HOME
+            zipStorePath=wrapper/dists
+          DEFAULTS
+        )
+        ""
+      end
+    end
+
+    it "updates the distribution URL to the target version" do
+      expect(updated_properties)
+        .to include("distributionUrl=https\\://services.gradle.org/distributions/gradle-9.0.0-bin.zip")
+      expect(updated_properties).not_to include("gradle-8.14.2-bin.zip")
+    end
+
+    it "restores user values reset by the wrapper task (#15312)" do
+      expect(updated_properties).to include("retries=3")
+      expect(updated_properties).to include("retryBackOffMs=1000")
+      expect(updated_properties).to include("networkTimeout=30000")
+      expect(updated_properties).to include("validateDistributionUrl=true")
+    end
+
+    it "preserves comments, custom keys and structural keys" do
+      expect(updated_properties).to include("# Keep my settings - managed by the platform team")
+      expect(updated_properties).to include("myCompany.customKey=keep-me")
+      expect(updated_properties).to include("distributionBase=GRADLE_USER_HOME")
+      expect(updated_properties).to include("zipStorePath=wrapper/dists")
+    end
+
+    it "preserves the original key ordering" do
+      expect(updated_properties.index("networkTimeout"))
+        .to be < updated_properties.index("validateDistributionUrl")
+      expect(updated_properties.index("# Keep my settings")).to eq(0)
+    end
+  end
+
+  describe "#update_files version gating when gradlew is missing" do
+    subject(:run_files) { updater.update_files(properties_file) }
+
+    let(:dependency_files) { [properties_file] }
+    let(:properties_file) do
+      Dependabot::DependencyFile.new(
+        name: "gradle/wrapper/gradle-wrapper.properties",
+        content: <<~PROPS,
+          distributionUrl=https\\://services.gradle.org/distributions/gradle-9.5.0-bin.zip
+          retries=3
+        PROPS
+        directory: "/"
+      )
+    end
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "gradle-wrapper",
+        version: "9.6.0",
+        requirements: [{
+          file: "gradle/wrapper/gradle-wrapper.properties",
+          requirement: "9.6.0",
+          groups: [],
+          source: {
+            type: "gradle-distribution",
+            url: "https\\://services.gradle.org/distributions/gradle-9.6.0-bin.zip",
+            property: "distributionUrl"
+          }
+        }],
+        package_manager: "gradle"
+      )
+    end
+
+    let(:captured_commands) { [] }
+
+    # No `gradlew` script is present, so the wrapper task runs under system Gradle. The system
+    # Gradle here is 8.0 (older than the 9.5.0 wrapper), which does not support `--retries`.
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:, **|
+        captured_commands << command
+        next "Gradle 8.0\n\nBuild time: 2023-01-01" if command == "gradle --version"
+
+        File.write(File.join(cwd, "gradle/wrapper/gradle-wrapper.properties"), properties_file.content)
+        ""
+      end
+    end
+
+    it "detects the system Gradle version before building the wrapper command" do
+      run_files
+      expect(captured_commands).to include("gradle --version")
+    end
+
+    it "gates flags on the system Gradle version, not the wrapper distributionUrl version" do
+      run_files
+      wrapper_command = captured_commands.find { |c| c.include?("wrapper") }
+      # System Gradle 8.0 predates `--retries` (9.5.0), so it must not be forwarded even though the
+      # wrapper's distributionUrl (9.5.0) would support it.
+      expect(wrapper_command).not_to include("--retries")
+      expect(wrapper_command).to start_with("gradle ")
     end
   end
 end

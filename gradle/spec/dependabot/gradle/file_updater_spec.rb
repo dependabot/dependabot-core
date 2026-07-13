@@ -735,6 +735,13 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
             is_expected.to include("distributionUrl=#{distribution_url}")
 
+            # Regression guard for #15312: user-customized and structural keys must survive the
+            # wrapper update rather than being reset to Gradle's hardcoded defaults.
+            is_expected.to include("networkTimeout=10000")
+            is_expected.to include("validateDistributionUrl=true")
+            is_expected.to include("distributionBase=GRADLE_USER_HOME")
+            is_expected.to include("zipStoreBase=GRADLE_USER_HOME")
+
             if checksum
               expected_command += " --gradle-distribution-sha256-sum #{updated_checksum}"
               is_expected.to include("distributionSha256Sum=#{updated_checksum}")

@@ -31,7 +31,7 @@ module Dependabot
         fetched_files.uniq(&:name)
       end
 
-      sig { override.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { override.returns(T.nilable(T::Hash[Symbol, T.anything])) }
       def ecosystem_versions
         nil
       end

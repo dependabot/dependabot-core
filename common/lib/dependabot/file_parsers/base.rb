@@ -25,7 +25,7 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::Source)) }
       attr_reader :source
 
-      sig { returns(T::Hash[Symbol, T.untyped]) }
+      sig { returns(T::Hash[Symbol, T.anything]) }
       attr_reader :options
 
       sig { returns(T::Boolean) }
@@ -40,7 +40,7 @@ module Dependabot
           repo_contents_path: T.nilable(String),
           credentials: T::Array[Dependabot::Credential],
           reject_external_code: T::Boolean,
-          options: T::Hash[Symbol, T.untyped]
+          options: T::Hash[Symbol, T.anything]
         )
           .void
       end

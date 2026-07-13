@@ -27,18 +27,6 @@ module Dependabot
           update_types: hash.fetch("update-types", []) || []
         )
       end
-
-      # Temporary bridge: returns the original hash format for code that
-      # still expects hash access. Remove once all callers are migrated.
-      sig { returns(T::Hash[String, T.untyped]) }
-      def to_hash
-        h = T.let({}, T::Hash[String, T.untyped])
-        h["dependency-name"] = dependency_name if dependency_name
-        h["dependency-type"] = dependency_type
-        h["update-type"] = update_type
-        h["update-types"] = update_types unless update_types.empty?
-        h
-      end
     end
   end
 end

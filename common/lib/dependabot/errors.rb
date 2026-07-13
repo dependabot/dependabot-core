@@ -23,7 +23,7 @@ module Dependabot
 
   # rubocop:disable Metrics/MethodLength
   # rubocop:disable Metrics/CyclomaticComplexity
-  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.anything])) }
   def self.fetcher_error_details(error)
     case error
     when Dependabot::ToolVersionNotSupported
@@ -97,6 +97,11 @@ module Dependabot
         "error-type": "path_dependencies_not_reachable",
         "error-detail": { dependencies: error.dependencies }
       }
+    when Dependabot::PrivateRegistryConfigNotFound
+      {
+        "error-type": "private_registry_config_not_found",
+        "error-detail": { source: error.source }
+      }
     when Dependabot::PrivateSourceAuthenticationFailure
       {
         "error-type": "private_source_authentication_failure",
@@ -137,7 +142,7 @@ module Dependabot
   end
   # rubocop:enable Metrics/CyclomaticComplexity
 
-  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.anything])) }
   def self.parser_error_details(error)
     case error
     when Dependabot::ToolFeatureNotSupported
@@ -221,7 +226,7 @@ module Dependabot
   # rubocop:disable Lint/RedundantCopDisableDirective
   # rubocop:disable Metrics/CyclomaticComplexity
   # rubocop:disable Metrics/AbcSize
-  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.anything])) }
   def self.updater_error_details(error)
     case error
     when Dependabot::ToolFeatureNotSupported
@@ -411,7 +416,7 @@ module Dependabot
 
     interface!
 
-    sig { abstract.returns(T::Hash[Symbol, T.untyped]) }
+    sig { abstract.returns(T::Hash[Symbol, T.anything]) }
     def sentry_context; end
   end
 
@@ -479,7 +484,7 @@ module Dependabot
       super(message || error_type)
     end
 
-    sig { params(hash: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Hash[Symbol, T.untyped]) }
+    sig { params(hash: T.nilable(T::Hash[Symbol, T.anything])).returns(T::Hash[Symbol, T.anything]) }
     def detail(hash = nil)
       {
         "error-type": error_type,
@@ -697,6 +702,22 @@ module Dependabot
   # Source level errors #
   #######################
 
+  class PrivateRegistryConfigNotFound < DependabotError
+    extend T::Sig
+
+    sig { returns(String) }
+    attr_reader :source
+
+    sig { params(source: String).void }
+    def initialize(source)
+      @source = T.let(sanitize_source(source), String)
+      msg = "Private npm registries require either a .npmrc file in your repository, " \
+            "or explicit `scope`/`replaces-base` configuration in dependabot.yml. " \
+            "Registry: #{@source}"
+      super(msg)
+    end
+  end
+
   class PrivateSourceAuthenticationFailure < DependabotError
     extend T::Sig
 
@@ -719,10 +740,10 @@ module Dependabot
     sig { returns(String) }
     attr_reader :source
 
-    sig { params(source: T.nilable(String)).void }
-    def initialize(source)
+    sig { params(source: T.nilable(String), error_message: T.nilable(String)).void }
+    def initialize(source, error_message = nil)
       @source = T.let(sanitize_source(T.must(source)), String)
-      msg = "Bad response error while accessing source: #{@source}"
+      msg = error_message ? sanitize_source(error_message) : "Bad response error while accessing source: #{@source}"
       super(msg)
     end
   end

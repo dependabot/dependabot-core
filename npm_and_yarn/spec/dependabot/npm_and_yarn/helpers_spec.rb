@@ -212,6 +212,64 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
       described_class.package_manager_run_command("npm", "install")
     end
+
+    it "retries once with COREPACK_INTEGRITY_KEYS when corepack signature verification fails" do
+      env = {
+        "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm",
+        "npm_config_registry" => "https://packages.example.com/artifactory/api/npm/npm",
+        "registry" => "https://packages.example.com/artifactory/api/npm/npm"
+      }
+
+      first_error = StandardError.new(
+        "Preparing npm@11.9.0 for immediate activation...\n" \
+        "Internal Error: No compatible signature found in package metadata"
+      )
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: env
+      ).ordered.and_raise(first_error)
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: env.merge("COREPACK_INTEGRITY_KEYS" => "")
+      ).ordered.and_return("11.9.0\n")
+
+      expect(described_class.package_manager_run_command("npm", "-v", env: env)).to eq("11.9.0")
+    end
+
+    it "does not retry for signature errors when no private registry env is configured" do
+      error = StandardError.new("Internal Error: No compatible signature found in package metadata")
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: nil
+      ).once.and_raise(error)
+
+      expect do
+        described_class.package_manager_run_command("npm", "-v")
+      end.to raise_error(StandardError, /No compatible signature found in package metadata/)
+    end
+
+    it "does not retry for signature errors when the configured registry is npmjs" do
+      env = {
+        "COREPACK_NPM_REGISTRY" => "https://registry.npmjs.org/"
+      }
+      error = StandardError.new("Internal Error: No compatible signature found in package metadata")
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: env
+      ).once.and_raise(error)
+
+      expect do
+        described_class.package_manager_run_command("npm", "-v", env: env)
+      end.to raise_error(StandardError, /No compatible signature found in package metadata/)
+    end
   end
 
   describe "::package_manager_run_command raise registry error" do
@@ -862,6 +920,69 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         end
 
         described_class.run_npm_command("install", env: { "CUSTOM_VAR" => "custom-value" })
+      end
+    end
+
+    describe ".run_pnpm_command integration" do
+      it "automatically injects corepack env variables" do
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
+          expect(options[:env]).not_to be_nil
+          expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+          expect(options[:env]["npm_config_registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+          expect(options[:env]["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+          expect(options[:env]["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
+          ""
+        end
+
+        described_class.run_pnpm_command("install")
+      end
+
+      context "when .npmrc registry has a trailing slash (e.g. CodeArtifact)" do
+        let(:npmrc_file) do
+          Dependabot::DependencyFile.new(
+            name: ".npmrc",
+            content: "registry=https://my-domain.d.codeartifact.amazonaws.com/npm/private/\n"
+          )
+        end
+        let(:credentials) { [] }
+
+        it "strips the trailing slash from COREPACK_NPM_REGISTRY" do
+          expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
+            expect(options[:env]).not_to be_nil
+            expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://my-domain.d.codeartifact.amazonaws.com/npm/private")
+            expect(options[:env]["npm_config_registry"]).to eq("https://my-domain.d.codeartifact.amazonaws.com/npm/private")
+            ""
+          end
+
+          described_class.run_pnpm_command("install")
+        end
+      end
+    end
+
+    describe ".run_single_yarn_command integration" do
+      before { allow(described_class).to receive(:setup_yarn_berry) }
+
+      it "automatically injects corepack env variables" do
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
+          expect(options[:env]).not_to be_nil
+          expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+          expect(options[:env]["npm_config_registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+          expect(options[:env]["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+          expect(options[:env]["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
+          ""
+        end
+
+        described_class.run_yarn_command("install")
+      end
+
+      it "merges manually provided env variables with corepack env" do
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
+          expect(options[:env]["CUSTOM_VAR"]).to eq("custom-value")
+          expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+          ""
+        end
+
+        described_class.run_yarn_command("install", env: { "CUSTOM_VAR" => "custom-value" })
       end
     end
 

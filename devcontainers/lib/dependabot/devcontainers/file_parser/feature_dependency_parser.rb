@@ -46,7 +46,7 @@ module Dependabot
         end
 
         # https://github.com/devcontainers/cli/blob/9444540283b236298c28f397dea879e7ec222ca1/src/spec-node/devContainersSpecCLI.ts#L1072
-        sig { returns(T::Hash[String, T.untyped]) }
+        sig { returns(T::Hash[String, T.anything]) }
         def evaluate_with_cli
           raise "config_file_path must be a string" unless config_file_path.is_a?(String) && !config_file_path.empty?
 
@@ -61,13 +61,14 @@ module Dependabot
           JSON.parse(json)
         end
 
-        sig { params(json: T::Hash[String, T.untyped]).returns(T::Array[Dependabot::Dependency]) }
+        sig { params(json: T::Hash[String, T.anything]).returns(T::Array[Dependabot::Dependency]) }
         def parse_cli_json(json)
           dependencies = []
 
-          features = json["features"]
+          features = T.cast(json["features"], T::Hash[String, T.anything])
           features.each do |feature, versions_object|
             name, requirement = feature.split(":")
+            next if name.nil?
 
             # Skip sha pinned tags for now. Ideally the devcontainers CLI would give us updated SHA info
             next if name.end_with?("@sha256")
@@ -76,7 +77,7 @@ module Dependabot
             # and `devcontainer upgrade` work with them. See https://github.com/devcontainers/cli/issues/712
             next unless name.include?("/")
 
-            current = versions_object["current"]
+            current = T.cast(T.cast(versions_object, T::Hash[String, T.anything])["current"], T.nilable(String))
 
             dep = Dependency.new(
               name: name,

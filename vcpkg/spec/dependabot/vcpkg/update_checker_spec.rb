@@ -148,6 +148,83 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
     end
   end
 
+  describe "#up_to_date?" do
+    subject(:up_to_date) { checker.up_to_date? }
+
+    let(:dependency_version) { "9b75e789ece3f942159b8500584e35aafe3979ff" }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: dependency_version,
+        requirements: [{
+          requirement: nil,
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/microsoft/vcpkg.git",
+            ref: "master"
+          },
+          file: "vcpkg.json"
+        }],
+        package_manager: "vcpkg"
+      )
+    end
+
+    let(:latest_version) { "2025.06.13" }
+    let(:latest_version_finder) { instance_double(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder) }
+    let(:mock_latest_release_info) do
+      instance_double(
+        Dependabot::Package::PackageRelease,
+        details: { "commit_sha" => commit_sha, "tag_sha" => "tag123" }
+      )
+    end
+
+    before do
+      allow(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder)
+        .to receive(:new)
+        .and_return(latest_version_finder)
+      allow(latest_version_finder)
+        .to receive_messages(
+          latest_version: latest_version,
+          latest_release_info: mock_latest_release_info
+        )
+    end
+
+    context "when the baseline already points at the latest release commit" do
+      let(:commit_sha) { dependency_version }
+
+      it "is up to date and does not propose an empty update" do
+        expect(up_to_date).to be(true)
+      end
+    end
+
+    context "when the baseline points at an older commit than the latest release" do
+      let(:commit_sha) { "1111111111111111111111111111111111111111" }
+
+      it "is not up to date" do
+        expect(up_to_date).to be(false)
+      end
+    end
+
+    context "when the baseline is an abbreviated SHA that prefixes the latest release commit" do
+      let(:dependency_version) { "9b75e78" }
+      let(:commit_sha) { "9b75e789ece3f942159b8500584e35aafe3979ff" }
+
+      it "is up to date" do
+        expect(up_to_date).to be(true)
+      end
+    end
+
+    context "when there is no resolvable latest release" do
+      let(:commit_sha) { dependency_version }
+      let(:mock_latest_release_info) { nil }
+
+      it "falls back to the base behaviour and is not up to date" do
+        expect(up_to_date).to be(false)
+      end
+    end
+  end
+
   describe "#updated_requirements" do
     subject(:updated_requirements) { checker.updated_requirements }
 
@@ -231,6 +308,62 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
             }]
           )
         end
+      end
+    end
+  end
+
+  describe "#latest_resolvable_previous_version" do
+    subject(:latest_resolvable_previous_version) do
+      checker.latest_resolvable_previous_version("2025.06.13")
+    end
+
+    let(:latest_version_finder) { instance_double(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder) }
+
+    before do
+      allow(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder)
+        .to receive(:new)
+        .and_return(latest_version_finder)
+    end
+
+    context "when the baseline is a commit SHA" do
+      let(:dependency_version) { "1111111111111111111111111111111111111111" }
+
+      before do
+        allow(latest_version_finder)
+          .to receive(:tag_for_commit_sha)
+          .with(dependency_version)
+          .and_return(previous_tag)
+      end
+
+      context "when the SHA maps to a release tag" do
+        let(:previous_tag) { "2025.04.09" }
+
+        it "returns the release tag" do
+          expect(latest_resolvable_previous_version).to eq("2025.04.09")
+        end
+      end
+
+      context "when the SHA has no matching release tag" do
+        let(:previous_tag) { nil }
+
+        it "falls back to the commit SHA" do
+          expect(latest_resolvable_previous_version).to eq(dependency_version)
+        end
+      end
+    end
+
+    context "when the version is not a commit SHA" do
+      let(:dependency_version) { "2025.04.09" }
+
+      before { allow(latest_version_finder).to receive(:tag_for_commit_sha) }
+
+      it "returns the current version unchanged" do
+        expect(latest_resolvable_previous_version).to eq("2025.04.09")
+      end
+
+      it "does not query the version finder" do
+        latest_resolvable_previous_version
+        expect(latest_version_finder).not_to have_received(:tag_for_commit_sha)
       end
     end
   end
@@ -380,6 +513,79 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
       it "returns true for non-baseline dependencies" do
         expect(port_dependency).to be(true)
       end
+    end
+  end
+
+  describe "with a synthesized missing-baseline (version-less) dependency" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: nil,
+        requirements: [{
+          requirement: nil,
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/microsoft/vcpkg.git",
+            ref: "master"
+          },
+          file: "vcpkg.json"
+        }],
+        package_manager: "vcpkg"
+      )
+    end
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "vcpkg.json",
+          content: '{"dependencies": ["fmt"]}',
+          directory: "/"
+        )
+      ]
+    end
+
+    let(:commit_sha) { "9b75e789ece3f942159b8500584e35aafe3979ff" }
+    let(:latest_version_finder) { instance_double(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder) }
+    let(:mock_latest_release_info) do
+      instance_double(
+        Dependabot::Package::PackageRelease,
+        details: { "commit_sha" => commit_sha, "tag_sha" => "tag123" }
+      )
+    end
+
+    before do
+      allow(Dependabot::Vcpkg::UpdateChecker::LatestVersionFinder)
+        .to receive(:new)
+        .and_return(latest_version_finder)
+      allow(latest_version_finder)
+        .to receive_messages(
+          latest_version: "2025.06.13",
+          latest_release_info: mock_latest_release_info
+        )
+    end
+
+    it "is not up to date" do
+      expect(checker.up_to_date?).to be(false)
+    end
+
+    it "can update via an own-requirement unlock" do
+      expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+    end
+
+    it "sets the baseline ref to the latest release commit SHA" do
+      expect(checker.updated_requirements).to eq(
+        [{
+          requirement: nil,
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/microsoft/vcpkg.git",
+            ref: commit_sha
+          },
+          file: "vcpkg.json"
+        }]
+      )
     end
   end
 end

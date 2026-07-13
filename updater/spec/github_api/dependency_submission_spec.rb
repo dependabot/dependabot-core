@@ -19,8 +19,12 @@ RSpec.shared_examples "dependency_submission" do |empty|
       branch: branch,
       sha: sha,
       package_manager: "bundler",
-      manifest_file: empty ? empty_file : lockfile,
-      resolved_dependencies: empty ? {} : resolved_dependencies
+      manifest_snapshots: [
+        Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(
+          manifest_file: empty ? empty_file : lockfile,
+          resolved_dependencies: empty ? {} : resolved_dependencies
+        )
+      ]
     )
   end
 
@@ -204,6 +208,89 @@ RSpec.describe GithubApi::DependencySubmission do
     it_behaves_like "dependency_submission", true
   end
 
+  context "with a manifest file but no resolved dependencies" do
+    subject(:dependency_submission) do
+      described_class.new(
+        job_id: "9999",
+        branch: "main",
+        sha: "fake-sha",
+        package_manager: "bundler",
+        manifest_snapshots: [
+          Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(
+            manifest_file: lockfile,
+            resolved_dependencies: {}
+          )
+        ]
+      )
+    end
+
+    let(:lockfile) do
+      Dependabot::DependencyFile.new(
+        name: "Gemfile.lock",
+        content: fixture("bundler/original/Gemfile.lock"),
+        directory: "/"
+      )
+    end
+
+    it "still reports the manifest with an empty resolved collection" do
+      payload = dependency_submission.payload
+
+      expect(payload[:manifests].length).to eq(1)
+
+      manifest = payload[:manifests].fetch("/Gemfile.lock")
+      expect(manifest[:name]).to eq("/Gemfile.lock")
+      expect(manifest[:file][:source_location]).to eq("Gemfile.lock")
+      expect(manifest[:metadata][:ecosystem]).to eq("rubygems")
+      expect(manifest[:resolved]).to be_empty
+    end
+  end
+
+  context "with multiple manifest group snapshots for a single directory" do
+    subject(:dependency_submission) do
+      described_class.new(
+        job_id: "9999",
+        branch: "main",
+        sha: "fake-sha",
+        package_manager: "pip",
+        manifest_snapshots: [
+          Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(
+            manifest_file: base_txt,
+            resolved_dependencies: {
+              "starlette" => Dependabot::DependencyGraphers::ResolvedDependency.new(
+                package_url: "pkg:pypi/starlette@0.40.0", direct: true, runtime: true, dependencies: []
+              )
+            }
+          ),
+          Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(
+            manifest_file: test_txt,
+            resolved_dependencies: {
+              "pytest" => Dependabot::DependencyGraphers::ResolvedDependency.new(
+                package_url: "pkg:pypi/pytest@8.3.3", direct: true, runtime: false, dependencies: []
+              )
+            }
+          )
+        ]
+      )
+    end
+
+    let(:base_txt) do
+      Dependabot::DependencyFile.new(name: "base-requirements.txt", content: "starlette==0.40.0\n", directory: "/")
+    end
+
+    let(:test_txt) do
+      Dependabot::DependencyFile.new(name: "test-requirements.txt", content: "pytest==8.3.3\n", directory: "/")
+    end
+
+    it "emits one manifest entry per snapshot, each with only its own dependencies" do
+      manifests = dependency_submission.payload[:manifests]
+
+      expect(manifests.keys).to contain_exactly("/base-requirements.txt", "/test-requirements.txt")
+
+      expect(manifests.fetch("/base-requirements.txt")[:resolved].keys).to contain_exactly("starlette")
+      expect(manifests.fetch("/test-requirements.txt")[:resolved].keys).to contain_exactly("pytest")
+    end
+  end
+
   context "when the commit SHA is 64 characters (SHA-256 repo)" do
     subject(:dependency_submission) do
       described_class.new(
@@ -211,8 +298,12 @@ RSpec.describe GithubApi::DependencySubmission do
         branch: "main",
         sha: sha256_sha,
         package_manager: "bundler",
-        manifest_file: lockfile,
-        resolved_dependencies: resolved_dependencies
+        manifest_snapshots: [
+          Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(
+            manifest_file: lockfile,
+            resolved_dependencies: resolved_dependencies
+          )
+        ]
       )
     end
 

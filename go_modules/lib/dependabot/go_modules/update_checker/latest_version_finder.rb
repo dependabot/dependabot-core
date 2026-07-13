@@ -305,7 +305,7 @@ module Dependabot
           @wants_prerelease ||= T.let(
             begin
               current_version = dependency.numeric_version
-              !current_version&.prerelease?.nil?
+              current_version&.prerelease? || false
             end,
             T.nilable(T::Boolean)
           )
