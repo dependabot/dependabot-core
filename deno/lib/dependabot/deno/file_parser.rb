@@ -76,9 +76,9 @@ module Dependabot
         )
       end
 
-      sig { params(file: DependencyFile).returns(T::Hash[String, T.untyped]) }
+      sig { params(file: DependencyFile).returns(T::Hash[String, String]) }
       def imports_for(file)
-        Helpers.parse_json_or_jsonc(file.content).fetch("imports", {})
+        T.cast(Helpers.parse_json_or_jsonc(file.content).fetch("imports", {}), T::Hash[String, String])
       end
 
       sig { params(specifier: String, file: DependencyFile).returns(T.nilable(Dependabot::Dependency)) }

@@ -311,7 +311,7 @@ module Dependabot
         latest_resolvable_version
       end
 
-      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped])) }
+      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.anything])) }
       def updated_source
         # Never need to update source, unless a git_dependency
         return dependency_source_details unless git_dependency?
@@ -327,7 +327,7 @@ module Dependabot
         dependency_source_details
       end
 
-      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped])) }
+      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.anything])) }
       def dependency_source_details
         dependency.source_details
       end
