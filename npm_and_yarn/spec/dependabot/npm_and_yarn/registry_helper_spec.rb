@@ -109,6 +109,29 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
   end
 
   describe "#find_corepack_env_variables" do
+    let(:npm_signing_keys) do
+      [{
+        "expires" => nil,
+        "keyid" => "SHA256:npm",
+        "keytype" => "ecdsa-sha2-nistp256",
+        "scheme" => "ecdsa-sha2-nistp256",
+        "key" => "npm-public-key"
+      }]
+    end
+
+    let(:registry_signing_keys) do
+      [{
+        "expires" => nil,
+        "keyid" => "SHA256:registry",
+        "keytype" => "ecdsa-sha2-nistp256",
+        "scheme" => "ecdsa-sha2-nistp256",
+        "key" => "registry-public-key"
+      }]
+    end
+
+    # Reset the per-job integrity-keys cache so each example fetches afresh.
+    before { described_class.instance_variable_set(:@integrity_keys_cache, {}) }
+
     context "when npmrc is provided" do
       let(:registry_config_files) { { npmrc: npmrc_file } }
 
@@ -137,15 +160,37 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         ]
       end
 
-      it "returns registry with https scheme" do
+      before do
+        stub_request(:get, "https://registry.npmjs.org/-/npm/v1/keys")
+          .to_return(status: 200, body: JSON.generate({ "keys" => npm_signing_keys }))
+        stub_request(:get, "https://artifactory.example.com/npm/-/npm/v1/keys")
+          .with(headers: { "Authorization" => "Bearer my-token" })
+          .to_return(status: 200, body: JSON.generate({ "keys" => registry_signing_keys }))
+      end
+
+      it "returns registry with https scheme and merged Corepack integrity keys" do
         helper = described_class.new(registry_config_files, credentials)
         env_variables = helper.find_corepack_env_variables
         expect(env_variables).to eq(
           "COREPACK_NPM_REGISTRY" => "https://artifactory.example.com/npm",
           "npm_config_registry" => "https://artifactory.example.com/npm",
           "COREPACK_NPM_TOKEN" => "my-token",
-          "registry" => "https://artifactory.example.com/npm"
+          "registry" => "https://artifactory.example.com/npm",
+          "COREPACK_INTEGRITY_KEYS" => JSON.generate("npm" => npm_signing_keys + registry_signing_keys)
         )
+      end
+
+      context "when a key endpoint fetch fails" do
+        before do
+          stub_request(:get, "https://artifactory.example.com/npm/-/npm/v1/keys")
+            .to_return(status: 500, body: "boom")
+        end
+
+        it "leaves Corepack integrity keys unset rather than disabling verification" do
+          helper = described_class.new(registry_config_files, credentials)
+          env_variables = helper.find_corepack_env_variables
+          expect(env_variables).not_to have_key("COREPACK_INTEGRITY_KEYS")
+        end
       end
     end
 
@@ -162,6 +207,13 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
         ]
       end
 
+      before do
+        stub_request(:get, "https://registry.npmjs.org/-/npm/v1/keys")
+          .to_return(status: 200, body: JSON.generate({ "keys" => npm_signing_keys }))
+        stub_request(:get, "https://artifactory.example.com/npm/-/npm/v1/keys")
+          .to_return(status: 200, body: JSON.generate({ "keys" => registry_signing_keys }))
+      end
+
       it "strips the trailing slash from the registry URL" do
         helper = described_class.new(registry_config_files, credentials)
         env_variables = helper.find_corepack_env_variables
@@ -169,8 +221,40 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
           "COREPACK_NPM_REGISTRY" => "https://artifactory.example.com/npm",
           "npm_config_registry" => "https://artifactory.example.com/npm",
           "COREPACK_NPM_TOKEN" => "my-token",
-          "registry" => "https://artifactory.example.com/npm"
+          "registry" => "https://artifactory.example.com/npm",
+          "COREPACK_INTEGRITY_KEYS" => JSON.generate("npm" => npm_signing_keys + registry_signing_keys)
         )
+      end
+    end
+
+    context "when credentials are provided without replaces-base" do
+      let(:registry_config_files) { {} }
+      let(:credentials) do
+        [
+          {
+            "type" => "npm_registry",
+            "registry" => "artifactory.example.com/npm",
+            "token" => "my-token",
+            "replaces-base" => false
+          }
+        ]
+      end
+
+      it "does not set Corepack integrity keys and does not fetch keys" do
+        helper = described_class.new(registry_config_files, credentials)
+        env_variables = helper.find_corepack_env_variables
+        expect(env_variables).not_to have_key("COREPACK_INTEGRITY_KEYS")
+        expect(WebMock).not_to have_requested(:get, "https://registry.npmjs.org/-/npm/v1/keys")
+      end
+    end
+
+    context "when no private registry is configured" do
+      let(:registry_config_files) { {} }
+
+      it "does not set Corepack integrity keys" do
+        helper = described_class.new(registry_config_files, [])
+        env_variables = helper.find_corepack_env_variables
+        expect(env_variables).not_to have_key("COREPACK_INTEGRITY_KEYS")
       end
     end
 
