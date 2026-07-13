@@ -69,9 +69,11 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def fallback_manifest_file
+        manifest_candidates = dependency_files.reject(&:support_file?)
+
         PRIMARY_MANIFEST_FILENAMES.filter_map do |filename|
-          dependency_files.find { |file| file.name == filename && !file.support_file? }
-        end.first
+          manifest_candidates.find { |file| file.name == filename }
+        end.first || manifest_candidates.find { |file| file.name.end_with?(".txt", ".in") }
       end
 
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }

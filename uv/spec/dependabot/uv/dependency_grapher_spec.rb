@@ -91,6 +91,21 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
         expect(grapher.relevant_dependency_file).to eql(requirements_txt)
       end
     end
+
+    context "when uv.lock is missing and only a non-primary requirements file is present" do
+      let(:dev_requirements_txt) do
+        Dependabot::DependencyFile.new(
+          name: "dev-requirements.txt",
+          content: "pytest==8.4.2\n",
+          directory: "/"
+        )
+      end
+      let(:dependency_files) { [dev_requirements_txt] }
+
+      it "returns that requirements file as fallback" do
+        expect(grapher.relevant_dependency_file).to eql(dev_requirements_txt)
+      end
+    end
   end
 
   describe "#resolved_dependencies" do
