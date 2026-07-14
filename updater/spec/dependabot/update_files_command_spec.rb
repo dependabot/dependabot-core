@@ -569,7 +569,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       end
 
       it "honours the blocked versions from the job definition" do
-        dummy_runner = double(run: nil)
+        dummy_runner = instance_double(Dependabot::Updater, run: nil)
         allow(Dependabot::Updater).to receive(:new).and_return(dummy_runner)
         allow(dummy_runner).to receive(:run)
         allow(service).to receive(:mark_job_as_processed)

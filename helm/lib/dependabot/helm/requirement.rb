@@ -1,0 +1,218 @@
+# typed: strict
+# frozen_string_literal: true
+
+require "sorbet-runtime"
+
+require "dependabot/requirement"
+require "dependabot/utils"
+require "dependabot/helm/version"
+
+module Dependabot
+  module Helm
+    # Parses Helm Chart.yaml SemVer range constraints (^, ~, x-ranges, hyphen
+    # ranges, || OR, space-AND and comma-AND). Adapted from
+    # Dependabot::NpmAndYarn::Requirement: Helm uses the same SemVer family
+    # (Masterminds), unlike the Gem-style Docker::Requirement registered for the
+    # docker-image path.
+    #
+    # NOTE: this class is intentionally NOT registered as the requirement class
+    # for "helm" (that remains Docker::Requirement, used by the docker-image
+    # path and ignore conditions). It is used explicitly by the range-preserving
+    # requirements updater.
+    class Requirement < Dependabot::Requirement
+      extend T::Sig
+
+      AND_SEPARATOR = T.let(/(?<=[a-zA-Z0-9*])\s+(?:&+\s+)?(?!\s*[|-])/, Regexp)
+      OR_SEPARATOR = T.let(/(?<=[a-zA-Z0-9*])\s*\|+/, Regexp)
+
+      # Allow an optional 'v' prefix and an optional '+<build metadata/digest>'
+      # suffix. Helm::Version supports the latter (e.g. "1.0.119807+<digest>"
+      # from OCI charts), so the requirement parser must accept it too or
+      # constraints containing it raise BadRequirementError.
+      quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
+      version_pattern = "v?#{Gem::Version::VERSION_PATTERN}(?:\\+[0-9A-Za-z\\-.]+)?"
+
+      PATTERN_RAW = T.let("\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze, String)
+      PATTERN = T.let(/\A#{PATTERN_RAW}\z/, Regexp)
+
+      # Always returns a Helm::Version (never the plain Gem::Version-backed
+      # DefaultRequirement), so satisfaction comparisons stay Helm::Version vs
+      # Helm::Version — Helm::Version#<=> has a strict sig that rejects plain
+      # Gem::Version operands.
+      sig do
+        params(obj: T.any(String, Gem::Version))
+          .returns(T::Array[T.any(String, Dependabot::Version)])
+      end
+      def self.parse(obj)
+        return ["=", Helm::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
+
+        unless (matches = PATTERN.match(obj.to_s))
+          raise BadRequirementError, "Illformed requirement [#{obj.inspect}]"
+        end
+
+        [matches[1] || "=", Helm::Version.new(T.must(matches[2]))]
+      end
+
+      # Returns an array of requirements. At least one requirement from the
+      # returned array must be satisfied for a version to be valid.
+      sig { override.params(requirement_string: T.nilable(String)).returns(T::Array[Requirement]) }
+      def self.requirements_array(requirement_string)
+        return [new(nil)] if requirement_string.nil?
+
+        # Parentheses are extremely rare in Helm constraints; strip them.
+        requirement_string = requirement_string.gsub(/[()]/, "")
+        requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
+          new(req_string.strip.split(AND_SEPARATOR))
+        end
+      end
+
+      sig { params(requirements: T.nilable(T.any(String, T::Array[String]))).void }
+      def initialize(*requirements)
+        requirements = requirements.flatten.compact
+        # `new(nil)` (from `requirements_array(nil)`) means "match anything".
+        # Use a literal ">= 0" so it flows through our `parse` and is backed by a
+        # Helm::Version — Gem's DefaultRequirement uses a plain Gem::Version, which
+        # Helm::Version#<=>'s strict sig would reject.
+        requirements = [">= 0"] if requirements.empty?
+
+        requirements = requirements.flat_map { |req_string| req_string.split(",").map(&:strip) }
+                                   .flat_map { |req_string| convert_helm_constraint_to_ruby_constraint(req_string) }
+
+        super
+      end
+
+      private
+
+      sig { params(req_string: String).returns(T.any(String, T::Array[String])) }
+      def convert_helm_constraint_to_ruby_constraint(req_string)
+        # Leave dist-tags / non-numeric leading tokens untouched.
+        return req_string if req_string.match?(/^([A-Za-uw-z]|v[^\d])/)
+
+        # Wildcards combined with an operator need dedicated handling before the
+        # generic wildcard strip below (which would corrupt them).
+        wildcard = wildcard_ruby_constraint(req_string)
+        return wildcard if wildcard
+
+        dispatch_ruby_constraint(req_string.gsub(/(?:\.|^)[xX*]/, ""))
+      end
+
+      # Dispatches a wildcard-stripped constraint token to its converter.
+      sig { params(req_string: String).returns(T.any(String, T::Array[String])) }
+      def dispatch_ruby_constraint(req_string)
+        if req_string.empty? then ">= 0"
+        elsif req_string.start_with?("~>") then req_string
+        elsif req_string.start_with?("=") then req_string.gsub(/^=*/, "")
+        elsif req_string.start_with?("~") then convert_tilde_req(req_string)
+        elsif req_string.start_with?("^") then convert_caret_req(req_string)
+        elsif req_string.include?(" - ") then convert_hyphen_req(req_string)
+        elsif req_string.match?(/[<>]/) then req_string
+        else ruby_range(req_string)
+        end
+      end
+
+      # Handles wildcard constraints that a leading operator would otherwise
+      # corrupt. Returns nil when there is no operator+wildcard to expand.
+      #   - "<=1.x"/">1.2.x": expand from the wildcard's [floor, ceiling) span
+      #     (stripping the wildcard first would turn "<=1.x" into "<=1", which
+      #     wrongly rejects 1.5.0 that Masterminds accepts).
+      #   - "*"/"^*"/"~*": a bare wildcard means "any version"; any other
+      #     conversion yields an empty bound.
+      sig { params(req_string: String).returns(T.nilable(String)) }
+      def wildcard_ruby_constraint(req_string)
+        if (m = req_string.match(/\A(<=|>=|<|>)\s*(\d+(?:\.\d+)*)\.[xX*]\z/))
+          return convert_wildcard_comparator(T.must(m[1]), T.must(m[2]))
+        end
+
+        return ">= 0" if req_string.match?(/\A[\^~<>=\s]*[xX*]+\z/)
+
+        nil
+      end
+
+      # Expands a comparator applied to a wildcard version ("1.x" spans
+      # [1.0.0, 2.0.0); "1.2.x" spans [1.2.0, 1.3.0)) per Masterminds semantics:
+      #   >= X.x -> >= floor    > X.x -> >= ceiling
+      #   <  X.x -> <  floor    <= X.x -> <  ceiling
+      sig { params(operator: String, prefix: String).returns(String) }
+      def convert_wildcard_comparator(operator, prefix)
+        parts = prefix.split(".").map(&:to_i)
+        floor = (parts + [0, 0, 0]).first(3)
+        ceiling_parts = parts.dup
+        ceiling_parts[-1] = T.must(ceiling_parts[-1]) + 1
+        ceiling = (ceiling_parts + [0, 0, 0]).first(3)
+
+        case operator
+        when ">=" then ">= #{floor.join('.')}"
+        when ">" then ">= #{ceiling.join('.')}"
+        when "<" then "< #{floor.join('.')}"
+        else "< #{ceiling.join('.')}" # "<="
+        end
+      end
+
+      sig { params(req_string: String).returns(String) }
+      def convert_tilde_req(req_string)
+        version = req_string.gsub(/^~\>?[\s=]*/, "")
+        parts = version.split(".")
+        parts << "0" if parts.count < 3
+        "~> #{parts.join('.')}"
+      end
+
+      sig { params(req_string: String).returns(T::Array[String]) }
+      def convert_hyphen_req(req_string)
+        parts = req_string.split(/\s+-\s+/)
+        lower_bound = T.must(parts[0])
+        upper_bound = T.must(parts[1])
+        lower_bound_parts = lower_bound.split(".")
+        lower_bound_parts.fill("0", lower_bound_parts.length...3)
+
+        upper_bound_parts = upper_bound.split(".")
+        upper_bound_range =
+          if upper_bound_parts.length < 3
+            # When upper bound is a partial version treat these as an X-range:
+            # "1.0 - 2.0" includes the whole 2.0.x series, so always increment
+            # the last specified component (even when it is 0) before padding —
+            # otherwise the bound becomes "< 2.0.0.a" and excludes 2.0.0.
+            upper_bound_parts[-1] = (T.must(upper_bound_parts[-1]).to_i + 1).to_s
+            upper_bound_parts.fill("0", upper_bound_parts.length...3)
+            "< #{upper_bound_parts.join('.')}.a"
+          else
+            "<= #{upper_bound_parts.join('.')}"
+          end
+
+        [">= #{lower_bound_parts.join('.')}", upper_bound_range]
+      end
+
+      sig { params(req_string: String).returns(String) }
+      def ruby_range(req_string)
+        parts = req_string.split(".")
+        # If we have three or more parts then this is an exact match
+        return req_string if parts.count >= 3
+
+        # If we have fewer than three parts we do a partial match
+        parts << "0"
+        "~> #{parts.join('.')}"
+      end
+
+      sig { params(req_string: String).returns(T::Array[String]) }
+      def convert_caret_req(req_string)
+        version = req_string.gsub(/^\^[\s=]*/, "")
+        parts = version.split(".")
+        parts.fill("x", parts.length...3)
+        first_non_zero = parts.find { |d| d != "0" }
+        first_non_zero_index =
+          first_non_zero ? T.must(parts.index(first_non_zero)) : parts.count - 1
+        # If the requirement has a blank minor or patch version increment the
+        # previous index value with 1
+        first_non_zero_index -= 1 if first_non_zero == "x"
+        upper_bound = parts.map.with_index do |part, i|
+          if i < first_non_zero_index then part
+          elsif i == first_non_zero_index then (part.to_i + 1).to_s
+          elsif i > first_non_zero_index && i == 2 then "0.a"
+          else "0"
+          end
+        end.join(".")
+
+        [">= #{version}", "< #{upper_bound}"]
+      end
+    end
+  end
+end

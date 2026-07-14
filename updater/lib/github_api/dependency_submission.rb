@@ -43,11 +43,8 @@ module GithubApi
     sig { returns(String) }
     attr_reader :package_manager
 
-    sig { returns(Dependabot::DependencyFile) }
-    attr_reader :manifest_file
-
-    sig { returns(T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency]) }
-    attr_reader :resolved_dependencies
+    sig { returns(T::Array[Dependabot::DependencyGraphers::ManifestGroupSnapshot]) }
+    attr_reader :manifest_snapshots
 
     sig { returns(SnapshotStatus) }
     attr_reader :status
@@ -61,8 +58,7 @@ module GithubApi
         branch: String,
         sha: String,
         package_manager: String,
-        manifest_file: Dependabot::DependencyFile,
-        resolved_dependencies: T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency],
+        manifest_snapshots: T::Array[Dependabot::DependencyGraphers::ManifestGroupSnapshot],
         status: SnapshotStatus,
         reason: T.nilable(String)
       ).void
@@ -72,8 +68,7 @@ module GithubApi
       branch:,
       sha:,
       package_manager:,
-      manifest_file:,
-      resolved_dependencies:,
+      manifest_snapshots:,
       status: SnapshotStatus::SUCCESS,
       reason: nil
     )
@@ -82,11 +77,36 @@ module GithubApi
       @sha = sha
       @package_manager = package_manager
 
-      @manifest_file = manifest_file
-      @resolved_dependencies = resolved_dependencies
+      # A submission always covers a single directory, and every ecosystem produces at least one manifest
+      # group snapshot.
+      #
+      # A directory with no supported manifest is represented by a single snapshot for a
+      # nameless sentinel manifest, so an empty array here is a programming error rather than "nothing to
+      # report".
+      raise ArgumentError, "manifest_snapshots must not be empty" if manifest_snapshots.empty?
+
+      @manifest_snapshots = manifest_snapshots
 
       @status = status
       @reason = reason
+    end
+
+    # The representative manifest file for the submission, used for the job correlator and scanned path. All
+    # snapshots share a directory, so any of them yields the same correlator; we use the first.
+    sig { returns(Dependabot::DependencyFile) }
+    def manifest_file
+      T.must(@manifest_snapshots.first).manifest_file
+    end
+
+    # The aggregate resolved dependency set across every manifest in the submission. Used for logging and
+    # empty-submission checks; the payload itself is built per-manifest from `manifest_snapshots`.
+    sig { returns(T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency]) }
+    def resolved_dependencies
+      @manifest_snapshots.each_with_object(
+        T.let({}, T::Hash[String, Dependabot::DependencyGraphers::ResolvedDependency])
+      ) do |snapshot, aggregate|
+        aggregate.merge!(snapshot.resolved_dependencies)
+      end
     end
 
     # TODO: Change to a typed structure?
@@ -165,32 +185,44 @@ module GithubApi
       returns(T::Hash[String, T.untyped])
     end
     def manifests
-      # We only omit the manifest entry when there is no real manifest file to report, e.g. an empty
-      # submission representing a directory where no manifests were found or a failure occurred.
-      #
-      # A manifest file that genuinely resolves to no dependencies should still be submitted with an
-      # empty `resolved` collection so the snapshot reflects that the file was scanned.
-      return {} if manifest_file.name.empty?
+      @manifest_snapshots.each_with_object({}) do |snapshot, manifests|
+        entry = manifest_entry(snapshot)
+        next if entry.nil?
+
+        manifests[snapshot.manifest_file.path] = entry
+      end
+    end
+
+    # Builds a single manifest entry for the payload, or nil when there is no real manifest file to report
+    # (e.g. an empty submission representing a directory where no manifests were found or a failure occurred).
+    #
+    # A manifest file that genuinely resolves to no dependencies is still emitted with an empty `resolved`
+    # collection so the snapshot reflects that the file was scanned.
+    sig do
+      params(snapshot: Dependabot::DependencyGraphers::ManifestGroupSnapshot)
+        .returns(T.nilable(T::Hash[Symbol, T.untyped]))
+    end
+    def manifest_entry(snapshot)
+      manifest_file = snapshot.manifest_file
+      return nil if manifest_file.name.empty?
 
       {
-        manifest_file.path => {
-          name: manifest_file.path,
-          file: {
-            source_location: manifest_file.path.gsub(%r{^/}, "")
-          },
-          metadata: {
-            ecosystem: GithubApi::EcosystemMapper.ecosystem_for(package_manager),
-            blob_oid: manifest_file.blob_oid(algorithm: blob_hash_algorithm)
-          }.compact,
-          resolved: resolved_dependencies.transform_values do |resolved|
-            {
-              package_url: resolved.package_url,
-              relationship: resolved.direct ? "direct" : "indirect",
-              scope: resolved.runtime ? "runtime" : "development",
-              dependencies: resolved.dependencies
-            }
-          end
-        }
+        name: manifest_file.path,
+        file: {
+          source_location: manifest_file.path.gsub(%r{^/}, "")
+        },
+        metadata: {
+          ecosystem: GithubApi::EcosystemMapper.ecosystem_for(package_manager),
+          blob_oid: manifest_file.blob_oid(algorithm: blob_hash_algorithm)
+        }.compact,
+        resolved: snapshot.resolved_dependencies.transform_values do |resolved|
+          {
+            package_url: resolved.package_url,
+            relationship: resolved.direct ? "direct" : "indirect",
+            scope: resolved.runtime ? "runtime" : "development",
+            dependencies: resolved.dependencies
+          }
+        end
       }
     end
 
