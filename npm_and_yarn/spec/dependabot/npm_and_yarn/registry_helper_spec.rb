@@ -207,6 +207,19 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
           expect(env_variables).not_to have_key("COREPACK_INTEGRITY_KEYS")
         end
       end
+
+      context "when the npm key endpoint returns an empty keys array" do
+        before do
+          stub_request(:get, "https://registry.npmjs.org/-/npm/v1/keys")
+            .to_return(status: 200, body: JSON.generate({ "keys" => [] }))
+        end
+
+        it "leaves Corepack integrity keys unset rather than dropping npm trust" do
+          helper = described_class.new(registry_config_files, credentials)
+          env_variables = helper.find_corepack_env_variables
+          expect(env_variables).not_to have_key("COREPACK_INTEGRITY_KEYS")
+        end
+      end
     end
 
     context "when credentials are provided as Dependabot::Credential objects" do

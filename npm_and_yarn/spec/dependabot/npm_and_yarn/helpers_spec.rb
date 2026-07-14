@@ -763,6 +763,15 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         .with(:enable_private_registry_for_corepack).and_return(true)
       allow(Dependabot::Experiments).to receive(:enabled?)
         .with(:enable_corepack_for_npm_and_yarn).and_return(true)
+      # Building env for a replaces-base registry fetches Corepack signing keys.
+      # Stub the endpoints so these examples stay hermetic and don't hit the network.
+      stub_request(:get, %r{/-/npm/v1/keys\z})
+        .to_return(
+          status: 200,
+          body: JSON.generate("keys" => [{ "keyid" => "SHA256:test", "key" => "test-key" }])
+        )
+      # Ensure a fresh integrity-keys cache so the stubs are exercised each example.
+      Dependabot::NpmAndYarn::RegistryHelper.instance_variable_set(:@integrity_keys_cache, {})
     end
 
     after do
