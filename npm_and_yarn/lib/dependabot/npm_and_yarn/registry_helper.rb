@@ -35,6 +35,10 @@ module Dependabot
       NPM_KEYS_URL = "https://registry.npmjs.org/-/npm/v1/keys"
       KEYS_ENDPOINT_PATH = "/-/npm/v1/keys"
 
+      # Sentinel recorded in the registry-info hash (whose values are strings) to
+      # flag a replaces-base registry. Compared explicitly rather than by truthiness.
+      REPLACES_BASE_FLAG = "true"
+
       # Cache of merged Corepack integrity keys, keyed by normalized registry URL,
       # so we fetch each registry's keys at most once per update job. A nil value
       # records that the keys could not be built, so we don't retry the fetch.
@@ -137,7 +141,7 @@ module Dependabot
             # signature verification fails against it. Rather than disabling the
             # check, merge npm's public keys with the registry's own keys so that
             # verification stays enabled and trusts both sources. See issue #15567.
-            if registry_info[:replaces_base]
+            if registry_info[:replaces_base] == REPLACES_BASE_FLAG
               integrity_keys = RegistryHelper.corepack_integrity_keys(registry, registry_info[:auth_token])
               env_variables[COREPACK_INTEGRITY_KEYS_ENV] = integrity_keys if integrity_keys
             end
@@ -195,7 +199,7 @@ module Dependabot
 
           # Flag that this registry replaces the base (reverse-proxy / caching
           # proxy), so Corepack's signature keys must be augmented with its own.
-          registries[:replaces_base] ||= "true"
+          registries[:replaces_base] ||= REPLACES_BASE_FLAG
         end
 
         registries
