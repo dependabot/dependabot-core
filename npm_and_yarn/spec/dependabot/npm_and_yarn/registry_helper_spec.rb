@@ -194,6 +194,19 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
           expect(env_variables).not_to have_key("COREPACK_INTEGRITY_KEYS")
         end
       end
+
+      context "when a key endpoint returns a malformed keys payload" do
+        before do
+          stub_request(:get, "https://artifactory.example.com/npm/-/npm/v1/keys")
+            .to_return(status: 200, body: JSON.generate({ "keys" => ["invalid"] }))
+        end
+
+        it "leaves Corepack integrity keys unset rather than emitting an invalid payload" do
+          helper = described_class.new(registry_config_files, credentials)
+          env_variables = helper.find_corepack_env_variables
+          expect(env_variables).not_to have_key("COREPACK_INTEGRITY_KEYS")
+        end
+      end
     end
 
     context "when credentials are provided as Dependabot::Credential objects" do
