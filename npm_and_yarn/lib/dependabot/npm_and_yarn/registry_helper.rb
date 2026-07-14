@@ -95,7 +95,9 @@ module Dependabot
         return nil unless response.status == 200
 
         keys = JSON.parse(response.body)["keys"]
-        return nil unless keys.is_a?(Array)
+        # Require a non-empty array: an empty response is treated as a fetch
+        # failure (nil) rather than silently dropping this source's trust.
+        return nil unless keys.is_a?(Array) && !keys.empty?
         # Each entry must be a signing-key object with at least a keyid and key.
         return nil unless keys.all? { |k| k.is_a?(Hash) && k["keyid"].is_a?(String) && k["key"].is_a?(String) }
 
