@@ -64,15 +64,38 @@ module Dependabot
         # Reuses SharedFileFetcher's reference regexes so callers keep exactly the children the file fetcher pulled in.
         sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
         def self.referenced_paths(file)
+          scan_reference_paths(
+            file,
+            [
+              Dependabot::Python::SharedFileFetcher::CHILD_REQUIREMENT_REGEX,
+              Dependabot::Python::SharedFileFetcher::CONSTRAINT_REGEX
+            ]
+          )
+        end
+
+        # The sibling paths a file pins via `-c` (constraint references only). Constraint files install
+        # nothing - they only bound versions - so they are ring-fenced from being treated as layers.
+        sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
+        def self.constraint_paths(file)
+          scan_reference_paths(file, [Dependabot::Python::SharedFileFetcher::CONSTRAINT_REGEX])
+        end
+
+        # The sibling paths a file includes via `-r` (requirement references only). An `-r`-included file
+        # is genuinely installed, so it stays layer-eligible even if some other file also `-c`s it.
+        sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
+        def self.required_paths(file)
+          scan_reference_paths(file, [Dependabot::Python::SharedFileFetcher::CHILD_REQUIREMENT_REGEX])
+        end
+
+        # Scans a file's content for the given reference regexes and resolves each captured path to a
+        # repo-relative cleanpath (matching fetched DependencyFile names).
+        sig { params(file: Dependabot::DependencyFile, regexes: T::Array[Regexp]).returns(T::Array[String]) }
+        def self.scan_reference_paths(file, regexes)
           content = file.content
           return [] if content.nil?
 
           current_dir = File.dirname(file.name)
-          referenced =
-            content.scan(Dependabot::Python::SharedFileFetcher::CHILD_REQUIREMENT_REGEX).flatten +
-            content.scan(Dependabot::Python::SharedFileFetcher::CONSTRAINT_REGEX).flatten
-
-          referenced.map do |path|
+          regexes.flat_map { |regex| content.scan(regex).flatten }.map do |path|
             resolved = current_dir == "." ? path : File.join(current_dir, path)
             Pathname.new(resolved).cleanpath.to_path
           end
@@ -107,12 +130,16 @@ module Dependabot
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def layer_primaries
           txt_primaries = requirement_family_files.select do |f|
-            f.name.end_with?(".txt") && self.class.manifest_txt_filename?(f.name)
+            f.name.end_with?(".txt") &&
+              self.class.manifest_txt_filename?(f.name) &&
+              !constraint_file_names.include?(f.name)
           end
           compiled_stems = txt_primaries.map { |f| requirements_stem(f.name) }
 
           in_primaries = requirement_family_files.select do |f|
-            f.name.end_with?(".in") && !compiled_stems.include?(requirements_stem(f.name))
+            f.name.end_with?(".in") &&
+              !constraint_file_names.include?(f.name) &&
+              !compiled_stems.include?(requirements_stem(f.name))
           end
 
           txt_primaries + in_primaries
@@ -145,9 +172,24 @@ module Dependabot
           )
         end
 
+        # Files identified as constraints by a `-c` reference anywhere in the directory, resolved to their
+        # fetched names. A file that is ALSO `-r`-included somewhere is genuinely installed, so it is
+        # excluded here and remains layer-eligible (constraints and layers are mutually exclusive).
+        sig { returns(T::Set[String]) }
+        def constraint_file_names
+          @constraint_file_names ||= T.let(
+            begin
+              constrained = Set.new(dependency_files.flat_map { |f| self.class.constraint_paths(f) })
+              required = Set.new(dependency_files.flat_map { |f| self.class.required_paths(f) })
+              constrained - required
+            end,
+            T.nilable(T::Set[String])
+          )
+        end
+
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def constraints_files
-          requirement_family_files.select { |f| File.basename(f.name).include?("constraint") }
+          requirement_family_files.select { |f| constraint_file_names.include?(f.name) }
         end
 
         # Finds sibling files referenced by a requirements file via `-r`/`-c`, following the chain transitively.

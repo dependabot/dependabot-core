@@ -147,8 +147,8 @@ RSpec.describe Dependabot::Python::DependencyGrapher::RequirementsLayers do
     context "with a shared constraints file" do
       let(:dependency_files) do
         [
-          file("base-requirements.txt", "foo==1.0\n"),
-          file("test-requirements.txt", "bar==2.0\n"),
+          file("base-requirements.txt", "-c constraints.txt\nfoo==1.0\n"),
+          file("test-requirements.txt", "-c constraints.txt\nbar==2.0\n"),
           file("constraints.txt", "foo<2.0\n")
         ]
       end
@@ -165,6 +165,41 @@ RSpec.describe Dependabot::Python::DependencyGrapher::RequirementsLayers do
           expect(constraints).not_to be_nil
           expect(constraints).to be_support_file
         end
+      end
+    end
+
+    context "with a manifest-named constraints file referenced via `-c`" do
+      let(:dependency_files) do
+        [
+          file("requirements.txt", "-c requirements-constraints.txt\nflask==3.0.0\n"),
+          file("requirements-constraints.txt", "certifi==2023.7.22\n")
+        ]
+      end
+
+      it "does not treat the `-c` file as its own layer even though its name looks like a manifest" do
+        expect(layers.groups.map { |g| g.primary.name }).to eq(["requirements.txt"])
+      end
+
+      it "includes the `-c` file as a support file rather than a primary" do
+        group = layers.groups.first
+        constraint = group.files.find { |f| f.name == "requirements-constraints.txt" }
+
+        expect(constraint).not_to be_nil
+        expect(constraint).to be_support_file
+      end
+    end
+
+    context "when a file is both `-r`-included and `-c`-constrained" do
+      let(:dependency_files) do
+        [
+          file("dev-requirements.txt", "-r base-requirements.txt\n-c base-requirements.txt\npytest==8.3.3\n"),
+          file("base-requirements.txt", "flask==3.0.0\n")
+        ]
+      end
+
+      it "keeps the `-r`-included file layer-eligible (constraints do not override a real include)" do
+        expect(layers.groups.map { |g| g.primary.name })
+          .to contain_exactly("dev-requirements.txt", "base-requirements.txt")
       end
     end
 
