@@ -777,6 +777,8 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
     after do
       described_class.dependency_files = []
       described_class.credentials = []
+      # Clear fake keys so they don't leak into later randomized specs.
+      Dependabot::NpmAndYarn::RegistryHelper.instance_variable_set(:@integrity_keys_cache, {})
     end
 
     describe ".build_corepack_env_variables" do

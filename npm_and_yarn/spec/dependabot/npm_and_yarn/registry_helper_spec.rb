@@ -222,6 +222,55 @@ RSpec.describe Dependabot::NpmAndYarn::RegistryHelper do
       end
     end
 
+    context "when the replaces-base registry uses a plaintext http scheme" do
+      let(:registry_config_files) { {} }
+      let(:credentials) do
+        [
+          {
+            "type" => "npm_registry",
+            "registry" => "http://artifactory.example.com/npm",
+            "token" => "my-token",
+            "replaces-base" => true
+          }
+        ]
+      end
+
+      it "does not fetch signing keys over http and leaves integrity keys unset" do
+        helper = described_class.new(registry_config_files, credentials)
+        env_variables = helper.find_corepack_env_variables
+        expect(env_variables).not_to have_key("COREPACK_INTEGRITY_KEYS")
+        expect(WebMock).not_to have_requested(:get, %r{/-/npm/v1/keys})
+      end
+    end
+
+    context "when a key endpoint responds with a redirect" do
+      let(:registry_config_files) { {} }
+      let(:credentials) do
+        [
+          {
+            "type" => "npm_registry",
+            "registry" => "artifactory.example.com/npm",
+            "token" => "my-token",
+            "replaces-base" => true
+          }
+        ]
+      end
+
+      before do
+        stub_request(:get, "https://registry.npmjs.org/-/npm/v1/keys")
+          .to_return(status: 200, body: JSON.generate({ "keys" => npm_signing_keys }))
+        stub_request(:get, "https://artifactory.example.com/npm/-/npm/v1/keys")
+          .to_return(status: 301, headers: { "Location" => "http://artifactory.example.com/npm/-/npm/v1/keys" })
+      end
+
+      it "does not follow the redirect and leaves integrity keys unset" do
+        helper = described_class.new(registry_config_files, credentials)
+        env_variables = helper.find_corepack_env_variables
+        expect(env_variables).not_to have_key("COREPACK_INTEGRITY_KEYS")
+        expect(WebMock).not_to have_requested(:get, "http://artifactory.example.com/npm/-/npm/v1/keys")
+      end
+    end
+
     context "when credentials are provided as Dependabot::Credential objects" do
       let(:registry_config_files) { {} }
       let(:credentials) do
