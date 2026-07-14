@@ -480,6 +480,38 @@ RSpec.describe Dependabot::Swift::FileParser do
     it_behaves_like "parse"
   end
 
+  context "with a revision (commit SHA) pinned dependency" do
+    let(:project_name) { "revision_pinned" }
+    let(:sha) { "2ce7e2373106b1b562dc965e1eee2324f9e72e3" }
+
+    it "parses the dependency" do
+      dep = dependencies.find { |d| d.name == "github.com/quick/quick" }
+      expect(dep).not_to be_nil
+    end
+
+    it "sets version to nil (no semver)" do
+      dep = dependencies.find { |d| d.name == "github.com/quick/quick" }
+      expect(dep&.version).to be_nil
+    end
+
+    it "sets the source ref to the commit SHA" do
+      dep = dependencies.find { |d| d.name == "github.com/quick/quick" }
+      expect(dep&.requirements&.first&.dig(:source, :ref)).to eq(sha)
+    end
+
+    it "sets requirement to nil (no semver constraint)" do
+      dep = dependencies.find { |d| d.name == "github.com/quick/quick" }
+      expect(dep&.requirements&.first&.dig(:requirement)).to be_nil
+    end
+
+    it "stores the revision declaration in metadata" do
+      dep = dependencies.find { |d| d.name == "github.com/quick/quick" }
+      req_string = dep&.requirements&.first&.dig(:metadata, :requirement_string)
+      expect(req_string).to include(".revision(")
+      expect(req_string).to include(sha)
+    end
+  end
+
   describe "#ecosystem" do
     subject(:ecosystem) { parser.ecosystem }
 

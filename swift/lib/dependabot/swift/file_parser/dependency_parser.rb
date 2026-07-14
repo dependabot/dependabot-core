@@ -93,9 +93,13 @@ module Dependabot
           name = UrlHelpers.normalize_name(url)
           version = nil unless version.is_a?(String)
 
-          source = { type: "git", url: url, ref: version, branch: nil }
+          revision = data["revision"]
+          revision = nil unless revision.is_a?(String)
+          ref = version != "unspecified" ? version : revision
+          source = { type: "git", url: url, ref: ref, branch: nil }
           metadata = { identity: identity.is_a?(String) ? identity : nil }
-          args = { name: name, version: version, package_manager: "swift", requirements: [], metadata: metadata }
+          dep_version = version != "unspecified" ? version : nil
+          args = { name: name, version: dep_version, package_manager: "swift", requirements: [], metadata: metadata }
 
           if level.zero?
             args[:requirements] << { requirement: nil, groups: ["dependencies"], file: nil, source: source }
@@ -103,7 +107,7 @@ module Dependabot
             args[:subdependency_metadata] = [{ source: source }]
           end
 
-          dep = Dependency.new(**args) if version != "unspecified"
+          dep = Dependency.new(**args) if ref
 
           [dep, *subdependencies(data, level: level + 1)].compact
         end

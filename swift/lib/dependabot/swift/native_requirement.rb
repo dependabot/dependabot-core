@@ -10,9 +10,13 @@ module Dependabot
     class NativeRequirement
       extend T::Sig
 
-      # TODO: Support pinning to specific revisions
       REGEXP = T.let(
-        /(from.*|\.upToNextMajor.*|\.upToNextMinor.*|"[^"]*"\s*\.\.[\.<]\s*"[^"]*".*|exact.*|\.exact.*)/,
+        /(from.*|\.upToNextMajor.*|\.upToNextMinor.*|"[^"]*"\s*\.\.[\.<]\s*"[^"]*".*|exact.*|\.exact.*|\.revision\s*\(.*)/,
+        Regexp
+      )
+
+      REVISION_REGEXP = T.let(
+        /\.revision\s*\(\s*"([0-9a-f]{40})"\s*\)/,
         Regexp
       )
 
@@ -47,9 +51,34 @@ module Dependabot
         end
       end
 
+      sig { returns(T::Boolean) }
+      def self.revision_declaration?(declaration)
+        REVISION_REGEXP.match?(declaration)
+      end
+
+      sig { params(declaration: String).returns(T.nilable(String)) }
+      def self.extract_revision_sha(declaration)
+        match = REVISION_REGEXP.match(declaration)
+        match&.captures&.first
+      end
+
+      sig { params(declaration: String, new_sha: String).returns(String) }
+      def self.replace_revision_sha(declaration, new_sha)
+        declaration.sub(REVISION_REGEXP, ".revision(\"#{new_sha}\")")
+      end
+
       sig { params(declaration: String).void }
       def initialize(declaration)
         @declaration = declaration
+
+        # Revision-pinned declarations are handled via class-level helpers;
+        # we represent them as a no-op requirement here.
+        if self.class.revision_declaration?(declaration)
+          @min = T.let("0", String)
+          @max = T.let("0", String)
+          @requirement = T.let(Requirement.new(["= 0"]), Requirement)
+          return
+        end
 
         min, max = parse_declaration(declaration)
 
@@ -71,8 +100,14 @@ module Dependabot
         requirement.to_s
       end
 
+      sig { returns(T::Boolean) }
+      def revision_pinned?
+        self.class.revision_declaration?(declaration)
+      end
+
       sig { params(version: T.any(String, Gem::Version)).returns(T.nilable(String)) }
       def update_if_needed(version)
+        return declaration if revision_pinned?
         return declaration if requirement.satisfied_by?(version)
 
         update(version)
@@ -80,6 +115,8 @@ module Dependabot
 
       sig { params(version: T.any(String, Gem::Version)).returns(T.nilable(String)) }
       def update(version)
+        return declaration if revision_pinned?
+
         if single_version_declaration?
           declaration.sub(min, version.to_s)
         elsif closed_range?

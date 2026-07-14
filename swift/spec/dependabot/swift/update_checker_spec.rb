@@ -291,6 +291,45 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
     end
   end
 
+  context "with a revision (commit SHA) pinned classic SPM dependency" do
+    let(:project_name) { "revision_pinned" }
+    let(:name) { "github.com/quick/quick" }
+    let(:url) { "https://github.com/Quick/Quick" }
+    let(:upload_pack_fixture) { "quick" }
+    let(:current_sha) { "2ce7e2373106b1b562dc965e1eee2324f9e72e3" }
+    let(:latest_tag_sha) { "91132c0fe9a98e76f3d7381a608685aa41770706" }
+
+    before { stub_upload_pack }
+
+    describe "#latest_version" do
+      subject { checker.latest_version }
+
+      it "returns the version of the latest semver tag" do
+        expect(subject).to eq(Dependabot::Swift::Version.new("7.0.2"))
+      end
+    end
+
+    describe "#can_update?" do
+      subject { checker.can_update?(requirements_to_unlock: :own) }
+
+      it { is_expected.to be_truthy }
+    end
+
+    describe "#updated_requirements" do
+      subject(:updated_requirements) { checker.updated_requirements }
+
+      it "rewrites the revision SHA in the requirement_string" do
+        req = updated_requirements.first
+        expect(req[:metadata][:requirement_string]).to eq(".revision(\"#{latest_tag_sha}\")")
+      end
+
+      it "updates the source ref to the new SHA" do
+        req = updated_requirements.first
+        expect(req[:source][:ref]).to eq(latest_tag_sha)
+      end
+    end
+  end
+
   context "with Xcode SPM projects" do
     let(:dependency_files) do
       [
