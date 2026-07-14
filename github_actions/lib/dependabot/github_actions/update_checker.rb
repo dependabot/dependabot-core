@@ -355,7 +355,12 @@ module Dependabot
       end
       def latest_commit_sha(source_checker, finder)
         latest_tag = finder.latest_version_tag
-        return unless latest_tag
+        unless latest_tag
+          latest = finder.latest_release_version
+          return latest if latest.is_a?(String)
+
+          return nil
+        end
 
         if source_checker.local_tag_for_pinned_sha
           new_tag = finder.latest_version_tag_respecting_cooldown

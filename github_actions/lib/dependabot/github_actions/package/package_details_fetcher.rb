@@ -85,7 +85,9 @@ module Dependabot
             return latest_version
           end
 
-          if git_commit_checker.pinned_ref_looks_like_commit_sha? && latest_version_tag
+          if git_commit_checker.pinned_ref_looks_like_commit_sha?
+            return latest_commit_for_pinned_ref unless latest_version_tag
+
             latest_version = tag_version(T.must(latest_version_tag))
             return unless latest_version.is_a?(Dependabot::Version)
             return latest_commit_for_pinned_ref unless git_commit_checker.local_tag_for_pinned_sha
