@@ -161,6 +161,30 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
       end
     end
 
+    context "when a git commit SHA is not associated with any version tag" do
+      let(:reference) { "506f1e5c67f7d47b690882cd3edf808863e7139f" }
+
+      before do
+        allow(fetcher).to receive_messages(
+          git_dependency?: true,
+          latest_version_tag: nil,
+          latest_commit_for_pinned_ref: "6dd44d4acaeb25266a521d5db993d0168b74b2e9"
+        )
+        allow(fetcher).to receive(:git_commit_checker).and_return(
+          instance_double(
+            Dependabot::GitCommitChecker,
+            pinned?: true,
+            pinned_ref_looks_like_version?: false,
+            pinned_ref_looks_like_commit_sha?: true
+          )
+        )
+      end
+
+      it "falls back to the latest commit on the containing branch" do
+        expect(latest_version).to eq("6dd44d4acaeb25266a521d5db993d0168b74b2e9")
+      end
+    end
+
     context "when using a dependency with multiple git refs" do
       include_context "with multiple git sources"
 
