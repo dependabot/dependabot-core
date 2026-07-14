@@ -128,7 +128,8 @@ module Dependabot
             f != primary && requirements_stem(f.name) == stem
           end
 
-          referenced = referenced_requirement_files(primary)
+          # When the primary is a compiled `.txt`, the `-r`/`-c` directives live in the paired `.in` files.
+          referenced = referenced_requirement_files([primary] + paired)
 
           support = (paired + referenced + constraints_files).uniq.map do |f|
             as_support_file(f)
@@ -150,15 +151,18 @@ module Dependabot
           requirement_family_files.select { |f| File.basename(f.name).include?("constraint") }
         end
 
-        # Finds sibling files referenced by a requirements file via `-r`/`-c`, following the chain transitively.
+        # Collects sibling files referenced via `-r`/`-c`, walking the chain transitively. Returns only newly
+        # discovered files; the seed files are excluded (they are already in the layer).
         #
-        # A referenced file can itself reference further files (e.g. `develop.in -r test.in`, `test.in -r base.in`),
-        # so we walk the whole closure to gather every sibling the layer needs on disk to parse in isolation.
-        sig { params(file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
-        def referenced_requirement_files(file)
+        # - Seeded from every file in the layer (primary + paired `.in`/`.txt`): a compiled `.txt` primary has
+        #   no live `-r`/`-c` directives, so they must be read from the paired `.in`.
+        # - Walks the full closure: a referenced file can reference more (e.g. `develop.in` -> `test.in` ->
+        #   `base.in`), and the layer needs every sibling on disk to parse in isolation.
+        sig { params(seeds: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::DependencyFile]) }
+        def referenced_requirement_files(seeds)
           by_name = requirement_family_files.to_h { |f| [f.name, f] }
-          seen = T.let(Set.new, T::Set[String])
-          queue = [file]
+          seen = T.let(Set.new(seeds.map(&:name)), T::Set[String])
+          queue = T.let(seeds.dup, T::Array[Dependabot::DependencyFile])
           collected = T.let([], T::Array[Dependabot::DependencyFile])
 
           until queue.empty?
