@@ -45,7 +45,7 @@ module Dependabot
         fetched_files
       end
 
-      sig { params(workspace_info: T::Hash[String, T.untyped]).void }
+      sig { params(workspace_info: T::Hash[String, Object]).void }
       def validate_workspace_info!(workspace_info)
         # Only domain errors ("no project file found") reach here; helper
         # crashes raise from RegistryClient rather than being misreported as

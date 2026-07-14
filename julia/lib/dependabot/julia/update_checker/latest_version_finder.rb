@@ -19,7 +19,7 @@ module Dependabot
           ignored_versions: T::Array[String],
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
           raise_on_ignored: T::Boolean,
-          cooldown_config: T.nilable(T::Hash[Symbol, T.untyped]),
+          cooldown_config: T.nilable(T::Hash[Symbol, Object]),
           custom_registries: T::Array[T::Hash[Symbol, String]]
         ).void
       end
@@ -75,7 +75,7 @@ module Dependabot
       sig { returns(T::Boolean) }
       attr_reader :raise_on_ignored
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { returns(T.nilable(T::Hash[Symbol, Object])) }
       attr_reader :cooldown_config
 
       sig { returns(T::Array[T::Hash[Symbol, String]]) }
