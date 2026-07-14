@@ -41,7 +41,7 @@ RSpec.describe Dependabot::Python::DependencyGrapher::RequirementsLayers do
       "LICENSE.txt",
       "prequire.txt",
       "acquire.txt",
-      "independ.txt"
+      "codependent.txt"
     ].each do |name|
       it "does not treat #{name} as a manifest" do
         expect(described_class.manifest_txt_filename?(name)).to be(false)
