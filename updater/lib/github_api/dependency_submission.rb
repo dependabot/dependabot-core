@@ -114,7 +114,7 @@ module GithubApi
     # TODO: Change to a typed structure?
     #
     # See: https://sorbet.org/docs/tstruct
-    sig { returns(T::Hash[Symbol, T.untyped]) }
+    sig { returns(T::Hash[Symbol, Object]) }
     def payload
       {
         version: SNAPSHOT_VERSION,
@@ -184,7 +184,7 @@ module GithubApi
     end
 
     sig do
-      returns(T::Hash[String, T.untyped])
+      returns(T::Hash[String, Object])
     end
     def manifests
       @manifest_snapshots.each_with_object({}) do |snapshot, manifests|
@@ -202,7 +202,7 @@ module GithubApi
     # collection so the snapshot reflects that the file was scanned.
     sig do
       params(snapshot: Dependabot::DependencyGraphers::ManifestGroupSnapshot)
-        .returns(T.nilable(T::Hash[Symbol, T.untyped]))
+        .returns(T.nilable(T::Hash[Symbol, Object]))
     end
     def manifest_entry(snapshot)
       manifest_file = snapshot.manifest_file
