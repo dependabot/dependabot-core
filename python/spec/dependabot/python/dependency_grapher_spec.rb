@@ -1175,6 +1175,57 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
     end
   end
 
+  # A constraints file installs nothing so it must never become its own manifest group.
+  #
+  # Unfortunately, a constraints file may be named in a way that it passes our manifest filtering regex, e.g.
+  # requirements-constraint.txt.
+  #
+  # This test asserts that we classify files as constraints if any peer refers them via a `-c` reference even
+  # if they match manifest naming conventions.
+  describe "attributing dependencies when a manifest-named constraints file is referenced via -c" do
+    let(:app_requirements_txt) do
+      Dependabot::DependencyFile.new(
+        name: "requirements.txt",
+        content: <<~TXT,
+          -c requirements-constraints.txt
+          flask==3.0.0
+        TXT
+        directory: "/"
+      )
+    end
+
+    let(:requirements_constraints_txt) do
+      Dependabot::DependencyFile.new(
+        name: "requirements-constraints.txt",
+        content: <<~TXT,
+          flask==3.0.0
+          werkzeug==3.0.1
+        TXT
+        directory: "/"
+      )
+    end
+
+    # Ordered alphabetically, exactly as the GitHub API returns the directory contents, so the constraints
+    # file precedes requirements.txt (the pre-fix collapse/duplication target).
+    let(:dependency_files) { [requirements_constraints_txt, app_requirements_txt] }
+
+    def resolved_package_names(snapshot)
+      snapshot.resolved_dependencies.each_key.map { |purl| purl[%r{\Apkg:pypi/([^@]+)}, 1] }
+    end
+
+    it "emits a single manifest group attributed to the real manifest, not the constraints file" do
+      manifest_names = grapher.manifest_group_snapshots.map { |snapshot| snapshot.manifest_file.name }
+
+      expect(manifest_names).to contain_exactly("requirements.txt")
+    end
+
+    it "does not double-report the constrained package across a spurious constraints snapshot" do
+      all_reported = grapher.manifest_group_snapshots.flat_map { |snapshot| resolved_package_names(snapshot) }
+
+      expect(all_reported.count("flask")).to eq(1)
+    end
+  end
+
   describe "#manifest_group_snapshots for package managers that do not support layering" do
     context "when the directory is a Poetry project" do
       let(:poetry_lock_file) do
