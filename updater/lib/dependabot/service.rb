@@ -9,6 +9,7 @@ require "dependabot/api_client"
 require "dependabot/errors"
 require "dependabot/opentelemetry"
 require "dependabot/experiments"
+require "dependabot/workflow_summary"
 
 # This class provides an output adapter for the Dependabot Service which manages
 # communication with the private API as well as consolidated error handling.
@@ -27,12 +28,16 @@ module Dependabot
     sig { returns(T::Array[T::Array[T.untyped]]) }
     attr_reader :errors
 
+    sig { returns(Dependabot::WorkflowSummary) }
+    attr_reader :workflow_summary
+
     sig { params(client: Dependabot::ApiClient).void }
     def initialize(client:)
       @client = client
       @pull_requests = T.let([], T::Array[T.untyped])
       @errors = T.let([], T::Array[T.untyped])
       @threads = T.let([], T::Array[T.untyped])
+      @workflow_summary = T.let(Dependabot::WorkflowSummary.new, Dependabot::WorkflowSummary)
     end
 
     def_delegators :client,
@@ -130,6 +135,20 @@ module Dependabot
       client.create_dependency_submission(dependency_submission.payload)
     end
 
+    # This method writes the information into a collection we can use to generate a summary markdown file in actions
+    sig { params(directory: String, status: String, details: String).void }
+    def record_workflow_result(directory:, status:, details:)
+      return unless Experiments.enabled?(:workflow_job_summary)
+
+      workflow_summary.record_result(directory: directory, status: status, details: details)
+    end
+
+    # This method finalises the workflow summary and stores it in an output file
+    sig { params(command: String, package_manager: String).void }
+    def write_workflow_summary(command:, package_manager:)
+      workflow_summary.write(command: command, package_manager: package_manager)
+    end
+
     # This method wraps the Sentry client as the Application error tracker
     # the service uses to notice errors.
     #
@@ -154,11 +173,11 @@ module Dependabot
         ErrorAttributes::CLASS => error.class.to_s,
         ErrorAttributes::MESSAGE => error.message,
         ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
-        ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? T.unsafe(error).sentry_context[:fingerprint] : nil, # rubocop:disable Layout/LineLength
+        ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? T.cast(error, Dependabot::HasSentryContext).sentry_context[:fingerprint] : nil, # rubocop:disable Layout/LineLength
         ErrorAttributes::PACKAGE_MANAGER => job&.package_manager,
         ErrorAttributes::JOB_ID => job&.id,
         ErrorAttributes::DEPENDENCIES => dependency&.name || job&.dependencies,
-        ErrorAttributes::DEPENDENCY_GROUPS => dependency_group&.name || job&.dependency_groups,
+        ErrorAttributes::DEPENDENCY_GROUPS => dependency_group&.name || job_dependency_groups(job),
         ErrorAttributes::SECURITY_UPDATE => job&.security_updates_only?
       }.compact
       record_update_job_unknown_error(error_type: "unknown_error", error_details: error_details)
@@ -202,11 +221,16 @@ module Dependabot
     sig { returns(Dependabot::ApiClient) }
     attr_reader :client
 
+    sig { params(job: T.untyped).returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+    def job_dependency_groups(job)
+      job&.dependency_groups&.map(&:to_h)
+    end
+
     sig { returns(T.nilable(Terminal::Table)) }
     def pull_request_summary
       return unless pull_requests.any?
 
-      T.unsafe(Terminal::Table).new do |t|
+      Terminal::Table.new do |t|
         t.title = "Changes to Dependabot Pull Requests"
         t.rows = pull_requests.map { |deps, action| [action, truncate(deps)] }
       end
@@ -236,7 +260,7 @@ module Dependabot
         end
         return if job_errors.none?
 
-        T.unsafe(Terminal::Table).new do |t|
+        Terminal::Table.new do |t|
           t.title = "Errors"
           t.headings = %w(Type Details)
           t.rows = job_errors
@@ -247,7 +271,7 @@ module Dependabot
         end
         return if job_error_types.none?
 
-        T.unsafe(Terminal::Table).new do |t|
+        Terminal::Table.new do |t|
           t.title = "Errors"
           t.rows = job_error_types
         end
@@ -271,7 +295,7 @@ module Dependabot
         end
         return if dependency_errors.none?
 
-        T.unsafe(Terminal::Table).new do |t|
+        Terminal::Table.new do |t|
           t.title = "Dependencies failed to update"
           t.headings = ["Dependency", "Error Type", "Error Details"]
           t.rows = dependency_errors
@@ -282,7 +306,7 @@ module Dependabot
         end
         return if dependency_errors.none?
 
-        T.unsafe(Terminal::Table).new do |t|
+        Terminal::Table.new do |t|
           t.title = "Dependencies failed to update"
           t.rows = dependency_errors
         end

@@ -56,7 +56,8 @@ module Dependabot
       def custom_registries
         return @custom_registries if @custom_registries
 
-        registries = T.cast(options.dig(:registries, :julia), T.nilable(T::Array[T.untyped])) || []
+        registries_config = T.cast(options[:registries], T.nilable(T::Hash[Symbol, T.anything]))
+        registries = T.cast(registries_config&.dig(:julia), T.nilable(T::Array[T.untyped])) || []
         # Convert string keys to symbols if needed
         @custom_registries = registries.map do |registry|
           if registry.is_a?(Hash)
@@ -91,7 +92,7 @@ module Dependabot
         Dependabot::Julia::Version.new(latest_version.to_s)
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         Dependabot::Julia::RequirementsUpdater.new(
           requirements: dependency.requirements,

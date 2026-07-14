@@ -3,8 +3,12 @@
 
 require "spec_helper"
 require "dependabot/dependency"
+require "dependabot/git_commit_checker"
+require "dependabot/git_tag_details"
+require "dependabot/package/release_cooldown_options"
 require "dependabot/swift/file_parser"
 require "dependabot/swift/update_checker"
+require "dependabot/swift/version"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::Swift::UpdateChecker do
@@ -205,6 +209,23 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
       end
     end
 
+    context "when tag details contain generic Gem::Version values" do
+      before do
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions)
+          .and_return(
+            [
+              Dependabot::GitTagDetails.new(tag: "10.0.0", version: Gem::Version.new("10.0.0")),
+              Dependabot::GitTagDetails.new(tag: "11.0.0", version: Gem::Version.new("11.0.0"))
+            ]
+          )
+      end
+
+      it "returns a Swift version" do
+        expect(lowest_security_fix_version).to eq(Dependabot::Swift::Version.new("10.0.0"))
+      end
+    end
+
     context "with ignored versions" do
       let(:ignored_versions) { ["= 10.0.0"] }
 
@@ -334,6 +355,24 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
         it "returns latest version from git tags" do
           expect(latest_version).to be_a(Dependabot::Swift::Version)
           expect(latest_version.to_s).to eq("7.0.2")
+        end
+
+        context "when tag details contain a generic Gem::Version" do
+          before do
+            allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+              .to receive(:local_tag_for_latest_version)
+              .and_return(
+                Dependabot::GitTagDetails.new(
+                  tag: "7.0.2",
+                  version: Gem::Version.new("7.0.2"),
+                  commit_sha: "abc123"
+                )
+              )
+          end
+
+          it "returns a Swift version" do
+            expect(latest_version).to eq(Dependabot::Swift::Version.new("7.0.2"))
+          end
         end
       end
 
@@ -622,6 +661,105 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
 
         # Revision-pinned dependencies don't have a semver version
         it { is_expected.to be_nil }
+      end
+    end
+  end
+
+  describe "#latest_version with git-tag cooldown" do
+    let(:cooldown_dependency) do
+      Dependabot::Dependency.new(
+        name: "github.com/apple/swift-nio",
+        version: "2.0.0",
+        requirements: [{
+          file: "Package.swift",
+          requirement: nil,
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/apple/swift-nio",
+            ref: "2.0.0",
+            branch: nil
+          }
+        }],
+        package_manager: "swift"
+      )
+    end
+    let(:cooldown_options) do
+      Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+    end
+    let(:cooldown_checker) do
+      described_class.new(
+        dependency: cooldown_dependency,
+        dependency_files: [],
+        repo_contents_path: nil,
+        credentials: github_credentials,
+        update_cooldown: cooldown_options
+      )
+    end
+    let(:stubbed_git_commit_checker) { instance_double(Dependabot::GitCommitChecker) }
+    let(:newer_tag) do
+      Dependabot::GitTagDetails.new(
+        tag: "2.1.0",
+        version: Gem::Version.new("2.1.0"),
+        commit_sha: "abc123",
+        tag_sha: "def456"
+      )
+    end
+
+    before do
+      allow(Dependabot::GitCommitChecker).to receive(:new).and_return(stubbed_git_commit_checker)
+      allow(stubbed_git_commit_checker).to receive_messages(
+        git_dependency?: true,
+        pinned_ref_looks_like_version?: true
+      )
+    end
+
+    context "when every candidate tag is still within its cooldown window" do
+      before do
+        allow(stubbed_git_commit_checker)
+          .to receive(:local_tag_for_latest_version)
+          .with(cooldown_options)
+          .and_return(nil)
+      end
+
+      it "proposes no update" do
+        expect(cooldown_checker.latest_version).to be_nil
+      end
+    end
+
+    context "when a tag is available outside the cooldown window" do
+      before do
+        allow(stubbed_git_commit_checker)
+          .to receive(:local_tag_for_latest_version)
+          .with(cooldown_options)
+          .and_return(newer_tag)
+      end
+
+      it "returns that version" do
+        expect(cooldown_checker.latest_version).to eq(Dependabot::Swift::Version.new("2.1.0"))
+      end
+
+      it "forwards the configured cooldown window to the git commit checker" do
+        cooldown_checker.latest_version
+        expect(stubbed_git_commit_checker)
+          .to have_received(:local_tag_for_latest_version).with(cooldown_options).at_least(:once)
+      end
+    end
+
+    context "when cooldown is not configured" do
+      let(:cooldown_options) { nil }
+
+      before do
+        allow(stubbed_git_commit_checker)
+          .to receive(:local_tag_for_latest_version)
+          .with(nil)
+          .and_return(newer_tag)
+      end
+
+      it "skips cooldown filtering and returns the newest tag" do
+        expect(cooldown_checker.latest_version).to eq(Dependabot::Swift::Version.new("2.1.0"))
+        expect(stubbed_git_commit_checker)
+          .to have_received(:local_tag_for_latest_version).with(nil).at_least(:once)
       end
     end
   end

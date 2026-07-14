@@ -3,7 +3,7 @@
 
 require "json"
 require "time"
-require "cgi"
+require "cgi/escape"
 require "excon"
 require "nokogiri"
 require "sorbet-runtime"
@@ -416,6 +416,7 @@ module Dependabot
         sig { params(filename: String).returns(T.nilable(String)) }
         def get_version_from_filename(filename)
           filename
+            .strip
             .gsub(/#{name_regex}-/i, "")
             .split(/-|\.tar\.|\.zip|\.whl/)
             .first

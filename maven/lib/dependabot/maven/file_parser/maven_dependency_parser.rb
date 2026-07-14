@@ -67,17 +67,17 @@ module Dependabot
           params(
             pom: Dependabot::DependencyFile,
             dependency_set: Dependabot::FileParsers::Base::DependencySet,
-            dependency_tree: T::Hash[String, T.untyped]
+            dependency_tree: T::Hash[String, Object]
           ).void
         end
         def self.extract_dependencies_from_tree(pom, dependency_set, dependency_tree)
-          traverse_tree = T.let(-> {}, T.proc.params(node: T::Hash[String, T.untyped]).void)
+          traverse_tree = T.let(-> {}, T.proc.params(node: T::Hash[String, Object]).void)
           traverse_tree = lambda do |node|
             artifact_id = node["artifactId"]
             group_id = node["groupId"]
             version = node["version"]
             type = node["type"]
-            classifier = node["classifier"].to_s.empty? ? nil : node["classifier"]
+            classifier = node["classifier"].to_s.empty? ? nil : node["classifier"].to_s
             scope = node["scope"]
 
             groups = scope == "test" ? ["test"] : []
@@ -98,7 +98,8 @@ module Dependabot
               }]
             )
 
-            node["children"]&.each(&traverse_tree)
+            children = node["children"]
+            children.each { |child| traverse_tree.call(child) } if children.is_a?(Array)
           end
 
           traverse_tree.call(dependency_tree)

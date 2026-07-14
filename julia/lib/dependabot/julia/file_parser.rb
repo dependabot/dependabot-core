@@ -92,10 +92,11 @@ module Dependabot
       sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def custom_registries
         @custom_registries ||= begin
-          registries = options.dig(:registries, :julia) || []
+          registries_config = T.cast(options[:registries], T.nilable(T::Hash[Symbol, T.anything]))
+          registries = T.cast(registries_config&.dig(:julia), T.nilable(T::Array[T::Hash[Symbol, T.anything]])) || []
           # Convert string keys to symbols if needed
           registries.map do |registry|
-            registry.is_a?(Hash) ? registry.transform_keys(&:to_sym) : registry
+            registry.transform_keys(&:to_sym)
           end
         end
       end
@@ -163,8 +164,7 @@ module Dependabot
           if dependencies_map.key?(name)
             # Merge requirements from additional project files
             existing_dep = T.must(dependencies_map[name])
-            existing_requirements = existing_dep.requirements.dup
-            existing_requirements << new_requirement
+            existing_requirements = existing_dep.requirements + [new_requirement]
             dependencies_map[name] = Dependabot::Dependency.new(
               name: name,
               version: nil,

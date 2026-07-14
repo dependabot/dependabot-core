@@ -123,7 +123,7 @@ module Dependabot
       raise "Only symlinked files must specify a target!" if symlink_target
     end
 
-    sig { returns(T::Hash[String, T.untyped]) }
+    sig { returns(T::Hash[String, T.nilable(T.any(String, T::Boolean))]) }
     def to_h
       details = {
         "name" => name,

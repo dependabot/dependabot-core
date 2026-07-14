@@ -142,7 +142,7 @@ module Dependabot
 
       sig do
         params(
-          parsed_toml_file: T::Hash[String, T.untyped],
+          parsed_toml_file: T::Hash[String, Object],
           toml_file: Dependabot::DependencyFile
         ).returns(DependencySet)
       end
@@ -156,7 +156,7 @@ module Dependabot
 
       sig do
         params(
-          parsed_toml_file: T::Hash[String, T.untyped],
+          parsed_toml_file: T::Hash[String, Object],
           toml_file: Dependabot::DependencyFile
         ).returns(DependencySet)
       end
@@ -247,9 +247,9 @@ module Dependabot
         end
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(T::Hash[String, T.untyped]) }
+      sig { params(file: Dependabot::DependencyFile).returns(T::Hash[String, Object]) }
       def parsed_toml_file(file)
-        T.cast(TomlRB.parse(file.content), T::Hash[String, T.untyped])
+        T.cast(TomlRB.parse(file.content), T::Hash[String, Object])
       rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
         raise Dependabot::DependencyFileNotParseable, file.path
       end

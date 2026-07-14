@@ -64,7 +64,7 @@ module Dependabot
           updated_content
         end
 
-        sig { params(requirements: T.nilable(T::Array[T::Hash[Symbol, T.untyped]])).returns(T.nilable(String)) }
+        sig { params(requirements: T.nilable(T::Array[Dependabot::DependencyRequirement])).returns(T.nilable(String)) }
         def find_workspace_requirement(requirements)
           requirements&.find { |r| r[:groups]&.include?("workspace.dependencies") }
                       &.fetch(:requirement)

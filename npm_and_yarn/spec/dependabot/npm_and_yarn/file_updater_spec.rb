@@ -3658,7 +3658,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:files) { project_dependency_files("yarn/multiple_sub_dependencies") }
 
         let(:dependency_name) { "js-yaml" }
-        let(:version) { "3.14.2" }
+        let(:version) { "3.15.0" }
         let(:previous_version) { "3.9.0" }
         let(:requirements) { [] }
         let(:previous_requirements) { nil }
@@ -3668,7 +3668,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(updated_yarn_lock.content)
             .to include(
               "js-yaml@^3.10.0, js-yaml@^3.4.6, js-yaml@^3.9.0:\n" \
-              '  version "3.14.2"'
+              '  version "3.15.0"'
             )
         end
       end
@@ -3985,7 +3985,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:project_name) { "pnpm/multiple_sub_dependencies" }
 
         let(:dependency_name) { "js-yaml" }
-        let(:version) { "3.14.2" }
+        let(:version) { "3.15.0" }
         let(:previous_version) { "3.9.0" }
         let(:requirements) { [] }
         let(:previous_requirements) { nil }
@@ -3993,7 +3993,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "de-duplicates all entries to the same version" do
           expect(updated_files.map(&:name)).to contain_exactly("pnpm-lock.yaml")
 
-          expect(updated_pnpm_lock.content).to include("js-yaml@3.14.2:\n    resolution").once
+          expect(updated_pnpm_lock.content).to include("js-yaml@3.15.0:\n    resolution").once
         end
       end
 

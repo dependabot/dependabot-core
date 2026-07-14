@@ -148,6 +148,40 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
 
         # The SHA of the next version tag
         it { is_expected.to eq("83141b376b93484341c68fbca3ca110ae5cd2708") }
+
+        context "with a cooldown period configured" do
+          let(:update_cooldown) do
+            Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+          end
+
+          before do
+            allow(checker.send(:git_commit_checker))
+              .to receive(:refs_for_tag_with_detail)
+              .and_return(
+                [
+                  Dependabot::GitTagWithDetail.new(tag: "0.1.3", release_date: "2018-01-02"),
+                  Dependabot::GitTagWithDetail.new(
+                    tag: "1.0.0",
+                    release_date: Time.now.strftime("%Y-%m-%d")
+                  )
+                ]
+              )
+          end
+
+          it "skips the version tag still within its cooldown window" do
+            expect(checker.latest_version)
+              .to eq("d5094c7e9456f2965dec20de671094a98c6929c2")
+          end
+
+          context "when there is no cooldown (e.g. a security update)" do
+            let(:update_cooldown) { nil }
+
+            it "uses the latest version tag" do
+              expect(checker.latest_version)
+                .to eq("83141b376b93484341c68fbca3ca110ae5cd2708")
+            end
+          end
+        end
       end
 
       context "with a non-version tag" do
@@ -450,14 +484,15 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           requirements: requirements,
           updated_source: nil,
           target_version: "0.1.40",
-          update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
+          update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary
         )
         .and_call_original
+      # "0.1.12" (caret) already allows 0.1.40, so the requirement is left as-is.
       expect(checker.updated_requirements)
         .to eq(
           [{
             file: "Cargo.toml",
-            requirement: "0.1.40",
+            requirement: "0.1.12",
             groups: [],
             source: nil
           }]
@@ -483,14 +518,15 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
             requirements: requirements,
             updated_source: nil,
             target_version: "0.1.39",
-            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary
           )
           .and_call_original
+        # "0.1.12" already allows the 0.1.39 fix, so only the lockfile changes.
         expect(checker.updated_requirements)
           .to eq(
             [{
               file: "Cargo.toml",
-              requirement: "0.1.39",
+              requirement: "0.1.12",
               groups: [],
               source: nil
             }]
@@ -508,6 +544,39 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
       let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
       it { is_expected.to be(false) }
+    end
+  end
+
+  describe "#requirements_update_strategy" do
+    subject(:strategy) { checker.requirements_update_strategy }
+
+    context "with no explicit strategy and a lockfile present" do
+      it "defaults to BumpVersionsIfNecessary" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary)
+      end
+    end
+
+    context "with no explicit strategy and no lockfile" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "Cargo.toml",
+            content: fixture("manifests", manifest_fixture_name)
+          )
+        ]
+      end
+
+      it "defaults to BumpVersionsIfNecessary" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary)
+      end
+    end
+
+    context "when an explicit strategy is passed" do
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+
+      it "honours the explicit strategy" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::LockfileOnly)
+      end
     end
   end
 

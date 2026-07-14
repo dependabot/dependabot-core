@@ -14,7 +14,7 @@ internal class TestFileWriterReturnsConstantResult : IFileWriter
         Result = result;
     }
 
-    public Task<bool> UpdatePackageVersionsAsync(DirectoryInfo repoContentsPath, ImmutableArray<string> relativeFilePaths, ImmutableArray<Dependency> originalDependencies, ImmutableArray<Dependency> requiredPackageVersions, PackageManagementKind packageManagementKind)
+    public Task<bool> UpdatePackageVersionsAsync(DirectoryInfo repoContentsPath, ImmutableArray<string> relativeFilePaths, ImmutableArray<Dependency> originalDependencies, ImmutableArray<Dependency> requiredPackageVersions, PackageManagementKind packageManagementKind, string? packageManagementSpecialFileRelativePath)
     {
         return Task.FromResult(Result);
     }

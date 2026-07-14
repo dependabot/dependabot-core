@@ -6,6 +6,7 @@ require "toml-rb"
 require "sorbet-runtime"
 
 require "dependabot/dependency"
+require "dependabot/dependency_requirement"
 require "dependabot/errors"
 require "dependabot/uv/name_normaliser"
 require "dependabot/uv/requirement_parser"
@@ -31,10 +32,10 @@ module Dependabot
       require_relative "update_checker/latest_version_finder"
       require_relative "update_checker/lock_file_resolver"
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         RequirementsUpdater.new(
-          requirements: requirements,
+          requirements: dependency.requirements,
           latest_resolvable_version: preferred_resolvable_version&.to_s,
           update_strategy: requirements_update_strategy,
           has_lockfile: requirements_text_file?

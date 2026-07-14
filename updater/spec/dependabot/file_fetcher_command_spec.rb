@@ -704,6 +704,77 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
+    context "when a directory raises PathDependenciesNotReachable for a graph job" do
+      let(:command) { described_class.new }
+
+      before do
+        FileUtils.mkdir_p(File.join(repo_contents_path, "tools"))
+        File.write(File.join(repo_contents_path, "tools/a.dummy"), "dummy content")
+
+        allow(command.job).to receive(:update_graph?).and_return(true)
+        allow(command).to receive(:base_commit_sha).and_return("sha")
+
+        allow(command).to receive(:file_fetcher_for_directory) do |dir|
+          fetcher = double("FileFetcher")
+          if dir == "/tools"
+            dummy_file = double("DependencyFile")
+            allow(dummy_file).to receive_messages(name: "a.dummy", directory: "/tools")
+            allow(fetcher).to receive(:files).and_return([dummy_file])
+          else
+            allow(fetcher).to receive(:files)
+              .and_raise(Dependabot::PathDependenciesNotReachable.new(["./local"]))
+          end
+          fetcher
+        end
+      end
+
+      it "does not abort the whole job and still returns the other directory's files" do
+        files = command.files.dependency_files
+
+        tools_files = files.select { |f| f.directory == "/tools" }
+        root_files = files.select { |f| f.directory == "/" }
+
+        expect(tools_files.map(&:name)).to include("a.dummy")
+        expect(root_files).to be_empty
+      end
+
+      it "surfaces the fetch error for the affected directory on the returned FetchedFiles" do
+        fetched = command.files
+
+        expect(fetched.directory_fetch_errors).to have_key("/")
+        expect(fetched.directory_fetch_errors["/"]).to be_a(Dependabot::PathDependenciesNotReachable)
+      end
+    end
+
+    context "when a directory raises PathDependenciesNotReachable for a non-graph job" do
+      let(:command) { described_class.new }
+
+      before do
+        FileUtils.mkdir_p(File.join(repo_contents_path, "tools"))
+        File.write(File.join(repo_contents_path, "tools/a.dummy"), "dummy content")
+
+        allow(command.job).to receive(:update_graph?).and_return(false)
+
+        allow(command).to receive(:file_fetcher_for_directory) do |dir|
+          fetcher = double("FileFetcher")
+          if dir == "/tools"
+            dummy_file = double("DependencyFile")
+            allow(dummy_file).to receive_messages(name: "a.dummy", directory: "/tools")
+            allow(fetcher).to receive(:files).and_return([dummy_file])
+          else
+            allow(fetcher).to receive(:files)
+              .and_raise(Dependabot::PathDependenciesNotReachable.new(["./local"]))
+          end
+          fetcher
+        end
+      end
+
+      it "propagates the error so the update job surfaces it" do
+        expect { command.files }
+          .to raise_error(Dependabot::PathDependenciesNotReachable)
+      end
+    end
+
     context "when all directories have required files" do
       let(:command) { described_class.new }
 

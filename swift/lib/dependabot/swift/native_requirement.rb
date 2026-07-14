@@ -12,7 +12,7 @@ module Dependabot
 
       # TODO: Support pinning to specific revisions
       REGEXP = T.let(
-        /(from.*|\.upToNextMajor.*|\.upToNextMinor.*|".*"\s*\.\.[\.<]\s*".*"\s*,?|exact.*|\.exact.*)/,
+        /(from.*|\.upToNextMajor.*|\.upToNextMinor.*|"[^"]*"\s*\.\.[\.<]\s*"[^"]*".*|exact.*|\.exact.*)/,
         Regexp
       )
 
@@ -22,14 +22,20 @@ module Dependabot
       sig do
         type_parameters(:T)
           .params(
-            requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            requirements: T::Array[T::Hash[Symbol, Object]],
             _blk: T.proc.params(declaration: NativeRequirement).returns(String)
           )
-          .returns(T::Array[T::Hash[Symbol, T.untyped]])
+          .returns(T::Array[T::Hash[Symbol, Object]])
       end
       def self.map_requirements(requirements, &_blk)
         requirements.map do |requirement|
-          declaration = new(requirement[:metadata][:requirement_string])
+          metadata = requirement[:metadata]
+          next requirement unless metadata.is_a?(Hash)
+
+          requirement_string = metadata[:requirement_string]
+          next requirement unless requirement_string.is_a?(String)
+
+          declaration = new(requirement_string)
 
           new_declaration = yield(declaration)
           new_requirement = new(new_declaration)
@@ -88,23 +94,23 @@ module Dependabot
       sig { params(declaration: String).returns([String, String]) }
       def parse_declaration(declaration)
         if up_to_next_major?
-          min = declaration.gsub(/\Afrom\s*:\s*"(\S+?)"\s*(?:,\s*)?\z/, '\1')
+          min = declaration.gsub(/\Afrom\s*:\s*"(\S+?)"\s*(?:,.*)?\z/, '\1')
           max = bump_major(min)
         elsif up_to_next_major_deprecated?
-          min = declaration.gsub(/\A\.upToNextMajor\s*\(\s*from\s*:\s*"(\S+?)"\s*(?:,\s*)?\)\s*(?:,\s*)?\z/, '\1')
+          min = declaration.gsub(/\A\.upToNextMajor\s*\(\s*from\s*:\s*"(\S+?)"\s*(?:,\s*)?\)\s*(?:,.*)?\z/, '\1')
           max = bump_major(min)
         elsif up_to_next_minor_deprecated?
-          min = declaration.gsub(/\A\.upToNextMinor\s*\(\s*from\s*:\s*"(\S+?)"\s*(?:,\s*)?\)\s*(?:,\s*)?\z/, '\1')
+          min = declaration.gsub(/\A\.upToNextMinor\s*\(\s*from\s*:\s*"(\S+?)"\s*(?:,\s*)?\)\s*(?:,.*)?\z/, '\1')
           max = bump_minor(min)
         elsif closed_range?
           min, max = parse_range("...")
         elsif range?
           min, max = parse_range("..<")
         elsif exact_version?
-          min = declaration.gsub(/\Aexact\s*:\s*"(\S+?)"\s*(?:,\s*)?\z/, '\1')
+          min = declaration.gsub(/\Aexact\s*:\s*"(\S+?)"\s*(?:,.*)?\z/, '\1')
           max = min
         elsif exact_version_deprecated?
-          min = declaration.gsub(/\A\.exact\s*\(\s*"(\S+?)"\s*(?:,\s*)?\)\s*(?:,\s*)?\z/, '\1')
+          min = declaration.gsub(/\A\.exact\s*\(\s*"(\S+?)"\s*(?:,\s*)?\)\s*(?:,.*)?\z/, '\1')
           max = min
         else
           raise "Unsupported constraint: #{declaration}"
@@ -115,7 +121,10 @@ module Dependabot
 
       sig { params(separator: String).returns(T::Array[String]) }
       def parse_range(separator)
-        declaration.delete_suffix(",").split(separator).map { |str| unquote(str.strip) }
+        declaration
+          .gsub(/("[^"]*"\s*\.\.[\.<]\s*"[^"]*").*/, '\1')
+          .split(separator)
+          .map { |str| unquote(str.strip) }
       end
 
       sig { returns(T::Boolean) }

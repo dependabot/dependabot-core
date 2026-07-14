@@ -3,39 +3,55 @@
 
 require "sorbet-runtime"
 
+require "dependabot/dependency"
 require "dependabot/dependency_graphers"
 require "dependabot/dependency_graphers/base"
 require "dependabot/uv/file_parser"
-require "dependabot/uv/name_normaliser"
 require "toml-rb"
 
 module Dependabot
   module Uv
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
-      UV_LOCK_COMMAND = T.let("pyenv exec uv lock --color never --no-progress && cat uv.lock", String)
-      UV_TREE_COMMAND = T.let("pyenv exec uv tree -q --color never --no-progress --frozen", String)
-
-      # Used to capture package lines from `uv tree` output.
-      #
-      # Example output:
-      #   ├── flask v3.1.3
-      #   │   ├── click v8.3.1
-      #   │   └── jinja2 v3.1.6
-      #   │       └── markupsafe v3.0.3
-      #
-      # The `prefix` contains tree-depth segments (`│   ` or `    `) and
-      # `package` is the dependency name token before the `v<version>` marker.
-      UV_TREE_LINE_REGEX = T.let(
-        /^(?<prefix>(?:(?:│   )|(?:    ))*)(?:├──|└──)\s(?<package>.+?)\sv[^\s]+(?:\s+\(.*\))?$/,
-        Regexp
-      )
+      RUNTIME_GROUP = T.let("dependencies", String)
+      DEV_GROUP = T.let("dev-dependencies", String)
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
-        return T.must(uv_lock) if uv_lock
-        return T.must(pyproject_toml) if pyproject_toml
+        uv_lock || raise(DependabotError, "No uv.lock present; uv graphing requires a lockfile.")
+      end
 
-        raise DependabotError, "No uv.lock or pyproject.toml present."
+      # uv.lock is guaranteed to be present when graphing runs - the
+      # dependabot-api EcosystemFileDetector only routes UV jobs when it sees
+      # a uv.lock in the repo. We override prepare! to parse uv.lock directly
+      # rather than delegating to FileParser, so the graph reflects only what
+      # uv actually resolved (no requirements.txt / pyproject.toml inputs).
+      sig { override.void }
+      def prepare!
+        raise DependabotError, "No uv.lock present; uv graphing requires a lockfile." unless uv_lock
+
+        parsed = TomlRB.parse(T.must(T.must(uv_lock).content))
+        packages = T.cast(parsed.fetch("package", []), T::Array[T.untyped])
+        manifest = parsed.fetch("manifest", {})
+
+        root_names = root_package_names(packages, manifest)
+        direct_runtime, direct_dev = direct_dependency_names(packages, root_names)
+
+        @dependencies = packages.filter_map do |pkg|
+          build_dependency(pkg, root_names, direct_runtime, direct_dev)
+        end
+        @prepared = true
+      rescue DependabotError
+        raise
+      rescue StandardError => e
+        # If uv.lock is unparseable we can't build a graph at all, but we still
+        # want the rest of the submission flow to continue (matching the prior
+        # behaviour where lockfile parse failures only marked subdependency
+        # fetching as errored).
+        errored_fetching_subdependencies!
+        @subdependency_error = e
+        Dependabot.logger.error("Failed to parse uv.lock for graphing: #{e.message}")
+        @dependencies = []
+        @prepared = true
       end
 
       private
@@ -49,29 +65,9 @@ module Dependabot
       sig { returns(T::Hash[String, T::Array[String]]) }
       def package_relationships
         @package_relationships ||= T.let(
-          fetch_package_relationships,
+          package_relationships_from_lockfile(T.must(T.must(uv_lock).content)),
           T.nilable(T::Hash[String, T::Array[String]])
         )
-      end
-
-      # See UV tree docs https://docs.astral.sh/uv/reference/cli/#uv-tree
-      # First try extracting relationships from uv.lock directly. If there is no
-      # lockfile, generate one in a temporary parsed context and parse that.
-      # If lockfile parsing fails for any reason, fall back to uv tree output.
-      sig { returns(T::Hash[String, T::Array[String]]) }
-      def fetch_package_relationships
-        return package_relationships_from_lockfile(T.must(T.must(uv_lock).content)) if uv_lock
-
-        begin
-          Dependabot.logger.info("No uv.lock present, generating ephemeral lockfile for dependency graphing")
-          generated_lockfile = uv_parser.run_in_parsed_context(UV_LOCK_COMMAND)
-          return package_relationships_from_lockfile(generated_lockfile)
-        rescue StandardError => e
-          Dependabot.logger.warn("Failed to build dependency graph from uv.lock: #{e.message}")
-          Dependabot.logger.info("Falling back to parsing uv tree output")
-        end
-
-        package_relationships_from_tree
       end
 
       sig { params(lockfile_content: String).returns(T::Hash[String, T::Array[String]]) }
@@ -106,19 +102,18 @@ module Dependabot
         normalised_dependency_name(package_name)
       end
 
+      # Mirrors uv's `create_dependencies` (crates/uv-resolver/src/lock/export/cyclonedx_json.rs),
+      # which chains a package's `dependencies`, `optional-dependencies`, and
+      # `dev-dependencies` when building the SBOM dependency graph.
       sig { params(package_data: T.untyped).returns(T::Array[String]) }
       def lockfile_child_names(package_data)
-        dependencies =
-          if package_data.is_a?(Hash)
-            T.cast(package_data["dependencies"], T.nilable(T::Array[T.untyped])) || []
-          else
-            []
-          end
+        return [] unless package_data.is_a?(Hash)
 
-        dependencies.filter_map do |dependency|
-          dependency_name = lockfile_dependency_name(dependency)
-          normalised_dependency_name(dependency_name) if dependency_name
-        end
+        names = T.let([], T::Array[String])
+        collect_dep_names(package_data["dependencies"], names)
+        collect_dep_names_from_groups(package_data["optional-dependencies"], names)
+        collect_dep_names_from_groups(package_data["dev-dependencies"], names)
+        names.map { |name| normalised_dependency_name(name) }.uniq
       end
 
       sig { params(dependency_data: T.untyped).returns(T.nilable(String)) }
@@ -133,32 +128,130 @@ module Dependabot
         nil
       end
 
-      sig { returns(T::Hash[String, T::Array[String]]) }
-      def package_relationships_from_tree
-        relationship_stack = T.let([], T::Array[String])
+      # Identifies the workspace member packages whose `dependencies`,
+      # `optional-dependencies`, and `dev-dependencies` arrays describe the
+      # project's direct deps.
+      #
+      # Authoritative signal: the `[manifest] members = [...]` array, which uv
+      # writes for multi-member workspaces. See
+      # https://github.com/astral-sh/uv/blob/main/crates/uv-resolver/src/lock/mod.rs
+      # ("manifest_table.insert(\"members\", ...)" and the workspace-member
+      # lookup `self.members().contains(&package.id.name)`).
+      #
+      # Fallback for single-member workspaces (which omit `[manifest] members`):
+      # match packages whose `source` is a local variant — `virtual`, `editable`,
+      # or `directory` — per the `SourceWire` enum in the same file.
+      sig { params(packages: T::Array[T.untyped], manifest: T.untyped).returns(T::Set[String]) }
+      def root_package_names(packages, manifest)
+        declared = declared_workspace_members(manifest)
+        return declared unless declared.empty?
 
-        uv_parser.run_in_parsed_context(UV_TREE_COMMAND).lines.each_with_object({}) do |line, rels|
-          match = line.match(UV_TREE_LINE_REGEX)
-          next unless match
+        packages.each_with_object(Set.new) do |pkg, set|
+          next unless pkg.is_a?(Hash)
 
-          package = normalised_dependency_name(T.must(match[:package]))
-          depth = T.must(match[:prefix]).scan(/(?:│   |    )/).length
+          source = pkg["source"]
+          next unless source.is_a?(Hash)
+          next unless source.key?("virtual") || source.key?("editable") || source.key?("directory")
 
-          relationship_stack[depth] = package
-          relationship_stack.slice!(depth + 1, relationship_stack.length)
-
-          parent = depth.zero? ? nil : relationship_stack[depth - 1]
-          rels[package] ||= []
-          next unless parent
-
-          rels[parent] ||= []
-          rels[parent] << package
+          name = pkg["name"]
+          set << name if name.is_a?(String)
         end
       end
 
-      sig { returns(Dependabot::Uv::FileParser) }
-      def uv_parser
-        T.cast(file_parser, Dependabot::Uv::FileParser)
+      sig { params(manifest: T.untyped).returns(T::Set[String]) }
+      def declared_workspace_members(manifest)
+        return Set.new unless manifest.is_a?(Hash)
+
+        members = manifest["members"]
+        return Set.new unless members.is_a?(Array)
+
+        members.each_with_object(Set.new) do |name, set|
+          set << name if name.is_a?(String)
+        end
+      end
+
+      # Mirrors uv's `ExportableRequirements::from_lock` (crates/uv-resolver/src/lock/export/mod.rs)
+      # when invoked with `--all-extras --all-groups`: each workspace root contributes its
+      # `dependencies` as direct runtime, `optional-dependencies` (all extras) as direct runtime,
+      # and `dev-dependencies` (all groups) as direct dev. We use --all-extras/--all-groups
+      # semantics because the dependency graph reports what *could* be installed, not what was
+      # selected for a particular sync.
+      sig do
+        params(packages: T::Array[T.untyped], root_names: T::Set[String])
+          .returns([T::Set[String], T::Set[String]])
+      end
+      def direct_dependency_names(packages, root_names)
+        runtime = T.let(Set.new, T::Set[String])
+        dev = T.let(Set.new, T::Set[String])
+
+        packages.each do |pkg|
+          next unless pkg.is_a?(Hash) && root_names.include?(pkg["name"])
+
+          collect_dep_names(pkg["dependencies"], runtime)
+          collect_dep_names_from_groups(pkg["optional-dependencies"], runtime)
+          collect_dep_names_from_groups(pkg["dev-dependencies"], dev)
+        end
+
+        [runtime, dev]
+      end
+
+      sig { params(entries: T.untyped, collection: T.any(T::Set[String], T::Array[String])).void }
+      def collect_dep_names(entries, collection)
+        return unless entries.is_a?(Array)
+
+        entries.each do |entry|
+          name = lockfile_dependency_name(entry)
+          collection << name if name.is_a?(String)
+        end
+      end
+
+      sig { params(groups: T.untyped, collection: T.any(T::Set[String], T::Array[String])).void }
+      def collect_dep_names_from_groups(groups, collection)
+        return unless groups.is_a?(Hash)
+
+        groups.each_value { |entries| collect_dep_names(entries, collection) }
+      end
+
+      sig do
+        params(
+          pkg: T.untyped,
+          root_names: T::Set[String],
+          direct_runtime: T::Set[String],
+          direct_dev: T::Set[String]
+        ).returns(T.nilable(Dependabot::Dependency))
+      end
+      def build_dependency(pkg, root_names, direct_runtime, direct_dev)
+        return unless pkg.is_a?(Hash)
+
+        name = pkg["name"]
+        version = pkg["version"]
+        return unless name.is_a?(String) && version.is_a?(String)
+
+        # Root project packages get requirements: [] (indirect, runtime) to
+        # match the prior FileParser-derived behaviour where uv.lock packages
+        # without a pyproject entry surfaced as indirect.
+        groups = root_names.include?(name) ? [] : direct_groups_for(name, direct_runtime, direct_dev)
+        requirements = groups.empty? ? [] : [{ requirement: nil, file: "uv.lock", source: nil, groups: groups }]
+
+        Dependabot::Dependency.new(
+          name: normalised_dependency_name(name),
+          version: version,
+          requirements: requirements,
+          package_manager: "uv"
+        )
+      end
+
+      # A dependency listed under both runtime and dev groups stays runtime;
+      # uv's production check returns true if "dependencies" is present.
+      sig do
+        params(name: String, direct_runtime: T::Set[String], direct_dev: T::Set[String])
+          .returns(T::Array[String])
+      end
+      def direct_groups_for(name, direct_runtime, direct_dev)
+        return [RUNTIME_GROUP] if direct_runtime.include?(name)
+        return [DEV_GROUP] if direct_dev.include?(name)
+
+        []
       end
 
       sig { params(name: String).returns(String) }
@@ -169,23 +262,6 @@ module Dependabot
       sig { override.params(_dependency: Dependabot::Dependency).returns(String) }
       def purl_pkg_for(_dependency)
         "pypi"
-      end
-
-      # Strip extras (e.g. "[filecache]") from the dependency name for PURLs,
-      # since the PURL should reference the base package only.
-      sig { override.params(dependency: Dependabot::Dependency).returns(String) }
-      def purl_name_for(dependency)
-        NameNormaliser.normalise(dependency.name)
-      end
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def pyproject_toml
-        return @pyproject_toml if defined?(@pyproject_toml)
-
-        @pyproject_toml = T.let(
-          dependency_files.find { |f| f.name == "pyproject.toml" },
-          T.nilable(Dependabot::DependencyFile)
-        )
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

@@ -26,23 +26,19 @@ module Dependabot
         /ix
 
         # Common Maven pre-release qualifiers.
-        # They often indicate versions that are not yet stable but that are released to the public for testing.
+        # Indicate versions not yet stable but released for testing.
         # Examples: 1.0.0-RC1, 2.0.0-ALPHA2, 3.1.0-BETA, 4.0.0-DEV5, etc.
         # See https://maven.apache.org/guides/mini/guide-naming-conventions.html#version-identifier
         MAVEN_PRE_RELEASE_QUALIFIERS = /
             # Must be at start OR preceded by a delimiter
             (?: \A | [-._])(
-              # --- Qualifiers that usually REQUIRE a number ---
-              # Examples: "RC1", "BETA2", "M3", "ALPHA-1", "EAP.2"
-              # The number differentiates multiple pre-releases; a version like "1.0.0-RC"
-              (?i)(?:RC|CR|M|MILESTONE|ALPHA|BETA|EA|EAP)(?:[-._]?\d+)?
-              |
-              # --- Qualifiers that do NOT usually have numbers ---
-              DEV|
-              PREVIEW|
-              PRERELEASE|
-              EXPERIMENTAL|
-              UNSTABLE
+              # Pre-release qualifiers, each with an optional numeric suffix
+              # (e.g., RC1, BETA2, DEV, PREVIEW1)
+              (?:
+                RC | CR | M | MILESTONE | ALPHA | BETA | EA | EAP |
+                DEV | PREVIEW | PRERELEASE | EXPERIMENTAL | UNSTABLE
+              )
+              (?:[-._]?\d+)?
             )$
           /ix
 
@@ -109,9 +105,17 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def wants_prerelease?
-          return false unless dependency.numeric_version
+          return true if dependency.numeric_version&.prerelease?
 
-          dependency.numeric_version&.prerelease? || false
+          dependency.requirements.any? do |req|
+            req_string = T.cast(req.fetch(:requirement), T.nilable(String)).to_s
+            req_string.split(",").any? do |segment|
+              normalized = segment.strip.gsub(/\A[\[\(]\s*/, "")
+                                  .gsub(/\s*[\]\)]\z/, "")
+              normalized.match?(MAVEN_PRE_RELEASE_QUALIFIERS) ||
+                normalized.match?(MAVEN_SNAPSHOT_QUALIFIER)
+            end
+          end
         end
 
         sig { returns(T::Boolean) }

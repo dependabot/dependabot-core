@@ -88,7 +88,7 @@ module Dependabot
         )
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         RequirementsUpdater.new(
           requirements: dependency.requirements,
@@ -108,8 +108,12 @@ module Dependabot
         # If passed in as an option (in the base class) honour that option
         return @requirements_update_strategy if @requirements_update_strategy
 
-        # Otherwise, widen ranges for libraries and bump versions for apps
-        library? ? RequirementsUpdateStrategy::BumpVersionsIfNecessary : RequirementsUpdateStrategy::BumpVersions
+        # Cargo resolves to the newest compatible version and a bare version is a
+        # caret-equivalent (compatible) requirement, so only raise the requirement
+        # when it doesn't already allow the new version. Avoids needless churn and
+        # MSRV bumps.
+        # https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#caret-requirements
+        RequirementsUpdateStrategy::BumpVersionsIfNecessary
       end
 
       private
@@ -132,13 +136,12 @@ module Dependabot
         # present in other areas
         return unless preferred_resolvable_version
 
-        library? ? latest_version&.to_s : preferred_resolvable_version.to_s
+        # No lockfile: target the latest version. With one: the resolvable version.
+        no_lockfile? ? latest_version&.to_s : preferred_resolvable_version.to_s
       end
 
       sig { returns(T::Boolean) }
-      def library?
-        # If it has a lockfile, treat it as an application. Otherwise treat it
-        # as a library.
+      def no_lockfile?
         dependency_files.none? { |f| f.name == "Cargo.lock" }
       end
 
@@ -175,7 +178,7 @@ module Dependabot
         # we want to update that tag. The latest version will then be the SHA
         # of the latest tag that looks like a version.
         if git_commit_checker.pinned_ref_looks_like_version?
-          latest_tag = git_commit_checker.local_tag_for_latest_version
+          latest_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
           return latest_tag&.fetch(:commit_sha) || dependency.version
         end
 
@@ -195,7 +198,7 @@ module Dependabot
         # of the latest tag that looks like a version.
         if git_commit_checker.pinned_ref_looks_like_version? &&
            latest_git_tag_is_resolvable?
-          new_tag = git_commit_checker.local_tag_for_latest_version
+          new_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
           return T.must(new_tag).fetch(:commit_sha)
         end
 
@@ -217,9 +220,9 @@ module Dependabot
 
         @latest_git_tag_is_resolvable_checked = true
 
-        return false if git_commit_checker.local_tag_for_latest_version.nil?
+        return false if git_commit_checker.local_tag_for_latest_version(update_cooldown).nil?
 
-        replacement_tag = T.must(git_commit_checker.local_tag_for_latest_version)
+        replacement_tag = T.must(git_commit_checker.local_tag_for_latest_version(update_cooldown))
 
         prepared_files = FilePreparer.new(
           dependency_files: dependency_files,
@@ -308,7 +311,7 @@ module Dependabot
         latest_resolvable_version
       end
 
-      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped])) }
+      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.anything])) }
       def updated_source
         # Never need to update source, unless a git_dependency
         return dependency_source_details unless git_dependency?
@@ -316,7 +319,7 @@ module Dependabot
         # Update the git tag if updating a pinned version
         if git_commit_checker.pinned_ref_looks_like_version? &&
            latest_git_tag_is_resolvable?
-          new_tag = T.must(git_commit_checker.local_tag_for_latest_version)
+          new_tag = T.must(git_commit_checker.local_tag_for_latest_version(update_cooldown))
           return T.must(dependency_source_details).merge(ref: new_tag.fetch(:tag))
         end
 
@@ -324,7 +327,7 @@ module Dependabot
         dependency_source_details
       end
 
-      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped])) }
+      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.anything])) }
       def dependency_source_details
         dependency.source_details
       end

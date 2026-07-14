@@ -79,11 +79,20 @@ module Dependabot
     def files
       Dependabot::FetchedFiles.new(
         dependency_files: T.must(job.source.directories ? dependency_files_for_multi_directories : dependency_files),
-        base_commit_sha: T.must(base_commit_sha)
+        base_commit_sha: T.must(base_commit_sha),
+        directory_fetch_errors: directory_fetch_errors
       )
     end
 
     private
+
+    # Records non-fatal, per-directory fetch errors encountered while listing a
+    # multi-directory graph job (e.g. an unresolvable path dependency). These are
+    # surfaced downstream as skipped snapshots rather than aborting the whole job.
+    sig { returns(T::Hash[String, Dependabot::DependabotError]) }
+    def directory_fetch_errors
+      @directory_fetch_errors ||= T.let({}, T.nilable(T::Hash[String, Dependabot::DependabotError]))
+    end
 
     sig { params(directory: T.nilable(String)).returns(Dependabot::FileFetchers::Base) }
     def create_file_fetcher(directory: nil)
@@ -168,6 +177,14 @@ module Dependabot
         begin
           files = ff.files
         rescue Dependabot::DependencyFileNotFound
+          next
+        rescue Dependabot::PathDependenciesNotReachable => e
+          # For graph jobs, an unreachable path dependency in one directory must not
+          # abort the whole multi-directory job. Record it so the directory is later
+          # reported as a skipped snapshot, and continue with the other directories.
+          raise unless job.update_graph?
+
+          directory_fetch_errors[dir] = e
           next
         end
         post_ecosystem_versions(ff) if should_record_ecosystem_versions?
@@ -296,11 +313,13 @@ module Dependabot
             ErrorAttributes::MESSAGE => error.message,
             ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
             ErrorAttributes::FINGERPRINT =>
-                    (T.unsafe(error).sentry_context[:fingerprint] if error.respond_to?(:sentry_context)),
+                    (if error.respond_to?(:sentry_context)
+                       T.cast(error, Dependabot::HasSentryContext).sentry_context[:fingerprint]
+                     end),
             ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
             ErrorAttributes::JOB_ID => job.id,
             ErrorAttributes::DEPENDENCIES => job.dependencies,
-            ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
+            ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups.map(&:to_h)
           }.compact,
           T::Hash[Symbol, T.untyped]
         )
