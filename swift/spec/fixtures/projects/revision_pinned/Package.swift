@@ -5,6 +5,6 @@ import PackageDescription
 let package = Package(
     name: "MyPackage",
     dependencies: [
-        .package(url: "https://github.com/Quick/Quick", .revision("2ce7e2373106b1b562dc965e1eee2324f9e72e3"))
+        .package(url: "https://github.com/Quick/Quick", .revision("f2ce7e2373106b1b562dc965e1eee2324f9e72e3"))
     ]
 )

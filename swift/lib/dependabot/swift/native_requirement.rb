@@ -10,8 +10,14 @@ module Dependabot
     class NativeRequirement
       extend T::Sig
 
+      VERSION_PATTERNS = T.let(
+        'from.*|\.upToNextMajor.*|\.upToNextMinor.*' \
+        '|"[^"]*"\s*\.\.[\.<]\s*"[^"]*".*|exact.*|\.exact.*',
+        String
+      )
+
       REGEXP = T.let(
-        /(from.*|\.upToNextMajor.*|\.upToNextMinor.*|"[^"]*"\s*\.\.[\.<]\s*"[^"]*".*|exact.*|\.exact.*|\.revision\s*\(.*)/,
+        /(#{VERSION_PATTERNS}|\.revision\s*\(.*)/,
         Regexp
       )
 
@@ -51,7 +57,7 @@ module Dependabot
         end
       end
 
-      sig { returns(T::Boolean) }
+      sig { params(declaration: String).returns(T::Boolean) }
       def self.revision_declaration?(declaration)
         REVISION_REGEXP.match?(declaration)
       end

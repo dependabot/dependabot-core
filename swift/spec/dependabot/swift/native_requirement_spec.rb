@@ -72,7 +72,6 @@ RSpec.describe Dependabot::Swift::NativeRequirement do
       end
 
       it "replaces the SHA" do
-        new_sha = "abc123" * 6 + "ab" # 40-char hex
         new_sha = "a" * 40
         result = described_class.replace_revision_sha(".revision(\"#{sha}\")", new_sha)
         expect(result).to eq(".revision(\"#{new_sha}\")")

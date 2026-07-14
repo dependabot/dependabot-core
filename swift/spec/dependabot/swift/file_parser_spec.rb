@@ -482,7 +482,7 @@ RSpec.describe Dependabot::Swift::FileParser do
 
   context "with a revision (commit SHA) pinned dependency" do
     let(:project_name) { "revision_pinned" }
-    let(:sha) { "2ce7e2373106b1b562dc965e1eee2324f9e72e3" }
+    let(:sha) { "f2ce7e2373106b1b562dc965e1eee2324f9e72e3" }
 
     it "parses the dependency" do
       dep = dependencies.find { |d| d.name == "github.com/quick/quick" }

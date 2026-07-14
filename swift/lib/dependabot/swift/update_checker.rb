@@ -112,15 +112,19 @@ module Dependabot
         return old_requirements unless new_sha
 
         old_requirements.map do |req|
-          metadata = req[:metadata] || {}
+          req_hash = T.cast(req, T::Hash[Symbol, T.untyped])
+          metadata = T.cast(req_hash[:metadata] || {}, T::Hash[Symbol, T.untyped])
           requirement_string = metadata[:requirement_string]
           next req unless requirement_string.is_a?(String)
           next req unless NativeRequirement.revision_declaration?(requirement_string)
 
           new_req_string = NativeRequirement.replace_revision_sha(requirement_string, new_sha)
-          req.merge(
-            source: (req[:source] || {}).merge(ref: new_sha),
-            metadata: metadata.merge(requirement_string: new_req_string)
+          old_source = T.cast(req_hash[:source] || {}, T::Hash[Symbol, T.untyped])
+          Dependabot::DependencyRequirement.create(
+            req_hash.merge(
+              source: old_source.merge(ref: new_sha),
+              metadata: metadata.merge(requirement_string: new_req_string)
+            )
           )
         end
       end
@@ -130,7 +134,7 @@ module Dependabot
         tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
         return unless tag
 
-        commit_sha = tag[:commit_sha]
+        commit_sha = T.cast(tag, T::Hash[Symbol, T.untyped])[:commit_sha]
         commit_sha.is_a?(String) ? commit_sha : nil
       end
 
@@ -193,6 +197,7 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::Version)) }
       def fetch_latest_resolvable_version
         return fetch_xcode_latest_resolvable_version if xcode_spm_mode?
+        return fetch_latest_version if revision_pinned?
 
         latest_resolvable_version = version_resolver_for(unlocked_requirements).latest_resolvable_version
         return current_version unless latest_resolvable_version

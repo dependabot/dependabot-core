@@ -95,10 +95,10 @@ module Dependabot
 
           revision = data["revision"]
           revision = nil unless revision.is_a?(String)
-          ref = version != "unspecified" ? version : revision
+          ref = version == "unspecified" ? revision : version
           source = { type: "git", url: url, ref: ref, branch: nil }
           metadata = { identity: identity.is_a?(String) ? identity : nil }
-          dep_version = version != "unspecified" ? version : nil
+          dep_version = version == "unspecified" ? nil : version
           args = { name: name, version: dep_version, package_manager: "swift", requirements: [], metadata: metadata }
 
           if level.zero?

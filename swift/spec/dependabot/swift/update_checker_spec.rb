@@ -296,16 +296,16 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
     let(:name) { "github.com/quick/quick" }
     let(:url) { "https://github.com/Quick/Quick" }
     let(:upload_pack_fixture) { "quick" }
-    let(:current_sha) { "2ce7e2373106b1b562dc965e1eee2324f9e72e3" }
+    let(:current_sha) { "f2ce7e2373106b1b562dc965e1eee2324f9e72e3" }
     let(:latest_tag_sha) { "91132c0fe9a98e76f3d7381a608685aa41770706" }
 
     before { stub_upload_pack }
 
     describe "#latest_version" do
-      subject { checker.latest_version }
+      subject(:latest_version) { checker.latest_version }
 
       it "returns the version of the latest semver tag" do
-        expect(subject).to eq(Dependabot::Swift::Version.new("7.0.2"))
+        expect(latest_version).to eq(Dependabot::Swift::Version.new("7.0.2"))
       end
     end
 
