@@ -2,40 +2,52 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
+require "dependabot/security_advisory"
 require "dependabot/package/release_cooldown_options"
 require "dependabot/bundler/update_checker"
 
 module Dependabot
   module Bundler
     class UpdateChecker < UpdateCheckers::Base
-      # Reads an optional `cooldown:` option declared on a `source` line in the
-      # Gemfile and merges it into any cooldown options configured for the update.
+      # Owns the cooldown policy for Bundler updates: it derives the effective
+      # `ReleaseCooldownOptions` from an optional `cooldown:` declared on a Gemfile
+      # `source` line and decides when Bundler's native cooldown must be disabled.
       class CooldownOptionsBuilder
         extend T::Sig
 
         SOURCE_COOLDOWN_REGEX =
           /^\s*source\s*(?:\(\s*)?["'][^"']+["']\s*,[^\n#]*?\bcooldown:\s*(\d+)/
 
-        sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
-        def initialize(dependency_files:)
+        sig do
+          params(
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            security_advisories: T::Array[Dependabot::SecurityAdvisory]
+          ).void
+        end
+        def initialize(dependency_files:, security_advisories:)
           @dependency_files = dependency_files
+          @security_advisories = security_advisories
         end
 
+        # Effective cooldown for target-dependency version selection. Target versions
+        # are fetched from the RubyGems API, which Bundler's native cooldown does not
+        # gate, so Dependabot applies the source cooldown here. Security updates must
+        # never be blocked, so the base config is returned unchanged.
         sig do
           params(base_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions))
             .returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions))
         end
-        def build(base_cooldown)
+        def release_cooldown_options(base_cooldown)
+          return base_cooldown if security_update?
+
           source_days = source_cooldown_days
           return base_cooldown if source_days.nil? || !source_days.positive?
           return Dependabot::Package::ReleaseCooldownOptions.new(default_days: source_days) if base_cooldown.nil?
 
-          # The Gemfile `source cooldown:` is a native Bundler setting that applies
-          # uniformly to every candidate version of every gem from that source. Since
-          # the native filter is disabled (BUNDLE_COOLDOWN=0), Dependabot is the sole
-          # enforcer, so the source value acts as a global floor: max every semver tier
-          # with it and drop include/exclude so no dependency can bypass it. Mirrors
-          # npm_and_yarn's `merge_cooldown_with_npmrc_floor`.
+          # The Gemfile `source cooldown:` applies uniformly to every candidate version,
+          # so treat it as a global floor: max every semver tier with it and drop
+          # include/exclude so no dependency can bypass it. Mirrors npm_and_yarn's
+          # `merge_cooldown_with_npmrc_floor`.
           Dependabot::Package::ReleaseCooldownOptions.new(
             default_days: [base_cooldown.default_days, source_days].max,
             semver_major_days: [base_cooldown.semver_major_days, source_days].max,
@@ -46,10 +58,23 @@ module Dependabot
           )
         end
 
+        # Options for the native Bundler subprocess. Native cooldown stays enabled for
+        # regular updates (per-source, transitive-aware enforcement) and is disabled
+        # for security updates so remediation is never blocked.
+        sig { params(options: T::Hash[Symbol, T.anything]).returns(T::Hash[Symbol, T.anything]) }
+        def native_helper_options(options)
+          options.merge(security_updates_only: security_update?)
+        end
+
         private
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig { returns(T::Boolean) }
+        def security_update?
+          @security_advisories.any?
+        end
 
         sig { returns(T.nilable(Integer)) }
         def source_cooldown_days

@@ -10,6 +10,11 @@ require "dependabot/update_checkers/base"
 
 module Dependabot
   module Bundler
+    # The cooldown/native-option policy lives in CooldownOptionsBuilder, but this
+    # orchestrator still exceeds the class-length threshold because of its git and
+    # resolution surface. Splitting that further is out of scope here, and the other
+    # ecosystem update checkers (npm_and_yarn, bun, docker, python) disable this cop
+    # for the same reason, so the exception is retained deliberately.
     class UpdateChecker < Dependabot::UpdateCheckers::Base # rubocop:disable Metrics/ClassLength
       require_relative "update_checker/force_updater"
       require_relative "update_checker/file_preparer"
@@ -123,9 +128,7 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
       def update_cooldown
-        return @update_cooldown if security_advisories.any?
-
-        CooldownOptionsBuilder.new(dependency_files: dependency_files).build(@update_cooldown)
+        cooldown_options_builder.release_cooldown_options(@update_cooldown)
       end
 
       sig { override.returns(T::Array[T::Hash[String, String]]) }
@@ -143,16 +146,25 @@ module Dependabot
 
       private
 
-      # Options passed to the native Bundler subprocess. Bundler's native source
-      # cooldown stays enabled for regular updates so it holds back too-new
-      # transitive dependencies, but must be disabled for security updates so
-      # remediation is never blocked. The base options don't carry the security
-      # signal in the update-checker phase, so derive it from the advisories.
+      # Options passed to the native Bundler subprocess. The security-update signal is
+      # derived from the advisories so native cooldown is disabled only for security
+      # remediation; see CooldownOptionsBuilder for the policy.
       sig { returns(T::Hash[Symbol, T.anything]) }
       def native_bundler_options
         @native_bundler_options ||= T.let(
-          options.merge(security_updates_only: security_advisories.any?),
+          cooldown_options_builder.native_helper_options(options),
           T.nilable(T::Hash[Symbol, T.anything])
+        )
+      end
+
+      sig { returns(CooldownOptionsBuilder) }
+      def cooldown_options_builder
+        @cooldown_options_builder ||= T.let(
+          CooldownOptionsBuilder.new(
+            dependency_files: dependency_files,
+            security_advisories: security_advisories
+          ),
+          T.nilable(CooldownOptionsBuilder)
         )
       end
 
