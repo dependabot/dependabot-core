@@ -16,13 +16,13 @@ module Dependabot
         String
       )
 
-      REGEXP = T.let(
-        /(#{VERSION_PATTERNS}|\.revision\s*\(.*)/,
+      REVISION_REGEXP = T.let(
+        /\.revision\s*\(\s*"([0-9a-f]{40})"\s*\)/,
         Regexp
       )
 
-      REVISION_REGEXP = T.let(
-        /\.revision\s*\(\s*"([0-9a-f]{40})"\s*\)/,
+      REGEXP = T.let(
+        /(#{VERSION_PATTERNS}|#{REVISION_REGEXP.source})/,
         Regexp
       )
 

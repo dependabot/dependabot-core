@@ -112,16 +112,15 @@ module Dependabot
         return old_requirements unless new_sha
 
         old_requirements.map do |req|
-          req_hash = T.cast(req, T::Hash[Symbol, T.untyped])
-          metadata = T.cast(req_hash[:metadata] || {}, T::Hash[Symbol, T.untyped])
+          metadata = req.metadata || {}
           requirement_string = metadata[:requirement_string]
           next req unless requirement_string.is_a?(String)
           next req unless NativeRequirement.revision_declaration?(requirement_string)
 
           new_req_string = NativeRequirement.replace_revision_sha(requirement_string, new_sha)
-          old_source = T.cast(req_hash[:source] || {}, T::Hash[Symbol, T.untyped])
+          old_source = req.source || {}
           Dependabot::DependencyRequirement.create(
-            req_hash.merge(
+            req.merge(
               source: old_source.merge(ref: new_sha),
               metadata: metadata.merge(requirement_string: new_req_string)
             )
@@ -132,10 +131,7 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def latest_commit_sha_for_revision
         tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
-        return unless tag
-
-        commit_sha = T.cast(tag, T::Hash[Symbol, T.untyped])[:commit_sha]
-        commit_sha.is_a?(String) ? commit_sha : nil
+        tag&.commit_sha
       end
 
       sig { returns(T::Boolean) }

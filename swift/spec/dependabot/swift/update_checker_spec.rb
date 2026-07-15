@@ -292,17 +292,60 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
   end
 
   context "with a revision (commit SHA) pinned classic SPM dependency" do
-    let(:project_name) { "revision_pinned" }
-    let(:name) { "github.com/quick/quick" }
     let(:url) { "https://github.com/Quick/Quick" }
-    let(:upload_pack_fixture) { "quick" }
     let(:current_sha) { "f2ce7e2373106b1b562dc965e1eee2324f9e72e3" }
     let(:latest_tag_sha) { "91132c0fe9a98e76f3d7381a608685aa41770706" }
+    let(:revision_dependency) do
+      Dependabot::Dependency.new(
+        name: "github.com/quick/quick",
+        version: nil,
+        requirements: [{
+          requirement: nil,
+          groups: ["dependencies"],
+          file: "Package.swift",
+          source: { type: "git", url: url, ref: current_sha, branch: nil },
+          metadata: {
+            declaration_string: ".package(url: \"#{url}\", .revision(\"#{current_sha}\"))",
+            requirement_string: ".revision(\"#{current_sha}\")"
+          }
+        }],
+        package_manager: "swift"
+      )
+    end
+    let(:revision_checker) do
+      described_class.new(
+        dependency: revision_dependency,
+        dependency_files: project_dependency_files("revision_pinned"),
+        repo_contents_path: build_tmp_repo("revision_pinned", path: "projects"),
+        credentials: github_credentials,
+        security_advisories: [],
+        ignored_versions: [],
+        raise_on_ignored: false
+      )
+    end
+    let(:stubbed_checker) { instance_double(Dependabot::GitCommitChecker) }
+    let(:latest_tag) do
+      Dependabot::GitTagDetails.new(
+        tag: "v7.0.2",
+        version: Gem::Version.new("7.0.2"),
+        commit_sha: latest_tag_sha
+      )
+    end
 
-    before { stub_upload_pack }
+    before do
+      allow(Dependabot::GitCommitChecker).to receive(:new).and_return(stubbed_checker)
+      allow(stubbed_checker).to receive_messages(
+        git_dependency?: true,
+        pinned?: true,
+        pinned_ref_looks_like_version?: false,
+        pinned_ref_looks_like_commit_sha?: true,
+        local_tag_for_latest_version: latest_tag,
+        local_tags_for_allowed_versions: [latest_tag]
+      )
+    end
 
     describe "#latest_version" do
-      subject(:latest_version) { checker.latest_version }
+      subject(:latest_version) { revision_checker.latest_version }
 
       it "returns the version of the latest semver tag" do
         expect(latest_version).to eq(Dependabot::Swift::Version.new("7.0.2"))
@@ -310,13 +353,13 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
     end
 
     describe "#can_update?" do
-      subject { checker.can_update?(requirements_to_unlock: :own) }
+      subject { revision_checker.can_update?(requirements_to_unlock: :own) }
 
       it { is_expected.to be_truthy }
     end
 
     describe "#updated_requirements" do
-      subject(:updated_requirements) { checker.updated_requirements }
+      subject(:updated_requirements) { revision_checker.updated_requirements }
 
       it "rewrites the revision SHA in the requirement_string" do
         req = updated_requirements.first
