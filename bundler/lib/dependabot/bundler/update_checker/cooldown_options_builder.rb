@@ -15,6 +15,11 @@ module Dependabot
       class CooldownOptionsBuilder
         extend T::Sig
 
+        # Matches the common inline `source "<url>", cooldown: <days>` form. Exotic
+        # DSL forms (a dynamic URL, `cooldown:` on a wrapped line, or a non-literal
+        # value) are not extracted here; those Gemfiles fall back to Bundler's native
+        # cooldown during resolution, so a too-new release is rejected rather than
+        # selected — a missed update at worst, never an incorrect version.
         SOURCE_COOLDOWN_REGEX =
           /^\s*source\s*(?:\(\s*)?["'][^"']+["']\s*,[^\n#]*?\bcooldown:\s*(\d+)/
 
