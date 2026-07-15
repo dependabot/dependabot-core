@@ -12,14 +12,22 @@ module Dependabot
       # Owns the cooldown policy for Bundler updates: it derives the effective
       # `ReleaseCooldownOptions` from an optional `cooldown:` declared on a Gemfile
       # `source` line and decides when Bundler's native cooldown must be disabled.
+      #
+      # Extraction is best-effort: it reads the manifest text rather than Bundler's
+      # evaluated source config, so uncommon declarations (see SOURCE_COOLDOWN_REGEX
+      # and #manifest_files) may be missed or understated. For regular updates
+      # Bundler's native cooldown stays enabled as the authoritative backstop, so the
+      # worst case is a missed update, never selecting a version native resolution
+      # rejects.
       class CooldownOptionsBuilder
         extend T::Sig
 
-        # Matches the common inline `source "<url>", cooldown: <days>` form. Exotic
-        # DSL forms (a dynamic URL, `cooldown:` on a wrapped line, or a non-literal
-        # value) are not extracted here; those Gemfiles fall back to Bundler's native
-        # cooldown during resolution, so a too-new release is rejected rather than
-        # selected — a missed update at worst, never an incorrect version.
+        # Matches the common inline `source "<url>", cooldown: <days>` form. Uncommon
+        # forms are not handled: a dynamic URL, `cooldown:` on a wrapped line, or a
+        # non-literal/underscored value (e.g. `cooldown: 14_000` reads as `14`). Those
+        # Gemfiles fall back to Bundler's native cooldown during resolution, so a
+        # too-new release is rejected rather than selected — a missed update at worst,
+        # never an incorrect version.
         SOURCE_COOLDOWN_REGEX =
           /^\s*source\s*(?:\(\s*)?["'][^"']+["']\s*,[^\n#]*?\bcooldown:\s*(\d+)/
 
@@ -88,6 +96,9 @@ module Dependabot
           end.max
         end
 
+        # Support files (e.g. child Gemfiles fetched for `eval_gemfile`) and lockfiles
+        # are skipped, so a `cooldown:` declared only in an evaled Gemfile is not seen
+        # here; Bundler's native cooldown still enforces it during resolution.
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def manifest_files
           dependency_files.reject(&:support_file?)
