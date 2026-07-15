@@ -110,15 +110,34 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
       end
     end
 
-    it "sets BUNDLE_COOLDOWN to 0 to bypass Gemfile-defined cooldown" do
-      expect(Dependabot::SharedHelpers)
-        .to have_received(:run_helper_subprocess)
-        .with(
-          command: anything,
-          function: "noop",
-          args: {},
-          env: hash_including("BUNDLE_COOLDOWN" => "0")
-        )
+    context "with a regular (non-security) update" do
+      let(:options) { {} }
+
+      it "keeps Bundler's native source cooldown enabled" do
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_helper_subprocess)
+          .with(
+            command: anything,
+            function: "noop",
+            args: {},
+            env: hash_excluding("BUNDLE_COOLDOWN")
+          )
+      end
+    end
+
+    context "with a security update" do
+      let(:options) { { security_updates_only: true } }
+
+      it "disables Bundler's native source cooldown so remediation is not blocked" do
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_helper_subprocess)
+          .with(
+            command: anything,
+            function: "noop",
+            args: {},
+            env: hash_including("BUNDLE_COOLDOWN" => "0")
+          )
+      end
     end
 
     private

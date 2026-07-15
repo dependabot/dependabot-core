@@ -419,6 +419,14 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         )
       end
 
+      it "keeps native Bundler cooldown enabled for the regular update" do
+        checker.latest_version
+
+        expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
+          hash_including(options: hash_including(security_updates_only: false))
+        )
+      end
+
       context "when the Gemfile source defines a cooldown" do
         let(:dependency_files) { bundler_project_dependency_files("gemfile_with_cooldown") }
         let(:expected_cooldown_options) do
@@ -500,6 +508,14 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
             expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
               hash_including(cooldown_options: nil)
+            )
+          end
+
+          it "disables native Bundler cooldown for the security update" do
+            checker.latest_version
+
+            expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
+              hash_including(options: hash_including(security_updates_only: true))
             )
           end
         end

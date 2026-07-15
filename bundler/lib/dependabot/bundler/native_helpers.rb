@@ -65,15 +65,7 @@ module Dependabot
             command: command,
             function: function,
             args: args,
-            env: {
-              # Set BUNDLE_PATH to a thread-safe location
-              "BUNDLE_PATH" => File.join(Dependabot::Utils::BUMP_TMP_DIR_PATH, ".bundle"),
-              # Set GEM_HOME to where the proper version of Bundler is installed
-              "GEM_HOME" => File.join(helpers_path, ".bundle"),
-              # Disable Bundler's native source-level cooldown so Dependabot's own
-              # cooldown logic remains the single source of truth
-              "BUNDLE_COOLDOWN" => "0"
-            }
+            env: subprocess_env(helpers_path, options)
           )
         rescue SharedHelpers::HelperSubprocessFailed => e
           # TODO: Remove once we stop stubbing out the V2 native helper
@@ -86,6 +78,28 @@ module Dependabot
       sig { params(bundler_major_version: String).returns(String) }
       def self.versioned_helper_path(bundler_major_version)
         File.join(native_helpers_root, "v#{bundler_major_version}")
+      end
+
+      sig do
+        params(helpers_path: String, options: T::Hash[Symbol, T.untyped])
+          .returns(T::Hash[String, String])
+      end
+      def self.subprocess_env(helpers_path, options)
+        env = {
+          # Set BUNDLE_PATH to a thread-safe location
+          "BUNDLE_PATH" => File.join(Dependabot::Utils::BUMP_TMP_DIR_PATH, ".bundle"),
+          # Set GEM_HOME to where the proper version of Bundler is installed
+          "GEM_HOME" => File.join(helpers_path, ".bundle")
+        }
+
+        # Bundler 4+ enforces the Gemfile `source cooldown:` window natively, holding
+        # back releases (including transitive dependencies) younger than the configured
+        # number of days. Disable it only for security updates so vulnerability
+        # remediation is never blocked; normal runs keep native enforcement as the
+        # per-source source of truth.
+        env["BUNDLE_COOLDOWN"] = "0" if options.fetch(:security_updates_only, false)
+
+        env
       end
 
       sig { returns(String) }

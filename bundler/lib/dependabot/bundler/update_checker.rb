@@ -134,7 +134,7 @@ module Dependabot
           dependency_files: dependency_files,
           repo_contents_path: repo_contents_path,
           credentials: credentials,
-          options: options
+          options: native_bundler_options
         ).conflicting_dependencies(
           dependency: dependency,
           target_version: lowest_security_fix_version.to_s # Convert Version to String
@@ -142,6 +142,19 @@ module Dependabot
       end
 
       private
+
+      # Options passed to the native Bundler subprocess. Bundler's native source
+      # cooldown stays enabled for regular updates so it holds back too-new
+      # transitive dependencies, but must be disabled for security updates so
+      # remediation is never blocked. The base options don't carry the security
+      # signal in the update-checker phase, so derive it from the advisories.
+      sig { returns(T::Hash[Symbol, T.anything]) }
+      def native_bundler_options
+        @native_bundler_options ||= T.let(
+          options.merge(security_updates_only: security_advisories.any?),
+          T.nilable(T::Hash[Symbol, T.anything])
+        )
+      end
 
       sig { returns(T::Boolean) }
       def requirements_unlocked?
@@ -198,7 +211,7 @@ module Dependabot
               target_version: version,
               requirements_update_strategy: T.must(requirements_update_strategy),
               update_multiple_dependencies: false,
-              options: options
+              options: native_bundler_options
             ).updated_dependencies
             true
           rescue Dependabot::DependencyFileNotResolvable
@@ -222,7 +235,7 @@ module Dependabot
               raise_on_ignored: raise_on_ignored,
               replacement_git_pin: tag,
               cooldown_options: update_cooldown,
-              options: options
+              options: native_bundler_options
             ).latest_resolvable_version_details
             true
           rescue Dependabot::DependencyFileNotResolvable
@@ -371,7 +384,7 @@ module Dependabot
             credentials: credentials,
             target_version: T.cast(latest_version, Dependabot::Version),
             requirements_update_strategy: T.must(requirements_update_strategy),
-            options: options
+            options: native_bundler_options
           )
       end
 
@@ -406,7 +419,7 @@ module Dependabot
             unlock_requirement: unlock_requirement,
             latest_allowable_version: latest_version,
             cooldown_options: update_cooldown,
-            options: options
+            options: native_bundler_options
           )
       end
 
@@ -428,7 +441,7 @@ module Dependabot
               raise_on_ignored: raise_on_ignored,
               security_advisories: security_advisories,
               cooldown_options: update_cooldown,
-              options: options
+              options: native_bundler_options
             )
           end
       end
