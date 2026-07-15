@@ -41,7 +41,7 @@ RSpec.describe Dependabot::Python::DependencyGrapher::RequirementsLayers do
       "LICENSE.txt",
       "prequire.txt",
       "acquire.txt",
-      "independ.txt"
+      "codependent.txt"
     ].each do |name|
       it "does not treat #{name} as a manifest" do
         expect(described_class.manifest_txt_filename?(name)).to be(false)
@@ -141,6 +141,40 @@ RSpec.describe Dependabot::Python::DependencyGrapher::RequirementsLayers do
 
         expect(names).to include("test.in", "base.in")
         expect(develop_group.files.select(&:support_file?).map(&:name)).to include("test.in", "base.in")
+      end
+    end
+
+    # Canonical pip-compile "layered requirements" layout: a prod pair plus a dev pair whose `.in` references
+    # the prod files via `-r`/`-c`.
+    #
+    # - The dev layer's primary is the compiled requirements-dev.txt, but the live `-r`/`-c` directives live
+    #   in the paired requirements-dev.in.
+    # - The referenced prod files must still be pulled into the dev layer as support files, otherwise pip
+    #   cannot open them and the graph job fails with `dependency_file_not_evaluatable`.
+    context "with a pip-compile layered layout where the paired .in references sibling requirements" do
+      let(:dependency_files) do
+        [
+          file("requirements.in", "requests\n"),
+          file("requirements.txt", "# via requirements.in\nrequests==2.32.5\n"),
+          file("requirements-dev.in", "-c requirements.txt\n-r requirements.in\npytest\n"),
+          file("requirements-dev.txt", "# via requirements-dev.in\npytest==8.3.3\n")
+        ]
+      end
+
+      it "emits one group per compiled layer" do
+        expect(layers.groups.map { |g| g.primary.name })
+          .to contain_exactly("requirements.txt", "requirements-dev.txt")
+      end
+
+      it "pulls the -r/-c siblings referenced by the paired .in into the dev layer as support files" do
+        dev_group = layers.groups.find { |g| g.primary.name == "requirements-dev.txt" }
+        support_names = dev_group.files.select(&:support_file?).map(&:name)
+
+        expect(dev_group.files.map(&:name))
+          .to contain_exactly(
+            "requirements-dev.txt", "requirements-dev.in", "requirements.in", "requirements.txt"
+          )
+        expect(support_names).to include("requirements-dev.in", "requirements.in", "requirements.txt")
       end
     end
 

@@ -120,7 +120,7 @@ module Dependabot
       end.join(", ")
     end
 
-    sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+    sig { returns(T::Array[T::Hash[String, T.nilable(T.any(String, T::Boolean))]]) }
     def updated_dependency_files_hash
       updated_dependency_files.map(&:to_h)
     end

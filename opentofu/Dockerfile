@@ -3,15 +3,15 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
 
 # See https://github.com/opentofu/opentofu/releases
-ARG TOFU_VERSION=1.11.4
+ARG TOFU_VERSION=1.12.1
 ARG ORAS_VERSION=1.3.0
 
 # curl "https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_SHA256SUMS" | grep "tofu_${TOFU_VERSION}_linux_amd64.zip"
-ARG TOFU_AMD64_CHECKSUM=f3907e96b5a9f2fce311078ca273bcdf1e13980dac150b2549932c26b515c61b
+ARG TOFU_AMD64_CHECKSUM=1fc9af962e3632b7cd0ba27076cd9f1ced177567defe9e331ac37f5a40468575
 ARG ORAS_AMD64_CHECKSUM=6cdc692f929100feb08aa8de584d02f7bcc30ec7d88bc2adc2054d782db57c64
 
 # curl "https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_SHA256SUMS" | grep "tofu_${TOFU_VERSION}_linux_arm64.zip"
-ARG TOFU_ARM64_CHECKSUM=f877d46cb911d40bc0b81818d1940afdd356f632bcac48ca19dd8f7802a86701
+ARG TOFU_ARM64_CHECKSUM=1a53dd57697dc04d243ddb81a0f70e44ab83c256f15dde173e5538120dc6a0bb
 ARG ORAS_ARM64_CHECKSUM=7649738b48fde10542bcc8b0e9b460ba83936c75fb5be01ee6d4443764a14352
 
 RUN cd /tmp \
