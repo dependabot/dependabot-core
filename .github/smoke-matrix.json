@@ -70,6 +70,11 @@
     "ecosystem": "gradle"
   },
   {
+    "core": "helm",
+    "test": "helm",
+    "ecosystem": "helm"
+  },
+  {
     "core": "hex",
     "test": "hex",
     "ecosystem": "mix"

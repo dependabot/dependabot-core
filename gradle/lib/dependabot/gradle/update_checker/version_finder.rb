@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "nokogiri"
@@ -49,7 +49,7 @@ module Dependabot
           @dependency_files    = dependency_files
           @credentials         = credentials
           @raise_on_ignored    = raise_on_ignored
-          @forbidden_urls      = T.let([], T::Array[T.untyped])
+          @forbidden_urls      = T.let([], T::Array[String])
           @ignored_versions    = ignored_versions
 
           super(
@@ -64,7 +64,7 @@ module Dependabot
           )
         end
 
-        sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
+        sig { returns(T.nilable(T::Hash[Symbol, Object])) }
         def latest_version_details
           possible_versions = package_release(versions)
 
@@ -92,7 +92,7 @@ module Dependabot
           true
         end
 
-        sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
+        sig { returns(T.nilable(T::Hash[Symbol, Object])) }
         def lowest_security_fix_version_details
           possible_versions = package_release(versions)
 
@@ -118,7 +118,7 @@ module Dependabot
             source_url: url }
         end
 
-        sig { returns(T.any(T::Array[T::Hash[String, T.untyped]], T::Array[T::Hash[Symbol, T.untyped]])) }
+        sig { returns(T::Array[T::Hash[Symbol, Object]]) }
         def versions
           Package::PackageDetailsFetcher.new(
             dependency: dependency,
@@ -134,10 +134,10 @@ module Dependabot
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
         sig { returns(T.nilable(T::Array[String])) }
@@ -149,15 +149,16 @@ module Dependabot
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
 
-        sig { params(version: T::Array[T.untyped]).returns(T::Array[Dependabot::Package::PackageRelease]) }
+        sig { params(version: T::Array[T::Hash[Symbol, Object]]).returns(T::Array[Dependabot::Package::PackageRelease]) }
         def package_release(version)
           package_releases = []
 
           version.map do |info|
+            released_at = info[:released_at]
             package_releases << Dependabot::Package::PackageRelease.new(
-              version: info[:version],
-              released_at: info[:released_at],
-              url: info[:source_url]
+              version: Dependabot::Gradle::Version.new(info[:version].to_s),
+              released_at: released_at.is_a?(Time) ? released_at : nil,
+              url: info[:source_url]&.to_s
             )
           end
           package_releases
@@ -177,7 +178,10 @@ module Dependabot
           )
         end
 
-        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
+        sig do
+          params(possible_versions: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
         def filter_ignored_versions(possible_versions)
           filtered = possible_versions
 

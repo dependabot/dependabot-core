@@ -24,7 +24,7 @@ module Dependabot
           )
         end
 
-        sig { override.params(latest_version: String).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { override.params(latest_version: String).returns(T::Array[T::Hash[Symbol, Object]]) }
         def updated_requirements(latest_version)
           requirements.map do |original_req|
             original_source = original_req[:source]

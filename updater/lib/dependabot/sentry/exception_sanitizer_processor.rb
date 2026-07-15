@@ -23,7 +23,7 @@ class ExceptionSanitizer < ::Dependabot::Sentry::Processor
     override
       .params(
         event: ::Sentry::Event,
-        _hint: T::Hash[Symbol, T.untyped]
+        _hint: T::Hash[Symbol, Object]
       )
       .returns(::Sentry::Event)
   end
