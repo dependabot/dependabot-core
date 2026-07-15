@@ -121,9 +121,9 @@ module Dependabot
 
             # Apply case transformation to content after prefix
             case branch_name_case
-            when "lower"
+            when "lowercase"
               content = content.downcase
-            when "upper"
+            when "uppercase"
               content = content.upcase
             end
 
