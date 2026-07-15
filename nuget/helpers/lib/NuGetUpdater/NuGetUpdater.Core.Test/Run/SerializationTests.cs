@@ -977,6 +977,44 @@ public class SerializationTests : TestBase
                 }
             }
         ];
+
+        // prerelease opt-in for specific dependencies
+        yield return
+        [
+            // allowedUpdatesJsonBody
+            """
+            [
+                {
+                    "dependency-name": "MyCompany.*",
+                    "prerelease": true
+                },
+                {
+                    "dependency-name": "Newtonsoft.Json",
+                    "prerelease": true
+                },
+                {
+                    "update-type": "all"
+                }
+            ]
+            """,
+            new[]
+            {
+                new AllowedUpdate()
+                {
+                    DependencyName = "MyCompany.*",
+                    Prerelease = true
+                },
+                new AllowedUpdate()
+                {
+                    DependencyName = "Newtonsoft.Json",
+                    Prerelease = true
+                },
+                new AllowedUpdate()
+                {
+                    UpdateType = UpdateType.All
+                }
+            }
+        ];
     }
 
     [Fact]

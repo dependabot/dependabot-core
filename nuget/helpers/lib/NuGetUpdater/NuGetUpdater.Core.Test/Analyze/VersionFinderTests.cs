@@ -202,6 +202,98 @@ public class VersionFinderTests : TestBase
     }
 
     [Fact]
+    public void VersionFilter_AllowPrerelease_PrereleaseVersionOfHigherBaseVersion_WhenCurrentIsPrerelease_ReturnsTrue()
+    {
+        // When AllowPrerelease is true, prerelease versions with a different base version are allowed
+        // even when the current version is also a prerelease
+        var dependencyInfo = new DependencyInfo
+        {
+            Name = "Dependency",
+            Version = "1.0.0-alpha",
+            IsVulnerable = false,
+            IgnoredVersions = [],
+            Vulnerabilities = [],
+            AllowPrerelease = true,
+        };
+        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, VersionRange.Parse(dependencyInfo.Version));
+        var version = NuGetVersion.Parse("2.0.0-beta");
+
+        var result = filter(version);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void VersionFilter_AllowPrereleaseNotSet_PrereleaseVersionOfHigherBaseVersion_WhenCurrentIsPrerelease_ReturnsFalse()
+    {
+        // When AllowPrerelease is not set and current version is a prerelease,
+        // prerelease versions with a different base version are NOT allowed (existing behavior)
+        var dependencyInfo = new DependencyInfo
+        {
+            Name = "Dependency",
+            Version = "1.0.0-alpha",
+            IsVulnerable = false,
+            IgnoredVersions = [],
+            Vulnerabilities = [],
+        };
+        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, VersionRange.Parse(dependencyInfo.Version));
+        var version = NuGetVersion.Parse("2.0.0-beta");
+
+        var result = filter(version);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void VersionFilter_AllowPrerelease_StableVersionStillAllowed_ReturnsTrue()
+    {
+        // Stable versions are always allowed even when AllowPrerelease is set
+        var dependencyInfo = new DependencyInfo
+        {
+            Name = "Dependency",
+            Version = "1.0.0",
+            IsVulnerable = false,
+            IgnoredVersions = [],
+            Vulnerabilities = [],
+            AllowPrerelease = true,
+        };
+        var filter = VersionFinder.CreateVersionFilter(dependencyInfo, VersionRange.Parse(dependencyInfo.Version));
+        var version = NuGetVersion.Parse("2.0.0");
+
+        var result = filter(version);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void CreateVersionFilter_WithNuGetVersion_AllowPrerelease_WhenCurrentIsPrerelease_PrereleaseAllowed()
+    {
+        // When allowPrerelease is true and current is a prerelease, prerelease versions with
+        // a different base version pass the filter
+        var currentVersion = NuGetVersion.Parse("1.0.0-alpha");
+        var filter = VersionFinder.CreateVersionFilter(currentVersion, allowPrerelease: true);
+        var candidate = NuGetVersion.Parse("2.0.0-beta");
+
+        var result = filter(candidate);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void CreateVersionFilter_WithNuGetVersion_AllowPrereleaseDefault_WhenCurrentIsPrerelease_PrereleaseNotAllowed()
+    {
+        // Default behavior when current is a prerelease: prerelease versions with
+        // a different base version are not allowed
+        var currentVersion = NuGetVersion.Parse("1.0.0-alpha");
+        var filter = VersionFinder.CreateVersionFilter(currentVersion);
+        var candidate = NuGetVersion.Parse("2.0.0-beta");
+
+        var result = filter(candidate);
+
+        Assert.False(result);
+    }
+
+    [Fact]
     public async Task TargetFrameworkIsConsideredForUpdatedVersions()
     {
         // arrange
