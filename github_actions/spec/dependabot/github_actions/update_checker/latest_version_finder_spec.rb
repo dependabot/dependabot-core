@@ -523,7 +523,7 @@ RSpec.describe namespace::LatestVersionFinder do
   end
 
   describe "#commit_metadata_details" do
-    subject(:commit_metadata_details) { finder.send(:commit_metadata_details) }
+    subject(:commit_metadata_details) { finder.send(:commit_metadata_details, "abc123") }
 
     let(:reference) { "v1" }
     let(:dependency_version) { "1.0.0" }
@@ -559,11 +559,9 @@ RSpec.describe namespace::LatestVersionFinder do
           .to receive(:dependency_source_details)
           .and_return({ type: "git", url: "https://github.com/actions/setup-node",
                         ref: "v1", branch: nil })
-        allow(finder).to receive_messages(
-          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
-                                commit_sha: "abc123" },
-          commit_ref: "abc123"
-        )
+        allow(finder).to receive(:latest_version_tag)
+          .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                        commit_sha: "abc123" })
         # No GitHub Release available — forces git fallback
         mock_client = instance_double(Octokit::Client, releases: [])
         allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
@@ -589,11 +587,9 @@ RSpec.describe namespace::LatestVersionFinder do
           .to receive(:dependency_source_details)
           .and_return({ type: "git", url: "https://github.com/actions/setup-node",
                         ref: "v1", branch: nil })
-        allow(finder).to receive_messages(
-          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
-                                commit_sha: "abc123" },
-          commit_ref: "abc123"
-        )
+        allow(finder).to receive(:latest_version_tag)
+          .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                        commit_sha: "abc123" })
         # No GitHub Release available — forces git fallback
         mock_client = instance_double(Octokit::Client, releases: [])
         allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
@@ -624,11 +620,9 @@ RSpec.describe namespace::LatestVersionFinder do
           .to receive(:dependency_source_details)
           .and_return({ type: "git", url: "https://github.com/actions/setup-node",
                         ref: "v1", branch: nil })
-        allow(finder).to receive_messages(
-          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
-                                commit_sha: "abc123" },
-          commit_ref: "abc123"
-        )
+        allow(finder).to receive(:latest_version_tag)
+          .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                        commit_sha: "abc123" })
         # Stub GitHub releases to return empty (force git fallback)
         mock_client = instance_double(Octokit::Client, releases: [])
         allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
@@ -677,11 +671,9 @@ RSpec.describe namespace::LatestVersionFinder do
           .to receive(:dependency_source_details)
           .and_return({ type: "git", url: "https://github.com/actions/setup-node",
                         ref: "v1", branch: nil })
-        allow(finder).to receive_messages(
-          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
-                                commit_sha: "abc123" },
-          commit_ref: "abc123"
-        )
+        allow(finder).to receive(:latest_version_tag)
+          .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                        commit_sha: "abc123" })
 
         # No release exists
         mock_client = instance_double(Octokit::Client, releases: [])
@@ -697,6 +689,46 @@ RSpec.describe namespace::LatestVersionFinder do
           .and_return(tag_creation_date)
 
         expect(commit_metadata_details).to eq(tag_creation_date)
+      end
+    end
+
+    context "when the proposed commit is not the tip of the latest version tag" do
+      subject(:commit_metadata_details) { finder.send(:commit_metadata_details, "branchheadsha") }
+
+      it "uses the proposed commit's own date and ignores the version tag's release date" do
+        commit_date = (Time.now.utc - (2 * 24 * 60 * 60)).strftime("%Y-%m-%d %H:%M:%S %z")
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return({ type: "git", url: "https://github.com/actions/setup-node",
+                        ref: "eeb902ac2f1be576edc296309872cf476a209b7f", branch: nil })
+        # The latest version tag points at a different (older) commit than the
+        # branch-head commit we're proposing to update to.
+        allow(finder).to receive(:latest_version_tag)
+          .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                        commit_sha: "abc123" })
+
+        # A GitHub Release exists for the tag, but its published_at must NOT be used
+        # because the proposed commit is unrelated to that tag/release.
+        stale_release_date = Time.now.utc - (30 * 24 * 60 * 60)
+        mock_release = Struct.new(:tag_name, :published_at, :prerelease)
+                             .new("v1.0.0", stale_release_date, false)
+        mock_client = instance_double(Octokit::Client, releases: [mock_release])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        # for-each-ref must not be consulted for an untagged commit
+        expect(Dependabot::SharedHelpers).not_to receive(:run_shell_command)
+          .with(/git for-each-ref/, any_args)
+        # The commit's own date is resolved via git show on the proposed SHA
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git show --no-patch/, hash_including(fingerprint: anything))
+          .and_return(commit_date)
+
+        expect(commit_metadata_details).to eq(commit_date)
       end
     end
   end

@@ -198,7 +198,7 @@ module Dependabot
           # If the proposed release is a commit SHA (String), check its date against cooldown
           if release.is_a?(String)
             Dependabot.logger.info("Checking cooldown for commit SHA: #{release}")
-            return release unless check_if_version_in_cooldown_period?(commit_metadata_details)
+            return release unless check_if_version_in_cooldown_period?(commit_metadata_details(release))
 
             # Proposed SHA is in cooldown; for a SHA-based proposal, return nil (don't fall back to tags)
             Dependabot.logger.info("Proposed commit SHA is in cooldown, returning nil")
@@ -248,41 +248,53 @@ module Dependabot
           []
         end
 
-        # Returns the release date for the latest version tag.
-        # Priority: GitHub Release published_at > tag creation date > commit date.
-        # This ensures re-tagged or republished releases are evaluated based on
-        # when they were actually made available.
-        sig { returns(T.nilable(String)) }
-        def commit_metadata_details
-          @commit_metadata_details ||= T.let(
-            resolve_commit_metadata_details,
-            T.nilable(String)
-          )
+        # Returns the release date for the proposed commit SHA.
+        #
+        # When the proposed commit is the tip of a version tag, the tag's date is
+        # used with priority: GitHub Release published_at > tag creation date > commit date.
+        # When the proposed commit is a branch-head commit that is NOT the tip of a
+        # version tag (e.g. a commit-pinned action being bumped to a newer commit),
+        # the commit's own date is used. This avoids reusing an unrelated version
+        # tag's (potentially stale or re-published) release date, which would let a
+        # brand-new commit bypass the cooldown window.
+        sig { params(commit_sha: String).returns(T.nilable(String)) }
+        def commit_metadata_details(commit_sha)
+          @commit_metadata_details ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
+          return @commit_metadata_details[commit_sha] if @commit_metadata_details.key?(commit_sha)
+
+          @commit_metadata_details[commit_sha] = resolve_commit_metadata_details(commit_sha)
         end
 
-        sig { returns(T.nilable(String)) }
-        def resolve_commit_metadata_details
-          # First, try GitHub Release published_at via Octokit
-          tag_name = latest_version_tag&.fetch(:tag, nil)
-          normalized_tag = tag_name ? normalize_tag_name(tag_name) : nil
-          if normalized_tag
+        sig { params(commit_sha: String).returns(T.nilable(String)) }
+        def resolve_commit_metadata_details(commit_sha)
+          tag = latest_version_tag
+          tag_name = tag&.fetch(:tag, nil)
+
+          # Only trust a version tag's release/tag date when the proposed commit is
+          # actually the tip of that tag. Otherwise the proposed commit is unrelated
+          # to the tag and must be evaluated on its own commit date.
+          if tag && tag.fetch(:commit_sha, nil) == commit_sha && tag_name
+            normalized_tag = normalize_tag_name(tag_name)
+
             release_date = github_release_published_at(normalized_tag)
             if release_date
               Dependabot.logger.info("Found release date from GitHub Release: #{release_date}")
               return release_date.iso8601
             end
+
+            return fetch_date_from_git(normalized_tag, commit_sha)
           end
 
-          # Fallback to git-based date detection
-          fetch_date_from_git(normalized_tag)
+          # Proposed commit is not the tip of a version tag: use the commit's own date.
+          fetch_date_from_git(nil, commit_sha)
         rescue StandardError => e
           msg = "Error (github actions) while checking release date for #{dependency.name}: #{e.message}"
           Dependabot.logger.warn(msg)
           nil
         end
 
-        sig { params(tag_name: T.nilable(String)).returns(T.nilable(String)) }
-        def fetch_date_from_git(tag_name)
+        sig { params(tag_name: T.nilable(String), commit_sha: String).returns(T.nilable(String)) }
+        def fetch_date_from_git(tag_name, commit_sha)
           url = cooldown_source_url
           source = T.must(Source.from_url(url))
 
@@ -302,8 +314,8 @@ module Dependabot
 
               date ||= SharedHelpers.run_shell_command(
                 "git show --no-patch --format=\"%cd\" " \
-                "--date=iso #{commit_ref}",
-                fingerprint: "git show --no-patch --format=\"%cd\" --date=iso <commit_ref>"
+                "--date=iso #{commit_sha}",
+                fingerprint: "git show --no-patch --format=\"%cd\" --date=iso <commit_sha>"
               ).strip
 
               Dependabot.logger.info("Found release date : #{Time.parse(date)}")
@@ -336,11 +348,6 @@ module Dependabot
         rescue StandardError => e
           Dependabot.logger.debug("Error parsing release date: #{e.message}")
           false
-        end
-
-        sig { returns(String) }
-        def commit_ref
-          latest_version_tag&.fetch(:commit_sha)
         end
 
         sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
