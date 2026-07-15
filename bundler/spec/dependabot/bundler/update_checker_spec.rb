@@ -1163,6 +1163,16 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                     .to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
                 end
               end
+
+              context "when the Gemfile source declares a cooldown" do
+                let(:dependency_files) { bundler_project_dependency_files("git_source_with_cooldown") }
+                let(:update_cooldown) { nil }
+
+                it "does not apply the RubyGems source cooldown to git tag selection" do
+                  expect(checker.latest_version)
+                    .to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
+                end
+              end
             end
 
             context "when the dependency has never been released" do
