@@ -37,6 +37,9 @@ module Dependabot
     extend T::Sig
 
     TOP_LEVEL_DEPENDENCY_TYPES = T.let(%w(direct production development).freeze, T::Array[String])
+    # Default cooldown period (in days) applied when a cooldown is configured
+    # without an explicit `default-days` value.
+    DEFAULT_COOLDOWN_DAYS = 3
     PERMITTED_KEYS = T.let(
       %i(
         allowed_updates
@@ -556,12 +559,11 @@ module Dependabot
         .returns(T::Array[BlockedVersion])
     end
     def matching_blocked_entries(dependency)
-      normaliser = name_normaliser
-      normalized_dep_name = T.must(normaliser).call(dependency.name)
-
-      blocked_versions
-        .select { |bv| bv.dependency_name && bv.version_requirement }
-        .select { |bv| T.must(normaliser).call(T.must(bv.dependency_name)) == normalized_dep_name }
+      BlockedVersion.matching(
+        blocked_versions,
+        dependency_name: dependency.name,
+        package_manager: package_manager
+      )
     end
 
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
@@ -729,13 +731,24 @@ module Dependabot
       return nil unless cooldown
 
       Dependabot::Package::ReleaseCooldownOptions.new(
-        default_days: cooldown["default-days"] || 0,
+        default_days: cooldown["default-days"] || default_cooldown_days,
         semver_major_days: cooldown["semver-major-days"] || 0,
         semver_minor_days: cooldown["semver-minor-days"] || 0,
         semver_patch_days: cooldown["semver-patch-days"] || 0,
         include: cooldown["include"] || [],
         exclude: cooldown["exclude"] || []
       )
+    end
+
+    # The fallback applied when a cooldown block is present but `default-days`
+    # is not explicitly set. Behind the `enable_cooldown_default_days`
+    # experiment this defaults to DEFAULT_COOLDOWN_DAYS, otherwise it remains 0
+    # (no cooldown) to preserve the previous behaviour.
+    sig { returns(Integer) }
+    def default_cooldown_days
+      return DEFAULT_COOLDOWN_DAYS if experiments[:enable_cooldown_default_days]
+
+      0
     end
 
     sig { params(source_details: T::Hash[String, T.untyped]).returns([T.nilable(String), T.nilable(T::Array[String])]) }

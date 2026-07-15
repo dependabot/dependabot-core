@@ -1160,6 +1160,202 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
+  describe "#allowed_version_tags_with_release_dates" do
+    subject(:releases) { checker.allowed_version_tags_with_release_dates }
+
+    let(:repo_url) { "https://github.com/gocardless/business.git" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+    let(:upload_pack_fixture) { "business" }
+
+    before do
+      stub_request(:get, service_pack_url)
+        .to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
+        )
+
+      allow(checker).to receive(:refs_for_tag_with_detail).and_return(
+        [
+          Dependabot::GitTagWithDetail.new(tag: "v1.11.1", release_date: "2018-01-02"),
+          Dependabot::GitTagWithDetail.new(tag: "v1.13.0", release_date: "2018-03-04")
+        ]
+      )
+    end
+
+    it "returns a PackageRelease for each allowed version tag, paired with its release date" do
+      latest = releases.max_by(&:version)
+
+      expect(latest.tag).to eq("v1.13.0")
+      expect(latest.version).to eq(Dependabot::Version.new("1.13.0"))
+      expect(latest.released_at).to eq(Time.parse("2018-03-04"))
+    end
+
+    it "leaves released_at nil for tags without a known release date" do
+      release = releases.find { |r| r.tag == "v1.0.0" }
+
+      expect(release.released_at).to be_nil
+    end
+  end
+
+  describe "#local_tag_for_pinned_version_ref" do
+    subject(:local_tag_for_pinned_version_ref) { checker.local_tag_for_pinned_version_ref }
+
+    let(:repo_url) { "https://github.com/gocardless/business.git" }
+    let(:upload_pack_fixture) { "business" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+
+    before do
+      stub_request(:get, service_pack_url)
+        .to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
+    end
+
+    context "when the dependency is pinned to a ref that looks like a version" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "v1.0.0"
+        }
+      end
+
+      it "returns the latest version tag" do
+        expect(local_tag_for_pinned_version_ref[:tag]).to eq("v1.13.0")
+      end
+    end
+
+    context "when the dependency is not pinned to a version (e.g. branch-pinned)" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "master"
+        }
+      end
+
+      it "returns nil without resolving a tag" do
+        expect(local_tag_for_pinned_version_ref).to be_nil
+      end
+    end
+  end
+
+  describe "#local_tag_for_latest_version with cooldown options" do
+    subject(:latest_tag) { checker.local_tag_for_latest_version(cooldown_options) }
+
+    let(:repo_url) { "https://github.com/gocardless/business.git" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+    let(:upload_pack_fixture) { "business" }
+    let(:cooldown_options) { nil }
+
+    before do
+      stub_request(:get, service_pack_url)
+        .to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
+        )
+    end
+
+    context "when no cooldown options are configured (e.g. security updates)" do
+      let(:cooldown_options) { nil }
+
+      it "returns the latest version tag without consulting release dates" do
+        expect(checker).not_to receive(:refs_for_tag_with_detail)
+        expect(latest_tag[:tag]).to eq("v1.13.0")
+      end
+    end
+
+    context "when cooldown options are configured" do
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+      end
+
+      before do
+        allow(checker).to receive(:refs_for_tag_with_detail).and_return(refs_with_detail)
+      end
+
+      context "when the latest tag is still within its cooldown window" do
+        let(:refs_with_detail) do
+          [
+            Dependabot::GitTagWithDetail.new(tag: "v1.11.1", release_date: "2018-01-02"),
+            Dependabot::GitTagWithDetail.new(tag: "v1.13.0", release_date: Time.now.strftime("%Y-%m-%d"))
+          ]
+        end
+
+        it "skips the cooled-down tag and returns the next newest allowed tag" do
+          expect(latest_tag[:tag]).to eq("v1.11.1")
+        end
+      end
+
+      context "when all candidate tags are within their cooldown window" do
+        let(:refs_with_detail) do
+          checker.allowed_version_tags.map do |tag|
+            Dependabot::GitTagWithDetail.new(tag: tag.name, release_date: Time.now.strftime("%Y-%m-%d"))
+          end
+        end
+
+        it "returns nil so no update is made" do
+          expect(latest_tag).to be_nil
+        end
+      end
+
+      context "when no tags are within their cooldown window" do
+        let(:refs_with_detail) do
+          [
+            Dependabot::GitTagWithDetail.new(tag: "v1.11.1", release_date: "2018-01-02"),
+            Dependabot::GitTagWithDetail.new(tag: "v1.13.0", release_date: "2018-03-04")
+          ]
+        end
+
+        it "returns the latest version tag" do
+          expect(latest_tag[:tag]).to eq("v1.13.0")
+        end
+      end
+
+      context "when a GitHub Release publish date is available" do
+        let(:refs_with_detail) do
+          [
+            Dependabot::GitTagWithDetail.new(tag: "v1.11.1", release_date: "2018-01-02"),
+            Dependabot::GitTagWithDetail.new(tag: "v1.13.0", release_date: "2018-03-04")
+          ]
+        end
+
+        before do
+          github_release = Struct.new(:tag_name, :published_at)
+                                 .new("v1.13.0", Time.now)
+          allow(checker).to receive(:cached_github_releases).and_return([github_release])
+        end
+
+        it "prefers the release publish date over the tag creation date" do
+          expect(latest_tag[:tag]).to eq("v1.11.1")
+        end
+      end
+
+      context "when the dependency is excluded from cooldown" do
+        let(:cooldown_options) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90, exclude: ["business"])
+        end
+        let(:refs_with_detail) do
+          [
+            Dependabot::GitTagWithDetail.new(tag: "v1.13.0", release_date: Time.now.strftime("%Y-%m-%d"))
+          ]
+        end
+
+        it "ignores cooldown and returns the latest version tag" do
+          expect(latest_tag[:tag]).to eq("v1.13.0")
+        end
+      end
+    end
+  end
+
   describe "#local_ref_for_latest_version_matching_existing_precision" do
     subject { checker.local_ref_for_latest_version_matching_existing_precision }
 

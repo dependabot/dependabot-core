@@ -15,7 +15,8 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       service:,
       job:,
       base_commit_sha:,
-      dependency_files:
+      dependency_files:,
+      directory_fetch_errors:
     )
   end
 
@@ -68,6 +69,7 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
 
   let(:base_commit_sha) { "fake-sha" }
   let(:repo_contents_path) { nil }
+  let(:directory_fetch_errors) { {} }
 
   context "with a basic Gemfile project" do
     let(:directories) { [directory] }
@@ -517,8 +519,9 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
     end
   end
 
-  # This is mainly for documentation purposes, this is unlikely to happen in the real world.
-  context "with a set of empty dependency files" do
+  # A manifest file that resolves to no dependencies should still be reported so the snapshot
+  # records that the file was scanned, rather than being omitted from the manifest list.
+  context "with a set of dependency files that resolve to no dependencies" do
     let(:directories) { [directory] }
     let(:directory) { "/" }
     let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
@@ -538,12 +541,22 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
       ]
     end
 
-    it "generates a snapshot with metadata and an empty manifest list" do
+    it "generates a snapshot reporting the manifest with an empty resolved collection" do
       expect(service).to receive(:create_dependency_submission) do |args|
         payload = args[:dependency_submission].payload
 
         expect(payload[:job][:correlator]).to eq("dependabot-bundler")
-        expect(payload[:manifests]).to be_empty
+
+        # The manifest is still reported, with no resolved dependencies
+        expect(payload[:manifests].length).to eq(1)
+
+        manifest = payload[:manifests].fetch("/Gemfile.lock")
+        expect(manifest[:name]).to eq("/Gemfile.lock")
+        expect(manifest[:resolved]).to be_empty
+
+        # The snapshot is a successful scan
+        expect(payload[:metadata][:status]).to eq(GithubApi::DependencySubmission::SnapshotStatus::SUCCESS.serialize)
+        expect(payload[:metadata][:scanned_manifest_path]).to eql("rubygems::/")
       end
 
       update_graph_processor.run
@@ -571,6 +584,127 @@ RSpec.describe Dependabot::UpdateGraphProcessor do
         expect(payload[:metadata][:status]).to eq(GithubApi::DependencySubmission::SnapshotStatus::SKIPPED.serialize)
         expect(payload[:metadata][:reason]).to eq(GithubApi::DependencySubmission::EMPTY_REASON_NO_MANIFESTS)
         expect(payload[:metadata][:scanned_manifest_path]).to eql("rubygems::/")
+      end
+
+      update_graph_processor.run
+    end
+  end
+
+  context "with a directory that failed to fetch due to an unreachable path dependency" do
+    let(:directories) { [dir_ok, dir_broken] }
+    let(:dir_ok) { "/" }
+    let(:dir_broken) { "/broken" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
+
+    let(:directory_fetch_errors) do
+      { dir_broken => Dependabot::PathDependenciesNotReachable.new(["./local"]) }
+    end
+
+    # The other directory has no manifests so it is reported without needing to
+    # parse an ecosystem, keeping the focus on the skipped-fetch behaviour.
+    let(:dependency_files) { [] }
+
+    it "submits a skipped snapshot describing the unreachable path dependency" do
+      submissions = []
+      allow(service).to receive(:create_dependency_submission) do |args|
+        submissions << args[:dependency_submission]
+      end
+
+      update_graph_processor.run
+
+      skipped = submissions.find do |s|
+        s.payload[:metadata][:scanned_manifest_path] == "rubygems::/broken"
+      end
+
+      expect(skipped).not_to be_nil
+      expect(skipped.payload[:metadata][:status])
+        .to eq(GithubApi::DependencySubmission::SnapshotStatus::SKIPPED.serialize)
+      expect(skipped.payload[:metadata][:reason])
+        .to eq(GithubApi::DependencySubmission::SKIPPED_REASON_PATH_DEPENDENCIES_NOT_REACHABLE)
+      expect(skipped.payload[:manifests]).to be_empty
+    end
+
+    it "does not mislabel the affected directory as having no manifests" do
+      allow(service).to receive(:create_dependency_submission) do |args|
+        payload = args[:dependency_submission].payload
+        if payload[:metadata][:scanned_manifest_path] == "rubygems::/broken"
+          expect(payload[:metadata][:status])
+            .to eq(GithubApi::DependencySubmission::SnapshotStatus::SKIPPED.serialize)
+          expect(payload[:metadata][:reason])
+            .not_to eq(GithubApi::DependencySubmission::EMPTY_REASON_NO_MANIFESTS)
+        end
+      end
+
+      update_graph_processor.run
+    end
+
+    it "records a skipped workflow result for the affected directory" do
+      allow(service).to receive(:record_workflow_result)
+      expect(service).to receive(:record_workflow_result).with(
+        directory: dir_broken,
+        status: GithubApi::DependencySubmission::SnapshotStatus::SKIPPED.serialize,
+        details: GithubApi::DependencySubmission::SKIPPED_REASON_PATH_DEPENDENCIES_NOT_REACHABLE
+      )
+
+      update_graph_processor.run
+    end
+
+    it "does not abort the job: the other directory is still processed" do
+      submissions = []
+      allow(service).to receive(:create_dependency_submission) do |args|
+        submissions << args[:dependency_submission].payload
+      end
+
+      update_graph_processor.run
+
+      scanned_paths = submissions.map { |p| p[:metadata][:scanned_manifest_path] }
+      expect(scanned_paths).to include("rubygems::/", "rubygems::/broken")
+    end
+
+    it "records a warning about the incomplete graph" do
+      expect(service).to receive(:record_update_job_warning).with(
+        hash_including(warn_type: "dependency_graph_incomplete")
+      )
+
+      update_graph_processor.run
+    end
+  end
+
+  context "with a directory that failed to fetch due to an unspecified file fetch error" do
+    let(:directories) { [dir_ok, dir_broken] }
+    let(:dir_ok) { "/" }
+    let(:dir_broken) { "/broken" }
+    let(:repo_contents_path) { build_tmp_repo("bundler/original", path: "") }
+
+    let(:directory_fetch_errors) do
+      { dir_broken => Dependabot::DependabotError.new("something went wrong") }
+    end
+
+    let(:dependency_files) { [] }
+
+    it "submits a skipped snapshot with a generic file fetch error reason" do
+      submissions = []
+      allow(service).to receive(:create_dependency_submission) do |args|
+        submissions << args[:dependency_submission]
+      end
+
+      update_graph_processor.run
+
+      skipped = submissions.find do |s|
+        s.payload[:metadata][:scanned_manifest_path] == "rubygems::/broken"
+      end
+
+      expect(skipped).not_to be_nil
+      expect(skipped.payload[:metadata][:status])
+        .to eq(GithubApi::DependencySubmission::SnapshotStatus::SKIPPED.serialize)
+      expect(skipped.payload[:metadata][:reason])
+        .to eq(GithubApi::DependencySubmission::SKIPPED_REASON_FILE_FETCH_ERROR)
+    end
+
+    it "does not leak the raw error message into the snapshot reason" do
+      allow(service).to receive(:create_dependency_submission) do |args|
+        payload = args[:dependency_submission].payload
+        expect(payload[:metadata][:reason]).not_to include("something went wrong")
       end
 
       update_graph_processor.run

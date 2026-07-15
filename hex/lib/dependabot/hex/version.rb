@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -48,7 +48,7 @@ module Dependabot
         "#<#{self.class} #{@version_string}>"
       end
 
-      sig { params(other: T.untyped).returns(T.nilable(Integer)) }
+      sig { params(other: Object).returns(T.nilable(Integer)) }
       def <=>(other)
         version_comparison = super
         return version_comparison unless version_comparison&.zero?

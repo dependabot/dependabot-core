@@ -218,7 +218,7 @@ module Dependabot
           return nil unless response.status == 204
 
           source_url = response.headers.fetch("X-OpenTofu-Get")
-          source_url = URI.join(download_url, source_url) if
+          source_url = URI.join(download_url, source_url).to_s if
             source_url.start_with?("/", "./", "../")
           source_url = RegistryClient.get_proxied_source(source_url) if source_url
         when "provider", "providers"
@@ -266,8 +266,8 @@ module Dependabot
         ).returns(Excon::Response)
       end
       def self.oci_get(url, host:, credentials:)
-        cred = credentials.find do |c|
-          c["type"] == "opentofu_registry" && (c["host"] == host || c["registry"] == host)
+        cred = credentials.reverse_each.find do |c|
+          ACCEPTED_CREDENTIAL_TYPES.include?(c["type"]) && (c["host"] == host || c["registry"] == host)
         end
 
         headers = {}
@@ -332,11 +332,7 @@ module Dependabot
 
       sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
       def self.oci_token_cache
-        @oci_token_cache = T.let(
-          @oci_token_cache,
-          T.nilable(T::Hash[String, T::Hash[Symbol, T.untyped]])
-        )
-        @oci_token_cache ||= {}
+        @oci_token_cache ||= T.let({}, T.nilable(T::Hash[String, T::Hash[Symbol, T.untyped]]))
       end
       private_class_method :oci_token_cache
 

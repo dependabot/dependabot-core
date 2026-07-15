@@ -176,14 +176,12 @@ module Dependabot
           end
 
         @updated_requirements ||=
-          wrap_requirements(
-            RequirementsUpdater.new(
-              requirements: dependency.requirements,
-              updated_source: updated_source,
-              latest_resolvable_version: resolvable_version,
-              update_strategy: T.must(requirements_update_strategy)
-            ).updated_requirements
-          )
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            updated_source: updated_source,
+            latest_resolvable_version: resolvable_version,
+            update_strategy: T.must(requirements_update_strategy)
+          ).updated_requirements
       end
 
       sig { returns(T::Boolean) }
@@ -477,7 +475,7 @@ module Dependabot
         # If there was a semver requirement provided or the dependency was
         # pinned to a version, look for the latest tag
         if semver_req || git_commit_checker.pinned_ref_looks_like_version?
-          latest_tag = git_commit_checker.local_tag_for_latest_version
+          latest_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
           return {
             sha: latest_tag&.fetch(:commit_sha),
             version: latest_tag&.fetch(:tag)&.gsub(/^[^\d]*/, "")
@@ -500,8 +498,8 @@ module Dependabot
 
         # Update the git tag if updating a pinned version
         if git_commit_checker.pinned_ref_looks_like_version? &&
-           !git_commit_checker.local_tag_for_latest_version.nil?
-          new_tag = git_commit_checker.local_tag_for_latest_version
+           !git_commit_checker.local_tag_for_latest_version(update_cooldown).nil?
+          new_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
           return dependency_source_details&.merge(ref: new_tag&.fetch(:tag))
         end
 

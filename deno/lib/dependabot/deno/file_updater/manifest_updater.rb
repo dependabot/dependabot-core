@@ -52,14 +52,15 @@ module Dependabot
           params(
             content: String,
             dep: Dependabot::Dependency,
-            prev_req: T::Hash[Symbol, T.untyped],
-            new_req: T::Hash[Symbol, T.untyped]
+            prev_req: T::Hash[Symbol, T.anything],
+            new_req: T::Hash[Symbol, T.anything]
           ).returns(String)
         end
         def apply_substitution(content, dep, prev_req, new_req)
-          source_type = prev_req[:source][:type]
-          prev_req_str = prev_req[:requirement]
-          new_req_str = new_req[:requirement]
+          source = T.cast(prev_req[:source], T::Hash[Symbol, T.anything])
+          source_type = T.cast(source[:type], String)
+          prev_req_str = T.cast(prev_req[:requirement], T.nilable(String))
+          new_req_str = T.cast(new_req[:requirement], T.nilable(String))
 
           base = "#{source_type}:#{dep.name}"
           old_specifier = prev_req_str ? "#{base}@#{prev_req_str}" : base

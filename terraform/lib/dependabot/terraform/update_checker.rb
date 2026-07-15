@@ -47,13 +47,11 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        wrap_requirements(
-          RequirementsUpdater.new(
-            requirements: dependency.requirements,
-            latest_version: latest_version&.to_s,
-            tag_for_latest_version: tag_for_latest_version
-          ).updated_requirements
-        )
+        RequirementsUpdater.new(
+          requirements: dependency.requirements,
+          latest_version: latest_version&.to_s,
+          tag_for_latest_version: tag_for_latest_version
+        ).updated_requirements
       end
 
       sig { returns(T::Boolean) }
@@ -111,11 +109,23 @@ module Dependabot
       def registry_client
         @registry_client ||= T.let(
           begin
-            hostname = dependency_source_details&.fetch(:registry_hostname)
+            hostname = registry_hostname
             RegistryClient.new(hostname: hostname, credentials: credentials)
           end,
           T.nilable(Dependabot::Terraform::RegistryClient)
         )
+      end
+
+      sig { returns(String) }
+      def registry_hostname
+        hostname = dependency_source_details&.fetch(:registry_hostname) || RegistryClient::PUBLIC_HOSTNAME
+        return hostname unless hostname == RegistryClient::PUBLIC_HOSTNAME
+
+        base_registry = credentials.find do |cred|
+          cred.fetch("type", nil) == "terraform_registry" && cred.replaces_base?
+        end
+
+        base_registry&.[]("host") || hostname
       end
 
       sig { returns(T.nilable(Dependabot::Terraform::Version)) }
@@ -162,31 +172,26 @@ module Dependabot
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. Because we don't have a lockfile, the
-        # latest version is the tag itself.
-        if git_commit_checker.pinned_ref_looks_like_version?
-          # Filter version tags that are in cooldown period
-          latest_tag =  latest_version_resolver.latest_version_tag&.fetch(:tag)
-          version_rgx = GitCommitChecker::VERSION_REGEX
-          return unless latest_tag.match(version_rgx)
+        # latest version is the tag itself. Tags within their cooldown window
+        # are filtered out by the shared GitCommitChecker.
+        latest_tag = git_commit_checker.local_tag_for_pinned_version_ref(update_cooldown)&.fetch(:tag)
+        return unless latest_tag
 
-          version = latest_tag.match(version_rgx)
-                              .named_captures.fetch("version")
-          return version_class.new(version)
-        end
+        version_rgx = GitCommitChecker::VERSION_REGEX
+        return unless latest_tag.match(version_rgx)
 
-        # If the dependency is pinned to a tag that doesn't look like a
-        # version then there's nothing we can do.
-        nil
+        version = latest_tag.match(version_rgx)
+                            .named_captures.fetch("version")
+        version_class.new(version)
       end
 
       sig { returns(T.nilable(String)) }
       def tag_for_latest_version
         return unless git_commit_checker.git_dependency?
-        return unless git_commit_checker.pinned?
-        return unless git_commit_checker.pinned_ref_looks_like_version?
 
-        latest_tag = git_commit_checker.local_tag_for_latest_version
+        latest_tag = git_commit_checker.local_tag_for_pinned_version_ref(update_cooldown)
                                        &.fetch(:tag)
+        return unless latest_tag
 
         version_rgx = GitCommitChecker::VERSION_REGEX
         return unless latest_tag.match(version_rgx)

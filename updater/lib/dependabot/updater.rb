@@ -39,7 +39,6 @@ module Dependabot
       @service = T.let(service, Dependabot::Service)
       @job = T.let(job, Dependabot::Job)
       @dependency_snapshot = T.let(dependency_snapshot, Dependabot::DependencySnapshot)
-      @error_handler = T.let(ErrorHandler.new(service: service, job: job), Dependabot::Updater::ErrorHandler)
     end
 
     sig { void }
@@ -48,6 +47,11 @@ module Dependabot
 
       Dependabot.logger.debug("Performing job with #{operation_class}")
       service.increment_metric("updater.started", tags: { operation: operation_class.tag_name })
+      error_handler = ErrorHandler.new(
+        service: service,
+        job: job,
+        operation_name: operation_class.tag_name.to_s
+      )
       operation_class.new(
         service: service,
         job: job,
@@ -82,8 +86,5 @@ module Dependabot
 
     sig { returns(Dependabot::DependencySnapshot) }
     attr_reader :dependency_snapshot
-
-    sig { returns(Dependabot::Updater::ErrorHandler) }
-    attr_reader :error_handler
   end
 end

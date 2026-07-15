@@ -12,6 +12,7 @@ require "sorbet-runtime"
 require "dependabot/cargo/update_checker"
 require "dependabot/cargo/requirement"
 require "dependabot/cargo/version"
+require "dependabot/dependency_requirement"
 require "dependabot/requirements_update_strategy"
 
 module Dependabot
@@ -34,8 +35,8 @@ module Dependabot
 
         sig do
           params(
-            requirements: T::Array[T::Hash[Symbol, T.untyped]],
-            updated_source: T.nilable(T::Hash[T.any(String, Symbol), T.untyped]),
+            requirements: T::Array[Dependabot::DependencyRequirement],
+            updated_source: T.nilable(T::Hash[T.any(String, Symbol), T.anything]),
             update_strategy: Dependabot::RequirementsUpdateStrategy,
             target_version: T.nilable(T.any(String, Gem::Version))
           ).void
@@ -46,8 +47,11 @@ module Dependabot
           update_strategy:,
           target_version:
         )
-          @requirements = T.let(requirements, T::Array[T::Hash[Symbol, T.untyped]])
-          @updated_source = T.let(updated_source, T.nilable(T::Hash[T.any(String, Symbol), T.untyped]))
+          @requirements = T.let(
+            requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
+            T::Array[Dependabot::DependencyRequirement]
+          )
+          @updated_source = T.let(updated_source, T.nilable(T::Hash[T.any(String, Symbol), T.anything]))
           @update_strategy = T.let(update_strategy, Dependabot::RequirementsUpdateStrategy)
 
           check_update_strategy
@@ -57,7 +61,7 @@ module Dependabot
           @target_version = T.let(version_class.new(target_version), Gem::Version)
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_requirements
           return requirements if update_strategy.lockfile_only?
 
@@ -65,7 +69,7 @@ module Dependabot
           # requirement at index `i` to correspond to the previous requirement
           # at the same index.
           requirements.map do |req|
-            req = req.merge(source: updated_source)
+            req = Dependabot::DependencyRequirement.create(req.merge(source: updated_source))
             next req unless target_version
             next req if req[:requirement].nil?
 
@@ -80,10 +84,10 @@ module Dependabot
 
         private
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :requirements
 
-        sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped])) }
+        sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.anything])) }
         attr_reader :updated_source
 
         sig { returns(Dependabot::RequirementsUpdateStrategy) }
@@ -99,7 +103,7 @@ module Dependabot
           raise "Unknown update strategy: #{update_strategy}"
         end
 
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_version_requirement(req)
           string_reqs = req[:requirement].split(",").map(&:strip)
 
@@ -119,10 +123,10 @@ module Dependabot
               update_range_requirements(string_reqs)
             end
 
-          req.merge(requirement: new_requirement)
+          Dependabot::DependencyRequirement.create(req.merge(requirement: new_requirement))
         end
 
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_version_requirement_if_needed(req)
           string_reqs = req[:requirement].split(",").map(&:strip)
           ruby_reqs = string_reqs.map { |r| Dependabot::Cargo::Requirement.new(r) }

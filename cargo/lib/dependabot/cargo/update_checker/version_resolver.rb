@@ -187,10 +187,7 @@ module Dependabot
         def run_cargo_command(command, fingerprint: nil)
           start = Time.now
           command = SharedHelpers.escape_command(command)
-          Helpers.bypass_cargo_credential_providers
-          # Pass through any cargo registry configuration via environment variables
-          # (e.g. CARGO_REGISTRIES_CRATES_IO_PROTOCOL, CARGO_REGISTRY_GLOBAL_CREDENTIAL_PROVIDERS).
-          env = ENV.select { |key, _value| key.match(/^CARGO_REGISTR(Y|IES)_/) }
+          env = Helpers.cargo_command_env(original_dependency_files, credentials)
 
           stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
@@ -210,17 +207,19 @@ module Dependabot
           )
         end
 
-        sig { params(prepared: T::Boolean).returns(T.nilable(Integer)) }
+        sig { params(prepared: T::Boolean).void }
         def write_temporary_dependency_files(prepared: true)
           write_manifest_files(prepared: prepared)
 
           File.write(T.must(lockfile).name, T.must(lockfile).content) if lockfile
           File.write(T.must(toolchain).name, T.must(toolchain).content) if toolchain
-          config_file = config
-          return unless config_file
-
-          FileUtils.mkdir_p(File.dirname(config_file.name))
-          File.write(config_file.name, Helpers.sanitize_cargo_config(T.must(config_file.content)))
+          config_files.each do |config_file|
+            FileUtils.mkdir_p(File.dirname(config_file.name))
+            File.write(
+              config_file.name,
+              Helpers.sanitize_cargo_config(T.must(config_file.content), file_name: config_file.name)
+            )
+          end
         end
 
         sig { void }
@@ -557,13 +556,18 @@ module Dependabot
           )
         end
 
-        sig { returns(T.nilable(DependencyFile)) }
-        def config
-          @config ||= T.let(
-            original_dependency_files.find do |f|
-              f.name == ".cargo/config.toml"
+        # Cargo merges `.cargo/config.toml` hierarchically (package directory plus
+        # every ancestor up to the repo root), so we materialise all of them and
+        # let Cargo perform the merge with its own precedence rules. Ancestor
+        # configs carry relative `../` names and are written to the matching
+        # location within the temporary tree.
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def config_files
+          @config_files ||= T.let(
+            original_dependency_files.select do |f|
+              f.name.end_with?(".cargo/config.toml")
             end,
-            T.nilable(Dependabot::DependencyFile)
+            T.nilable(T::Array[Dependabot::DependencyFile])
           )
         end
 

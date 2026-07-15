@@ -684,5 +684,127 @@ RSpec.describe Dependabot::Vcpkg::FileUpdater do
         expect(updated_content["registries"][1]["baseline"]).to eq("new-commit-sha-2")
       end
     end
+
+    context "when creating a default-registry in a configuration without one" do
+      let(:vcpkg_configuration_json_content) do
+        <<~JSON
+          {
+            "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg-configuration.schema.json",
+            "registries": [
+              {
+                "kind": "git",
+                "repository": "https://github.com/northwindtraders/vcpkg-registry",
+                "baseline": "dacf4de488094a384ca2c202b923ccc097956e0c",
+                "packages": ["beicode", "beison"]
+              }
+            ]
+          }
+        JSON
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "github.com/microsoft/vcpkg",
+          version: "2025.06.13",
+          previous_version: nil,
+          package_manager: "vcpkg",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/microsoft/vcpkg.git",
+              ref: "new-commit-sha"
+            },
+            file: "vcpkg-configuration.json"
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/microsoft/vcpkg.git",
+              ref: "master"
+            },
+            file: "vcpkg-configuration.json"
+          }],
+          metadata: {
+            default: true,
+            create_default_registry: true
+          }
+        )
+      end
+
+      let(:dependencies) { [dependency] }
+
+      it "adds a git default-registry pointing at microsoft/vcpkg" do
+        expect(updated_dependency_files.length).to eq(1)
+
+        updated_content = JSON.parse(updated_dependency_files.first.content)
+        expect(updated_content["default-registry"]).to eq(
+          "kind" => "git",
+          "repository" => "https://github.com/microsoft/vcpkg",
+          "baseline" => "new-commit-sha"
+        )
+        expect(updated_content["registries"].length).to eq(1)
+      end
+    end
+  end
+
+  describe "#updated_dependency_files when adding a missing builtin-baseline" do
+    subject(:updated_dependency_files) { updater.updated_dependency_files }
+
+    let(:dependency_files) { [vcpkg_json] }
+    let(:vcpkg_json) do
+      Dependabot::DependencyFile.new(
+        name: "vcpkg.json",
+        content: <<~JSON
+          {
+            "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+            "dependencies": ["fmt"]
+          }
+        JSON
+      )
+    end
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "github.com/microsoft/vcpkg",
+        version: "2025.06.13",
+        previous_version: nil,
+        package_manager: "vcpkg",
+        requirements: [{
+          requirement: nil,
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/microsoft/vcpkg.git",
+            ref: "new-commit-sha"
+          },
+          file: "vcpkg.json"
+        }],
+        previous_requirements: [{
+          requirement: nil,
+          groups: [],
+          source: {
+            type: "git",
+            url: "https://github.com/microsoft/vcpkg.git",
+            ref: "master"
+          },
+          file: "vcpkg.json"
+        }],
+        metadata: {}
+      )
+    end
+
+    let(:dependencies) { [dependency] }
+
+    it "adds the builtin-baseline to vcpkg.json" do
+      expect(updated_dependency_files.length).to eq(1)
+
+      updated_content = JSON.parse(updated_dependency_files.first.content)
+      expect(updated_content["builtin-baseline"]).to eq("new-commit-sha")
+      expect(updated_content["dependencies"]).to eq(["fmt"])
+    end
   end
 end

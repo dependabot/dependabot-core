@@ -19,7 +19,7 @@ module Dependabot
       def latest_version
         return if git_dependency?
 
-        latest_version_details&.fetch(:version)
+        version_from_details(latest_version_details)
       end
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
@@ -38,7 +38,7 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def lowest_security_fix_version
-        lowest_security_fix_version_details&.fetch(:version)
+        version_from_details(lowest_security_fix_version_details)
       end
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
@@ -66,16 +66,14 @@ module Dependabot
       def updated_requirements
         property_names =
           declarations_using_a_property
-          .map { |req| req.dig(:metadata, :property_name) }
+          .filter_map { |req| property_name_from_requirement(req) }
 
-        wrap_requirements(
-          RequirementsUpdater.new(
-            requirements: dependency.requirements,
-            latest_version: preferred_resolvable_version&.to_s,
-            source_url: preferred_version_details&.fetch(:source_url),
-            properties_to_update: property_names
-          ).updated_requirements
-        )
+        RequirementsUpdater.new(
+          requirements: dependency.requirements,
+          latest_version: preferred_resolvable_version&.to_s,
+          source_url: source_url_from_details(preferred_version_details),
+          properties_to_update: property_names
+        ).updated_requirements
       end
 
       sig { override.returns(T::Boolean) }
@@ -116,26 +114,26 @@ module Dependabot
         super
       end
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { returns(T.nilable(T::Hash[Symbol, Object])) }
       def preferred_version_details
         return lowest_security_fix_version_details if vulnerable?
 
         latest_version_details
       end
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { returns(T.nilable(T::Hash[Symbol, Object])) }
       def latest_version_details
         @latest_version_details ||= T.let(
           version_finder.latest_version_details,
-          T.nilable(T::Hash[Symbol, T.untyped])
+          T.nilable(T::Hash[Symbol, Object])
         )
       end
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { returns(T.nilable(T::Hash[Symbol, Object])) }
       def lowest_security_fix_version_details
         @lowest_security_fix_version_details ||= T.let(
           version_finder.lowest_security_fix_version_details,
-          T.nilable(T::Hash[Symbol, T.untyped])
+          T.nilable(T::Hash[Symbol, Object])
         )
       end
 
@@ -170,6 +168,18 @@ module Dependabot
         )
       end
 
+      sig { params(details: T.nilable(T::Hash[Symbol, Object])).returns(T.nilable(Dependabot::Version)) }
+      def version_from_details(details)
+        version = details&.fetch(:version, nil)
+        version if version.is_a?(Dependabot::Version)
+      end
+
+      sig { params(details: T.nilable(T::Hash[Symbol, Object])).returns(T.nilable(String)) }
+      def source_url_from_details(details)
+        source_url = details&.fetch(:source_url, nil)
+        source_url if source_url.is_a?(String)
+      end
+
       sig { returns(T::Boolean) }
       def git_dependency?
         git_commit_checker.git_dependency?
@@ -189,7 +199,8 @@ module Dependabot
       sig { returns(T::Boolean) }
       def version_comes_from_multi_dependency_property?
         declarations_using_a_property.any? do |requirement|
-          property_name = requirement.fetch(:metadata).fetch(:property_name)
+          property_name = property_name_from_requirement(requirement)
+          next false unless property_name
 
           all_property_based_dependencies.any? do |dep|
             next false if dep.name == dependency.name
@@ -201,6 +212,15 @@ module Dependabot
         end
       end
 
+      sig { params(requirement: T::Hash[Symbol, Object]).returns(T.nilable(String)) }
+      def property_name_from_requirement(requirement)
+        metadata = requirement[:metadata]
+        return unless metadata.is_a?(Hash)
+
+        property_name = metadata[:property_name]
+        property_name if property_name.is_a?(String)
+      end
+
       sig { returns(T::Boolean) }
       def version_comes_from_dependency_set?
         dependency.requirements.any? do |req|
@@ -208,12 +228,12 @@ module Dependabot
         end
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
       def declarations_using_a_property
         @declarations_using_a_property ||= T.let(
           dependency.requirements
                     .select { |req| req.dig(:metadata, :property_name) },
-          T.nilable(T::Array[T::Hash[Symbol, T.untyped]])
+          T.nilable(T::Array[T::Hash[Symbol, Object]])
         )
       end
 

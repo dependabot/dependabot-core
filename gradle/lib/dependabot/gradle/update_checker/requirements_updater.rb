@@ -8,6 +8,7 @@
 
 require "sorbet-runtime"
 
+require "dependabot/dependency_requirement"
 require "dependabot/requirements_updater/base"
 require "dependabot/gradle/distributions"
 require "dependabot/gradle/package/distributions_fetcher"
@@ -29,7 +30,7 @@ module Dependabot
 
         sig do
           params(
-            requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            requirements: T::Array[Dependabot::DependencyRequirement],
             latest_version: T.nilable(T.any(Version, String)),
             source_url: T.nilable(String),
             properties_to_update: T::Array[String]
@@ -51,7 +52,7 @@ module Dependabot
           @is_distribution = T.let(Distributions.distribution_requirements?(requirements), T::Boolean)
         end
 
-        sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_requirements
           return requirements unless latest_version
           return updated_distribution_requirements if @is_distribution
@@ -67,13 +68,13 @@ module Dependabot
             next req if property_name && !properties_to_update.include?(property_name)
 
             new_req = update_requirement(req[:requirement])
-            req.merge(requirement: new_req, source: updated_source)
+            Dependabot::DependencyRequirement.create(req.merge(requirement: new_req, source: updated_source))
           end
         end
 
         private
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :requirements
 
         sig { returns(T.nilable(Version)) }
@@ -118,7 +119,7 @@ module Dependabot
           end
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_distribution_requirements
           distribution_url = T.let(nil, T.nilable(String))
 
@@ -132,15 +133,19 @@ module Dependabot
               version = update_exact_requirement(requirement)
               distribution_url = source[:url].gsub(requirement, version)
 
-              req.merge(
-                requirement: version,
-                source: source.merge(url: distribution_url)
+              Dependabot::DependencyRequirement.create(
+                req.merge(
+                  requirement: version,
+                  source: source.merge(url: distribution_url)
+                )
               )
             when "distributionSha256Sum"
               checksum_url, checksum = Gradle::Package::DistributionsFetcher.resolve_checksum(T.must(distribution_url))
-              req.merge(
-                requirement: checksum,
-                source: source.merge(url: checksum_url)
+              Dependabot::DependencyRequirement.create(
+                req.merge(
+                  requirement: checksum,
+                  source: source.merge(url: checksum_url)
+                )
               )
             else
               next req
