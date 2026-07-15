@@ -30,13 +30,19 @@ module Dependabot
           return base_cooldown if source_days.nil? || !source_days.positive?
           return Dependabot::Package::ReleaseCooldownOptions.new(default_days: source_days) if base_cooldown.nil?
 
+          # The Gemfile `source cooldown:` is a native Bundler setting that applies
+          # uniformly to every candidate version of every gem from that source. Since
+          # the native filter is disabled (BUNDLE_COOLDOWN=0), Dependabot is the sole
+          # enforcer, so the source value acts as a global floor: max every semver tier
+          # with it and drop include/exclude so no dependency can bypass it. Mirrors
+          # npm_and_yarn's `merge_cooldown_with_npmrc_floor`.
           Dependabot::Package::ReleaseCooldownOptions.new(
             default_days: [base_cooldown.default_days, source_days].max,
-            semver_major_days: base_cooldown.semver_major_days,
-            semver_minor_days: base_cooldown.semver_minor_days,
-            semver_patch_days: base_cooldown.semver_patch_days,
-            include: base_cooldown.include.to_a,
-            exclude: base_cooldown.exclude.to_a
+            semver_major_days: [base_cooldown.semver_major_days, source_days].max,
+            semver_minor_days: [base_cooldown.semver_minor_days, source_days].max,
+            semver_patch_days: [base_cooldown.semver_patch_days, source_days].max,
+            include: [],
+            exclude: []
           )
         end
 
