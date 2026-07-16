@@ -15,6 +15,7 @@ require "dependabot/source"
 require "dependabot/dependency"
 require "dependabot/credential"
 require "dependabot/git_metadata_fetcher"
+require "dependabot/git_commit_checker/github_release"
 require "dependabot/git_commit_checker/source_details"
 require "dependabot/git_tag_details"
 require "dependabot/package/package_release"
@@ -737,7 +738,7 @@ module Dependabot
       false
     end
 
-    sig { returns(T::Array[T.untyped]) }
+    sig { returns(T::Array[GitHubRelease]) }
     def github_releases
       @github_releases ||= T.let(
         begin
@@ -752,11 +753,15 @@ module Dependabot
           )
           # The Octokit RBI types this as non-nil, but it can be nil at runtime
           # (e.g. an empty/unexpected registry response), so guard against it.
-          T.unsafe(client.releases(T.must(source).repo, per_page: 100)) || []
+          releases = T.let(
+            client.releases(T.must(source).repo, per_page: 100),
+            T.nilable(T::Array[Sawyer::Resource])
+          )
+          (releases || []).filter_map { |release| GitHubRelease.from_resource(release) }
         rescue Octokit::Error
           []
         end,
-        T.nilable(T::Array[T.untyped])
+        T.nilable(T::Array[GitHubRelease])
       )
     end
 

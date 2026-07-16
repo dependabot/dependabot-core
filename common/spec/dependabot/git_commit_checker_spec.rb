@@ -2295,10 +2295,8 @@ RSpec.describe Dependabot::GitCommitChecker do
         it "returns the releases" do
           releases = checker.send(:github_releases)
           expect(releases.length).to eq(2)
-          expect(releases.first[:tag_name]).to eq("v1.0.0")
-          expect(releases.first[:prerelease]).to be(false)
-          expect(releases.last[:tag_name]).to eq("v2.0.0-beta")
-          expect(releases.last[:prerelease]).to be(true)
+          expect(releases.first).to have_attributes(tag_name: "v1.0.0", prerelease: false)
+          expect(releases.last).to have_attributes(tag_name: "v2.0.0-beta", prerelease: true)
         end
 
         it "caches the result" do
