@@ -1729,4 +1729,108 @@ RSpec.describe Dependabot::Job do
       end
     end
   end
+
+  describe "#dependency_ignored_by_pr_command?" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        package_manager: "bundler",
+        version: "1.8.0",
+        requirements: [{ file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }]
+      )
+    end
+
+    context "when there are no ignore conditions" do
+      it "returns false" do
+        expect(job.dependency_ignored_by_pr_command?(dependency)).to be(false)
+      end
+    end
+
+    context "when ignore condition is from config file" do
+      let(:attributes) do
+        super().merge(
+          ignore_conditions: [
+            {
+              "dependency-name" => "business",
+              "version-requirement" => ">= 2.0.0",
+              "source" => ".github/dependabot.yaml"
+            }
+          ]
+        )
+      end
+
+      it "returns false" do
+        expect(job.dependency_ignored_by_pr_command?(dependency)).to be(false)
+      end
+    end
+
+    context "when ignore condition is from @dependabot ignore command" do
+      let(:attributes) do
+        super().merge(
+          ignore_conditions: [
+            {
+              "dependency-name" => "business",
+              "source" => "@dependabot ignore command"
+            }
+          ]
+        )
+      end
+
+      it "returns true" do
+        expect(job.dependency_ignored_by_pr_command?(dependency)).to be(true)
+      end
+    end
+
+    context "when ignore condition is from @dependabot ignore with update-types" do
+      let(:attributes) do
+        super().merge(
+          ignore_conditions: [
+            {
+              "dependency-name" => "business",
+              "update-types" => ["version-update:semver-major"],
+              "source" => "@dependabot ignore command"
+            }
+          ]
+        )
+      end
+
+      it "returns true" do
+        expect(job.dependency_ignored_by_pr_command?(dependency)).to be(true)
+      end
+    end
+
+    context "when ignore condition matches via wildcard pattern" do
+      let(:attributes) do
+        super().merge(
+          ignore_conditions: [
+            {
+              "dependency-name" => "bus*",
+              "source" => "@dependabot ignore command"
+            }
+          ]
+        )
+      end
+
+      it "returns true" do
+        expect(job.dependency_ignored_by_pr_command?(dependency)).to be(true)
+      end
+    end
+
+    context "when ignore condition is for a different dependency" do
+      let(:attributes) do
+        super().merge(
+          ignore_conditions: [
+            {
+              "dependency-name" => "other-dep",
+              "source" => "@dependabot ignore command"
+            }
+          ]
+        )
+      end
+
+      it "returns false" do
+        expect(job.dependency_ignored_by_pr_command?(dependency)).to be(false)
+      end
+    end
+  end
 end

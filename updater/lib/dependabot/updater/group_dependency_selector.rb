@@ -280,6 +280,10 @@ module Dependabot
         ignore_conditions = job.ignore_conditions_for(dep)
         return false if ignore_conditions.any?(Dependabot::Config::IgnoreCondition::ALL_VERSIONS)
 
+        # For security updates, also check if the dependency was explicitly ignored
+        # via a "@dependabot ignore" PR command
+        return false if job.security_updates_only? && job.dependency_ignored_by_pr_command?(dep)
+
         job.allowed_update?(dep, check_previous_version: true)
       end
 

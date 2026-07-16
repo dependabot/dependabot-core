@@ -525,6 +525,18 @@ module Dependabot
       log_blocked_versions_for(dependency)
     end
 
+    # Checks whether a dependency has been explicitly ignored via a "@dependabot ignore"
+    # PR command. This is used in grouped security updates to respect user commands
+    # that should exclude a dependency from the group, even when security_updates_only
+    # would normally override update-type-based ignore conditions.
+    sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+    def dependency_ignored_by_pr_command?(dependency)
+      ignore_conditions.any? do |ic|
+        name_match?(ic.dependency_name, dependency.name) &&
+          ic.source&.start_with?("@dependabot ignore")
+      end
+    end
+
     private
 
     sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
