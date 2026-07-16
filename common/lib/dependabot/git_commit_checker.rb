@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "excon"
@@ -486,7 +486,9 @@ module Dependabot
     def handle_tag_prefix(tags)
       if dependency_source_details&.ref&.start_with?("tags/")
         tags = tags.map do |tag|
-          tag.dup.tap { |t| t.name = "tags/#{tag.name}" }
+          duplicated_tag = tag.dup
+          duplicated_tag.name = "tags/#{tag.name}"
+          duplicated_tag
         end
       end
 
@@ -525,8 +527,11 @@ module Dependabot
       client = Clients::GithubWithRetries
                .for_github_dot_com(credentials: credentials)
 
-      # TODO: create this method instead of relying on method_missing
-      T.unsafe(client.compare(T.must(listing_source_repo), ref1, ref2)).status
+      comparison = client.compare(T.must(listing_source_repo), ref1, ref2)
+      status = T.cast(comparison[:status], Object)
+      raise TypeError, "GitHub comparison status must be a string" unless status.is_a?(String)
+
+      status
     end
 
     sig { params(ref1: String, ref2: String).returns(String) }
@@ -535,9 +540,11 @@ module Dependabot
                .for_gitlab_dot_com(credentials: credentials)
 
       comparison = client.compare(T.must(listing_source_repo), ref1, ref2)
+      commits = T.cast(comparison["commits"], Object)
+      raise TypeError, "GitLab comparison commits must be an array" unless commits.is_a?(Array)
 
-      if T.unsafe(comparison).commits.none? then "behind"
-      elsif T.unsafe(comparison).compare_same_ref then "identical"
+      if commits.empty? then "behind"
+      elsif T.cast(comparison["compare_same_ref"], Object) == true then "identical"
       else
         "ahead"
       end
@@ -556,7 +563,13 @@ module Dependabot
 
       # Conservatively assume that ref2 is ahead in the equality case, of
       # if we get an unexpected format (e.g., due to a 404)
-      if JSON.parse(response.body).fetch("values", ["x"]).none? then "behind"
+      comparison = T.cast(JSON.parse(response.body), Object)
+      raise TypeError, "Bitbucket comparison must be a hash" unless comparison.is_a?(Hash)
+
+      values = T.cast(comparison.fetch("values", ["x"]), Object)
+      raise TypeError, "Bitbucket comparison values must be an array" unless values.is_a?(Array)
+
+      if values.empty? then "behind"
       else
         "ahead"
       end
@@ -675,7 +688,9 @@ module Dependabot
 
           if dependency_source_details&.ref&.start_with?("tags/")
             tags = tags.map do |tag|
-              tag.dup.tap { |t| t.name = "tags/#{tag.name}" }
+              duplicated_tag = tag.dup
+              duplicated_tag.name = "tags/#{tag.name}"
+              duplicated_tag
             end
           end
 
