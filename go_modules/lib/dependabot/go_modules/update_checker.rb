@@ -90,7 +90,7 @@ module Dependabot
         false
       end
 
-      sig { params(tag: T.nilable(T::Hash[Symbol, String])).returns(T.untyped) }
+      sig { params(tag: T.nilable(T::Hash[Symbol, String])).returns(T.nilable(String)) }
       def version_from_tag(tag)
         # To compare with the current version we either use the commit SHA
         # (if that's what the parser picked up) or the tag name.
@@ -99,7 +99,7 @@ module Dependabot
         tag&.fetch(:tag)
       end
 
-      sig { returns(T::Hash[Symbol, T.untyped]) }
+      sig { returns(T::Hash[Symbol, String]) }
       def default_source
         { type: "default", source: dependency.name }
       end

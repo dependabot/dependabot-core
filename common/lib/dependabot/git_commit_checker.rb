@@ -46,7 +46,7 @@ module Dependabot
         ignored_versions: T::Array[String],
         raise_on_ignored: T::Boolean,
         consider_version_branches_pinned: T::Boolean,
-        dependency_source_details: T.nilable(T::Hash[Symbol, String])
+        dependency_source_details: T.nilable(T::Hash[Symbol, Object])
       )
         .void
     end

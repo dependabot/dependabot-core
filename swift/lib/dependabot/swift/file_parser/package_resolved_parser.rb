@@ -46,7 +46,7 @@ module Dependabot
         sig { returns(Dependabot::DependencyFile) }
         attr_reader :resolved_file
 
-        sig { returns(T::Hash[String, T.untyped]) }
+        sig { returns(T::Hash[String, Object]) }
         def parse_json
           content = resolved_file.content
           unless content
@@ -64,7 +64,7 @@ module Dependabot
           )
         end
 
-        sig { params(parsed: T::Hash[String, T.untyped]).returns(Integer) }
+        sig { params(parsed: T::Hash[String, Object]).returns(Integer) }
         def detect_schema_version(parsed)
           version = parsed["version"]
 
@@ -81,13 +81,14 @@ module Dependabot
 
         sig do
           params(
-            parsed: T::Hash[String, T.untyped],
+            parsed: T::Hash[String, Object],
             schema_version: Integer
-          ).returns(T::Array[T::Hash[String, T.untyped]])
+          ).returns(T::Array[T::Hash[String, Object]])
         end
         def extract_pins(parsed, schema_version)
           pins = if schema_version == 1
-                   parsed.dig("object", "pins")
+                   object = parsed["object"]
+                   object["pins"] if object.is_a?(Hash)
                  else
                    # v2 and v3 use the same top-level "pins" key
                    parsed["pins"]
@@ -106,7 +107,7 @@ module Dependabot
 
         sig do
           params(
-            pin: T::Hash[String, T.untyped],
+            pin: T::Hash[String, Object],
             schema_version: Integer
           ).returns(T.nilable(Dependabot::Dependency))
         end
@@ -115,19 +116,32 @@ module Dependabot
           url = pin[T.must(keys[:url])]
           return nil unless url.is_a?(String) && !url.empty?
 
-          state = pin[T.must(keys[:state])] || {}
-          identity = pin[T.must(keys[:identity])]
-          # v1 uses a display name for "package"; normalize to lowercase like v2/v3 "identity".
-          # v2/v3 identity is always lowercase per spec, so only v1 needs downcasing.
-          identity = identity&.downcase if schema_version == 1
+          state = pin_state(pin, T.must(keys[:state]))
 
           build_dependency_object(
-            identity: identity,
+            identity: pin_identity(pin, T.must(keys[:identity]), schema_version),
             url: url,
-            version: state["version"],
-            revision: state["revision"],
-            branch: state["branch"]
+            version: string_value(state["version"]),
+            revision: string_value(state["revision"]),
+            branch: string_value(state["branch"])
           )
+        end
+
+        sig { params(pin: T::Hash[String, Object], state_key: String).returns(T::Hash[String, Object]) }
+        def pin_state(pin, state_key)
+          state = pin[state_key]
+          state.is_a?(Hash) ? state : {}
+        end
+
+        sig { params(pin: T::Hash[String, Object], identity_key: String, schema_version: Integer).returns(T.nilable(String)) }
+        def pin_identity(pin, identity_key, schema_version)
+          identity = string_value(pin[identity_key])
+          schema_version == 1 ? identity&.downcase : identity
+        end
+
+        sig { params(value: T.nilable(Object)).returns(T.nilable(String)) }
+        def string_value(value)
+          value if value.is_a?(String)
         end
 
         sig do

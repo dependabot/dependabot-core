@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -41,9 +41,9 @@ module Dependabot
 
         sig do
           params(
-            source: T::Hash[Symbol, T.untyped],
+            source: T::Hash[Symbol, Object],
             credentials: T::Array[Dependabot::Credential],
-            requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            requirements: T::Array[T::Hash[Symbol, Object]],
             current_version: T.nilable(String),
             cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
@@ -65,18 +65,18 @@ module Dependabot
         # Generate updated requirements for the new version
         # Should preserve the original version constraint operator (>=, ~=, etc.)
         # and update the source hash with the new original_string
-        sig { abstract.params(latest_version: String).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { abstract.params(latest_version: String).returns(T::Array[T::Hash[Symbol, Object]]) }
         def updated_requirements(latest_version); end
 
         private
 
-        sig { returns(T::Hash[Symbol, T.untyped]) }
+        sig { returns(T::Hash[Symbol, Object]) }
         attr_reader :source
 
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[T::Hash[Symbol, Object]]) }
         attr_reader :requirements
 
         sig { returns(T.nilable(String)) }
@@ -88,6 +88,12 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def package_name
           source[:package_name]&.to_s
+        end
+
+        sig { params(requirement: T.nilable(T::Hash[Symbol, Object])).returns(T.nilable(String)) }
+        def requirement_string(requirement)
+          value = requirement&.dig(:requirement)
+          value if value.is_a?(String)
         end
       end
     end
