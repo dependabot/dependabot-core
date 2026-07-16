@@ -144,10 +144,11 @@ module Dependabot
         quoted_key = /["']?#{key}["']?/
         presence = /^\s*#{quoted_key}\s*#{separator}/
         # Allow an optionally quoted value and an optional trailing comment
-        # (e.g. `minimumReleaseAge: "4320" # 3 days`), which YAML/npmrc permit;
-        # otherwise a quoted or commented value is treated as non-numeric
-        # (Float::INFINITY).
-        value = /^\s*#{quoted_key}\s*#{separator}\s*["']?(\d+)["']?\s*(?:#.*)?$/
+        # (e.g. `minimumReleaseAge: "4320" # 3 days`). npmrc/INI treats both `#` and
+        # `;` as comment delimiters; YAML uses `#` only. Otherwise a quoted or
+        # commented value is treated as non-numeric (Float::INFINITY).
+        comment_chars = setting.separator == "=" ? "#;" : "#"
+        value = /^\s*#{quoted_key}\s*#{separator}\s*["']?(\d+)["']?\s*(?:[#{comment_chars}].*)?$/
 
         last_line = content.lines.reverse_each.find { |line| line.match?(presence) }
         return unless last_line

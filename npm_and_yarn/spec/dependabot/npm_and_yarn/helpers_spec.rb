@@ -1185,6 +1185,11 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       files = [file("pnpm-workspace.yaml", "\"minimumReleaseAge\": \"20160\"\n")]
       expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(20_160)
     end
+
+    it "parses an npmrc value with a trailing semicolon comment" do
+      files = [file(".npmrc", "min-release-age=3 ; temporary\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(3)
+    end
   end
 
   describe "::npm_supports_min_release_age?" do

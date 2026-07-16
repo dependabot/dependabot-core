@@ -1134,6 +1134,45 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         end
       end
 
+      context "when .npmrc sets minimum-release-age longer than the cooldown" do
+        let(:files) do
+          project_dependency_files(project_name) +
+            [Dependabot::DependencyFile.new(name: ".npmrc", content: "minimum-release-age=20160\n")]
+        end
+
+        context "when pnpm is 11, which ignores non-registry .npmrc settings" do
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers)
+              .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.0.0"))
+          end
+
+          it "ignores the .npmrc gate and still applies the cooldown floor" do
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+              expect(cmd).to include("--config.minimumReleaseAge=10080")
+              ""
+            end.at_least(:once)
+
+            updater.send(:run_pnpm_update_packages)
+          end
+        end
+
+        context "when pnpm is 10.x, which reads .npmrc" do
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers)
+              .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("10.16.0"))
+          end
+
+          it "respects the longer .npmrc gate and does not inject the shorter cooldown" do
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+              expect(cmd).not_to include("--config.minimumReleaseAge=10080")
+              ""
+            end.at_least(:once)
+
+            updater.send(:run_pnpm_update_packages)
+          end
+        end
+      end
+
       context "when pnpm is 11.0+ and the repo enables minimumReleaseAgeStrict" do
         before do
           allow(Dependabot::NpmAndYarn::Helpers)

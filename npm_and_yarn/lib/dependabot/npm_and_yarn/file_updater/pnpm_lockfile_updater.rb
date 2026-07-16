@@ -104,6 +104,9 @@ module Dependabot
         # pnpm 10.x ignores minimumReleaseAge when shared-workspace-lockfile is
         # disabled (pnpm/pnpm#10008); the fix ships in pnpm 11.
         PNPM_WORKSPACE_RELEASE_AGE_FIX_VERSION = "11.0"
+        # pnpm 11 stopped reading non-registry settings (e.g. minimum-release-age)
+        # from .npmrc, so a .npmrc release-age gate is only effective on pnpm 10.x.
+        PNPM_NPMRC_RELEASE_AGE_DROPPED_VERSION = "11.0"
 
         UNREACHABLE_GIT = %r{Command failed with exit code 128: git ls-remote (?<url>.*github\.com/[^/]+/[^ ]+)}
         UNREACHABLE_GIT_V8 = %r{ERR_PNPM_FETCH_404[ [^:print]]+GET (?<url>https://codeload\.github\.com/[^/]+/[^/]+)/}
@@ -424,7 +427,11 @@ module Dependabot
           last_line = content.lines.reverse_each.find { |line| line.match?(presence) }
           return unless last_line
 
-          match = last_line.match(/^\s*#{quoted_key}\s*#{Regexp.escape(separator)}\s*["']?(\w+)["']?\s*(?:#.*)?$/)
+          # npmrc/INI treats both `#` and `;` as comment delimiters; YAML uses `#`.
+          comment_chars = separator == "=" ? "#;" : "#"
+          match = last_line.match(
+            /^\s*#{quoted_key}\s*#{Regexp.escape(separator)}\s*["']?(\w+)["']?\s*(?:[#{comment_chars}].*)?$/
+          )
           return unless match
 
           case T.must(match[1]).downcase
@@ -440,17 +447,28 @@ module Dependabot
         # user gate is never overridden by the cooldown floor.
         sig { returns(T.nilable(T.any(Integer, Float))) }
         def pnpm_configured_minimum_release_age
-          Helpers.max_configured_release_age(
-            dependency_files,
-            [
-              Helpers::ReleaseAgeGateSetting.new(
-                filename: "pnpm-workspace.yaml", key: "minimumReleaseAge", separator: ":"
-              ),
-              Helpers::ReleaseAgeGateSetting.new(
-                filename: ".npmrc", key: "minimum-release-age", separator: "="
-              )
-            ]
-          )
+          settings = [
+            Helpers::ReleaseAgeGateSetting.new(
+              filename: "pnpm-workspace.yaml", key: "minimumReleaseAge", separator: ":"
+            )
+          ]
+          # pnpm 11+ ignores non-registry settings in .npmrc, so a .npmrc
+          # `minimum-release-age` is only an effective user gate on pnpm 10.x.
+          # Counting it on pnpm 11 would wrongly suppress the cooldown CLI override
+          # while pnpm resolves with no age gate.
+          if pnpm_reads_npmrc_release_age?
+            settings << Helpers::ReleaseAgeGateSetting.new(
+              filename: ".npmrc", key: "minimum-release-age", separator: "="
+            )
+          end
+
+          Helpers.max_configured_release_age(dependency_files, settings)
+        end
+
+        sig { returns(T::Boolean) }
+        def pnpm_reads_npmrc_release_age?
+          version = pnpm_version
+          !version.nil? && version < Version.new(PNPM_NPMRC_RELEASE_AGE_DROPPED_VERSION)
         end
 
         # Tries `pnpm update --depth Infinity <dep>` for each dependency as a
