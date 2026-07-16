@@ -582,7 +582,7 @@ RSpec.describe Dependabot::Job do
       it "registers the experiments with Dependabot::Experiments" do
         job
         expect(Dependabot::Experiments).to be_enabled(:kebab_case)
-        expect(Dependabot::Experiments).not_to be_enabled(:simpe)
+        expect(Dependabot::Experiments).not_to be_enabled(:simple)
       end
     end
 
