@@ -371,6 +371,47 @@ RSpec.describe Dependabot::GitCommitChecker do
 
           it { is_expected.to be(true) }
         end
+
+        context "when the source is GitLab" do
+          let(:source_url) { "https://gitlab.com/gocardless/business" }
+          let(:service_pack_url) do
+            "https://gitlab.com/gocardless/business.git/info/refs" \
+              "?service=git-upload-pack"
+          end
+          let(:comparison_commits) { [{}] }
+          let(:compare_same_ref) { false }
+          let(:comparison) do
+            Gitlab::ObjectifiedHash.new(
+              commits: comparison_commits,
+              compare_same_ref: compare_same_ref
+            )
+          end
+          let(:gitlab_client) do
+            double("GitlabWithRetries", compare: comparison)
+          end
+
+          before do
+            allow(Dependabot::Clients::GitlabWithRetries)
+              .to receive(:for_gitlab_dot_com)
+              .and_return(gitlab_client)
+          end
+
+          context "when the reference is behind the release" do
+            let(:comparison_commits) { [] }
+
+            it { is_expected.to be(true) }
+          end
+
+          context "when the reference is identical to the release" do
+            let(:compare_same_ref) { true }
+
+            it { is_expected.to be(true) }
+          end
+
+          context "when the reference is ahead of the release" do
+            it { is_expected.to be(false) }
+          end
+        end
       end
     end
   end
