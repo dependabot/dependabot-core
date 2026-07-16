@@ -523,6 +523,59 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
     end
   end
 
+  describe "native Bundler cooldown env for a Bundler 4 project" do
+    let(:dependency_files) { bundler_project_dependency_files("gemfile_with_cooldown_bundler4") }
+
+    before do
+      # Stub only the lowest-level subprocess boundary so the public update path runs
+      # without a real Bundler resolve, while run_bundler_subprocess still builds the
+      # env. "default" is the source type returned for the RubyGems remote probe.
+      allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_return("default")
+      stub_request(:get, rubygems_url + "versions/business.json")
+        .to_return(status: 200, body: fixture("ruby", "rubygems_response_versions.json"))
+    end
+
+    context "when performing a regular update" do
+      it "invokes the Bundler 4 helper with native cooldown left enabled" do
+        checker.latest_version
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_helper_subprocess)
+          .with(
+            command: a_string_including("v4"),
+            function: anything,
+            args: anything,
+            env: hash_excluding("BUNDLE_COOLDOWN")
+          )
+          .at_least(:once)
+      end
+    end
+
+    context "when performing a security update" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "bundler",
+            vulnerable_versions: ["< 999"]
+          )
+        ]
+      end
+
+      it "invokes the Bundler 4 helper with native cooldown disabled" do
+        checker.latest_version
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_helper_subprocess)
+          .with(
+            command: a_string_including("v4"),
+            function: anything,
+            args: anything,
+            env: hash_including("BUNDLE_COOLDOWN" => "0")
+          )
+          .at_least(:once)
+      end
+    end
+  end
+
   describe "#lowest_security_fix_version" do
     subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
 
