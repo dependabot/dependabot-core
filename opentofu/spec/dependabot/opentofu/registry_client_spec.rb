@@ -179,6 +179,31 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
     expect(source.url).to eq("https://github.com/hashicorp/terraform-aws-consul")
   end
 
+  it "handles a relative X-OpenTofu-Get header without a type error" do
+    download_url = "https://api.opentofu.org/registry/docs/modules/hashicorp/consul/aws/0.9.3/download"
+    stub_request(:get, download_url).and_return(
+      status: 204,
+      headers: { "X-OpenTofu-Get" => "/registry/docs/modules/hashicorp/consul/aws/0.9.3/download.zip" }
+    )
+    dependency = Dependabot::Dependency.new(
+      name: "hashicorp/consul/aws",
+      version: "0.9.3",
+      package_manager: "opentofu",
+      requirements: [{
+        requirement: "0.9.3",
+        groups: [],
+        file: "main.tf",
+        source: {
+          type: "registry",
+          registry_hostname: "registry.opentofu.org",
+          module_identifier: "hashicorp/consul/aws"
+        }
+      }]
+    )
+
+    expect { client.source(dependency: dependency) }.not_to raise_error
+  end
+
   it "fetches the source for a provider dependency", :vcr do
     source = client.source(dependency: module_dependency)
 
@@ -254,6 +279,96 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
       expect do
         client.all_module_versions(identifier: "corp/package")
       end.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+    end
+  end
+
+  describe "#all_provider_package_hashes" do
+    let(:metadata_url) { "https://registry.opentofu.org/.well-known/terraform.json" }
+    let(:download_url) { "https://registry.opentofu.org/v1/providers/hashicorp/aws/3.42.0/download/linux/amd64" }
+
+    before do
+      stub_request(:get, metadata_url).and_return(
+        status: 200,
+        body: {
+          "modules.v1": "/v1/modules/",
+          "providers.v1": "/v1/providers/"
+        }.to_json
+      )
+    end
+
+    it "returns platform-to-hashes map when packages field is present" do
+      stub_request(:get, download_url).and_return(
+        status: 200,
+        body: {
+          os: "linux",
+          arch: "amd64",
+          packages: {
+            "linux_amd64" => {
+              "hashes" => ["h1:abc123=", "zh:def456"],
+              "package_size" => 100_000
+            },
+            "darwin_arm64" => {
+              "hashes" => ["h1:xyz789=", "zh:ghi012"],
+              "package_size" => 90_000
+            }
+          }
+        }.to_json
+      )
+
+      result = client.all_provider_package_hashes(identifier: "hashicorp/aws", version: "3.42.0")
+
+      expect(result).to eq(
+        "linux_amd64" => ["h1:abc123=", "zh:def456"],
+        "darwin_arm64" => ["h1:xyz789=", "zh:ghi012"]
+      )
+    end
+
+    it "returns nil when packages field is absent (e.g. Terraform registry)" do
+      stub_request(:get, download_url).and_return(
+        status: 200,
+        body: {
+          os: "linux",
+          arch: "amd64",
+          filename: "terraform-provider-aws_3.42.0_linux_amd64.zip",
+          shasum: "abc123"
+        }.to_json
+      )
+
+      result = client.all_provider_package_hashes(identifier: "hashicorp/aws", version: "3.42.0")
+
+      expect(result).to be_nil
+    end
+
+    it "sends auth token when credentials are configured" do
+      hostname = "registry.example.org"
+      token = SecureRandom.hex(16)
+      credentials = [{ "type" => "opentofu_registry", "host" => hostname, "token" => token }]
+
+      stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
+        body: {
+          "modules.v1": "/v1/modules/",
+          "providers.v1": "/v1/providers/"
+        }.to_json
+      )
+      stub_request(:get, "https://#{hostname}/v1/providers/corp/thing/1.0.0/download/linux/amd64")
+        .and_return(
+          status: 200,
+          body: {
+            os: "linux",
+            arch: "amd64",
+            packages: {
+              "linux_amd64" => { "hashes" => ["h1:foo="] }
+            }
+          }.to_json
+        )
+
+      authed_client = described_class.new(hostname: hostname, credentials: credentials)
+      result = authed_client.all_provider_package_hashes(identifier: "corp/thing", version: "1.0.0")
+
+      expect(result).to eq("linux_amd64" => ["h1:foo="])
+      expect(WebMock).to have_requested(
+        :get, "https://#{hostname}/v1/providers/corp/thing/1.0.0/download/linux/amd64"
+      ).with(headers: { "Authorization" => "Bearer #{token}" })
     end
   end
 

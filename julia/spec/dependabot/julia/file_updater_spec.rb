@@ -87,6 +87,43 @@ RSpec.describe Dependabot::Julia::FileUpdater do
       end
     end
 
+    context "when no dependency files are given" do
+      let(:dependency_files) { [] }
+
+      it "raises DependencyFileNotFound" do
+        expect { updater }.to raise_error(Dependabot::DependencyFileNotFound)
+      end
+    end
+
+    context "when the dependency has no UUID metadata" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Example",
+          version: "0.5.5",
+          previous_version: "0.4.1",
+          package_manager: "julia",
+          requirements: [{
+            requirement: "0.4, 0.5",
+            file: "Project.toml",
+            groups: ["deps"],
+            source: nil
+          }],
+          previous_requirements: [{
+            requirement: "0.4",
+            file: "Project.toml",
+            groups: ["deps"],
+            source: nil
+          }]
+        )
+      end
+
+      it "still updates the Project.toml instead of raising" do
+        updated_files = updater.updated_dependency_files
+        project_toml = updated_files.find { |f| f.name == "Project.toml" }
+        expect(project_toml.content).to include('Example = "0.4, 0.5"')
+      end
+    end
+
     context "when preserving UUID in [deps] section" do
       let(:project_file_content) do
         <<~TOML
@@ -435,6 +472,134 @@ RSpec.describe Dependabot::Julia::FileUpdater do
         entry_names = compat_section.scan(/^([A-Za-z_]+)\s*=/).flatten
 
         expect(entry_names).to eq(%w(Aqua CUDA Statistics julia))
+      end
+    end
+
+    context "when the [compat] section contains comments" do
+      let(:project_file_content) do
+        <<~TOML
+          name = "TestProject"
+          uuid = "1234e567-e89b-12d3-a456-789012345678"
+          version = "0.1.0"
+
+          [deps]
+          Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+          Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+          [compat]
+          # keep in sync with CI
+          Aqua = "0.8"
+          julia = "1.10" # LTS
+        TOML
+      end
+
+      let(:project_file) do
+        Dependabot::DependencyFile.new(name: "Project.toml", content: project_file_content)
+      end
+
+      let(:dependency_files) { [project_file] }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Statistics",
+          version: "1.11.1",
+          previous_version: nil,
+          package_manager: "julia",
+          requirements: [{
+            requirement: "1",
+            file: "Project.toml",
+            groups: ["deps"],
+            source: nil
+          }],
+          previous_requirements: [],
+          metadata: { julia_uuid: "10745b16-79ce-11e8-11f9-7d13ad32a3b2" }
+        )
+      end
+
+      it "adds the entry without deleting comments or reordering" do
+        updated_files = updater.updated_dependency_files
+        content = updated_files.first.content
+
+        expect(content).to include("# keep in sync with CI")
+        expect(content).to include('julia = "1.10" # LTS')
+        expect(content).to include('Statistics = "1"')
+        # Alphabetical placement between Aqua and julia
+        expect(content.index('Aqua = "0.8"')).to be < content.index('Statistics = "1"')
+        expect(content.index('Statistics = "1"')).to be < content.index("julia = ")
+      end
+
+      it "preserves inline comments when replacing an existing entry" do
+        dependency = Dependabot::Dependency.new(
+          name: "Aqua",
+          version: "0.9.0",
+          previous_version: nil,
+          package_manager: "julia",
+          requirements: [{
+            requirement: "0.8, 0.9",
+            file: "Project.toml",
+            groups: ["deps"],
+            source: nil
+          }],
+          previous_requirements: [],
+          metadata: { julia_uuid: "4c88cf16-eb10-579e-8560-4a9242c79595" }
+        )
+
+        updater = described_class.new(
+          dependencies: [dependency],
+          dependency_files: dependency_files,
+          credentials: []
+        )
+
+        content = updater.updated_dependency_files.first.content
+        expect(content).to include('Aqua = "0.8, 0.9"')
+        expect(content).to include("# keep in sync with CI")
+        expect(content).to include('julia = "1.10" # LTS')
+      end
+    end
+
+    context "when the [compat] header has a trailing comment" do
+      let(:project_file_content) do
+        <<~TOML
+          [deps]
+          Example = "7876af07-990d-54b4-ab0e-23690620f79a"
+
+          [compat] # constraints
+          Example = "0.4"
+        TOML
+      end
+
+      let(:project_file) do
+        Dependabot::DependencyFile.new(name: "Project.toml", content: project_file_content)
+      end
+
+      let(:dependency_files) { [project_file] }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Example",
+          version: "0.5.5",
+          previous_version: "0.4.1",
+          package_manager: "julia",
+          requirements: [{
+            requirement: "0.4, 0.5",
+            file: "Project.toml",
+            groups: ["deps"],
+            source: nil
+          }],
+          previous_requirements: [{
+            requirement: "0.4",
+            file: "Project.toml",
+            groups: ["deps"],
+            source: nil
+          }],
+          metadata: { julia_uuid: "7876af07-990d-54b4-ab0e-23690620f79a" }
+        )
+      end
+
+      it "updates the entry instead of appending a duplicate section" do
+        content = updater.updated_dependency_files.first.content
+        expect(content).to include('Example = "0.4, 0.5"')
+        expect(content.scan("[compat]").length).to eq(1)
       end
     end
 

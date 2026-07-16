@@ -118,18 +118,14 @@ RSpec.describe Dependabot::Julia::Package::PackageDetailsFetcher do
       end
     end
 
-    context "when an error occurs" do
+    context "when an infrastructure error occurs" do
       before do
         allow(registry_client).to receive(:fetch_available_versions)
           .and_raise(StandardError, "Network error")
       end
 
-      it "logs error and returns empty array" do
-        expect(Dependabot.logger).to receive(:error)
-          .with(/Error while fetching package releases for Example/)
-
-        releases = fetcher.fetch_package_releases
-        expect(releases).to eq([])
+      it "propagates the error instead of reporting no versions" do
+        expect { fetcher.fetch_package_releases }.to raise_error(StandardError, "Network error")
       end
     end
   end

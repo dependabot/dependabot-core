@@ -46,7 +46,7 @@ module Dependabot
         ignored_versions: T::Array[String],
         raise_on_ignored: T::Boolean,
         consider_version_branches_pinned: T::Boolean,
-        dependency_source_details: T.nilable(T::Hash[Symbol, String])
+        dependency_source_details: T.nilable(T::Hash[Symbol, Object])
       )
         .void
     end
@@ -745,7 +745,9 @@ module Dependabot
             source: T.must(source),
             credentials: credentials
           )
-          client.releases(T.must(source).repo, per_page: 100)
+          # The Octokit RBI types this as non-nil, but it can be nil at runtime
+          # (e.g. an empty/unexpected registry response), so guard against it.
+          T.unsafe(client.releases(T.must(source).repo, per_page: 100)) || []
         rescue Octokit::Error
           []
         end,

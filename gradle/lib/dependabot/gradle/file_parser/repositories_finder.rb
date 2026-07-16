@@ -174,9 +174,9 @@ module Dependabot
           base_credential ? T.must(base_credential["url"]).gsub(%r{/+$}, "") : CENTRAL_REPO_URL
         end
 
-        sig { params(credential: T.untyped).returns(T::Boolean) }
+        sig { params(credential: T.any(Dependabot::Credential, T::Hash[String, Object])).returns(T::Boolean) }
         def replaces_base?(credential)
-          if credential.respond_to?(:replaces_base?)
+          if credential.is_a?(Dependabot::Credential)
             credential.replaces_base?
           else
             credential["replaces-base"] == true
