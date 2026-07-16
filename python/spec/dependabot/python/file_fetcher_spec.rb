@@ -966,6 +966,9 @@ RSpec.describe Dependabot::Python::FileFetcher do
             body: fixture("github", "contents_directory_with_missing_path_in_file.json"),
             headers: { "content-type" => "application/json" }
           )
+        stub_request(:get, File.join(url_with_directory, "missing?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
         stub_request(:get, File.join(url_with_directory, "missing/setup.py?ref=sha"))
           .with(headers: { "Authorization" => "token token" })
           .to_return(status: 404)
