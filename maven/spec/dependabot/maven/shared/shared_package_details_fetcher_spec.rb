@@ -884,7 +884,11 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
           :get,
           "https://artifacts.example.com/repository/maven-releases" \
           "/com/google/guava/guava/maven-metadata.xml"
-        ).to_raise(Excon::Error::Socket.new(OpenSSL::SSL::SSLError.new("SSL_connect SYSCALL returned=5 errno=0 peeraddr=1.2.3.4:443")))
+        ).to_raise(
+          Excon::Error::Socket.new(
+            OpenSSL::SSL::SSLError.new("SSL_connect SYSCALL returned=5 errno=0 peeraddr=1.2.3.4:443")
+          )
+        )
       end
 
       it "raises PrivateSourceCertificateFailure" do
