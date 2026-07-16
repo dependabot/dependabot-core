@@ -69,6 +69,7 @@ module Dependabot
       # corepack supported package managers
       SUPPORTED_COREPACK_PACKAGE_MANAGERS = %w(npm yarn pnpm).freeze
       COREPACK_SIGNATURE_METADATA_ERROR = "No compatible signature found in package metadata"
+      COREPACK_NOT_FOUND_ERROR = "The remote server failed to provide the requested resource"
 
       sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
       def self.npm_version_numeric(lockfile)
@@ -467,6 +468,14 @@ module Dependabot
             fallback_to_local_version(name, env: env)
           end
         rescue StandardError => e
+          if retry_without_private_registry?(error: e, env: env)
+            Dependabot.logger.warn(
+              "Private registry returned 404 for #{name}@#{version}. " \
+              "Retrying with public registry."
+            )
+            return install(name, version, env: env_without_private_registry(env))
+          end
+
           Dependabot.logger.error("Error activating #{name}@#{version}: #{e.message}")
           fallback_to_local_version(name, env: env)
         end
@@ -669,6 +678,29 @@ module Dependabot
         return false unless error.message.include?(COREPACK_SIGNATURE_METADATA_ERROR)
 
         !env.key?(RegistryHelper::COREPACK_INTEGRITY_KEYS_ENV)
+      end
+
+      sig { params(error: StandardError, env: T.nilable(T::Hash[String, String])).returns(T::Boolean) }
+      def self.retry_without_private_registry?(error:, env:)
+        return false unless env
+
+        registry = env[RegistryHelper::COREPACK_NPM_REGISTRY_ENV]
+        return false unless registry
+        return false if default_npm_registry?(registry)
+
+        error.message.include?(COREPACK_NOT_FOUND_ERROR) &&
+          error.message.match?(/Response Code.*:.*404.*\(Not Found\)/)
+      end
+
+      sig { params(env: T.nilable(T::Hash[String, String])).returns(T::Hash[String, String]) }
+      def self.env_without_private_registry(env)
+        return {} if env.nil?
+
+        env.except(
+          RegistryHelper::COREPACK_NPM_REGISTRY_ENV,
+          RegistryHelper::NPM_CONFIG_REGISTRY_ENV,
+          RegistryHelper::REGISTRY_KEY
+        )
       end
 
       sig { params(registry: String).returns(T::Boolean) }

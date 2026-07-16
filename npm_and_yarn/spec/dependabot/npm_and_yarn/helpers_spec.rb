@@ -549,6 +549,161 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         )
       end
     end
+
+    context "when private registry returns 404 (Azure Artifacts version-specific endpoint)" do
+      let(:private_registry_env) do
+        {
+          "COREPACK_NPM_REGISTRY" => "https://pkgs.dev.azure.com/org/_packaging/feed/npm/registry",
+          "npm_config_registry" => "https://pkgs.dev.azure.com/org/_packaging/feed/npm/registry",
+          "registry" => "https://pkgs.dev.azure.com/org/_packaging/feed/npm/registry",
+          "COREPACK_NPM_TOKEN" => "azure-token"
+        }
+      end
+
+      let(:not_found_error_message) do
+        "Preparing pnpm@10.34.4 for immediate activation...\n" \
+        "Error when performing the request to " \
+        "https://pkgs.dev.azure.com/org/_packaging/feed/npm/registry/pnpm/10.34.4; " \
+        "for troubleshooting help, see " \
+        "https://github.com/nodejs/corepack#troubleshooting\n" \
+        "Response Code: 404 (Not Found)\n" \
+        "The remote server failed to provide the requested resource"
+      end
+
+      it "retries without private registry env and installs successfully from public npm" do
+        # First call: fails with 404 from Azure Artifacts
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare pnpm@10.34.4 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: private_registry_env
+        ).and_raise(StandardError, not_found_error_message)
+
+        # Retry without private registry succeeds
+        env_without_registry = { "COREPACK_NPM_TOKEN" => "azure-token" }
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare pnpm@10.34.4 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: env_without_registry
+        ).and_return("Preparing pnpm@10.34.4 for immediate activation...")
+
+        # package_manager_version after successful retry
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack pnpm -v",
+          fingerprint: "corepack pnpm -v",
+          env: env_without_registry
+        ).and_return("10.34.4")
+
+        expect(Dependabot.logger).to receive(:info).with("Installing \"pnpm@10.34.4\"")
+        expect(Dependabot.logger).to receive(:warn).with(
+          "Private registry returned 404 for pnpm@10.34.4. " \
+          "Retrying with public registry."
+        )
+        expect(Dependabot.logger).to receive(:info).with("Installing \"pnpm@10.34.4\"")
+        expect(Dependabot.logger).to receive(:info).with("pnpm@10.34.4 successfully installed.")
+        expect(Dependabot.logger).to receive(:info).with(
+          "Activating currently installed version of pnpm: 10.34.4"
+        )
+        expect(Dependabot.logger).to receive(:info).with("Fetching version for package manager: pnpm")
+        expect(Dependabot.logger).to receive(:info).with("Installed version of pnpm: 10.34.4")
+
+        result = described_class.install("pnpm", "10.34.4", env: private_registry_env)
+        expect(result).to eq("10.34.4")
+      end
+
+      it "does not retry when registry is the default npm registry" do
+        default_registry_env = {
+          "COREPACK_NPM_REGISTRY" => "https://registry.npmjs.org",
+          "npm_config_registry" => "https://registry.npmjs.org",
+          "registry" => "https://registry.npmjs.org"
+        }
+
+        # Fails with 404 from public npm (package genuinely not found)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare pnpm@99.99.99 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: default_registry_env
+        ).and_raise(StandardError, not_found_error_message)
+
+        # Falls back to local version instead of retrying
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "pnpm -v",
+          fingerprint: "pnpm -v"
+        ).and_return("9.0.0")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare pnpm@9.0.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: default_registry_env
+        ).and_return("Preparing pnpm@9.0.0 for immediate activation...")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack pnpm -v",
+          fingerprint: "corepack pnpm -v",
+          env: default_registry_env
+        ).and_return("9.0.0")
+
+        expect(Dependabot.logger).to receive(:info).with("Installing \"pnpm@99.99.99\"")
+        expect(Dependabot.logger).to receive(:error).with(
+          a_string_matching(/Error activating pnpm@99.99.99/)
+        )
+        expect(Dependabot.logger).to receive(:info).with(
+          "Falling back to activate the currently installed version of pnpm."
+        )
+        expect(Dependabot.logger).to receive(:info).with(
+          "Activating currently installed version of pnpm: 9.0.0"
+        )
+        expect(Dependabot.logger).to receive(:info).with("Fetching version for package manager: pnpm")
+        expect(Dependabot.logger).to receive(:info).with("Installed version of pnpm: 9.0.0")
+
+        result = described_class.install("pnpm", "99.99.99", env: default_registry_env)
+        expect(result).to eq("9.0.0")
+      end
+
+      it "does not retry when env has no COREPACK_NPM_REGISTRY" do
+        env_without_registry = { "COREPACK_NPM_TOKEN" => "azure-token" }
+
+        # Fails with 404 but no private registry configured
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare pnpm@10.34.4 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: env_without_registry
+        ).and_raise(StandardError, not_found_error_message)
+
+        # Falls back to local version
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "pnpm -v",
+          fingerprint: "pnpm -v"
+        ).and_return("9.0.0")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare pnpm@9.0.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: env_without_registry
+        ).and_return("Preparing pnpm@9.0.0 for immediate activation...")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack pnpm -v",
+          fingerprint: "corepack pnpm -v",
+          env: env_without_registry
+        ).and_return("9.0.0")
+
+        expect(Dependabot.logger).to receive(:info).with("Installing \"pnpm@10.34.4\"")
+        expect(Dependabot.logger).to receive(:error).with(
+          a_string_matching(/Error activating pnpm@10.34.4/)
+        )
+        expect(Dependabot.logger).to receive(:info).with(
+          "Falling back to activate the currently installed version of pnpm."
+        )
+        expect(Dependabot.logger).to receive(:info).with(
+          "Activating currently installed version of pnpm: 9.0.0"
+        )
+        expect(Dependabot.logger).to receive(:info).with("Fetching version for package manager: pnpm")
+        expect(Dependabot.logger).to receive(:info).with("Installed version of pnpm: 9.0.0")
+
+        result = described_class.install("pnpm", "10.34.4", env: env_without_registry)
+        expect(result).to eq("9.0.0")
+      end
+    end
   end
 
   describe "::parse_npm8?" do
