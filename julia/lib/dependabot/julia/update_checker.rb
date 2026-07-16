@@ -136,8 +136,9 @@ module Dependabot
           semver_major_days: cooldown.semver_major_days,
           semver_minor_days: cooldown.semver_minor_days,
           semver_patch_days: cooldown.semver_patch_days,
-          include: cooldown.include,
-          exclude: cooldown.exclude
+          # ReleaseCooldownOptions stores these as Sets; LatestVersionFinder expects Arrays.
+          include: cooldown.include.to_a,
+          exclude: cooldown.exclude.to_a
         }
       end
 

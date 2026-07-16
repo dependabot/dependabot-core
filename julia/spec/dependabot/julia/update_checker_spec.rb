@@ -109,6 +109,77 @@ RSpec.describe Dependabot::Julia::UpdateChecker do
     end
   end
 
+  describe "#latest_version with a cooldown configured" do
+    subject(:latest_version) { cooldown_checker.latest_version }
+
+    let(:cooldown_checker) do
+      described_class.new(
+        dependency: dependency,
+        dependency_files: dependency_files,
+        credentials: credentials,
+        ignored_versions: ignored_versions,
+        raise_on_ignored: false,
+        security_advisories: security_advisories,
+        update_cooldown: Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7,
+          include: include_patterns,
+          exclude: exclude_patterns
+        ),
+        options: {}
+      )
+    end
+
+    let(:include_patterns) { [] }
+    let(:exclude_patterns) { [] }
+
+    before do
+      allow_any_instance_of(Dependabot::Julia::Package::PackageDetailsFetcher)
+        .to receive(:fetch_package_releases)
+        .and_return(
+          [
+            Dependabot::Package::PackageRelease.new(
+              version: Dependabot::Julia::Version.new("0.5.0"),
+              released_at: released_at
+            )
+          ]
+        )
+    end
+
+    # ReleaseCooldownOptions stores include/exclude as Sets, so passing them
+    # through unconverted used to raise a TypeError from the finder's T.cast.
+    context "when the release is outside the cooldown window" do
+      let(:released_at) { Time.now - (30 * 24 * 60 * 60) }
+
+      it "returns the version" do
+        expect(latest_version).to eq(Dependabot::Julia::Version.new("0.5.0"))
+      end
+    end
+
+    context "when the release is inside the cooldown window" do
+      let(:released_at) { Time.now - (24 * 60 * 60) }
+
+      it "filters the version out" do
+        expect(latest_version).to be_nil
+      end
+
+      context "when the dependency is excluded from the cooldown" do
+        let(:exclude_patterns) { ["Example"] }
+
+        it "returns the version" do
+          expect(latest_version).to eq(Dependabot::Julia::Version.new("0.5.0"))
+        end
+      end
+
+      context "when the dependency is not in the include list" do
+        let(:include_patterns) { ["SomethingElse"] }
+
+        it "returns the version" do
+          expect(latest_version).to eq(Dependabot::Julia::Version.new("0.5.0"))
+        end
+      end
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
