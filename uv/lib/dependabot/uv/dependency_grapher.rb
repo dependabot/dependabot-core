@@ -14,31 +14,19 @@ module Dependabot
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
       RUNTIME_GROUP = T.let("dependencies", String)
       DEV_GROUP = T.let("dev-dependencies", String)
-      PRIMARY_MANIFEST_FILENAMES = T.let(
-        ["pyproject.toml", "requirements.txt", "requirements.in"].freeze,
-        T::Array[String]
-      )
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
-        uv_lock || fallback_manifest_file ||
-          raise(DependabotError, "No uv.lock or manifest file present for uv graphing.")
+        uv_lock || raise(DependabotError, "No uv.lock present; uv graphing requires a lockfile.")
       end
 
-      # When uv.lock is present we parse it directly to build the full
-      # dependency graph. When it is absent (e.g. a directory scoped via a
-      # broad glob that only contains requirements.txt files) we fall back to
-      # the FileParser so that whatever manifests are available still produce
-      # a valid (though relationship-incomplete) snapshot.
+      # uv.lock is guaranteed to be present when graphing runs - the
+      # dependabot-api EcosystemFileDetector only routes UV jobs when it sees
+      # a uv.lock in the repo. We parse uv.lock directly rather than
+      # delegating to FileParser, so the graph reflects only what uv resolved.
       sig { override.void }
       def prepare!
-        unless uv_lock
-          Dependabot.logger.info(
-            "No uv.lock found; falling back to FileParser for dependency list (subdependency graph unavailable)."
-          )
-          super
-          return
-        end
+        raise DependabotError, "No uv.lock present; uv graphing requires a lockfile." unless uv_lock
 
         parsed = TomlRB.parse(T.must(T.must(uv_lock).content))
         packages = T.cast(parsed.fetch("package", []), T::Array[T.untyped])
@@ -66,15 +54,6 @@ module Dependabot
       end
 
       private
-
-      sig { returns(T.nilable(Dependabot::DependencyFile)) }
-      def fallback_manifest_file
-        manifest_candidates = dependency_files.reject(&:support_file?)
-
-        PRIMARY_MANIFEST_FILENAMES.filter_map do |filename|
-          manifest_candidates.find { |file| file.name == filename }
-        end.first || manifest_candidates.find { |file| file.name.end_with?(".txt", ".in") }
-      end
 
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def fetch_subdependencies(dependency)
@@ -293,7 +272,8 @@ module Dependabot
         return @uv_lock if defined?(@uv_lock)
 
         @uv_lock = T.let(
-          dependency_files.find { |f| f.name == "uv.lock" },
+          dependency_files.find { |f| f.name == "uv.lock" } ||
+            dependency_files.find { |f| f.name.end_with?("/uv.lock") },
           T.nilable(Dependabot::DependencyFile)
         )
       end

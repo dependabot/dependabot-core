@@ -46,125 +46,55 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
       expect(grapher.relevant_dependency_file).to eql(uv_lock_file)
     end
 
-    context "when uv.lock is missing but pyproject.toml is present" do
+    context "when uv.lock exists in a nested path" do
+      let(:nested_uv_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "projects/manufacturing/ops-assistant/uv.lock",
+          content: uv_lock_content,
+          directory: "/"
+        )
+      end
+      let(:dependency_files) { [pyproject_toml, nested_uv_lock_file] }
+
+      it "returns the nested uv.lock" do
+        expect(grapher.relevant_dependency_file).to eql(nested_uv_lock_file)
+      end
+    end
+
+    context "when uv.lock is missing" do
       let(:dependency_files) { [pyproject_toml] }
 
-      it "returns the pyproject.toml as fallback" do
-        expect(grapher.relevant_dependency_file).to eql(pyproject_toml)
-      end
-    end
-
-    context "when uv.lock is missing and only requirements.txt is present" do
-      let(:requirements_txt) do
-        Dependabot::DependencyFile.new(
-          name: "requirements.txt",
-          content: "requests==2.32.5\n",
-          directory: "/"
-        )
-      end
-      let(:dependency_files) { [requirements_txt] }
-
-      it "returns the requirements.txt as fallback" do
-        expect(grapher.relevant_dependency_file).to eql(requirements_txt)
-      end
-    end
-
-    context "when uv.lock is missing and support files appear before the primary requirements file" do
-      let(:constraints_txt) do
-        Dependabot::DependencyFile.new(
-          name: "constraints.txt",
-          content: "urllib3==2.5.0\n",
-          directory: "/",
-          support_file: true
-        )
-      end
-      let(:requirements_txt) do
-        Dependabot::DependencyFile.new(
-          name: "requirements.txt",
-          content: "requests==2.32.5\n",
-          directory: "/"
-        )
-      end
-      let(:dependency_files) { [constraints_txt, requirements_txt] }
-
-      it "ignores support files and returns the primary requirements manifest" do
-        expect(grapher.relevant_dependency_file).to eql(requirements_txt)
-      end
-    end
-
-    context "when uv.lock is missing and only a non-primary requirements file is present" do
-      let(:dev_requirements_txt) do
-        Dependabot::DependencyFile.new(
-          name: "dev-requirements.txt",
-          content: "pytest==8.4.2\n",
-          directory: "/"
-        )
-      end
-      let(:dependency_files) { [dev_requirements_txt] }
-
-      it "returns that requirements file as fallback" do
-        expect(grapher.relevant_dependency_file).to eql(dev_requirements_txt)
+      it "raises a DependabotError" do
+        expect { grapher.relevant_dependency_file }
+          .to raise_error(Dependabot::DependabotError, /No uv.lock present/)
       end
     end
   end
 
   describe "#resolved_dependencies" do
-    context "when uv.lock is missing but pyproject.toml is present" do
+    context "when uv.lock is missing" do
       let(:dependency_files) { [pyproject_toml] }
 
-      before do
-        allow(parser).to receive(:parse).and_return(
-          [
-            Dependabot::Dependency.new(
-              name: "flask",
-              version: "3.1.3",
-              requirements: [{ requirement: ">=3.1.3", file: "pyproject.toml", source: nil, groups: ["dependencies"] }],
-              package_manager: "uv"
-            )
-          ]
-        )
-      end
-
-      it "falls back to FileParser without raising" do
-        resolved_dependencies = grapher.resolved_dependencies
-
-        expect(resolved_dependencies).not_to be_nil
-        expect(resolved_dependencies).to include("pkg:pypi/flask@3.1.3")
-        expect(grapher.errored_fetching_subdependencies).to be(false)
+      it "raises a DependabotError" do
+        expect { grapher.resolved_dependencies }
+          .to raise_error(Dependabot::DependabotError, /No uv.lock present/)
       end
     end
 
-    context "when uv.lock is missing and only requirements.txt files are present" do
-      let(:requirements_txt) do
+    context "when uv.lock exists in a nested path" do
+      let(:nested_uv_lock_file) do
         Dependabot::DependencyFile.new(
-          name: "requirements.txt",
-          content: "requests==2.32.5\n",
+          name: "projects/manufacturing/ops-assistant/uv.lock",
+          content: uv_lock_content,
           directory: "/"
         )
       end
-      let(:dependency_files) { [requirements_txt] }
+      let(:dependency_files) { [pyproject_toml, nested_uv_lock_file] }
 
-      before do
-        allow(parser).to receive(:parse).and_return(
-          [
-            Dependabot::Dependency.new(
-              name: "requests",
-              version: "2.32.5",
-              requirements: [{ requirement: "==2.32.5", file: "requirements.txt", source: nil,
-                               groups: ["dependencies"] }],
-              package_manager: "uv"
-            )
-          ]
-        )
-      end
-
-      it "falls back to FileParser and returns dependencies without subdependency relationships" do
+      it "extracts dependencies from the nested uv.lock" do
         resolved_dependencies = grapher.resolved_dependencies
 
-        expect(resolved_dependencies).to include("pkg:pypi/requests@2.32.5")
-        dep = resolved_dependencies.fetch("pkg:pypi/requests@2.32.5")
-        expect(dep.dependencies).to eq([])
-        expect(grapher.errored_fetching_subdependencies).to be(false)
+        expect(resolved_dependencies).to include("pkg:pypi/flask@3.1.3")
       end
     end
 
