@@ -15,6 +15,7 @@ require "dependabot/source"
 require "dependabot/dependency"
 require "dependabot/credential"
 require "dependabot/git_metadata_fetcher"
+require "dependabot/git_commit_checker/source_details"
 require "dependabot/git_tag_details"
 require "dependabot/package/package_release"
 require "dependabot/package/release_cooldown_options"
@@ -63,14 +64,16 @@ module Dependabot
       @ignored_versions = ignored_versions
       @raise_on_ignored = raise_on_ignored
       @consider_version_branches_pinned = consider_version_branches_pinned
-      @dependency_source_details = dependency_source_details
+      @dependency_source_details = T.let(
+        dependency_source_details,
+        T.nilable(T::Hash[Symbol, Object])
+      )
+      @parsed_dependency_source_details = T.let(nil, T.nilable(SourceDetails))
     end
 
     sig { returns(T::Boolean) }
     def git_dependency?
-      return false if dependency_source_details.nil?
-
-      dependency_source_details&.fetch(:type) == "git"
+      parsed_dependency_source_details&.type == "git"
     end
 
     # rubocop:disable Metrics/PerceivedComplexity
@@ -78,7 +81,7 @@ module Dependabot
     def pinned?
       raise "Not a git dependency!" unless git_dependency?
 
-      branch = dependency_source_details&.fetch(:branch)
+      branch = parsed_dependency_source_details&.branch
 
       return false if ref.nil?
       return false if branch == ref
@@ -118,7 +121,7 @@ module Dependabot
     sig { returns(T::Array[GitRef]) }
     def tags
       GitMetadataFetcher.new(
-        url: dependency.source_details&.fetch(:url, nil),
+        url: T.must(source_details&.url),
         credentials: credentials
       ).tags
     end
@@ -128,7 +131,7 @@ module Dependabot
       T.must(
         T.let(
           GitMetadataFetcher.new(
-            url: dependency.source_details&.fetch(:url, nil),
+            url: T.must(source_details&.url),
             credentials: credentials
           ).ref_details_for_pinned_ref(ref),
           T.nilable(Excon::Response)
@@ -333,7 +336,7 @@ module Dependabot
 
     sig { override.returns(T.nilable(String)) }
     def cooldown_source_url
-      dependency_source_details&.fetch(:url, nil)
+      parsed_dependency_source_details&.url
     end
 
     sig { override.returns(T::Array[Dependabot::Credential]) }
@@ -342,6 +345,14 @@ module Dependabot
     end
 
     private
+
+    sig { returns(T.nilable(SourceDetails)) }
+    def parsed_dependency_source_details
+      @parsed_dependency_source_details ||= begin
+        details = dependency_source_details
+        SourceDetails.from_hash(details) if details
+      end
+    end
 
     sig { returns(Dependabot::Dependency) }
     attr_reader :dependency
@@ -478,7 +489,7 @@ module Dependabot
 
     sig { params(tags: T::Array[Dependabot::GitRef]).returns(T::Array[Dependabot::GitRef]) }
     def handle_tag_prefix(tags)
-      if dependency_source_details&.fetch(:ref, nil)&.start_with?("tags/")
+      if parsed_dependency_source_details&.ref&.start_with?("tags/")
         tags = tags.map do |tag|
           tag.dup.tap { |t| t.name = "tags/#{tag.name}" }
         end
@@ -558,12 +569,12 @@ module Dependabot
 
     sig { returns(T.nilable(String)) }
     def ref_or_branch
-      ref || dependency_source_details&.fetch(:branch)
+      ref || parsed_dependency_source_details&.branch
     end
 
     sig { returns(T.nilable(String)) }
     def ref
-      dependency_source_details&.fetch(:ref)
+      parsed_dependency_source_details&.ref
     end
 
     sig { params(tag: String).returns(T::Boolean) }
@@ -667,7 +678,7 @@ module Dependabot
         begin
           tags = listing_repo_git_metadata_fetcher.tags
 
-          if dependency_source_details&.fetch(:ref, nil)&.start_with?("tags/")
+          if parsed_dependency_source_details&.ref&.start_with?("tags/")
             tags = tags.map do |tag|
               tag.dup.tap { |t| t.name = "tags/#{tag.name}" }
             end
@@ -695,7 +706,7 @@ module Dependabot
 
     sig { returns(T::Boolean) }
     def wants_prerelease?
-      return false unless dependency_source_details&.fetch(:ref, nil)
+      return false unless parsed_dependency_source_details&.ref
       return false unless pinned_ref_looks_like_version?
 
       version = version_from_ref(T.must(ref))
@@ -892,7 +903,7 @@ module Dependabot
       @local_repo_git_metadata_fetcher ||=
         T.let(
           GitMetadataFetcher.new(
-            url: dependency_source_details&.fetch(:url),
+            url: T.must(parsed_dependency_source_details&.url),
             credentials: credentials
           ),
           T.nilable(Dependabot::GitMetadataFetcher)
@@ -913,8 +924,14 @@ module Dependabot
 
     sig { returns(String) }
     def ref_pinned
-      dependency.source_details&.fetch(:ref, nil) ||
-        dependency.source_details&.fetch(:branch, nil) || "HEAD"
+      details = source_details
+      details&.ref || details&.branch || "HEAD"
+    end
+
+    sig { returns(T.nilable(SourceDetails)) }
+    def source_details
+      details = dependency.source_details
+      SourceDetails.from_hash(details) if details
     end
   end
   # rubocop:enable Metrics/ClassLength
