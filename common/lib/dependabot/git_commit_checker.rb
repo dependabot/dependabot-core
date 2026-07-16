@@ -65,15 +65,14 @@ module Dependabot
       @raise_on_ignored = raise_on_ignored
       @consider_version_branches_pinned = consider_version_branches_pinned
       @dependency_source_details = T.let(
-        dependency_source_details,
-        T.nilable(T::Hash[Symbol, Object])
+        dependency_source_details && SourceDetails.from_hash(dependency_source_details),
+        T.nilable(SourceDetails)
       )
-      @parsed_dependency_source_details = T.let(nil, T.nilable(SourceDetails))
     end
 
     sig { returns(T::Boolean) }
     def git_dependency?
-      parsed_dependency_source_details&.type == "git"
+      dependency_source_details&.type == "git"
     end
 
     # rubocop:disable Metrics/PerceivedComplexity
@@ -81,7 +80,7 @@ module Dependabot
     def pinned?
       raise "Not a git dependency!" unless git_dependency?
 
-      branch = parsed_dependency_source_details&.branch
+      branch = dependency_source_details&.branch
 
       return false if ref.nil?
       return false if branch == ref
@@ -285,9 +284,12 @@ module Dependabot
       false
     end
 
-    sig { returns(T.nilable(T::Hash[T.any(Symbol, String), T.untyped])) }
+    sig { returns(T.nilable(SourceDetails)) }
     def dependency_source_details
-      @dependency_source_details || dependency.source_details(allowed_types: ["git"])
+      @dependency_source_details ||= begin
+        details = dependency.source_details(allowed_types: ["git"])
+        SourceDetails.from_hash(details) if details
+      end
     end
 
     sig { returns(T::Array[Dependabot::GitTagWithDetail]) }
@@ -336,7 +338,7 @@ module Dependabot
 
     sig { override.returns(T.nilable(String)) }
     def cooldown_source_url
-      parsed_dependency_source_details&.url
+      dependency_source_details&.url
     end
 
     sig { override.returns(T::Array[Dependabot::Credential]) }
@@ -345,14 +347,6 @@ module Dependabot
     end
 
     private
-
-    sig { returns(T.nilable(SourceDetails)) }
-    def parsed_dependency_source_details
-      @parsed_dependency_source_details ||= begin
-        details = dependency_source_details
-        SourceDetails.from_hash(details) if details
-      end
-    end
 
     sig { returns(Dependabot::Dependency) }
     attr_reader :dependency
@@ -489,7 +483,7 @@ module Dependabot
 
     sig { params(tags: T::Array[Dependabot::GitRef]).returns(T::Array[Dependabot::GitRef]) }
     def handle_tag_prefix(tags)
-      if parsed_dependency_source_details&.ref&.start_with?("tags/")
+      if dependency_source_details&.ref&.start_with?("tags/")
         tags = tags.map do |tag|
           tag.dup.tap { |t| t.name = "tags/#{tag.name}" }
         end
@@ -569,12 +563,12 @@ module Dependabot
 
     sig { returns(T.nilable(String)) }
     def ref_or_branch
-      ref || parsed_dependency_source_details&.branch
+      ref || dependency_source_details&.branch
     end
 
     sig { returns(T.nilable(String)) }
     def ref
-      parsed_dependency_source_details&.ref
+      dependency_source_details&.ref
     end
 
     sig { params(tag: String).returns(T::Boolean) }
@@ -678,7 +672,7 @@ module Dependabot
         begin
           tags = listing_repo_git_metadata_fetcher.tags
 
-          if parsed_dependency_source_details&.ref&.start_with?("tags/")
+          if dependency_source_details&.ref&.start_with?("tags/")
             tags = tags.map do |tag|
               tag.dup.tap { |t| t.name = "tags/#{tag.name}" }
             end
@@ -706,7 +700,7 @@ module Dependabot
 
     sig { returns(T::Boolean) }
     def wants_prerelease?
-      return false unless parsed_dependency_source_details&.ref
+      return false unless dependency_source_details&.ref
       return false unless pinned_ref_looks_like_version?
 
       version = version_from_ref(T.must(ref))
@@ -903,7 +897,7 @@ module Dependabot
       @local_repo_git_metadata_fetcher ||=
         T.let(
           GitMetadataFetcher.new(
-            url: T.must(parsed_dependency_source_details&.url),
+            url: T.must(dependency_source_details&.url),
             credentials: credentials
           ),
           T.nilable(Dependabot::GitMetadataFetcher)

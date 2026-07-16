@@ -143,6 +143,20 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
+  describe "#dependency_source_details" do
+    subject(:source_details) { checker.dependency_source_details }
+
+    it "returns typed source details" do
+      expect(source_details).to be_a(described_class::SourceDetails)
+      expect(source_details).to have_attributes(
+        type: "git",
+        url: "https://github.com/gocardless/business",
+        branch: "master",
+        ref: "master"
+      )
+    end
+  end
+
   describe "#branch_or_ref_in_release?" do
     subject(:branch_or_ref_in_release?) { checker.branch_or_ref_in_release?(Dependabot::Version.new("1.5.0")) }
 

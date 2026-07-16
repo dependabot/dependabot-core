@@ -30,6 +30,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
       branch: nil
     }
   end
+  let(:source_details) { Dependabot::GitCommitChecker::SourceDetails.from_hash(dependency_source) }
   let(:dependency_version) do
     return unless Dependabot::PreCommit::Version.correct?(reference)
 
@@ -187,8 +188,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
           .and_return([v6_tag])
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
-          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
-                        ref: reference, branch: nil })
+          .and_return(source_details)
         # Stub GitHub Releases (empty — forces git clone fallback)
         mock_client = instance_double(Octokit::Client, releases: [])
         allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
