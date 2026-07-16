@@ -1180,6 +1180,11 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       files = [file(".npmrc", "min-release-age=30 # about a month\n")]
       expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(30)
     end
+
+    it "parses an optionally quoted YAML key and value" do
+      files = [file("pnpm-workspace.yaml", "\"minimumReleaseAge\": \"20160\"\n")]
+      expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(20_160)
+    end
   end
 
   describe "::npm_supports_min_release_age?" do

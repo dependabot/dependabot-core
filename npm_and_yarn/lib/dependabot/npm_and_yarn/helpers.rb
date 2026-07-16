@@ -139,11 +139,15 @@ module Dependabot
       def self.configured_release_age(content, setting)
         key = Regexp.escape(setting.key)
         separator = Regexp.escape(setting.separator)
-        presence = /^\s*#{key}\s*#{separator}/
-        # Allow an optional trailing comment (e.g. `minimumReleaseAge: 4320 # 3 days`),
-        # which both YAML and npmrc/INI permit; without this a commented value would
-        # fail to match and be treated as non-numeric (Float::INFINITY).
-        value = /^\s*#{key}\s*#{separator}\s*(\d+)\s*(?:#.*)?$/
+        # Match an optionally quoted key (`"minimumReleaseAge":`) so a valid quoted
+        # YAML key is not treated as absent.
+        quoted_key = /["']?#{key}["']?/
+        presence = /^\s*#{quoted_key}\s*#{separator}/
+        # Allow an optionally quoted value and an optional trailing comment
+        # (e.g. `minimumReleaseAge: "4320" # 3 days`), which YAML/npmrc permit;
+        # otherwise a quoted or commented value is treated as non-numeric
+        # (Float::INFINITY).
+        value = /^\s*#{quoted_key}\s*#{separator}\s*["']?(\d+)["']?\s*(?:#.*)?$/
 
         last_line = content.lines.reverse_each.find { |line| line.match?(presence) }
         return unless last_line

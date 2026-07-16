@@ -101,6 +101,9 @@ module Dependabot
         # `minimumReleaseAgeStrict` toggle in 11.0; older versions ignore them.
         PNPM_MINIMUM_RELEASE_AGE_VERSION = "10.16"
         PNPM_MINIMUM_RELEASE_AGE_STRICT_VERSION = "11.0"
+        # pnpm 10.x ignores minimumReleaseAge when shared-workspace-lockfile is
+        # disabled (pnpm/pnpm#10008); the fix ships in pnpm 11.
+        PNPM_WORKSPACE_RELEASE_AGE_FIX_VERSION = "11.0"
 
         UNREACHABLE_GIT = %r{Command failed with exit code 128: git ls-remote (?<url>.*github\.com/[^/]+/[^ ]+)}
         UNREACHABLE_GIT_V8 = %r{ERR_PNPM_FETCH_404[ [^:print]]+GET (?<url>https://codeload\.github\.com/[^/]+/[^/]+)/}
@@ -275,6 +278,11 @@ module Dependabot
           minutes = effective_release_age_minutes
           return nil if minutes.nil?
 
+          # Security updates pass minimumReleaseAge=0 unconditionally: older pnpm
+          # ignores it, and a transient version-probe failure must not leave a native
+          # gate active and block the fix.
+          return minimum_release_age_gate_args(minutes) if security_updates_only?
+
           unless pnpm_supports_minimum_release_age?
             Dependabot.logger.warn(
               "pnpm #{pnpm_version || '(unknown version)'} does not support minimumReleaseAge " \
@@ -346,7 +354,18 @@ module Dependabot
         sig { returns(T::Boolean) }
         def pnpm_supports_minimum_release_age?
           version = pnpm_version
-          !version.nil? && version >= Version.new(PNPM_MINIMUM_RELEASE_AGE_VERSION)
+          return false if version.nil? || version < Version.new(PNPM_MINIMUM_RELEASE_AGE_VERSION)
+
+          if pnpm_shared_workspace_lockfile_disabled? &&
+             version < Version.new(PNPM_WORKSPACE_RELEASE_AGE_FIX_VERSION)
+            Dependabot.logger.warn(
+              "pnpm #{version} ignores minimumReleaseAge when shared-workspace-lockfile is disabled " \
+              "(pnpm/pnpm#10008); the release-age cooldown cannot be enforced. Upgrade to pnpm 11+."
+            )
+            return false
+          end
+
+          true
         end
 
         sig { returns(T::Boolean) }
@@ -373,16 +392,45 @@ module Dependabot
           end
         end
 
+        # pnpm 10.x ignores `minimumReleaseAge` when `shared-workspace-lockfile` is
+        # disabled (pnpm/pnpm#10008), so the cooldown cannot be enforced there.
+        sig { returns(T::Boolean) }
+        def pnpm_shared_workspace_lockfile_disabled?
+          dependency_files.any? do |file|
+            case File.basename(file.name)
+            when "pnpm-workspace.yaml"
+              yaml_boolean_setting(file.content.to_s, "shared-workspace-lockfile", ":") == false
+            when ".npmrc"
+              yaml_boolean_setting(file.content.to_s, "shared-workspace-lockfile", "=") == false
+            else
+              false
+            end
+          end
+        end
+
         sig { params(content: String, key: String, separator: String).returns(T::Boolean) }
         def strict_release_age_enabled?(content, key, separator)
-          presence = /^\s*#{Regexp.escape(key)}\s*#{Regexp.escape(separator)}/
-          last_line = content.lines.reverse_each.find { |line| line.match?(presence) }
-          return false unless last_line
+          yaml_boolean_setting(content, key, separator) == true
+        end
 
-          # Match YAML/INI boolean casing (`true`, `True`, `TRUE`) and allow an
-          # optional trailing comment (e.g. `minimumReleaseAgeStrict: true # policy`),
-          # so an explicit strict opt-in is never missed and silently weakened.
-          last_line.match?(/^\s*#{Regexp.escape(key)}\s*#{Regexp.escape(separator)}\s*(?i:true)\s*(?:#.*)?$/)
+        # Reads a YAML/INI boolean `key`, returning true/false, or nil when absent or
+        # non-boolean. Handles optionally quoted keys/values (`"key": True`), boolean
+        # casing, and trailing comments so a valid native setting is never misread.
+        # The last occurrence wins, matching how pnpm/INI resolve a repeated key.
+        sig { params(content: String, key: String, separator: String).returns(T.nilable(T::Boolean)) }
+        def yaml_boolean_setting(content, key, separator)
+          quoted_key = /["']?#{Regexp.escape(key)}["']?/
+          presence = /^\s*#{quoted_key}\s*#{Regexp.escape(separator)}/
+          last_line = content.lines.reverse_each.find { |line| line.match?(presence) }
+          return unless last_line
+
+          match = last_line.match(/^\s*#{quoted_key}\s*#{Regexp.escape(separator)}\s*["']?(\w+)["']?\s*(?:#.*)?$/)
+          return unless match
+
+          case T.must(match[1]).downcase
+          when "true" then true
+          when "false" then false
+          end
         end
 
         # The largest `minimumReleaseAge` (in minutes) the repo configures for pnpm,
@@ -436,7 +484,7 @@ module Dependabot
           package_json_snapshots = Dir.glob("**/package.json").to_h { |f| [f, File.read(f)] }
 
           begin
-            NativeHelpers.run_pnpm_audit_fix_command
+            run_pnpm_command_with_release_age_gate("audit --fix", "audit --fix")
             run_pnpm_install
 
             manifest_changed = package_json_snapshots.any? { |f, c| File.read(f) != c }

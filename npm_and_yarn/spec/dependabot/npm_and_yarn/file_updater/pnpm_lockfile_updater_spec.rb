@@ -912,6 +912,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         updater.send(:run_pnpm_deep_update_fallback)
       end
 
+      it "routes the audit-fix fallback through the release-age gate" do
+        allow(Dir).to receive(:glob).and_return([])
+        pnpm_lock = Dependabot::DependencyFile.new(name: "pnpm-lock.yaml", content: "original")
+        gated = false
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          gated ||= cmd.include?("audit --fix") && cmd.include?("--config.minimumReleaseAge=10080")
+          ""
+        end
+
+        updater.send(:run_pnpm_audit_fix_fallback, pnpm_lock, "original")
+        expect(gated).to be(true)
+      end
+
       it "retries without the gate when pnpm raises ERR_PNPM_MISSING_TIME" do
         call_count = 0
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
@@ -1069,6 +1082,58 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         end
       end
 
+      context "when the pnpm version can't be determined on a security update" do
+        let(:updater) do
+          described_class.new(
+            dependency_files: files,
+            dependencies: dependencies,
+            credentials: credentials,
+            repo_contents_path: repo_contents_path,
+            security_updates_only: true
+          )
+        end
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:pnpm_version).and_return(nil)
+        end
+
+        it "still passes minimumReleaseAge=0 so remediation is never blocked" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            expect(cmd).to include("--config.minimumReleaseAge=0")
+            ""
+          end.at_least(:once)
+
+          updater.send(:run_pnpm_update_packages)
+        end
+      end
+
+      context "when shared-workspace-lockfile is disabled on pnpm 10.x" do
+        let(:files) do
+          project_dependency_files(project_name) +
+            [Dependabot::DependencyFile.new(
+              name: "pnpm-workspace.yaml",
+              content: "shared-workspace-lockfile: false\n"
+            )]
+        end
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("10.16.0"))
+        end
+
+        it "skips the gate and warns that pnpm 10.x cannot enforce it (pnpm/pnpm#10008)" do
+          allow(Dependabot.logger).to receive(:warn)
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            expect(cmd).not_to include("minimumReleaseAge")
+            ""
+          end.at_least(:once)
+
+          updater.send(:run_pnpm_update_packages)
+
+          expect(Dependabot.logger).to have_received(:warn).with(/shared-workspace-lockfile/)
+        end
+      end
+
       context "when pnpm is 11.0+ and the repo enables minimumReleaseAgeStrict" do
         before do
           allow(Dependabot::NpmAndYarn::Helpers)
@@ -1107,6 +1172,30 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             [Dependabot::DependencyFile.new(
               name: "pnpm-workspace.yaml",
               content: "minimumReleaseAge: 4320\nminimumReleaseAgeStrict: True # enforce policy\n"
+            )]
+        end
+
+        it "still detects the strict opt-in and does not force strict=false" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            expect(cmd).not_to include("minimumReleaseAgeStrict")
+            ""
+          end.at_least(:once)
+
+          updater.send(:run_pnpm_update_packages)
+        end
+      end
+
+      context "when the strict opt-in uses a quoted YAML key" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.0.0"))
+        end
+
+        let(:files) do
+          project_dependency_files(project_name) +
+            [Dependabot::DependencyFile.new(
+              name: "pnpm-workspace.yaml",
+              content: "minimumReleaseAge: 4320\n\"minimumReleaseAgeStrict\": true\n"
             )]
         end
 
