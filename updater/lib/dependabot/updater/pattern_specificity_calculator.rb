@@ -130,7 +130,7 @@ module Dependabot
           current_group: Dependabot::DependencyGroup,
           dep: Dependabot::Dependency,
           groups: T::Array[Dependabot::DependencyGroup],
-          context: T::Hash[Symbol, T.untyped],
+          context: T::Hash[Symbol, Object],
           current_specificity: Integer
         ).returns(T.nilable(Dependabot::DependencyGroup))
       end
@@ -156,7 +156,7 @@ module Dependabot
         params(
           group: Dependabot::DependencyGroup,
           dep: Dependabot::Dependency,
-          context: T::Hash[Symbol, T.untyped]
+          context: T::Hash[Symbol, Object]
         ).returns(T::Boolean)
       end
       def group_matches_context?(group, dep, context)

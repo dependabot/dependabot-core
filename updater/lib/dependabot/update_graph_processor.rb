@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 # Dependabot components
 require "dependabot/environment"
+require "dependabot/errors"
 require "dependabot/experiments"
 require "dependabot/dependency_graphers"
 require "dependabot/logger"
@@ -32,19 +33,23 @@ module Dependabot
     # - The Dependabot::Job that describes the work to be done
     # - The Dependabot::DependencyFile list retrieved by the file fetcher
     # - The base_commit_sha being processed
+    # - Optionally, a map of directory to a non-fatal fetch error (e.g. an
+    #   unresolvable path dependency) to report as a skipped snapshot
     sig do
       params(
         service: Dependabot::Service,
         job: Dependabot::Job,
         base_commit_sha: String,
-        dependency_files: T::Array[Dependabot::DependencyFile]
+        dependency_files: T::Array[Dependabot::DependencyFile],
+        directory_fetch_errors: T::Hash[String, Dependabot::DependabotError]
       ).void
     end
-    def initialize(service:, job:, base_commit_sha:, dependency_files:)
+    def initialize(service:, job:, base_commit_sha:, dependency_files:, directory_fetch_errors: {})
       @service = service
       @job = job
       @base_commit_sha = base_commit_sha
       @dependency_files = dependency_files
+      @directory_fetch_errors = directory_fetch_errors
 
       @error_handler = T.let(
         Dependabot::Updater::ErrorHandler.new(service: service, job: job),
@@ -87,12 +92,25 @@ module Dependabot
     sig { returns(T::Array[Dependabot::DependencyFile]) }
     attr_reader :dependency_files
 
+    sig { returns(T::Hash[String, Dependabot::DependabotError]) }
+    attr_reader :directory_fetch_errors
+
     sig { returns(Dependabot::Updater::ErrorHandler) }
     attr_reader :error_handler
 
     sig { params(branch: String, directory: String).void }
     def process_directory(branch:, directory:) # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
       directory_source = create_source_for(directory)
+
+      # A non-fatal fetch error (e.g. an unresolvable path dependency) means we
+      # could not fetch this directory's files, but the rest of the job proceeded.
+      # Report it as a skipped snapshot describing the failure rather than a
+      # misleading "no manifests" skip.
+      if (fetch_error = directory_fetch_errors[directory])
+        submit_skipped_fetch_error(branch, directory, directory_source, fetch_error)
+        return
+      end
+
       directory_dependency_files = dependency_files_for(directory)
 
       submission = if directory_dependency_files.empty?
@@ -194,6 +212,58 @@ module Dependabot
     sig { params(directory: String).returns(T::Array[Dependabot::DependencyFile]) }
     def dependency_files_for(directory)
       dependency_files.select { |f| f.directory == directory }
+    end
+
+    # Submits a skipped snapshot for a directory whose files could not be fetched
+    # due to a non-fatal error (e.g. an unresolvable path dependency). The snapshot
+    # carries the failure reason so consumers can distinguish it from a directory
+    # that genuinely has no manifests.
+    sig do
+      params(
+        branch: String,
+        directory: String,
+        source: Dependabot::Source,
+        error: Dependabot::DependabotError
+      ).void
+    end
+    def submit_skipped_fetch_error(branch, directory, source, error)
+      reason = skipped_reason_for(error)
+
+      Dependabot.logger.warn("Dependency graph incomplete in directory #{directory}: #{error.message}")
+
+      service.record_update_job_warning(
+        warn_type: "dependency_graph_incomplete",
+        warn_title: "dependency graph incomplete",
+        warn_description: "The dependency graph may be incomplete. #{error.message}"
+      )
+
+      submission = empty_submission(
+        branch,
+        source,
+        GithubApi::DependencySubmission::SnapshotStatus::SKIPPED,
+        reason
+      )
+      Dependabot.logger.info("Dependency submission payload:\n#{JSON.pretty_generate(submission.payload)}")
+      service.create_dependency_submission(dependency_submission: submission)
+
+      record_workflow_result(
+        directory,
+        GithubApi::DependencySubmission::SnapshotStatus::SKIPPED,
+        reason
+      )
+    end
+
+    # Maps a per-directory fetch error to a stable snapshot reason. An unresolvable
+    # path dependency gets a specific reason; any other error falls back to a
+    # generic reason so we never leak an unexpected raw error message.
+    sig { params(error: Dependabot::DependabotError).returns(String) }
+    def skipped_reason_for(error)
+      case error
+      when Dependabot::PathDependenciesNotReachable
+        GithubApi::DependencySubmission::SKIPPED_REASON_PATH_DEPENDENCIES_NOT_REACHABLE
+      else
+        GithubApi::DependencySubmission::SKIPPED_REASON_FILE_FETCH_ERROR
+      end
     end
 
     sig do
