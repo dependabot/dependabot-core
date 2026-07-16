@@ -29,28 +29,6 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
       directory: "/"
     )
   end
-  let(:requirements_txt) do
-    Dependabot::DependencyFile.new(
-      name: "requirements.txt",
-      content: "flask==3.1.3\n",
-      directory: "/"
-    )
-  end
-  let(:dev_requirements_txt) do
-    Dependabot::DependencyFile.new(
-      name: "dev-requirements.txt",
-      content: "ruff==0.15.4\n",
-      directory: "/"
-    )
-  end
-  let(:support_txt) do
-    Dependabot::DependencyFile.new(
-      name: "README.txt",
-      content: "This is a support file\n",
-      directory: "/",
-      support_file: true
-    )
-  end
 
   let(:dependency_files) { [pyproject_toml, uv_lock_file] }
 
@@ -86,24 +64,9 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
     context "when uv.lock is missing" do
       let(:dependency_files) { [pyproject_toml] }
 
-      it "falls back to pyproject.toml" do
-        expect(grapher.relevant_dependency_file).to eql(pyproject_toml)
-      end
-    end
-
-    context "when uv.lock is missing and requirements manifests are present" do
-      let(:dependency_files) { [pyproject_toml, requirements_txt, support_txt] }
-
-      it "prefers requirements.txt over pyproject.toml" do
-        expect(grapher.relevant_dependency_file).to eql(requirements_txt)
-      end
-    end
-
-    context "when uv.lock and pyproject.toml are missing" do
-      let(:dependency_files) { [dev_requirements_txt, support_txt] }
-
-      it "uses non-support requirements files as fallback" do
-        expect(grapher.relevant_dependency_file).to eql(dev_requirements_txt)
+      it "raises a DependabotError" do
+        expect { grapher.relevant_dependency_file }
+          .to raise_error(Dependabot::DependabotError, /No uv.lock present/)
       end
     end
   end
@@ -112,30 +75,9 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
     context "when uv.lock is missing" do
       let(:dependency_files) { [pyproject_toml] }
 
-      it "falls back to parser-based dependency extraction" do
-        resolved_dependencies = grapher.resolved_dependencies
-
-        expect(resolved_dependencies).to include("pkg:pypi/flask")
-        expect(resolved_dependencies.fetch("pkg:pypi/flask").dependencies).to eq([])
-      end
-    end
-
-    context "when uv.lock and pyproject.toml are missing" do
-      let(:dependency_files) { [dev_requirements_txt] }
-
-      it "parses requirements-only inputs" do
-        resolved_dependencies = grapher.resolved_dependencies
-
-        expect(resolved_dependencies).to include("pkg:pypi/ruff@0.15.4")
-      end
-    end
-
-    context "when no supported manifest files are present" do
-      let(:dependency_files) { [support_txt] }
-
       it "raises a DependabotError" do
         expect { grapher.resolved_dependencies }
-          .to raise_error(Dependabot::DependabotError, /No supported dependency files present/)
+          .to raise_error(Dependabot::DependabotError, /No uv.lock present/)
       end
     end
 
