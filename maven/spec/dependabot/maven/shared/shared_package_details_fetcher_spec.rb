@@ -870,6 +870,89 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
           .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
       end
     end
+
+    context "when a repository has a TLS/certificate error" do
+      let(:repositories) do
+        [{
+          "url" => "https://artifacts.example.com/repository/maven-releases",
+          "auth_headers" => {}
+        }]
+      end
+
+      before do
+        stub_request(
+          :get,
+          "https://artifacts.example.com/repository/maven-releases" \
+          "/com/google/guava/guava/maven-metadata.xml"
+        ).to_raise(Excon::Error::Socket.new(OpenSSL::SSL::SSLError.new("SSL_connect SYSCALL returned=5 errno=0 peeraddr=1.2.3.4:443")))
+      end
+
+      it "raises PrivateSourceCertificateFailure" do
+        expect { client.versions_details_from_xml }
+          .to raise_error(Dependabot::PrivateSourceCertificateFailure) do |error|
+            expect(error.source).to eq("https://artifacts.example.com/repository/maven-releases")
+          end
+      end
+    end
+
+    context "when a repository has a TLS error but another repo succeeds" do
+      let(:repositories) do
+        [
+          {
+            "url" => "https://artifacts.example.com/repository/maven-releases",
+            "auth_headers" => {}
+          },
+          {
+            "url" => maven_central,
+            "auth_headers" => {}
+          }
+        ]
+      end
+
+      before do
+        stub_request(
+          :get,
+          "https://artifacts.example.com/repository/maven-releases" \
+          "/com/google/guava/guava/maven-metadata.xml"
+        ).to_raise(Excon::Error::Socket.new(OpenSSL::SSL::SSLError.new("certificate verify failed")))
+
+        stub_request(:get, metadata_url)
+          .to_return(
+            status: 200,
+            body: fixture("maven_central_metadata", "with_release.xml")
+          )
+      end
+
+      it "returns versions from the successful repository without raising" do
+        result = client.versions_details_from_xml
+
+        expect(result).to be_an(Array)
+        expect(result).not_to be_empty
+      end
+    end
+
+    context "when a repository has a non-TLS socket error" do
+      let(:repositories) do
+        [{
+          "url" => "https://artifacts.example.com/repository/maven-releases",
+          "auth_headers" => {}
+        }]
+      end
+
+      before do
+        stub_request(
+          :get,
+          "https://artifacts.example.com/repository/maven-releases" \
+          "/com/google/guava/guava/maven-metadata.xml"
+        ).to_raise(Excon::Error::Socket.new(Errno::ECONNREFUSED.new("Connection refused")))
+      end
+
+      it "does not raise PrivateSourceCertificateFailure" do
+        result = client.versions_details_from_xml
+
+        expect(result).to eq([])
+      end
+    end
   end
 
   describe "#versions_details_hash_from_html" do

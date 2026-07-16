@@ -22,6 +22,10 @@ module Dependabot
         URL_KEY = T.let("url", String)
         AUTH_HEADERS_KEY = T.let("auth_headers", String)
         DEFAULT_CENTRAL_REPO_URL = T.let("https://repo.maven.apache.org/maven2", String)
+        CERTIFICATE_ERROR_KEYWORDS = T.let(
+          %w(certificate SSL x509 verify TLS).freeze,
+          T::Array[String]
+        )
         RepositoryDetails = T.type_alias { T::Hash[String, T.any(String, T::Hash[String, String])] }
         VersionDetails = T.type_alias do
           {
@@ -223,6 +227,7 @@ module Dependabot
         end
 
         # Raises RegistryError for failures hitting the central repo.
+        # Tracks TLS/certificate errors on non-central repos.
         sig do
           params(
             url: String,
@@ -231,16 +236,21 @@ module Dependabot
           ).void
         end
         def handle_registry_error(url, error, response)
-          return unless central_repo_urls.include?(url)
+          if central_repo_urls.include?(url)
+            response_status = response&.status || 0
+            response_body = if response
+                              "RegistryError: #{response.status} response status with body #{response.body}"
+                            else
+                              "RegistryError: #{error.message}"
+                            end
 
-          response_status = response&.status || 0
-          response_body = if response
-                            "RegistryError: #{response.status} response status with body #{response.body}"
-                          else
-                            "RegistryError: #{error.message}"
-                          end
+            raise RegistryError.new(response_status, response_body)
+          end
 
-          raise RegistryError.new(response_status, response_body)
+          return unless certificate_error?(error)
+          return if tls_error_urls.include?(url)
+
+          tls_error_urls << url
         end
 
         # -- Version Aggregation --
@@ -288,6 +298,7 @@ module Dependabot
         sig { returns(T::Array[VersionDetails]) }
         def versions_details_from_xml
           forbidden_urls.clear
+          tls_error_urls.clear
           version_details = repositories.flat_map do |repository_details|
             url = repository_url(repository_details)
             xml = dependency_metadata(repository_details)
@@ -297,6 +308,8 @@ module Dependabot
           end
 
           raise PrivateSourceAuthenticationFailure, forbidden_urls.first if version_details.none? && forbidden_urls.any?
+          raise PrivateSourceCertificateFailure, T.must(tls_error_urls.first) if version_details.none? &&
+                                                                                 tls_error_urls.any?
 
           version_details
         end
@@ -305,6 +318,7 @@ module Dependabot
         sig { returns(T::Hash[String, HtmlVersionDetails]) }
         def versions_details_hash_from_html
           forbidden_urls.clear
+          tls_error_urls.clear
 
           versions_detail_hash = T.let(
             {}, T::Hash[String, HtmlVersionDetails]
@@ -320,6 +334,11 @@ module Dependabot
           if versions_detail_hash.any? && forbidden_urls.any?
             raise PrivateSourceAuthenticationFailure,
                   forbidden_urls.first
+          end
+
+          if versions_detail_hash.any? && tls_error_urls.any?
+            raise PrivateSourceCertificateFailure,
+                  T.must(tls_error_urls.first)
           end
 
           versions_detail_hash
@@ -400,6 +419,11 @@ module Dependabot
           @forbidden_urls ||= T.let([], T.nilable(T::Array[String]))
         end
 
+        sig { returns(T::Array[String]) }
+        def tls_error_urls
+          @tls_error_urls ||= T.let([], T.nilable(T::Array[String]))
+        end
+
         # -- Auth --
 
         sig { params(maven_repo_url: String).returns(T::Hash[String, String]) }
@@ -465,6 +489,19 @@ module Dependabot
         sig { returns(T.class_of(Dependabot::Version)) }
         def version_class
           dependency.version_class
+        end
+
+        private
+
+        sig { params(error: Excon::Error).returns(T::Boolean) }
+        def certificate_error?(error)
+          message = if error.is_a?(Excon::Error::Socket) && error.socket_error
+                      "#{error.message} #{error.socket_error.class}: #{error.socket_error.message}"
+                    else
+                      error.message.to_s
+                    end
+
+          CERTIFICATE_ERROR_KEYWORDS.any? { |keyword| message.include?(keyword) }
         end
       end
     end
