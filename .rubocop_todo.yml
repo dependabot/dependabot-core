@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 1149
+# Offense count: 1147
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bun/lib/dependabot/bun.rb"
@@ -286,7 +286,6 @@ Sorbet/ForbidTUntyped:
     - "common/lib/dependabot/clients/gitlab_with_retries.rb"
     - "common/lib/dependabot/dependency.rb"
     - "common/lib/dependabot/file_fetchers/base.rb"
-    - "common/lib/dependabot/git_commit_checker.rb"
     - "common/lib/dependabot/metadata_finders/base/changelog_finder.rb"
     - "common/lib/dependabot/metadata_finders/base/release_finder.rb"
     - "common/lib/dependabot/pull_request_creator/github.rb"
