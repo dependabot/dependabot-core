@@ -17,7 +17,8 @@ module Dependabot
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file
-        uv_lock || raise(DependabotError, "No uv.lock present; uv graphing requires a lockfile.")
+        uv_lock || fallback_manifest_file ||
+          raise(DependabotError, "No supported dependency files present for uv graphing.")
       end
 
       # uv.lock is guaranteed to be present when graphing runs - the
@@ -26,31 +27,10 @@ module Dependabot
       # delegating to FileParser, so the graph reflects only what uv resolved.
       sig { override.void }
       def prepare!
-        raise DependabotError, "No uv.lock present; uv graphing requires a lockfile." unless uv_lock
+        return super if uv_lock.nil? && fallback_manifest_file
+        raise DependabotError, "No supported dependency files present for uv graphing." unless uv_lock
 
-        parsed = TomlRB.parse(T.must(T.must(uv_lock).content))
-        packages = T.cast(parsed.fetch("package", []), T::Array[T.untyped])
-        manifest = parsed.fetch("manifest", {})
-
-        root_names = root_package_names(packages, manifest)
-        direct_runtime, direct_dev = direct_dependency_names(packages, root_names)
-
-        @dependencies = packages.filter_map do |pkg|
-          build_dependency(pkg, root_names, direct_runtime, direct_dev)
-        end
-        @prepared = true
-      rescue DependabotError
-        raise
-      rescue StandardError => e
-        # If uv.lock is unparseable we can't build a graph at all, but we still
-        # want the rest of the submission flow to continue (matching the prior
-        # behaviour where lockfile parse failures only marked subdependency
-        # fetching as errored).
-        errored_fetching_subdependencies!
-        @subdependency_error = e
-        Dependabot.logger.error("Failed to parse uv.lock for graphing: #{e.message}")
-        @dependencies = []
-        @prepared = true
+        prepare_from_lockfile!
       end
 
       private
@@ -71,6 +51,32 @@ module Dependabot
           end,
           T.nilable(T::Hash[String, T::Array[String]])
         )
+      end
+
+      sig { void }
+      def prepare_from_lockfile!
+        lockfile = T.must(uv_lock)
+        parsed = TomlRB.parse(lockfile.content)
+        packages = T.cast(parsed.fetch("package", []), T::Array[T.untyped])
+        manifest = parsed.fetch("manifest", {})
+
+        root_names = root_package_names(packages, manifest)
+        direct_runtime, direct_dev = direct_dependency_names(packages, root_names)
+
+        @dependencies = packages.filter_map do |pkg|
+          build_dependency(pkg, root_names, direct_runtime, direct_dev)
+        end
+        @prepared = true
+      rescue StandardError => e
+        # If uv.lock is unparseable we can't build a graph at all, but we still
+        # want the rest of the submission flow to continue (matching the prior
+        # behaviour where lockfile parse failures only marked subdependency
+        # fetching as errored).
+        errored_fetching_subdependencies!
+        @subdependency_error = e
+        Dependabot.logger.error("Failed to parse uv.lock for graphing: #{e.message}")
+        @dependencies = []
+        @prepared = true
       end
 
       sig { params(lockfile_content: String).returns(T::Hash[String, T::Array[String]]) }
@@ -276,6 +282,30 @@ module Dependabot
             dependency_files.find { |f| f.name.end_with?("/uv.lock") },
           T.nilable(Dependabot::DependencyFile)
         )
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def fallback_manifest_file
+        primary_requirements_file || pyproject_toml || requirements_manifest_files.first
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def primary_requirements_file
+        requirements_manifest_files.find do |file|
+          ["requirements.txt", "requirements.in"].include?(File.basename(file.name))
+        end
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def pyproject_toml
+        dependency_files.find { |f| f.name == "pyproject.toml" }
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def requirements_manifest_files
+        dependency_files
+          .select { |f| f.name.end_with?(".txt", ".in") && !f.support_file? }
+          .sort_by(&:name)
       end
     end
   end
