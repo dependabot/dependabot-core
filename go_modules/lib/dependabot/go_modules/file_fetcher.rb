@@ -22,7 +22,7 @@ module Dependabot
         "Repo must contain a go.mod or go.work."
       end
 
-      sig { override.returns(T::Hash[Symbol, T.untyped]) }
+      sig { override.returns(T::Hash[Symbol, Object]) }
       def ecosystem_versions
         version = go_version_from_file(go_mod) ||
                   go_version_from_file(go_work) ||

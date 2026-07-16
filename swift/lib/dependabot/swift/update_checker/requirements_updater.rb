@@ -93,8 +93,8 @@ module Dependabot
 
         sig do
           params(
-            source: T.nilable(T::Hash[T.any(String, Symbol), T.untyped])
-          ).returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped]))
+            source: T.nilable(T::Hash[T.any(String, Symbol), Object])
+          ).returns(T.nilable(T::Hash[T.any(String, Symbol), Object]))
         end
         def update_source_ref(source)
           return source unless source && target_version

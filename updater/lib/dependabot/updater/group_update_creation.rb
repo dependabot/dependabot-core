@@ -586,8 +586,12 @@ module Dependabot
         normalized_job_dirs = job_directories.map { |d| Pathname.new(d).cleanpath.to_s }.uniq
         normalized_pr_dirs = pr_directories.map { |d| Pathname.new(d).cleanpath.to_s }.uniq
 
-        # Match only when the PR directories exactly match the job directories
-        normalized_job_dirs.sort == normalized_pr_dirs.sort
+        # Match when the PR's directories are a subset of the job's directories.
+        # A PR only records the directories that actually had updates, so it can
+        # legitimately cover fewer directories than the job is configured with.
+        # A PR covering directories outside the job's scope is stale or belongs
+        # to a different configuration, so it is not a match.
+        (normalized_pr_dirs - normalized_job_dirs).empty?
       end
 
       sig do
