@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
@@ -97,7 +97,7 @@ module Dependabot
         end
 
         # Support files (e.g. child Gemfiles fetched for `eval_gemfile`) and lockfiles
-        # are skipped, so a `cooldown:` declared only in an evaled Gemfile is not seen
+        # are skipped, so a `cooldown:` declared only in an evaluated Gemfile is not seen
         # here; Bundler's native cooldown still enforces it during resolution.
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def manifest_files
