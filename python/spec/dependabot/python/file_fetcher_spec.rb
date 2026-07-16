@@ -1029,6 +1029,52 @@ RSpec.describe Dependabot::Python::FileFetcher do
       end
     end
 
+    context "with an empty editable argument" do
+      let(:directory) { "/requirements" }
+
+      let(:repo_contents) do
+        fixture("github", "contents_directory_with_outside_reference_root.json")
+      end
+
+      before do
+        stub_request(:get, url_with_directory + "?ref=sha")
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_directory_with_outside_reference.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, File.join(url_with_directory, "base.in?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_directory_with_empty_editable_in_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, File.join(url_with_directory, "base.txt?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_directory_with_empty_editable_in_file.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, File.join(url_with_directory, "setup.py?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+        stub_request(:get, File.join(url_with_directory, "pyproject.toml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(status: 404)
+      end
+
+      it "does not treat it as a self-reference and still raises" do
+        expect { file_fetcher_instance.files }
+          .to raise_error(
+            Dependabot::PathDependenciesNotReachable,
+            "The following path based dependencies could not be retrieved: \"-e file:\" at /requirements/base.in"
+          )
+      end
+    end
+
     context "with a path-based sdist/wheel dependency" do
       let(:repo_contents) do
         fixture("github", "contents_python_only_requirements.json")

@@ -326,7 +326,11 @@ module Dependabot
 
       sig { params(path: String).returns(T::Boolean) }
       def self_referential_path_dependency?(path)
-        clean_path(path.delete_prefix("file:")) == "."
+        stripped = path.delete_prefix("file:")
+        # Reject an empty value ("-e " / "-e file:") so it isn't normalized to "." by cleanpath.
+        return false if stripped.empty?
+
+        clean_path(stripped) == "."
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
