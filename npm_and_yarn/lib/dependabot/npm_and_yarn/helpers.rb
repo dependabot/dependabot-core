@@ -50,6 +50,9 @@ module Dependabot
       NPM_V6 = 6
       NPM_DEFAULT_VERSION = NPM_V11
 
+      # Minimum npm version that supports the `--min-release-age` CLI flag.
+      NPM_MINIMUM_RELEASE_AGE_VERSION = "11.10.0"
+
       # PNPM Version Constants
       PNPM_V10 = 10
       PNPM_V9 = 9
@@ -137,7 +140,10 @@ module Dependabot
         key = Regexp.escape(setting.key)
         separator = Regexp.escape(setting.separator)
         presence = /^\s*#{key}\s*#{separator}/
-        value = /^\s*#{key}\s*#{separator}\s*(\d+)\s*$/
+        # Allow an optional trailing comment (e.g. `minimumReleaseAge: 4320 # 3 days`),
+        # which both YAML and npmrc/INI permit; without this a commented value would
+        # fail to match and be treated as non-numeric (Float::INFINITY).
+        value = /^\s*#{key}\s*#{separator}\s*(\d+)\s*(?:#.*)?$/
 
         last_line = content.lines.reverse_each.find { |line| line.match?(presence) }
         return unless last_line
@@ -235,6 +241,43 @@ module Dependabot
       rescue StandardError => e
         Dependabot.logger.warn("Could not determine pnpm version to gate release-age settings: #{e.message}")
         nil
+      end
+
+      # The concrete npm version that will run — via Corepack when the corepack
+      # experiment is enabled (honouring the repo's `packageManager` pin, which can
+      # select npm 7-11), otherwise the npm on PATH. Returns nil when it can't be
+      # determined. Used to gate `--min-release-age`, added in npm 11.10.
+      sig { returns(T.nilable(Dependabot::Version)) }
+      def self.npm_version
+        raw = if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
+                package_manager_version(NpmPackageManager::NAME)
+              else
+                local_package_manager_version(NpmPackageManager::NAME)
+              end
+        Version.new(raw)
+      rescue StandardError => e
+        Dependabot.logger.warn("Could not determine npm version to gate release-age settings: #{e.message}")
+        nil
+      end
+
+      # True when the running npm supports `--min-release-age` (npm 11.10+). Because
+      # npm runs through Corepack, a repo pinned to an older npm via `packageManager`
+      # would reject the flag, so the cooldown gate must be skipped for it.
+      sig { returns(T::Boolean) }
+      def self.npm_supports_min_release_age?
+        version = npm_version
+        return false if version.nil?
+
+        supported = version >= Version.new(NPM_MINIMUM_RELEASE_AGE_VERSION)
+        if supported
+          Dependabot.logger.info("npm #{version} supports --min-release-age.")
+        else
+          Dependabot.logger.info(
+            "npm #{version} does not support --min-release-age (requires 11.10.0+); the release-age " \
+            "cooldown gate will not be applied to transitive dependencies."
+          )
+        end
+        supported
       end
 
       sig { params(key: String, default_value: String).returns(T.untyped) }

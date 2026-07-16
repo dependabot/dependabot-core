@@ -902,6 +902,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         updater.send(:run_pnpm_update_packages)
       end
 
+      it "routes the deep-update fallback through the release-age gate" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          expect(cmd).to include("--depth Infinity")
+          expect(cmd).to include("--config.minimumReleaseAge=10080")
+          ""
+        end.at_least(:once)
+
+        updater.send(:run_pnpm_deep_update_fallback)
+      end
+
       it "retries without the gate when pnpm raises ERR_PNPM_MISSING_TIME" do
         call_count = 0
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
@@ -1078,6 +1088,30 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             # Cooldown (10080) wins over the user's 4320, but their explicit
             # strict=true must not be overridden with strict=false.
             expect(cmd).to include("--config.minimumReleaseAge=10080")
+            expect(cmd).not_to include("minimumReleaseAgeStrict")
+            ""
+          end.at_least(:once)
+
+          updater.send(:run_pnpm_update_packages)
+        end
+      end
+
+      context "when the strict opt-in uses uppercase casing and a trailing comment" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.0.0"))
+        end
+
+        let(:files) do
+          project_dependency_files(project_name) +
+            [Dependabot::DependencyFile.new(
+              name: "pnpm-workspace.yaml",
+              content: "minimumReleaseAge: 4320\nminimumReleaseAgeStrict: True # enforce policy\n"
+            )]
+        end
+
+        it "still detects the strict opt-in and does not force strict=false" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
             expect(cmd).not_to include("minimumReleaseAgeStrict")
             ""
           end.at_least(:once)

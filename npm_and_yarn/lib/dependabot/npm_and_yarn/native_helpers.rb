@@ -89,27 +89,36 @@ module Dependabot
         )
       end
 
-      sig { params(dependency_name: String, recursive: T::Boolean).returns(String) }
-      def self.run_pnpm_deep_update_command(dependency_name, recursive: false)
+      sig { params(dependency_name: String, recursive: T::Boolean).returns([String, String]) }
+      def self.pnpm_deep_update_command(dependency_name, recursive: false)
         # `pnpm update --depth Infinity <dep>` traverses the full dependency
         # graph, allowing transitive dependencies to be updated in the lockfile
         # without modifying any package.json (unlike `pnpm audit --fix`).
         # `-r --include-workspace-root` is required for workspace repos so the
         # update is applied across all packages.
         flags = recursive ? "-r --include-workspace-root " : ""
-        Helpers.run_pnpm_command(
-          "#{flags}update #{dependency_name} --depth Infinity --lockfile-only",
-          fingerprint: "#{flags}update <dependency_name> --depth Infinity --lockfile-only"
-        )
+        cmd = "#{flags}update #{dependency_name} --depth Infinity --lockfile-only"
+        fingerprint = "#{flags}update <dependency_name> --depth Infinity --lockfile-only"
+        [cmd, fingerprint]
       end
 
-      sig { returns(String) }
-      def self.run_yarn_audit_fix_command
+      sig { params(dependency_name: String, recursive: T::Boolean).returns(String) }
+      def self.run_pnpm_deep_update_command(dependency_name, recursive: false)
+        cmd, fingerprint = pnpm_deep_update_command(dependency_name, recursive: recursive)
+        Helpers.run_pnpm_command(cmd, fingerprint: fingerprint)
+      end
+
+      sig { params(env: T.nilable(T::Hash[String, String])).returns(String) }
+      def self.run_yarn_audit_fix_command(env: nil)
         # Fallback for transitive dependencies where `yarn up -R` is a no-op.
-        # `yarn npm audit --fix` updates vulnerable deps in the lockfile.
+        # `yarn npm audit --fix` updates vulnerable deps in the lockfile. The
+        # release-age gate env is threaded through so this lockfile-resolving
+        # command honours the same cooldown (and security `=0` bypass) as the
+        # primary add/dedupe/remove commands.
         Helpers.run_yarn_command(
           "npm audit --fix --mode update-lockfile",
-          fingerprint: "npm audit --fix --mode update-lockfile"
+          fingerprint: "npm audit --fix --mode update-lockfile",
+          env: env
         )
       end
     end

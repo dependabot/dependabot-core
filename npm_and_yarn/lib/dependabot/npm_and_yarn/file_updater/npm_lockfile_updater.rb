@@ -449,12 +449,26 @@ module Dependabot
         # or longer) gate is left untouched so neither policy is silently weakened.
         sig { returns(T.nilable(String)) }
         def effective_min_release_age_arg
+          return nil unless npm_supports_min_release_age?
+
           return "--min-release-age=0" if security_updates_only?
 
           effective = Helpers.higher_release_age_gate(@release_age_days, npmrc_min_release_age)
           return nil unless effective
 
           "--min-release-age=#{effective}"
+        end
+
+        # Whether the npm that will run supports `--min-release-age` (npm 11.10+).
+        # npm runs through Corepack, so a repo pinned to an older npm via
+        # `packageManager` would reject the flag; gate it out for those. Memoized so
+        # the version subprocess runs at most once per update.
+        sig { returns(T::Boolean) }
+        def npm_supports_min_release_age?
+          @npm_supports_min_release_age = T.let(@npm_supports_min_release_age, T.nilable(T::Boolean))
+          return @npm_supports_min_release_age unless @npm_supports_min_release_age.nil?
+
+          @npm_supports_min_release_age = Helpers.npm_supports_min_release_age?
         end
 
         sig { params(arg: String).returns(String) }

@@ -1170,5 +1170,32 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       files = [file(".npmrc", "min-release-age=30\nmin-release-age=soon\n")]
       expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(Float::INFINITY)
     end
+
+    it "parses a YAML value with a trailing inline comment" do
+      files = [file("pnpm-workspace.yaml", "minimumReleaseAge: 4320 # 3 days\n")]
+      expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(4320)
+    end
+
+    it "parses an npmrc value with a trailing inline comment" do
+      files = [file(".npmrc", "min-release-age=30 # about a month\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(30)
+    end
+  end
+
+  describe "::npm_supports_min_release_age?" do
+    it "is true for npm 11.10.0 and newer" do
+      allow(described_class).to receive(:npm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.16.0"))
+      expect(described_class.npm_supports_min_release_age?).to be(true)
+    end
+
+    it "is false for npm older than 11.10.0" do
+      allow(described_class).to receive(:npm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.9.0"))
+      expect(described_class.npm_supports_min_release_age?).to be(false)
+    end
+
+    it "is false when the npm version cannot be determined" do
+      allow(described_class).to receive(:npm_version).and_return(nil)
+      expect(described_class.npm_supports_min_release_age?).to be(false)
+    end
   end
 end

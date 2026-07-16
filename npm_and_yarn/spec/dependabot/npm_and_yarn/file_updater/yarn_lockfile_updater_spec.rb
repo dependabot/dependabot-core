@@ -391,6 +391,32 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
       # simulates a no-op so the updater should fall back to yarn audit fix.
       updated_yarn_lock_content
     end
+
+    context "when a cooldown release-age gate is configured" do
+      let(:updater) do
+        described_class.new(
+          dependency_files: files,
+          dependencies: dependencies,
+          credentials: credentials,
+          repo_contents_path: nil,
+          release_age_days: 7
+        )
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers)
+          .to receive(:yarn_berry_supports_minimal_age_gate?).and_return(true)
+      end
+
+      it "threads the release-age gate env through the audit-fix fallback" do
+        expect(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive(:run_yarn_audit_fix_command)
+          .with(env: { "YARN_NPM_MINIMAL_AGE_GATE" => "10080" })
+          .once.and_return("")
+
+        updated_yarn_lock_content
+      end
+    end
   end
 
   context "when updating a yarn berry lockfile without packageManager or .yarnrc.yml" do

@@ -1399,6 +1399,33 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
         end
       end
 
+      context "when the running npm does not support --min-release-age" do
+        let(:updater) do
+          described_class.new(
+            lockfile: package_lock,
+            dependency_files: files,
+            dependencies: dependencies,
+            credentials: credentials,
+            security_updates_only: true
+          )
+        end
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:npm_supports_min_release_age?).and_return(false)
+        end
+
+        it "omits --min-release-age entirely (the flag would be rejected)" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
+            expect(command).not_to include("--min-release-age")
+            expect(command).to include("--package-lock-only")
+            ""
+          end
+
+          updater.send(:run_npm_install_lockfile_only, install_args)
+        end
+      end
+
       context "when update_cooldown sets a release-age floor (regular update)" do
         let(:updater) do
           described_class.new(

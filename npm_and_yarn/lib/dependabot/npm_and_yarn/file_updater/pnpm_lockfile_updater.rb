@@ -379,7 +379,10 @@ module Dependabot
           last_line = content.lines.reverse_each.find { |line| line.match?(presence) }
           return false unless last_line
 
-          last_line.match?(/^\s*#{Regexp.escape(key)}\s*#{Regexp.escape(separator)}\s*true\s*$/)
+          # Match YAML/INI boolean casing (`true`, `True`, `TRUE`) and allow an
+          # optional trailing comment (e.g. `minimumReleaseAgeStrict: true # policy`),
+          # so an explicit strict opt-in is never missed and silently weakened.
+          last_line.match?(/^\s*#{Regexp.escape(key)}\s*#{Regexp.escape(separator)}\s*(?i:true)\s*(?:#.*)?$/)
         end
 
         # The largest `minimumReleaseAge` (in minutes) the repo configures for pnpm,
@@ -405,12 +408,15 @@ module Dependabot
         # Tries `pnpm update --depth Infinity <dep>` for each dependency as a
         # first-tier fallback when the regular update is a no-op (typically
         # transitive deps not listed in any package.json). Unlike `audit --fix`
-        # this does not write `overrides` to package.json.
+        # this does not write `overrides` to package.json. Routed through the
+        # release-age gate (with the missing-time retry) so this fallback cannot
+        # pull a just-published transitive release past the cooldown.
         sig { void }
         def run_pnpm_deep_update_fallback
           recursive = workspace_files.any?
           dependencies.each do |dep|
-            NativeHelpers.run_pnpm_deep_update_command(dep.name, recursive: recursive)
+            cmd, fingerprint = NativeHelpers.pnpm_deep_update_command(dep.name, recursive: recursive)
+            run_pnpm_command_with_release_age_gate(cmd, fingerprint)
             dep.metadata[:deep_update_used] = true
           end
         rescue SharedHelpers::HelperSubprocessFailed

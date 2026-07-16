@@ -352,18 +352,24 @@ module Dependabot
 
           updated_content = File.read(yarn_lock.name)
           if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
-            begin
-              NativeHelpers.run_yarn_audit_fix_command
-              dep.metadata[:audit_fix_used] = true
-            rescue SharedHelpers::HelperSubprocessFailed
-              Dependabot.logger.info(
-                "yarn npm audit --fix failed or partially fixed — continuing with any changes made"
-              )
-            end
+            run_yarn_audit_fix_fallback(dep)
             updated_content = File.read(yarn_lock.name)
           end
 
           { yarn_lock.name => updated_content }
+        end
+
+        # Fallback for transitive deps where add/dedupe/remove is a no-op. Threads
+        # the release-age gate env so the audit-fix resolve honours the same cooldown
+        # (and security `=0` bypass) as the primary commands.
+        sig { params(dep: Dependabot::Dependency).void }
+        def run_yarn_audit_fix_fallback(dep)
+          NativeHelpers.run_yarn_audit_fix_command(env: yarn_time_gate_env)
+          dep.metadata[:audit_fix_used] = true
+        rescue SharedHelpers::HelperSubprocessFailed
+          Dependabot.logger.info(
+            "yarn npm audit --fix failed or partially fixed — continuing with any changes made"
+          )
         end
 
         sig { returns(T::Boolean) }
