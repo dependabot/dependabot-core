@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -8,9 +8,9 @@ module Dependabot
     # Parsed representation of an existing group pull request from the job
     # definition.
     #
-    # Replaces the raw T::Hash[String, T.untyped] with a typed struct so
+    # Replaces the raw job hash with a typed struct so
     # downstream code gets compile-time checked field access instead of
-    # hash key lookups that return T.untyped.
+    # raw hash key lookups.
     class ExistingGroupPullRequest < T::ImmutableStruct
       extend T::Sig
 
@@ -29,11 +29,7 @@ module Dependabot
         const :directory, T.nilable(String)
         const :removed, T::Boolean, default: false
 
-        # T.untyped is unavoidable here: this parses a freshly-deserialised
-        # JSON hash at the wire boundary.
-        # rubocop:disable Sorbet/ForbidTUntyped
-        sig { params(hash: T::Hash[String, T.untyped]).returns(Dependency) }
-        # rubocop:enable Sorbet/ForbidTUntyped
+        sig { params(hash: T::Hash[String, Object]).returns(Dependency) }
         def self.from_hash(hash)
           name = hash["dependency-name"]
           version = hash["dependency-version"]
@@ -65,11 +61,7 @@ module Dependabot
       const :pr_number, T.nilable(Integer)
       const :dependencies, T.nilable(T::Array[Dependency])
 
-      # T.untyped is unavoidable here: this parses a freshly-deserialised
-      # JSON hash at the wire boundary.
-      # rubocop:disable Sorbet/ForbidTUntyped
-      sig { params(hash: T::Hash[String, T.untyped]).returns(ExistingGroupPullRequest) }
-      # rubocop:enable Sorbet/ForbidTUntyped
+      sig { params(hash: T::Hash[String, Object]).returns(ExistingGroupPullRequest) }
       def self.from_hash(hash)
         group_name = hash["dependency-group-name"]
         pr_number = hash["pr_number"]
@@ -78,9 +70,33 @@ module Dependabot
         new(
           dependency_group_name: group_name.is_a?(String) ? group_name : nil,
           pr_number: pr_number.is_a?(Integer) ? pr_number : nil,
-          dependencies: dependencies.is_a?(Array) ? dependencies.grep(Hash).map { |d| Dependency.from_hash(d) } : nil
+          dependencies: parsed_dependencies(dependencies)
         )
       end
+
+      sig { params(value: T.nilable(Object)).returns(T.nilable(T::Array[Dependency])) }
+      def self.parsed_dependencies(value)
+        return unless value.is_a?(Array)
+
+        value.filter_map do |dependency|
+          hash = string_hash(T.cast(dependency, Object))
+          Dependency.from_hash(hash) if hash
+        end
+      end
+      private_class_method :parsed_dependencies
+
+      sig { params(value: Object).returns(T.nilable(T::Hash[String, Object])) }
+      def self.string_hash(value)
+        return unless value.is_a?(Hash)
+
+        result = T.let({}, T::Hash[String, Object])
+        value.each do |raw_key, raw_value|
+          key = T.cast(raw_key, Object)
+          result[key] = T.cast(raw_value, Object) if key.is_a?(String)
+        end
+        result
+      end
+      private_class_method :string_hash
     end
   end
 end
