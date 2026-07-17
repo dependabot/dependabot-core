@@ -11,6 +11,14 @@ module Dependabot
     class DependencyGroupChangeBatch
       extend T::Sig
 
+      class FileState < T::ImmutableStruct
+        const :file, Dependabot::DependencyFile
+        const :changed, T::Boolean
+        const :changes, Integer
+      end
+
+      FileBatch = T.type_alias { T::Hash[String, FileState] }
+
       sig { returns(T::Array[Dependabot::Dependency]) }
       attr_reader :updated_dependencies
 
@@ -20,12 +28,12 @@ module Dependabot
 
         @dependency_file_batch = T.let(
           initial_dependency_files.to_h do |file|
-            [file.path, { file: file, changed: false, changes: 0 }]
+            [file.path, FileState.new(file: file, changed: false, changes: 0)]
           end,
-          T::Hash[String, T::Hash[Symbol, T.untyped]]
+          FileBatch
         )
 
-        @vendored_dependency_batch = T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
+        @vendored_dependency_batch = T.let({}, FileBatch)
 
         Dependabot.logger.debug("Starting with '#{@dependency_file_batch.count}' dependency files:")
         debug_current_file_state
@@ -37,7 +45,7 @@ module Dependabot
         directory = Pathname.new(job.source.directory).cleanpath.to_s
 
         files = @dependency_file_batch.filter_map do |_path, data|
-          data[:file] if Pathname.new(data[:file].directory).cleanpath.to_s == directory
+          data.file if Pathname.new(data.file.directory).cleanpath.to_s == directory
         end
         # This should be prevented in the FileFetcher, but possible due to directory cleaning
         # that all files are filtered out.
@@ -50,8 +58,8 @@ module Dependabot
       # and changes we've collected to vendored dependencies
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
-        @dependency_file_batch.filter_map { |_path, data| data[:file] if data[:changed] } +
-          @vendored_dependency_batch.map { |_path, data| data[:file] }
+        @dependency_file_batch.filter_map { |_path, data| data.file if data.changed } +
+          @vendored_dependency_batch.map { |_path, data| data.file }
       end
 
       sig { params(dependency_change: Dependabot::DependencyChange).void }
@@ -97,17 +105,16 @@ module Dependabot
         end
       end
 
-      sig { params(file: Dependabot::DependencyFile, batch: T::Hash[String, T::Hash[Symbol, T.untyped]]).void }
+      sig { params(file: Dependabot::DependencyFile, batch: FileBatch).void }
       def merge_file_to_batch(file, batch)
-        change_count = if (existing_file = batch[file.path])
-                         existing_file.fetch(:change_count, 0)
-                       else
-                         # The file is newly encountered
-                         Dependabot.logger.debug("File #{file.operation}d: '#{file.path}'")
-                         0
-                       end
+        existing_state = batch[file.path]
+        Dependabot.logger.debug("File #{file.operation}d: '#{file.path}'") unless existing_state
 
-        batch[file.path] = { file: file, changed: true, changes: change_count + 1 }
+        batch[file.path] = FileState.new(
+          file: file,
+          changed: true,
+          changes: existing_state ? existing_state.changes + 1 : 1
+        )
       end
 
       sig { void }
@@ -132,9 +139,9 @@ module Dependabot
         @vendored_dependency_batch.each { |path, data| debug_file_hash(path, data) }
       end
 
-      sig { params(path: String, data: T::Hash[Symbol, T.untyped]).void }
+      sig { params(path: String, data: FileState).void }
       def debug_file_hash(path, data)
-        changed_string = data[:changed] ? "( Changed #{data[:changes]} times )" : ""
+        changed_string = data.changed ? "( Changed #{data.changes} times )" : ""
         Dependabot.logger.debug("  - #{path} #{changed_string}")
       end
     end
