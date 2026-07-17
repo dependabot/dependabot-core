@@ -403,5 +403,103 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
         )
       end
     end
+
+    context "when allow rules specify update-types (patch only)" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/allow_update_types_patch_only")
+      end
+      let(:dependency_files) do
+        original_bundler_files(fixture: "bundler_allow_update_types")
+      end
+
+      it "passes ignored_versions that block major and minor updates to the UpdateChecker" do
+        update_all_versions.send(:update_checker_for, dependency, raise_on_ignored: false)
+
+        expect(stub_update_checker_class).to have_received(:new).with(
+          hash_including(
+            ignored_versions: a_collection_containing_exactly(
+              a_string_matching(/>= 5/),
+              a_string_matching(/>= 4\.1/)
+            )
+          )
+        )
+      end
+    end
+
+    context "when allow rules specify update-types (minor and patch)" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/allow_update_types_minor_and_patch")
+      end
+      let(:dependency_files) do
+        original_bundler_files(fixture: "bundler_allow_update_types")
+      end
+
+      it "passes ignored_versions that block only major updates to the UpdateChecker" do
+        update_all_versions.send(:update_checker_for, dependency, raise_on_ignored: false)
+
+        expect(stub_update_checker_class).to have_received(:new).with(
+          hash_including(
+            ignored_versions: a_collection_containing_exactly(
+              a_string_matching(/>= 5/)
+            )
+          )
+        )
+      end
+    end
+
+    context "when allow rules have no update-types" do
+      let(:job_definition) do
+        job_definition_fixture("bundler/version_updates/pull_request_simple")
+      end
+
+      it "passes no implicit ignored_versions to the UpdateChecker" do
+        update_all_versions.send(:update_checker_for, dependency, raise_on_ignored: false)
+
+        expect(stub_update_checker_class).to have_received(:new).with(
+          hash_including(ignored_versions: [])
+        )
+      end
+    end
+  end
+
+  describe "blocked versions ignored metric" do
+    before do
+      allow(job).to receive(:package_manager).and_return("bundler")
+      allow(stub_update_checker).to receive_messages(up_to_date?: true)
+      allow(update_all_versions).to receive(:all_versions_ignored?).and_return(false)
+    end
+
+    context "when the dependency has an active GitHub Security block" do
+      before do
+        allow(job).to receive(:blocked_versions_for?).with(dependency).and_return(true)
+      end
+
+      it "increments the ignored metric tagged with the package manager" do
+        update_all_versions.send(:check_and_create_pull_request, dependency)
+
+        expect(mock_service).to have_received(:increment_metric).with(
+          "blocked_versions.ignored",
+          tags: {
+            operation: "version_update",
+            package_manager: "bundler"
+          }
+        )
+      end
+    end
+
+    context "when the dependency only has user ignore rules (no block)" do
+      before do
+        allow(job).to receive(:blocked_versions_for?).with(dependency).and_return(false)
+      end
+
+      it "does not increment the ignored metric" do
+        update_all_versions.send(:check_and_create_pull_request, dependency)
+
+        expect(mock_service).not_to have_received(:increment_metric).with(
+          "blocked_versions.ignored",
+          tags: anything
+        )
+      end
+    end
   end
 end

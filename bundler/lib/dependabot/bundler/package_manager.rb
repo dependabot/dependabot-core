@@ -11,8 +11,14 @@ module Dependabot
     ECOSYSTEM = "bundler"
     PACKAGE_MANAGER = "bundler"
 
-    # Keep versions in ascending order
-    SUPPORTED_BUNDLER_VERSIONS = T.let([Version.new("2")].freeze, T::Array[Dependabot::Version])
+    # Keep versions in ascending order.
+    # Note: Bundler 3 was intentionally skipped upstream — Bundler jumped from
+    # 2.7 directly to 4.0 to align its major version with RubyGems, so there
+    # is no Bundler 3.x release to support.
+    SUPPORTED_BUNDLER_VERSIONS = T.let(
+      [Version.new("2"), Version.new("4")].freeze,
+      T::Array[Dependabot::Version]
+    )
 
     # Currently, we don't support any deprecated versions of Bundler
     # When a version is going to be unsupported, it will be added here for a while to give users time to upgrade

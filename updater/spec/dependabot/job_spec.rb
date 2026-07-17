@@ -76,6 +76,20 @@ RSpec.describe Dependabot::Job do
   let(:repo_private) { false }
   let(:cooldown) { nil }
 
+  describe "when wire-format collections contain non-hash entries" do
+    let(:attributes) do
+      super().merge(
+        dependency_groups: [nil, { "name" => "group-a", "rules" => { "patterns" => ["*"] } }],
+        existing_group_pull_requests: ["not-a-hash", { "dependency-group-name" => "group-a" }]
+      )
+    end
+
+    it "ignores the non-hash entries instead of raising" do
+      expect(job.dependency_groups.map(&:name)).to eq(["group-a"])
+      expect(job.existing_group_pull_requests.map(&:dependency_group_name)).to eq(["group-a"])
+    end
+  end
+
   describe "::new_update_job" do
     let(:job_json) { fixture("jobs/job_with_credentials.json") }
 
@@ -454,6 +468,91 @@ RSpec.describe Dependabot::Job do
 
       it { is_expected.to be(false) }
     end
+
+    context "with update-types in allow block" do
+      # update-types filtering is handled by ignore_conditions_for (via version ranges),
+      # NOT by allowed_update?. allowed_update? only checks dependency-name, dependency-type,
+      # and update-type (security). So dependencies with update-types should still pass
+      # allowed_update? as long as name/type match.
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "business",
+          package_manager: "bundler",
+          version: "1.9.0",
+          previous_version: "1.8.0",
+          requirements: requirements
+        )
+      end
+
+      context "when allow rule has update-types and dependency name matches" do
+        let(:allowed_updates) do
+          [
+            {
+              "dependency-name" => "business",
+              "update-types" => ["version-update:semver-patch"]
+            }
+          ]
+        end
+
+        it "allows the update (update-types filtering is handled by ignore_conditions_for)" do
+          expect(allowed_update).to be(true)
+        end
+      end
+
+      context "when dependency name does not match" do
+        let(:allowed_updates) do
+          [
+            {
+              "dependency-name" => "other-dep",
+              "update-types" => ["version-update:semver-minor"]
+            }
+          ]
+        end
+
+        it { is_expected.to be(false) }
+      end
+
+      context "when update-types is empty array" do
+        let(:allowed_updates) do
+          [
+            {
+              "dependency-name" => "business",
+              "update-types" => []
+            }
+          ]
+        end
+
+        it "allows the update" do
+          expect(allowed_update).to be(true)
+        end
+      end
+
+      context "with security updates" do
+        let(:security_advisories) do
+          [
+            {
+              "dependency-name" => "business",
+              "affected-versions" => [],
+              "patched-versions" => ["~> 1.11.0"],
+              "unaffected-versions" => []
+            }
+          ]
+        end
+
+        let(:allowed_updates) do
+          [
+            {
+              "update-type" => "security",
+              "update-types" => ["version-update:semver-patch"]
+            }
+          ]
+        end
+
+        it "allows security update regardless of update-types" do
+          expect(allowed_update).to be(true)
+        end
+      end
+    end
   end
 
   describe "#security_updates_only?" do
@@ -483,7 +582,7 @@ RSpec.describe Dependabot::Job do
       it "registers the experiments with Dependabot::Experiments" do
         job
         expect(Dependabot::Experiments).to be_enabled(:kebab_case)
-        expect(Dependabot::Experiments).not_to be_enabled(:simpe)
+        expect(Dependabot::Experiments).not_to be_enabled(:simple)
       end
     end
 
@@ -607,6 +706,94 @@ RSpec.describe Dependabot::Job do
 
       it "excludes specified packages" do
         expect(job.cooldown.exclude).to include("excluded-package")
+      end
+    end
+
+    context "when cooldown is provided without default-days" do
+      let(:experiments) { { "enable_cooldown_default_days" => true } }
+      let(:cooldown) do
+        {
+          "include" => ["included-package"]
+        }
+      end
+
+      it "defaults default_days to 3" do
+        expect(job.cooldown).to be_a(Dependabot::Package::ReleaseCooldownOptions)
+        expect(job.cooldown.default_days).to eq(Dependabot::Job::DEFAULT_COOLDOWN_DAYS)
+      end
+
+      it "falls back to the default for unset semver-specific days" do
+        expect(job.cooldown.semver_major_days).to eq(Dependabot::Job::DEFAULT_COOLDOWN_DAYS)
+        expect(job.cooldown.semver_minor_days).to eq(Dependabot::Job::DEFAULT_COOLDOWN_DAYS)
+        expect(job.cooldown.semver_patch_days).to eq(Dependabot::Job::DEFAULT_COOLDOWN_DAYS)
+      end
+
+      it "still honours include settings" do
+        expect(job.cooldown.include).to include("included-package")
+      end
+    end
+
+    context "when cooldown is provided without default-days and the experiment is disabled" do
+      let(:cooldown) do
+        {
+          "include" => ["included-package"]
+        }
+      end
+
+      it "defaults default_days to 0 (no cooldown)" do
+        expect(job.cooldown).to be_a(Dependabot::Package::ReleaseCooldownOptions)
+        expect(job.cooldown.default_days).to eq(0)
+      end
+
+      it "keeps semver-specific days at 0" do
+        expect(job.cooldown.semver_major_days).to eq(0)
+        expect(job.cooldown.semver_minor_days).to eq(0)
+        expect(job.cooldown.semver_patch_days).to eq(0)
+      end
+    end
+
+    context "when cooldown is provided with default-days explicitly set to 0" do
+      let(:experiments) { { "enable_cooldown_default_days" => true } }
+      let(:cooldown) do
+        {
+          "default-days" => 0
+        }
+      end
+
+      it "keeps default_days at 0 (explicit values are respected)" do
+        expect(job.cooldown.default_days).to eq(0)
+      end
+    end
+
+    context "when cooldown is provided with only semver-specific days" do
+      let(:experiments) { { "enable_cooldown_default_days" => true } }
+      let(:cooldown) do
+        {
+          "semver-major-days" => 14
+        }
+      end
+
+      it "defaults default_days to DEFAULT_COOLDOWN_DAYS" do
+        expect(job.cooldown.default_days).to eq(Dependabot::Job::DEFAULT_COOLDOWN_DAYS)
+      end
+
+      it "uses the provided semver-major-days" do
+        expect(job.cooldown.semver_major_days).to eq(14)
+      end
+
+      it "falls back to the default for the other semver days" do
+        expect(job.cooldown.semver_minor_days).to eq(Dependabot::Job::DEFAULT_COOLDOWN_DAYS)
+        expect(job.cooldown.semver_patch_days).to eq(Dependabot::Job::DEFAULT_COOLDOWN_DAYS)
+      end
+    end
+
+    context "when cooldown is an empty hash" do
+      let(:experiments) { { "enable_cooldown_default_days" => true } }
+      let(:cooldown) { {} }
+
+      it "defaults default_days to DEFAULT_COOLDOWN_DAYS" do
+        expect(job.cooldown).to be_a(Dependabot::Package::ReleaseCooldownOptions)
+        expect(job.cooldown.default_days).to eq(Dependabot::Job::DEFAULT_COOLDOWN_DAYS)
       end
     end
 
@@ -919,6 +1106,195 @@ RSpec.describe Dependabot::Job do
     end
   end
 
+  describe "#ignore_conditions_for" do
+    subject(:ignored) { job.ignore_conditions_for(dependency) }
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        package_manager: "bundler",
+        version: "1.8.0",
+        requirements: [{ file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }]
+      )
+    end
+
+    context "with no ignore conditions and no allow update-types" do
+      let(:allowed_updates) do
+        [{ "dependency-type" => "direct", "update-type" => "all" }]
+      end
+
+      it "returns an empty array" do
+        expect(ignored).to be_empty
+      end
+    end
+
+    context "with explicit ignore conditions" do
+      let(:attributes) do
+        super().merge(
+          ignore_conditions: [
+            {
+              "dependency-name" => "business",
+              "version-requirement" => "> 2.0.0"
+            }
+          ]
+        )
+      end
+
+      it "returns the explicit ignore ranges" do
+        expect(ignored).to include("> 2.0.0")
+      end
+    end
+
+    context "with allow update-types" do
+      context "when allowing only patch updates" do
+        let(:allowed_updates) do
+          [{ "dependency-name" => "business", "update-types" => ["version-update:semver-patch"] }]
+        end
+
+        it "generates ignore ranges for major and minor" do
+          expect(ignored).to include(a_string_matching(/>= 2/))
+          expect(ignored).to include(a_string_matching(/>= 1\.9/))
+          expect(ignored).not_to include(a_string_matching(/> 1\.8\.0, < 1\.9/))
+        end
+      end
+
+      context "when allowing only minor updates" do
+        let(:allowed_updates) do
+          [{ "dependency-name" => "business", "update-types" => ["version-update:semver-minor"] }]
+        end
+
+        it "generates ignore ranges for major and patch" do
+          expect(ignored).to include(a_string_matching(/>= 2/))
+          expect(ignored).to include(a_string_matching(/> 1\.8\.0, < 1\.9/))
+          expect(ignored).not_to include(a_string_matching(/>= 1\.9/))
+        end
+      end
+
+      context "when allowing minor and patch" do
+        let(:allowed_updates) do
+          [{
+            "dependency-name" => "business",
+            "update-types" => ["version-update:semver-minor", "version-update:semver-patch"]
+          }]
+        end
+
+        it "generates ignore ranges only for major" do
+          expect(ignored).to include(a_string_matching(/>= 2/))
+          expect(ignored).not_to include(a_string_matching(/>= 1\.9/))
+          expect(ignored).not_to include(a_string_matching(/> 1\.8\.0/))
+        end
+      end
+
+      context "when allow rule has no update-types" do
+        let(:allowed_updates) do
+          [{ "dependency-name" => "business", "dependency-type" => "direct", "update-type" => "all" }]
+        end
+
+        it "does not generate any implicit ignore ranges" do
+          expect(ignored).to be_empty
+        end
+      end
+
+      context "when one allow rule has update-types and another does not" do
+        let(:allowed_updates) do
+          [
+            { "dependency-name" => "business", "update-types" => ["version-update:semver-patch"] },
+            { "dependency-name" => "business" }
+          ]
+        end
+
+        it "does not generate ignore ranges (rule without update-types permits all)" do
+          expect(ignored).to be_empty
+        end
+      end
+
+      context "when dependency name does not match" do
+        let(:allowed_updates) do
+          [{ "dependency-name" => "other-dep", "update-types" => ["version-update:semver-patch"] }]
+        end
+
+        it "does not generate ignore ranges" do
+          expect(ignored).to be_empty
+        end
+      end
+
+      context "when security_updates_only is true" do
+        let(:security_updates_only) { true }
+        let(:dependencies) { ["business"] }
+        let(:allowed_updates) do
+          [{ "dependency-name" => "business", "update-types" => ["version-update:semver-patch"] }]
+        end
+
+        it "does not generate ignore ranges" do
+          expect(ignored).to be_empty
+        end
+      end
+
+      context "with dependency-type filtering" do
+        let(:allowed_updates) do
+          [{ "dependency-type" => "production", "update-types" => ["version-update:semver-patch"] }]
+        end
+
+        context "when dependency is production" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "business",
+              package_manager: "bundler",
+              version: "1.8.0",
+              requirements: [{ file: "Gemfile", requirement: "~> 1.8.0", groups: ["default"], source: nil }]
+            )
+          end
+
+          it "generates ignore ranges for major and minor" do
+            expect(ignored).to include(a_string_matching(/>= 2/))
+            expect(ignored).to include(a_string_matching(/>= 1\.9/))
+          end
+        end
+
+        context "when dependency is development" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "business",
+              package_manager: "bundler",
+              version: "1.8.0",
+              requirements: [{ file: "Gemfile", requirement: "~> 1.8.0", groups: ["development"], source: nil }]
+            )
+          end
+
+          it "does not generate ignore ranges (rule does not match)" do
+            expect(ignored).to be_empty
+          end
+        end
+      end
+
+      context "with wildcard dependency name" do
+        let(:allowed_updates) do
+          [{ "dependency-name" => "busi*", "update-types" => ["version-update:semver-patch"] }]
+        end
+
+        it "matches and generates ignore ranges" do
+          expect(ignored).to include(a_string_matching(/>= 2/))
+        end
+      end
+
+      context "when combining with explicit ignore conditions" do
+        let(:attributes) do
+          super().merge(
+            ignore_conditions: [{ "dependency-name" => "business", "version-requirement" => "> 1.8.1" }]
+          )
+        end
+        let(:allowed_updates) do
+          [{ "dependency-name" => "business", "update-types" => ["version-update:semver-patch"] }]
+        end
+
+        it "includes both explicit ignore and implicit allow-derived ranges" do
+          expect(ignored).to include("> 1.8.1")
+          expect(ignored).to include(a_string_matching(/>= 2/))
+        end
+      end
+    end
+  end
+
   describe "#allowed_update? with check_previous_version parameter" do
     subject(:allowed_update_with_completed) do
       job.allowed_update?(dependency, check_previous_version: check_previous_version)
@@ -996,6 +1372,360 @@ RSpec.describe Dependabot::Job do
         it "does not allow the update" do
           expect(allowed_update_with_completed).to be(false)
         end
+      end
+    end
+  end
+
+  describe "#ignore_conditions_for with blocked_versions" do
+    subject(:ignored) { job.ignore_conditions_for(dependency) }
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "event-stream",
+        package_manager: "bundler",
+        version: "3.3.5",
+        requirements: [{ file: "Gemfile", requirement: "~> 3.3", groups: [], source: nil }]
+      )
+    end
+
+    context "when blocked_versions contains a matching dependency" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            {
+              "dependency-name" => "event-stream",
+              "version-requirement" => "= 3.3.6",
+              "reason" => "malware - flatmap-stream injection"
+            }
+          ]
+        )
+      end
+
+      it "includes the blocked version as an ignore condition" do
+        expect(ignored).to include("= 3.3.6")
+      end
+    end
+
+    context "when blocked_versions contains multiple versions for the same package" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" },
+            { "dependency-name" => "event-stream", "version-requirement" => "= 4.0.0", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "includes all blocked versions" do
+        expect(ignored).to include("= 3.3.6", "= 4.0.0")
+      end
+    end
+
+    context "when blocked_versions contains a version range with greater-than" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version-requirement" => "> 2.10", "reason" => "compromised" }
+          ]
+        )
+      end
+
+      it "passes the range through as an ignore requirement" do
+        expect(ignored).to include("> 2.10")
+      end
+    end
+
+    context "when blocked_versions contains a bounded range" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            {
+              "dependency-name" => "event-stream",
+              "version-requirement" => ">= 3.0, < 4.0",
+              "reason" => "compromised series"
+            }
+          ]
+        )
+      end
+
+      it "passes the bounded range through" do
+        expect(ignored).to include(">= 3.0, < 4.0")
+      end
+    end
+
+    context "when blocked_versions contains a less-than range" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version-requirement" => "< 2.0", "reason" => "deprecated" }
+          ]
+        )
+      end
+
+      it "passes the less-than range through" do
+        expect(ignored).to include("< 2.0")
+      end
+    end
+
+    context "when blocked_versions contains a pessimistic constraint" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            {
+              "dependency-name" => "event-stream",
+              "version-requirement" => "~> 3.3.0",
+              "reason" => "vulnerable patch line"
+            }
+          ]
+        )
+      end
+
+      it "passes the pessimistic constraint through" do
+        expect(ignored).to include("~> 3.3.0")
+      end
+    end
+
+    context "when blocked_versions mixes exact and range entries" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" },
+            { "dependency-name" => "event-stream", "version-requirement" => ">= 5.0", "reason" => "hijacked major" }
+          ]
+        )
+      end
+
+      it "includes both the exact version and the range" do
+        expect(ignored).to include("= 3.3.6", ">= 5.0")
+      end
+    end
+
+    context "when blocked_versions does not match the dependency name" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "other-package", "version-requirement" => "= 1.0.0", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "does not include the blocked version" do
+        expect(ignored).not_to include("= 1.0.0")
+      end
+    end
+
+    context "when blocked_versions uses exact name matching (not wildcard)" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream*", "version-requirement" => "= 3.3.6", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "does not match wildcards in blocked version names" do
+        expect(ignored).not_to include("= 3.3.6")
+      end
+    end
+
+    context "when security_updates_only is true" do
+      let(:security_updates_only) { true }
+      let(:dependencies) { ["event-stream"] }
+
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "still includes the blocked version (blocks apply regardless of update type)" do
+        expect(ignored).to include("= 3.3.6")
+      end
+    end
+
+    context "when blocked_versions is empty" do
+      let(:attributes) do
+        super().merge(blocked_versions: [])
+      end
+
+      it "returns no additional conditions" do
+        expect(ignored).to be_empty
+      end
+    end
+
+    context "when blocked_versions contains malformed entries" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream" },
+            { "version-requirement" => "= 3.3.6" },
+            {},
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "ignores entries missing dependency-name or version-requirement" do
+        expect(ignored).to eq(["= 3.3.6"])
+      end
+    end
+
+    context "when blocked_versions contains non-string types" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => 123, "version-requirement" => "= 1.0.0" },
+            { "dependency-name" => "event-stream", "version-requirement" => nil },
+            { "dependency-name" => "event-stream", "version-requirement" => ["= 1.0"] },
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "ignores entries with non-string dependency-name or version-requirement" do
+        expect(ignored).to eq(["= 3.3.6"])
+      end
+    end
+
+    context "when blocked_versions contains empty string values" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version-requirement" => "", "reason" => "empty" },
+            { "dependency-name" => "event-stream", "version-requirement" => "  ", "reason" => "whitespace" },
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "ignores entries with empty or whitespace-only version-requirement" do
+        expect(ignored).to eq(["= 3.3.6"])
+      end
+    end
+  end
+
+  describe "#log_ignore_conditions_for with blocked_versions" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "event-stream",
+        package_manager: "bundler",
+        version: "3.3.5",
+        requirements: [{ file: "Gemfile", requirement: "~> 3.3", groups: [], source: nil }]
+      )
+    end
+
+    context "when blocked_versions contains a matching dependency" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            {
+              "dependency-name" => "event-stream",
+              "version-requirement" => "= 3.3.6",
+              "reason" => "malware - flatmap-stream injection"
+            }
+          ]
+        )
+      end
+
+      it "logs the blocked version with reason" do
+        expect(Dependabot.logger).to receive(:info).with("Blocked versions (by GitHub Security):")
+        expect(Dependabot.logger).to receive(:info)
+          .with("  = 3.3.6 - reason: malware - flatmap-stream injection")
+        job.log_ignore_conditions_for(dependency)
+      end
+    end
+
+    context "when blocked_versions has no reason" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6" }
+          ]
+        )
+      end
+
+      it "logs the blocked version without reason" do
+        expect(Dependabot.logger).to receive(:info).with("Blocked versions (by GitHub Security):")
+        expect(Dependabot.logger).to receive(:info).with("  = 3.3.6")
+        job.log_ignore_conditions_for(dependency)
+      end
+    end
+
+    context "when blocked_versions contains a range" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            {
+              "dependency-name" => "event-stream",
+              "version-requirement" => "> 2.10, < 4.0",
+              "reason" => "compromised range"
+            }
+          ]
+        )
+      end
+
+      it "logs the range requirement" do
+        expect(Dependabot.logger).to receive(:info).with("Blocked versions (by GitHub Security):")
+        expect(Dependabot.logger).to receive(:info)
+          .with("  > 2.10, < 4.0 - reason: compromised range")
+        job.log_ignore_conditions_for(dependency)
+      end
+    end
+
+    context "when no blocked versions match" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "other-pkg", "version-requirement" => "= 1.0.0", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "does not log blocked versions" do
+        expect(Dependabot.logger).not_to receive(:info).with("Blocked versions (by GitHub Security):")
+        job.log_ignore_conditions_for(dependency)
+      end
+    end
+  end
+
+  describe "#blocked_versions_for?" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "event-stream",
+        package_manager: "bundler",
+        version: "3.3.5",
+        requirements: [{ file: "Gemfile", requirement: "~> 3.3", groups: [], source: nil }]
+      )
+    end
+
+    context "when a non-empty blocked version matches the dependency" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "returns true" do
+        expect(job.blocked_versions_for?(dependency)).to be(true)
+      end
+    end
+
+    context "when no usable blocked version matches the dependency" do
+      let(:attributes) do
+        super().merge(
+          blocked_versions: [
+            { "dependency-name" => "event-stream", "version-requirement" => " ", "reason" => "empty" },
+            { "dependency-name" => "other-package", "version-requirement" => "= 1.0.0", "reason" => "malware" }
+          ]
+        )
+      end
+
+      it "returns false" do
+        expect(job.blocked_versions_for?(dependency)).to be(false)
       end
     end
   end

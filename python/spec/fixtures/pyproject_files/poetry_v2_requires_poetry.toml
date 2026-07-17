@@ -1,0 +1,19 @@
+[project]
+name = "requires-poetry-project"
+version = "0.1.0"
+description = "A project with requires-poetry constraint for Poetry v2"
+authors = [
+    {name = "Dependabot Support", email = "support@dependabot.com"}
+]
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.28.0",
+    "click>=8.1.0",
+]
+
+[tool.poetry]
+requires-poetry = ">=2.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

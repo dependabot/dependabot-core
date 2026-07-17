@@ -41,7 +41,7 @@ module Dependabot
           @path_dependency_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
           @lockfile = T.let(nil, T.nilable(Dependabot::DependencyFile))
           @toolchain = T.let(nil, T.nilable(Dependabot::DependencyFile))
-          @config = T.let(nil, T.nilable(Dependabot::DependencyFile))
+          @config_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
         end
 
         sig { returns(T.any(String, T.noreturn)) }
@@ -88,7 +88,7 @@ module Dependabot
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
         # Currently, there will only be a single updated dependency
@@ -217,10 +217,7 @@ module Dependabot
         def run_cargo_command(command, fingerprint:)
           start = Time.now
           command = SharedHelpers.escape_command(command)
-          Helpers.bypass_cargo_credential_providers
-          # Pass through any cargo registry configuration via environment variables
-          # (e.g. CARGO_REGISTRIES_CRATES_IO_PROTOCOL, CARGO_REGISTRY_GLOBAL_CREDENTIAL_PROVIDERS).
-          env = ENV.select { |key, _value| key.match(/^CARGO_REGISTR(Y|IES)_/) }
+          env = Helpers.cargo_command_env(dependency_files, credentials)
           stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
 
@@ -291,6 +288,10 @@ module Dependabot
         def using_old_toolchain?(message)
           return true if message.include?("usage of sparse registries requires `-Z sparse-registry`")
 
+          # Detect rustup installation failures for old toolchains (e.g. "syncing channel updates for 1.67-x86_64-...")
+          rustup_channel = /syncing channel updates for (?<version>\d+\.\d+)-/.match(message)
+          return version_class.new(rustup_channel[:version]) < version_class.new("1.68") if rustup_channel
+
           version_log = /rust version (?<version>\d.\d+)/.match(message)
           return false unless version_log
 
@@ -302,13 +303,15 @@ module Dependabot
           write_temporary_manifest_files
           write_temporary_path_dependency_files
 
-          File.write(lockfile.name, lockfile.content)
+          File.write(lockfile.name, replace_ssh_urls(T.must(lockfile.content)))
           File.write(T.must(toolchain).name, T.must(toolchain).content) if toolchain
-          config_file = config
-          return unless config_file
-
-          FileUtils.mkdir_p(File.dirname(config_file.name))
-          File.write(config_file.name, Helpers.sanitize_cargo_config(T.must(config_file.content)))
+          config_files.each do |config_file|
+            FileUtils.mkdir_p(File.dirname(config_file.name))
+            File.write(
+              config_file.name,
+              Helpers.sanitize_cargo_config(T.must(config_file.content), file_name: config_file.name)
+            )
+          end
         end
 
         sig { void }
@@ -389,20 +392,31 @@ module Dependabot
           TomlRB.dump(parsed_manifest)
         end
 
-        sig { params(parsed_manifest: T::Hash[String, T.untyped]).void }
+        sig { params(parsed_manifest: T::Hash[String, T.anything]).void }
         def pin_target_specific_dependencies!(parsed_manifest)
-          parsed_manifest.fetch("target", {}).each do |target, t_details|
+          toml_table_or_empty(parsed_manifest.fetch("target", {})).each do |target, t_details|
+            t_details = toml_table_or_empty(t_details)
             Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
-              t_details.fetch(type, {}).each do |name, requirement|
+              toml_table_or_empty(t_details.fetch(type, {})).each do |name, requirement|
                 next unless name == dependency.name
 
                 updated_req = "=#{dependency.version}"
 
-                if requirement.is_a?(Hash)
-                  parsed_manifest["target"][target][type][name]["version"] =
+                if T.cast(requirement, T.nilable(Object)).is_a?(Hash)
+                  toml_table_or_empty(
+                    toml_table_or_empty(
+                      toml_table_or_empty(
+                        toml_table_or_empty(parsed_manifest["target"])[target]
+                      )[type]
+                    )[name]
+                  )["version"] =
                     updated_req
                 else
-                  parsed_manifest["target"][target][type][name] = updated_req
+                  toml_table_or_empty(
+                    toml_table_or_empty(
+                      toml_table_or_empty(parsed_manifest["target"])[target]
+                    )[type]
+                  )[name] = updated_req
                 end
               end
             end
@@ -495,6 +509,12 @@ module Dependabot
           lockfile_content
         end
 
+        sig { params(value: T.anything).returns(T::Hash[String, T.anything]) }
+        def toml_table_or_empty(value)
+          obj = T.cast(value, T.nilable(Object))
+          obj.is_a?(Hash) ? obj : {}
+        end
+
         sig { returns(String) }
         def dummy_app_content
           %{fn main() {\nprintln!("Hello, world!");\n}}
@@ -536,9 +556,12 @@ module Dependabot
             dependency_files.find { |f| f.name == "rust-toolchain" }
         end
 
-        sig { returns(T.nilable(Dependabot::DependencyFile)) }
-        def config
-          @config ||= dependency_files.find { |f| f.name == ".cargo/config.toml" }
+        # Cargo merges `.cargo/config.toml` hierarchically (package directory plus
+        # every ancestor up to the repo root), so we materialise all of them and
+        # let Cargo perform the merge with its own precedence rules.
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def config_files
+          @config_files ||= dependency_files.select { |f| f.name.end_with?(".cargo/config.toml") }
         end
 
         sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }

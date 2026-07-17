@@ -1,6 +1,7 @@
+using NuGetUpdater.Core.Run;
 using NuGetUpdater.Core.Run.ApiModel;
 using NuGetUpdater.Core.Run.UpdateHandlers;
-using NuGetUpdater.Core.Run;
+
 using Xunit;
 
 namespace NuGetUpdater.Core.Test.Run.UpdateHandlers;
@@ -66,6 +67,24 @@ public class UpdateHandlerSelectionTests : UpdateHandlersTestsBase
                 DependencyGroupToRefresh = null,
                 SecurityUpdatesOnly = true,
                 UpdatingAPullRequest = false,
+            },
+            GroupUpdateAllVersionsHandler.Instance,
+        ];
+
+        // multi-ecosystem update; this short-circuits to `group_update_all_versions` even when
+        // `UpdatingAPullRequest` is true, no top-level dependencies are listed, and a group is
+        // being refreshed (regression test for "Unable to find appropriate update handler.")
+        yield return
+        [
+            new Job()
+            {
+                Source = CreateJobSource("/"),
+                Dependencies = [],
+                DependencyGroups = [new() { Name = "some-group" }],
+                DependencyGroupToRefresh = "some-group",
+                SecurityUpdatesOnly = false,
+                UpdatingAPullRequest = true,
+                MultiEcosystemUpdate = true,
             },
             GroupUpdateAllVersionsHandler.Instance,
         ];

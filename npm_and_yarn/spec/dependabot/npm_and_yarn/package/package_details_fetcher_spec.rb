@@ -110,5 +110,82 @@ RSpec.describe Dependabot::NpmAndYarn::Package::PackageDetailsFetcher do
         expect(release.latest).to be(false)
       end
     end
+
+    context "when lockfile source is private but credentials replace the base registry" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "16.6.0",
+          requirements: [{
+            requirement: "^16.0",
+            file: "package.json",
+            groups: ["dependencies"],
+            source: { type: "registry", url: "https://registry.locked.example.com/dependabot" }
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      let(:credentials) do
+        [Dependabot::Credential.new(
+          {
+            "type" => "npm_registry",
+            "registry" => "https://registry.configured.example.com/dependabot",
+            "token" => "secret_token",
+            "replaces-base" => true
+          }
+        )]
+      end
+
+      let(:registry_url) { "https://registry.configured.example.com/dependabot/#{dependency_name}" }
+
+      before do
+        stub_request(:get, registry_url)
+          .with(headers: { "Authorization" => "Bearer secret_token" })
+          .to_return(
+            status: 200,
+            body: fixture("npm_responses", "react.json")
+          )
+      end
+
+      it "uses the configured registry instead of the lockfile source" do
+        release = details.releases.find { |r| r.version.to_s == "16.6.0" }
+
+        expect(release.url).to include("registry.configured.example.com/dependabot")
+      end
+    end
+
+    context "when the registry raises Excon::Error::Socket" do
+      context "with a private registry" do
+        let(:registry_url) { "https://npm.fury.io/dependabot/react" }
+
+        before do
+          stub_request(:get, registry_url)
+            .to_raise(Excon::Error::Socket.new(EOFError.new))
+          allow_any_instance_of(described_class) # rubocop:disable RSpec/AnyInstance
+            .to receive(:dependency_registry).and_return("npm.fury.io/dependabot")
+          allow_any_instance_of(described_class) # rubocop:disable RSpec/AnyInstance
+            .to receive(:dependency_url).and_return(registry_url)
+        end
+
+        it "raises PrivateSourceTimedOut" do
+          expect { fetcher.fetch }
+            .to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
+              expect(error.source).to eq("npm.fury.io/<redacted>")
+            end
+        end
+      end
+
+      context "with the global registry" do
+        before do
+          stub_request(:get, registry_url)
+            .to_raise(Excon::Error::Socket.new(EOFError.new))
+        end
+
+        it "re-raises the Excon::Error::Socket" do
+          expect { fetcher.fetch }.to raise_error(Excon::Error::Socket)
+        end
+      end
+    end
   end
 end

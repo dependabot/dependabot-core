@@ -1,5 +1,0 @@
-version: '2'
-services:
-  hello_world:
-    image: registry-host.io:5000/myreg/ubuntu:17.04
-    command: [/bin/echo, 'Hello world']

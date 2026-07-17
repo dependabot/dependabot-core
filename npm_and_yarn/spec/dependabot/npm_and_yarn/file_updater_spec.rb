@@ -68,6 +68,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_private_registry_for_corepack).and_return(false)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:enable_audit_fix_fallback).and_return(false)
   end
 
   after do
@@ -1720,10 +1722,90 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(other_package.content).to include('"lodash": "^1.3.1"')
         end
 
-        context "with a dependency that doesn't appear in all the workspaces" do
+        context "when npm rewrites a workspace manifest but the requirement still satisfies the new version" do
+          let(:dependency_name) { "lodash" }
+          let(:version) { "1.3.1" }
+          let(:previous_version) { "1.2.0" }
+          let(:requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.2.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.2.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+
+          # This scenario also covers the lockfile-only strategy: requirements
+          # are unchanged, but npm still rewrites workspace manifests as a side
+          # effect of `npm install dep@version --workspace=... --package-lock-only`.
+          it "keeps the workspace package.json update in the returned files" do
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package-lock.json packages/package1/package.json other_package/package.json))
+
+            package1 = updated_files.find { |f| f.name == "packages/package1/package.json" }
+            expect(package1.content).to include('"lodash": "^1.3.1"')
+
+            other_package = updated_files.find { |f| f.name == "other_package/package.json" }
+            expect(other_package.content).to include('"lodash": "^1.3.1"')
+          end
+        end
+
+        context "when a workspace manifest is in updated_manifest_files and npm also rewrites it (dedup path)" do
+          let(:dependency_name) { "lodash" }
+          let(:version) { "1.3.1" }
+          let(:previous_version) { "1.2.0" }
+          # Only packages/package1 has an explicit requirement change — it will
+          # appear in updated_manifest_files. other_package's requirement is
+          # unchanged so Dependabot won't include it in updated_manifest_files,
+          # but npm rewrites both workspace manifests when running the install.
+          # The dedup check must prevent packages/package1 from appearing twice.
+          let(:requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.3.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.2.1",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+
+          it "includes each workspace manifest exactly once regardless of whether it came from Dependabot or npm" do
+            expect(updated_files.map(&:name))
+              .to match_array(%w(package-lock.json packages/package1/package.json other_package/package.json))
+
+            # packages/package1 sourced from updated_manifest_files (Dependabot's version)
+            package1 = updated_files.find { |f| f.name == "packages/package1/package.json" }
+            expect(package1.content).to include('"lodash": "^1.3.1"')
+
+            # other_package sourced from npm's workspace manifest capture
+            other_package = updated_files.find { |f| f.name == "other_package/package.json" }
+            expect(other_package.content).to include('"lodash": "^1.3.1"')
+          end
+        end
+
+        context "when the dependency is only in one workspace and npm does not rewrite the other (partial workspace)" do
           let(:dependency_name) { "chalk" }
           let(:version) { "0.4.0" }
           let(:previous_version) { "0.3.0" }
+          # chalk exists only in packages/package1; other_package has no chalk entry.
+          # npm rewrites packages/package1/package.json for chalk but leaves
+          # other_package/package.json untouched — workspace_package_json_updates
+          # returns an empty hash for other_package (empty capture path).
           let(:requirements) do
             [{
               file: "packages/package1/package.json",
@@ -1741,13 +1823,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             }]
           end
 
-          it "updates the yarn.lock and the correct package_json" do
+          it "returns only the lockfile and the workspace manifest that changed, not all workspace manifests" do
             expect(updated_files.map(&:name))
               .to match_array(%w(package-lock.json packages/package1/package.json))
 
             lockfile = updated_files.find { |f| f.name == "package-lock.json" }
-            parsed_lockfile = JSON.parse(lockfile.content)
-            expect(parsed_lockfile["dependencies"]["chalk"]["version"]).to eq("0.4.0")
+            expect(JSON.parse(lockfile.content)["dependencies"]["chalk"]["version"]).to eq("0.4.0")
           end
         end
 
@@ -2726,7 +2807,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           )
           npm_updater = instance_double(
             Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater,
-            updated_lockfile: updated_lockfile
+            updated_lockfile: updated_lockfile,
+            updated_package_json_files: {}
           )
           allow(Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater)
             .to receive(:new).and_return(npm_updater)
@@ -2954,6 +3036,74 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "updates the version" do
           expect(updated_yarn_lock.content)
             .to include(%("acorn@npm:^5.0.0, acorn@npm:^5.1.2":\n  version: 5.7.3))
+        end
+      end
+
+      context "when the target version differs from latest in range (security update)" do
+        let(:project_name) { "yarn_berry/security_update" }
+        let(:files) { project_dependency_files(project_name) }
+        let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+        let(:dependency_name) { "axios" }
+        let(:version) { "1.15.2" }
+        let(:previous_version) { "1.15.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^1.15.2",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "^1.15.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "pins to the exact target version with the caret range descriptor" do
+          parsed_lockfile = YAML.safe_load(updated_yarn_lock.content)
+          axios_entry = parsed_lockfile.find { |k, _| k.is_a?(String) && k.include?("axios") }
+
+          expect(axios_entry&.first).to include("^1.15.2")
+          expect(axios_entry&.last&.dig("version")).to eq("1.15.2")
+        end
+      end
+
+      context "when the target version differs from latest in range (version update with ignore)" do
+        let(:project_name) { "yarn_berry/security_update" }
+        let(:files) { project_dependency_files(project_name) }
+        let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+        let(:dependency_name) { "lodash" }
+        let(:version) { "4.17.10" }
+        let(:previous_version) { "4.17.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "~4.17.10",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "~4.17.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "pins to the exact target version with the tilde range descriptor" do
+          parsed_lockfile = YAML.safe_load(updated_yarn_lock.content)
+          lodash_entry = parsed_lockfile.find { |k, _| k.is_a?(String) && k.include?("lodash") }
+
+          expect(lodash_entry&.first).to include("~4.17.10")
+          expect(lodash_entry&.last&.dig("version")).to eq("4.17.10")
         end
       end
     end
@@ -3508,7 +3658,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:files) { project_dependency_files("yarn/multiple_sub_dependencies") }
 
         let(:dependency_name) { "js-yaml" }
-        let(:version) { "3.14.2" }
+        let(:version) { "3.15.0" }
         let(:previous_version) { "3.9.0" }
         let(:requirements) { [] }
         let(:previous_requirements) { nil }
@@ -3518,7 +3668,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(updated_yarn_lock.content)
             .to include(
               "js-yaml@^3.10.0, js-yaml@^3.4.6, js-yaml@^3.9.0:\n" \
-              '  version "3.14.2"'
+              '  version "3.15.0"'
             )
         end
       end
@@ -3835,7 +3985,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:project_name) { "pnpm/multiple_sub_dependencies" }
 
         let(:dependency_name) { "js-yaml" }
-        let(:version) { "3.14.2" }
+        let(:version) { "3.15.0" }
         let(:previous_version) { "3.9.0" }
         let(:requirements) { [] }
         let(:previous_requirements) { nil }
@@ -3843,7 +3993,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "de-duplicates all entries to the same version" do
           expect(updated_files.map(&:name)).to contain_exactly("pnpm-lock.yaml")
 
-          expect(updated_pnpm_lock.content).to include("js-yaml@3.14.2:\n    resolution").once
+          expect(updated_pnpm_lock.content).to include("js-yaml@3.15.0:\n    resolution").once
         end
       end
 

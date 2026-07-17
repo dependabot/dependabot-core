@@ -45,12 +45,12 @@ module Dependabot
         dependency.version
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        return additional_dependency_updated_requirements if additional_dependency?
+        return wrap_requirements(additional_dependency_updated_requirements) if additional_dependency?
 
-        dependency.requirements.map do |req|
-          source = T.cast(req[:source], T.nilable(T::Hash[Symbol, T.untyped]))
+        updated_reqs = dependency.requirements.map do |req|
+          source = T.cast(req[:source], T.nilable(T::Hash[Symbol, Object]))
           updated = updated_ref(source)
           next req unless updated
 
@@ -68,6 +68,7 @@ module Dependabot
           new_metadata = updated_comment_version_metadata(req, updated)
           req.merge(source: new_source, metadata: new_metadata)
         end
+        wrap_requirements(updated_reqs)
       end
 
       private
@@ -113,10 +114,18 @@ module Dependabot
         frozen_ver = version_from_comment
         return super unless frozen_ver
 
-        resolved_sha = latest_commit_sha
-        return true if resolved_sha && resolved_sha == dependency.version
+        # Use latest_version (which respects cooldown) for semantic comparison.
+        # This ensures that when cooldown rejects all candidates, the dependency
+        # is correctly treated as up-to-date.
+        lv = latest_version
+        return true if lv.is_a?(Dependabot::Version) && lv <= frozen_ver
 
-        false
+        resolved_sha = latest_commit_sha
+        # If no SHA can be resolved (e.g., all candidate versions rejected by cooldown),
+        # there is nothing to update to — treat as up-to-date.
+        return true unless resolved_sha
+
+        resolved_sha == dependency.version
       end
 
       sig { override.returns(T::Boolean) }
@@ -137,7 +146,7 @@ module Dependabot
             if head_commit_for_ref_sha
               head_commit_for_ref_sha
             else
-              url = T.cast(git_commit_checker.dependency_source_details&.fetch(:url), T.nilable(String))
+              url = git_commit_checker.dependency_source_details&.url
               source = T.must(Source.from_url(T.must(url)))
 
               SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
@@ -146,7 +155,7 @@ module Dependabot
                 SharedHelpers.run_shell_command("git clone --no-recurse-submodules #{url} #{repo_contents_path}")
 
                 Dir.chdir(repo_contents_path) do
-                  ref = T.cast(git_commit_checker.dependency_source_details&.fetch(:ref), T.nilable(String))
+                  ref = git_commit_checker.dependency_source_details&.ref
                   ref_branch = find_container_branch(T.must(ref))
                   git_commit_checker.head_commit_for_local_branch(ref_branch) if ref_branch
                 end
@@ -157,7 +166,7 @@ module Dependabot
         )
       end
 
-      sig { params(source: T.nilable(T::Hash[Symbol, T.untyped])).returns(T.nilable(String)) }
+      sig { params(source: T.nilable(T::Hash[Symbol, Object])).returns(T.nilable(String)) }
       def updated_ref(source)
         return unless git_commit_checker.git_dependency?
 
@@ -204,12 +213,12 @@ module Dependabot
 
       sig do
         params(
-          req: T::Hash[Symbol, T.untyped],
+          req: T::Hash[Symbol, Object],
           new_ref: String
-        ).returns(T::Hash[Symbol, T.untyped])
+        ).returns(T::Hash[Symbol, Object])
       end
       def updated_comment_version_metadata(req, new_ref)
-        existing_metadata = T.cast(req.fetch(:metadata, {}), T::Hash[Symbol, T.untyped])
+        existing_metadata = T.cast(req.fetch(:metadata, {}), T::Hash[Symbol, Object])
         comment = T.cast(existing_metadata[:comment], T.nilable(String))
         return existing_metadata unless comment
 
@@ -235,7 +244,7 @@ module Dependabot
             comment = T.let(
               @dependency.requirements
                 .filter_map do |req|
-                  val = T.cast(req.fetch(:metadata, {}), T::Hash[Symbol, T.untyped])[:comment]
+                  val = T.cast(req.fetch(:metadata, {}), T::Hash[Symbol, Object])[:comment]
                   T.cast(val, T.nilable(String))
                 end
                 .first,
@@ -301,7 +310,7 @@ module Dependabot
         requirement = dependency.requirements.first
         return false unless requirement
 
-        source = T.cast(requirement[:source], T.nilable(T::Hash[Symbol, T.untyped]))
+        source = T.cast(requirement[:source], T.nilable(T::Hash[Symbol, Object]))
         return false unless source
 
         T.cast(source[:type], T.nilable(String)) == "additional_dependency"
@@ -309,7 +318,7 @@ module Dependabot
 
       sig { returns(T.nilable(T.any(String, Gem::Version))) }
       def additional_dependency_latest_version
-        source = T.cast(dependency.requirements.first&.dig(:source), T::Hash[Symbol, T.untyped])
+        source = T.cast(dependency.requirements.first&.dig(:source), T::Hash[Symbol, Object])
         language = T.cast(source[:language], T.nilable(String))
         return nil unless language && AdditionalDependencyCheckers.supported?(language)
 
@@ -322,9 +331,9 @@ module Dependabot
         latest
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
       def additional_dependency_updated_requirements
-        source = T.cast(dependency.requirements.first&.dig(:source), T::Hash[Symbol, T.untyped])
+        source = T.cast(dependency.requirements.first&.dig(:source), T::Hash[Symbol, Object])
         language = T.cast(source[:language], T.nilable(String))
         return dependency.requirements unless language && AdditionalDependencyCheckers.supported?(language)
 
@@ -340,7 +349,7 @@ module Dependabot
       sig do
         params(
           language: String,
-          source: T::Hash[Symbol, T.untyped]
+          source: T::Hash[Symbol, Object]
         ).returns(T.nilable(Dependabot::PreCommit::AdditionalDependencyCheckers::Base))
       end
       def additional_dependency_checker(language, source)
@@ -349,7 +358,8 @@ module Dependabot
           source: source,
           credentials: credentials,
           requirements: dependency.requirements,
-          current_version: dependency.version
+          current_version: dependency.version,
+          cooldown_options: update_cooldown
         )
       rescue StandardError => e
         Dependabot.logger.error("Error creating checker for #{language}: #{e.message}")

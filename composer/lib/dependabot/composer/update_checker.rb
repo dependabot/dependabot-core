@@ -75,13 +75,15 @@ module Dependabot
         )
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        RequirementsUpdater.new(
-          requirements: dependency.requirements,
-          latest_resolvable_version: preferred_resolvable_version&.to_s,
-          update_strategy: T.must(requirements_update_strategy)
-        ).updated_requirements
+        wrap_requirements(
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            latest_resolvable_version: preferred_resolvable_version&.to_s,
+            update_strategy: T.must(requirements_update_strategy)
+          ).updated_requirements
+        )
       end
 
       sig { returns(T::Boolean) }
@@ -187,8 +189,8 @@ module Dependabot
         # we want to update that tag. The latest version will then be the SHA
         # of the latest tag that looks like a version.
         if git_commit_checker.pinned_ref_looks_like_version? &&
-           git_commit_checker.local_tag_for_latest_version
-          latest_tag = git_commit_checker.local_tag_for_latest_version
+           git_commit_checker.local_tag_for_latest_version(update_cooldown)
+          latest_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
           return latest_tag&.fetch(:commit_sha)
         end
 

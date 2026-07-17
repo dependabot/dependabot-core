@@ -109,6 +109,10 @@ module Dependabot
             raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
           end
 
+          if (match = error.message.match(/Failed to decode public key for repo "(?<repo>[a-z_]+)"/))
+            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
+          end
+
           if (match = error.message.match(/Failed to fetch record for (?<repo>[a-z_]+)(?::(?<org>[a-z_]+))?/))
             name = match[:org] || match[:repo]
             raise Dependabot::PrivateSourceAuthenticationFailure, name

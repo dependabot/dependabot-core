@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/npm_and_yarn/file_updater"
+require "dependabot/npm_and_yarn/helpers"
 
 module Dependabot
   module NpmAndYarn
@@ -11,7 +12,7 @@ module Dependabot
       # Build a .npmrc file from the lockfile content, credentials, and any
       # committed .npmrc
       # We should refactor this to use Package::RegistryFinder
-      class NpmrcBuilder
+      class NpmrcBuilder # rubocop:disable Metrics/ClassLength
         extend T::Sig
 
         CENTRAL_REGISTRIES = T.let(
@@ -37,14 +38,55 @@ module Dependabot
           @dependencies = dependencies
         end
 
+        # Generates .npmrc content solely from credential scope/replaces-base properties,
+        # without lockfile inference or auth token lines. Used by FileFetcher as a fallback
+        # when lockfile inference fails.
+        # rubocop:disable Metrics/PerceivedComplexity
+        sig { params(credentials: T::Array[Dependabot::Credential]).returns(T.nilable(String)) }
+        def self.npmrc_content_from_credentials(credentials)
+          registry_creds = credentials.select { |cred| cred.fetch("type") == "npm_registry" }
+          replaces_base_cred = registry_creds.find(&:replaces_base?)
+          scoped_credentials = registry_creds.select { |cred| cred.scope && cred["registry"] }
+          return if replaces_base_cred.nil? && scoped_credentials.empty?
+
+          lines = T.let([], T::Array[String])
+
+          if replaces_base_cred
+            registry = replaces_base_cred.fetch("registry")
+            registry_url = registry.start_with?("http") ? registry : "https://#{registry}"
+            lines << "registry=#{registry_url}"
+          end
+
+          scoped_credentials.each do |cred|
+            registry = cred.fetch("registry")
+            registry_url = registry.start_with?("http") ? registry : "https://#{registry}"
+            T.must(cred.scope).each do |s|
+              lines << "#{Helpers.normalize_npm_scope(s)}:registry=#{registry_url}"
+            end
+          end
+
+          lines.join("\n")
+        end
+        # rubocop:enable Metrics/PerceivedComplexity
+
         # PROXY WORK
+        # rubocop:disable Metrics/PerceivedComplexity
         sig { returns(String) }
         def npmrc_content
+          # When credentials have explicit scope, always generate from credentials
+          # (overrides committed .npmrc and lockfile inference)
+          if credentials_have_scope?
+            Dependabot.logger.info(
+              "Generating .npmrc from credential scope configuration (committed .npmrc ignored)"
+            )
+            return build_npmrc_from_scope_credentials
+          end
+
           initial_content =
             if npmrc_file then complete_npmrc_from_credentials
             elsif yarnrc_file then build_npmrc_from_yarnrc
             else
-              build_npmrc_content_from_lockfile
+              build_npmrc_content_from_lockfile || build_npmrc_content_from_credential_scopes
             end
 
           final_content = initial_content || ""
@@ -59,6 +101,7 @@ module Dependabot
 
           final_content
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         # PROXY WORK
         # Yarn allows registries to be defined either in an .npmrc or .yarnrc
@@ -86,6 +129,30 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
 
+        sig { returns(T::Boolean) }
+        def credentials_have_scope?
+          registry_credentials.any?(&:scope)
+        end
+
+        sig { returns(String) }
+        def build_npmrc_from_scope_credentials
+          content = T.must(NpmrcBuilder.npmrc_content_from_credentials(credentials))
+
+          # Append auth lines for all configured registries
+          lines = [content]
+          registry_credentials.each do |cred|
+            token = cred.fetch("token", nil)
+            next unless token
+
+            lines << auth_line(token, cred.fetch("registry"))
+          end
+
+          replaces_base_cred = registry_credentials.find(&:replaces_base?)
+          lines << "always-auth = true" if replaces_base_cred
+
+          lines.reject(&:empty?).join("\n")
+        end
+
         sig { returns(T.nilable(String)) }
         def build_npmrc_content_from_lockfile
           return unless yarn_lock || package_lock || shrinkwrap
@@ -96,6 +163,17 @@ module Dependabot
           "registry = #{registry}\n" \
             "#{npmrc_global_registry_auth_line}" \
             "always-auth = true"
+        end
+
+        sig { returns(T.nilable(String)) }
+        def build_npmrc_content_from_credential_scopes
+          content = NpmrcBuilder.npmrc_content_from_credentials(credentials)
+          return unless content
+
+          replaces_base_cred = registry_credentials.find(&:replaces_base?)
+          return content unless replaces_base_cred
+
+          "#{content}\nalways-auth = true"
         end
 
         sig { returns(T.nilable(String)) }
@@ -334,11 +412,25 @@ module Dependabot
           )
         end
 
+        sig { params(registry: String).returns(T.nilable(T::Array[String])) }
+        def credential_scopes_for(registry)
+          cred = registry_credentials.find { |c| c["registry"] == registry }
+          return unless cred&.scope
+
+          registry_url = registry.start_with?("http") ? registry : "https://#{registry}"
+          T.must(cred.scope).map { |s| "#{Helpers.normalize_npm_scope(s)}:registry=#{registry_url}" }
+        end
+
         # rubocop:disable Metrics/PerceivedComplexity
         sig { params(registry: String).returns(T.nilable(T::Array[String])) }
         def registry_scopes(registry)
           # Central registries don't just apply to scopes
           return if CENTRAL_REGISTRIES.include?(registry)
+
+          # Use explicit scope from credential if available
+          explicit = credential_scopes_for(registry)
+          return explicit if explicit
+
           return unless dependency_urls
 
           other_regs =

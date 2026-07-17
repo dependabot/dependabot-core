@@ -26,7 +26,7 @@ module Dependabot
         [new(requirement_string)]
       end
 
-      sig { params(dep_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { params(dep_string: String).returns(T.nilable(T::Hash[Symbol, T.nilable(String)])) }
       def self.parse_dep_string(dep_string)
         stripped = dep_string.strip
         return nil if stripped.empty?

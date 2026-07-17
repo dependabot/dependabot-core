@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 
+require "dependabot/dependency_requirement"
 require "dependabot/hex/version"
 require "dependabot/hex/requirement"
 require "dependabot/hex/update_checker"
@@ -20,7 +21,7 @@ module Dependabot
 
         sig do
           params(
-            requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            requirements: T::Array[Dependabot::DependencyRequirement],
             latest_resolvable_version: T.nilable(String),
             updated_source: T.nilable(T::Hash[Symbol, T.nilable(String)])
           ).void
@@ -30,7 +31,10 @@ module Dependabot
           latest_resolvable_version:,
           updated_source:
         )
-          @requirements = T.let(requirements, T::Array[T::Hash[Symbol, T.untyped]])
+          @requirements = T.let(
+            requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
+            T::Array[Dependabot::DependencyRequirement]
+          )
           @updated_source = T.let(updated_source, T.nilable(T::Hash[Symbol, T.nilable(String)]))
           @latest_resolvable_version = T.let(nil, T.nilable(Dependabot::Version))
 
@@ -40,14 +44,14 @@ module Dependabot
           @latest_resolvable_version = Hex::Version.new(latest_resolvable_version)
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_requirements
           requirements.map { |req| updated_mixfile_requirement(req) }
         end
 
         private
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :requirements
 
         sig { returns(T.nilable(Dependabot::Version)) }
@@ -58,7 +62,7 @@ module Dependabot
 
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def updated_mixfile_requirement(req)
           req = update_source(req)
           return req unless latest_resolvable_version && req[:requirement]
@@ -81,18 +85,20 @@ module Dependabot
 
           new_requirement = req[:requirement] + " or " + new_requirement if or_string_reqs.count > 1
 
-          req.merge(requirement: new_requirement)
+          Dependabot::DependencyRequirement.create(req.merge(requirement: new_requirement))
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
 
-        sig { params(requirement_hash: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+        sig do
+          params(requirement_hash: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement)
+        end
         def update_source(requirement_hash)
           # Only git sources ever need to be updated. Anything else should be
           # left alone.
           return requirement_hash unless requirement_hash.dig(:source, :type) == "git"
 
-          requirement_hash.merge(source: updated_source)
+          Dependabot::DependencyRequirement.create(requirement_hash.merge(source: updated_source))
         end
 
         sig { params(requirement_string: String).returns(T::Boolean) }

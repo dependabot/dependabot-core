@@ -113,6 +113,26 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
       .with(headers: { "Authorization" => "Bearer #{token}" })
   end
 
+  it "also accepts terraform_registry credentials so existing configs keep working" do
+    hostname = "registry.example.org"
+    token = SecureRandom.hex(16)
+    credentials = [{ "type" => "terraform_registry", "host" => hostname, "token" => token }]
+
+    stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
+      body: {
+        "modules.v1": "/v1/modules/",
+        "providers.v1": "/v1/providers/"
+      }.to_json
+    )
+    stub_request(:get, "https://#{hostname}/v1/providers/x/y/versions")
+      .and_return(body: { id: "x/y", versions: [{ version: "0.1.0" }] }.to_json)
+    client = described_class.new(hostname: hostname, credentials: credentials)
+
+    expect(client.all_provider_versions(identifier: "x/y")).to contain_exactly(Gem::Version.new("0.1.0"))
+    expect(WebMock).to have_requested(:get, "https://#{hostname}/v1/providers/x/y/versions")
+      .with(headers: { "Authorization" => "Bearer #{token}" })
+  end
+
   it "fetches module versions", :vcr do
     response = client.all_module_versions(identifier: "hashicorp/consul/aws")
     expect(response.max).to eq(Gem::Version.new("0.10.1"))
@@ -157,6 +177,31 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
 
     expect(source).to be_a Dependabot::Source
     expect(source.url).to eq("https://github.com/hashicorp/terraform-aws-consul")
+  end
+
+  it "handles a relative X-OpenTofu-Get header without a type error" do
+    download_url = "https://api.opentofu.org/registry/docs/modules/hashicorp/consul/aws/0.9.3/download"
+    stub_request(:get, download_url).and_return(
+      status: 204,
+      headers: { "X-OpenTofu-Get" => "/registry/docs/modules/hashicorp/consul/aws/0.9.3/download.zip" }
+    )
+    dependency = Dependabot::Dependency.new(
+      name: "hashicorp/consul/aws",
+      version: "0.9.3",
+      package_manager: "opentofu",
+      requirements: [{
+        requirement: "0.9.3",
+        groups: [],
+        file: "main.tf",
+        source: {
+          type: "registry",
+          registry_hostname: "registry.opentofu.org",
+          module_identifier: "hashicorp/consul/aws"
+        }
+      }]
+    )
+
+    expect { client.source(dependency: dependency) }.not_to raise_error
   end
 
   it "fetches the source for a provider dependency", :vcr do
@@ -234,6 +279,96 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
       expect do
         client.all_module_versions(identifier: "corp/package")
       end.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+    end
+  end
+
+  describe "#all_provider_package_hashes" do
+    let(:metadata_url) { "https://registry.opentofu.org/.well-known/terraform.json" }
+    let(:download_url) { "https://registry.opentofu.org/v1/providers/hashicorp/aws/3.42.0/download/linux/amd64" }
+
+    before do
+      stub_request(:get, metadata_url).and_return(
+        status: 200,
+        body: {
+          "modules.v1": "/v1/modules/",
+          "providers.v1": "/v1/providers/"
+        }.to_json
+      )
+    end
+
+    it "returns platform-to-hashes map when packages field is present" do
+      stub_request(:get, download_url).and_return(
+        status: 200,
+        body: {
+          os: "linux",
+          arch: "amd64",
+          packages: {
+            "linux_amd64" => {
+              "hashes" => ["h1:abc123=", "zh:def456"],
+              "package_size" => 100_000
+            },
+            "darwin_arm64" => {
+              "hashes" => ["h1:xyz789=", "zh:ghi012"],
+              "package_size" => 90_000
+            }
+          }
+        }.to_json
+      )
+
+      result = client.all_provider_package_hashes(identifier: "hashicorp/aws", version: "3.42.0")
+
+      expect(result).to eq(
+        "linux_amd64" => ["h1:abc123=", "zh:def456"],
+        "darwin_arm64" => ["h1:xyz789=", "zh:ghi012"]
+      )
+    end
+
+    it "returns nil when packages field is absent (e.g. Terraform registry)" do
+      stub_request(:get, download_url).and_return(
+        status: 200,
+        body: {
+          os: "linux",
+          arch: "amd64",
+          filename: "terraform-provider-aws_3.42.0_linux_amd64.zip",
+          shasum: "abc123"
+        }.to_json
+      )
+
+      result = client.all_provider_package_hashes(identifier: "hashicorp/aws", version: "3.42.0")
+
+      expect(result).to be_nil
+    end
+
+    it "sends auth token when credentials are configured" do
+      hostname = "registry.example.org"
+      token = SecureRandom.hex(16)
+      credentials = [{ "type" => "opentofu_registry", "host" => hostname, "token" => token }]
+
+      stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
+        body: {
+          "modules.v1": "/v1/modules/",
+          "providers.v1": "/v1/providers/"
+        }.to_json
+      )
+      stub_request(:get, "https://#{hostname}/v1/providers/corp/thing/1.0.0/download/linux/amd64")
+        .and_return(
+          status: 200,
+          body: {
+            os: "linux",
+            arch: "amd64",
+            packages: {
+              "linux_amd64" => { "hashes" => ["h1:foo="] }
+            }
+          }.to_json
+        )
+
+      authed_client = described_class.new(hostname: hostname, credentials: credentials)
+      result = authed_client.all_provider_package_hashes(identifier: "corp/thing", version: "1.0.0")
+
+      expect(result).to eq("linux_amd64" => ["h1:foo="])
+      expect(WebMock).to have_requested(
+        :get, "https://#{hostname}/v1/providers/corp/thing/1.0.0/download/linux/amd64"
+      ).with(headers: { "Authorization" => "Bearer #{token}" })
     end
   end
 
@@ -323,6 +458,49 @@ RSpec.describe Dependabot::Opentofu::RegistryClient do
           client.service_url_for_registry("providers.v1")
         end.to raise_error(Dependabot::DependabotError, /does not support required service/)
       end
+    end
+  end
+
+  describe ".all_oci_tags" do
+    it "accepts terraform_registry credentials for OCI tag listing" do
+      host = "registry.example.org"
+      token = SecureRandom.hex(16)
+      credentials = [Dependabot::Credential.new({ "type" => "terraform_registry", "host" => host, "token" => token })]
+
+      stub_request(:get, "https://#{host}/v2/example/module/tags/list")
+        .with(headers: { "Authorization" => "Bearer #{token}" })
+        .and_return(status: 200, body: { tags: ["1.0.0"] }.to_json)
+
+      tags = described_class.all_oci_tags(
+        artifact_identifier: "#{host}/example/module",
+        credentials: credentials
+      )
+
+      expect(tags).to contain_exactly(Gem::Version.new("1.0.0"))
+      expect(WebMock).to have_requested(:get, "https://#{host}/v2/example/module/tags/list")
+        .with(headers: { "Authorization" => "Bearer #{token}" })
+    end
+
+    it "uses the last matching credential when multiple credentials match the same host" do
+      host = "registry.example.org"
+      first_token = SecureRandom.hex(16)
+      last_token = SecureRandom.hex(16)
+      credentials = [
+        Dependabot::Credential.new({ "type" => "opentofu_registry", "host" => host, "token" => first_token }),
+        Dependabot::Credential.new({ "type" => "terraform_registry", "host" => host, "token" => last_token })
+      ]
+
+      stub_request(:get, "https://#{host}/v2/example/module/tags/list")
+        .with(headers: { "Authorization" => "Bearer #{last_token}" })
+        .and_return(status: 200, body: { tags: ["1.0.0"] }.to_json)
+
+      described_class.all_oci_tags(
+        artifact_identifier: "#{host}/example/module",
+        credentials: credentials
+      )
+
+      expect(WebMock).to have_requested(:get, "https://#{host}/v2/example/module/tags/list")
+        .with(headers: { "Authorization" => "Bearer #{last_token}" })
     end
   end
 end

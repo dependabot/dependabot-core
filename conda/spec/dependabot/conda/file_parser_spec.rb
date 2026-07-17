@@ -340,6 +340,59 @@ RSpec.describe Dependabot::Conda::FileParser do
       end
     end
 
+    context "with compound version constraints (>=X,<=Y)" do
+      let(:environment_content) { fixture("environment_compound_constraints.yml") }
+
+      it "does not treat compound constraints as fully qualified specs" do
+        dependencies = parser.parse
+
+        # Compound constraints like >=0.24.1,<=0.25.0 have 2+ '=' characters
+        # but are NOT fully qualified build-string specs
+        expect(dependencies).not_to be_empty
+      end
+
+      it "parses all conda dependencies correctly" do
+        dependencies = parser.parse
+        conda_deps = dependencies.select { |d| d.package_manager == "conda" }
+
+        expect(conda_deps.map(&:name)).to include(
+          "eccodes", "cartopy", "h5py", "numpy", "pandas", "xarray", "scipy"
+        )
+      end
+
+      it "parses pip dependencies alongside compound conda constraints" do
+        dependencies = parser.parse
+        pip_deps = dependencies.select { |d| d.package_manager == "pip" }
+
+        expect(pip_deps.map(&:name)).to include("hmmlearn")
+      end
+
+      it "preserves compound constraint strings in requirements" do
+        dependencies = parser.parse
+        cartopy_dep = dependencies.find { |dep| dep.name == "cartopy" }
+
+        expect(cartopy_dep).not_to be_nil
+        expect(cartopy_dep.requirements.first[:requirement]).to eq(">=0.24.1,<=0.25.0")
+      end
+    end
+
+    context "with compound constraints and digits-only upper bounds (>=X,<=Y)" do
+      let(:environment_content) do
+        <<~YAML
+          dependencies:
+            - pkg>=6,<=7
+        YAML
+      end
+
+      it "does not treat digits-only upper bounds as fully qualified specs" do
+        dependencies = parser.parse
+        pkg_dep = dependencies.find { |dep| dep.name == "pkg" }
+
+        expect(pkg_dep).not_to be_nil
+        expect(pkg_dep.requirements.first[:requirement]).to eq(">=6,<=7")
+      end
+    end
+
     context "with compatible release operator (~=) for conda packages" do
       let(:environment_content) do
         <<~YAML

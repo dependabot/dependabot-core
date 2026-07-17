@@ -85,6 +85,13 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       end
     end
 
+    context "when the npm registry returns a bare JSON string body" do
+      let(:npm_latest_version_response) { '"Not Found"' }
+      let(:npm_all_versions_response) { '"Not Found"' }
+
+      it { is_expected.to be_nil }
+    end
+
     context "when there is a github link in the npm response" do
       let(:npm_latest_version_response) do
         fixture("npm_responses", "etag-1.0.0.json")
@@ -459,6 +466,67 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         expect(source_url).to eq("https://github.com/jshttp/etag")
       end
     end
+
+    context "when the latest listing is unavailable and the all-versions fallback repeats a dead homepage" do
+      let(:npm_latest_version_response) { nil }
+      let(:npm_all_versions_response) do
+        JSON.dump(
+          {
+            "versions" => {
+              "2.0.0" => {
+                "homepage" => "https://typescript-eslint.io/typescript-eslint/typescript-eslint",
+                "bugs" => { "url" => "https://typescript-eslint.io/typescript-eslint/issues" }
+              },
+              "1.0.0" => {
+                "homepage" => "https://typescript-eslint.io/typescript-eslint/typescript-eslint",
+                "bugs" => { "url" => "https://typescript-eslint.io/typescript-eslint/issues" }
+              }
+            }
+          }
+        )
+      end
+
+      before do
+        stub_request(:get, npm_url + "/latest")
+          .to_return(status: 404, body: '{"error":"Not found"}')
+        stub_request(:get, "https://typescript-eslint.io/status").to_return(status: 404)
+      end
+
+      it "probes the repeated homepage host at most once" do
+        expect(source_url).to be_nil
+        expect(WebMock).to have_requested(:get, "https://typescript-eslint.io/status").once
+      end
+    end
+
+    context "when the latest listing is unavailable but the first all-versions repository resolves" do
+      let(:npm_latest_version_response) { nil }
+      let(:npm_all_versions_response) do
+        JSON.dump(
+          {
+            "versions" => {
+              "2.0.0" => {
+                "repository" => { "url" => "typescript-eslint/typescript-eslint" },
+                "homepage" => "https://typescript-eslint.io/typescript-eslint/typescript-eslint"
+              },
+              "1.0.0" => {
+                "homepage" => "https://typescript-eslint.io/typescript-eslint/typescript-eslint"
+              }
+            }
+          }
+        )
+      end
+
+      before do
+        stub_request(:get, npm_url + "/latest")
+          .to_return(status: 404, body: '{"error":"Not found"}')
+        stub_request(:get, "https://typescript-eslint.io/status").to_return(status: 404)
+      end
+
+      it "returns the repository source without probing the homepage" do
+        expect(source_url).to eq("https://github.com/typescript-eslint/typescript-eslint")
+        expect(WebMock).not_to have_requested(:get, "https://typescript-eslint.io/status")
+      end
+    end
   end
 
   describe "#homepage_url" do
@@ -523,6 +591,36 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
           "This version was pushed to npm by " \
           "[dougwilson](https://www.npmjs.com/~dougwilson), a new releaser " \
           "for etag since your current version."
+        )
+      end
+    end
+
+    context "when the maintainer name contains spaces" do
+      let(:dependency_name) { "npm-package-json-lint" }
+      let(:npm_url) { "https://registry.npmjs.org/npm-package-json-lint" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "10.0.0",
+          previous_version: "9.0.0",
+          requirements: [{
+            file: "package.json",
+            requirement: "^10.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:npm_all_versions_response) do
+        fixture("npm_responses", "npm-package-json-lint.json")
+      end
+
+      it "properly URL-encodes the maintainer name in the link" do
+        expect(maintainer_changes).to eq(
+          "This version was pushed to npm by " \
+          "[GitHub Actions](https://www.npmjs.com/~GitHub%20Actions), a new releaser " \
+          "for npm-package-json-lint since your current version."
         )
       end
     end
@@ -931,8 +1029,8 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         )]
       end
 
-      it "uses source from lockfile, not credentials" do
-        expect(dependency_url).to eq("https://npm.fury.io/dependabot/etag")
+      it "uses replaces-base credentials, not source from lockfile" do
+        expect(dependency_url).to eq("https://different.registry.com/etag")
       end
     end
   end

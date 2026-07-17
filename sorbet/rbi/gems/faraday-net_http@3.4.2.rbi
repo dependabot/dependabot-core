@@ -5,68 +5,64 @@
 # Please instead update this file by running `bin/tapioca gem faraday-net_http`.
 
 
-# source://faraday-net_http//lib/faraday/adapter/net_http.rb#12
+# pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:12
 module Faraday; end
 
-# source://faraday-net_http//lib/faraday/adapter/net_http.rb#13
+# pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:13
 class Faraday::Adapter; end
 
-# source://faraday-net_http//lib/faraday/adapter/net_http.rb#14
+# pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:14
 class Faraday::Adapter::NetHttp < ::Faraday::Adapter
-  # @return [NetHttp] a new instance of NetHttp
-  #
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#38
+  # pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:38
   def initialize(app = T.unsafe(nil), opts = T.unsafe(nil), &block); end
 
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#43
+  # pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:43
   def build_connection(env); end
 
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#63
+  # pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:63
   def call(env); end
 
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#50
+  # pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:50
   def net_http_connection(env); end
 
   private
 
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#152
+  # pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:152
   def configure_request(http, req); end
 
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#131
+  # pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:131
   def configure_ssl(http, ssl); end
 
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#79
+  # pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:79
   def create_request(env); end
 
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#189
+  # pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:189
   def encoded_body(http_response); end
 
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#95
+  # pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:95
   def perform_request(http, env); end
 
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#109
+  # pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:109
   def request_with_wrapped_block(http, env, &block); end
 
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#121
+  # pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:121
   def save_http_response(env, http_response); end
 
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#172
+  # pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:172
   def ssl_cert_store(ssl); end
 
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#179
+  # pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:179
   def ssl_verify_mode(ssl); end
 
-  # @return [Boolean]
-  #
-  # source://faraday-net_http//lib/faraday/adapter/net_http.rb#201
+  # pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:201
   def verify_hostname_enabled?(http, ssl); end
 end
 
-# source://faraday-net_http//lib/faraday/adapter/net_http.rb#36
+# pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:36
 Faraday::Adapter::NetHttp::NET_HTTP_EXCEPTIONS = T.let(T.unsafe(nil), Array)
 
-# source://faraday-net_http//lib/faraday/net_http/version.rb#4
+# pkg:gem/faraday-net_http#lib/faraday/net_http/version.rb:4
 module Faraday::NetHttp; end
 
-# source://faraday-net_http//lib/faraday/net_http/version.rb#5
+# pkg:gem/faraday-net_http#lib/faraday/net_http/version.rb:5
 Faraday::NetHttp::VERSION = T.let(T.unsafe(nil), String)

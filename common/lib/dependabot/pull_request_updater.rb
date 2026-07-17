@@ -37,7 +37,10 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     attr_reader :signature_key
 
-    sig { returns(T::Hash[Symbol, T.untyped]) }
+    sig { returns(T.nilable(String)) }
+    attr_reader :commit_message
+
+    sig { returns(T::Hash[Symbol, Integer]) }
     attr_reader :provider_metadata
 
     sig do
@@ -50,7 +53,8 @@ module Dependabot
         pull_request_number: Integer,
         author_details: T.nilable(T::Hash[Symbol, String]),
         signature_key: T.nilable(String),
-        provider_metadata: T::Hash[Symbol, T.untyped]
+        commit_message: T.nilable(String),
+        provider_metadata: T::Hash[Symbol, Integer]
       )
         .void
     end
@@ -63,6 +67,7 @@ module Dependabot
       pull_request_number:,
       author_details: nil,
       signature_key: nil,
+      commit_message: nil,
       provider_metadata: {}
     )
       @source              = source
@@ -73,12 +78,13 @@ module Dependabot
       @pull_request_number = pull_request_number
       @author_details      = author_details
       @signature_key       = signature_key
+      @commit_message      = commit_message
       @provider_metadata   = provider_metadata
     end
 
     # TODO: Each implementation returns a client-specific type.
     #       We should standardise this to return a `Dependabot::Branch` type instead.
-    sig { returns(T.untyped) }
+    sig { returns(T.untyped) } # rubocop:disable Sorbet/ForbidTUntyped
     def update
       case source.provider
       when "github" then github_updater.update
@@ -100,7 +106,8 @@ module Dependabot
         credentials: credentials,
         pull_request_number: pull_request_number,
         author_details: author_details,
-        signature_key: signature_key
+        signature_key: signature_key,
+        commit_message: commit_message
       )
     end
 
@@ -113,7 +120,7 @@ module Dependabot
         files: files,
         credentials: credentials,
         pull_request_number: pull_request_number,
-        target_project_id: T.cast(provider_metadata[:target_project_id], T.nilable(Integer))
+        target_project_id: provider_metadata[:target_project_id]
       )
     end
 

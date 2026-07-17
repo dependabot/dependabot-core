@@ -1,0 +1,14 @@
+[project]
+name = "myapp"
+version = "1.0.0"
+description = "Test project with PEP 621 dependencies"
+requires-python = ">=3.10"
+
+dependencies = [
+    "requests>=2.13.0,<3.0",
+    "urllib3>=1.21.1",
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

@@ -184,18 +184,18 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
         it { is_expected.to eq(Gem::Version.new("3.2.4")) }
 
         context "when the version is set to the oldest version of python supported by Dependabot" do
-          let(:python_version_content) { "3.9.0\n" }
+          let(:python_version_content) { "3.10.0\n" }
 
           it { is_expected.to eq(Gem::Version.new("3.2.4")) }
         end
 
         context "when the version is set to a python version no longer supported by Dependabot" do
-          let(:python_version_content) { "3.8.0\n" }
+          let(:python_version_content) { "3.9.0\n" }
 
           it "raises a helpful error" do
             expect { latest_resolvable_version }.to raise_error(Dependabot::ToolVersionNotSupported) do |err|
               expect(err.message).to start_with(
-                "Dependabot detected the following Python requirement for your project: '3.8.0'."
+                "Dependabot detected the following Python requirement for your project: '3.9.0'."
               )
             end
           end
@@ -756,6 +756,42 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
             groups: [],
             source: nil
           }
+        )
+      end
+    end
+
+    context "when the requirement was in a workspace member pyproject.toml" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject_fixture_name) { "standard_python_tilde_version.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "1.2.3",
+          requirements: [{
+            file: "schema/pyproject.toml",
+            requirement: "~=1.0.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "uv"
+        )
+      end
+      let(:pypi_url) { "https://pypi.org/simple/requests/" }
+      let(:pypi_response) do
+        fixture("pypi", "pypi_simple_response_requests.html")
+      end
+
+      before do
+        stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+          .to_return(status: 404)
+      end
+
+      it "updates the workspace member pyproject requirement" do
+        expect(first_updated_requirements).to eq(
+          file: "schema/pyproject.toml",
+          requirement: "~=2.19.1",
+          groups: [],
+          source: nil
         )
       end
     end

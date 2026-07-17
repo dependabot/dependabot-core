@@ -3,6 +3,6 @@ artifacts/
 bin/
 obj/
 Properties/launchSettings.json
-NuGetUpdater.sln.DotSettings.user
+NuGetUpdater.slnx.DotSettings.user
 NuGetUpdater.Core/dotnet-package-correlation.json
 *.binlog

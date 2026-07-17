@@ -12,6 +12,7 @@ require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
+require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
 
 module Dependabot
   module NpmAndYarn
@@ -79,16 +80,27 @@ module Dependabot
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
-      def fetch_files
+      def fetch_files # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
         fetched_files = T.let([], T::Array[DependencyFile])
         fetched_files << package_json
-        fetched_files << T.must(npmrc) if npmrc
+        fetched_files << T.must(npmrc) if npmrc && !scope_overrides_npmrc?
         fetched_files += npm_files if npm_version
         fetched_files += yarn_files if yarn_version
         fetched_files += pnpm_files if pnpm_version
         fetched_files += lerna_files
         fetched_files += workspace_package_jsons
         fetched_files += path_dependencies(fetched_files)
+
+        # When no package manager version is detected at all (no lockfile, no
+        # packageManager, no engines) AND no committed .npmrc exists, the
+        # inferred_npmrc path inside npm_files is never reached. Try generating
+        # an .npmrc from scope credentials, or reject if no config is available.
+        # Skip for yarn/pnpm-only projects where npm isn't the relevant manager.
+        if no_package_manager_detected? && npmrc.nil?
+          generated = inferred_npmrc
+          fetched_files << generated if generated
+          reject_if_private_registry_without_config! unless generated
+        end
 
         # Filter excluded files from final collection
         filtered_files = fetched_files.uniq.reject do |file|
@@ -137,15 +149,35 @@ module Dependabot
         fetched_lerna_files
       end
 
-      # If every entry in the lockfile uses the same registry, we can infer
-      # that there is a global .npmrc file, so add it here as if it were in the repo.
+      # Generates or infers an .npmrc file for the project.
+      # Priority order:
+      #   1. If credentials have `scope` → generate from credentials (authoritative, overrides everything)
+      #   2. If no `scope` AND `.npmrc` in repo → return nil (committed file handled upstream)
+      #   3. If no `scope` AND no `.npmrc` → try lockfile inference (transitional)
+      #   4. If nothing works → return nil
 
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/CyclomaticComplexity
+      # rubocop:disable Metrics/MethodLength
       sig { returns(T.nilable(DependencyFile)) }
       def inferred_npmrc # rubocop:disable Metrics/PerceivedComplexity
         return @inferred_npmrc if defined?(@inferred_npmrc)
-        return @inferred_npmrc ||= T.let(nil, T.nilable(DependencyFile)) unless npmrc.nil? && package_lock
+
+        if Dependabot::Experiments.enabled?(:enable_npmrc_credential_generation) && credentials_have_scope?
+          npmrc_from_credentials = generate_npmrc_from_credentials
+          if npmrc_from_credentials
+            Dependabot.logger.warn("Generated .npmrc from credential scope configuration (overrides committed .npmrc)")
+            return @inferred_npmrc ||= T.let(npmrc_from_credentials, T.nilable(DependencyFile))
+          end
+        end
+
+        unless npmrc.nil? && package_lock
+          # If .npmrc exists in the repo, it handles things — no rejection needed.
+          # If no .npmrc AND no lockfile, we can't infer, so check for rejection.
+          reject_if_private_registry_without_config! if npmrc.nil?
+          return @inferred_npmrc ||= T.let(nil, T.nilable(DependencyFile))
+        end
 
         known_registries = []
         FileParser::JsonLock.new(T.must(package_lock)).parsed.fetch(
@@ -157,9 +189,6 @@ module Dependabot
           begin
             uri = URI.parse(resolved)
           rescue URI::InvalidURIError
-            # Ignoring non-URIs since they're not registries.
-            # This can happen if resolved is `false`, for instance
-            # npm6 bug https://github.com/npm/cli/issues/1138
             next
           end
 
@@ -187,10 +216,93 @@ module Dependabot
           )
         end
 
+        # Lockfile inference failed — fall back to replaces-base credential generation
+        if Dependabot::Experiments.enabled?(:enable_npmrc_credential_generation)
+          npmrc_from_credentials = generate_npmrc_from_credentials
+          if npmrc_from_credentials
+            Dependabot.logger.info("Generated .npmrc from credential replaces-base configuration")
+            return @inferred_npmrc ||= npmrc_from_credentials
+          end
+        end
+
+        # Phase 3: Reject updates when private registries exist but no config is resolvable
+        reject_if_private_registry_without_config!
+
         @inferred_npmrc ||= nil
       end
+      # rubocop:enable Metrics/MethodLength
+      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
+
+      sig { returns(T.nilable(DependencyFile)) }
+      def generate_npmrc_from_credentials
+        content = NpmAndYarn::FileUpdater::NpmrcBuilder.npmrc_content_from_credentials(wrapped_credentials)
+        return unless content
+
+        Dependabot::DependencyFile.new(
+          name: ".npmrc",
+          content: content
+        )
+      end
+
+      sig { void }
+      def reject_if_private_registry_without_config! # rubocop:disable Metrics/PerceivedComplexity
+        return unless Dependabot::Experiments.enabled?(:enable_npmrc_credential_generation)
+        return if credentials_have_scope?
+        return if wrapped_credentials.any?(&:replaces_base?)
+
+        private_registry_creds = wrapped_credentials.select do |cred|
+          next false unless cred["type"] == "npm_registry"
+
+          registry = cred["registry"]
+          next false if registry.nil?
+
+          # Normalize: strip scheme to compare against CENTRAL_REGISTRIES (bare hostnames)
+          normalized = registry.sub(%r{^https?://}, "")
+          !NpmAndYarn::FileUpdater::NpmrcBuilder::CENTRAL_REGISTRIES.include?(normalized)
+        end
+        return if private_registry_creds.empty?
+
+        registry = private_registry_creds.first&.fetch("registry", nil) || "unknown"
+        raise Dependabot::PrivateRegistryConfigNotFound, registry
+      end
+
+      sig { returns(T::Boolean) }
+      def credentials_have_scope?
+        wrapped_credentials.any? { |cred| cred["type"] == "npm_registry" && cred.scope&.any? }
+      end
+
+      # file_fetcher_command.rb may pass raw Hashes as credentials at runtime.
+      # Wrap them in Credential objects so we can use .scope and .replaces_base? safely.
+      # Credential#initialize destructively removes "scope"/"replaces-base" keys, so we .dup first.
+      sig { returns(T::Array[Dependabot::Credential]) }
+      def wrapped_credentials
+        @wrapped_credentials ||= T.let(
+          credentials.map { |cred| ensure_credential(cred) },
+          T.nilable(T::Array[Dependabot::Credential])
+        )
+      end
+
+      sig do
+        params(cred: T.any(Dependabot::Credential, T::Hash[String, T.untyped]))
+          .returns(Dependabot::Credential)
+      end
+      def ensure_credential(cred)
+        return cred if cred.is_a?(Dependabot::Credential)
+
+        Dependabot::Credential.new(cred.dup)
+      end
+
+      sig { returns(T::Boolean) }
+      def scope_overrides_npmrc?
+        Dependabot::Experiments.enabled?(:enable_npmrc_credential_generation) && credentials_have_scope?
+      end
+
+      sig { returns(T::Boolean) }
+      def no_package_manager_detected?
+        !npm_version && !yarn_version && !pnpm_version
+      end
 
       sig { returns(T.nilable(T.any(Integer, String))) }
       def npm_version

@@ -35,6 +35,51 @@ RSpec.describe Dependabot::Opentofu::RequirementsUpdater do
 
     specify { expect(updater.updated_requirements.count).to eq(1) }
 
+    context "when there is no latest version" do
+      let(:latest_version) { nil }
+
+      context "when an exact requirement was previously specified" do
+        let(:requirement) { "0.3.1" }
+
+        it "leaves the requirement unchanged" do
+          expect(updated_requirements).to eq(requirements.first)
+        end
+      end
+
+      context "when a ~> requirement was previously specified" do
+        let(:requirement) { "~> 0.2.1" }
+
+        it "leaves the requirement unchanged" do
+          expect(updated_requirements).to eq(requirements.first)
+        end
+      end
+
+      context "when a <= requirement was previously specified" do
+        let(:requirement) { "<= 0.1.9" }
+
+        it "leaves the requirement unchanged" do
+          expect(updated_requirements).to eq(requirements.first)
+        end
+      end
+
+      context "when the source is a git requirement" do
+        let(:requirement) { nil }
+        let(:tag_for_latest_version) { "v0.4.0" }
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/cloudposse/terraform-null-label.git",
+            branch: nil,
+            ref: "v0.3.7"
+          }
+        end
+
+        it "still updates the git ref via tag_for_latest_version" do
+          expect(updated_requirements[:source][:ref]).to eq("v0.4.0")
+        end
+      end
+    end
+
     context "when there is a latest version" do
       let(:latest_version) { version_class.new("0.3.7") }
 

@@ -26,6 +26,5 @@ internal sealed class PackagesConfigBuildFile : XmlBuildFile
         .Select(p => new Dependency(
             p.GetAttributeValue("id", StringComparison.OrdinalIgnoreCase),
             p.GetAttributeValue("version", StringComparison.OrdinalIgnoreCase),
-            DependencyType.PackagesConfig,
-            IsDevDependency: (p.GetAttribute("developmentDependency", StringComparison.OrdinalIgnoreCase)?.Value ?? "false").Equals(true.ToString(), StringComparison.OrdinalIgnoreCase)));
+            DependencyType.PackagesConfig));
 }

@@ -133,13 +133,71 @@ RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
           Dependabot::GitRef.new(name: "v2.0.0", commit_sha: "eee555")
         ]
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
-          .to receive(:allowed_version_tags).and_return(mixed_tags)
+          .to receive(:all_version_tags).and_return(mixed_tags)
       end
 
       it "returns only tags matching the frozen version prefix and major version" do
         expect(latest_version_tag).to be_a(Hash)
         expect(latest_version_tag[:tag]).to eq("v1.29.4")
         expect(latest_version_tag[:version].to_s).to eq("1.29.4")
+      end
+    end
+
+    context "when SHA-pinned with frozen comment and different prefix has higher version (issue #14550)" do
+      let(:reference) { "631208b7aac2daa8b707f55e7331f9112b0e062d" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "https://github.com/crate-ci/typos",
+          version: reference,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".pre-commit-config.yaml",
+            source: {
+              type: "git",
+              url: "https://github.com/crate-ci/typos",
+              ref: reference,
+              branch: nil
+            },
+            metadata: { comment: "# frozen: v1.44.0" }
+          }],
+          package_manager: "pre_commit"
+        )
+      end
+
+      let(:mixed_tags) do
+        [
+          Dependabot::GitRef.new(name: "v1.44.0", commit_sha: "631208b7aac2daa8b707f55e7331f9112b0e062d"),
+          Dependabot::GitRef.new(name: "v1.45.0", commit_sha: "new_sha_1"),
+          Dependabot::GitRef.new(name: "v1.46.0", commit_sha: "new_sha_2"),
+          Dependabot::GitRef.new(name: "varcon-core-v5.0.6", commit_sha: "different_sha"),
+          Dependabot::GitRef.new(name: "varcon-core-v4.0.0", commit_sha: "another_sha")
+        ]
+      end
+
+      before do
+        typos_service_pack_url = "https://github.com/crate-ci/typos.git/info/refs?service=git-upload-pack"
+        stub_request(:get, typos_service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "pre-commit-hooks"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags).and_return(mixed_tags)
+      end
+
+      it "selects the correct v-prefixed tag, not the higher-versioned different-prefix tag" do
+        expect(latest_version_tag).to be_a(Hash)
+        expect(latest_version_tag[:tag]).to eq("v1.46.0")
+        expect(latest_version_tag[:version].to_s).to eq("1.46.0")
+      end
+
+      it "does not select a tag with a different prefix even if it has a higher version" do
+        expect(latest_version_tag[:tag]).not_to include("varcon-core")
       end
     end
   end
@@ -166,9 +224,18 @@ RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
       before do
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tag_for_pinned_sha).and_return("v4.4.0")
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tag_for_latest_version)
+          .and_return(
+            Dependabot::GitTagDetails.new(
+              tag: "v6.0.0",
+              version: Gem::Version.new("6.0.0"),
+              commit_sha: "latest_sha"
+            )
+          )
       end
 
-      it "returns the latest tagged version" do
+      it "converts the latest tagged version" do
         expect(commit_sha_release).to be_a(Dependabot::PreCommit::Version)
         expect(commit_sha_release.to_s).to eq("6.0.0")
       end
@@ -243,10 +310,34 @@ RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
 
     context "when pinned to a version tag" do
       let(:reference) { "v4.4.0" }
+      let(:latest_tag) do
+        Dependabot::GitTagDetails.new(
+          tag: "v6.0.0",
+          version: Gem::Version.new("6.0.0"),
+          commit_sha: "latest_sha"
+        )
+      end
 
-      it "returns the latest version" do
+      before do
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_ref_for_latest_version_matching_existing_precision)
+          .and_return(latest_tag)
+      end
+
+      it "converts the latest version" do
         expect(version_tag_release).to be_a(Dependabot::PreCommit::Version)
         expect(version_tag_release.to_s).to eq("6.0.0")
+      end
+
+      context "when the latest version is a string" do
+        let(:latest_tag) do
+          { tag: "v6.0.0", version: "6.0.0", commit_sha: "latest_sha" }
+        end
+
+        it "converts the latest version" do
+          expect(version_tag_release).to be_a(Dependabot::PreCommit::Version)
+          expect(version_tag_release.to_s).to eq("6.0.0")
+        end
       end
     end
 

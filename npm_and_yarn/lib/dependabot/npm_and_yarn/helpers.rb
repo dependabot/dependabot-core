@@ -68,6 +68,7 @@ module Dependabot
 
       # corepack supported package managers
       SUPPORTED_COREPACK_PACKAGE_MANAGERS = %w(npm yarn pnpm).freeze
+      COREPACK_SIGNATURE_METADATA_ERROR = "No compatible signature found in package metadata"
 
       sig { params(lockfile: T.nilable(DependencyFile)).returns(Integer) }
       def self.npm_version_numeric(lockfile)
@@ -248,6 +249,31 @@ module Dependabot
         yarn_major_version >= 4
       end
 
+      sig { returns(T::Boolean) }
+      def self.yarn_berry_supports_minimal_age_gate?
+        version = Version.new(run_single_yarn_command("--version"))
+        supported = version >= Version.new("4.10.0")
+        if supported
+          Dependabot.logger.info(
+            "Yarn #{version} supports npmMinimalAgeGate. " \
+            "Setting YARN_NPM_MINIMAL_AGE_GATE=0 to bypass the release-age gate for security updates."
+          )
+        else
+          Dependabot.logger.info(
+            "Yarn #{version} does not support npmMinimalAgeGate (requires 4.10.0+). " \
+            "YARN_NPM_MINIMAL_AGE_GATE will not be set."
+          )
+        end
+        supported
+      rescue StandardError => e
+        Dependabot.logger.warn(
+          "Could not determine Yarn version to check npmMinimalAgeGate support: #{e.message}. " \
+          "Assuming unsupported (returning false). YARN_NPM_MINIMAL_AGE_GATE will not be set, " \
+          "so the registry's release-age gate may still block security updates."
+        )
+        false
+      end
+
       sig { returns(T.nilable(String)) }
       def self.setup_yarn_berry
         # Always disable immutable installs so yarn's CI detection doesn't prevent updates.
@@ -334,7 +360,9 @@ module Dependabot
 
         # Validate the output format (e.g., "v20.18.1" or "20.18.1")
         if version.match?(/^v?\d+(\.\d+){2}$/)
-          version.strip.delete_prefix("v") # Remove the "v" prefix if present
+          parsed_version = version.strip.delete_prefix("v") # Remove the "v" prefix if present
+          Dependabot.logger.info("Using node version: #{parsed_version}")
+          parsed_version
         end
       rescue StandardError => e
         Dependabot.logger.error("Error retrieving Node.js version: #{e.message}")
@@ -360,17 +388,30 @@ module Dependabot
       end
 
       # Setup yarn and run a single yarn command returning stdout/stderr
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
-      def self.run_yarn_command(command, fingerprint: nil)
+      sig do
+        params(
+          command: String,
+          fingerprint: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_yarn_command(command, fingerprint: nil, env: nil)
         setup_yarn_berry
-        run_single_yarn_command(command, fingerprint: fingerprint)
+        run_single_yarn_command(command, fingerprint: fingerprint, env: env)
       end
 
       # Run single pnpm command returning stdout/stderr
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
-      def self.run_pnpm_command(command, fingerprint: nil)
+      sig do
+        params(
+          command: String,
+          fingerprint: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_pnpm_command(command, fingerprint: nil, env: nil)
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          package_manager_run_command(PNPMPackageManager::NAME, command, fingerprint: fingerprint)
+          merged_env = merge_corepack_env(env)
+          package_manager_run_command(PNPMPackageManager::NAME, command, fingerprint: fingerprint, env: merged_env)
         else
           Dependabot::SharedHelpers.run_shell_command(
             "pnpm #{command}",
@@ -380,14 +421,22 @@ module Dependabot
       end
 
       # Run single yarn command returning stdout/stderr
-      sig { params(command: String, fingerprint: T.nilable(String)).returns(String) }
-      def self.run_single_yarn_command(command, fingerprint: nil)
+      sig do
+        params(
+          command: String,
+          fingerprint: T.nilable(String),
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_single_yarn_command(command, fingerprint: nil, env: nil)
         if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          package_manager_run_command(YarnPackageManager::NAME, command, fingerprint: fingerprint)
+          merged_env = merge_corepack_env(env)
+          package_manager_run_command(YarnPackageManager::NAME, command, fingerprint: fingerprint, env: merged_env)
         else
           Dependabot::SharedHelpers.run_shell_command(
             "yarn #{command}",
-            fingerprint: "yarn #{fingerprint || command}"
+            fingerprint: "yarn #{fingerprint || command}",
+            env: env
           )
         end
       end
@@ -423,7 +472,7 @@ module Dependabot
         end
 
         # Verify the installed version
-        installed_version = package_manager_version(name)
+        installed_version = package_manager_version(name, env: env)
 
         installed_version
       end
@@ -455,11 +504,11 @@ module Dependabot
       def self.package_manager_install(name, version, env: {})
         return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
 
-        Dependabot::SharedHelpers.run_shell_command(
+        run_corepack_command(
           "corepack install #{name}@#{version} --global --cache-only",
           fingerprint: "corepack install <name>@<version> --global --cache-only",
           env: env
-        ).strip
+        )
       end
 
       # Prepare the package manager for use by using corepack
@@ -467,11 +516,11 @@ module Dependabot
       def self.package_manager_activate(name, version, env: {})
         return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
 
-        Dependabot::SharedHelpers.run_shell_command(
+        run_corepack_command(
           "corepack prepare #{name}@#{version} --activate",
           fingerprint: "corepack prepare <name>@<version> --activate",
           env: env
-        ).strip
+        )
       end
 
       # Fetch the currently installed version of the package manager directly
@@ -485,11 +534,11 @@ module Dependabot
       end
 
       # Get the version of the package manager by using corepack
-      sig { params(name: String).returns(String) }
-      def self.package_manager_version(name)
+      sig { params(name: String, env: T.nilable(T::Hash[String, String])).returns(String) }
+      def self.package_manager_version(name, env: nil)
         Dependabot.logger.info("Fetching version for package manager: #{name}")
 
-        version = package_manager_run_command(name, "-v").strip
+        version = package_manager_run_command(name, "-v", env: env).strip
 
         Dependabot.logger.info("Installed version of #{name}: #{version}")
 
@@ -516,24 +565,51 @@ module Dependabot
         output_observer: nil,
         env: nil
       )
-        full_command = "corepack #{name} #{command}"
-        fingerprint =  "corepack #{name} #{fingerprint || command}"
+        run_corepack_command(
+          "corepack #{name} #{command}",
+          fingerprint: "corepack #{name} #{fingerprint || command}",
+          output_observer: output_observer,
+          env: env
+        )
+      end
 
-        if output_observer
-          return Dependabot::SharedHelpers.run_shell_command(
+      # Run a corepack shell command, retrying once with signature verification
+      # disabled when a configured private registry strips `dist.signatures`
+      # from its version endpoint (a known Artifactory behaviour that otherwise
+      # aborts the run with COREPACK_SIGNATURE_METADATA_ERROR).
+      sig do
+        params(
+          full_command: String,
+          fingerprint: String,
+          output_observer: CommandHelpers::OutputObserver,
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_corepack_command(full_command, fingerprint:, output_observer: nil, env: nil)
+        run_corepack_shell_command(
+          full_command,
+          fingerprint: fingerprint,
+          output_observer: output_observer,
+          env: env
+        )
+      rescue StandardError => e
+        Dependabot.logger.error("Error running package manager command: #{full_command}, Error: #{e.message}")
+
+        raise_registry_error_if_not_found(e)
+
+        if retry_without_signature_verification?(error: e, env: env)
+          retry_env = T.must(env).merge(RegistryHelper::COREPACK_INTEGRITY_KEYS_ENV => "")
+          Dependabot.logger.warn(
+            "Corepack signature verification failed against the configured private registry. " \
+            "Retrying once with COREPACK_INTEGRITY_KEYS disabled for this command only."
+          )
+
+          return run_corepack_shell_command(
             full_command,
             fingerprint: fingerprint,
             output_observer: output_observer,
-            env: env
-          ).strip
-        else
-          Dependabot::SharedHelpers.run_shell_command(full_command, fingerprint: fingerprint)
-        end.strip
-      rescue StandardError => e
-        Dependabot.logger.error("Error running package manager command: #{full_command}, Error: #{e.message}")
-        if e.message.match?(/Response Code.*:.*404.*\(Not Found\)/) &&
-           e.message.include?("The remote server failed to provide the requested resource")
-          raise RegistryError.new(404, "The remote server failed to provide the requested resource")
+            env: retry_env
+          )
         end
 
         raise
@@ -568,6 +644,57 @@ module Dependabot
         registry_helper.find_corepack_env_variables
       end
 
+      sig do
+        params(
+          full_command: String,
+          fingerprint: String,
+          output_observer: CommandHelpers::OutputObserver,
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_corepack_shell_command(full_command, fingerprint:, output_observer:, env: nil)
+        if output_observer
+          return Dependabot::SharedHelpers.run_shell_command(
+            full_command,
+            fingerprint: fingerprint,
+            output_observer: output_observer,
+            env: env
+          ).strip
+        end
+
+        Dependabot::SharedHelpers.run_shell_command(
+          full_command,
+          fingerprint: fingerprint,
+          env: env
+        ).strip
+      end
+
+      sig { params(error: StandardError).void }
+      def self.raise_registry_error_if_not_found(error)
+        if error.message.match?(/Response Code.*:.*404.*\(Not Found\)/) &&
+           error.message.include?("The remote server failed to provide the requested resource")
+          raise RegistryError.new(404, "The remote server failed to provide the requested resource")
+        end
+      end
+
+      sig { params(error: StandardError, env: T.nilable(T::Hash[String, String])).returns(T::Boolean) }
+      def self.retry_without_signature_verification?(error:, env:)
+        return false unless env
+
+        registry = env[RegistryHelper::COREPACK_NPM_REGISTRY_ENV]
+        return false unless registry
+        return false if default_npm_registry?(registry)
+        return false unless error.message.include?(COREPACK_SIGNATURE_METADATA_ERROR)
+
+        !env.key?(RegistryHelper::COREPACK_INTEGRITY_KEYS_ENV)
+      end
+
+      sig { params(registry: String).returns(T::Boolean) }
+      def self.default_npm_registry?(registry)
+        normalized_registry = RegistryHelper.normalize_registry_url(registry)
+        normalized_registry == RegistryHelper::DEFAULT_NPM_REGISTRY
+      end
+
       private_class_method :run_single_yarn_command
 
       sig { params(pnpm_lock: DependencyFile).returns(T.nilable(String)) }
@@ -589,6 +716,11 @@ module Dependabot
       sig { params(name: String).returns(T::Boolean) }
       def self.corepack_supported_package_manager?(name)
         SUPPORTED_COREPACK_PACKAGE_MANAGERS.include?(name)
+      end
+
+      sig { params(scope: String).returns(String) }
+      def self.normalize_npm_scope(scope)
+        scope.start_with?("@") ? scope : "@#{scope}"
       end
     end
   end

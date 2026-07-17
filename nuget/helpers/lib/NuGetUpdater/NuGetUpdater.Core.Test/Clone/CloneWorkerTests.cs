@@ -145,7 +145,7 @@ public class CloneWorkerTests
         var cloneWorker = new CloneWorker("JOB-ID", testApiHandler, testGitCommandHandler, new TestLogger());
         using var testDirectory = new TemporaryDirectory();
         var jobFilePath = Path.Combine(testDirectory.DirectoryPath, "job.json");
-        await File.WriteAllTextAsync(jobFilePath, "not json");
+        await File.WriteAllTextAsync(jobFilePath, "not json", TestContext.Current.CancellationToken);
 
         // act
         var result = await cloneWorker.RunAsync(new FileInfo(jobFilePath), new DirectoryInfo(testDirectory.DirectoryPath));
@@ -183,7 +183,7 @@ public class CloneWorkerTests
                     ]
                 }
             }
-            """);
+            """, TestContext.Current.CancellationToken);
 
         // act
         var result = await cloneWorker.RunAsync(new FileInfo(jobFilePath), new DirectoryInfo(testDirectory.DirectoryPath));

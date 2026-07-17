@@ -55,10 +55,10 @@ module Dependabot
         old_sources = previous_sources(file)
         new_sources = sources(file)
 
-        updated_content = T.let(file.content, T.untyped)
+        updated_content = T.let(file.content, T.nilable(String))
 
         T.must(old_sources).zip(new_sources).each do |old_source, new_source|
-          updated_content = update_digest_and_tag(updated_content, old_source, T.must(new_source))
+          updated_content = update_digest_and_tag(T.must(updated_content), old_source, T.must(new_source))
         end
 
         raise "Expected content to change!" if updated_content == file.content
@@ -232,13 +232,13 @@ module Dependabot
         !source[:digest].nil?
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyRequirement]) }
       def requirements(file)
         T.must(dependency).requirements
          .select { |r| r[:file] == file.name }
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Array[Dependabot::DependencyRequirement])) }
       def previous_requirements(file)
         T.must(dependency).previous_requirements
          &.select { |r| r[:file] == file.name }

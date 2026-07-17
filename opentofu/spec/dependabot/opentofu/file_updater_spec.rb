@@ -30,6 +30,17 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
   describe "#updated_dependency_files" do
     subject(:updated_dependency_files) { updater.updated_dependency_files }
 
+    before do
+      stub_request(:get, "https://registry.opentofu.org/.well-known/terraform.json")
+        .and_return(
+          status: 200,
+          body: { "modules.v1": "/v1/modules/", "providers.v1": "/v1/providers/" }.to_json
+        )
+
+      stub_request(:get, %r{https://registry\.opentofu\.org/v1/providers/.+/download/linux/amd64})
+        .and_return(status: 200, body: { os: "linux", arch: "amd64" }.to_json)
+    end
+
     context "with a private module" do
       let(:project_name) { "private_module" }
 
@@ -117,6 +128,57 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
           module "s3-webapp" {
             source  = "registry.opentofu.org/example-org-5d3190/s3-webapp/aws"
             version = "2.0.0"
+          }
+        HCL
+      end
+    end
+
+    context "with an oci module" do
+      let(:project_name) { "modules_oci" }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "example.com/repository-name",
+            version: "v2.0.0",
+            previous_version: "v1.0.0",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "oci",
+                artifact_identifier: "example.com/repository-name",
+                subdirectory: nil,
+                tag: "v2.0.0",
+                digest: nil,
+                version: "v2.0.0"
+              }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "oci",
+                artifact_identifier: "example.com/repository-name",
+                subdirectory: nil,
+                tag: "v1.0.0",
+                digest: nil,
+                version: "v1.0.0"
+              }
+            }],
+            package_manager: "opentofu"
+          )
+        ]
+      end
+
+      it "rewrites the tag in the oci:// source" do
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
+
+        expect(updated_file.content).to include(<<~HCL)
+          module "s3-webapp" {
+            source  = "oci://example.com/repository-name?tag=v2.0.0"
           }
         HCL
       end
@@ -703,6 +765,143 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
       end
     end
 
+    context "with a module version using interpolated local syntax" do
+      let(:project_name) { "module_with_interpolated_local_version" }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/consul/aws",
+            version: "0.2.0",
+            previous_version: "0.1.0",
+            requirements: [{
+              requirement: "0.2.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/consul/aws",
+                local_variable: "module_version"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "0.1.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/consul/aws",
+                local_variable: "module_version"
+              }
+            }],
+            package_manager: "opentofu"
+          )
+        ]
+      end
+
+      it "updates the local variable value and preserves the interpolation syntax" do
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
+
+        expect(updated_file.content).to include('module_version = "0.2.0"')
+        expect(updated_file.content).to include('version = "${local.module_version}"')
+      end
+    end
+
+    context "with a module version from a local in the same file" do
+      let(:project_name) { "module_with_local_version" }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/consul/aws",
+            version: "0.2.0",
+            previous_version: "0.1.0",
+            requirements: [{
+              requirement: "0.2.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/consul/aws",
+                local_variable: "module_version"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "0.1.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/consul/aws",
+                local_variable: "module_version"
+              }
+            }],
+            package_manager: "opentofu"
+          )
+        ]
+      end
+
+      it "updates the local variable value" do
+        updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
+
+        expect(updated_file.content).to include('module_version = "0.2.0"')
+        expect(updated_file.content).to include("version = local.module_version")
+      end
+    end
+
+    context "with a module version from a local in a different file" do
+      let(:project_name) { "module_with_cross_file_local_version" }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/consul/aws",
+            version: "0.2.0",
+            previous_version: "0.1.0",
+            requirements: [{
+              requirement: "0.2.0",
+              groups: [],
+              file: "locals.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/consul/aws",
+                local_variable: "module_version"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "0.1.0",
+              groups: [],
+              file: "locals.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/consul/aws",
+                local_variable: "module_version"
+              }
+            }],
+            package_manager: "opentofu"
+          )
+        ]
+      end
+
+      it "updates the local variable in the locals file" do
+        updated_file = updated_dependency_files.find { |file| file.name == "locals.tf" }
+
+        expect(updated_file.content).to include('module_version = "0.2.0"')
+      end
+
+      it "does not modify the main.tf file" do
+        main_file = updated_dependency_files.find { |file| file.name == "main.tf" }
+
+        expect(main_file).to be_nil
+      end
+    end
+
     context "with a required provider block with multiple versions" do
       let(:project_name) { "registry_provider_compound_local_name" }
       let(:dependencies) do
@@ -1030,6 +1229,174 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
             }
           DEP
         )
+      end
+    end
+
+    context "when using registry-based hash fetching for multi-platform lockfile" do
+      let(:project_name) { "lockfile_multiple_platforms" }
+      let(:metadata_url) { "https://registry.opentofu.org/.well-known/terraform.json" }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/aws",
+            version: "3.42.0",
+            previous_version: "3.37.0",
+            requirements: [{
+              requirement: "3.42.0",
+              groups: [],
+              file: "versions.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "3.37.0",
+              groups: [],
+              file: "versions.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.opentofu.org",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            package_manager: "opentofu"
+          )
+        ]
+      end
+
+      let(:old_version_packages) do
+        {
+          "linux_amd64" => {
+            "hashes" => ["h1:mxnOC4CXzhG+/JiAs6u2QTn6ecDBoiZBqxaXwqp2TB0=", "zh:fakehash1"]
+          },
+          "darwin_amd64" => {
+            "hashes" => ["h1:RvLGIfRZfbzY58wUja9B6CvGdgVVINy7zLVBdLqIelA=", "zh:fakehash2"]
+          },
+          "darwin_arm64" => {
+            "hashes" => ["h1:Tf6Os+utUxE8rEr/emCXLFEDdCb0Y6rsN4Ee84+aDCQ=", "zh:fakehash3"]
+          }
+        }
+      end
+
+      let(:new_version_packages) do
+        {
+          "linux_amd64" => {
+            "hashes" => ["h1:newLinuxAmd64Hash=", "zh:newLinuxAmd64Zh"]
+          },
+          "darwin_amd64" => {
+            "hashes" => ["h1:newDarwinAmd64Hash=", "zh:newDarwinAmd64Zh"]
+          },
+          "darwin_arm64" => {
+            "hashes" => ["h1:newDarwinArm64Hash=", "zh:newDarwinArm64Zh"]
+          },
+          "windows_amd64" => {
+            "hashes" => ["h1:newWindowsAmd64Hash=", "zh:newWindowsAmd64Zh"]
+          }
+        }
+      end
+
+      before do
+        stub_request(:get, metadata_url).and_return(
+          status: 200,
+          body: {
+            "modules.v1": "/v1/modules/",
+            "providers.v1": "/v1/providers/"
+          }.to_json
+        )
+
+        stub_request(
+          :get,
+          "https://registry.opentofu.org/v1/providers/hashicorp/aws/3.37.0/download/linux/amd64"
+        ).and_return(
+          status: 200,
+          body: { os: "linux", arch: "amd64", packages: old_version_packages }.to_json
+        )
+
+        stub_request(
+          :get,
+          "https://registry.opentofu.org/v1/providers/hashicorp/aws/3.42.0/download/linux/amd64"
+        ).and_return(
+          status: 200,
+          body: { os: "linux", arch: "amd64", packages: new_version_packages }.to_json
+        )
+      end
+
+      it "detects all platforms from registry and includes hashes for each" do
+        actual_lockfile = updated_dependency_files.find { |file| file.name == ".terraform.lock.hcl" }
+
+        expect(actual_lockfile.content).to include('version     = "3.42.0"')
+        # h1 hashes only for detected platforms (linux_amd64, darwin_amd64, darwin_arm64)
+        expect(actual_lockfile.content).to include("h1:newDarwinAmd64Hash=")
+        expect(actual_lockfile.content).to include("h1:newDarwinArm64Hash=")
+        expect(actual_lockfile.content).to include("h1:newLinuxAmd64Hash=")
+        expect(actual_lockfile.content).not_to include("h1:newWindowsAmd64Hash=")
+        # zh hashes for ALL platforms including undetected ones
+        expect(actual_lockfile.content).to include("zh:newDarwinAmd64Zh")
+        expect(actual_lockfile.content).to include("zh:newDarwinArm64Zh")
+        expect(actual_lockfile.content).to include("zh:newLinuxAmd64Zh")
+        expect(actual_lockfile.content).to include("zh:newWindowsAmd64Zh")
+      end
+
+      it "preserves h1 hashes only for detected platforms" do
+        actual_lockfile = updated_dependency_files.find { |file| file.name == ".terraform.lock.hcl" }
+
+        aws_block = actual_lockfile.content[%r(provider "registry\.opentofu\.org/hashicorp/aws".*?^})m]
+        h1_hashes = aws_block.scan(/h1:\S+/)
+
+        expect(h1_hashes.length).to eq(3)
+      end
+
+      it "preserves file header comments" do
+        actual_lockfile = updated_dependency_files.find { |file| file.name == ".terraform.lock.hcl" }
+
+        expect(actual_lockfile.content).to include("# This file is maintained automatically")
+      end
+
+      it "does not modify unrelated provider blocks" do
+        actual_lockfile = updated_dependency_files.find { |file| file.name == ".terraform.lock.hcl" }
+
+        expect(actual_lockfile.content).to include(
+          'provider "registry.opentofu.org/hashicorp/random"'
+        )
+        expect(actual_lockfile.content).to include('version     = "3.0.0"')
+      end
+
+      context "when registry returns no packages field" do
+        before do
+          stub_request(
+            :get,
+            "https://registry.opentofu.org/v1/providers/hashicorp/aws/3.37.0/download/linux/amd64"
+          ).and_return(
+            status: 200,
+            body: { os: "linux", arch: "amd64", shasum: "abc" }.to_json
+          )
+        end
+
+        it "registry-based architecture detection returns nil" do
+          new_req = dependencies.first.requirements.first
+          result = updater.send(:lookup_hash_architecture_from_registry, new_req)
+
+          expect(result).to be_nil
+        end
+      end
+
+      context "when registry returns error" do
+        before do
+          stub_request(
+            :get,
+            "https://registry.opentofu.org/v1/providers/hashicorp/aws/3.37.0/download/linux/amd64"
+          ).and_return(status: 500, body: "Internal Server Error")
+        end
+
+        it "registry-based architecture detection returns nil" do
+          new_req = dependencies.first.requirements.first
+          result = updater.send(:lookup_hash_architecture_from_registry, new_req)
+
+          expect(result).to be_nil
+        end
       end
     end
 

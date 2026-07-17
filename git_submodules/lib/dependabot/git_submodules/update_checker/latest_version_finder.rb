@@ -45,50 +45,6 @@ module Dependabot
             )
         end
 
-        sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
-        def in_cooldown_period?(release)
-          unless release.released_at
-            Dependabot.logger.info("Release date not available for ref tag #{release.tag}")
-            return false
-          end
-
-          days = cooldown_days
-          passed_seconds = Time.now.to_i - release.released_at.to_i
-          passed_days = passed_seconds / DAY_IN_SECONDS
-
-          if passed_days < days
-            Dependabot.logger.info(
-              "Filtered #{release.tag}, Released on: " \
-              "#{T.must(release.released_at).strftime('%Y-%m-%d')} " \
-              "(#{passed_days}/#{days} cooldown days)"
-            )
-          end
-
-          passed_seconds < days * DAY_IN_SECONDS
-        end
-
-        sig do
-          returns(Integer)
-        end
-        def cooldown_days
-          cooldown = @cooldown_options
-          return 0 if cooldown.nil?
-          return 0 unless cooldown_enabled?
-          return 0 unless cooldown.included?(dependency.name)
-
-          return cooldown.default_days if cooldown.default_days.positive?
-          return cooldown.semver_major_days if cooldown.semver_major_days.positive?
-          return cooldown.semver_minor_days if cooldown.semver_minor_days.positive?
-          return cooldown.semver_patch_days if cooldown.semver_patch_days.positive?
-
-          cooldown.default_days
-        end
-
-        sig { returns(T::Boolean) }
-        def cooldown_enabled?
-          true
-        end
-
         sig do
           params(releases: T::Array[Dependabot::Package::PackageRelease])
             .returns(T::Array[Dependabot::Package::PackageRelease])

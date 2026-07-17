@@ -81,6 +81,20 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
     end
   end
 
+  describe "yarn berry without packageManager or .yarnrc.yml" do
+    let(:project_name) { "yarn_berry/simple_without_package_manager" }
+
+    it "does not write classic yarn configuration" do
+      Dependabot::SharedHelpers.in_a_temporary_directory do
+        builder.write_temporary_dependency_files
+
+        expect(Dir.children(".")).to match_array(
+          %w(package.json yarn.lock)
+        )
+      end
+    end
+  end
+
   describe "has no lockfile or rc file" do
     let(:project_name) { "npm8/library" }
 

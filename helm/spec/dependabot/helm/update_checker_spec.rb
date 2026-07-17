@@ -48,13 +48,15 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
   end
   let(:raise_on_ignored) { false }
   let(:ignored_versions) { [] }
+  let(:requirements_update_strategy) { nil }
   let(:checker) do
     described_class.new(
       dependency: dependency,
       dependency_files: [],
       credentials: credentials,
       ignored_versions: ignored_versions,
-      raise_on_ignored: raise_on_ignored
+      raise_on_ignored: raise_on_ignored,
+      requirements_update_strategy: requirements_update_strategy
     )
   end
 
@@ -86,6 +88,24 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
 
         stub_request(:get, repo_url + "tags/list")
           .and_return(status: 200, body: repo_tags)
+
+        # The merged Docker UpdateChecker first issues a HEAD request per tag to
+        # detect single-platform images (single_platform_image?) before its
+        # digest-content check, and otherwise GETs the manifest to compare
+        # platform digests (same_image_contents?). ubuntu:#{version} is a
+        # single-platform image, so report a non-manifest-list media type for
+        # both requests, keeping those checks no-ops so version selection
+        # proceeds from the tags alone.
+        stub_request(:head, %r{#{Regexp.escape(repo_url)}manifests/.+})
+          .and_return(
+            status: 200,
+            headers: { "Content-Type" => "application/vnd.docker.distribution.manifest.v2+json" }
+          )
+        stub_request(:get, repo_url + "manifests/#{version}")
+          .and_return(
+            status: 200,
+            body: { mediaType: "application/vnd.docker.distribution.manifest.v2+json" }.to_json
+          )
       end
 
       it { is_expected.to eq(Dependabot::Helm::Version.new("17.10")) }
@@ -199,6 +219,222 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
         end
       end
     end
+
+    context "with a docker-image dependency" do
+      let(:dependency_type) { { type: :docker_image } }
+
+      before { allow(checker).to receive(:latest_version).and_return(Dependabot::Helm::Version.new("20.11.3")) }
+
+      it "overwrites the requirement with the exact latest version" do
+        expect(checker.updated_requirements.first[:requirement]).to eq("20.11.3")
+      end
+    end
+
+    context "when a requirement has no metadata type" do
+      let(:dependency_type) { {} }
+
+      before { allow(checker).to receive(:latest_version).and_return(Dependabot::Helm::Version.new("20.11.3")) }
+
+      it "leaves the requirement unchanged" do
+        expect(checker.updated_requirements.first[:requirement]).to be_nil
+      end
+    end
+  end
+
+  describe "versioning-strategy (range-preserving updates)" do
+    # The Chart.yaml constraint lives in dependency.version for helm chart deps.
+    let(:version) { "^1.0.0" }
+
+    before { allow(checker).to receive(:latest_version).and_return(latest) }
+
+    context "with increase-if-necessary" do
+      let(:requirements_update_strategy) do
+        Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary
+      end
+
+      context "when the latest version is already in range" do
+        let(:latest) { Dependabot::Helm::Version.new("1.0.5") }
+
+        it "does not report an update" do
+          expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+        end
+      end
+
+      context "when the latest version is out of range" do
+        let(:latest) { Dependabot::Helm::Version.new("2.0.0") }
+
+        it "reports an update" do
+          expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        end
+
+        it "bumps the constraint to ^2.0.0" do
+          expect(checker.updated_requirements.first[:requirement]).to eq("^2.0.0")
+        end
+      end
+    end
+
+    context "with widen" do
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+
+      context "when in range" do
+        let(:latest) { Dependabot::Helm::Version.new("1.0.5") }
+
+        it "does not report an update" do
+          expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+        end
+      end
+    end
+
+    context "with the default strategy (increase)" do
+      let(:latest) { Dependabot::Helm::Version.new("1.0.5") }
+
+      it "bumps the caret floor" do
+        expect(checker.updated_requirements.first[:requirement]).to eq("^1.0.5")
+      end
+
+      it "reports an update even though it is in range" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+      end
+    end
+
+    context "with an explicit comparator-range constraint" do
+      # dependency.version holds the Chart.yaml constraint; a multi-comparator
+      # range can't parse as a single version, so the checker anchors on its
+      # lowest version instead of crashing.
+      let(:version) { ">=1.0.0 <2.0.0" }
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+      let(:latest) { Dependabot::Helm::Version.new("2.5.0") }
+
+      it "does not raise and widens the range" do
+        expect { checker.can_update?(requirements_to_unlock: :own) }.not_to raise_error
+        expect(checker.updated_requirements.first[:requirement]).to eq(">=1.0.0 <3.0.0")
+      end
+    end
+
+    context "with the default strategy (increase) and an in-range comparator range" do
+      # Regression: the updater leaves a comparator range untouched when the
+      # latest version already satisfies it, so can_update? must not report an
+      # update (otherwise the file updater raises "Expected content to change!").
+      let(:version) { ">=1.0.0 <2.0.0" }
+      let(:latest) { Dependabot::Helm::Version.new("1.5.0") }
+
+      it "does not report an update" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+      end
+
+      it "leaves the requirement unchanged" do
+        expect(checker.updated_requirements.first[:requirement]).to eq(">=1.0.0 <2.0.0")
+      end
+    end
+
+    context "with the default strategy (increase) and an out-of-range comparator range" do
+      let(:version) { ">=1.0.0 <2.0.0" }
+      let(:latest) { Dependabot::Helm::Version.new("2.5.0") }
+
+      it "reports an update and widens the upper bound" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        expect(checker.updated_requirements.first[:requirement]).to eq(">=1.0.0 <3.0.0")
+      end
+    end
+
+    context "with widen and an OR range where every alternative is out of range" do
+      # Regression: widen must actually widen (append an alternative). Reporting
+      # can_update? while leaving the constraint unchanged would crash the file
+      # updater with "Expected content to change!".
+      let(:version) { "^0.5.0 || ^1.0.0" }
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+      let(:latest) { Dependabot::Helm::Version.new("3.0.0") }
+
+      it "reports an update and appends a new alternative" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        expect(checker.updated_requirements.first[:requirement]).to eq("^0.5.0 || ^1.0.0 || ^3.0.0")
+      end
+    end
+
+    context "with widen and an OR range already satisfied" do
+      let(:version) { "^1.0.0 || ^2.0.0" }
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+      let(:latest) { Dependabot::Helm::Version.new("1.5.0") }
+
+      it "does not report an update" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+      end
+    end
+
+    context "when the dependency carries several requirements (same chart, different constraints)" do
+      # DependencySet merges same-named occurrences into one dependency with
+      # multiple requirements; each must be updated by its own source[:tag],
+      # not the single combined dependency.version.
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "common",
+          version: "^1.0.0",
+          requirements: [
+            { requirement: nil, groups: [], file: "Chart.yaml",
+              source: { tag: "^1.0.0" }, metadata: { type: :helm_chart } },
+            { requirement: nil, groups: [], file: "Chart.yaml",
+              source: { tag: "1.2.0" }, metadata: { type: :helm_chart } }
+          ],
+          package_manager: "helm"
+        )
+      end
+      let(:latest) { Dependabot::Helm::Version.new("1.5.0") }
+
+      it "updates each requirement by its own authored constraint" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        updated = checker.updated_requirements.map { |r| [r.dig(:source, :tag), r[:requirement]] }
+        expect(updated).to contain_exactly(["^1.0.0", "^1.5.0"], ["1.2.0", "1.5.0"])
+      end
+
+      context "when a lower occurrence needs an update the highest one does not" do
+        # Regression: the anchor is the lowest occurrence (1.0.0), not the
+        # combined dependency.version (^5.0.0). Otherwise latest 5.0.0 would gate
+        # out as "not newer" and the ^1.0.0 occurrence would never be widened.
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "common",
+            version: "^5.0.0",
+            requirements: [
+              { requirement: nil, groups: [], file: "Chart.yaml",
+                source: { tag: "^5.0.0" }, metadata: { type: :helm_chart } },
+              { requirement: nil, groups: [], file: "sub/Chart.yaml",
+                source: { tag: "^1.0.0" }, metadata: { type: :helm_chart } }
+            ],
+            package_manager: "helm"
+          )
+        end
+        let(:latest) { Dependabot::Helm::Version.new("5.0.0") }
+
+        it "still reports the update" do
+          expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        end
+      end
+    end
+
+    context "with an upper-only range whose latest equals the ceiling" do
+      # Regression: "<2.0.0" must anchor at 0, not at its ceiling. A latest of
+      # exactly 2.0.0 is outside the range, so widen should report and widen it.
+      let(:version) { "<2.0.0" }
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+      let(:latest) { Dependabot::Helm::Version.new("2.0.0") }
+
+      it "reports an update and widens the upper bound" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        expect(checker.updated_requirements.first[:requirement]).to eq("<3.0.0")
+      end
+    end
+
+    context "with a != exclusion combined with an upper bound" do
+      # Regression: the anchor must not treat the excluded operand (9.0.0) as a
+      # lower bound, or a new 2.0.0 would be filtered out before widening.
+      let(:version) { "!=9.0.0 <2.0.0" }
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+      let(:latest) { Dependabot::Helm::Version.new("2.0.0") }
+
+      it "anchors below the exclusion and reports an update" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+      end
+    end
   end
 
   describe "#filter_valid_releases" do
@@ -264,6 +500,44 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
 
       it "does not cause cross-package type validation errors" do
         expect { checker.send(:filter_valid_releases, releases) }.not_to raise_error
+      end
+    end
+
+    context "when the constraint is a range" do
+      let(:releases) { [{ "version" => "0.5.0" }, { "version" => "1.5.0" }, { "version" => "2.5.0" }] }
+
+      context "with a comma-AND lower bound not written first" do
+        # Regression: the anchor must read the >= lower bound (1.0.0), not be
+        # thrown off by the leading < operand, so 0.5.0 is filtered out.
+        let(:version) { "<2.0.0,>=1.0.0" }
+
+        it "filters versions below the range's lower bound" do
+          result = checker.send(:filter_valid_releases, releases)
+          expect(result.map { |r| r["version"] }).to contain_exactly("1.5.0", "2.5.0")
+        end
+      end
+
+      context "with an OR branch that has no lower bound" do
+        # Regression: an unbounded-below branch means the constraint permits
+        # arbitrarily low versions, so the anchor is 0 and nothing is filtered.
+        let(:version) { "<=2.0.0 || >=10.0.0" }
+
+        it "keeps all versions" do
+          result = checker.send(:filter_valid_releases, releases)
+          expect(result.map { |r| r["version"] }).to contain_exactly("0.5.0", "1.5.0", "2.5.0")
+        end
+      end
+
+      context "with an OR of exact pins" do
+        # Regression: an exact branch has a real floor (its version), even though
+        # min_version reports nil for "=", so the anchor is the lowest pin (1.0.0)
+        # and 0.5.0 is filtered out.
+        let(:version) { "1.0.0 || 2.0.0" }
+
+        it "anchors on the lowest pinned version" do
+          result = checker.send(:filter_valid_releases, releases)
+          expect(result.map { |r| r["version"] }).to contain_exactly("1.5.0", "2.5.0")
+        end
       end
     end
   end

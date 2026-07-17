@@ -339,7 +339,8 @@ RSpec.describe Dependabot::Python::FileUpdater do
             file: "pyproject.toml",
             source: nil,
             groups: ["dependencies"]
-          }]
+          }],
+          metadata: { source_requirement: "==5.0.0" }
         )
       end
 

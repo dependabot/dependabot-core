@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
-require "dependabot/experiments"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/swift/xcode_file_helpers"
@@ -21,21 +20,13 @@ module Dependabot
       def self.required_files_in?(filenames)
         return true if filenames.include?("Package.swift")
 
-        if Dependabot::Experiments.enabled?(:enable_swift_xcode_spm)
-          return filenames.any? { |f| XcodeFileHelpers.xcode_resolved_path?(f) }
-        end
-
-        false
+        filenames.any? { |f| XcodeFileHelpers.xcode_resolved_path?(f) }
       end
 
       sig { override.returns(String) }
       def self.required_files_message
-        if Dependabot::Experiments.enabled?(:enable_swift_xcode_spm)
-          "Repo must contain a Package.swift configuration file or " \
-            "an .xcodeproj/.xcworkspace directory with a Package.resolved file."
-        else
-          "Repo must contain a Package.swift configuration file."
-        end
+        "Repo must contain a Package.swift configuration file or " \
+          "an .xcodeproj/.xcworkspace directory with a Package.resolved file."
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
@@ -51,8 +42,6 @@ module Dependabot
         end
 
         # Base class validates returned files against required_files_in? and raises if needed
-        return fetched_files unless Dependabot::Experiments.enabled?(:enable_swift_xcode_spm)
-
         fetch_xcode_spm_files(fetched_files)
         fetched_files
       end

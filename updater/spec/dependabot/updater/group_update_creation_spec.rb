@@ -55,11 +55,19 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     instance_double(
       Dependabot::Job,
       dependencies: job_dependencies,
+      clone?: clone_job,
+      repo_contents_path: repo_contents_path,
       security_advisories_for: security_advisories,
       updating_a_pull_request?: false,
-      source: instance_double(Dependabot::Source, directory: "/")
+      blocked_versions_for?: false,
+      source: source
     )
   end
+
+  let(:clone_job) { false }
+  let(:repo_contents_path) { nil }
+  let(:source_directory) { "/" }
+  let(:source) { instance_double(Dependabot::Source, directory: source_directory) }
 
   let(:group) do
     instance_double(
@@ -443,6 +451,114 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
   end
 
+  describe "workspace handling in compile_all_dependency_changes_for" do
+    let(:clone_job) { true }
+    let(:repo_contents_path) { "/tmp/dependabot/repo" }
+    let(:source_directory) { "/services/api/../api" }
+
+    before do
+      allow(test_instance).to receive(:prepare_workspace).and_call_original
+      allow(test_instance).to receive(:cleanup_workspace).and_call_original
+      allow(test_instance).to receive_messages(
+        compile_updates_for: [],
+        skip_dependency?: false,
+        deduce_updated_dependency: nil,
+        store_changes: nil,
+        record_warning_notices: nil
+      )
+      allow(Dependabot::Updater::DependencyGroupChangeBatch).to receive(:new).and_return(
+        instance_double(
+          Dependabot::Updater::DependencyGroupChangeBatch,
+          current_dependency_files: dependency_files,
+          updated_dependencies: [],
+          updated_dependency_files: dependency_files,
+          add_updated_dependency: nil,
+          merge: nil
+        )
+      )
+      allow(Dependabot::DependencyChange).to receive(:new).and_return(
+        instance_double(Dependabot::DependencyChange, all_have_previous_version?: true)
+      )
+      allow(Dependabot::Workspace).to receive(:setup)
+      allow(Dependabot::Workspace).to receive(:cleanup!)
+    end
+
+    it "sets up and cleans up the workspace for clone jobs" do
+      test_instance.compile_all_dependency_changes_for(group)
+
+      expect(Dependabot::Workspace).to have_received(:setup).with(
+        repo_contents_path: repo_contents_path,
+        directory: Pathname.new(source_directory).cleanpath
+      )
+      expect(Dependabot::Workspace).to have_received(:cleanup!).once
+    end
+  end
+
+  describe "#compile_updates_for blocked versions ignored metric" do
+    let(:dependency) { dependencies.first }
+    let(:group) do
+      instance_double(
+        Dependabot::DependencyGroup,
+        name: "test-group",
+        dependencies: [dependency],
+        group_by_dependency_name?: false
+      )
+    end
+
+    let(:metrics_service) do
+      instance_double(Dependabot::Service, record_update_job_error: nil, increment_metric: nil)
+    end
+
+    before do
+      allow(test_instance).to receive_messages(
+        update_checker_for: checker,
+        raise_on_ignored?: false,
+        log_checking_for_update: nil,
+        all_versions_ignored?: false,
+        semver_rules_allow_grouping?: true,
+        log_up_to_date: nil,
+        requirements_to_unlock: [],
+        log_requirements_for_update: nil,
+        service: metrics_service
+      )
+      allow(job).to receive(:package_manager).and_return("bundler")
+      allow(checker).to receive(:up_to_date?).and_return(true)
+    end
+
+    context "when the dependency has an active GitHub Security block" do
+      before do
+        allow(job).to receive(:blocked_versions_for?).with(dependency).and_return(true)
+      end
+
+      it "increments the ignored metric tagged with group_update" do
+        test_instance.compile_updates_for(dependency, dependency_files, group)
+
+        expect(metrics_service).to have_received(:increment_metric).with(
+          "blocked_versions.ignored",
+          tags: {
+            operation: "group_update",
+            package_manager: "bundler"
+          }
+        )
+      end
+    end
+
+    context "when the dependency only has user ignore rules (no block)" do
+      before do
+        allow(job).to receive(:blocked_versions_for?).with(dependency).and_return(false)
+      end
+
+      it "does not increment the ignored metric" do
+        test_instance.compile_updates_for(dependency, dependency_files, group)
+
+        expect(metrics_service).not_to have_received(:increment_metric).with(
+          "blocked_versions.ignored",
+          tags: anything
+        )
+      end
+    end
+  end
+
   describe "#compile_updates_for group-by-name handled deps" do
     let(:dependency) { dependencies.first }
 
@@ -687,6 +803,157 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       )
 
       expect(result).to be(false)
+    end
+  end
+
+  describe "#skip_dependency? directory filtering" do
+    let(:group) do
+      instance_double(
+        Dependabot::DependencyGroup,
+        name: "test-group",
+        dependencies: group_dependencies,
+        group_by_dependency_name?: false
+      )
+    end
+
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:allow_refresh_group_with_all_dependencies)
+        .and_return(false)
+    end
+
+    context "when dependency directory matches the job source directory" do
+      let(:source_directory) { "/app" }
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: "/app")
+      end
+
+      it "does not skip the dependency" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(false)
+      end
+    end
+
+    context "when dependency directory differs from the job source directory" do
+      let(:source_directory) { "/app" }
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: "/other")
+      end
+
+      it "skips the dependency" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(true)
+      end
+    end
+
+    context "when dependency directory is nil" do
+      let(:source_directory) { "/app" }
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: nil)
+      end
+
+      it "does not skip the dependency (nil is treated as belonging to any directory)" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(false)
+      end
+    end
+
+    context "when both dependency directory and source directory are '/'" do
+      let(:source_directory) { "/" }
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: "/")
+      end
+
+      it "does not skip the dependency" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(false)
+      end
+    end
+
+    context "when directories are equivalent but differ in formatting" do
+      let(:source_directory) { "/app/./config/../config" }
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: "/app/config")
+      end
+
+      it "does not skip the dependency (paths are normalized before comparison)" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(false)
+      end
+    end
+  end
+
+  describe "#skip_dependency? single-directory regression" do
+    let(:source_directory) { "/" }
+    let(:group) do
+      instance_double(
+        Dependabot::DependencyGroup,
+        name: "test-group",
+        dependencies: group_dependencies,
+        group_by_dependency_name?: false
+      )
+    end
+
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:allow_refresh_group_with_all_dependencies)
+        .and_return(false)
+    end
+
+    context "when dependency directory matches root '/'" do
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: "/")
+      end
+
+      it "does not skip the dependency" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(false)
+      end
+    end
+
+    context "when dependency directory is nil in single-directory job" do
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: nil)
+      end
+
+      it "does not skip the dependency" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(false)
+      end
+    end
+
+    context "when dependency has already been handled" do
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: "/")
+      end
+
+      before do
+        allow(dependency_snapshot).to receive(:handled_dependencies).and_return(Set.new(["dep1"]))
+      end
+
+      it "skips the dependency" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(true)
+      end
+    end
+
+    context "when dependency has been handled but is a group refresh" do
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: "/")
+      end
+
+      before do
+        allow(dependency_snapshot).to receive(:handled_dependencies).and_return(Set.new(["dep1"]))
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:allow_refresh_group_with_all_dependencies)
+          .and_return(true)
+        allow(job).to receive(:dependency_group_to_refresh).and_return("test-group")
+      end
+
+      it "does not skip the dependency" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(false)
+      end
     end
   end
 end

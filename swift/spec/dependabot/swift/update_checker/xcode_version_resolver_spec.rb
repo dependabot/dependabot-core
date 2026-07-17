@@ -164,7 +164,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
       end
     end
 
-    context "with nil requirement kind" do
+    context "with nil requirement kind from pbxproj" do
       let(:requirements) do
         [{
           file: "MyApp.xcodeproj/project.pbxproj",
@@ -177,6 +177,22 @@ RSpec.describe Dependabot::Swift::UpdateChecker::XcodeVersionResolver do
 
       it "falls back to checking the requirement constraint" do
         expect(resolver.send(:version_meets_requirements?, version)).to be false
+      end
+    end
+
+    context "with nil requirement kind from Package.resolved (sub-dependency)" do
+      let(:requirements) do
+        [{
+          file: "MyApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+          requirement: "= 7.0.0",
+          groups: ["dependencies"],
+          source: { type: "git", url: "https://github.com/Quick/Quick.git", ref: "7.0.0", branch: nil },
+          metadata: { identity: "quick" }
+        }]
+      end
+
+      it "allows updates since actual constraint is in local package's Package.swift" do
+        expect(resolver.send(:version_meets_requirements?, version)).to be true
       end
     end
   end

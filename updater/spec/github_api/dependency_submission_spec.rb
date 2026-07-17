@@ -19,8 +19,12 @@ RSpec.shared_examples "dependency_submission" do |empty|
       branch: branch,
       sha: sha,
       package_manager: "bundler",
-      manifest_file: empty ? empty_file : lockfile,
-      resolved_dependencies: empty ? {} : resolved_dependencies
+      manifest_snapshots: [
+        Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(
+          manifest_file: empty ? empty_file : lockfile,
+          resolved_dependencies: empty ? {} : resolved_dependencies
+        )
+      ]
     )
   end
 
@@ -174,6 +178,9 @@ RSpec.shared_examples "dependency_submission" do |empty|
       # Ecosystem is mapped from the package manager
       expect(lockfile[:metadata][:ecosystem]).to eq("rubygems")
 
+      # Blob OID matches the Git blob SHA-1 of the fixture file
+      expect(lockfile[:metadata][:blob_oid]).to eq("1f21c435958a7c58ef0b4021e1f981017e6d49f2")
+
       # Resolved dependencies are correct
       expect(lockfile[:resolved].length).to eq(2)
 
@@ -199,5 +206,162 @@ RSpec.describe GithubApi::DependencySubmission do
 
   context "without resolved dependencies" do
     it_behaves_like "dependency_submission", true
+  end
+
+  context "with a skipped status and a file fetch error reason" do
+    subject(:dependency_submission) do
+      described_class.new(
+        job_id: "9999",
+        branch: "main",
+        sha: "fake-sha",
+        package_manager: "bundler",
+        manifest_snapshots: [
+          Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(
+            manifest_file: empty_file,
+            resolved_dependencies: {}
+          )
+        ],
+        status: described_class::SnapshotStatus::SKIPPED,
+        reason: described_class::SKIPPED_REASON_FILE_FETCH_ERROR
+      )
+    end
+
+    let(:empty_file) do
+      Dependabot::DependencyFile.new(name: "", content: "", directory: "/broken")
+    end
+
+    it "surfaces the skipped status and reason in the payload metadata" do
+      payload = dependency_submission.payload
+
+      expect(payload[:manifests]).to be_empty
+      expect(payload[:metadata][:status])
+        .to eq(described_class::SnapshotStatus::SKIPPED.serialize)
+      expect(payload[:metadata][:reason]).to eq("unable to fetch files")
+    end
+  end
+
+  context "with a manifest file but no resolved dependencies" do
+    subject(:dependency_submission) do
+      described_class.new(
+        job_id: "9999",
+        branch: "main",
+        sha: "fake-sha",
+        package_manager: "bundler",
+        manifest_snapshots: [
+          Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(
+            manifest_file: lockfile,
+            resolved_dependencies: {}
+          )
+        ]
+      )
+    end
+
+    let(:lockfile) do
+      Dependabot::DependencyFile.new(
+        name: "Gemfile.lock",
+        content: fixture("bundler/original/Gemfile.lock"),
+        directory: "/"
+      )
+    end
+
+    it "still reports the manifest with an empty resolved collection" do
+      payload = dependency_submission.payload
+
+      expect(payload[:manifests].length).to eq(1)
+
+      manifest = payload[:manifests].fetch("/Gemfile.lock")
+      expect(manifest[:name]).to eq("/Gemfile.lock")
+      expect(manifest[:file][:source_location]).to eq("Gemfile.lock")
+      expect(manifest[:metadata][:ecosystem]).to eq("rubygems")
+      expect(manifest[:resolved]).to be_empty
+    end
+  end
+
+  context "with multiple manifest group snapshots for a single directory" do
+    subject(:dependency_submission) do
+      described_class.new(
+        job_id: "9999",
+        branch: "main",
+        sha: "fake-sha",
+        package_manager: "pip",
+        manifest_snapshots: [
+          Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(
+            manifest_file: base_txt,
+            resolved_dependencies: {
+              "starlette" => Dependabot::DependencyGraphers::ResolvedDependency.new(
+                package_url: "pkg:pypi/starlette@0.40.0", direct: true, runtime: true, dependencies: []
+              )
+            }
+          ),
+          Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(
+            manifest_file: test_txt,
+            resolved_dependencies: {
+              "pytest" => Dependabot::DependencyGraphers::ResolvedDependency.new(
+                package_url: "pkg:pypi/pytest@8.3.3", direct: true, runtime: false, dependencies: []
+              )
+            }
+          )
+        ]
+      )
+    end
+
+    let(:base_txt) do
+      Dependabot::DependencyFile.new(name: "base-requirements.txt", content: "starlette==0.40.0\n", directory: "/")
+    end
+
+    let(:test_txt) do
+      Dependabot::DependencyFile.new(name: "test-requirements.txt", content: "pytest==8.3.3\n", directory: "/")
+    end
+
+    it "emits one manifest entry per snapshot, each with only its own dependencies" do
+      manifests = dependency_submission.payload[:manifests]
+
+      expect(manifests.keys).to contain_exactly("/base-requirements.txt", "/test-requirements.txt")
+
+      expect(manifests.fetch("/base-requirements.txt")[:resolved].keys).to contain_exactly("starlette")
+      expect(manifests.fetch("/test-requirements.txt")[:resolved].keys).to contain_exactly("pytest")
+    end
+  end
+
+  context "when the commit SHA is 64 characters (SHA-256 repo)" do
+    subject(:dependency_submission) do
+      described_class.new(
+        job_id: "9999",
+        branch: "main",
+        sha: sha256_sha,
+        package_manager: "bundler",
+        manifest_snapshots: [
+          Dependabot::DependencyGraphers::ManifestGroupSnapshot.new(
+            manifest_file: lockfile,
+            resolved_dependencies: resolved_dependencies
+          )
+        ]
+      )
+    end
+
+    let(:sha256_sha) { "a" * 64 }
+    let(:lockfile) do
+      Dependabot::DependencyFile.new(
+        name: "Gemfile.lock",
+        content: fixture("bundler/original/Gemfile.lock"),
+        directory: "/"
+      )
+    end
+    let(:resolved_dependencies) do
+      {
+        "dummy-pkg-a" => Dependabot::DependencyGraphers::ResolvedDependency.new(
+          package_url: "pkg:gem/dummy-pkg-a@2.0.0",
+          direct: true,
+          runtime: true,
+          dependencies: []
+        )
+      }
+    end
+
+    it "uses SHA-256 for the blob OID" do
+      manifest = dependency_submission.payload[:manifests].fetch("/Gemfile.lock")
+      expect(manifest[:metadata][:blob_oid])
+        .to eq("54bf0378f9dd16ad2b60250c6156132f3ec9232e85b6ef87958aa439e29a4cec")
+    end
   end
 end

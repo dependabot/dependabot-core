@@ -13,6 +13,7 @@ require "dependabot/go_modules/resolvability_errors"
 require "dependabot/go_modules/package/package_details_fetcher"
 require "dependabot/go_modules/azure_devops_path_normalizer"
 require "dependabot/package/package_latest_version_finder"
+require "dependabot/update_checkers/cooldown_calculation"
 
 module Dependabot
   module GoModules
@@ -217,20 +218,18 @@ module Dependabot
 
           current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
           days = cooldown_days_for(current_version, release.version)
+          in_cooldown = Dependabot::UpdateCheckers::CooldownCalculation
+                        .within_cooldown_window?(T.must(release.released_at), days)
 
-          # Calculate the number of seconds passed since the release
-          passed_seconds = Time.now.to_i - release.released_at.to_i
-          passed_days = passed_seconds / DAY_IN_SECONDS
-
-          if passed_days < days
+          if in_cooldown
+            passed_days = (Time.now.to_i - release.released_at.to_i) / (24 * 60 * 60)
             Dependabot.logger.info(
               "Version #{release.version}, Release date: #{release.released_at}." \
               " Days since release: #{passed_days} (cooldown days: #{days})"
             )
           end
 
-          # Check if the release is within the cooldown period
-          passed_seconds < days * DAY_IN_SECONDS
+          in_cooldown
         end
         # rubocop:enable Metrics/AbcSize
 
@@ -254,6 +253,11 @@ module Dependabot
         def fetch_lowest_security_fix_version(language_version: nil)
           relevant_versions = available_versions_details
           relevant_versions = filter_prerelease_versions(relevant_versions)
+          # Add pseudo-versions from advisory boundaries after the prerelease filter.
+          # The Go proxy only indexes tagged releases, so commit-based pseudo-version
+          # fix boundaries won't appear in the version list. They're not traditional
+          # prereleases and must always be considered as candidates.
+          relevant_versions += pseudo_versions_from_advisory_boundaries
           relevant_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
             relevant_versions,
             security_advisories
@@ -265,12 +269,43 @@ module Dependabot
         end
         # rubocop:enable Lint/UnusedMethodArgument
 
+        # When an advisory's fix boundary is a pseudo-version (e.g. "< 2.3.1-0.20260320110106-0b84568fffcc"),
+        # the Go module proxy won't include it in its version list. Extract those pseudo-versions
+        # from the advisory requirement strings so they can be considered as fix candidates.
+        # Only pseudo-versions strictly greater than the current version are returned to avoid
+        # unnecessary processing of versions that would be discarded by filter_lower_versions anyway.
+        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
+        def pseudo_versions_from_advisory_boundaries
+          current = dependency.numeric_version
+
+          security_advisories.flat_map do |advisory|
+            advisory.vulnerable_version_strings.flat_map do |req_string|
+              # Parse each constraint in requirement strings like
+              # ">= 1.1.0, < 2.3.1-0.20260320110106-0b84568fffcc" and extract
+              # any pseudo-version boundary that represents a possible fix.
+              req_string.to_s.split(",").filter_map do |constraint|
+                version_str = constraint.gsub(/\A\s*[<>=!~^]+\s*v?/, "").strip
+                next unless PSEUDO_VERSION_REGEX.match?(version_str)
+                next unless version_class.correct?(version_str)
+
+                candidate = version_class.new(version_str)
+                next if current && candidate <= current
+
+                Dependabot::Package::PackageRelease.new(
+                  version: candidate,
+                  details: { "version_string" => version_str }
+                )
+              end
+            end
+          end.uniq(&:version)
+        end
+
         sig { returns(T::Boolean) }
         def wants_prerelease?
           @wants_prerelease ||= T.let(
             begin
               current_version = dependency.numeric_version
-              !current_version&.prerelease?.nil?
+              current_version&.prerelease? || false
             end,
             T.nilable(T::Boolean)
           )

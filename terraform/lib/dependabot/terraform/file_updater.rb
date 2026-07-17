@@ -14,6 +14,8 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
+      require_relative "file_updater/provider_cli_config_builder"
+
       include FileSelector
 
       PRIVATE_MODULE_ERROR = /Could not download module.*code from\n.*\"(?<repo>\S+)\":/
@@ -46,6 +48,8 @@ module Dependabot
         raise "No files changed!" if updated_files.none?
 
         updated_files
+      ensure
+        cleanup_terraform_cli_config
       end
 
       private
@@ -215,7 +219,8 @@ module Dependabot
 
             SharedHelpers.run_shell_command(
               "terraform providers lock -platform=#{arch} #{provider_source} -no-color",
-              fingerprint: "terraform providers lock -platform=<arch> <provider_source> -no-color"
+              fingerprint: "terraform providers lock -platform=<arch> <provider_source> -no-color",
+              env: terraform_env
             )
 
             updated_lockfile = File.read(".terraform.lock.hcl")
@@ -282,7 +287,8 @@ module Dependabot
 
           SharedHelpers.run_shell_command(
             "terraform providers lock #{platforms} #{provider_source}",
-            fingerprint: "terraform providers lock <platforms> <provider_source>"
+            fingerprint: "terraform providers lock <platforms> <provider_source>",
+            env: terraform_env
           )
 
           updated_lockfile = File.read(".terraform.lock.hcl")
@@ -319,7 +325,10 @@ module Dependabot
           # -backend=false option used to ignore any backend configuration, as these won't be accessible
           # -input=false option used to immediately fail if it needs user input
           # -no-color option used to prevent any color characters being printed in the output
-          SharedHelpers.run_shell_command("terraform init -backend=false -input=false -no-color")
+          SharedHelpers.run_shell_command(
+            "terraform init -backend=false -input=false -no-color",
+            env: terraform_env
+          )
         rescue SharedHelpers::HelperSubprocessFailed => e
           output = e.message
 
@@ -427,6 +436,30 @@ module Dependabot
           provider\s*["']#{Regexp.escape(provider_source)}["']\s*\{
           (?:(?!^\}).)*}
         /mix
+      end
+
+      sig { returns(T::Hash[String, String]) }
+      def terraform_env
+        @terraform_env ||= T.let(
+          provider_cli_config_builder.env,
+          T.nilable(T::Hash[String, String])
+        )
+      end
+
+      sig { void }
+      def cleanup_terraform_cli_config
+        provider_cli_config_builder.cleanup
+      end
+
+      sig { returns(ProviderCliConfigBuilder) }
+      def provider_cli_config_builder
+        @provider_cli_config_builder ||= T.let(
+          ProviderCliConfigBuilder.new(
+            dependency: dependency,
+            terraform_files: terraform_files
+          ),
+          T.nilable(ProviderCliConfigBuilder)
+        )
       end
     end
 

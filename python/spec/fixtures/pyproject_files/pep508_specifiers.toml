@@ -1,0 +1,16 @@
+[project]
+name = "myapp"
+version = "1.0.0"
+description = "Test project exercising PEP 508 specifier styles"
+requires-python = ">=3.10"
+
+dependencies = [
+    "requests >= 2.13.0, < 3.0",
+    "urllib3==1.26.0",
+    "certifi ~= 2023.7.22",
+    "idna >= 3.4, != 3.5",
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

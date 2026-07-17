@@ -17,6 +17,11 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
 
     public bool CanHandle(Job job)
     {
+        if (job.MultiEcosystemUpdate)
+        {
+            return true;
+        }
+
         if (job.UpdatingAPullRequest)
         {
             return false;
@@ -52,6 +57,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
     private async Task RunGroupedDependencyUpdates(Job job, DirectoryInfo originalRepoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
     {
         var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
+        var initialFiles = ModifiedFilesTracker.GetInitiallyExistingFiles(repoContentsPath);
         foreach (var group in job.DependencyGroups)
         {
             logger.Info($"Starting update for group {group.Name}");
@@ -69,10 +75,10 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     return;
                 }
 
-                var tracker = new ModifiedFilesTracker(originalRepoContentsPath, logger);
+                var tracker = new ModifiedFilesTracker(originalRepoContentsPath, initialFiles, logger);
                 await tracker.StartTrackingAsync(discoveryResult);
 
-                var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger);
+                var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger, initialFiles);
                 await apiHandler.UpdateDependencyList(updatedDependencyList);
 
                 var updateOperationsToPerform = RunWorker.GetUpdateOperations(discoveryResult).ToArray();
@@ -117,7 +123,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     }
 
                     var projectDiscovery = discoveryResult.GetProjectDiscoveryFromPath(projectPath);
-                    var updaterResult = await updaterWorker.RunAsync(repoContentsPath.FullName, projectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, dependency.IsTransitive);
+                    var updaterResult = await updaterWorker.RunAsync(repoContentsPath.FullName, projectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, dependency.IsTopLevel);
                     if (updaterResult.Error is not null)
                     {
                         logger.Error($"Error updating {dependency.Name} in {projectPath}: {updaterResult.Error.GetReport()}");
@@ -179,6 +185,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
     private async Task RunUngroupedDependencyUpdates(Job job, DirectoryInfo originalRepoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
     {
         var repoContentsPath = caseInsensitiveRepoContentsPath ?? originalRepoContentsPath;
+        var initialFiles = ModifiedFilesTracker.GetInitiallyExistingFiles(repoContentsPath);
         foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
         {
             var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
@@ -189,7 +196,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                 return;
             }
 
-            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger);
+            var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger, initialFiles);
             await apiHandler.UpdateDependencyList(updatedDependencyList);
 
             var updateOperationsToPerformByDependency = CollectUpdateOperationsByDependency(discoveryResult);
@@ -198,7 +205,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                 logger.Info($"Starting dependency update for {sameDependencySet.Key}");
                 var updateOperationsPerformed = new List<UpdateOperationBase>();
                 var updatedDependencies = new List<ReportedDependency>();
-                var tracker = new ModifiedFilesTracker(originalRepoContentsPath, logger);
+                var tracker = new ModifiedFilesTracker(originalRepoContentsPath, initialFiles, logger);
                 await tracker.StartTrackingAsync(discoveryResult);
 
                 foreach (var (projectPath, dependency) in sameDependencySet)
@@ -236,7 +243,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     }
 
                     var projectDiscovery = discoveryResult.GetProjectDiscoveryFromPath(projectPath);
-                    var updaterResult = await updaterWorker.RunAsync(repoContentsPath.FullName, projectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, dependency.IsTransitive);
+                    var updaterResult = await updaterWorker.RunAsync(repoContentsPath.FullName, projectPath, dependency.Name, dependency.Version!, analysisResult.UpdatedVersion, dependency.IsTopLevel);
                     if (updaterResult.Error is not null)
                     {
                         await apiHandler.RecordUpdateJobError(updaterResult.Error, logger);

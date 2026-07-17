@@ -1,0 +1,655 @@
+# typed: false
+# frozen_string_literal: true
+
+require "base64"
+
+require "spec_helper"
+require "dependabot/dependency_file"
+require "dependabot/gradle/file_updater"
+
+RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
+  subject(:lockfile_updater) { described_class.new(dependency_files: dependency_files) }
+
+  let(:root_settings) do
+    Dependabot::DependencyFile.new(
+      name: "settings.gradle",
+      directory: "/",
+      content: "include(':app')\nincludeBuild('included')\n"
+    )
+  end
+
+  let(:included_settings) do
+    Dependabot::DependencyFile.new(
+      name: "included/settings.gradle",
+      directory: "/",
+      content: "include(':lib')\n"
+    )
+  end
+
+  let(:root_buildfile) do
+    Dependabot::DependencyFile.new(
+      name: "build.gradle",
+      directory: "/",
+      content: "plugins { id 'java' }\n"
+    )
+  end
+
+  let(:app_buildfile) do
+    Dependabot::DependencyFile.new(
+      name: "app/build.gradle",
+      directory: "/",
+      content: "plugins { id 'java-library' }\n"
+    )
+  end
+
+  let(:gradlew) do
+    Dependabot::DependencyFile.new(
+      name: "gradlew",
+      directory: "/",
+      content: "#!/bin/sh\necho wrapper\n"
+    )
+  end
+
+  let(:gradle_wrapper_jar_raw) { "fake-gradle-wrapper\x00bytes" }
+
+  let(:gradle_wrapper_jar) do
+    Dependabot::DependencyFile.new(
+      name: "gradle/wrapper/gradle-wrapper.jar",
+      directory: "/",
+      content: Base64.strict_encode64(gradle_wrapper_jar_raw),
+      content_encoding: Dependabot::DependencyFile::ContentEncoding::BASE64
+    )
+  end
+
+  let(:included_buildfile) do
+    Dependabot::DependencyFile.new(
+      name: "included/build.gradle",
+      directory: "/",
+      content: "plugins { id 'java' }\n"
+    )
+  end
+
+  let(:root_lockfile) do
+    Dependabot::DependencyFile.new(
+      name: "gradle.lockfile",
+      directory: "/",
+      content: "# root lockfile\n"
+    )
+  end
+
+  let(:app_lockfile) do
+    Dependabot::DependencyFile.new(
+      name: "app/gradle.lockfile",
+      directory: "/",
+      content: "# app lockfile\n"
+    )
+  end
+
+  let(:included_lockfile) do
+    Dependabot::DependencyFile.new(
+      name: "included/gradle.lockfile",
+      directory: "/",
+      content: "# included lockfile\n"
+    )
+  end
+
+  let(:external_lockfile) do
+    Dependabot::DependencyFile.new(
+      name: "external/gradle.lockfile",
+      directory: "/",
+      content: "# external lockfile\n"
+    )
+  end
+
+  describe "#update_lockfiles" do
+    context "when the build file belongs to the root build" do
+      let(:dependency_files) do
+        [
+          root_settings,
+          root_buildfile,
+          app_buildfile,
+          root_lockfile,
+          app_lockfile,
+          external_lockfile
+        ]
+      end
+
+      let(:observed_cwds) { [] }
+      let(:observed_commands) { [] }
+      let(:observed_wrapper_executable) { [] }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
+          observed_cwds << cwd
+          observed_commands << command
+
+          wrapper_token = command.split.first
+          if wrapper_token&.include?("gradlew")
+            wrapper_path = File.expand_path(wrapper_token, cwd)
+            observed_wrapper_executable << File.executable?(wrapper_path)
+          end
+
+          File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+          FileUtils.mkdir_p(File.join(cwd, "app"))
+          File.write(File.join(cwd, "app/gradle.lockfile"), "# updated app lockfile\n")
+        end
+      end
+
+      it "runs from the repository root and updates lockfiles in scope" do
+        result = lockfile_updater.update_lockfiles(root_buildfile)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          include("dependabotResolveAll"),
+          cwd: kind_of(String)
+        )
+        expect(observed_cwds.last).not_to end_with("/app")
+        expect(observed_cwds.last).not_to end_with("/external")
+
+        expect(result.find { |f| f.name == "gradle.lockfile" }.content).to eq("# updated root lockfile\n")
+        expect(result.find { |f| f.name == "app/gradle.lockfile" }.content).to eq("# updated app lockfile\n")
+        expect(result.find { |f| f.name == "external/gradle.lockfile" }.content).to eq("# external lockfile\n")
+      end
+
+      context "when a local gradlew script is available" do
+        let(:dependency_files) do
+          [
+            gradlew,
+            root_settings,
+            root_buildfile,
+            root_lockfile
+          ]
+        end
+
+        let(:observed_command) { [] }
+        let(:observed_wrapper_executable) { [] }
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
+            File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+            observed_command << command
+
+            wrapper_path = File.expand_path(command.split.first, cwd)
+            observed_wrapper_executable << File.executable?(wrapper_path)
+          end
+        end
+
+        it "prefers the local wrapper executable" do
+          lockfile_updater.update_lockfiles(root_buildfile)
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          expect(observed_command.last).to include("./gradlew")
+          expect(observed_wrapper_executable.last).to be(true)
+        end
+
+        it "returns existing files unchanged when wrapper execution fails" do
+          allow(Dependabot.logger).to receive(:error)
+
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                         message: "Error: Invalid or corrupt jarfile gradle/wrapper/gradle-wrapper.jar",
+                         error_context: { command: "./gradlew" }
+                       ))
+
+          result = lockfile_updater.update_lockfiles(root_buildfile)
+
+          expect(result.find { |f| f.name == "gradle.lockfile" }.content).to eq("# root lockfile\n")
+          expect(Dependabot.logger).to have_received(:error).with(include("Failed to update lockfiles"))
+        end
+      end
+
+      context "when gradle-wrapper.jar is base64 encoded" do
+        let(:dependency_files) do
+          [
+            gradlew,
+            gradle_wrapper_jar,
+            root_settings,
+            root_buildfile,
+            root_lockfile
+          ]
+        end
+
+        let(:observed_wrapper_jar_content) { [] }
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+            wrapper_jar_path = File.join(cwd, "gradle/wrapper/gradle-wrapper.jar")
+            observed_wrapper_jar_content << File.binread(wrapper_jar_path)
+            File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+          end
+        end
+
+        it "writes decoded binary wrapper jar content to disk" do
+          lockfile_updater.update_lockfiles(root_buildfile)
+
+          expect(observed_wrapper_jar_content.last).to eq(gradle_wrapper_jar_raw)
+        end
+      end
+
+      context "when a local gradlew script is not available" do
+        let(:dependency_files) do
+          [
+            root_settings,
+            root_buildfile,
+            root_lockfile
+          ]
+        end
+
+        let(:observed_command) { [] }
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
+            File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+            observed_command << command
+          end
+        end
+
+        it "falls back to system gradle" do
+          lockfile_updater.update_lockfiles(root_buildfile)
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          expect(observed_command.last).to start_with("gradle ")
+        end
+      end
+    end
+
+    context "when the build file belongs to an included build" do
+      let(:dependency_files) do
+        [
+          root_settings,
+          included_settings,
+          included_buildfile,
+          included_lockfile,
+          external_lockfile
+        ]
+      end
+
+      let(:observed_cwds) { [] }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+          observed_cwds << cwd
+          File.write(File.join(cwd, "gradle.lockfile"), "# updated included lockfile\n")
+        end
+      end
+
+      it "runs from the included build root and updates only that root's lockfiles" do
+        result = lockfile_updater.update_lockfiles(included_buildfile)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          include("dependabotResolveAll"),
+          cwd: kind_of(String)
+        )
+        expect(observed_cwds.last).to end_with("/included")
+
+        expect(result.find { |f| f.name == "included/gradle.lockfile" }.content).to eq("# updated included lockfile\n")
+        expect(result.find { |f| f.name == "external/gradle.lockfile" }.content).to eq("# external lockfile\n")
+      end
+    end
+
+    context "when using a version catalog without a settings file" do
+      let(:version_catalog) do
+        Dependabot::DependencyFile.new(
+          name: "gradle/libs.versions.toml",
+          directory: "/",
+          content: "[versions]\nfoo = \"1.0.0\"\n"
+        )
+      end
+
+      let(:dependency_files) do
+        [
+          version_catalog,
+          root_lockfile,
+          app_lockfile
+        ]
+      end
+
+      let(:observed_cwds) { [] }
+      let(:observed_commands) { [] }
+      let(:observed_wrapper_executable) { [] }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
+          observed_cwds << cwd
+          observed_commands << command
+
+          wrapper_token = command.split.first
+          if wrapper_token&.include?("gradlew")
+            wrapper_path = File.expand_path(wrapper_token, cwd)
+            observed_wrapper_executable << File.executable?(wrapper_path)
+          end
+
+          File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+          FileUtils.mkdir_p(File.join(cwd, "app"))
+          File.write(File.join(cwd, "app/gradle.lockfile"), "# updated app lockfile\n")
+        end
+      end
+
+      it "falls back to the project root and updates root-scoped lockfiles" do
+        result = lockfile_updater.update_lockfiles(version_catalog)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          include("dependabotResolveAll"),
+          cwd: kind_of(String)
+        )
+        expect(observed_cwds.last).not_to end_with("/gradle")
+
+        expect(result.find { |f| f.name == "gradle.lockfile" }.content).to eq("# updated root lockfile\n")
+        expect(result.find { |f| f.name == "app/gradle.lockfile" }.content).to eq("# updated app lockfile\n")
+      end
+    end
+
+    context "when Gradle does not regenerate one of the lockfiles" do
+      let(:dependency_files) { [root_settings, root_buildfile, root_lockfile, app_lockfile] }
+
+      before do
+        allow(Dependabot.logger).to receive(:warn)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+          File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+        end
+      end
+
+      it "keeps lockfiles with unchanged content" do
+        result = lockfile_updater.update_lockfiles(root_buildfile)
+
+        expect(result.find { |f| f.name == "gradle.lockfile" }.content).to eq("# updated root lockfile\n")
+        expect(result.find { |f| f.name == "app/gradle.lockfile" }.content).to eq("# app lockfile\n")
+      end
+    end
+
+    context "when the Gradle invocation fails" do
+      let(:dependency_files) { [root_settings, app_buildfile, root_lockfile, app_lockfile] }
+
+      before do
+        allow(Dependabot.logger).to receive(:error)
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: "gradle failed",
+                       error_context: { command: "gradle" }
+                     ))
+      end
+
+      it "returns the existing files unchanged" do
+        result = lockfile_updater.update_lockfiles(app_buildfile)
+
+        expect(result.find { |f| f.name == "gradle.lockfile" }.content).to eq("# root lockfile\n")
+        expect(result.find { |f| f.name == "app/gradle.lockfile" }.content).to eq("# app lockfile\n")
+        expect(Dependabot.logger).to have_received(:error).with(include("Failed to update lockfiles"))
+      end
+    end
+
+    context "when there are no lockfiles in scope" do
+      let(:dependency_files) { [root_settings, root_buildfile] }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      end
+
+      it "returns dependency files unchanged without invoking Gradle" do
+        result = lockfile_updater.update_lockfiles(root_buildfile)
+
+        expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+        expect(result).to eq(dependency_files)
+      end
+    end
+
+    context "when a gradle.properties file is present" do
+      let(:gradle_properties) do
+        Dependabot::DependencyFile.new(
+          name: "gradle.properties",
+          directory: "/",
+          content: "GROUP=com.example\nVERSION=1.0.0\n"
+        )
+      end
+
+      let(:dependency_files) do
+        [root_settings, root_buildfile, root_lockfile, gradle_properties]
+      end
+
+      let(:observed_properties) { [] }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+          properties_path = File.join(cwd, "gradle.properties")
+          observed_properties << File.read(properties_path) if File.exist?(properties_path)
+          File.write(File.join(cwd, "gradle.lockfile"), "# updated lockfile\n")
+        end
+      end
+
+      it "preserves existing gradle.properties content and appends proxy settings" do
+        lockfile_updater.update_lockfiles(root_buildfile)
+
+        expect(observed_properties.last).to include("GROUP=com.example")
+        expect(observed_properties.last).to include("VERSION=1.0.0")
+        expect(observed_properties.last).to include("systemProp.http.proxyHost=")
+      end
+    end
+
+    context "when files have a non-root source directory" do
+      let(:subdir_settings) do
+        Dependabot::DependencyFile.new(
+          name: "settings.gradle",
+          directory: "/gradle-lockfile",
+          content: "include(':app')\n"
+        )
+      end
+
+      let(:subdir_buildfile) do
+        Dependabot::DependencyFile.new(
+          name: "app/build.gradle",
+          directory: "/gradle-lockfile",
+          content: "plugins { id 'java' }\n"
+        )
+      end
+
+      let(:subdir_root_lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "gradle.lockfile",
+          directory: "/gradle-lockfile",
+          content: "# old root lockfile\n"
+        )
+      end
+
+      let(:subdir_app_lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "app/gradle.lockfile",
+          directory: "/gradle-lockfile",
+          content: "# old app lockfile\n"
+        )
+      end
+
+      let(:dependency_files) do
+        [subdir_settings, subdir_buildfile, subdir_root_lockfile, subdir_app_lockfile]
+      end
+
+      let(:observed_cwds) { [] }
+      let(:observed_commands) { [] }
+      let(:observed_wrapper_executable) { [] }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
+          observed_cwds << cwd
+          observed_commands << command
+
+          wrapper_token = command.split.first
+          if wrapper_token&.include?("gradlew")
+            wrapper_path = File.expand_path(wrapper_token, cwd)
+            observed_wrapper_executable << File.executable?(wrapper_path)
+          end
+
+          File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+          FileUtils.mkdir_p(File.join(cwd, "app"))
+          File.write(File.join(cwd, "app/gradle.lockfile"), "# updated app lockfile\n")
+        end
+      end
+
+      it "resolves root_dir to the source directory and runs Gradle from there" do
+        result = lockfile_updater.update_lockfiles(subdir_buildfile)
+
+        expect(observed_cwds.last).to end_with("/gradle-lockfile")
+
+        expect(result.find { |f| f.name == "gradle.lockfile" }.content).to eq("# updated root lockfile\n")
+        expect(result.find { |f| f.name == "app/gradle.lockfile" }.content).to eq("# updated app lockfile\n")
+      end
+
+      context "when gradlew exists at the repository root" do
+        let(:dependency_files) do
+          [gradlew, subdir_settings, subdir_buildfile, subdir_root_lockfile, subdir_app_lockfile]
+        end
+
+        it "uses the parent-directory wrapper script" do
+          lockfile_updater.update_lockfiles(subdir_buildfile)
+
+          expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+          expect(observed_commands.last).to start_with("../gradlew ")
+          expect(observed_wrapper_executable.last).to be(true)
+        end
+
+        it "does not execute wrappers outside the temporary repository root" do
+          require "tmpdir"
+
+          outside_root = Dir.mktmpdir("outside-gradle-wrapper")
+          outside_wrapper = File.join(outside_root, "gradlew")
+          File.write(outside_wrapper, "#!/bin/sh\necho outside\n")
+          FileUtils.chmod("+x", outside_wrapper)
+
+          begin
+            stub_const("Dependabot::Utils::BUMP_TMP_DIR_PATH", outside_root)
+
+            allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
+              observed_commands << command
+              File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+              FileUtils.mkdir_p(File.join(cwd, "app"))
+              File.write(File.join(cwd, "app/gradle.lockfile"), "# updated app lockfile\n")
+            end
+
+            updater = described_class.new(
+              dependency_files: [subdir_settings, subdir_buildfile, subdir_root_lockfile, subdir_app_lockfile]
+            )
+            updater.update_lockfiles(subdir_buildfile)
+
+            expect(observed_commands.last).to start_with("gradle ")
+          ensure
+            FileUtils.rm_rf(outside_root)
+          end
+        end
+
+        it "falls back to system gradle when the build path escapes the temporary workspace" do
+          require "tmpdir"
+
+          outside_root = Dir.mktmpdir("outside-gradle-wrapper")
+          outside_wrapper = File.join(outside_root, "gradlew")
+          File.write(outside_wrapper, "#!/bin/sh\necho outside\n")
+          FileUtils.chmod("+x", outside_wrapper)
+
+          escaped_settings = Dependabot::DependencyFile.new(
+            name: "settings.gradle",
+            directory: "/gradle-lockfile/sub/../../../../shared",
+            content: "include(':app')\n"
+          )
+
+          escaped_buildfile = Dependabot::DependencyFile.new(
+            name: "app/build.gradle",
+            directory: "/gradle-lockfile/sub/../../../../shared",
+            content: "plugins { id 'java' }\n"
+          )
+
+          escaped_root_lockfile = Dependabot::DependencyFile.new(
+            name: "gradle.lockfile",
+            directory: "/gradle-lockfile/sub/../../../../shared",
+            content: "# old root lockfile\n"
+          )
+
+          escaped_app_lockfile = Dependabot::DependencyFile.new(
+            name: "app/gradle.lockfile",
+            directory: "/gradle-lockfile/sub/../../../../shared",
+            content: "# old app lockfile\n"
+          )
+
+          begin
+            stub_const("Dependabot::Utils::BUMP_TMP_DIR_PATH", outside_root)
+
+            allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
+              observed_commands << command
+              File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+              FileUtils.mkdir_p(File.join(cwd, "app"))
+              File.write(File.join(cwd, "app/gradle.lockfile"), "# updated app lockfile\n")
+            end
+
+            updater = described_class.new(
+              dependency_files: [escaped_settings, escaped_buildfile, escaped_root_lockfile, escaped_app_lockfile]
+            )
+            updater.update_lockfiles(escaped_buildfile)
+
+            expect(observed_commands.last).to start_with("gradle ")
+          ensure
+            FileUtils.rm_rf(outside_root)
+          end
+        end
+      end
+
+      context "when the build path contains parent traversal" do
+        let(:traversal_settings) do
+          Dependabot::DependencyFile.new(
+            name: "settings.gradle",
+            directory: "/gradle-lockfile/sub/../../build-logic",
+            content: "include(':app')\n"
+          )
+        end
+
+        let(:traversal_buildfile) do
+          Dependabot::DependencyFile.new(
+            name: "app/build.gradle",
+            directory: "/gradle-lockfile/sub/../../build-logic",
+            content: "plugins { id 'java' }\n"
+          )
+        end
+
+        let(:traversal_root_lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "gradle.lockfile",
+            directory: "/gradle-lockfile/sub/../../build-logic",
+            content: "# old root lockfile\n"
+          )
+        end
+
+        let(:traversal_app_lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "app/gradle.lockfile",
+            directory: "/gradle-lockfile/sub/../../build-logic",
+            content: "# old app lockfile\n"
+          )
+        end
+
+        let(:sibling_gradlew) do
+          Dependabot::DependencyFile.new(
+            name: "gradlew",
+            directory: "/gradle-lockfile/sub",
+            content: "#!/bin/sh\necho sibling wrapper\n"
+          )
+        end
+
+        let(:dependency_files) do
+          [sibling_gradlew, traversal_settings, traversal_buildfile, traversal_root_lockfile, traversal_app_lockfile]
+        end
+
+        let(:observed_commands) { [] }
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
+            observed_commands << command
+            File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+            FileUtils.mkdir_p(File.join(cwd, "app"))
+            File.write(File.join(cwd, "app/gradle.lockfile"), "# updated app lockfile\n")
+          end
+        end
+
+        it "ignores wrappers that are only reachable through lexical parent traversal" do
+          lockfile_updater.update_lockfiles(traversal_buildfile)
+
+          expect(observed_commands.last).to start_with("gradle ")
+        end
+      end
+    end
+  end
+end

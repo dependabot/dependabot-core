@@ -31,10 +31,6 @@ module Dependabot
 
       private
 
-      # TODO: Build subdependency in this class and assign here -or- assign metadata in the parser
-      #
-      # We can do whichever makes most sense on a case-by-case basis, for Go the trade off on
-      # doing this in the parser shouldn't add a huge overhead.
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def fetch_subdependencies(dependency)
         # go mod graph returns all dependencies it finds, even if it has been pruned. So filter those out.

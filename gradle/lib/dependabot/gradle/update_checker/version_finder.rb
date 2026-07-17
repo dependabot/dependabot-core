@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "nokogiri"
@@ -13,6 +13,7 @@ require "sorbet-runtime"
 require "dependabot/gradle/package/package_details_fetcher"
 require "dependabot/package/package_latest_version_finder"
 require "dependabot/maven/shared/shared_version_finder"
+require "dependabot/update_checkers/cooldown_calculation"
 
 module Dependabot
   module Gradle
@@ -48,7 +49,7 @@ module Dependabot
           @dependency_files    = dependency_files
           @credentials         = credentials
           @raise_on_ignored    = raise_on_ignored
-          @forbidden_urls      = T.let([], T::Array[T.untyped])
+          @forbidden_urls      = T.let([], T::Array[String])
           @ignored_versions    = ignored_versions
 
           super(
@@ -63,7 +64,7 @@ module Dependabot
           )
         end
 
-        sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
+        sig { returns(T.nilable(T::Hash[Symbol, Object])) }
         def latest_version_details
           possible_versions = package_release(versions)
 
@@ -91,7 +92,7 @@ module Dependabot
           true
         end
 
-        sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
+        sig { returns(T.nilable(T::Hash[Symbol, Object])) }
         def lowest_security_fix_version_details
           possible_versions = package_release(versions)
 
@@ -117,13 +118,14 @@ module Dependabot
             source_url: url }
         end
 
-        sig { returns(T.any(T::Array[T::Hash[String, T.untyped]], T::Array[T::Hash[Symbol, T.untyped]])) }
+        sig { returns(T::Array[T::Hash[Symbol, Object]]) }
         def versions
           Package::PackageDetailsFetcher.new(
             dependency: dependency,
             dependency_files: dependency_files,
             credentials: credentials,
-            forbidden_urls: forbidden_urls
+            forbidden_urls: forbidden_urls,
+            cooldown_options: cooldown_options
           ).fetch_available_versions
         end
 
@@ -132,10 +134,10 @@ module Dependabot
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
         sig { returns(T.nilable(T::Array[String])) }
@@ -147,37 +149,16 @@ module Dependabot
         sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
         attr_reader :security_advisories
 
-        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
-        def filter_date_based_versions(possible_versions)
-          return possible_versions if wants_date_based_version?
-
-          filtered = possible_versions.reject { |release| release.version > version_class.new(1900) }
-          if possible_versions.count > filtered.count
-            Dependabot.logger.info("Filtered out #{possible_versions.count - filtered.count} date-based versions")
-          end
-          filtered
-        end
-
-        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
-        def filter_version_types(possible_versions)
-          filtered = possible_versions.select { |release| matches_dependency_version_type?(release.version) }
-          if possible_versions.count > filtered.count
-            diff = possible_versions.count - filtered.count
-            classifier = T.must(dependency.version).split(/[.\-]/).last
-            Dependabot.logger.info("Filtered out #{diff} non-#{classifier} classifier versions")
-          end
-          filtered
-        end
-
-        sig { params(version: T::Array[T.untyped]).returns(T::Array[Dependabot::Package::PackageRelease]) }
+        sig { params(version: T::Array[T::Hash[Symbol, Object]]).returns(T::Array[Dependabot::Package::PackageRelease]) }
         def package_release(version)
           package_releases = []
 
           version.map do |info|
+            released_at = info[:released_at]
             package_releases << Dependabot::Package::PackageRelease.new(
-              version: info[:version],
-              released_at: info[:released_at],
-              url: info[:source_url]
+              version: Dependabot::Gradle::Version.new(info[:version].to_s),
+              released_at: released_at.is_a?(Time) ? released_at : nil,
+              url: info[:source_url]&.to_s
             )
           end
           package_releases
@@ -190,13 +171,17 @@ module Dependabot
               dependency: dependency,
               dependency_files: dependency_files,
               credentials: credentials,
-              forbidden_urls: []
+              forbidden_urls: [],
+              cooldown_options: cooldown_options
             ),
             T.nilable(Dependabot::Gradle::Package::PackageDetailsFetcher)
           )
         end
 
-        sig { params(possible_versions: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
+        sig do
+          params(possible_versions: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
         def filter_ignored_versions(possible_versions)
           filtered = possible_versions
 
@@ -253,52 +238,46 @@ module Dependabot
 
         sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
         def in_cooldown_period?(release)
-          unless release.released_at
-            if cooldown_options
-              Dependabot.logger.info("Release date not available for version #{release.version} - filtering out")
-              return true
-            else
-              Dependabot.logger.info("Release date not available for version #{release.version}")
-              return false
-            end
-          end
-
           current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
           days = cooldown_days_for(current_version, release.version)
+          return false if days <= 0
 
-          # Calculate the number of seconds passed since the release
-          passed_seconds = Time.now.to_i - release.released_at.to_i
-          passed_days = passed_seconds / DAY_IN_SECONDS
+          release = package_details_fetcher.fetch_release_metadata(release: release)
+          return missing_release_date_in_cooldown?(release) unless release.released_at
 
-          if passed_days < days
+          cooldown_window?(release: release, days: days)
+        end
+
+        sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
+        def missing_release_date_in_cooldown?(release)
+          if cooldown_options
+            Dependabot.logger.info("Release date not available for version #{release.version} - filtering out")
+            true
+          else
+            Dependabot.logger.info("Release date not available for version #{release.version}")
+            false
+          end
+        end
+
+        sig do
+          params(
+            release: Dependabot::Package::PackageRelease,
+            days: Integer
+          ).returns(T::Boolean)
+        end
+        def cooldown_window?(release:, days:)
+          in_cooldown = Dependabot::UpdateCheckers::CooldownCalculation
+                        .within_cooldown_window?(T.must(release.released_at), days)
+          if in_cooldown
+            passed_days = (Time.now.to_i - release.released_at.to_i) / (24 * 60 * 60)
             Dependabot.logger.info(
               "Version #{release.version}, Release date: #{release.released_at}." \
               " Days since release: #{passed_days} (cooldown days: #{days})"
             )
           end
-
-          # Check if the release is within the cooldown period
-          passed_seconds < days * DAY_IN_SECONDS
+          in_cooldown
         end
 
-        sig { returns(T::Boolean) }
-        def wants_prerelease?
-          return false unless dependency.numeric_version
-
-          T.must(dependency.numeric_version).prerelease?
-        end
-
-        sig { returns(T::Boolean) }
-        def wants_date_based_version?
-          return false unless dependency.numeric_version
-
-          T.must(dependency.numeric_version) >= version_class.new(100)
-        end
-
-        sig { returns(T.class_of(Dependabot::Version)) }
-        def version_class
-          dependency.version_class
-        end
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def package_details; end
       end

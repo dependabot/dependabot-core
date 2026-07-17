@@ -193,27 +193,100 @@ module Dependabot
       def find_engine_constraints_as_requirement(name)
         Dependabot.logger.info("Processing engine constraints for #{name}")
 
-        return nil unless @engines.is_a?(Hash) && @engines[name]
-
-        raw_constraint = @engines[name].to_s.strip
+        raw_constraint = raw_engine_constraint(name)
         return nil if raw_constraint.empty?
 
-        constraints = ConstraintHelper.extract_ruby_constraints(raw_constraint)
-        # When constraints are invalid we return constraints array nil
-        if constraints.nil?
+        constraint_groups = parse_constraint_groups(raw_constraint)
+        if constraint_groups.nil?
           Dependabot.logger.warn(
             "Unrecognized constraint format for #{name}: #{raw_constraint}"
           )
+          return nil
         end
 
-        if constraints && !constraints.empty?
-          Dependabot.logger.info("Parsed constraints for #{name}: #{constraints.join(', ')}")
-          Requirement.new(constraints)
-        end
+        # A wildcard/latest branch translates to no constraints, which means
+        # there is effectively no engine requirement.
+        return nil if constraint_groups.any?(&:empty?)
+
+        constraint_groups = constraint_groups.reject(&:empty?)
+
+        return nil if constraint_groups.empty?
+
+        parsed_constraints = constraint_groups.map { |group| group.join(" ") }.join(" || ")
+        Dependabot.logger.info("Parsed constraints for #{name}: #{parsed_constraints}")
+
+        requirement_for_group(constraint_groups, name)
       rescue StandardError => e
         Dependabot.logger.error("Error processing constraints for #{name}: #{e.message}")
         nil
       end
+
+      sig { params(name: String).returns(String) }
+      def raw_engine_constraint(name)
+        return "" unless @engines.is_a?(Hash) && @engines[name]
+
+        @engines[name].to_s.strip
+      end
+
+      sig { params(raw_constraint: String).returns(T.nilable(T::Array[T::Array[String]])) }
+      def parse_constraint_groups(raw_constraint)
+        raw_constraint.split("||").map(&:strip).reject(&:empty?).map do |constraint_group|
+          constraints = ConstraintHelper.extract_ruby_constraints(constraint_group)
+          return nil if constraints.nil?
+
+          expanded_constraints(constraints)
+        end
+      end
+
+      sig { params(constraints: T::Array[String]).returns(T::Array[String]) }
+      def expanded_constraints(constraints)
+        constraints.flat_map do |constraint|
+          parts = constraint.strip.split(/\s+/)
+          if parts.length > 1 && parts.all? { |part| part.match?(ConstraintHelper::VALID_CONSTRAINT_REGEX) }
+            parts
+          else
+            [constraint]
+          end
+        end
+      end
+
+      sig do
+        params(
+          constraint_groups: T::Array[T::Array[String]],
+          name: String
+        ).returns(Requirement)
+      end
+      def requirement_for_group(constraint_groups, name)
+        requirements = constraint_groups.map { |constraints| Requirement.new(constraints) }
+        fallback_requirement = T.must(requirements.first)
+
+        current_version = current_engine_version(name)
+        return fallback_requirement unless current_version
+
+        matching_requirement = requirements.find { |requirement| requirement.satisfied_by?(current_version) }
+        matching_requirement || fallback_requirement
+      end
+
+      sig { params(name: String).returns(T.nilable(Dependabot::Version)) }
+      def current_engine_version(name)
+        raw_version = if name == Language::NAME
+                        Helpers.node_version
+                      else
+                        @installed_versions[name]
+                      end
+
+        return nil if raw_version.to_s.strip.empty?
+
+        Version.new(raw_version)
+      rescue StandardError
+        nil
+      end
+
+      private :raw_engine_constraint,
+              :parse_constraint_groups,
+              :expanded_constraints,
+              :requirement_for_group,
+              :current_engine_version
 
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/AbcSize

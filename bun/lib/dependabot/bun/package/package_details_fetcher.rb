@@ -335,7 +335,7 @@ module Dependabot
         sig { params(error: StandardError).void }
         def raise_npm_details_error(error)
           raise if dependency_registry == GLOBAL_REGISTRY
-          raise unless error.is_a?(Excon::Error::Timeout)
+          raise unless error.is_a?(Excon::Error::Timeout) || error.is_a?(Excon::Error::Socket)
 
           raise PrivateSourceTimedOut, dependency_registry
         end

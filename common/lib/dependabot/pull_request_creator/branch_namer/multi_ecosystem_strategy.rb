@@ -19,7 +19,10 @@ module Dependabot
             multi_ecosystem_name: String,
             separator: String,
             prefix: String,
-            max_length: T.nilable(Integer)
+            max_length: T.nilable(Integer),
+            word_separator: T.nilable(String),
+            branch_name_case: T.nilable(String),
+            template: T.nilable(String)
           )
             .void
         end
@@ -31,7 +34,10 @@ module Dependabot
           multi_ecosystem_name:,
           separator: "/",
           prefix: "dependabot",
-          max_length: nil
+          max_length: nil,
+          word_separator: nil,
+          branch_name_case: nil,
+          template: nil
         )
           super(
             dependencies: dependencies,
@@ -40,6 +46,9 @@ module Dependabot
             separator: separator,
             prefix: prefix,
             max_length: max_length,
+            word_separator: word_separator,
+            branch_name_case: branch_name_case,
+            template: template,
           )
 
           @multi_ecosystem_name = multi_ecosystem_name
@@ -48,6 +57,14 @@ module Dependabot
 
         sig { override.returns(String) }
         def new_branch_name
+          if template
+            return render_from_template(
+              vars: template_vars,
+              strategy: :multi_ecosystem,
+              digest: dependency_digest
+            )
+          end
+
           sanitize_branch_name(File.join(prefixes, group_name_with_dependency_digest))
         end
 
@@ -55,6 +72,19 @@ module Dependabot
 
         sig { returns(String) }
         attr_reader :multi_ecosystem_name
+
+        sig { returns(T::Hash[String, String]) }
+        def template_vars
+          multi_name = sanitize_ref(multi_ecosystem_name.tr(" ", "-"))
+
+          vars = {
+            "prefix" => prefix,
+            "group_name" => multi_name,
+            "name" => multi_name,
+            "target_branch" => target_branch || ""
+          }
+          vars
+        end
 
         sig { returns(T::Array[String]) }
         def prefixes

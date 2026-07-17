@@ -13,6 +13,14 @@ require "dependabot/requirements_update_strategy"
 require "dependabot/source"
 require "dependabot/pull_request"
 require "dependabot/package/release_cooldown_options"
+require "dependabot/updater/update_type_helper"
+
+require "dependabot/job/allowed_update"
+require "dependabot/job/blocked_version"
+require "dependabot/job/dependency_group_definition"
+require "dependabot/job/existing_group_pull_request"
+require "dependabot/job/ignore_condition"
+require "dependabot/job/security_advisory_entry"
 
 # Describes a single Dependabot workload within the GitHub-integrated Service
 #
@@ -29,6 +37,9 @@ module Dependabot
     extend T::Sig
 
     TOP_LEVEL_DEPENDENCY_TYPES = T.let(%w(direct production development).freeze, T::Array[String])
+    # Default cooldown period (in days) applied when a cooldown is configured
+    # without an explicit `default-days` value.
+    DEFAULT_COOLDOWN_DAYS = 3
     PERMITTED_KEYS = T.let(
       %i(
         allowed_updates
@@ -56,11 +67,12 @@ module Dependabot
         cooldown
         repo_private
         multi_ecosystem_update
+        blocked_versions
       ).freeze,
       T::Array[Symbol]
     )
 
-    sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+    sig { returns(T::Array[Dependabot::Job::AllowedUpdate]) }
     attr_reader :allowed_updates
 
     sig { returns(T::Array[Dependabot::Credential]) }
@@ -75,7 +87,7 @@ module Dependabot
     sig { returns(T::Array[PullRequest]) }
     attr_reader :existing_pull_requests
 
-    sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+    sig { returns(T::Array[Dependabot::Job::ExistingGroupPullRequest]) }
     attr_reader :existing_group_pull_requests
 
     sig { returns(String) }
@@ -84,7 +96,7 @@ module Dependabot
     sig { returns(String) }
     attr_reader :command
 
-    sig { returns(T::Array[T.untyped]) }
+    sig { returns(T::Array[Dependabot::Job::IgnoreCondition]) }
     attr_reader :ignore_conditions
 
     sig { returns(String) }
@@ -93,7 +105,7 @@ module Dependabot
     sig { returns(T.nilable(Dependabot::RequirementsUpdateStrategy)) }
     attr_reader :requirements_update_strategy
 
-    sig { returns(T::Array[T.untyped]) }
+    sig { returns(T::Array[Dependabot::Job::SecurityAdvisoryEntry]) }
     attr_reader :security_advisories
 
     sig { returns(T::Boolean) }
@@ -108,7 +120,7 @@ module Dependabot
     sig { returns(T::Boolean) }
     attr_reader :vendor_dependencies
 
-    sig { returns(T::Array[T.untyped]) }
+    sig { returns(T::Array[Dependabot::Job::DependencyGroupDefinition]) }
     attr_reader :dependency_groups
 
     sig { returns(T.nilable(String)) }
@@ -116,6 +128,14 @@ module Dependabot
 
     sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
     attr_reader :cooldown
+
+    sig { returns(T::Array[Dependabot::Job::BlockedVersion]) }
+    attr_reader :blocked_versions
+
+    sig { params(blocked_versions: T::Array[T::Hash[String, T.untyped]]).void }
+    def blocked_versions=(blocked_versions)
+      @blocked_versions = self.class.parse_blocked_versions(blocked_versions)
+    end
 
     sig { returns(Dependabot::Config::UpdateConfig) }
     attr_reader :update_config
@@ -149,21 +169,31 @@ module Dependabot
       new(attrs.merge(id: job_id, repo_contents_path: repo_contents_path))
     end
 
-    sig { params(hash: T::Hash[T.untyped, T.untyped]).returns(T::Hash[T.untyped, T.untyped]) }
+    sig { params(hash: T::Hash[String, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
     def self.standardise_keys(hash)
       hash.transform_keys { |key| key.tr("-", "_").to_sym }
     end
 
+    # Non-hash entries are dropped rather than raising so that malformed
+    # entries are ignored, matching the previous hash-based filtering.
+    sig { params(blocked_versions: T::Array[T::Hash[String, T.untyped]]).returns(T::Array[BlockedVersion]) }
+    def self.parse_blocked_versions(blocked_versions)
+      blocked_versions.grep(Hash).map { |bv| BlockedVersion.from_hash(bv) }
+    end
+
     # NOTE: "attributes" are fetched and injected at run time from
     # dependabot-api using the UpdateJobPrivateSerializer
-    sig { params(attributes: T.untyped).void }
+    sig { params(attributes: T::Hash[Symbol, T.untyped]).void }
     def initialize(attributes) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
       @id                             = T.let(attributes.fetch(:id), String)
       @command                        = T.let(attributes.fetch(:command, ""), String)
-      @allowed_updates                = T.let(attributes.fetch(:allowed_updates), T::Array[T.untyped])
-      @commit_message_options         = T.let(
+      @allowed_updates                = T.let(
+        attributes.fetch(:allowed_updates).map { |h| AllowedUpdate.from_hash(h) },
+        T::Array[AllowedUpdate]
+      )
+      @commit_message_options = T.let(
         attributes.fetch(:commit_message_options, {}),
-        T.nilable(T::Hash[T.untyped, T.untyped])
+        T.nilable(T::Hash[String, T.untyped])
       )
       @credentials = T.let(
         attributes.fetch(:credentials, []).map do |data|
@@ -171,7 +201,7 @@ module Dependabot
         end,
         T::Array[Dependabot::Credential]
       )
-      @dependencies                   = T.let(attributes.fetch(:dependencies), T.nilable(T::Array[T.untyped]))
+      @dependencies                   = T.let(attributes.fetch(:dependencies), T.nilable(T::Array[String]))
       @exclude_paths                  = T.let(attributes.fetch(:exclude_paths, []), T.nilable(T::Array[String]))
       @existing_pull_requests         = T.let(PullRequest.create_from_job_definition(attributes), T::Array[PullRequest])
       # TODO: Make this hash required
@@ -180,26 +210,35 @@ module Dependabot
       # so let's consider it optional for now. If we get a nil value, let's force it to be
       # an array.
       @existing_group_pull_requests = T.let(
-        attributes.fetch(:existing_group_pull_requests, []) || [],
-        T::Array[T::Hash[String, T.untyped]]
+        (attributes.fetch(:existing_group_pull_requests, []) || []).grep(Hash).map do |pr|
+          ExistingGroupPullRequest.from_hash(pr)
+        end,
+        T::Array[ExistingGroupPullRequest]
       )
       @experiments = T.let(
         attributes.fetch(:experiments, {}),
-        T.nilable(T::Hash[T.untyped, T.untyped])
+        T.nilable(T::Hash[String, T.untyped])
       )
-      @ignore_conditions              =  T.let(attributes.fetch(:ignore_conditions), T::Array[T.untyped])
+      @ignore_conditions = T.let(
+        attributes.fetch(:ignore_conditions).map { |h| Job::IgnoreCondition.from_hash(h) },
+        T::Array[Job::IgnoreCondition]
+      )
       @package_manager                =  T.let(attributes.fetch(:package_manager), String)
       @reject_external_code           =  T.let(attributes.fetch(:reject_external_code, false), T::Boolean)
       @repo_contents_path             =  T.let(attributes.fetch(:repo_contents_path, nil), T.nilable(String))
 
       @requirements_update_strategy   = T.let(
         build_update_strategy(
-          **attributes.slice(:requirements_update_strategy, :lockfile_only)
+          requirements_update_strategy: attributes.fetch(:requirements_update_strategy),
+          lockfile_only: attributes.fetch(:lockfile_only)
         ),
         T.nilable(Dependabot::RequirementsUpdateStrategy)
       )
 
-      @security_advisories            = T.let(attributes.fetch(:security_advisories), T::Array[T.untyped])
+      @security_advisories = T.let(
+        attributes.fetch(:security_advisories).map { |h| SecurityAdvisoryEntry.from_hash(h) },
+        T::Array[SecurityAdvisoryEntry]
+      )
       @security_updates_only          = T.let(attributes.fetch(:security_updates_only), T::Boolean)
       @source                         = T.let(build_source(attributes.fetch(:source)), Dependabot::Source)
       @token                          = T.let(attributes.fetch(:token, nil), T.nilable(String))
@@ -210,15 +249,24 @@ module Dependabot
         build_cooldown(attributes.fetch(:cooldown, nil)),
         T.nilable(Dependabot::Package::ReleaseCooldownOptions)
       )
-      @multi_ecosystem_update         = T.let(attributes.fetch(:multi_ecosystem_update, false), T::Boolean)
+      @multi_ecosystem_update = T.let(attributes.fetch(:multi_ecosystem_update, false), T::Boolean)
       # TODO: Make this hash required
       #
       # We will need to do a pass updating the CLI and smoke tests before this is possible,
       # so let's consider it optional for now. If we get a nil value, let's force it to be
       # an array.
-      @dependency_groups              = T.let(attributes.fetch(:dependency_groups, []) || [], T::Array[T.untyped])
+      @dependency_groups = T.let(
+        (attributes.fetch(:dependency_groups, []) || []).grep(Hash).map do |group|
+          DependencyGroupDefinition.from_hash(group)
+        end,
+        T::Array[DependencyGroupDefinition]
+      )
       @dependency_group_to_refresh    = T.let(attributes.fetch(:dependency_group_to_refresh, nil), T.nilable(String))
       @repo_private                   = T.let(attributes.fetch(:repo_private, nil), T.nilable(T::Boolean))
+      @blocked_versions               = T.let(
+        self.class.parse_blocked_versions(attributes.fetch(:blocked_versions, []) || []),
+        T::Array[BlockedVersion]
+      )
 
       @update_config = T.let(calculate_update_config, Dependabot::Config::UpdateConfig)
 
@@ -299,6 +347,10 @@ module Dependabot
     #   was vulnerable instead of the current version. This prevents security updates
     #   from being filtered out after the dependency has already been updated in group scenarios.
     #
+    # NOTE: update-types (semver-based filtering) is handled in ignore_conditions_for,
+    # not here — allowed_update? runs pre-resolution when only the current version is
+    # known, and semver-level filtering needs version ranges computed from that version.
+    #
     # rubocop:disable Metrics/PerceivedComplexity
     # rubocop:disable Metrics/CyclomaticComplexity
     sig { params(dependency: Dependency, check_previous_version: T::Boolean).returns(T::Boolean) }
@@ -311,18 +363,17 @@ module Dependabot
 
       allowed_updates.any? do |update|
         # Check the update-type (defaulting to all)
-        update_type = update.fetch("update-type", "all")
         # NOTE: Preview supports specifying a "security" update type whereas
         # native will say "security-updates-only"
-        security_update = update_type == "security" || security_updates_only?
+        security_update = update.update_type == "security" || security_updates_only?
         next false if security_update && !vulnerable?(dependency, check_previous_version)
 
         # Check the dependency-name (defaulting to matching)
-        condition_name = update.fetch("dependency-name", dependency.name)
+        condition_name = update.dependency_name || dependency.name
         next false unless name_match?(condition_name, dependency.name)
 
         # Check the dependency-type (defaulting to all)
-        dep_type = update.fetch("dependency-type", "all")
+        dep_type = update.dependency_type
         next false if dep_type == "indirect" &&
                       dependency.requirements.any?
         # In dependabot-api, dependency-type is defaulting to "direct" not "all". Ignoring
@@ -412,28 +463,37 @@ module Dependabot
     def security_advisories_for(dependency)
       relevant_advisories =
         security_advisories
-        .select { |adv| adv.fetch("dependency-name").casecmp(dependency.name).zero? }
+        .select { |adv| T.must(adv.dependency_name.casecmp(dependency.name)).zero? }
+
+      requirement_class = Dependabot::Utils.requirement_class_for_package_manager(package_manager)
 
       relevant_advisories.map do |adv|
-        vulnerable_versions = adv["affected-versions"] || []
-        safe_versions = (adv["patched-versions"] || []) +
-                        (adv["unaffected-versions"] || [])
-
         Dependabot::SecurityAdvisory.new(
           dependency_name: dependency.name,
           package_manager: package_manager,
-          vulnerable_versions: vulnerable_versions,
-          safe_versions: safe_versions
+          vulnerable_versions: adv.affected_versions.flat_map { |v| requirement_class.requirements_array(v) },
+          safe_versions: adv.patched_versions + adv.unaffected_versions
         )
       end
     end
 
     sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
     def ignore_conditions_for(dependency)
-      update_config.ignored_versions_for(
+      conditions = update_config.ignored_versions_for(
         dependency,
         security_updates_only: security_updates_only?
       )
+
+      # Supplement with implicit ignore ranges derived from allow update-types.
+      # allow update-types cannot be checked in allowed_update? because it runs
+      # pre-resolution when only the current version is known. Version ranges
+      # only need the current version — the same mechanism as ignore update-types.
+      conditions + ignored_versions_from_allowed_update_types(dependency) + blocked_versions_for(dependency)
+    end
+
+    sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+    def blocked_versions_for?(dependency)
+      blocked_versions_for(dependency).any?
     end
 
     # TODO: Present Dependabot::Config::IgnoreCondition in calling code
@@ -448,28 +508,162 @@ module Dependabot
     # were created via "@dependabot ignore version" commands
     sig { params(dependency: Dependabot::Dependency).void }
     def log_ignore_conditions_for(dependency)
-      conditions = ignore_conditions.select { |ic| name_match?(ic["dependency-name"], dependency.name) }
-      return if conditions.empty?
+      conditions = ignore_conditions.select { |ic| name_match?(ic.dependency_name, dependency.name) }
+      if conditions.any?
+        Dependabot.logger.info("Ignored versions:")
+        conditions.each do |ic|
+          Dependabot.logger.info("  #{ic.version_requirement} - from #{ic.source}") unless ic.version_requirement.nil?
 
-      Dependabot.logger.info("Ignored versions:")
-      conditions.each do |ic|
-        unless ic["version-requirement"].nil?
-          Dependabot.logger.info("  #{ic['version-requirement']} - from #{ic['source']}")
-        end
-
-        ic["update-types"]&.each do |update_type|
-          msg = "  #{update_type} - from #{ic['source']}"
-          msg += " (doesn't apply to security update)" if security_updates_only?
-          Dependabot.logger.info(msg)
+          ic.update_types&.each do |update_type|
+            msg = "  #{update_type} - from #{ic.source}"
+            msg += " (doesn't apply to security update)" if security_updates_only?
+            Dependabot.logger.info(msg)
+          end
         end
       end
+
+      log_blocked_versions_for(dependency)
     end
 
     private
 
+    sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+    def blocked_versions_for(dependency)
+      matching_blocked_entries(dependency).filter_map do |bv|
+        req = T.must(bv.version_requirement).strip
+        req.empty? ? nil : req
+      end
+    end
+
+    sig { params(dependency: Dependabot::Dependency).void }
+    def log_blocked_versions_for(dependency)
+      entries = matching_blocked_entries(dependency).filter_map do |bv|
+        req = T.must(bv.version_requirement).strip
+        next if req.empty?
+
+        reason = bv.reason&.strip
+        { version_requirement: req, reason: reason&.empty? ? nil : reason }
+      end
+      return if entries.empty?
+
+      Dependabot.logger.info("Blocked versions (by GitHub Security):")
+      entries.each do |entry|
+        msg = "  #{entry[:version_requirement]}"
+        msg += " - reason: #{entry[:reason]}" if entry[:reason]
+        Dependabot.logger.info(msg)
+      end
+    end
+
+    sig do
+      params(dependency: Dependabot::Dependency)
+        .returns(T::Array[BlockedVersion])
+    end
+    def matching_blocked_entries(dependency)
+      BlockedVersion.matching(
+        blocked_versions,
+        dependency_name: dependency.name,
+        package_manager: package_manager
+      )
+    end
+
     sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
     def completely_ignored?(dependency)
       ignore_conditions_for(dependency).any?(Dependabot::Config::IgnoreCondition::ALL_VERSIONS)
+    end
+
+    # Derives implicit ignore version ranges from allow rules that specify update-types.
+    # For example, if allow says only "semver-patch", this computes ignore ranges for
+    # major and minor — using the same mechanism as IgnoreCondition#versions_by_type.
+    sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+    def ignored_versions_from_allowed_update_types(dependency)
+      return [] if security_updates_only?
+
+      permitted_types = collect_permitted_update_types(dependency)
+      return [] if permitted_types.empty?
+
+      disallowed_types = Dependabot::Updater::UpdateTypeHelper::ALL_SEMVER_UPDATE_TYPES - permitted_types
+
+      version = version_for_dependency(dependency)
+      return [] unless version
+
+      disallowed_types.flat_map do |t|
+        case t
+        when Dependabot::Config::IgnoreCondition::PATCH_VERSION_TYPE
+          version.ignored_patch_versions
+        when Dependabot::Config::IgnoreCondition::MINOR_VERSION_TYPE
+          version.ignored_minor_versions
+        when Dependabot::Config::IgnoreCondition::MAJOR_VERSION_TYPE
+          version.ignored_major_versions
+        else
+          []
+        end
+      end.compact
+    end
+
+    # Collects the union of update-types from all matching allow rules for a dependency.
+    # Returns empty if no matching rules specify update-types (meaning no filtering needed).
+    # If any matching rule lacks update-types, it permits all types — returns empty.
+    sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+    def collect_permitted_update_types(dependency)
+      matching_rules = matching_allow_rules(dependency)
+      return [] if matching_rules.empty?
+
+      # If any matching rule lacks update-types, it permits all types
+      return [] if matching_rules.any? { |r| allow_rule_permits_all_types?(r) }
+
+      matching_rules
+        .flat_map(&:update_types)
+        .filter_map { |t| t.is_a?(String) ? t.downcase.strip : nil }
+        .select { |t| Dependabot::Updater::UpdateTypeHelper::ALL_SEMVER_UPDATE_TYPES.include?(t) }
+        .uniq
+    end
+
+    sig { params(dependency: Dependabot::Dependency).returns(T::Array[AllowedUpdate]) }
+    def matching_allow_rules(dependency)
+      allowed_updates.select do |update|
+        allow_rule_matches_dependency?(update, dependency)
+      end
+    end
+
+    sig { params(update: AllowedUpdate, dependency: Dependabot::Dependency).returns(T::Boolean) }
+    def allow_rule_matches_dependency?(update, dependency)
+      condition_name = update.dependency_name
+      return false if condition_name && !name_match?(condition_name, dependency.name)
+
+      dep_type = update.dependency_type
+      return true if dep_type == "all"
+
+      # Indirect deps don't match top-level type rules (matching allowed_update? behavior)
+      return false if dependency.requirements.none? && TOP_LEVEL_DEPENDENCY_TYPES.include?(dep_type)
+
+      case dep_type
+      when "production" then dependency.production?
+      when "development" then !dependency.production?
+      when "direct" then dependency.requirements.any?
+      when "indirect" then dependency.requirements.none?
+      else true
+      end
+    end
+
+    sig { params(rule: AllowedUpdate).returns(T::Boolean) }
+    def allow_rule_permits_all_types?(rule)
+      rule.update_types.empty?
+    end
+
+    sig { params(dependency: Dependabot::Dependency).returns(T.nilable(Dependabot::Version)) }
+    def version_for_dependency(dependency)
+      version_str = dependency.version
+      return nil if version_str.nil? || version_str.empty?
+
+      version_class = begin
+        Dependabot::Utils.version_class_for_package_manager(dependency.package_manager)
+      rescue StandardError
+        Dependabot::Version
+      end
+
+      return nil unless version_class.correct?(version_str)
+
+      version_class.new(version_str)
     end
 
     sig { void }
@@ -537,13 +731,24 @@ module Dependabot
       return nil unless cooldown
 
       Dependabot::Package::ReleaseCooldownOptions.new(
-        default_days: cooldown["default-days"] || 0,
+        default_days: cooldown["default-days"] || default_cooldown_days,
         semver_major_days: cooldown["semver-major-days"] || 0,
         semver_minor_days: cooldown["semver-minor-days"] || 0,
         semver_patch_days: cooldown["semver-patch-days"] || 0,
         include: cooldown["include"] || [],
         exclude: cooldown["exclude"] || []
       )
+    end
+
+    # The fallback applied when a cooldown block is present but `default-days`
+    # is not explicitly set. Behind the `enable_cooldown_default_days`
+    # experiment this defaults to DEFAULT_COOLDOWN_DAYS, otherwise it remains 0
+    # (no cooldown) to preserve the previous behaviour.
+    sig { returns(Integer) }
+    def default_cooldown_days
+      return DEFAULT_COOLDOWN_DAYS if experiments[:enable_cooldown_default_days]
+
+      0
     end
 
     sig { params(source_details: T::Hash[String, T.untyped]).returns([T.nilable(String), T.nilable(T::Array[String])]) }
@@ -572,17 +777,16 @@ module Dependabot
     def calculate_update_config
       update_config_ignore_conditions = ignore_conditions.map do |ic|
         Dependabot::Config::IgnoreCondition.new(
-          dependency_name: T.let(ic["dependency-name"], String),
-          versions: T.let([ic["version-requirement"]].compact, T::Array[String]),
-          update_types: T.let(ic["update-types"], T.nilable(T::Array[String]))
+          dependency_name: ic.dependency_name,
+          versions: [ic.version_requirement].compact,
+          update_types: ic.update_types
         )
       end
 
-      update_config = Dependabot::Config::UpdateConfig.new(
-        ignore_conditions: T.let(update_config_ignore_conditions, T::Array[Dependabot::Config::IgnoreCondition]),
-        exclude_paths: T.let(exclude_paths, T.nilable(T::Array[String]))
+      Dependabot::Config::UpdateConfig.new(
+        ignore_conditions: update_config_ignore_conditions,
+        exclude_paths: exclude_paths
       )
-      T.let(update_config, Dependabot::Config::UpdateConfig)
     end
   end
 end

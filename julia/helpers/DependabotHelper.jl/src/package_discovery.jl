@@ -74,15 +74,17 @@ function get_package_metadata(package_name::String, package_uuid::String)
                 if entry.name == package_name && string(uuid) == package_uuid
                     reg_info = Pkg.Registry.registry_info(entry)
 
-                    # Get available versions
-                    versions = [string(v) for v in keys(reg_info.version_info)]
-                    latest_version = string(maximum(keys(reg_info.version_info)))
+                    # Get available versions, excluding yanked ones
+                    non_yanked = [v for (v, info) in reg_info.version_info if !info.yanked]
+                    if isempty(non_yanked)
+                        return Dict("error" => "All versions of package $package_name [$package_uuid] are yanked")
+                    end
 
                     return Dict(
                         "name" => package_name,
                         "uuid" => string(uuid),
-                        "latest_version" => latest_version,
-                        "available_versions" => versions
+                        "latest_version" => string(maximum(non_yanked)),
+                        "available_versions" => [string(v) for v in non_yanked]
                     )
                 end
             end
@@ -125,7 +127,7 @@ function fetch_package_versions(package_name::String, package_uuid::String)
 
                 if name_matches && uuid_matches
                     version_info = Pkg.Registry.registry_info(entry).version_info
-                    versions = [string(v) for v in keys(version_info)]
+                    versions = [string(v) for (v, info) in version_info if !info.yanked]
                     break
                 end
             end
@@ -189,20 +191,15 @@ function fetch_package_info(package_name::String, package_uuid::String)
                 if name_matches && uuid_matches
                     reg_info = Pkg.Registry.registry_info(entry)
 
-                    # Get all versions
-                    all_versions = [string(v) for v in keys(reg_info.version_info)]
-
-                    # Sort versions
-                    try
-                        version_numbers = [Pkg.Types.VersionNumber(v) for v in all_versions]
-                        sorted_versions = sort(version_numbers)
-                        all_versions = [string(v) for v in sorted_versions]
-                    catch
-                        # If version parsing fails, keep original order
+                    # Get all versions, excluding yanked ones
+                    non_yanked = [v for (v, info) in reg_info.version_info if !info.yanked]
+                    if isempty(non_yanked)
+                        return Dict("error" => "All versions of package $package_name [$package_uuid] are yanked")
                     end
+                    all_versions = [string(v) for v in sort(non_yanked)]
 
                     # Get the latest version info
-                    latest_version = maximum(keys(reg_info.version_info))
+                    latest_version = maximum(non_yanked)
                     latest_info = reg_info.version_info[latest_version]
 
                     return Dict(
@@ -350,9 +347,11 @@ function extract_package_metadata_from_url(package_name::String, source_url::Str
         # Extract owner and repo from GitHub/GitLab URLs
         if source_type in ["github", "gitlab"]
             # Pattern: https://github.com/owner/repo.git
+            # Repo names may contain dots (virtually every Julia repo ends in
+            # ".jl"); only a trailing ".git" is stripped.
             patterns = [
-                r"(?:https?://)?(?:www\.)?(?:github|gitlab)\.com/([^/]+)/([^/\.]+)(?:\.git)?",
-                r"git@(?:github|gitlab)\.com:([^/]+)/([^/\.]+)(?:\.git)?"
+                r"(?:https?://)?(?:www\.)?(?:github|gitlab)\.com/([^/]+)/(.+?)(?:\.git)?(?:/.*)?$",
+                r"git@(?:github|gitlab)\.com:([^/]+)/(.+?)(?:\.git)?$"
             ]
 
             for pattern in patterns
@@ -376,7 +375,7 @@ end
     get_available_versions(package_name::String, package_uuid::String)
 
 Get all available versions for a package from the registry using both name and UUID for precise identification.
-Returns just the version strings in sorted order.
+Yanked versions are excluded. Returns just the version strings in sorted order.
 """
 function get_available_versions(package_name::String, package_uuid::String)
     try
@@ -390,7 +389,9 @@ function get_available_versions(package_name::String, package_uuid::String)
 
                 if name_matches && uuid_matches
                     version_info = Pkg.Registry.registry_info(entry).version_info
-                    versions = [string(v) for v in keys(version_info)]
+                    # Filter out yanked versions so callers (e.g. latest version finder)
+                    # never consider retracted releases.
+                    versions = [string(ver) for (ver, info) in version_info if !info.yanked]
                     break
                 end
             end
@@ -439,16 +440,10 @@ For packages in the General registry, fetches registration dates from GeneralMet
 """
 function get_version_release_date(package_name::String, version::String, package_uuid::String)
     try
-        # First verify the package and version exist
-        versions_result = get_available_versions(package_name, package_uuid)
-        if haskey(versions_result, "error")
-            return versions_result
-        end
-
-        available_versions = versions_result["versions"]
-        if !(version in available_versions)
-            return Dict("error" => "Version $version not found for package $package_name")
-        end
+        # Note: deliberately no validation against the (yanked-filtered)
+        # available-versions list — the registration date of a yanked or
+        # currently-locked old version is a legitimate query, and an unknown
+        # version simply yields no date below.
 
         # Check if package is in the General registry
         in_general = is_package_in_general_registry(package_name, package_uuid)
@@ -479,7 +474,8 @@ function is_package_in_general_registry(package_name::String, package_uuid::Stri
             # Check if this is the General registry
             if reg.name == "General"
                 for (uuid, entry) in reg.pkgs
-                    if entry.name == package_name && string(uuid) == package_uuid
+                    # Fall back to name-only matching when no UUID is known
+                    if entry.name == package_name && (isempty(package_uuid) || string(uuid) == package_uuid)
                         return true
                     end
                 end
@@ -528,7 +524,9 @@ end# Args wrapper for get_version_release_date function with UUID requirement
 function get_version_release_date(args::AbstractDict)
     package_name = get(args, "package_name", "")
     version = get(args, "version", "")
-    package_uuid = get(args, "package_uuid", "")
+    # Ruby may send an explicit null uuid; JSON parses that to nothing, which
+    # must not reach the ::String method signature
+    package_uuid = something(get(args, "package_uuid", ""), "")
 
     if isempty(package_name) || isempty(version)
         return Dict("error" => "Both package_name and version are required")

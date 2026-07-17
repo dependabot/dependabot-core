@@ -1,7 +1,8 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/package/release_cooldown_options"
 
 module Dependabot
   module PreCommit
@@ -40,17 +41,19 @@ module Dependabot
 
         sig do
           params(
-            source: T::Hash[Symbol, T.untyped],
+            source: T::Hash[Symbol, Object],
             credentials: T::Array[Dependabot::Credential],
-            requirements: T::Array[T::Hash[Symbol, T.untyped]],
-            current_version: T.nilable(String)
+            requirements: T::Array[T::Hash[Symbol, Object]],
+            current_version: T.nilable(String),
+            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize(source:, credentials:, requirements:, current_version:)
+        def initialize(source:, credentials:, requirements:, current_version:, cooldown_options: nil)
           @source = source
           @credentials = credentials
           @requirements = requirements
           @current_version = current_version
+          @cooldown_options = cooldown_options
         end
 
         # Find the latest available version for this dependency
@@ -62,26 +65,35 @@ module Dependabot
         # Generate updated requirements for the new version
         # Should preserve the original version constraint operator (>=, ~=, etc.)
         # and update the source hash with the new original_string
-        sig { abstract.params(latest_version: String).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { abstract.params(latest_version: String).returns(T::Array[T::Hash[Symbol, Object]]) }
         def updated_requirements(latest_version); end
 
         private
 
-        sig { returns(T::Hash[Symbol, T.untyped]) }
+        sig { returns(T::Hash[Symbol, Object]) }
         attr_reader :source
 
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[T::Hash[Symbol, Object]]) }
         attr_reader :requirements
 
         sig { returns(T.nilable(String)) }
         attr_reader :current_version
 
+        sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+        attr_reader :cooldown_options
+
         sig { returns(T.nilable(String)) }
         def package_name
           source[:package_name]&.to_s
+        end
+
+        sig { params(requirement: T.nilable(T::Hash[Symbol, Object])).returns(T.nilable(String)) }
+        def requirement_string(requirement)
+          value = requirement&.dig(:requirement)
+          value if value.is_a?(String)
         end
       end
     end

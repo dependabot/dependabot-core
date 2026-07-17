@@ -54,6 +54,29 @@ module Dependabot
         @include.empty? || @include.any? { |pattern| File.fnmatch?(pattern, dependency_name) }
       end
 
+      sig do
+        params(
+          current_semver: T.nilable([Integer, Integer, Integer]),
+          new_semver: T.nilable([Integer, Integer, Integer])
+        ).returns(Integer)
+      end
+      def cooldown_days_for(current_semver, new_semver)
+        return @default_days if current_semver.nil? || new_semver.nil?
+
+        current_major, current_minor, current_patch = current_semver
+        new_major, new_minor, new_patch = new_semver
+
+        return @semver_major_days if new_major > current_major
+
+        if new_major == current_major
+          return @semver_minor_days if new_minor > current_minor
+          return @semver_patch_days if new_minor == current_minor &&
+                                       new_patch > current_patch
+        end
+
+        @default_days
+      end
+
       private
 
       sig { params(dependency_name: String).returns(T::Boolean) }

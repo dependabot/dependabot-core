@@ -242,7 +242,7 @@ module Dependabot
             .sort_by(&:version).reverse
         end
 
-        sig { returns(T::Array[[Dependabot::Version, T::Hash[String, T.nilable(String)]]]) }
+        sig { returns(T::Array[[Dependabot::Version, T::Hash[String, T.anything]]]) }
         def possible_previous_versions_with_details
           possible_previous_releases.map do |r|
             [r.version, r.details]
@@ -259,12 +259,18 @@ module Dependabot
         sig { params(_block: T.untyped).returns(T.nilable(Dependabot::Version)) }
         def with_custom_registry_rescue(&_block)
           yield
-        rescue Excon::Error::Socket, Excon::Error::Timeout, RegistryError
-          raise unless package_fetcher.custom_registry?
+        rescue Excon::Error::Socket, Excon::Error::Timeout, RegistryError => e
+          raise unless package_fetcher.custom_registry? || eof_socket_error?(e)
 
-          # Custom registries can be flaky. We don't want to make that
-          # our problem, so quietly return `nil` here.
+          # Custom registries can be flaky, and the global npm registry can
+          # occasionally terminate connections (EOFError). Don't abort the update
+          # flow for these transient failures; quietly return `nil` here.
           nil
+        end
+
+        sig { params(error: StandardError).returns(T::Boolean) }
+        def eof_socket_error?(error)
+          error.is_a?(Excon::Error::Socket) && error.socket_error.is_a?(EOFError)
         end
 
         sig { returns(T::Boolean) }
@@ -332,9 +338,11 @@ module Dependabot
         def specified_dist_tag_requirement?
           dependency.requirements.any? do |req|
             next false if req[:requirement].nil?
-            next false unless req[:requirement].match?(/^[A-Za-z]/)
 
-            !req[:requirement].match?(/^v\d/i)
+            req_string = req[:requirement].sub(NpmAndYarn::Requirement::JSR_PREFIX, "")
+            next false unless req_string.match?(/^[A-Za-z]/)
+
+            !req_string.match?(/^v\d/i)
           end
         end
 
@@ -357,7 +365,9 @@ module Dependabot
           dependency.requirements.any? do |req|
             next false unless req[:requirement]
 
-            req_version = req[:requirement].sub(/^\^|~|>=?/, "")
+            req_version = req[:requirement]
+                          .sub(NpmAndYarn::Requirement::JSR_PREFIX, "")
+                          .sub(/^\^|~|>=?/, "")
             next false unless version_class.correct?(req_version)
 
             version_class.new(req_version) > version

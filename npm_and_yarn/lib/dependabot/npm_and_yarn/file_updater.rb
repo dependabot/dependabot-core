@@ -5,6 +5,7 @@ require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/file_updaters/vendor_updater"
 require "dependabot/file_updaters/artifact_updater"
+require "dependabot/errors"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 require "sorbet-runtime"
@@ -22,14 +23,15 @@ module Dependabot
 
       class NoChangeError < StandardError
         extend T::Sig
+        include Dependabot::HasSentryContext
 
-        sig { params(message: String, error_context: T::Hash[Symbol, T.untyped]).void }
+        sig { params(message: String, error_context: T::Hash[Symbol, T.anything]).void }
         def initialize(message:, error_context:)
           super(message)
           @error_context = error_context
         end
 
-        sig { returns(T::Hash[Symbol, T.untyped]) }
+        sig { override.returns(T::Hash[Symbol, T.anything]) }
         def sentry_context
           { extra: @error_context }
         end
@@ -79,19 +81,7 @@ module Dependabot
         return unless original_pnpm_locks.any?
         return unless updated_files.none? || updated_files.all?(&:support_file?)
 
-        raise_tool_not_supported_for_pnpm_if_transitive
         raise_miss_configured_tooling_if_pnpm_subdirectory
-      end
-
-      sig { void }
-      def raise_tool_not_supported_for_pnpm_if_transitive
-        return if dependencies.empty? || dependencies.any?(&:top_level?)
-
-        raise ToolFeatureNotSupported.new(
-          tool_name: "pnpm",
-          tool_type: "package_manager",
-          feature: "updating transitive dependencies"
-        )
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
@@ -221,7 +211,7 @@ module Dependabot
         raise DependencyFileNotFound.new(nil, "package.json not found.") unless get_original_file("package.json")
       end
 
-      sig { params(updated_files: T::Array[DependencyFile]).returns(T::Hash[Symbol, T.untyped]) }
+      sig { params(updated_files: T::Array[DependencyFile]).returns(T::Hash[Symbol, T.anything]) }
       def error_context(updated_files:)
         {
           dependencies: dependencies.map(&:to_h),
@@ -390,12 +380,10 @@ module Dependabot
         updated_files.concat(update_pnpm_locks)
 
         package_locks.each do |package_lock|
-          next unless package_lock_changed?(package_lock)
+          lockfile_updates = updated_lockfile_files(package_lock)
+          next if lockfile_updates.empty?
 
-          updated_files << updated_file(
-            file: package_lock,
-            content: T.must(updated_lockfile_content(package_lock))
-          )
+          updated_files.concat(lockfile_updates)
         end
 
         shrinkwraps.each do |shrinkwrap|
@@ -408,6 +396,27 @@ module Dependabot
         end
 
         updated_files
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
+      def updated_lockfile_files(file)
+        return [] unless package_lock_changed?(file)
+
+        updated_file_set = [updated_file(
+          file: file,
+          content: T.must(updated_lockfile_content(file))
+        )]
+
+        already_updated_names = updated_manifest_files.to_set(&:name)
+
+        workspace_package_json_updates(file).each do |manifest_file, updated_content|
+          next if updated_content == manifest_file.content
+          next if already_updated_names.include?(manifest_file.name)
+
+          updated_file_set << updated_file(file: manifest_file, content: updated_content)
+        end
+
+        updated_file_set
       end
       sig { params(yarn_lock: Dependabot::DependencyFile).returns(String) }
       def updated_yarn_lock_content(yarn_lock)
@@ -433,7 +442,8 @@ module Dependabot
             dependencies: dependencies,
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
-            credentials: credentials
+            credentials: credentials,
+            security_updates_only: options.fetch(:security_updates_only, false) ? true : false
           ),
           T.nilable(Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater)
         )
@@ -446,22 +456,39 @@ module Dependabot
             dependencies: dependencies,
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
-            credentials: credentials
+            credentials: credentials,
+            security_updates_only: options.fetch(:security_updates_only, false) ? true : false
           ),
           T.nilable(Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater)
         )
       end
 
+      sig { params(file: Dependabot::DependencyFile).returns(NpmLockfileUpdater) }
+      def npm_lockfile_updater_for(file)
+        @npm_lockfile_updaters ||= T.let(
+          {},
+          T.nilable(T::Hash[String, NpmLockfileUpdater])
+        )
+        @npm_lockfile_updaters[file.name] ||= NpmLockfileUpdater.new(
+          lockfile: file,
+          dependencies: dependencies,
+          dependency_files: dependency_files,
+          credentials: credentials,
+          security_updates_only: options.fetch(:security_updates_only, false) ? true : false
+        )
+      end
+
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }
       def updated_lockfile_content(file)
-        @updated_lockfile_content ||= T.let({}, T.nilable(T::Hash[String, T.nilable(String)]))
-        @updated_lockfile_content[file.name] ||=
-          NpmLockfileUpdater.new(
-            lockfile: file,
-            dependencies: dependencies,
-            dependency_files: dependency_files,
-            credentials: credentials
-          ).updated_lockfile.content
+        npm_lockfile_updater_for(file).updated_lockfile.content
+      end
+
+      sig do
+        params(file: Dependabot::DependencyFile)
+          .returns(T::Hash[Dependabot::DependencyFile, String])
+      end
+      def workspace_package_json_updates(file)
+        npm_lockfile_updater_for(file).updated_package_json_files
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(String)) }

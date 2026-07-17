@@ -56,7 +56,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
     it "delegates to Dependabot::Updater" do
       dummy_runner = double(run: nil)
       base_commit_sha = "1c6331732c41e4557a16dacb82534f1d1c831848"
-      expect(Dependabot::Updater)
+      allow(Dependabot::Updater)
         .to receive(:new)
         .with(
           service: service,
@@ -71,6 +71,14 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         .with(dependency_snapshot: an_instance_of(Dependabot::DependencySnapshot))
 
       perform_job
+
+      expect(Dependabot::Updater)
+        .to have_received(:new)
+        .with(
+          service: service,
+          job: an_object_having_attributes(id: job_id, repo_contents_path: nil),
+          dependency_snapshot: an_object_having_attributes(base_commit_sha: base_commit_sha)
+        )
     end
   end
 
@@ -435,6 +443,148 @@ RSpec.describe Dependabot::UpdateFilesCommand do
 
           perform_job
         end
+      end
+    end
+  end
+
+  describe "#perform_job with blocked versions experiment enabled" do
+    subject(:perform_job) { job.perform_job }
+
+    before do
+      Dependabot::Experiments.register(:blocked_versions, true)
+      allow(service).to receive(:fetch_blocked_versions).and_return(blocked_versions)
+    end
+
+    after do
+      Dependabot::Experiments.reset!
+    end
+
+    let(:blocked_versions) do
+      [
+        { "dependency-name" => "rails", "version-requirement" => "= 7.0.0", "reason" => "vulnerability" }
+      ]
+    end
+
+    it "fetches blocked versions and sets them on the job" do
+      dummy_runner = double(run: nil)
+      allow(Dependabot::Updater).to receive(:new).and_return(dummy_runner)
+      allow(dummy_runner).to receive(:run)
+      allow(service).to receive(:mark_job_as_processed)
+      allow(service).to receive(:update_dependency_list)
+
+      expect(service).to receive(:fetch_blocked_versions).with("bundler")
+
+      perform_job
+
+      job_instance = job.send(:job)
+      expect(job_instance.blocked_versions).to contain_exactly(
+        an_object_having_attributes(
+          dependency_name: "rails",
+          version_requirement: "= 7.0.0",
+          reason: "vulnerability"
+        )
+      )
+    end
+
+    context "when the experiment is enabled via the job definition" do
+      let(:job_definition) do
+        definition = JSON.parse(fixture("jobs/job_without_credentials.json"))
+        definition["job"]["experiments"] = { "blocked-versions" => true }
+        definition
+      end
+
+      before do
+        Dependabot::Experiments.reset!
+        allow(service).to receive(:fetch_blocked_versions).and_return(blocked_versions)
+      end
+
+      it "registers the experiment from the job payload and fetches blocked versions" do
+        dummy_runner = double(run: nil)
+        allow(Dependabot::Updater).to receive(:new).and_return(dummy_runner)
+        allow(dummy_runner).to receive(:run)
+        allow(service).to receive(:mark_job_as_processed)
+        allow(service).to receive(:update_dependency_list)
+
+        expect(service).to receive(:fetch_blocked_versions).with("bundler")
+
+        perform_job
+
+        job_instance = job.send(:job)
+        expect(job_instance.blocked_versions).to contain_exactly(
+          an_object_having_attributes(
+            dependency_name: "rails",
+            version_requirement: "= 7.0.0",
+            reason: "vulnerability"
+          )
+        )
+      end
+    end
+
+    context "when the experiment is not enabled" do
+      before do
+        Dependabot::Experiments.reset!
+      end
+
+      it "does not fetch blocked versions" do
+        dummy_runner = double(run: nil)
+        allow(Dependabot::Updater).to receive(:new).and_return(dummy_runner)
+        allow(dummy_runner).to receive(:run)
+        allow(service).to receive(:mark_job_as_processed)
+        allow(service).to receive(:update_dependency_list)
+
+        expect(service).not_to receive(:fetch_blocked_versions)
+
+        perform_job
+
+        job_instance = job.send(:job)
+        expect(job_instance.blocked_versions).to eq([])
+      end
+    end
+
+    context "when the API returns no blocked versions" do
+      let(:blocked_versions) { [] }
+
+      it "assigns empty blocked versions to the job" do
+        dummy_runner = double(run: nil)
+        allow(Dependabot::Updater).to receive(:new).and_return(dummy_runner)
+        allow(dummy_runner).to receive(:run)
+        allow(service).to receive(:mark_job_as_processed)
+        allow(service).to receive(:update_dependency_list)
+
+        perform_job
+
+        job_instance = job.send(:job)
+        expect(job_instance.blocked_versions).to eq([])
+      end
+    end
+
+    context "when the API returns no blocked versions but the job definition provides some" do
+      let(:blocked_versions) { [] }
+      let(:job_definition) do
+        definition = JSON.parse(fixture("jobs/job_without_credentials.json"))
+        definition["job"]["blocked-versions"] = [
+          { "dependency-name" => "minimist", "version-requirement" => "1.2.8", "reason" => "malware" }
+        ]
+        definition
+      end
+
+      it "honours the blocked versions from the job definition" do
+        dummy_runner = instance_double(Dependabot::Updater, run: nil)
+        allow(Dependabot::Updater).to receive(:new).and_return(dummy_runner)
+        allow(dummy_runner).to receive(:run)
+        allow(service).to receive(:mark_job_as_processed)
+        allow(service).to receive(:update_dependency_list)
+
+        perform_job
+
+        job_instance = job.send(:job)
+        expect(job_instance.blocked_versions).to contain_exactly(
+          an_object_having_attributes(
+            dependency_name: "minimist",
+            version_requirement: "1.2.8",
+            reason: "malware"
+          )
+        )
       end
     end
   end
