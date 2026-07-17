@@ -198,7 +198,7 @@ module Dependabot
       end
     end
 
-    sig { params(base_commit_sha: String).void }
+    sig { params(base_commit_sha: T.nilable(String)).void }
     def mark_job_as_processed(base_commit_sha)
       ::Dependabot::OpenTelemetry.tracer.in_span("mark_job_as_processed", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::BASE_COMMIT_SHA, base_commit_sha)
@@ -282,7 +282,7 @@ module Dependabot
       end
     end
 
-    sig { params(metric: String, tags: T::Hash[String, String]).void }
+    sig { params(metric: String, tags: T::Hash[Symbol, Object]).void }
     def increment_metric(metric, tags:)
       ::Dependabot::OpenTelemetry.tracer.in_span("increment_metric", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID.to_s, job_id.to_s)
@@ -389,7 +389,7 @@ module Dependabot
     # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/MethodLength
 
-    sig { params(package_manager: String).returns(T::Array[T::Hash[String, T.untyped]]) }
+    sig { params(package_manager: String).returns(T::Array[T::Hash[String, Object]]) }
     def fetch_blocked_versions(package_manager)
       ::Dependabot::OpenTelemetry.tracer.in_span("fetch_blocked_versions", kind: :internal) do |span|
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
