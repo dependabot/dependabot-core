@@ -31,21 +31,30 @@ module Dependabot
         raise NotImplementedError
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        dependency.requirements.map do |requirement|
+        updated_reqs = dependency.requirements.map do |requirement|
           required_version = T.cast(version_class.new(requirement[:requirement]), Dependabot::Devcontainers::Version)
-          updated_requirement = remove_precision_changes(
-            T.cast(release_versions, T::Array[Dependabot::Devcontainers::Version]),
-            required_version
-          ).last
+          versions = T.cast(release_versions, T::Array[Dependabot::Devcontainers::Version])
+          precision_matches = remove_precision_changes(versions, required_version)
+          # When the published tags don't include a precision-matching tag (e.g. a feature
+          # that only publishes full semver like "1.10.0" but the pin is the major-only ":1"),
+          # fall back to truncating the latest version to the required precision so that
+          # ":1" stays ":1" within the same major and becomes ":2" on a major bump.
+          updated_requirement =
+            if precision_matches.any?
+              precision_matches.last
+            else
+              versions.last&.truncate_to_precision_of(required_version)
+            end
           {
             file: requirement[:file],
-            requirement: updated_requirement,
+            requirement: updated_requirement&.to_s || requirement[:requirement],
             groups: requirement[:groups],
             source: requirement[:source]
           }
         end
+        wrap_requirements(updated_reqs)
       end
 
       private

@@ -479,6 +479,30 @@ public class MSBuildHelperTests : TestBase
         yield return
         [
             // output
+            "error : End of Central Directory record could not be found.",
+            // expectedError
+            new PrivateSourceBadResponse(["http://localhost/test-feed"], "unused"),
+        ];
+
+        yield return
+        [
+            // output
+            "The content at 'https://nuget.example.com/v3/some.package/index.json' is not a valid JSON object.",
+            // expectedError
+            new PrivateSourceBadResponse(["https://nuget.example.com/v3/some.package/index.json"], "unused"),
+        ];
+
+        yield return
+        [
+            // a generic 404 (e.g., a misconfigured credential in a `packages.config` scenario) is reported as a bad response
+            // output
+            "Failed to fetch results from V2 feed at 'https://nuget.example.com/FindPackagesById()?id='Some.Package'&semVerLevel=2.0.0' with following message : Response status code does not indicate success: 404 (Not Found)",
+            // expectedError
+            new PrivateSourceBadResponse(["https://nuget.example.com"], "unused"),
+        ];
+        yield return
+        [
+            // output
             "The file is not a valid nupkg.",
             // expectedError
             new PrivateSourceBadResponse(["http://localhost/test-feed"], "unused"),
@@ -653,6 +677,14 @@ public class MSBuildHelperTests : TestBase
             "Circular dependency detected 'ReactiveProperty 3.6.0 => System.Reactive 3.1.1 => System.Reactive.PlatformServices 6.1.0 => System.Reactive 3.1.1'.",
             // expectedError
             new UnknownError(new Exception("Circular dependency detected"), "TEST-JOB-ID"),
+        ];
+
+        yield return
+        [
+            // output
+            "Couldn't find a valid ICU package installed on the system. Set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support.",
+            // expectedError
+            new UnknownError(new Exception("Couldn't find a valid ICU package installed on the system. Likely EOL SDK."), "TEST-JOB-ID"),
         ];
     }
 }

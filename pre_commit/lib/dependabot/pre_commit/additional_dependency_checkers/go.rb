@@ -24,7 +24,7 @@ module Dependabot
           )
         end
 
-        sig { override.params(latest_version: String).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { override.params(latest_version: String).returns(T::Array[T::Hash[Symbol, Object]]) }
         def updated_requirements(latest_version)
           requirements.map do |original_req|
             original_source = original_req[:source]
@@ -89,7 +89,8 @@ module Dependabot
             credentials: credentials,
             ignored_versions: [],
             security_advisories: [],
-            raise_on_ignored: false
+            raise_on_ignored: false,
+            update_cooldown: cooldown_options
           )
         end
 

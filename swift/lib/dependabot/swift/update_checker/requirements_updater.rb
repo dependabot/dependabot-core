@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "dependabot/dependency_requirement"
 require "dependabot/update_checkers/base"
 require "dependabot/swift/native_requirement"
 require "dependabot/swift/version"
@@ -13,14 +14,17 @@ module Dependabot
 
         sig do
           params(
-            requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            requirements: T::Array[Dependabot::DependencyRequirement],
             target_version: T.nilable(T.any(String, Gem::Version)),
             xcode_mode: T::Boolean,
             target_commit_sha: T.nilable(String)
           ).void
         end
         def initialize(requirements:, target_version:, xcode_mode: false, target_commit_sha: nil)
-          @requirements = requirements
+          @requirements = T.let(
+            requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
+            T::Array[Dependabot::DependencyRequirement]
+          )
           @xcode_mode = xcode_mode
           @target_commit_sha = T.let(target_commit_sha, T.nilable(String))
 
@@ -29,18 +33,19 @@ module Dependabot
           @target_version = T.let(Version.new(target_version), Dependabot::Version)
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_requirements
           return updated_xcode_requirements if xcode_mode
 
-          NativeRequirement.map_requirements(requirements) do |requirement|
+          updated = NativeRequirement.map_requirements(requirements) do |requirement|
             T.must(requirement.update_if_needed(T.must(target_version)))
           end
+          updated.map { |req| Dependabot::DependencyRequirement.create(req) }
         end
 
         private
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :requirements
 
         sig { returns(T.nilable(Gem::Version)) }
@@ -53,7 +58,7 @@ module Dependabot
         attr_reader :target_commit_sha
 
         # For Xcode projects, we update the version in the requirement while preserving the kind.
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_xcode_requirements
           requirements.map do |req|
             next req unless target_version
@@ -63,7 +68,7 @@ module Dependabot
           end
         end
 
-        sig { params(requirement: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(requirement: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_xcode_requirement(requirement)
           metadata = requirement[:metadata] || {}
           requirement_string = metadata[:requirement_string]
@@ -75,19 +80,21 @@ module Dependabot
           # Update source ref to target version
           updated_source = update_source_ref(requirement[:source])
 
-          requirement.merge(
-            requirement: new_requirement,
-            source: updated_source,
-            metadata: metadata.merge(
-              requirement_string: new_requirement_string
-            ).compact
+          Dependabot::DependencyRequirement.create(
+            requirement.merge(
+              requirement: new_requirement,
+              source: updated_source,
+              metadata: metadata.merge(
+                requirement_string: new_requirement_string
+              ).compact
+            )
           )
         end
 
         sig do
           params(
-            source: T.nilable(T::Hash[T.any(String, Symbol), T.untyped])
-          ).returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped]))
+            source: T.nilable(T::Hash[T.any(String, Symbol), Object])
+          ).returns(T.nilable(T::Hash[T.any(String, Symbol), Object]))
         end
         def update_source_ref(source)
           return source unless source && target_version

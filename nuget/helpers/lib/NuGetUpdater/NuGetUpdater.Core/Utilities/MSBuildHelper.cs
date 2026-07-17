@@ -346,7 +346,7 @@ internal static partial class MSBuildHelper
                 // empty `Version` attributes will cause the temporary project to not build
                 .Where(p => (p.EvaluationResult is null || p.EvaluationResult.ResultType == EvaluationResultType.Success) && !string.IsNullOrWhiteSpace(p.Version))
                 // If all PackageReferences for a package are update-only mark it as such, otherwise it can cause package incoherence errors which do not exist in the repo.
-                .Select(p => $"<{(usePackageDownload ? "PackageDownload" : "PackageReference")} {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"{(p.Version!.Contains("*") ? p.Version : $"[{p.Version}]")}\" />"));
+                .Select(p => $"<{(usePackageDownload ? "PackageDownload" : "PackageReference")} {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"{GetExactVersionConstraint(p.Version!)}\" />"));
 
         var dependencyTargetsImport = importDependencyTargets
             ? $"""<Import Project="{GetFileFromRuntimeDirectory("DependencyDiscovery.targets")}" />"""
@@ -398,6 +398,29 @@ internal static partial class MSBuildHelper
         await File.WriteAllTextAsync(Path.Combine(tempDir.FullName, "Directory.Build.targets"), "<Project />");
 
         return tempProjectPath;
+    }
+
+    /// <summary>
+    /// Returns a NuGet version constraint string suitable for use in a temporary project file.
+    /// If the version is a single version (e.g., "1.0.0"), it is wrapped in square brackets to
+    /// pin to that exact version (e.g., "[1.0.0]").
+    /// If the version is already a valid version range (e.g., "[1.0.0,2.0.0)" or "1.*"), it is
+    /// returned as-is.
+    /// Throws if the string is neither a valid version nor a valid version range.
+    /// </summary>
+    internal static string GetExactVersionConstraint(string version)
+    {
+        if (NuGetVersion.TryParse(version, out _))
+        {
+            return $"[{version}]";
+        }
+
+        if (VersionRange.TryParse(version, out _))
+        {
+            return version;
+        }
+
+        throw new ArgumentException($"Invalid NuGet version or version range: '{version}'", nameof(version));
     }
 
     internal static async Task<ImmutableArray<string>> GetTargetFrameworkValuesFromProject(string repoRoot, string projectPath, ILogger logger)
@@ -491,7 +514,7 @@ internal static partial class MSBuildHelper
             var tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, logger, importDependencyTargets: false);
 
             var experimentsManager = new ExperimentsManager();
-            var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(repoRoot, tempDirectory.FullName, tempProjectPath, experimentsManager, logger);
+            var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(repoRoot, tempDirectory.FullName, tempProjectPath, experimentsManager, solutionDir: null, logger);
             var allDependencies = projectDiscovery
                 .Where(p => p.FilePath == Path.GetFileName(tempProjectPath))
                 .FirstOrDefault()
@@ -644,9 +667,11 @@ internal static partial class MSBuildHelper
         ThrowOnRateLimitExceeded(output);
         ThrowOnTimeout(output);
         ThrowOnBadResponse(output);
+        ThrowOnNotFoundResponse(output);
         ThrowOnUnparseableFile(output);
         ThrowOnMultipleProjectsForPackagesConfig(output);
         ThrowOnCircularDependency(output);
+        ThrowOnInvalidIcuPackage(output);
     }
 
     private static void ThrowOnUnauthenticatedFeed(string stdout)
@@ -701,10 +726,30 @@ internal static partial class MSBuildHelper
             new Regex(@"The file is not a valid nupkg"),
             new Regex(@"The response ended prematurely\. \(ResponseEnded\)"),
             new Regex(@"The content at '.*' is not valid XML\."),
+            new Regex(@"End of Central Directory record could not be found\."),
         };
         if (patterns.Any(p => p.IsMatch(stdout)))
         {
             throw new HttpRequestException(message: stdout, inner: null, statusCode: System.Net.HttpStatusCode.InternalServerError);
+        }
+    }
+
+    private static void ThrowOnNotFoundResponse(string stdout)
+    {
+        // These commonly occur when a feed is misconfigured (e.g., a bad credential or URL); they're a user
+        // configuration error rather than an updater failure.  In each case a URI is extracted from the
+        // message and passed through to the reported error.
+        var patterns = new[]
+        {
+            // V2 feed 404; the URI is the portion before the `/FindPackagesById` path
+            new Regex(@"Failed to fetch results from V2 feed at '(?<Uri>.+?)/FindPackagesById.*Response status code does not indicate success: 404"),
+            // feed returned content that couldn't be parsed as a valid JSON object
+            new Regex(@"The content at '(?<Uri>[^']*)' is not a valid JSON object\."),
+        };
+        var match = patterns.Select(p => p.Match(stdout)).FirstOrDefault(m => m.Success);
+        if (match is not null)
+        {
+            throw new BadResponseException(stdout, uri: match.Groups["Uri"].Value);
         }
     }
 
@@ -795,6 +840,14 @@ internal static partial class MSBuildHelper
         if (pattern.IsMatch(output))
         {
             throw new Exception("Circular dependency detected");
+        }
+    }
+
+    private static void ThrowOnInvalidIcuPackage(string output)
+    {
+        if (output.Contains("Couldn't find a valid ICU package installed on the system."))
+        {
+            throw new Exception("Couldn't find a valid ICU package installed on the system. Likely EOL SDK.");
         }
     }
 

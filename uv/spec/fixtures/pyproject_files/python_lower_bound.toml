@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "dependabot_poetry_auto_update_bug"}]
 
 [tool.poetry.dependencies]
-python = ">=3.9.10,<3.10"
+python = ">=3.10.0,<3.11"
 
 a-dependency = {path = "a-dependency"}
 

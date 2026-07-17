@@ -89,6 +89,24 @@ RSpec.describe Dependabot::Julia::MetadataFinder do
     end
   end
 
+  describe "#parse_source_url provider mapping" do
+    {
+      "https://github.com/JuliaLang/Example.jl" => %w(github JuliaLang/Example.jl),
+      "https://gitlab.com/org/Pkg.jl" => %w(gitlab org/Pkg.jl),
+      "https://bitbucket.org/org/Pkg.jl" => %w(bitbucket org/Pkg.jl)
+    }.each do |url, (provider, repo)|
+      it "maps #{url} to #{provider}" do
+        source = finder.send(:parse_source_url, url)
+        expect(source.provider).to eq(provider)
+        expect(source.repo).to eq(repo)
+      end
+    end
+
+    it "returns nil for unrecognized hosts" do
+      expect(finder.send(:parse_source_url, "https://example.com/org/Pkg.jl")).to be_nil
+    end
+  end
+
   # NOTE: Additional metadata methods like changelog_url, commit_sha_for_tag, etc.
   # are inherited from the base class and return nil/default values as appropriate.
   # These are covered by the shared example tests above.

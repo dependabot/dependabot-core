@@ -272,7 +272,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
                 }
               ]
             }
-          ]
+          ].map { |pr| Dependabot::Job::ExistingGroupPullRequest.from_hash(pr) }
         )
       end
 
@@ -334,7 +334,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
                 }
               ]
             }
-          ]
+          ].map { |pr| Dependabot::Job::ExistingGroupPullRequest.from_hash(pr) }
         )
       end
 
@@ -386,7 +386,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
                 { "dependency-name" => "dummy-pkg-d", "dependency-version" => "0.1.0" }
               ]
             }
-          ]
+          ].map { |pr| Dependabot::Job::ExistingGroupPullRequest.from_hash(pr) }
         )
       end
 
@@ -610,7 +610,11 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     end
 
     let(:group) do
-      instance_double(Dependabot::DependencyGroup, rules: { "update-types" => update_types })
+      instance_double(
+        Dependabot::DependencyGroup,
+        rules: { "update-types" => update_types },
+        update_types: update_types
+      )
     end
 
     let(:dependency) do

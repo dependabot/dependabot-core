@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "dependabot/dependency_requirement"
 require "dependabot/julia/requirement"
 require "dependabot/julia/version"
 
@@ -11,20 +12,26 @@ module Dependabot
 
       sig do
         params(
-          requirements: T::Array[T::Hash[Symbol, T.untyped]],
+          requirements: T::Array[Dependabot::DependencyRequirement],
           target_version: T.nilable(String),
           update_strategy: T.nilable(Symbol)
         ).void
       end
       def initialize(requirements:, target_version:, update_strategy:)
-        @requirements = requirements
+        @requirements = T.let(
+          requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
+          T::Array[Dependabot::DependencyRequirement]
+        )
         @target_version = target_version
-        @update_strategy = T.let(update_strategy || :bump_versions, Symbol)
+        # Julia's ecosystem convention (CompatHelper) is to append a new spec
+        # to the existing compat entry, i.e. widen, so that is the default.
+        @update_strategy = T.let(update_strategy || :widen_ranges, Symbol)
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         return requirements unless target_version
+        return requirements if update_strategy == :lockfile_only
 
         target_version_obj = Dependabot::Julia::Version.new(target_version)
 
@@ -35,7 +42,7 @@ module Dependabot
 
       private
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       attr_reader :requirements
 
       sig { returns(T.nilable(String)) }
@@ -46,9 +53,9 @@ module Dependabot
 
       sig do
         params(
-          requirement: T::Hash[Symbol, T.untyped],
+          requirement: Dependabot::DependencyRequirement,
           target_version: Dependabot::Julia::Version
-        ).returns(T::Hash[Symbol, T.untyped])
+        ).returns(Dependabot::DependencyRequirement)
       end
       def update_requirement(requirement, target_version)
         current_requirement = requirement[:requirement]
@@ -60,22 +67,34 @@ module Dependabot
                             updated_version_requirement(current_requirement, target_version)
                           end
 
-        requirement.merge(requirement: new_requirement)
+        Dependabot::DependencyRequirement.create(requirement.merge(requirement: new_requirement))
       end
 
       sig { params(requirement_string: String, target_version: Dependabot::Julia::Version).returns(String) }
       def updated_version_requirement(requirement_string, target_version)
-        # Don't update range requirements (e.g., "0.34-0.35") - these are explicit manual constraints
-        return requirement_string if requirement_string.match?(/^\d+(?:\.\d+)*-\d+(?:\.\d+)*$/)
+        # Don't update range requirements (e.g., "0.34 - 0.35") - these are explicit manual constraints
+        return requirement_string if requirement_string.match?(Dependabot::Julia::Requirement::HYPHEN_RANGE_PATTERN)
 
         # Parse all constraints in the requirement string
         reqs = Dependabot::Julia::Requirement.requirements_array(requirement_string)
 
         # Check if any requirement is satisfied by the target version
         # Note: This uses the implicit caret semantics from the Requirement class
-        return requirement_string if reqs.any? { |req| req.satisfied_by?(target_version) }
+        satisfied = reqs.any? { |req| req.satisfied_by?(target_version) }
 
-        # Otherwise, append a new requirement that includes the target version
+        case update_strategy
+        when :bump_versions
+          simplified_version_spec(target_version)
+        when :bump_versions_if_necessary
+          satisfied ? requirement_string : simplified_version_spec(target_version)
+        else # :widen_ranges
+          satisfied ? requirement_string : append_spec(requirement_string, target_version)
+        end
+      end
+
+      sig { params(requirement_string: String, target_version: Dependabot::Julia::Version).returns(String) }
+      def append_spec(requirement_string, target_version)
+        # Append a new requirement that includes the target version
         # Following CompatHelper.jl's approach: use major.minor for versions >= 1.0,
         # 0.minor for 0.x versions, and 0.0.patch for 0.0.x versions
         new_spec = simplified_version_spec(target_version)

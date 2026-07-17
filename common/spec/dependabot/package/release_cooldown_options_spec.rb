@@ -300,5 +300,32 @@ RSpec.describe Dependabot::Package::ReleaseCooldownOptions do
         expect(release_cooldown_options.cooldown_days_for([2, 1, 0], [2, 3, 0])).to eq(7)
       end
     end
+
+    context "when default_days is zero" do
+      let(:default_days) { 0 }
+      let(:semver_major_days) { 0 }
+      let(:semver_minor_days) { 0 }
+      let(:semver_patch_days) { 0 }
+
+      it "applies a zero day cooldown for a major bump" do
+        expect(release_cooldown_options.cooldown_days_for([1, 0, 0], [2, 0, 0])).to eq(0)
+      end
+
+      it "applies a zero day cooldown for a minor bump" do
+        expect(release_cooldown_options.cooldown_days_for([1, 0, 0], [1, 1, 0])).to eq(0)
+      end
+
+      it "applies a zero day cooldown for a patch bump" do
+        expect(release_cooldown_options.cooldown_days_for([1, 0, 0], [1, 0, 1])).to eq(0)
+      end
+
+      it "applies a zero day cooldown when versions are equal" do
+        expect(release_cooldown_options.cooldown_days_for([1, 0, 0], [1, 0, 0])).to eq(0)
+      end
+
+      it "applies a zero day cooldown when current_semver is nil" do
+        expect(release_cooldown_options.cooldown_days_for(nil, [2, 0, 0])).to eq(0)
+      end
+    end
   end
 end

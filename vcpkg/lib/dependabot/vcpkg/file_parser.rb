@@ -21,7 +21,10 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
-        dependency_files.flat_map { |file| parse_dependency_file(file) }.compact
+        dependencies = dependency_files.flat_map { |file| parse_dependency_file(file) }.compact
+        baseline = missing_baseline_dependency
+        dependencies << baseline if baseline
+        dependencies
       end
 
       sig { override.returns(Ecosystem) }
@@ -234,6 +237,106 @@ module Dependabot
         else
           [version_string, nil]
         end
+      end
+
+      # A project relying on a global vcpkg install has no baseline to update.
+      # Synthesize one so the updater adds it to the manifest; later runs keep it
+      # current. See https://github.com/dependabot/dependabot-core/issues/13051
+      sig { returns(T.nilable(Dependabot::Dependency)) }
+      def missing_baseline_dependency
+        manifest = vcpkg_manifest_file
+        return nil unless manifest
+        return nil unless manifest_declares_dependencies?(manifest)
+        return nil if baseline_resolvable?
+
+        config = vcpkg_configuration_file
+        if config.nil?
+          synthetic_baseline_dependency(file_name: manifest.name)
+        elsif default_registry.nil?
+          synthetic_baseline_dependency(
+            file_name: config.name,
+            metadata: { default: true, create_default_registry: true }
+          )
+        end
+      end
+
+      sig do
+        params(file_name: String, metadata: T::Hash[Symbol, T.untyped]).returns(Dependabot::Dependency)
+      end
+      def synthetic_baseline_dependency(file_name:, metadata: {})
+        Dependabot::Dependency.new(
+          name: VCPKG_DEFAULT_BASELINE_DEPENDENCY_NAME,
+          version: nil,
+          package_manager: "vcpkg",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: VCPKG_DEFAULT_BASELINE_URL,
+              ref: VCPKG_DEFAULT_BASELINE_DEFAULT_BRANCH
+            },
+            file: file_name
+          }],
+          metadata: metadata
+        )
+      end
+
+      sig { returns(T::Boolean) }
+      def baseline_resolvable?
+        manifest_baseline_present? || default_registry_baseline_present?
+      end
+
+      sig { returns(T::Boolean) }
+      def manifest_baseline_present?
+        manifest = vcpkg_manifest_file
+        return false unless manifest
+
+        parsed_json(manifest)&.dig("builtin-baseline").is_a?(String)
+      end
+
+      sig { returns(T::Boolean) }
+      def default_registry_baseline_present?
+        registry = default_registry
+        !!(registry && registry["baseline"].is_a?(String))
+      end
+
+      sig { returns(T.nilable(T::Hash[String, T.untyped])) }
+      def default_registry
+        config = vcpkg_configuration_file
+        return nil unless config
+
+        registry = parsed_json(config)&.dig("default-registry")
+        registry.is_a?(Hash) ? registry : nil
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
+      def manifest_declares_dependencies?(file)
+        declared = parsed_json(file)&.dig("dependencies")
+        return false unless declared.is_a?(Array)
+
+        !declared.empty?
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def vcpkg_manifest_file
+        dependency_files.find { |file| file.name == VCPKG_JSON_FILENAME }
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def vcpkg_configuration_file
+        dependency_files.find { |file| file.name == VCPKG_CONFIGURATION_JSON_FILENAME }
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Hash[String, T.untyped])) }
+      def parsed_json(file)
+        content = file.content
+        return nil unless content
+
+        parsed = JSON.parse(content)
+        parsed.is_a?(Hash) ? parsed : nil
+      rescue JSON::ParserError
+        nil
       end
 
       sig { returns(Ecosystem::VersionManager) }

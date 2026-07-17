@@ -174,5 +174,47 @@ RSpec.describe Dependabot::Helm::FileUpdater do
         its(:content) { is_expected.to include "- name: myreg/redis\n    version: 20.11.3" }
       end
     end
+
+    context "when the same chart is in two files and only one changes" do
+      # Regression: the unchanged file must be skipped, not written back
+      # identically (which would raise "Expected content to change!").
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "Chart.yaml",
+            content: "name: a\ndependencies:\n  - name: common\n    version: 1.0.0\n"
+          ),
+          Dependabot::DependencyFile.new(
+            name: "sub/Chart.yaml",
+            content: "name: b\ndependencies:\n  - name: common\n    version: \">1.0.0\"\n"
+          )
+        ]
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "common",
+          version: "1.0.0",
+          previous_version: "1.0.0",
+          requirements: [
+            { file: "Chart.yaml", requirement: "2.0.0", groups: [],
+              source: { tag: "1.0.0" }, metadata: { type: :helm_chart } },
+            { file: "sub/Chart.yaml", requirement: ">1.0.0", groups: [],
+              source: { tag: ">1.0.0" }, metadata: { type: :helm_chart } }
+          ],
+          previous_requirements: [
+            { file: "Chart.yaml", requirement: nil, groups: [],
+              source: { tag: "1.0.0" }, metadata: { type: :helm_chart } },
+            { file: "sub/Chart.yaml", requirement: nil, groups: [],
+              source: { tag: ">1.0.0" }, metadata: { type: :helm_chart } }
+          ],
+          package_manager: "helm"
+        )
+      end
+
+      it "updates only the changed file" do
+        expect(updated_files.map(&:name)).to eq(["Chart.yaml"])
+        expect(updated_files.first.content).to include("version: 2.0.0")
+      end
+    end
   end
 end

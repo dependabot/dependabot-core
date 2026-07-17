@@ -7,6 +7,7 @@ require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/nix/version"
 require "dependabot/nix/requirement"
+require "dependabot/nix/channel"
 require "dependabot/git_commit_checker"
 
 module Dependabot
@@ -16,6 +17,7 @@ module Dependabot
 
       require_relative "update_checker/latest_version_finder"
       require_relative "update_checker/versioned_branch_finder"
+      require_relative "update_checker/channel_version_finder"
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_version
@@ -36,12 +38,14 @@ module Dependabot
         latest_version
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        if ref_pinned_to_version_tag?
-          updated_requirements_for_tag
+        if tarball_channel_input?
+          wrap_requirements(updated_requirements_for_channel)
+        elsif ref_pinned_to_version_tag?
+          wrap_requirements(updated_requirements_for_tag)
         elsif ref_is_versioned_branch?
-          updated_requirements_for_versioned_branch
+          wrap_requirements(updated_requirements_for_versioned_branch)
         else
           dependency.requirements
         end
@@ -61,13 +65,84 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def fetch_latest_version
-        if ref_pinned_to_version_tag?
+        if tarball_channel_input?
+          fetch_latest_version_for_channel
+        elsif ref_pinned_to_version_tag?
           fetch_latest_version_for_tag
         elsif ref_is_versioned_branch?
           fetch_latest_version_for_versioned_branch || fetch_latest_version_for_commit
         else
           fetch_latest_version_for_commit
         end
+      end
+
+      # --- Tarball channel support ---
+
+      sig { returns(T::Boolean) }
+      def tarball_channel_input?
+        source = dependency.source_details(allowed_types: ["tarball"])
+        return false unless source
+
+        Channel.channel_url?(source[:url] || source["url"])
+      end
+
+      sig { returns(T.nilable(String)) }
+      def fetch_latest_version_for_channel
+        latest_channel&.fetch(:commit_sha) || channel_version_finder.current_channel_revision
+      end
+
+      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      def updated_requirements_for_channel
+        result = latest_channel
+        return dependency.requirements unless result
+
+        dependency.requirements.map do |req|
+          source = req[:source]
+          next req unless source
+
+          req.merge(source: source.merge(ref: result[:channel], url: result[:url]))
+        end
+      end
+
+      sig { returns(T.nilable(T::Hash[Symbol, String])) }
+      def latest_channel
+        @latest_channel ||= T.let(
+          channel_version_finder.latest_channel,
+          T.nilable(T::Hash[Symbol, String])
+        )
+      end
+
+      sig { returns(ChannelVersionFinder) }
+      def channel_version_finder
+        @channel_version_finder ||= T.let(
+          ChannelVersionFinder.new(
+            current_channel: T.must(tarball_channel_name),
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            extension: tarball_channel_extension
+          ),
+          T.nilable(ChannelVersionFinder)
+        )
+      end
+
+      sig { returns(T.nilable(String)) }
+      def tarball_channel_name
+        source = dependency.source_details(allowed_types: ["tarball"])
+        return unless source
+
+        ref = source[:ref] || source["ref"]
+        return ref if ref
+
+        # Fall back to the URL's channel when the source omits a ref.
+        Channel.channel_name_from_url(source[:url] || source["url"])
+      end
+
+      # Preserve the flake's existing tarball suffix (xz, gz, bz2) on a bump.
+      sig { returns(String) }
+      def tarball_channel_extension
+        source = dependency.source_details(allowed_types: ["tarball"])
+        url = source && (source[:url] || source["url"])
+        Channel.extension_from_url(url) || Channel::DEFAULT_EXTENSION
       end
 
       # --- Tag-pinned ref support ---
@@ -94,7 +169,7 @@ module Dependabot
       sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
       def latest_version_tag
         @latest_version_tag ||= T.let(
-          git_commit_checker.local_tag_for_latest_version,
+          git_commit_checker.local_tag_for_latest_version(update_cooldown),
           T.nilable(T::Hash[Symbol, T.untyped])
         )
       end

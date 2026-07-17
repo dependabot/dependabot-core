@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Xml;
 using System.Xml.Linq;
 
 using Microsoft.Language.Xml;
@@ -154,7 +155,7 @@ internal static class BindingRedirectManager
         }
 
         // Get the configuration file
-        var document = GetConfiguration(configFile.Content);
+        var document = GetConfiguration(configFile.Content, configFile.Path);
 
         // Get the runtime element
         var runtime = document.Root?.Element("runtime");
@@ -211,15 +212,19 @@ internal static class BindingRedirectManager
             document.ToString()
         );
 
-        static XDocument GetConfiguration(string configFileContent)
+        static XDocument GetConfiguration(string configFileContent, string configFilePath)
         {
             try
             {
                 return XDocument.Parse(configFileContent, LoadOptions.PreserveWhitespace);
             }
+            catch (XmlException ex)
+            {
+                throw new UnparseableFileException($"Error loading binding redirect configuration: {ex.Message}", configFilePath);
+            }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Error loading binging redirect configuration", ex);
+                throw new InvalidOperationException("Error loading binding redirect configuration", ex);
             }
         }
 

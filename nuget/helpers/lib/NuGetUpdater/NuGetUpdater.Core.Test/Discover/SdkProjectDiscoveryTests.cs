@@ -13,6 +13,91 @@ namespace NuGetUpdater.Core.Test.Discover;
 public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
 {
     [Fact]
+    public async Task DiscoveryInSingleProject_SolutionDirPropertyIsHonored()
+    {
+        // the project only references the package when the MSBuild `SolutionDir` property is set, which mimics
+        // project files that rely on `$(SolutionDir)` being defined by a solution-level build; the concatenated path
+        // also asserts that the faked value ends with a directory separator like VS/MSBuild solution builds
+        await TestDiscoverAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Solution.Scoped.Package", "1.2.3", "net8.0"),
+            ],
+            startingDirectory: "src",
+            projectPath: "src/library.csproj",
+            solutionDir: "src",
+            files:
+            [
+                ("src/library.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup Condition="Exists('$(SolutionDir)library.csproj')">
+                        <PackageReference Include="Solution.Scoped.Package" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedProjects:
+            [
+                new()
+                {
+                    FilePath = "library.csproj",
+                    Dependencies =
+                    [
+                        new("Solution.Scoped.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                    ],
+                    ImportedFiles = [],
+                    TargetFrameworks = ["net8.0"],
+                    ReferencedProjectPaths = [],
+                    AdditionalFiles = [],
+                }
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task DiscoveryInSingleProject_SolutionDirPropertyIsUnsetWhenNotProvided()
+    {
+        // without a solution directory the `$(SolutionDir)` property is undefined, so the conditional package
+        // reference is not evaluated and the package is not discovered
+        await TestDiscoverAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Solution.Scoped.Package", "1.2.3", "net8.0"),
+            ],
+            startingDirectory: "src",
+            projectPath: "src/library.csproj",
+            files:
+            [
+                ("src/library.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup Condition="Exists('$(SolutionDir)library.csproj')">
+                        <PackageReference Include="Solution.Scoped.Package" Version="1.2.3" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            expectedProjects:
+            [
+                new()
+                {
+                    FilePath = "library.csproj",
+                    Dependencies = [],
+                    ImportedFiles = [],
+                    TargetFrameworks = ["net8.0"],
+                    ReferencedProjectPaths = [],
+                    AdditionalFiles = [],
+                }
+            ]
+        );
+    }
+
+    [Fact]
     public async Task DiscoveryInSingleProject_TopLevelAndTransitive()
     {
         await TestDiscoverAsync(
@@ -636,12 +721,69 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
         Assert.False(File.Exists(errorSentinelPath), "Build targets should not have executed during discovery");
     }
 
+    [Fact]
+    public async Task LegacyProjectWithPackagesConfigAndVersionRangePackageReference_DoesNotThrow()
+    {
+        // A legacy project with packages.config and a <PackageReference> using a version range
+        // correctly resolves both direct and transitive dependencies.
+        await TestDiscoverAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("SdkStyle.Package", "1.5.0", "net48", [(null, [("Transitive.Dependency", "3.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "3.0.0", "net48"),
+            ],
+            startingDirectory: "",
+            projectPath: "project.csproj",
+            files:
+            [
+                ("project.csproj", """
+                    <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                      <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+                      <PropertyGroup>
+                        <OutputType>Library</OutputType>
+                        <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <None Include="packages.config" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <PackageReference Include="SdkStyle.Package" Version="[1.0.0,2.0.0)" />
+                      </ItemGroup>
+                      <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+                    </Project>
+                    """),
+                ("packages.config", """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <packages>
+                    </packages>
+                    """)
+            ],
+            expectedProjects:
+            [
+                new()
+                {
+                    FilePath = "project.csproj",
+                    Dependencies =
+                    [
+                        new("SdkStyle.Package", "1.5.0", DependencyType.PackageReference, TargetFrameworks: ["net48"]),
+                        new("Transitive.Dependency", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["net48"], IsTopLevel: false),
+                    ],
+                    ImportedFiles = [],
+                    TargetFrameworks = ["net48"],
+                    ReferencedProjectPaths = [],
+                    AdditionalFiles = ["packages.config"],
+                }
+            ]
+        );
+    }
+
     private static async Task TestDiscoverAsync(
         string startingDirectory,
         string projectPath,
         TestFile[] files,
         ImmutableArray<ExpectedSdkProjectDiscoveryResult> expectedProjects,
-        MockNuGetPackage[]? packages = null
+        MockNuGetPackage[]? packages = null,
+        string? solutionDir = null
     )
     {
         using var testDirectory = await TemporaryDirectory.CreateWithContentsAsync(files);
@@ -651,7 +793,9 @@ public class SdkProjectDiscoveryTests : DiscoveryWorkerTestBase
         var logger = new TestLogger();
         var fullProjectPath = Path.Combine(testDirectory.DirectoryPath, projectPath);
         var experimentsManager = new ExperimentsManager();
-        var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(testDirectory.DirectoryPath, Path.GetDirectoryName(fullProjectPath)!, fullProjectPath, experimentsManager, logger);
+        var resolvedSolutionDir = solutionDir is null ? null : Path.Combine(testDirectory.DirectoryPath, solutionDir);
+        var projectDiscovery = await SdkProjectDiscovery.DiscoverAsync(testDirectory.DirectoryPath, Path.GetDirectoryName(fullProjectPath)!, fullProjectPath, experimentsManager, resolvedSolutionDir, logger);
         ValidateProjectResults(expectedProjects, projectDiscovery);
     }
 }
+

@@ -28,7 +28,7 @@ public class GraphWorker : IGraphWorker
     {
         // Deserialize the job file
         var jobFileContent = await File.ReadAllTextAsync(jobFilePath.FullName);
-        var jobWrapper = RunWorker.Deserialize(jobFileContent);
+        var jobWrapper = RunWorker.Deserialize(jobFileContent, _logger);
         var job = jobWrapper.Job;
 
         // Use the case-insensitive repo contents path if provided, otherwise use the original

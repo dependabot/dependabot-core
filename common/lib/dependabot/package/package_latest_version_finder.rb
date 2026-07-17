@@ -1,7 +1,6 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "cgi"
 require "excon"
 require "nokogiri"
 require "sorbet-runtime"
@@ -40,7 +39,7 @@ module Dependabot
       sig { returns(T.nilable(ReleaseCooldownOptions)) }
       attr_reader :cooldown_options
 
-      sig { returns(T::Hash[Symbol, T.untyped]) }
+      sig { returns(T::Hash[Symbol, T.anything]) }
       attr_reader :options
 
       sig do
@@ -52,7 +51,7 @@ module Dependabot
           security_advisories: T::Array[Dependabot::SecurityAdvisory],
           cooldown_options: T.nilable(ReleaseCooldownOptions),
           raise_on_ignored: T::Boolean,
-          options: T::Hash[Symbol, T.untyped]
+          options: T::Hash[Symbol, T.anything]
         ).void
       end
       def initialize(
@@ -323,15 +322,20 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def wants_prerelease?
-        return version_class.new(dependency.version).prerelease? if dependency.version
+        return true if dependency.numeric_version&.prerelease?
 
         dependency.requirements.any? do |req|
-          reqs = (req.fetch(:requirement) || "").split(",").map(&:strip)
-          reqs.any? { |r| r.match?(/[A-Za-z]/) }
+          req_string = req.fetch(:requirement) || ""
+          req_string.split(",").map(&:strip).any? do |r|
+            version_str = r.gsub(/^\s*[!<>=~^]+\s*/, "").strip
+            next false unless version_class.correct?(version_str)
+
+            version_class.new(version_str).prerelease?
+          end
         end
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[Dependabot::Requirement]) }
       def ignore_requirements
         ignored_versions.flat_map { |req| requirement_class.requirements_array(req) }
       end

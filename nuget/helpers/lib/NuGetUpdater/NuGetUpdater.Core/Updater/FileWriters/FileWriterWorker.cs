@@ -406,7 +406,7 @@ public class FileWriterWorker
             .ToImmutableArray();
 
         // try update
-        var success = await fileWriter.UpdatePackageVersionsAsync(repoContentsPath, relativeFilePaths, projectDiscovery.Dependencies, requiredPackageVersions, projectDiscovery.PackageManagementKind);
+        var success = await fileWriter.UpdatePackageVersionsAsync(repoContentsPath, relativeFilePaths, projectDiscovery.Dependencies, requiredPackageVersions, projectDiscovery.PackageManagementKind, projectDiscovery.PackageManagementSpecialFileRelativePath);
         var updatedFiles = new List<string>();
         foreach (var (filePath, originalContents) in originalFileContents)
         {

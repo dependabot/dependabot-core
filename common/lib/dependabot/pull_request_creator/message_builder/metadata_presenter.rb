@@ -247,7 +247,7 @@ module Dependabot
           end
         end
 
-        sig { params(details: T::Hash[String, T.untyped]).returns(String) }
+        sig { params(details: T::Hash[String, T.anything]).returns(String) }
         def vulnerability_version_range_lines(details)
           msg = ""
           %w(
@@ -256,9 +256,12 @@ module Dependabot
             affected_versions
           ).each do |tp|
             type = T.must(tp.split("_").first).capitalize
-            next unless details[tp]
+            versions = case (value = details[tp])
+                       when Array then value
+                       end
+            next unless versions
 
-            versions_string = details[tp].any? ? details[tp].join("; ") : "none"
+            versions_string = versions.any? ? versions.join("; ") : "none"
             versions_string = versions_string.gsub(/(?<!\\)~/, '\~')
             msg += "> #{type} versions: #{versions_string}\n"
           end

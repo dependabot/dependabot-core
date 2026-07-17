@@ -271,13 +271,7 @@ module Dependabot
 
           workspace_module_paths.each do |mod_path|
             Dir.chdir(mod_path) do
-              command = "go mod tidy -e"
-              _, stderr, status = Open3.capture3(command)
-              if status.success?
-                Dependabot.logger.info "`go mod tidy` succeeded in #{mod_path}"
-              else
-                Dependabot.logger.info "Failed to `go mod tidy` in #{mod_path}: #{stderr}"
-              end
+              run_go_mod_tidy(context: mod_path)
             end
           end
         end
@@ -332,21 +326,28 @@ module Dependabot
           results
         end
 
-        sig { void }
-        def run_go_mod_tidy
+        sig { params(context: T.nilable(String)).void }
+        def run_go_mod_tidy(context: nil)
           return unless tidy?
 
-          command = "go mod tidy -e"
+          label = context ? " in #{context}" : ""
 
-          # we explicitly don't raise an error for 'go mod tidy' and silently
-          # continue with an info log here. `go mod tidy` shouldn't block
-          # updating versions because there are some edge cases where it's OK to fail
-          # (such as generated files not available yet to us).
+          # Run a strict `go mod tidy` (without the `-e` flag). `-e` tells tidy
+          # to continue despite errors loading packages, which silently
+          # tolerates unreachable/private modules and can over-prune `/go.mod`
+          # checksum entries from go.sum for unrelated modules. We surface the
+          # real error instead so the underlying dependency problem is visible
+          # and can be fixed by giving Dependabot the same access to
+          # dependencies as the rest of the team.
+          command = "go mod tidy"
           _, stderr, status = Open3.capture3(command)
           if status.success?
-            Dependabot.logger.info "`go mod tidy` succeeded"
+            Dependabot.logger.info "`#{command}` succeeded#{label}"
           else
-            Dependabot.logger.info "Failed to `go mod tidy`: #{stderr}"
+            # Log the failing module before raising, as handle_subprocess_error
+            # scrubs the working directory from the message.
+            Dependabot.logger.info "Failed to `#{command}`#{label}: #{stderr}"
+            handle_subprocess_error(stderr)
           end
         end
 

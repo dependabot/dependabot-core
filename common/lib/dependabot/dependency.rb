@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/dependency_requirement"
 require "dependabot/version"
 
 module Dependabot
@@ -90,7 +91,7 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     attr_reader :version
 
-    sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+    sig { returns(T::Array[Dependabot::DependencyRequirement]) }
     attr_reader :requirements
 
     sig { returns(String) }
@@ -99,7 +100,7 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     attr_reader :previous_version
 
-    sig { returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
+    sig { returns(T.nilable(T::Array[Dependabot::DependencyRequirement])) }
     attr_reader :previous_requirements
 
     sig { returns(T.nilable(String)) }
@@ -124,7 +125,6 @@ module Dependabot
     sig { returns(T.nilable(Time)) }
     attr_accessor :attribution_timestamp
 
-    # rubocop:disable Metrics/AbcSize
     # rubocop:disable Metrics/PerceivedComplexity
     sig do
       params(
@@ -162,12 +162,15 @@ module Dependabot
         T.nilable(String)
       )
       @version = nil if @version == ""
-      @requirements = T.let(requirements.map { |req| symbolize_keys(req) }, T::Array[T::Hash[Symbol, T.untyped]])
+      @requirements = T.let(
+        requirements.map { |req| DependencyRequirement.create(req) },
+        T::Array[Dependabot::DependencyRequirement]
+      )
       @previous_version = previous_version
       @previous_version = nil if @previous_version == ""
       @previous_requirements = T.let(
-        previous_requirements&.map { |req| symbolize_keys(req) },
-        T.nilable(T::Array[T::Hash[Symbol, T.untyped]])
+        previous_requirements&.map { |req| DependencyRequirement.create(req) },
+        T.nilable(T::Array[Dependabot::DependencyRequirement])
       )
       @package_manager = package_manager
       @directory = directory
@@ -181,7 +184,6 @@ module Dependabot
       @metadata = T.let(symbolize_keys(metadata || {}), T::Hash[Symbol, T.untyped])
       check_values
     end
-    # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/PerceivedComplexity
 
     sig { returns(T::Boolean) }
@@ -272,7 +274,7 @@ module Dependabot
       end
     end
 
-    sig { params(requirements: T::Array[T::Hash[Symbol, T.untyped]]).returns(T.nilable(String)) }
+    sig { params(requirements: T::Array[Dependabot::DependencyRequirement]).returns(T.nilable(String)) }
     def docker_digest_from_reqs(requirements)
       requirements
         .filter_map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }
@@ -340,9 +342,9 @@ module Dependabot
       self == other
     end
 
-    sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+    sig { returns(T::Array[Dependabot::DependencyRequirement]) }
     def specific_requirements
-      requirements.select { |r| requirement_class.new(r[:requirement]).specific? }
+      requirements.select { |r| requirement_class.new(r.requirement).specific? }
     end
 
     sig { returns(T.class_of(Dependabot::Requirement)) }

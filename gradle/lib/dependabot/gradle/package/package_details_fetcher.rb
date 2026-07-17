@@ -15,34 +15,82 @@ require "dependabot/logger"
 require "dependabot/gradle/metadata_finder"
 require "dependabot/gradle/package/release_date_extractor"
 require "dependabot/gradle/package/version_release_date_fallback_fetcher"
+require "dependabot/package/release_cooldown_options"
 
 module Dependabot
   module Gradle
     module Package
+      module EofRetry
+        extend T::Sig
+
+        EOF_RETRY_COUNT = 2
+
+        sig do
+          params(
+            url: String,
+            headers: T::Hash[T.any(String, Symbol), Object]
+          ).returns(Excon::Response)
+        end
+        def self.get(url:, headers:)
+          retries_remaining = EOF_RETRY_COUNT
+
+          begin
+            Dependabot::RegistryClient.get(url: url, headers: headers)
+          rescue Excon::Error::Socket => e
+            raise e unless e.socket_error.is_a?(EOFError) && retries_remaining.positive?
+
+            retries_remaining -= 1
+            retry
+          end
+        end
+      end
+
+      module RepositoryDetailsHelpers
+        extend T::Sig
+
+        sig { params(hash: T::Hash[String, Object], key: String).returns(String) }
+        def string_key_value(hash, key)
+          value = hash.fetch(key)
+          return value if value.is_a?(String)
+
+          Kernel.raise TypeError, "Expected #{key} to be a String"
+        end
+
+        sig { params(hash: T::Hash[String, Object]).returns(T::Hash[T.any(String, Symbol), Object]) }
+        def auth_headers_value(hash)
+          value = hash.fetch("auth_headers")
+          return value if value.is_a?(Hash)
+
+          Kernel.raise TypeError, "Expected auth_headers to be a Hash"
+        end
+      end
+
       class PackageDetailsFetcher
         extend T::Sig
+        include RepositoryDetailsHelpers
 
         CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
         KOTLIN_PLUGIN_REPO_PREFIX = "org.jetbrains.kotlin"
         TYPE_SUFFICES = %w(jre android java native_mt agp).freeze
-
         sig do
           params(
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            forbidden_urls: T.nilable(T::Array[String])
+            forbidden_urls: T.nilable(T::Array[String]),
+            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize(dependency:, dependency_files:, credentials:, forbidden_urls:)
+        def initialize(dependency:, dependency_files:, credentials:, forbidden_urls:, cooldown_options: nil)
           @dependency = dependency
           @dependency_files = dependency_files
           @credentials = credentials
           @forbidden_urls = forbidden_urls
-          @repositories = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
-          @google_version_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
-          @dependency_repository_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
-          @release_details = T.let(nil, T.nilable(T::Hash[String, T::Hash[Symbol, T.untyped]]))
+          @cooldown_options = T.let(cooldown_options, T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+          @repositories = T.let(nil, T.nilable(T::Array[T::Hash[String, Object]]))
+          @google_version_details = T.let(nil, T.nilable(Nokogiri::XML::Document))
+          @dependency_repository_details = T.let(nil, T.nilable(T::Array[T::Hash[String, Object]]))
+          @release_details = T.let(nil, T.nilable(T::Hash[String, T::Hash[Symbol, Object]]))
           @version_release_date_fallback_fetcher = T.let(nil, T.nilable(VersionReleaseDateFallbackFetcher))
         end
 
@@ -59,9 +107,9 @@ module Dependabot
         attr_reader :forbidden_urls
 
         # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
-        sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+        sig { returns(T::Array[T::Hash[Symbol, Object]]) }
         def fetch_available_versions
-          package_releases = T.let([], T::Array[T::Hash[String, T.untyped]])
+          package_releases = T.let([], T::Array[T::Hash[Symbol, Object]])
           version_details =
             repositories.map do |repository_details|
               url = repository_details.fetch("url")
@@ -77,7 +125,7 @@ module Dependabot
             end.flatten.compact
 
           version_details = version_details.sort_by { |details| details.fetch(:version) }
-          release_date_info = release_details
+          release_date_info = @cooldown_options ? release_details : {}
           version_details.each do |info|
             package_releases << {
               version: Gradle::Version.new(info[:version].to_s),
@@ -98,6 +146,7 @@ module Dependabot
           return release if release.released_at
 
           release_date = release_details[release.version.to_s]&.fetch(:release_date, nil)
+          release_date = nil unless release_date.is_a?(Time)
           hydrated_release = build_release_with_date(release, release_date)
 
           return hydrated_release if hydrated_release.released_at || !plugin?
@@ -105,7 +154,7 @@ module Dependabot
           build_release_with_date(hydrated_release, version_release_date_fallback(release.version.to_s))
         end
 
-        sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Hash[String, T::Hash[Symbol, Object]]) }
         def release_details
           @release_details ||= begin
             extractor = ReleaseDateExtractor.new(dependency_name: dependency.name, version_class: version_class)
@@ -153,7 +202,7 @@ module Dependabot
           )
         end
 
-        sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+        sig { returns(T::Array[T::Hash[String, Object]]) }
         def repositories
           return @repositories if @repositories
 
@@ -173,11 +222,12 @@ module Dependabot
             end
         end
 
-        sig { returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+        sig { returns(T.nilable(T::Array[T::Hash[Symbol, Object]])) }
         def distribution_version_details
           DistributionsFetcher.available_versions.map do |info|
+            build_time = info[:build_time]
             release_date = begin
-              Time.parse(info[:build_time])
+              Time.parse(build_time) if build_time.is_a?(String)
             rescue StandardError
               nil
             end
@@ -192,7 +242,7 @@ module Dependabot
           nil
         end
 
-        sig { returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+        sig { returns(T.nilable(T::Array[T::Hash[Symbol, Object]])) }
         def google_version_details
           url = Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO
           group_id, artifact_id = group_and_artifact_ids
@@ -220,17 +270,18 @@ module Dependabot
           nil
         end
 
-        sig { params(repository_details: T::Hash[T.untyped, T.untyped]).returns(T.untyped) }
+        sig { params(repository_details: T::Hash[String, Object]).returns(Nokogiri::XML::Document) }
         def dependency_metadata(repository_details)
-          @dependency_metadata ||= T.let({}, T.nilable(T::Hash[T.untyped, T.untyped]))
+          @dependency_metadata ||= T.let({}, T.nilable(T::Hash[Integer, Nokogiri::XML::Document]))
           @dependency_metadata[repository_details.hash] ||=
             begin
-              response = Dependabot::RegistryClient.get(
-                url: dependency_metadata_url(repository_details.fetch("url")),
-                headers: repository_details.fetch("auth_headers")
+              repository_url = string_key_value(repository_details, "url")
+              response = EofRetry.get(
+                url: dependency_metadata_url(repository_url),
+                headers: auth_headers_value(repository_details)
               )
 
-              check_response(response, repository_details.fetch("url"))
+              check_response(response, repository_url)
               Nokogiri::XML(response.body)
             rescue URI::InvalidURIError
               Nokogiri::XML("")
@@ -242,17 +293,18 @@ module Dependabot
             end
         end
 
-        sig { params(repository_details: T::Hash[T.untyped, T.untyped]).returns(T.untyped) }
+        sig { params(repository_details: T::Hash[String, Object]).returns(Nokogiri::HTML::Document) }
         def release_info_metadata(repository_details)
-          @release_info_metadata ||= T.let({}, T.nilable(T::Hash[Integer, T.untyped]))
+          @release_info_metadata ||= T.let({}, T.nilable(T::Hash[Integer, Nokogiri::HTML::Document]))
           @release_info_metadata[repository_details.hash] ||=
             begin
-              response = Dependabot::RegistryClient.get(
-                url: dependency_metadata_url(repository_details.fetch("url")).gsub("maven-metadata.xml", ""),
-                headers: repository_details.fetch("auth_headers")
+              repository_url = string_key_value(repository_details, "url")
+              response = EofRetry.get(
+                url: dependency_metadata_url(repository_url).gsub("maven-metadata.xml", ""),
+                headers: auth_headers_value(repository_details)
               )
 
-              check_response(response, repository_details.fetch("url"))
+              check_response(response, repository_url)
               Nokogiri::HTML(response.body)
             rescue URI::InvalidURIError
               Nokogiri::HTML("")
@@ -264,12 +316,12 @@ module Dependabot
             end
         end
 
-        sig { returns(T::Array[T::Hash[String, String]]) }
+        sig { returns(T::Array[T::Hash[String, Object]]) }
         def repository_urls
           plugin? ? plugin_repository_details : dependency_repository_details
         end
 
-        sig { params(response: T.untyped, repository_url: T.untyped).returns(T.nilable(T::Array[T.untyped])) }
+        sig { params(response: Excon::Response, repository_url: String).void }
         def check_response(response, repository_url)
           return unless response.status == 401 || response.status == 403
           return if T.must(@forbidden_urls).include?(repository_url)
@@ -290,7 +342,7 @@ module Dependabot
           end
         end
 
-        sig { returns(T::Array[T::Hash[String, String]]) }
+        sig { returns(T::Array[T::Hash[String, Object]]) }
         def dependency_repository_details
           requirement_files =
             dependency.requirements
@@ -310,18 +362,18 @@ module Dependabot
             end.uniq
         end
 
-        sig { returns(T::Array[T::Hash[String, String]]) }
+        sig { returns(T::Array[T::Hash[String, Object]]) }
         def plugin_repository_details
           [{ "url" => Gradle::FileParser::RepositoriesFinder::GRADLE_PLUGINS_REPO, "auth_headers" => {} }] +
             dependency_repository_details
         end
 
-        sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+        sig { returns(T::Array[T::Hash[String, Object]]) }
         def distribution_repository_details
           [{ "url" => Gradle::Distributions::DISTRIBUTION_REPOSITORY_URL, "auth_headers" => {} }]
         end
 
-        sig { params(comparison_version: T.untyped).returns(T::Boolean) }
+        sig { params(comparison_version: Object).returns(T::Boolean) }
         def matches_dependency_version_type?(comparison_version)
           return true unless dependency.version
 
@@ -348,7 +400,7 @@ module Dependabot
           dependency_files.find { |f| f.name == filename }
         end
 
-        sig { params(repository_url: T.untyped).returns(String) }
+        sig { params(repository_url: String).returns(String) }
         def dependency_metadata_url(repository_url)
           group_id, artifact_id = group_and_artifact_ids
           group_id = "#{Dependabot::Gradle::MetadataFinder::KOTLIN_PLUGIN_REPO_PREFIX}.#{group_id}" if kotlin_plugin?
