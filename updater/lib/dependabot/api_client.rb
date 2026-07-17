@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "excon"
@@ -44,7 +44,7 @@ module Dependabot
 
         api_url = "#{api_path}/update_jobs/#{job_id}/create_pull_request"
         data = create_pull_request_data(dependency_change, base_commit_sha)
-        response = http_client.post(path: api_url, body: { data: data }.to_json)
+        response = post(path: api_url, body: { data: data }.to_json)
         if response.status >= 400 && dependency_file_not_supported_error?(response.body.to_s)
           raise Dependabot::DependencyFileNotSupported, response.body.to_s
         elsif response.status >= 400
@@ -77,7 +77,7 @@ module Dependabot
           "pr-title": dependency_change.pr_message.pr_name,
           "pr-body": dependency_change.pr_message.pr_message
         }
-        response = http_client.post(path: api_url, body: { data: data }.to_json)
+        response = post(path: api_url, body: { data: data }.to_json)
         raise ApiError, response.body if response.status >= 400
       rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
@@ -97,7 +97,7 @@ module Dependabot
 
         api_url = "#{api_path}/update_jobs/#{job_id}/close_pull_request"
         body = { data: { "dependency-names": dependency_names, reason: reason } }
-        response = http_client.post(path: api_url, body: body.to_json)
+        response = post(path: api_url, body: body.to_json)
         raise ApiError, response.body if response.status >= 400
       rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
@@ -124,7 +124,7 @@ module Dependabot
             "error-details": error_details
           }
         }
-        response = http_client.post(path: api_url, body: body.to_json)
+        response = post(path: api_url, body: body.to_json)
         raise ApiError, response.body if response.status >= 400
       rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
@@ -159,7 +159,7 @@ module Dependabot
             "warn-description": warn_description
           }
         }
-        response = http_client.post(path: api_url, body: body.to_json)
+        response = post(path: api_url, body: body.to_json)
         raise ApiError, response.body if response.status >= 400
       rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
@@ -188,7 +188,7 @@ module Dependabot
             "error-details": error_details
           }
         }
-        response = http_client.post(path: api_url, body: body.to_json)
+        response = post(path: api_url, body: body.to_json)
         raise ApiError, response.body if response.status >= 400
       rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
@@ -208,7 +208,7 @@ module Dependabot
 
         api_url = "#{api_path}/update_jobs/#{job_id}/mark_as_processed"
         body = { data: { "base-commit-sha": base_commit_sha } }
-        response = http_client.patch(path: api_url, body: body.to_json)
+        response = patch(path: api_url, body: body.to_json)
         raise ApiError, response.body if response.status >= 400
       rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
@@ -232,7 +232,7 @@ module Dependabot
             dependency_files: dependency_files
           }
         }
-        response = http_client.post(path: api_url, body: body.to_json)
+        response = post(path: api_url, body: body.to_json)
         raise ApiError, response.body if response.status >= 400
       rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
@@ -253,7 +253,7 @@ module Dependabot
         body = {
           data: dependency_submission
         }
-        response = http_client.post(path: api_url, body: body.to_json)
+        response = post(path: api_url, body: body.to_json)
         raise ApiError, response.body if response.status >= 400
       rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
@@ -272,7 +272,7 @@ module Dependabot
         body = {
           data: { ecosystem_versions: ecosystem_versions }
         }
-        response = http_client.post(path: api_url, body: body.to_json)
+        response = post(path: api_url, body: body.to_json)
         raise ApiError, response.body if response.status >= 400
       rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
         retry_count ||= 0
@@ -300,7 +300,7 @@ module Dependabot
             tags: tags
           }
         }
-        response = http_client.post(path: api_url, body: body.to_json)
+        response = post(path: api_url, body: body.to_json)
         # We treat metrics as fire-and-forget, so just warn if they fail.
         Dependabot.logger.debug("Unable to report metric '#{metric}'.") if response.status >= 400
       rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError
@@ -327,7 +327,7 @@ module Dependabot
           ]
         }
 
-        response = http_client.post(path: api_url, body: body.to_json)
+        response = post(path: api_url, body: body.to_json)
         if response.status >= 400
           Dependabot.logger.error(
             "Failed to record ecosystem meta. Status: #{response.status}, body: #{response.body}"
@@ -369,7 +369,7 @@ module Dependabot
           retry_count = 0
 
           begin
-            response = http_client.post(path: api_url, body: body.to_json)
+            response = post(path: api_url, body: body.to_json)
             raise ApiError, response.body if response.status >= 400
           rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError, ApiError => e
             retry_count += 1
@@ -395,7 +395,7 @@ module Dependabot
         span.set_attribute(::Dependabot::OpenTelemetry::Attributes::JOB_ID, job_id.to_s)
 
         api_url = "#{api_path}/update_jobs/#{job_id}/blocked_versions"
-        response = http_client.get(path: api_url, query: { "package-manager": package_manager })
+        response = get(path: api_url, query: { "package-manager" => package_manager })
 
         if response.status >= 400
           Dependabot.logger.warn("Failed to fetch blocked versions (HTTP #{response.status}), continuing without them")
@@ -412,6 +412,21 @@ module Dependabot
     end
 
     private
+
+    sig { params(path: String, body: String).returns(Excon::Response) }
+    def post(path:, body:)
+      T.cast(http_client.post(path: path, body: body), Excon::Response)
+    end
+
+    sig { params(path: String, body: String).returns(Excon::Response) }
+    def patch(path:, body:)
+      T.cast(http_client.patch(path: path, body: body), Excon::Response)
+    end
+
+    sig { params(path: String, query: T::Hash[String, String]).returns(Excon::Response) }
+    def get(path:, query:)
+      T.cast(http_client.get(path: path, query: query), Excon::Response)
+    end
 
     sig { params(body: String).returns(T::Array[T::Hash[String, Object]]) }
     def parse_blocked_versions_response(body)
@@ -462,7 +477,8 @@ module Dependabot
 
     sig { returns(String) }
     def api_path
-      T.cast(http_client.params[:path], String)
+      params = T.cast(http_client.params, T::Hash[Symbol, Object])
+      T.cast(params[:path], String)
     end
 
     # Update return type to allow returning a Hash or nil
@@ -517,18 +533,22 @@ module Dependabot
         if ENV.key?("HTTPS_PROXY")
           ENV.fetch("HTTPS_PROXY")
         else
-          URI(base_url).find_proxy&.to_s
+          proxy_uri = T.cast(URI(base_url).find_proxy, T.nilable(URI::Generic))
+          proxy_uri&.to_s
         end
 
-      Excon.new(
-        base_url,
-        proxy: proxy,
-        **Dependabot::SharedHelpers.excon_defaults(
-          headers: {
-            "Authorization" => job_token,
-            "Content-Type" => "application/json"
-          }
-        )
+      T.cast(
+        Excon.new(
+          base_url,
+          proxy: proxy,
+          **Dependabot::SharedHelpers.excon_defaults(
+            headers: {
+              "Authorization" => job_token,
+              "Content-Type" => "application/json"
+            }
+          )
+        ),
+        Excon::Connection
       )
     end
 
