@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -523,19 +523,22 @@ module Dependabot
 
     sig { params(dependency: Dependabot::Dependency).void }
     def log_blocked_versions_for(dependency)
-      entries = matching_blocked_entries(dependency).filter_map do |bv|
-        req = T.must(bv.version_requirement).strip
-        next if req.empty?
+      entries = T.let(
+        matching_blocked_entries(dependency).filter_map do |bv|
+          req = T.must(bv.version_requirement).strip
+          next if req.empty?
 
-        reason = bv.reason&.strip
-        { version_requirement: req, reason: reason&.empty? ? nil : reason }
-      end
+          reason = bv.reason&.strip
+          [req, reason&.empty? ? nil : reason]
+        end,
+        T::Array[[String, T.nilable(String)]]
+      )
       return if entries.empty?
 
       Dependabot.logger.info("Blocked versions (by GitHub Security):")
-      entries.each do |entry|
-        msg = "  #{entry[:version_requirement]}"
-        msg += " - reason: #{entry[:reason]}" if entry[:reason]
+      entries.each do |version_requirement, reason|
+        msg = "  #{version_requirement}"
+        msg += " - reason: #{reason}" if reason
         Dependabot.logger.info(msg)
       end
     end
