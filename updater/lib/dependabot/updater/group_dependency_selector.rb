@@ -376,12 +376,12 @@ module Dependabot
 
         filtered_deps.each do |dep|
           attribution = DependencyAttribution.get_attribution(dep)
-          case attribution&.dig(:selection_reason)
-          when :not_in_group
+          case attribution&.selection_reason
+          when DependencyAttribution::SelectionReason::NOT_IN_GROUP
             grouped[:not_in_group] << dep.name
-          when :filtered_by_config
+          when DependencyAttribution::SelectionReason::FILTERED_BY_CONFIG
             grouped[:filtered_by_config] << dep.name
-          when :belongs_to_more_specific_group
+          when DependencyAttribution::SelectionReason::BELONGS_TO_MORE_SPECIFIC_GROUP
             grouped[:belongs_to_more_specific_group] << dep.name
           else
             grouped[:other] << dep.name
