@@ -7,6 +7,7 @@ require "dependabot/credential"
 require "dependabot/pull_request"
 require "dependabot/job/allowed_update"
 require "dependabot/job/blocked_version"
+require "dependabot/job/cooldown_definition"
 require "dependabot/job/dependency_group_definition"
 require "dependabot/job/existing_group_pull_request"
 require "dependabot/job/ignore_condition"
@@ -42,7 +43,7 @@ module Dependabot
       const :update_subdependencies, T::Boolean
       const :updating_a_pull_request, T::Boolean
       const :vendor_dependencies, T::Boolean
-      const :cooldown, T.nilable(T::Hash[String, Object])
+      const :cooldown, T.nilable(CooldownDefinition)
       const :multi_ecosystem_update, T::Boolean
       const :dependency_groups, T::Array[DependencyGroupDefinition]
       const :dependency_group_to_refresh, T.nilable(String)
@@ -77,7 +78,7 @@ module Dependabot
           update_subdependencies: required_boolean(hash, :update_subdependencies),
           updating_a_pull_request: required_boolean(hash, :updating_a_pull_request),
           vendor_dependencies: boolean_with_default(hash, :vendor_dependencies, false),
-          cooldown: optional_string_hash(hash.fetch(:cooldown, nil), :cooldown),
+          cooldown: parsed_cooldown(hash),
           multi_ecosystem_update: boolean_with_default(hash, :multi_ecosystem_update, false),
           dependency_groups: parsed_dependency_groups(hash),
           dependency_group_to_refresh: parsed_dependency_group_to_refresh(hash),
@@ -102,7 +103,7 @@ module Dependabot
 
       sig { params(hash: T::Hash[Symbol, Object]).returns(T::Array[Dependabot::Credential]) }
       def self.parsed_credentials(hash)
-        credentials(hash.fetch(:credentials, []))
+        credentials_from(hash.fetch(:credentials, []))
       end
       private_class_method :parsed_credentials
 
@@ -164,6 +165,13 @@ module Dependabot
         ).map { |entry| BlockedVersion.from_hash(entry) }
       end
       private_class_method :parsed_blocked_versions
+
+      sig { params(hash: T::Hash[Symbol, Object]).returns(T.nilable(CooldownDefinition)) }
+      def self.parsed_cooldown(hash)
+        cooldown = optional_string_hash(hash.fetch(:cooldown, nil), :cooldown)
+        CooldownDefinition.from_hash(cooldown) if cooldown
+      end
+      private_class_method :parsed_cooldown
 
       sig { params(hash: T::Hash[Symbol, Object], key: Symbol).returns(String) }
       def self.required_string(hash, key)
@@ -278,12 +286,11 @@ module Dependabot
       private_class_method :tolerant_hash_array
 
       sig { params(value: Object).returns(T::Array[Dependabot::Credential]) }
-      def self.credentials(value)
+      def self.credentials_from(value)
         strict_hash_array(value, :credentials).map do |entry|
           Dependabot::Credential.new(credential_hash(entry))
         end
       end
-      private_class_method :credentials
 
       sig do
         params(hash: T::Hash[String, Object])

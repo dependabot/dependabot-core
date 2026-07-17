@@ -134,7 +134,7 @@ module Dependabot
     sig { returns(T::Array[Dependabot::Job::BlockedVersion]) }
     attr_reader :blocked_versions
 
-    sig { params(blocked_versions: T::Array[T::Hash[String, T.untyped]]).void }
+    sig { params(blocked_versions: T::Array[T::Hash[String, Object]]).void }
     def blocked_versions=(blocked_versions)
       @blocked_versions = self.class.parse_blocked_versions(blocked_versions)
     end
@@ -145,13 +145,14 @@ module Dependabot
     sig do
       params(
         job_id: String,
-        job_definition: T::Hash[String, T.untyped],
+        job_definition: T::Hash[String, Object],
         repo_contents_path: T.nilable(String)
       ).returns(Job)
     end
     def self.new_fetch_job(job_id:, job_definition:, repo_contents_path: nil)
-      standardised = standardise_keys(job_definition["job"])
-      attrs = standardised.slice(*T.unsafe(PERMITTED_KEYS))
+      standardised = standardise_keys(job_attributes(job_definition))
+      # Sorbet cannot type a splat from a dynamically-sized key array.
+      attrs = standardised.select { |key, _value| PERMITTED_KEYS.include?(key) } # rubocop:disable Style/HashSlice
 
       new(attrs.merge(id: job_id, repo_contents_path: repo_contents_path))
     end
@@ -159,28 +160,45 @@ module Dependabot
     sig do
       params(
         job_id: String,
-        job_definition: T::Hash[String, T.untyped],
+        job_definition: T::Hash[String, Object],
         repo_contents_path: T.nilable(String)
       ).returns(Job)
     end
     def self.new_update_job(job_id:, job_definition:, repo_contents_path: nil)
-      job_hash = standardise_keys(job_definition["job"])
-      attrs = job_hash.slice(*T.unsafe(PERMITTED_KEYS))
+      job_hash = standardise_keys(job_attributes(job_definition))
+      # Sorbet cannot type a splat from a dynamically-sized key array.
+      attrs = job_hash.select { |key, _value| PERMITTED_KEYS.include?(key) } # rubocop:disable Style/HashSlice
       attrs[:credentials] = job_hash[:credentials_metadata] || []
 
       new(attrs.merge(id: job_id, repo_contents_path: repo_contents_path))
     end
 
-    sig { params(hash: T::Hash[String, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+    sig { params(hash: T::Hash[String, Object]).returns(T::Hash[Symbol, Object]) }
     def self.standardise_keys(hash)
       hash.transform_keys { |key| key.tr("-", "_").to_sym }
     end
 
+    sig { params(job_definition: T::Hash[String, Object]).returns(T::Hash[String, Object]) }
+    def self.job_attributes(job_definition)
+      value = job_definition["job"]
+      raise TypeError, "job must be a hash" unless value.is_a?(Hash)
+
+      result = T.let({}, T::Hash[String, Object])
+      value.each do |raw_key, raw_value|
+        key = T.cast(raw_key, Object)
+        raise TypeError, "job keys must be strings" unless key.is_a?(String)
+
+        result[key] = T.cast(raw_value, Object)
+      end
+      result
+    end
+    private_class_method :job_attributes
+
     # Non-hash entries are dropped rather than raising so that malformed
     # entries are ignored, matching the previous hash-based filtering.
-    sig { params(blocked_versions: T::Array[T::Hash[String, T.untyped]]).returns(T::Array[BlockedVersion]) }
+    sig { params(blocked_versions: T::Array[T::Hash[String, Object]]).returns(T::Array[BlockedVersion]) }
     def self.parse_blocked_versions(blocked_versions)
-      blocked_versions.grep(Hash).map { |bv| BlockedVersion.from_hash(bv) }
+      blocked_versions.map { |blocked_version| BlockedVersion.from_hash(blocked_version) }
     end
 
     # NOTE: "attributes" are fetched and injected at run time from
@@ -413,14 +431,14 @@ module Dependabot
       Dependabot::Dependency.name_normaliser_for_package_manager(package_manager)
     end
 
-    sig { returns(T::Hash[Symbol, T.untyped]) }
+    sig { returns(T::Hash[Symbol, Object]) }
     def experiments
       return {} unless @experiments
 
       self.class.standardise_keys(@experiments)
     end
 
-    sig { returns(T::Hash[Symbol, T.untyped]) }
+    sig { returns(T::Hash[Symbol, Object]) }
     def commit_message_options
       return {} unless @commit_message_options
 
@@ -670,24 +688,13 @@ module Dependabot
     end
 
     sig do
-      params(
-        cooldown: T.nilable(
-          T::Hash[String,
-                  T.untyped]
-        )
-      ).returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+      params(cooldown: T.nilable(CooldownDefinition))
+        .returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions))
     end
     def build_cooldown(cooldown)
       return nil unless cooldown
 
-      Dependabot::Package::ReleaseCooldownOptions.new(
-        default_days: cooldown["default-days"] || default_cooldown_days,
-        semver_major_days: cooldown["semver-major-days"] || 0,
-        semver_minor_days: cooldown["semver-minor-days"] || 0,
-        semver_patch_days: cooldown["semver-patch-days"] || 0,
-        include: cooldown["include"] || [],
-        exclude: cooldown["exclude"] || []
-      )
+      cooldown.to_options(default_days: default_cooldown_days)
     end
 
     # The fallback applied when a cooldown block is present but `default-days`
