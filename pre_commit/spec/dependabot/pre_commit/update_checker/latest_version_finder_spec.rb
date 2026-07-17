@@ -28,6 +28,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
       branch: nil
     }
   end
+  let(:source_details) { Dependabot::GitCommitChecker::SourceDetails.from_hash(dependency_source) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "https://github.com/#{dependency_name}",
@@ -259,8 +260,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
           .and_return([latest_tag, older_tag])
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
-          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
-                        ref: "v4.4.0", branch: nil })
+          .and_return(source_details)
         allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
         allow(Dir).to receive(:chdir).and_yield
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
@@ -297,8 +297,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
           .and_return([latest_tag])
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
-          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
-                        ref: "v4.4.0", branch: nil })
+          .and_return(source_details)
         allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
         allow(Dir).to receive(:chdir).and_yield
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
@@ -335,8 +334,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
           .and_return([latest_tag, older_tag])
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
-          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
-                        ref: "v4.4.0", branch: nil })
+          .and_return(source_details)
         allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
         allow(Dir).to receive(:chdir).and_yield
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
@@ -387,8 +385,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
             .and_return([latest_tag, old_tag])
           allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
             .to receive(:dependency_source_details)
-            .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
-                          ref: "v4.4.0", branch: nil })
+            .and_return(source_details)
           allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
           allow(Dir).to receive(:chdir).and_yield
           allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
@@ -467,8 +464,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
           .and_raise("unexpected precision filtering")
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
-          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
-                        ref: reference, branch: nil })
+          .and_return(source_details)
         allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
         allow(Dir).to receive(:chdir).and_yield
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
@@ -513,8 +509,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
           .and_raise("unexpected precision filtering")
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
-          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
-                        ref: reference, branch: nil })
+          .and_return(source_details)
         allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
         allow(Dir).to receive(:chdir).and_yield
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
@@ -556,8 +551,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
           .and_return([latest_tag])
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
-          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
-                        ref: "v4.4.0", branch: nil })
+          .and_return(source_details)
         allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
         allow(Dir).to receive(:chdir).and_yield
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
@@ -588,8 +582,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
           .and_return([latest_tag])
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
-          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
-                        ref: "v4.4.0", branch: nil })
+          .and_return(source_details)
         allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
         allow(Dir).to receive(:chdir).and_yield
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
@@ -630,8 +623,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
           .and_return([latest_tag, older_tag])
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
-          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
-                        ref: "v4.4.0", branch: nil })
+          .and_return(source_details)
         allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
         allow(Dir).to receive(:chdir).and_yield
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
@@ -668,8 +660,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
           .and_return([latest_tag])
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
-          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
-                        ref: "v4.4.0", branch: nil })
+          .and_return(source_details)
 
         # Mock GitHub Release with recent published_at (in cooldown)
         mock_release = Struct.new(:tag_name, :published_at, :prerelease)
@@ -699,8 +690,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
           .and_return([latest_tag])
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
-          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
-                        ref: "v4.4.0", branch: nil })
+          .and_return(source_details)
 
         # No release for this tag
         mock_client = instance_double(Octokit::Client, releases: [])
