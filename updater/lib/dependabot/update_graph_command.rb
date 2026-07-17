@@ -30,7 +30,8 @@ module Dependabot
           service: service,
           job: job,
           base_commit_sha: @fetched_files.base_commit_sha,
-          dependency_files: @fetched_files.dependency_files
+          dependency_files: @fetched_files.dependency_files,
+          directory_fetch_errors: @fetched_files.directory_fetch_errors
         ).run
       rescue StandardError => e
         handle_error(e)

@@ -18,8 +18,10 @@ module GithubApi
     SNAPSHOT_DETECTOR_NAME = "dependabot"
     SNAPSHOT_DETECTOR_URL = "https://github.com/dependabot/dependabot-core"
 
-    # Expected reasons for empty or degraded snapshots
+    # Expected reasons for empty, skipped or degraded snapshots
     DEGRADED_REASON_SUBDEPENDENCY_ERR = "error fetching sub-dependencies"
+    SKIPPED_REASON_PATH_DEPENDENCIES_NOT_REACHABLE = "unresolvable path dependency"
+    SKIPPED_REASON_FILE_FETCH_ERROR = "unable to fetch files"
     EMPTY_REASON_NO_MANIFESTS = "missing manifest files"
 
     class SnapshotStatus < T::Enum
@@ -112,7 +114,7 @@ module GithubApi
     # TODO: Change to a typed structure?
     #
     # See: https://sorbet.org/docs/tstruct
-    sig { returns(T::Hash[Symbol, T.untyped]) }
+    sig { returns(T::Hash[Symbol, Object]) }
     def payload
       {
         version: SNAPSHOT_VERSION,
@@ -182,7 +184,7 @@ module GithubApi
     end
 
     sig do
-      returns(T::Hash[String, T.untyped])
+      returns(T::Hash[String, Object])
     end
     def manifests
       @manifest_snapshots.each_with_object({}) do |snapshot, manifests|
@@ -200,7 +202,7 @@ module GithubApi
     # collection so the snapshot reflects that the file was scanned.
     sig do
       params(snapshot: Dependabot::DependencyGraphers::ManifestGroupSnapshot)
-        .returns(T.nilable(T::Hash[Symbol, T.untyped]))
+        .returns(T.nilable(T::Hash[Symbol, Object]))
     end
     def manifest_entry(snapshot)
       manifest_file = snapshot.manifest_file

@@ -39,27 +39,23 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
         def fetch_package_releases
-          releases = T.let([], T::Array[Dependabot::Package::PackageRelease])
+          registry_client = RegistryClient.new(
+            credentials: credentials,
+            custom_registries: custom_registries
+          )
+          uuid = T.cast(dependency.metadata[:julia_uuid], T.nilable(String))
 
-          begin
-            registry_client = RegistryClient.new(
-              credentials: credentials,
-              custom_registries: custom_registries
-            )
-            uuid = T.cast(dependency.metadata[:julia_uuid], T.nilable(String))
+          # Fetch all available versions. Domain errors (package not found)
+          # come back as an empty list; infrastructure failures raise and are
+          # classified by the updater's error handler rather than being
+          # silently treated as "no update available".
+          available_versions = registry_client.fetch_available_versions(dependency.name, uuid)
+          return [] if available_versions.empty?
 
-            # Fetch all available versions
-            available_versions = registry_client.fetch_available_versions(dependency.name, uuid)
-            return releases if available_versions.empty?
+          releases = build_releases_for_versions(registry_client, available_versions, uuid)
+          mark_latest_release(releases)
 
-            releases = build_releases_for_versions(registry_client, available_versions, uuid)
-            mark_latest_release(releases)
-
-            releases
-          rescue StandardError => e
-            Dependabot.logger.error("Error while fetching package releases for #{dependency.name}: #{e.message}")
-            releases
-          end
+          releases
         end
 
         private

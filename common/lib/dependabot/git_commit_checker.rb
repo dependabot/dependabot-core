@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "excon"
@@ -15,6 +15,8 @@ require "dependabot/source"
 require "dependabot/dependency"
 require "dependabot/credential"
 require "dependabot/git_metadata_fetcher"
+require "dependabot/git_commit_checker/github_release"
+require "dependabot/git_commit_checker/source_details"
 require "dependabot/git_tag_details"
 require "dependabot/package/package_release"
 require "dependabot/package/release_cooldown_options"
@@ -46,7 +48,7 @@ module Dependabot
         ignored_versions: T::Array[String],
         raise_on_ignored: T::Boolean,
         consider_version_branches_pinned: T::Boolean,
-        dependency_source_details: T.nilable(T::Hash[Symbol, String])
+        dependency_source_details: T.nilable(T::Hash[Symbol, Object])
       )
         .void
     end
@@ -63,14 +65,15 @@ module Dependabot
       @ignored_versions = ignored_versions
       @raise_on_ignored = raise_on_ignored
       @consider_version_branches_pinned = consider_version_branches_pinned
-      @dependency_source_details = dependency_source_details
+      @dependency_source_details = T.let(
+        dependency_source_details && SourceDetails.from_hash(dependency_source_details),
+        T.nilable(SourceDetails)
+      )
     end
 
     sig { returns(T::Boolean) }
     def git_dependency?
-      return false if dependency_source_details.nil?
-
-      dependency_source_details&.fetch(:type) == "git"
+      dependency_source_details&.type == "git"
     end
 
     # rubocop:disable Metrics/PerceivedComplexity
@@ -78,7 +81,7 @@ module Dependabot
     def pinned?
       raise "Not a git dependency!" unless git_dependency?
 
-      branch = dependency_source_details&.fetch(:branch)
+      branch = dependency_source_details&.branch
 
       return false if ref.nil?
       return false if branch == ref
@@ -118,7 +121,7 @@ module Dependabot
     sig { returns(T::Array[GitRef]) }
     def tags
       GitMetadataFetcher.new(
-        url: dependency.source_details&.fetch(:url, nil),
+        url: T.must(source_details&.url),
         credentials: credentials
       ).tags
     end
@@ -128,7 +131,7 @@ module Dependabot
       T.must(
         T.let(
           GitMetadataFetcher.new(
-            url: dependency.source_details&.fetch(:url, nil),
+            url: T.must(source_details&.url),
             credentials: credentials
           ).ref_details_for_pinned_ref(ref),
           T.nilable(Excon::Response)
@@ -282,9 +285,12 @@ module Dependabot
       false
     end
 
-    sig { returns(T.nilable(T::Hash[T.any(Symbol, String), T.untyped])) }
+    sig { returns(T.nilable(SourceDetails)) }
     def dependency_source_details
-      @dependency_source_details || dependency.source_details(allowed_types: ["git"])
+      @dependency_source_details ||= begin
+        details = dependency.source_details(allowed_types: ["git"])
+        SourceDetails.from_hash(details) if details
+      end
     end
 
     sig { returns(T::Array[Dependabot::GitTagWithDetail]) }
@@ -333,7 +339,7 @@ module Dependabot
 
     sig { override.returns(T.nilable(String)) }
     def cooldown_source_url
-      dependency_source_details&.fetch(:url, nil)
+      dependency_source_details&.url
     end
 
     sig { override.returns(T::Array[Dependabot::Credential]) }
@@ -478,9 +484,11 @@ module Dependabot
 
     sig { params(tags: T::Array[Dependabot::GitRef]).returns(T::Array[Dependabot::GitRef]) }
     def handle_tag_prefix(tags)
-      if dependency_source_details&.fetch(:ref, nil)&.start_with?("tags/")
+      if dependency_source_details&.ref&.start_with?("tags/")
         tags = tags.map do |tag|
-          tag.dup.tap { |t| t.name = "tags/#{tag.name}" }
+          duplicated_tag = tag.dup
+          duplicated_tag.name = "tags/#{tag.name}"
+          duplicated_tag
         end
       end
 
@@ -519,8 +527,11 @@ module Dependabot
       client = Clients::GithubWithRetries
                .for_github_dot_com(credentials: credentials)
 
-      # TODO: create this method instead of relying on method_missing
-      T.unsafe(client.compare(T.must(listing_source_repo), ref1, ref2)).status
+      comparison = client.compare(T.must(listing_source_repo), ref1, ref2)
+      status = T.cast(comparison[:status], Object)
+      raise TypeError, "GitHub comparison status must be a string" unless status.is_a?(String)
+
+      status
     end
 
     sig { params(ref1: String, ref2: String).returns(String) }
@@ -529,9 +540,11 @@ module Dependabot
                .for_gitlab_dot_com(credentials: credentials)
 
       comparison = client.compare(T.must(listing_source_repo), ref1, ref2)
+      commits = T.cast(comparison["commits"], Object)
+      raise TypeError, "GitLab comparison commits must be an array" unless commits.is_a?(Array)
 
-      if T.unsafe(comparison).commits.none? then "behind"
-      elsif T.unsafe(comparison).compare_same_ref then "identical"
+      if commits.empty? then "behind"
+      elsif T.cast(comparison["compare_same_ref"], Object) == true then "identical"
       else
         "ahead"
       end
@@ -550,7 +563,13 @@ module Dependabot
 
       # Conservatively assume that ref2 is ahead in the equality case, of
       # if we get an unexpected format (e.g., due to a 404)
-      if JSON.parse(response.body).fetch("values", ["x"]).none? then "behind"
+      comparison = T.cast(JSON.parse(response.body), Object)
+      raise TypeError, "Bitbucket comparison must be a hash" unless comparison.is_a?(Hash)
+
+      values = T.cast(comparison.fetch("values", ["x"]), Object)
+      raise TypeError, "Bitbucket comparison values must be an array" unless values.is_a?(Array)
+
+      if values.empty? then "behind"
       else
         "ahead"
       end
@@ -558,12 +577,12 @@ module Dependabot
 
     sig { returns(T.nilable(String)) }
     def ref_or_branch
-      ref || dependency_source_details&.fetch(:branch)
+      ref || dependency_source_details&.branch
     end
 
     sig { returns(T.nilable(String)) }
     def ref
-      dependency_source_details&.fetch(:ref)
+      dependency_source_details&.ref
     end
 
     sig { params(tag: String).returns(T::Boolean) }
@@ -667,9 +686,11 @@ module Dependabot
         begin
           tags = listing_repo_git_metadata_fetcher.tags
 
-          if dependency_source_details&.fetch(:ref, nil)&.start_with?("tags/")
+          if dependency_source_details&.ref&.start_with?("tags/")
             tags = tags.map do |tag|
-              tag.dup.tap { |t| t.name = "tags/#{tag.name}" }
+              duplicated_tag = tag.dup
+              duplicated_tag.name = "tags/#{tag.name}"
+              duplicated_tag
             end
           end
 
@@ -695,7 +716,7 @@ module Dependabot
 
     sig { returns(T::Boolean) }
     def wants_prerelease?
-      return false unless dependency_source_details&.fetch(:ref, nil)
+      return false unless dependency_source_details&.ref
       return false unless pinned_ref_looks_like_version?
 
       version = version_from_ref(T.must(ref))
@@ -732,7 +753,7 @@ module Dependabot
       false
     end
 
-    sig { returns(T::Array[T.untyped]) }
+    sig { returns(T::Array[GitHubRelease]) }
     def github_releases
       @github_releases ||= T.let(
         begin
@@ -747,11 +768,15 @@ module Dependabot
           )
           # The Octokit RBI types this as non-nil, but it can be nil at runtime
           # (e.g. an empty/unexpected registry response), so guard against it.
-          T.unsafe(client.releases(T.must(source).repo, per_page: 100)) || []
+          releases = T.let(
+            client.releases(T.must(source).repo, per_page: 100),
+            T.nilable(T::Array[Sawyer::Resource])
+          )
+          (releases || []).filter_map { |release| GitHubRelease.from_resource(release) }
         rescue Octokit::Error
           []
         end,
-        T.nilable(T::Array[T.untyped])
+        T.nilable(T::Array[GitHubRelease])
       )
     end
 
@@ -892,7 +917,7 @@ module Dependabot
       @local_repo_git_metadata_fetcher ||=
         T.let(
           GitMetadataFetcher.new(
-            url: dependency_source_details&.fetch(:url),
+            url: T.must(dependency_source_details&.url),
             credentials: credentials
           ),
           T.nilable(Dependabot::GitMetadataFetcher)
@@ -913,8 +938,14 @@ module Dependabot
 
     sig { returns(String) }
     def ref_pinned
-      dependency.source_details&.fetch(:ref, nil) ||
-        dependency.source_details&.fetch(:branch, nil) || "HEAD"
+      details = source_details
+      details&.ref || details&.branch || "HEAD"
+    end
+
+    sig { returns(T.nilable(SourceDetails)) }
+    def source_details
+      details = dependency.source_details
+      SourceDetails.from_hash(details) if details
     end
   end
   # rubocop:enable Metrics/ClassLength
