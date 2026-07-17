@@ -55,7 +55,7 @@ module Dependabot
         def tag_for_commit_sha(commit_sha)
           package_details
             &.releases
-            &.find { |release| release.details["commit_sha"] == commit_sha }
+            &.find { |release| T.cast(release.details["commit_sha"], T.nilable(String)) == commit_sha }
             &.tag
         end
 

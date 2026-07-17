@@ -85,6 +85,13 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       end
     end
 
+    context "when the npm registry returns a bare JSON string body" do
+      let(:npm_latest_version_response) { '"Not Found"' }
+      let(:npm_all_versions_response) { '"Not Found"' }
+
+      it { is_expected.to be_nil }
+    end
+
     context "when there is a github link in the npm response" do
       let(:npm_latest_version_response) do
         fixture("npm_responses", "etag-1.0.0.json")
@@ -457,6 +464,67 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
 
       it "escapes the spaces before querying the content" do
         expect(source_url).to eq("https://github.com/jshttp/etag")
+      end
+    end
+
+    context "when the latest listing is unavailable and the all-versions fallback repeats a dead homepage" do
+      let(:npm_latest_version_response) { nil }
+      let(:npm_all_versions_response) do
+        JSON.dump(
+          {
+            "versions" => {
+              "2.0.0" => {
+                "homepage" => "https://typescript-eslint.io/typescript-eslint/typescript-eslint",
+                "bugs" => { "url" => "https://typescript-eslint.io/typescript-eslint/issues" }
+              },
+              "1.0.0" => {
+                "homepage" => "https://typescript-eslint.io/typescript-eslint/typescript-eslint",
+                "bugs" => { "url" => "https://typescript-eslint.io/typescript-eslint/issues" }
+              }
+            }
+          }
+        )
+      end
+
+      before do
+        stub_request(:get, npm_url + "/latest")
+          .to_return(status: 404, body: '{"error":"Not found"}')
+        stub_request(:get, "https://typescript-eslint.io/status").to_return(status: 404)
+      end
+
+      it "probes the repeated homepage host at most once" do
+        expect(source_url).to be_nil
+        expect(WebMock).to have_requested(:get, "https://typescript-eslint.io/status").once
+      end
+    end
+
+    context "when the latest listing is unavailable but the first all-versions repository resolves" do
+      let(:npm_latest_version_response) { nil }
+      let(:npm_all_versions_response) do
+        JSON.dump(
+          {
+            "versions" => {
+              "2.0.0" => {
+                "repository" => { "url" => "typescript-eslint/typescript-eslint" },
+                "homepage" => "https://typescript-eslint.io/typescript-eslint/typescript-eslint"
+              },
+              "1.0.0" => {
+                "homepage" => "https://typescript-eslint.io/typescript-eslint/typescript-eslint"
+              }
+            }
+          }
+        )
+      end
+
+      before do
+        stub_request(:get, npm_url + "/latest")
+          .to_return(status: 404, body: '{"error":"Not found"}')
+        stub_request(:get, "https://typescript-eslint.io/status").to_return(status: 404)
+      end
+
+      it "returns the repository source without probing the homepage" do
+        expect(source_url).to eq("https://github.com/typescript-eslint/typescript-eslint")
+        expect(WebMock).not_to have_requested(:get, "https://typescript-eslint.io/status")
       end
     end
   end

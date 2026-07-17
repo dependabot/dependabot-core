@@ -215,7 +215,7 @@ module Dependabot
               if head_commit_for_ref_sha
                 head_commit_for_ref_sha
               else
-                url = git_commit_checker.dependency_source_details&.fetch(:url)
+                url = git_commit_checker.dependency_source_details&.url
                 source = T.must(Source.from_url(url))
 
                 SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
@@ -224,7 +224,7 @@ module Dependabot
                   SharedHelpers.run_shell_command("git clone --no-recurse-submodules #{url} #{repo_contents_path}")
 
                   Dir.chdir(repo_contents_path) do
-                    ref_branch = find_container_branch(git_commit_checker.dependency_source_details&.fetch(:ref))
+                    ref_branch = find_container_branch(T.must(git_commit_checker.dependency_source_details&.ref))
                     git_commit_checker.head_commit_for_local_branch(ref_branch) if ref_branch
                   end
                 end

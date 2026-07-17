@@ -1668,8 +1668,36 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           let(:blob_headers) { {} }
           let(:last_modified) { nil }
 
-          it "fails open and proposes the update" do
-            expect(can_update).to be true
+          context "when the config blob created date is within the cooldown window" do
+            before do
+              allow(checker).to receive(:fetch_image_config_created)
+                .and_return(Time.now - (2 * 86_400))
+            end
+
+            it "falls back to the config created date and respects cooldown" do
+              expect(can_update).to be false
+            end
+          end
+
+          context "when the config blob created date is outside the cooldown window" do
+            before do
+              allow(checker).to receive(:fetch_image_config_created)
+                .and_return(Time.now - (30 * 86_400))
+            end
+
+            it "falls back to the config created date and proposes the update" do
+              expect(can_update).to be true
+            end
+          end
+
+          context "when the config blob created date is also unavailable" do
+            before do
+              allow(checker).to receive(:fetch_image_config_created).and_return(nil)
+            end
+
+            it "fails open and proposes the update" do
+              expect(can_update).to be true
+            end
           end
         end
       end
@@ -3369,6 +3397,23 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     before do
       allow(checker).to receive(:docker_registry_client).and_return(mock_client)
       allow(mock_client).to receive(:dohead).and_return(mock_blob_response)
+    end
+
+    context "when the Last-Modified header is missing" do
+      let(:blob_headers) { {} }
+      let(:digest_string) { "sha256:abc123" }
+      let(:config_created) { Time.parse("Tue, 10 Jun 2025 00:00:00 GMT") }
+
+      before do
+        allow(mock_client).to receive(:digest).and_return(digest_string)
+        allow(checker).to receive(:fetch_image_config_created).with("1.0.0").and_return(config_created)
+      end
+
+      it "falls back to the image config blob created timestamp" do
+        result = get_tag_publication_details
+        expect(result).to be_a(Dependabot::Package::PackageRelease)
+        expect(result.released_at).to eq(config_created)
+      end
     end
 
     context "when client.digest returns a String" do

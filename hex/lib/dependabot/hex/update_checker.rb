@@ -90,7 +90,7 @@ module Dependabot
         # of the latest tag that looks like a version.
         if git_commit_checker.pinned_ref_looks_like_version? &&
            latest_git_tag_is_resolvable?
-          new_tag = git_commit_checker.local_tag_for_latest_version
+          new_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
           return T.must(new_tag).fetch(:commit_sha)
         end
 
@@ -125,7 +125,7 @@ module Dependabot
         # we want to update that tag. The latest version will then be the SHA
         # of the latest tag that looks like a version.
         if git_commit_checker.pinned_ref_looks_like_version?
-          latest_tag = git_commit_checker.local_tag_for_latest_version
+          latest_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
           return latest_tag&.fetch(:commit_sha) || dependency.version
         end
 
@@ -140,9 +140,9 @@ module Dependabot
 
         @latest_git_tag_is_resolvable_checked = T.let(true, T.nilable(T::Boolean))
 
-        return false if git_commit_checker.local_tag_for_latest_version.nil?
+        return false if git_commit_checker.local_tag_for_latest_version(update_cooldown).nil?
 
-        replacement_tag = git_commit_checker.local_tag_for_latest_version
+        replacement_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
 
         prepared_files = FilePreparer.new(
           dependency: dependency,
@@ -175,7 +175,7 @@ module Dependabot
         # Update the git tag if updating a pinned version
         if git_commit_checker.pinned_ref_looks_like_version? &&
            latest_git_tag_is_resolvable?
-          new_tag = git_commit_checker.local_tag_for_latest_version
+          new_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
           return T.must(dependency_source_details).merge(ref: T.must(new_tag).fetch(:tag))
         end
 

@@ -26,7 +26,7 @@ module Dependabot
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
             repo_contents_path: T.nilable(String),
-            options: T::Hash[Symbol, T.untyped]
+            options: T::Hash[Symbol, T.anything]
           )
           .void
       end

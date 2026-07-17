@@ -15,26 +15,18 @@ module Dependabot
 
         sig { override.returns(String) }
         def new_branch_name
+          if template
+            return render_from_template(
+              vars: template_vars,
+              strategy: :solo
+            )
+          end
+
           return short_branch_name if branch_name_might_be_long?
 
           @name ||=
             T.let(
-              begin
-                dependency_name_part =
-                  if dependencies.count > 1 && updating_a_property?
-                    property_name
-                  elsif dependencies.count > 1 && updating_a_dependency_set?
-                    dependency_set.fetch(:group)
-                  else
-                    dependencies
-                      .map(&:name)
-                      .join("-and-")
-                      .tr(":[]", "-")
-                      .tr("@", "")
-                  end
-
-                "#{dependency_name_part}-#{branch_version_suffix}"
-              end,
+              "#{template_dependency_name}-#{branch_version_suffix}",
               T.nilable(String)
             )
 
@@ -51,6 +43,40 @@ module Dependabot
             files.first&.directory&.tr(" ", "-"),
             target_branch
           ].compact
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def template_vars
+          dep_name = template_dependency_name
+          version = branch_version_suffix || ""
+
+          vars = {
+            "prefix" => prefix,
+            "package_manager" => package_manager,
+            "directory" => sanitized_directory,
+            "dependency" => dep_name,
+            "version" => version,
+            "name" => "#{dep_name}-#{version}",
+            "target_branch" => target_branch || ""
+          }
+          vars
+        end
+
+        sig { returns(String) }
+        def template_dependency_name
+          if dependencies.count > 1 && updating_a_property?
+            property_name
+          elsif dependencies.count > 1 && updating_a_dependency_set?
+            dependency_set.fetch(:group)
+          else
+            dependencies.map(&:name).join("-and-").tr(":[]", "-").tr("@", "")
+          end
+        end
+
+        sig { returns(String) }
+        def sanitized_directory
+          dir = (files.first&.directory&.tr(" ", "-") || "/").sub(%r{^/}, "")
+          dir.empty? ? "root" : dir
         end
 
         sig { returns(String) }

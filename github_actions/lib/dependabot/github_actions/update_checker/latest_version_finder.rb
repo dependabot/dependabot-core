@@ -131,7 +131,7 @@ module Dependabot
 
         sig { override.returns(T.nilable(String)) }
         def cooldown_source_url
-          @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
+          @git_helper.git_commit_checker.dependency_source_details&.url
         end
 
         sig { override.returns(T::Array[Dependabot::Credential]) }

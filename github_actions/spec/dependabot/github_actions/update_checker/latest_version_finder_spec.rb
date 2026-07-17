@@ -30,6 +30,7 @@ RSpec.describe namespace::LatestVersionFinder do
       branch: nil
     }
   end
+  let(:source_details) { Dependabot::GitCommitChecker::SourceDetails.from_hash(dependency_source) }
   let(:dependency_version) do
     return unless Dependabot::GithubActions::Version.correct?(reference)
 
@@ -557,8 +558,7 @@ RSpec.describe namespace::LatestVersionFinder do
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
-          .and_return({ type: "git", url: "https://github.com/actions/setup-node",
-                        ref: "v1", branch: nil })
+          .and_return(source_details)
         allow(finder).to receive_messages(
           latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
                                 commit_sha: "abc123" },
@@ -587,8 +587,7 @@ RSpec.describe namespace::LatestVersionFinder do
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
-          .and_return({ type: "git", url: "https://github.com/actions/setup-node",
-                        ref: "v1", branch: nil })
+          .and_return(source_details)
         allow(finder).to receive_messages(
           latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
                                 commit_sha: "abc123" },
@@ -622,8 +621,7 @@ RSpec.describe namespace::LatestVersionFinder do
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
-          .and_return({ type: "git", url: "https://github.com/actions/setup-node",
-                        ref: "v1", branch: nil })
+          .and_return(source_details)
         allow(finder).to receive_messages(
           latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
                                 commit_sha: "abc123" },
@@ -651,8 +649,7 @@ RSpec.describe namespace::LatestVersionFinder do
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
-          .and_return({ type: "git", url: "https://github.com/actions/setup-node",
-                        ref: "v1", branch: nil })
+          .and_return(source_details)
         allow(finder).to receive(:latest_version_tag)
           .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
                         commit_sha: "abc123" })
@@ -675,8 +672,7 @@ RSpec.describe namespace::LatestVersionFinder do
 
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
-          .and_return({ type: "git", url: "https://github.com/actions/setup-node",
-                        ref: "v1", branch: nil })
+          .and_return(source_details)
         allow(finder).to receive_messages(
           latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
                                 commit_sha: "abc123" },
