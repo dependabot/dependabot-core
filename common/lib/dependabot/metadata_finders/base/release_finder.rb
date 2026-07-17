@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/credential"
+require "dependabot/clients/github_release"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/metadata_finders/base"
@@ -12,39 +13,19 @@ require "dependabot/utils"
 module Dependabot
   module MetadataFinders
     class Base
-      class GitLabRelease
+      class GitLabRelease < T::ImmutableStruct
         extend T::Sig
 
-        sig { returns(String) }
-        attr_reader :name
-
-        sig { returns(String) }
-        attr_reader :tag_name
-
-        sig { returns(String) }
-        attr_reader :body
-
-        sig { returns(String) }
-        attr_reader :html_url
-
-        sig do
-          params(
-            name: String,
-            tag_name: String,
-            body: String,
-            html_url: String
-          ).void
-        end
-        def initialize(name:, tag_name:, body:, html_url:)
-          @name = name
-          @tag_name = tag_name
-          @body = body
-          @html_url = html_url
-        end
+        const :name, String
+        const :tag_name, String
+        const :body, String
+        const :html_url, String
       end
 
       class ReleaseFinder
         extend T::Sig
+
+        ReleaseType = T.type_alias { T.any(Dependabot::Clients::GithubRelease, GitLabRelease) }
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
@@ -98,14 +79,13 @@ module Dependabot
 
         private
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[ReleaseType]) }
         def all_dep_releases
           releases = all_releases
           dep_prefix = dependency.name.downcase
 
           releases_with_dependency_name =
             releases
-            .reject { |r| r.tag_name.nil? }
             .select { |r| r.tag_name.start_with?(dep_prefix) }
 
           return releases unless releases_with_dependency_name.any?
@@ -113,12 +93,12 @@ module Dependabot
           releases_with_dependency_name
         end
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[ReleaseType]) }
         def all_releases
-          @all_releases ||= T.let(fetch_dependency_releases, T.nilable(T::Array[T.untyped]))
+          @all_releases ||= T.let(fetch_dependency_releases, T.nilable(T::Array[ReleaseType]))
         end
 
-        sig { returns(T.nilable(T::Array[T.untyped])) }
+        sig { returns(T.nilable(T::Array[ReleaseType])) }
         def relevant_releases
           releases = releases_since_previous_version
 
@@ -139,7 +119,7 @@ module Dependabot
           end
         end
 
-        sig { returns(T.nilable(T::Array[T.untyped])) }
+        sig { returns(T.nilable(T::Array[ReleaseType])) }
         def releases_since_previous_version
           return [updated_release].compact unless previous_version
 
@@ -158,21 +138,21 @@ module Dependabot
           end
         end
 
-        sig { params(releases: T::Array[T.untyped]).returns(T.nilable(T::Array[T.untyped])) }
+        sig { params(releases: T::Array[ReleaseType]).returns(T.nilable(T::Array[ReleaseType])) }
         def filter_releases_using_previous_release(releases)
           return releases if releases.index(previous_release).nil?
 
           releases.first(T.must(releases.index(previous_release)))
         end
 
-        sig { params(releases: T::Array[T.untyped]).returns(T.nilable(T::Array[T.untyped])) }
+        sig { params(releases: T::Array[ReleaseType]).returns(T.nilable(T::Array[ReleaseType])) }
         def filter_releases_using_updated_release(releases)
           return releases if releases.index(updated_release).nil?
 
           releases[releases.index(updated_release)..-1]
         end
 
-        sig { params(releases: T::Array[T.untyped], conservative: T::Boolean).returns(T::Array[T.untyped]) }
+        sig { params(releases: T::Array[ReleaseType], conservative: T::Boolean).returns(T::Array[ReleaseType]) }
         def filter_releases_using_previous_version(releases, conservative:)
           releases.reject do |release|
             cleaned_tag = release.tag_name.gsub(/^[^0-9]*/, "")
@@ -193,7 +173,7 @@ module Dependabot
           end
         end
 
-        sig { params(releases: T::Array[T.untyped], conservative: T::Boolean).returns(T::Array[T.untyped]) }
+        sig { params(releases: T::Array[ReleaseType], conservative: T::Boolean).returns(T::Array[ReleaseType]) }
         def filter_releases_using_updated_version(releases, conservative:)
           updated_version = version_class.new(new_version)
 
@@ -216,17 +196,17 @@ module Dependabot
           end
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T.nilable(ReleaseType)) }
         def updated_release
           release_for_version(new_version)
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T.nilable(ReleaseType)) }
         def previous_release
           release_for_version(previous_version)
         end
 
-        sig { params(version: T.nilable(String)).returns(T.untyped) }
+        sig { params(version: T.nilable(String)).returns(T.nilable(ReleaseType)) }
         def release_for_version(version)
           return nil unless version
 
@@ -236,22 +216,23 @@ module Dependabot
             all_dep_releases.find { |r| release_regex.match?(r.name.to_s) }
         end
 
-        sig { params(release: T.untyped).returns(String) }
+        sig { params(release: ReleaseType).returns(String) }
         def serialize_release(release)
-          rel = release
-          title = "## #{rel.name.to_s == '' ? rel.tag_name : rel.name}\n"
-          body = if rel.body.to_s.gsub(/\n*\z/m, "") == ""
+          name = release.name
+          title = "## #{name.to_s == '' ? release.tag_name : name}\n"
+          body = if release.body.to_s.gsub(/\n*\z/m, "") == ""
                    "No release notes provided."
                  else
-                   rel.body.gsub(/\n*\z/m, "")
+                   T.must(release.body).gsub(/\n*\z/m, "")
                  end
 
-          release_body_includes_title?(rel) ? body : title + body
+          release_body_includes_title?(release) ? body : title + body
         end
 
-        sig { params(release: T.untyped).returns(T::Boolean) }
+        sig { params(release: ReleaseType).returns(T::Boolean) }
         def release_body_includes_title?(release)
-          title = release.name.to_s == "" ? release.tag_name : release.name
+          name = release.name
+          title = name.nil? || name.empty? ? release.tag_name : name
           release.body.to_s.match?(/\A\s*\#*\s*#{Regexp.quote(title)}/m)
         end
 
@@ -265,7 +246,7 @@ module Dependabot
           dependency.version_class
         end
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[ReleaseType]) }
         def fetch_dependency_releases
           return [] unless source
 
@@ -279,29 +260,37 @@ module Dependabot
           end
         end
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[Dependabot::Clients::GithubRelease]) }
         def fetch_github_releases
-          releases = github_client.releases(T.must(source).repo, per_page: 100)
-
-          # Remove any releases without a tag name. These are draft releases and
-          # aren't yet associated with a tag, so shouldn't be used.
-          releases = releases.reject { |r| T.unsafe(r).tag_name.nil? }
+          releases = parsed_github_releases
 
           clean_release_names =
-            releases.map { |r| T.unsafe(r).tag_name.gsub(/^[^0-9\.]*/, "") }
+            releases.map { |release| release.tag_name.gsub(/^[^0-9\.]*/, "") }
 
           if clean_release_names.all? { |nm| version_class.correct?(nm) }
-            releases.sort_by do |r|
-              version_class.new(T.unsafe(r).tag_name.gsub(/^[^0-9\.]*/, ""))
+            releases.sort_by do |release|
+              version_class.new(release.tag_name.gsub(/^[^0-9\.]*/, ""))
             end.reverse
           else
-            releases.sort_by { |r| T.unsafe(r).id }.reverse
+            releases.sort_by { |release| release.id || 0 }.reverse
           end
         rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons
           []
         end
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[Dependabot::Clients::GithubRelease]) }
+        def parsed_github_releases
+          resources = T.let(
+            github_client.releases(T.must(source).repo, per_page: 100),
+            T.nilable(T::Array[Sawyer::Resource])
+          )
+          releases = (resources || []).filter_map do |release|
+            Dependabot::Clients::GithubRelease.from_resource(release)
+          end
+          releases
+        end
+
+        sig { returns(T::Array[GitLabRelease]) }
         def fetch_gitlab_releases
           releases =
             T.unsafe(
