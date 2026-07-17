@@ -663,8 +663,12 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
           .and_return(source_details)
 
         # Mock GitHub Release with recent published_at (in cooldown)
-        mock_release = Struct.new(:tag_name, :published_at, :prerelease)
-                             .new("v6.0.0", recent_published_at, false)
+        sawyer_agent = instance_double(Sawyer::Agent)
+        allow(sawyer_agent).to receive(:parse_links) { |value| [value, {}] }
+        mock_release = Sawyer::Resource.new(
+          sawyer_agent,
+          { tag_name: "v6.0.0", published_at: recent_published_at, prerelease: false }
+        )
         mock_client = instance_double(Octokit::Client, releases: [mock_release])
         allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
 
