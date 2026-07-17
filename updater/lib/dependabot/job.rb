@@ -17,6 +17,7 @@ require "dependabot/updater/update_type_helper"
 
 require "dependabot/job/allowed_update"
 require "dependabot/job/blocked_version"
+require "dependabot/job/definition"
 require "dependabot/job/dependency_group_definition"
 require "dependabot/job/existing_group_pull_request"
 require "dependabot/job/ignore_condition"
@@ -184,90 +185,56 @@ module Dependabot
 
     # NOTE: "attributes" are fetched and injected at run time from
     # dependabot-api using the UpdateJobPrivateSerializer
-    sig { params(attributes: T::Hash[Symbol, T.untyped]).void }
+    sig { params(attributes: T::Hash[Symbol, Object]).void }
     def initialize(attributes) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
-      @id                             = T.let(attributes.fetch(:id), String)
-      @command                        = T.let(attributes.fetch(:command, ""), String)
-      @allowed_updates                = T.let(
-        attributes.fetch(:allowed_updates).map { |h| AllowedUpdate.from_hash(h) },
-        T::Array[AllowedUpdate]
-      )
+      definition = Definition.from_hash(attributes)
+
+      @id = T.let(definition.id, String)
+      @command = T.let(definition.command, String)
+      @allowed_updates = T.let(definition.allowed_updates, T::Array[AllowedUpdate])
       @commit_message_options = T.let(
-        attributes.fetch(:commit_message_options, {}),
-        T.nilable(T::Hash[String, T.untyped])
+        definition.commit_message_options,
+        T.nilable(T::Hash[String, Object])
       )
-      @credentials = T.let(
-        attributes.fetch(:credentials, []).map do |data|
-          Dependabot::Credential.new(data)
-        end,
-        T::Array[Dependabot::Credential]
-      )
-      @dependencies                   = T.let(attributes.fetch(:dependencies), T.nilable(T::Array[String]))
-      @exclude_paths                  = T.let(attributes.fetch(:exclude_paths, []), T.nilable(T::Array[String]))
-      @existing_pull_requests         = T.let(PullRequest.create_from_job_definition(attributes), T::Array[PullRequest])
-      # TODO: Make this hash required
-      #
-      # We will need to do a pass updating the CLI and smoke tests before this is possible,
-      # so let's consider it optional for now. If we get a nil value, let's force it to be
-      # an array.
+      @credentials = T.let(definition.credentials, T::Array[Dependabot::Credential])
+      @dependencies = T.let(definition.dependencies, T.nilable(T::Array[String]))
+      @exclude_paths = T.let(definition.exclude_paths, T.nilable(T::Array[String]))
+      @existing_pull_requests = T.let(definition.existing_pull_requests, T::Array[PullRequest])
       @existing_group_pull_requests = T.let(
-        (attributes.fetch(:existing_group_pull_requests, []) || []).grep(Hash).map do |pr|
-          ExistingGroupPullRequest.from_hash(pr)
-        end,
+        definition.existing_group_pull_requests,
         T::Array[ExistingGroupPullRequest]
       )
       @experiments = T.let(
-        attributes.fetch(:experiments, {}),
-        T.nilable(T::Hash[String, T.untyped])
+        definition.experiments,
+        T.nilable(T::Hash[String, Object])
       )
-      @ignore_conditions = T.let(
-        attributes.fetch(:ignore_conditions).map { |h| Job::IgnoreCondition.from_hash(h) },
-        T::Array[Job::IgnoreCondition]
-      )
-      @package_manager                =  T.let(attributes.fetch(:package_manager), String)
-      @reject_external_code           =  T.let(attributes.fetch(:reject_external_code, false), T::Boolean)
-      @repo_contents_path             =  T.let(attributes.fetch(:repo_contents_path, nil), T.nilable(String))
-
-      @requirements_update_strategy   = T.let(
+      @ignore_conditions = T.let(definition.ignore_conditions, T::Array[Job::IgnoreCondition])
+      @package_manager = T.let(definition.package_manager, String)
+      @reject_external_code = T.let(definition.reject_external_code, T::Boolean)
+      @repo_contents_path = T.let(definition.repo_contents_path, T.nilable(String))
+      @requirements_update_strategy = T.let(
         build_update_strategy(
-          requirements_update_strategy: attributes.fetch(:requirements_update_strategy),
-          lockfile_only: attributes.fetch(:lockfile_only)
+          requirements_update_strategy: definition.requirements_update_strategy,
+          lockfile_only: definition.lockfile_only
         ),
         T.nilable(Dependabot::RequirementsUpdateStrategy)
       )
-
-      @security_advisories = T.let(
-        attributes.fetch(:security_advisories).map { |h| SecurityAdvisoryEntry.from_hash(h) },
-        T::Array[SecurityAdvisoryEntry]
-      )
-      @security_updates_only          = T.let(attributes.fetch(:security_updates_only), T::Boolean)
-      @source                         = T.let(build_source(attributes.fetch(:source)), Dependabot::Source)
-      @token                          = T.let(attributes.fetch(:token, nil), T.nilable(String))
-      @update_subdependencies         = T.let(attributes.fetch(:update_subdependencies), T::Boolean)
-      @updating_a_pull_request        = T.let(attributes.fetch(:updating_a_pull_request), T::Boolean)
-      @vendor_dependencies            = T.let(attributes.fetch(:vendor_dependencies, false), T::Boolean)
+      @security_advisories = T.let(definition.security_advisories, T::Array[SecurityAdvisoryEntry])
+      @security_updates_only = T.let(definition.security_updates_only, T::Boolean)
+      @source = T.let(definition.source.to_source, Dependabot::Source)
+      @token = T.let(definition.token, T.nilable(String))
+      @update_subdependencies = T.let(definition.update_subdependencies, T::Boolean)
+      @updating_a_pull_request = T.let(definition.updating_a_pull_request, T::Boolean)
+      @vendor_dependencies = T.let(definition.vendor_dependencies, T::Boolean)
       @cooldown = T.let(
-        build_cooldown(attributes.fetch(:cooldown, nil)),
+        build_cooldown(definition.cooldown),
         T.nilable(Dependabot::Package::ReleaseCooldownOptions)
       )
-      @multi_ecosystem_update = T.let(attributes.fetch(:multi_ecosystem_update, false), T::Boolean)
-      # TODO: Make this hash required
-      #
-      # We will need to do a pass updating the CLI and smoke tests before this is possible,
-      # so let's consider it optional for now. If we get a nil value, let's force it to be
-      # an array.
-      @dependency_groups = T.let(
-        (attributes.fetch(:dependency_groups, []) || []).grep(Hash).map do |group|
-          DependencyGroupDefinition.from_hash(group)
-        end,
-        T::Array[DependencyGroupDefinition]
-      )
-      @dependency_group_to_refresh    = T.let(attributes.fetch(:dependency_group_to_refresh, nil), T.nilable(String))
-      @repo_private                   = T.let(attributes.fetch(:repo_private, nil), T.nilable(T::Boolean))
-      @blocked_versions               = T.let(
-        self.class.parse_blocked_versions(attributes.fetch(:blocked_versions, []) || []),
-        T::Array[BlockedVersion]
-      )
+      @multi_ecosystem_update = T.let(definition.multi_ecosystem_update, T::Boolean)
+      @dependency_groups = T.let(definition.dependency_groups, T::Array[DependencyGroupDefinition])
+      @dependency_group_to_refresh = T.let(definition.dependency_group_to_refresh, T.nilable(String))
+      @repo_private = T.let(definition.repo_private, T.nilable(T::Boolean))
+      @blocked_versions = T.let(definition.blocked_versions, T::Array[BlockedVersion])
 
       @update_config = T.let(calculate_update_config, Dependabot::Config::UpdateConfig)
 
@@ -700,11 +667,6 @@ module Dependabot
       end
 
       lockfile_only ? RequirementsUpdateStrategy::LockfileOnly : nil
-    end
-
-    sig { params(source_details: T::Hash[String, Object]).returns(Dependabot::Source) }
-    def build_source(source_details)
-      SourceDefinition.from_hash(source_details).to_source
     end
 
     sig do
