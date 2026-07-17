@@ -1,7 +1,8 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "time"
 
 require "dependabot/credential"
 require "dependabot/clients/github_release"
@@ -18,8 +19,50 @@ module Dependabot
 
         const :name, String
         const :tag_name, String
-        const :body, String
+        const :body, T.nilable(String)
         const :html_url, String
+        const :authored_at, Time
+
+        sig do
+          params(
+            tag: Gitlab::ObjectifiedHash,
+            source_url: String
+          ).returns(T.nilable(GitLabRelease))
+        end
+        def self.from_tag(tag, source_url:)
+          name = T.cast(tag["name"], Object)
+          release = T.cast(tag["release"], Object)
+          commit = T.cast(tag["commit"], Object)
+          return unless name.is_a?(String)
+          return unless release.is_a?(Gitlab::ObjectifiedHash)
+          return unless commit.is_a?(Gitlab::ObjectifiedHash)
+
+          tag_name = T.cast(release["tag_name"], Object)
+          return unless tag_name.is_a?(String)
+
+          authored_at = time_value(T.cast(commit["authored_date"], Object))
+          return unless authored_at
+
+          description = T.cast(release["description"], Object)
+          new(
+            name: name,
+            tag_name: tag_name,
+            body: description.is_a?(String) ? description : nil,
+            html_url: "#{source_url}/tags/#{name}",
+            authored_at: authored_at
+          )
+        end
+
+        sig { params(value: Object).returns(T.nilable(Time)) }
+        def self.time_value(value)
+          return value if value.is_a?(Time)
+          return unless value.is_a?(String)
+
+          Time.parse(value)
+        rescue ArgumentError
+          nil
+        end
+        private_class_method :time_value
       end
 
       class ReleaseFinder
@@ -292,23 +335,13 @@ module Dependabot
 
         sig { returns(T::Array[GitLabRelease]) }
         def fetch_gitlab_releases
-          releases =
-            T.unsafe(
-              gitlab_client
-                           .tags(T.must(source).repo)
-            )
-             .select(&:release)
-             .sort_by { |r| T.unsafe(r).commit.authored_date }
-             .reverse
+          tags = gitlab_client.tags(T.must(source).repo)
+          releases = tags.filter_map do |tag|
+            next unless tag.is_a?(Gitlab::ObjectifiedHash)
 
-          releases.map do |tag|
-            GitLabRelease.new(
-              name: T.unsafe(tag).name,
-              tag_name: T.unsafe(tag).release.tag_name,
-              body: T.unsafe(tag).release.description,
-              html_url: "#{T.must(source).url}/tags/#{T.unsafe(tag).name}"
-            )
+            GitLabRelease.from_tag(tag, source_url: T.must(source).url)
           end
+          releases.sort_by(&:authored_at).reverse
         rescue Gitlab::Error::NotFound
           []
         end
@@ -348,18 +381,30 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def previous_ref
-          previous_refs = T.must(dependency.previous_requirements).filter_map do |r|
-            r.dig(:source, "ref") || r.dig(:source, :ref)
+          previous_refs = T.must(dependency.previous_requirements).filter_map do |requirement|
+            requirement_ref(requirement)
           end.uniq
           previous_refs.first if previous_refs.one?
         end
 
         sig { returns(T.nilable(String)) }
         def new_ref
-          new_refs = dependency.requirements.filter_map do |r|
-            r.dig(:source, "ref") || r.dig(:source, :ref)
+          new_refs = dependency.requirements.filter_map do |requirement|
+            requirement_ref(requirement)
           end.uniq
           new_refs.first if new_refs.one?
+        end
+
+        sig { params(requirement: Dependabot::DependencyRequirement).returns(T.nilable(String)) }
+        def requirement_ref(requirement)
+          source = requirement.source
+          return unless source
+
+          symbol_ref = T.cast(source[:ref], Object)
+          return symbol_ref if symbol_ref.is_a?(String)
+
+          string_ref = T.cast(source["ref"], Object)
+          string_ref if string_ref.is_a?(String)
         end
 
         sig { returns(T::Boolean) }
