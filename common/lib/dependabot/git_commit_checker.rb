@@ -14,8 +14,8 @@ require "dependabot/utils"
 require "dependabot/source"
 require "dependabot/dependency"
 require "dependabot/credential"
+require "dependabot/clients/github_release"
 require "dependabot/git_metadata_fetcher"
-require "dependabot/git_commit_checker/github_release"
 require "dependabot/git_commit_checker/source_details"
 require "dependabot/git_tag_details"
 require "dependabot/package/package_release"
@@ -753,7 +753,7 @@ module Dependabot
       false
     end
 
-    sig { returns(T::Array[GitHubRelease]) }
+    sig { returns(T::Array[Dependabot::Clients::GithubRelease]) }
     def github_releases
       @github_releases ||= T.let(
         begin
@@ -772,11 +772,13 @@ module Dependabot
             client.releases(T.must(source).repo, per_page: 100),
             T.nilable(T::Array[Sawyer::Resource])
           )
-          (releases || []).filter_map { |release| GitHubRelease.from_resource(release) }
+          (releases || []).filter_map do |release|
+            Dependabot::Clients::GithubRelease.from_resource(release)
+          end
         rescue Octokit::Error
           []
         end,
-        T.nilable(T::Array[GitHubRelease])
+        T.nilable(T::Array[Dependabot::Clients::GithubRelease])
       )
     end
 
