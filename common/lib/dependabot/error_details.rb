@@ -7,7 +7,7 @@ module Dependabot
   class ErrorDetails < T::ImmutableStruct
     extend T::Sig
 
-    DetailHash = T.type_alias { T::Hash[Symbol, Object] }
+    DetailHash = T.type_alias { T::Hash[T.any(String, Symbol), T.anything] }
     Detail = T.type_alias { T.any(String, DetailHash) }
 
     const :error_type, String
@@ -40,7 +40,7 @@ module Dependabot
       result = T.let({}, DetailHash)
       value.each do |raw_key, raw_value|
         key = T.cast(raw_key, Object)
-        raise TypeError, "error-detail keys must be symbols" unless key.is_a?(Symbol)
+        raise TypeError, "error-detail keys must be strings or symbols" unless key.is_a?(String) || key.is_a?(Symbol)
 
         result[key] = T.cast(raw_value, Object)
       end
