@@ -21,6 +21,7 @@ require "dependabot/job/dependency_group_definition"
 require "dependabot/job/existing_group_pull_request"
 require "dependabot/job/ignore_condition"
 require "dependabot/job/security_advisory_entry"
+require "dependabot/job/source_definition"
 
 # Describes a single Dependabot workload within the GitHub-integrated Service
 #
@@ -701,22 +702,9 @@ module Dependabot
       lockfile_only ? RequirementsUpdateStrategy::LockfileOnly : nil
     end
 
-    sig { params(source_details: T::Hash[String, T.untyped]).returns(Dependabot::Source) }
+    sig { params(source_details: T::Hash[String, Object]).returns(Dependabot::Source) }
     def build_source(source_details)
-      # Immediately normalize the source directory, ensure it starts with a "/"
-      # Uses Pathname#cleanpath to prevent users from maliciously using paths like ../.. to access other directories.
-      directory, directories = clean_directories(source_details)
-
-      Dependabot::Source.new(
-        provider: T.let(source_details["provider"], String),
-        repo: T.let(source_details["repo"], String),
-        directory: directory,
-        directories: directories,
-        branch: T.let(source_details["branch"], T.nilable(String)),
-        commit: T.let(source_details["commit"], T.nilable(String)),
-        hostname: T.let(source_details["hostname"], T.nilable(String)),
-        api_endpoint: T.let(source_details["api-endpoint"], T.nilable(String))
-      )
+      SourceDefinition.from_hash(source_details).to_source
     end
 
     sig do
@@ -749,24 +737,6 @@ module Dependabot
       return DEFAULT_COOLDOWN_DAYS if experiments[:enable_cooldown_default_days]
 
       0
-    end
-
-    sig { params(source_details: T::Hash[String, T.untyped]).returns([T.nilable(String), T.nilable(T::Array[String])]) }
-    def clean_directories(source_details)
-      directory = T.let(source_details["directory"], T.nilable(String))
-      unless directory.nil?
-        directory = Pathname.new(directory).cleanpath.to_s
-        directory = "/#{directory}" unless directory.start_with?("/")
-      end
-      directories = T.let(source_details["directories"], T.nilable(T::Array[String]))
-      unless directories.nil?
-        directories = directories.map do |dir|
-          dir = Pathname.new(dir).cleanpath.to_s
-          dir = "/#{dir}" unless dir.start_with?("/")
-          dir
-        end
-      end
-      [directory, directories]
     end
 
     # Provides a Dependabot::Config::UpdateConfig objected hydrated with
