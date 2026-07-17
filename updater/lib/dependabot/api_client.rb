@@ -402,20 +402,9 @@ module Dependabot
           return []
         end
 
-        parsed = JSON.parse(response.body.to_s)
-        unless parsed.is_a?(Hash)
-          Dependabot.logger.warn("Unexpected blocked versions format, continuing without them")
-          return []
-        end
-        data = parsed.fetch("data", [])
-        unless data.is_a?(Array) && data.all?(Hash)
-          Dependabot.logger.warn("Unexpected blocked versions format, continuing without them")
-          return []
-        end
-        data
+        parse_blocked_versions_response(response.body.to_s)
       rescue JSON::ParserError, TypeError => e
-        Dependabot.logger.warn("Failed to parse blocked versions response: #{e.message}, continuing without them")
-        []
+        raise ApiError, "Malformed blocked versions response: #{e.message}"
       rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError => e
         Dependabot.logger.warn("Failed to fetch blocked versions: #{e.message}, continuing without them")
         []
@@ -423,6 +412,53 @@ module Dependabot
     end
 
     private
+
+    sig { params(body: String).returns(T::Array[T::Hash[String, Object]]) }
+    def parse_blocked_versions_response(body)
+      parsed = T.cast(JSON.parse(body), Object)
+      raise TypeError, "expected an object" unless parsed.is_a?(Hash)
+
+      data = T.cast(parsed["data"], Object)
+      raise TypeError, "data must be an array" unless data.is_a?(Array)
+
+      data.map do |entry|
+        blocked_version = string_hash(T.cast(entry, Object), "blocked version")
+        required_string(blocked_version, "dependency-name")
+        required_string(blocked_version, "version-requirement")
+        optional_string(blocked_version["reason"], "reason")
+        blocked_version
+      end
+    end
+
+    sig { params(value: Object, name: String).returns(T::Hash[String, Object]) }
+    def string_hash(value, name)
+      raise TypeError, "#{name} must be an object" unless value.is_a?(Hash)
+
+      result = T.let({}, T::Hash[String, Object])
+      value.each do |raw_key, raw_value|
+        key = T.cast(raw_key, Object)
+        raise TypeError, "#{name} keys must be strings" unless key.is_a?(String)
+
+        result[key] = T.cast(raw_value, Object)
+      end
+      result
+    end
+
+    sig { params(hash: T::Hash[String, Object], key: String).returns(String) }
+    def required_string(hash, key)
+      value = hash.fetch(key)
+      raise TypeError, "#{key} must be a string" unless value.is_a?(String)
+
+      value
+    end
+
+    sig { params(value: T.nilable(Object), key: String).returns(T.nilable(String)) }
+    def optional_string(value, key)
+      return if value.nil?
+      raise TypeError, "#{key} must be a string" unless value.is_a?(String)
+
+      value
+    end
 
     sig { returns(String) }
     def api_path
@@ -541,12 +577,22 @@ module Dependabot
 
     sig { params(response: String).returns(T::Boolean) }
     def dependency_file_not_supported_error?(response)
-      body = JSON.parse(response)
-
+      body = T.cast(JSON.parse(response), Object)
       return false unless body.is_a?(Hash)
-      return false unless body["errors"]
 
-      INVALID_REQUEST_MSG.match? body["errors"].first["detail"]
+      errors = T.cast(body["errors"], Object)
+      return false if errors.nil?
+      raise TypeError, "errors must be an array" unless errors.is_a?(Array)
+
+      first_error = T.cast(errors.first, Object)
+      raise TypeError, "errors must contain objects" unless first_error.is_a?(Hash)
+
+      detail = T.cast(first_error["detail"], Object)
+      raise TypeError, "error detail must be a string" unless detail.is_a?(String)
+
+      INVALID_REQUEST_MSG.match?(detail)
+    rescue JSON::ParserError, TypeError => e
+      raise ApiError, "Malformed API error response: #{e.message}"
     end
   end
 end
