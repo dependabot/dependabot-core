@@ -10,13 +10,19 @@ require "dependabot/update_checkers/base"
 
 module Dependabot
   module Bundler
-    class UpdateChecker < Dependabot::UpdateCheckers::Base
+    # The cooldown/native-option policy lives in CooldownOptionsBuilder, but this
+    # orchestrator still exceeds the class-length threshold because of its git and
+    # resolution surface. Splitting that further is out of scope here, and the other
+    # ecosystem update checkers (npm_and_yarn, bun, docker, python) disable this cop
+    # for the same reason, so the exception is retained deliberately.
+    class UpdateChecker < Dependabot::UpdateCheckers::Base # rubocop:disable Metrics/ClassLength
       require_relative "update_checker/force_updater"
       require_relative "update_checker/file_preparer"
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_resolver"
       require_relative "update_checker/latest_version_finder"
       require_relative "update_checker/conflicting_dependency_resolver"
+      require_relative "update_checker/cooldown_options_builder"
       extend T::Sig
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Bundler::Version))) }
@@ -120,13 +126,18 @@ module Dependabot
         end
       end
 
+      sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+      def update_cooldown
+        cooldown_options_builder.release_cooldown_options(@update_cooldown)
+      end
+
       sig { override.returns(T::Array[T::Hash[String, String]]) }
       def conflicting_dependencies
         ConflictingDependencyResolver.new(
           dependency_files: dependency_files,
           repo_contents_path: repo_contents_path,
           credentials: credentials,
-          options: options
+          options: native_bundler_options
         ).conflicting_dependencies(
           dependency: dependency,
           target_version: lowest_security_fix_version.to_s # Convert Version to String
@@ -134,6 +145,36 @@ module Dependabot
       end
 
       private
+
+      # Options passed to the native Bundler subprocess. The security-update signal is
+      # derived from the advisories so native cooldown is disabled only for security
+      # remediation; see CooldownOptionsBuilder for the policy.
+      sig { returns(T::Hash[Symbol, T.anything]) }
+      def native_bundler_options
+        @native_bundler_options ||= T.let(
+          cooldown_options_builder.native_helper_options(options),
+          T.nilable(T::Hash[Symbol, T.anything])
+        )
+      end
+
+      sig { returns(CooldownOptionsBuilder) }
+      def cooldown_options_builder
+        @cooldown_options_builder ||= T.let(
+          CooldownOptionsBuilder.new(
+            dependency_files: dependency_files,
+            security_advisories: security_advisories
+          ),
+          T.nilable(CooldownOptionsBuilder)
+        )
+      end
+
+      # Bundler's Gemfile `source cooldown:` applies only to RubyGems remotes, so a
+      # git dependency's tag selection/resolvability must use the user-configured
+      # cooldown without the RubyGems source floor added by CooldownOptionsBuilder.
+      sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+      def git_dependency_cooldown
+        @update_cooldown
+      end
 
       sig { returns(T::Boolean) }
       def requirements_unlocked?
@@ -190,7 +231,7 @@ module Dependabot
               target_version: version,
               requirements_update_strategy: T.must(requirements_update_strategy),
               update_multiple_dependencies: false,
-              options: options
+              options: native_bundler_options
             ).updated_dependencies
             true
           rescue Dependabot::DependencyFileNotResolvable
@@ -213,8 +254,8 @@ module Dependabot
               ignored_versions: ignored_versions,
               raise_on_ignored: raise_on_ignored,
               replacement_git_pin: tag,
-              cooldown_options: update_cooldown,
-              options: options
+              cooldown_options: git_dependency_cooldown,
+              options: native_bundler_options
             ).latest_resolvable_version_details
             true
           rescue Dependabot::DependencyFileNotResolvable
@@ -255,7 +296,7 @@ module Dependabot
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA
         # of the latest tag that looks like a version.
-        latest_tag = git_commit_checker.local_tag_for_pinned_version_ref(update_cooldown)
+        latest_tag = git_commit_checker.local_tag_for_pinned_version_ref(git_dependency_cooldown)
         return latest_tag.fetch(:tag_sha) || dependency.version if latest_tag
 
         # If the dependency is pinned to a tag that doesn't look like a
@@ -279,7 +320,7 @@ module Dependabot
         # we want to update that tag. The latest version will then be the SHA
         # of the latest tag that looks like a version.
         if latest_git_tag_is_resolvable?
-          new_tag = git_commit_checker.local_tag_for_pinned_version_ref(update_cooldown)
+          new_tag = git_commit_checker.local_tag_for_pinned_version_ref(git_dependency_cooldown)
           return new_tag&.fetch(:tag_sha)
         end
 
@@ -314,7 +355,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def latest_git_tag_is_resolvable?
-        latest_tag_details = git_commit_checker.local_tag_for_pinned_version_ref(update_cooldown)
+        latest_tag_details = git_commit_checker.local_tag_for_pinned_version_ref(git_dependency_cooldown)
         return false unless latest_tag_details
 
         git_tag_resolvable?(latest_tag_details.fetch(:tag))
@@ -334,7 +375,7 @@ module Dependabot
 
         # Update the git tag if updating a pinned version
         if latest_git_tag_is_resolvable?
-          new_tag = git_commit_checker.local_tag_for_pinned_version_ref(update_cooldown)
+          new_tag = git_commit_checker.local_tag_for_pinned_version_ref(git_dependency_cooldown)
           return T.must(dependency_source_details).merge(ref: T.must(new_tag).fetch(:tag))
         end
 
@@ -363,7 +404,7 @@ module Dependabot
             credentials: credentials,
             target_version: T.cast(latest_version, Dependabot::Version),
             requirements_update_strategy: T.must(requirements_update_strategy),
-            options: options
+            options: native_bundler_options
           )
       end
 
@@ -398,7 +439,7 @@ module Dependabot
             unlock_requirement: unlock_requirement,
             latest_allowable_version: latest_version,
             cooldown_options: update_cooldown,
-            options: options
+            options: native_bundler_options
           )
       end
 
@@ -420,7 +461,7 @@ module Dependabot
               raise_on_ignored: raise_on_ignored,
               security_advisories: security_advisories,
               cooldown_options: update_cooldown,
-              options: options
+              options: native_bundler_options
             )
           end
       end
