@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 1066
+# Offense count: 1054
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bun/lib/dependabot/bun.rb"
@@ -401,10 +401,6 @@ Sorbet/ForbidTUntyped:
     - "terraform/lib/dependabot/terraform/file_updater/provider_cli_config_builder.rb"
     - "terraform/lib/dependabot/terraform/package/package_details_fetcher.rb"
     - "terraform/lib/dependabot/terraform/update_checker.rb"
-    - "updater/lib/dependabot/dependency_attribution.rb"
-    - "updater/lib/dependabot/updater/dependency_group_change_batch.rb"
-    - "updater/lib/dependabot/updater/group_dependency_selector.rb"
-    - "updater/lib/dependabot/updater/update_type_helper.rb"
     - "uv/lib/dependabot/uv.rb"
     - "uv/lib/dependabot/uv/dependency_grapher.rb"
     - "uv/lib/dependabot/uv/file_fetcher/workspace_fetcher.rb"

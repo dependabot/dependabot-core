@@ -13,14 +13,18 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
   # double matches how DependencyGroup parses its rules. A nil reader means the
   # rule is absent, mirroring DependencyGroup#string_array_rule.
   def group_double(rules:, **attrs)
-    instance_double(
+    applies_to = attrs.delete(:applies_to) || "version-updates"
+    group = instance_double(
       Dependabot::DependencyGroup,
       rules: rules,
+      applies_to: applies_to,
       patterns: rules.key?("patterns") ? Array(rules["patterns"]) : nil,
       exclude_patterns: rules.key?("exclude-patterns") ? Array(rules["exclude-patterns"]) : nil,
       update_types: rules.key?("update-types") ? Array(rules["update-types"]) : nil,
       **attrs
     )
+    allow(group).to receive(:respond_to?).and_return(false)
+    group
   end
 
   let(:group_name) { "backend-dependencies" }
@@ -491,7 +495,7 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
           snapshot_with_multiple_groups.groups,
           instance_of(Proc),
           "/api",
-          applies_to: nil,
+          applies_to: "version-updates",
           update_type: "minor"
         )
       end
