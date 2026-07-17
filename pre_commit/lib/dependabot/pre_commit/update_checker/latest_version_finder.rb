@@ -206,14 +206,15 @@ module Dependabot
           candidates.each do |tag|
             tag_name = normalize_tag_name((tag[:tag] || "v#{tag[:version]}").to_s)
             release = releases.find { |r| r.tag_name == tag_name }
+            published_at = release&.published_at
 
-            unless release&.published_at
+            unless published_at
               all_have_releases = false
               next
             end
 
-            unless release_in_cooldown_period?(release.published_at)
-              log_cooldown_result(filtered_count, tag[:version], release.published_at)
+            unless release_in_cooldown_period?(published_at)
+              log_cooldown_result(filtered_count, tag[:version], published_at)
               @cooldown_selected_tag = tag
               return version_from_tag(tag)
             end

@@ -654,8 +654,12 @@ RSpec.describe namespace::LatestVersionFinder do
           .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
                         commit_sha: "abc123" })
 
-        mock_release = Struct.new(:tag_name, :published_at, :prerelease)
-                             .new("v1.0.0", published_at, false)
+        sawyer_agent = instance_double(Sawyer::Agent)
+        allow(sawyer_agent).to receive(:parse_links) { |value| [value, {}] }
+        mock_release = Sawyer::Resource.new(
+          sawyer_agent,
+          { tag_name: "v1.0.0", published_at: published_at, prerelease: false }
+        )
         mock_client = instance_double(Octokit::Client, releases: [mock_release])
         allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
 
