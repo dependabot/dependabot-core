@@ -10,7 +10,7 @@ module Dependabot
     #
     # Replaces the raw job hash with a typed struct so
     # downstream code gets compile-time checked field access instead of
-    # hash key lookups that return T.untyped.
+    # raw hash key lookups.
     class ExistingGroupPullRequest < T::ImmutableStruct
       extend T::Sig
 
