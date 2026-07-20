@@ -1,0 +1,12 @@
+{
+  "name": "dependabot-yarn-resolution-security-poc",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "yarn@4.15.0",
+  "dependencies": {
+    "external-editor": "^3.0.3"
+  },
+  "resolutions": {
+    "tmp": "^0.2.4"
+  }
+}
