@@ -416,6 +416,34 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     end
   end
 
+  context "when multiple resolutions selectors pin the same yarn berry sub-dependency across workspaces" do
+    let(:files) { project_dependency_files("yarn_berry/resolutions_subdependency_workspaces") }
+
+    let(:dependency_name) { "tmp" }
+    let(:version) { "0.2.7" }
+    let(:previous_version) { "0.2.5" }
+    let(:requirements) { [] }
+    let(:previous_requirements) { [] }
+
+    before do
+      # Isolate the up -R path under test; the shared setup above hard-codes
+      # this experiment to true, which would let a broken up -R silently pass
+      # via the audit-fix fallback instead of failing.
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_audit_fix_fallback).and_return(false)
+    end
+
+    it "updates every override-constrained descriptor to the target version" do
+      parsed = YAML.safe_load(updated_yarn_lock_content)
+      tmp_entries = parsed.select do |descriptors, _|
+        descriptors.split(", ").any? { |descriptor| descriptor.start_with?("tmp@") }
+      end
+
+      expect(tmp_entries).not_to be_empty
+      expect(tmp_entries.values.map { |entry| entry["version"] }.uniq).to eq(["0.2.7"])
+    end
+  end
+
   context "when updating a yarn berry lockfile without packageManager or .yarnrc.yml" do
     let(:files) { project_dependency_files("yarn_berry/simple_without_package_manager") }
     let(:temporary_config_files) { [] }

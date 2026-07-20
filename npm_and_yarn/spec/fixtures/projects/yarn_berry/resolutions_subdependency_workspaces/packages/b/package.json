@@ -1,0 +1,8 @@
+{
+  "name": "b",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "tmp-promise": "^3.0.3"
+  }
+}
