@@ -67,7 +67,24 @@ namespace NuGetUpdater.Core.Updater
                 {
                     var element = (IXmlElementSyntax)n;
                     var originalElement = _capturedElements[i];
-                    return (XmlNodeSyntax)originalElement;
+
+                    // copy over attribute values from the potentially updated element EXCEPT for `Condition="false"`
+                    var updatedAttributeValues = element.Attributes.ToDictionary(e => e.Name, e => e.Value);
+                    var originalRestoredElement = originalElement;
+                    foreach (var (attributeName, attributeValue) in updatedAttributeValues)
+                    {
+                        if (attributeName == "Condition" && attributeValue == "false")
+                        {
+                            // this was the attribute we manually patched so it shouldn't be copied over
+                            continue;
+                        }
+
+                        var oldAttribute = originalRestoredElement.GetAttribute(attributeName);
+                        var updatedAttribute = oldAttribute.WithValue(updatedAttributeValues[attributeName]);
+                        originalRestoredElement = originalRestoredElement.ReplaceAttribute(oldAttribute, updatedAttribute);
+                    }
+
+                    return (XmlNodeSyntax)originalRestoredElement;
                 }
             );
         }

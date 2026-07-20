@@ -54,6 +54,44 @@ public class SpecialFilePatcherTests
         Assert.Equal(restoredContent.Replace("\r", ""), fileContent.Replace("\r", ""));
     }
 
+    [Fact]
+    public async Task ModifiedAttributesAreRetainedThroughConditionPatching()
+    {
+        // it's possible that an operation updated a `<Import Project="..." />` element after we patched it with `Condition="false"`
+        // this test ensures that if that did happen, we don't lose the updated attributes when we restore the original content
+
+        // arrange
+        var projectFileName = "project.csproj";
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync((projectFileName, """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <Import Project="Some\Path\Microsoft.WebApplication.targets" />
+            </Project>
+            """));
+        var projectPath = Path.Join(tempDir.DirectoryPath, projectFileName);
+
+        // act
+        using (var patcher = new SpecialImportsConditionPatcher(projectPath))
+        {
+            var initialPatchedContent = await File.ReadAllTextAsync(projectPath, TestContext.Current.CancellationToken);
+            Assert.Contains("Condition=\"false\"", initialPatchedContent);
+
+            // this simulates an operation that updated the `<Import Project="..."` attribute that we still want to be present when we're all done
+            await File.WriteAllTextAsync(projectPath, """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <Import Project="UPDATED\Path\Microsoft.WebApplication.targets" Condition="false" />
+                </Project>
+                """, TestContext.Current.CancellationToken);
+        }
+
+        // assert
+        var restoredAndUpdatedContent = await File.ReadAllTextAsync(projectPath, TestContext.Current.CancellationToken);
+        Assert.Equal("""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <Import Project="UPDATED\Path\Microsoft.WebApplication.targets" />
+            </Project>
+            """.Replace("\r", ""), restoredAndUpdatedContent.Replace("\r", ""));
+    }
+
     public static IEnumerable<object[]> SpecialImportsConditionPatcherTestData()
     {
         // magic file names
