@@ -76,12 +76,29 @@ namespace NuGetUpdater.Core.Updater
                         if (attributeName == "Condition" && attributeValue == "false")
                         {
                             // this was the attribute we manually patched so it shouldn't be copied over
+                            // note that if the update operation change the Condition value, then we _will_ copy it over, which is what we want
                             continue;
                         }
 
                         var oldAttribute = originalRestoredElement.GetAttribute(attributeName);
-                        var updatedAttribute = oldAttribute.WithValue(updatedAttributeValues[attributeName]);
-                        originalRestoredElement = originalRestoredElement.ReplaceAttribute(oldAttribute, updatedAttribute);
+                        if (oldAttribute is null)
+                        {
+                            // the attribute was added by an operation and just needs to be added
+                            originalRestoredElement = originalRestoredElement.WithAttribute(attributeName, attributeValue);
+                        }
+                        else
+                        {
+                            // the attribute was updated by an operation and needs to be maintained
+                            var updatedAttribute = oldAttribute.WithValue(updatedAttributeValues[attributeName]);
+                            originalRestoredElement = originalRestoredElement.ReplaceAttribute(oldAttribute, updatedAttribute);
+                        }
+                    }
+
+                    // remove attributes not present in the updated element
+                    var attributeNamesToRemove = originalRestoredElement.Attributes.Select(a => a.Name).Except(updatedAttributeValues.Keys);
+                    foreach (var attributeNameToRemove in attributeNamesToRemove)
+                    {
+                        originalRestoredElement = originalRestoredElement.RemoveAttributeByName(attributeNameToRemove);
                     }
 
                     return (XmlNodeSyntax)originalRestoredElement;
