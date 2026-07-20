@@ -51,34 +51,12 @@ module Dependabot
 
       sig { params(url_string: String).returns(T.nilable(Dependabot::Source)) }
       def parse_source_url(url_string)
-        uri = URI.parse(url_string)
-        hostname = uri.host
-        return nil unless hostname
-
-        # Extract repository path and clean it
-        path = T.must(uri.path).delete_prefix("/").delete_suffix(".git")
-        path_parts = path.split("/")
-        return nil if path_parts.length < 2
-
-        repo = "#{path_parts[0]}/#{path_parts[1]}"
-
-        # Determine the provider based on hostname
-        provider = case hostname
-                   when "github.com" then "github"
-                   when "gitlab.com" then "gitlab"
-                   when /\A.*\.gitlab\.io\z/ then "gitlab"
-                   else
-                     Dependabot.logger.info("Unknown SCM provider for #{hostname}, using generic")
-                     return nil # Return nil for unknown providers
-                   end
-
-        Dependabot::Source.new(
-          provider: provider,
-          repo: repo
-        )
-      rescue URI::InvalidURIError => e
-        Dependabot.logger.error("Invalid URI for dependency #{dependency.name}: #{url_string} - #{e.message}")
-        nil
+        # Source.from_url understands all providers Dependabot supports
+        # (GitHub, GitLab, Bitbucket, Azure DevOps, ...), unlike a
+        # hand-rolled hostname switch
+        source = Dependabot::Source.from_url(url_string)
+        Dependabot.logger.info("Unknown SCM provider for #{url_string}") if source.nil?
+        source
       end
     end
   end

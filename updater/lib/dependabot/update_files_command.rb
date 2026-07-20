@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "base64"
@@ -78,7 +78,7 @@ module Dependabot
 
           if Experiments.enabled?(:blocked_versions)
             blocked = service.fetch_blocked_versions(update_job.package_manager)
-            update_job.blocked_versions = blocked
+            update_job.blocked_versions = blocked if blocked.any?
           end
 
           update_job
@@ -127,11 +127,11 @@ module Dependabot
             ErrorAttributes::CLASS => error.class.to_s,
             ErrorAttributes::MESSAGE => error.message,
             ErrorAttributes::BACKTRACE => error.backtrace&.join("\n"),
-            ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? T.unsafe(error).sentry_context[:fingerprint] : nil,
+            ErrorAttributes::FINGERPRINT => error.respond_to?(:sentry_context) ? T.cast(error, Dependabot::HasSentryContext).sentry_context[:fingerprint] : nil,
             ErrorAttributes::PACKAGE_MANAGER => job.package_manager,
             ErrorAttributes::JOB_ID => job.id,
             ErrorAttributes::DEPENDENCIES => job.dependencies,
-            ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups
+            ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups.map(&:to_h)
           }.compact
 
           service.capture_exception(error: error, job: job)
@@ -143,34 +143,39 @@ module Dependabot
           }
         end
 
+      error_type = T.cast(error_details.fetch(:"error-type"), T.any(String, Symbol))
+      error_detail = T.cast(error_details[:"error-detail"], T.nilable(T::Hash[Symbol, T.anything]))
+
       service.record_update_job_error(
-        error_type: error_details.fetch(:"error-type"),
-        error_details: error_details[:"error-detail"]
+        error_type: error_type,
+        error_details: error_detail
       )
       # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
       return unless Experiments.enabled?(:record_update_job_unknown_error)
-      return unless error_details.fetch(:"error-type") == "update_files_error"
+      return unless error_type == "update_files_error"
 
       service.record_update_job_unknown_error(
-        error_type: error_details.fetch(:"error-type"),
-        error_details: error_details[:"error-detail"]
+        error_type: error_type,
+        error_details: error_detail
       )
     end
     # rubocop:enable Metrics/AbcSize, Layout/LineLength, Metrics/MethodLength, Metrics/PerceivedComplexity
 
     sig { params(error: Dependabot::DependencyFileNotParseable).void }
     def handle_dependency_file_not_parseable_error(error)
-      error_details = Dependabot.updater_error_details(error)
+      error_details = T.must(Dependabot.updater_error_details(error))
+      error_type = T.cast(error_details.fetch(:"error-type"), T.any(String, Symbol))
+      error_detail = T.cast(error_details[:"error-detail"], T.nilable(T::Hash[Symbol, T.anything]))
 
       service.record_update_job_error(
-        error_type: T.must(error_details).fetch(:"error-type"),
-        error_details: T.must(error_details)[:"error-detail"]
+        error_type: error_type,
+        error_details: error_detail
       )
       return unless Experiments.enabled?(:record_update_job_unknown_error)
 
       service.record_update_job_unknown_error(
-        error_type: T.must(error_details).fetch(:"error-type"),
-        error_details: T.must(error_details)[:"error-detail"]
+        error_type: error_type,
+        error_details: error_detail
       )
     end
   end

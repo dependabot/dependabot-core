@@ -71,7 +71,7 @@ internal static class SdkProjectDiscovery
     // this seems to be the maximum number of TFMs that can be restored in parallel without running into race conditions
     private const int MaximumParallelTargetFrameworkRestores = 2;
 
-    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string startingProjectPath, ExperimentsManager experimentsManager, ILogger logger)
+    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string startingProjectPath, ExperimentsManager experimentsManager, string? solutionDir, ILogger logger)
     {
         var extension = Path.GetExtension(startingProjectPath)?.ToLowerInvariant();
         switch (extension)
@@ -190,6 +190,15 @@ internal static class SdkProjectDiscovery
                     args.Add($"/p:TargetFramework={tfm}");
                 }
 
+                // if the project lives alongside a solution file, fake the MSBuild `SolutionDir` property so that
+                // project files referencing `$(SolutionDir)` can be evaluated correctly; MSBuild expects this value
+                // to end with a directory separator so that `$(SolutionDir)foo` concatenations form valid paths
+                if (solutionDir is not null)
+                {
+                    var normalizedSolutionDir = $"{solutionDir.TrimEnd('/', Path.DirectorySeparatorChar)}/";
+                    args.Add($"/p:SolutionDir={normalizedSolutionDir}");
+                }
+
                 // if using CPM and a project also sets TreatWarningsAsErrors to true, this can cause discovery to fail; explicitly don't allow that
                 args.Add("/p:TreatWarningsAsErrors=false");
                 args.Add("/p:MSBuildTreatWarningsAsErrors=false");
@@ -207,6 +216,7 @@ internal static class SdkProjectDiscovery
                 }
 
                 MSBuildHelper.ThrowOnError(stdOut);
+                MSBuildHelper.ThrowOnError(stdErr);
                 if (exitCode != 0)
                 {
                     // log error, but still try to resolve what we can
@@ -215,6 +225,11 @@ internal static class SdkProjectDiscovery
 
                 if (!File.Exists(binLogPath))
                 {
+                    if (stdErr.Contains("A compatible .NET SDK was not found."))
+                    {
+                        throw new Exception("Missing SDK, check global.json locations vs. job directories.");
+                    }
+
                     throw new FileNotFoundException("Dependency discovery didn't produce a log file.");
                 }
 
@@ -440,6 +455,7 @@ internal static class SdkProjectDiscovery
                 packagesPerProject,
                 explicitPackageVersionsPerProject,
                 experimentsManager,
+                solutionDir,
                 logger
             );
         }
@@ -803,6 +819,7 @@ internal static class SdkProjectDiscovery
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesPerProject,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> explicitPackageVersionsPerProject,
         ExperimentsManager experimentsManager,
+        string? solutionDir,
         ILogger logger
     )
     {
@@ -825,8 +842,14 @@ internal static class SdkProjectDiscovery
 
             var tempProjectPath = await MSBuildHelper.CreateTempProjectAsync(tempDirectory, repoRootPath, projectPath, targetFrameworks, topLevelDependencies, logger);
             var tempProjectDirectory = Path.GetDirectoryName(tempProjectPath)!;
-            var rediscoveredDependencies = await DiscoverAsync(tempProjectDirectory, tempProjectDirectory, tempProjectPath, experimentsManager, logger);
-            var rediscoveredDependenciesForThisProject = rediscoveredDependencies.Single(); // we started with a single temp project, this will be the only result
+            var rediscoveredDependencies = await DiscoverAsync(tempProjectDirectory, tempProjectDirectory, tempProjectPath, experimentsManager, solutionDir, logger);
+            var tempProjectFileName = Path.GetFileName(tempProjectPath);
+            var rediscoveredDependenciesForThisProject = rediscoveredDependencies.FirstOrDefault(r => PathComparer.Instance.Equals(r.FilePath, tempProjectFileName));
+            if (rediscoveredDependenciesForThisProject is null)
+            {
+                logger.Warn($"Unable to rediscover packages for legacy project {projectPath}; using original package set.");
+                return packagesPerProject;
+            }
 
             // re-build packagesPerProject
             var rebuiltPackagesPerProject = packagesPerProject.ToDictionary(PathComparer.Instance); // shallow copy

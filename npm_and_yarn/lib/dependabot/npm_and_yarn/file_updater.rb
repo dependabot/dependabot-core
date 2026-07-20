@@ -5,6 +5,7 @@ require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/file_updaters/vendor_updater"
 require "dependabot/file_updaters/artifact_updater"
+require "dependabot/errors"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 require "dependabot/shared_helpers/command_trace"
@@ -28,17 +29,18 @@ module Dependabot
 
       class NoChangeError < StandardError
         extend T::Sig
+        include Dependabot::HasSentryContext
 
-        sig { returns(T::Hash[Symbol, T.untyped]) }
+        sig { returns(T::Hash[Symbol, T.anything]) }
         attr_reader :error_context
 
-        sig { params(message: String, error_context: T::Hash[Symbol, T.untyped]).void }
+        sig { params(message: String, error_context: T::Hash[Symbol, T.anything]).void }
         def initialize(message:, error_context:)
           super(message)
           @error_context = error_context
         end
 
-        sig { returns(T::Hash[Symbol, T.untyped]) }
+        sig { override.returns(T::Hash[Symbol, T.anything]) }
         def sentry_context
           { extra: @error_context }
         end
@@ -218,7 +220,7 @@ module Dependabot
         raise DependencyFileNotFound.new(nil, "package.json not found.") unless get_original_file("package.json")
       end
 
-      sig { params(updated_files: T::Array[DependencyFile]).returns(T::Hash[Symbol, T.untyped]) }
+      sig { params(updated_files: T::Array[DependencyFile]).returns(T::Hash[Symbol, T.anything]) }
       def error_context(updated_files:)
         traces = aggregated_command_traces
         fallback_attempted, fallback_succeeded = compute_fallback_state(traces)
@@ -490,7 +492,8 @@ module Dependabot
             dependencies: dependencies,
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
-            credentials: credentials
+            credentials: credentials,
+            security_updates_only: options.fetch(:security_updates_only, false) ? true : false
           ),
           T.nilable(Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater)
         )
@@ -503,7 +506,8 @@ module Dependabot
             dependencies: dependencies,
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
-            credentials: credentials
+            credentials: credentials,
+            security_updates_only: options.fetch(:security_updates_only, false) ? true : false
           ),
           T.nilable(Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater)
         )
@@ -520,7 +524,7 @@ module Dependabot
           dependencies: dependencies,
           dependency_files: dependency_files,
           credentials: credentials,
-          security_updates_only: options.fetch(:security_updates_only, false)
+          security_updates_only: options.fetch(:security_updates_only, false) ? true : false
         )
       end
 

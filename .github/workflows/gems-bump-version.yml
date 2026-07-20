@@ -1,7 +1,7 @@
 name: Gems - Bump Version
 on: # yamllint disable-line rule:truthy
   schedule:
-    - cron: '25 1 * * THU'
+    - cron: '25 1 * * MON'
   workflow_dispatch:
     inputs:
       version_type:
@@ -35,7 +35,7 @@ jobs:
           ref: "main"
 
       # bump-version.rb needs bundler
-      - uses: ruby/setup-ruby@6ca151fd1bfcfd6fe0c4eb6837eb0584d0134a0c # v1.290.0
+      - uses: ruby/setup-ruby@9eb537ca036ebaed86729dcb9309076e4c5c3b74 # v1.314.0
         with:
           # Use the version of bundler specified in `updater/Gemfile.lock`.
           # Otherwise the generated PR will change `BUNDLED WITH` in

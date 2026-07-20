@@ -102,7 +102,7 @@ module Dependabot
           @suggested_changelog_url = @suggested_changelog_url&.split("#")&.first
 
           @new_version = T.let(nil, T.nilable(String))
-          @changelog_from_suggested_url = T.let(nil, T.untyped)
+          @changelog_from_suggested_url = T.let(nil, T.nilable(Sawyer::Resource))
         end
 
         sig { returns(T.nilable(String)) }
@@ -172,7 +172,7 @@ module Dependabot
 
           opts = { path: suggested_source&.directory, ref: suggested_source&.branch }.compact
           suggested_source_client = github_client_for_source(T.must(suggested_source))
-          tmp_files = T.unsafe(suggested_source_client).contents(suggested_source&.repo, opts)
+          tmp_files = suggested_source_client.contents(T.must(suggested_source).repo, opts)
 
           filename = T.must(T.must(suggested_changelog_url).split("/").last)
           @changelog_from_suggested_url =
@@ -290,7 +290,7 @@ module Dependabot
         sig { params(file_source: Dependabot::Source, file: T.untyped).returns(String) }
         def fetch_github_file(file_source, file)
           # Hitting the download URL directly causes encoding problems
-          raw_content = T.unsafe(github_client_for_source(file_source)).get(file.url).content
+          raw_content = T.unsafe(github_client_for_source(file_source).get(file.url)).content
           Base64.decode64(raw_content).force_encoding("UTF-8").encode
         end
 
@@ -305,8 +305,8 @@ module Dependabot
 
         sig { params(file: T.untyped).returns(String) }
         def fetch_bitbucket_file(file)
-          T.unsafe(bitbucket_client).get(file.download_url).body
-           .force_encoding("UTF-8").encode
+          bitbucket_client.get(file.download_url).body
+                          .force_encoding("UTF-8").encode
         end
 
         sig { params(file: T.untyped).returns(String) }
@@ -349,37 +349,34 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/AbcSize
         sig { params(ref: T.nilable(String)).returns(T::Array[T.untyped]) }
         def fetch_github_file_list(ref)
           files = []
 
           if T.must(source).directory
             opts = { path: T.must(source).directory, ref: ref }.compact
-            tmp_files = T.unsafe(github_client).contents(T.must(source).repo, opts)
+            tmp_files = github_client.contents(T.must(source).repo, opts)
             files += tmp_files if tmp_files.is_a?(Array)
           end
 
           opts = { ref: ref }.compact
-          files += T.unsafe(github_client).contents(T.must(source).repo, opts)
+          files += github_client.contents(T.must(source).repo, opts)
 
           files.uniq.each do |f|
             next unless f.type == "dir" && f.name.match?(/docs?/o)
 
             opts = { path: f.path, ref: ref }.compact
-            files += T.unsafe(github_client).contents(T.must(source).repo, opts)
+            files += github_client.contents(T.must(source).repo, opts)
           end
 
           files
         rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons
           []
         end
-        # rubocop:enable Metrics/AbcSize
-
         sig { returns(T.untyped) }
         def fetch_bitbucket_file_list
           branch = default_bitbucket_branch
-          T.unsafe(bitbucket_client).fetch_repo_contents(T.must(source).repo).map do |file|
+          bitbucket_client.fetch_repo_contents(T.must(source).repo).map do |file|
             type = case file.fetch("type")
                    when "commit_file" then "file"
                    when "commit_directory" then "dir"
@@ -402,7 +399,7 @@ module Dependabot
         sig { returns(T.untyped) }
         def fetch_gitlab_file_list
           branch = default_gitlab_branch
-          T.unsafe(gitlab_client).repo_tree(T.must(source).repo).map do |file|
+          T.unsafe(gitlab_client.repo_tree(T.must(source).repo)).map do |file|
             type = case file.type
                    when "blob" then "file"
                    when "tree" then "dir"
@@ -544,7 +541,7 @@ module Dependabot
         def default_bitbucket_branch
           @default_bitbucket_branch ||=
             T.let(
-              T.unsafe(bitbucket_client).fetch_default_branch(T.must(source).repo),
+              bitbucket_client.fetch_default_branch(T.must(source).repo),
               T.nilable(String)
             )
         end

@@ -11,6 +11,17 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
     )
   end
 
+  let(:uv_lock_content) { fixture("dependency_grapher", "uv_lock_with_relationships.lock") }
+  let(:uv_lock_file) do
+    Dependabot::DependencyFile.new(
+      name: "uv.lock",
+      content: uv_lock_content,
+      directory: "/"
+    )
+  end
+
+  # The grapher itself doesn't read pyproject.toml, but FileParser requires
+  # a manifest to instantiate so we include one to satisfy that constraint.
   let(:pyproject_toml) do
     Dependabot::DependencyFile.new(
       name: "pyproject.toml",
@@ -19,7 +30,7 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
     )
   end
 
-  let(:dependency_files) { [pyproject_toml] }
+  let(:dependency_files) { [pyproject_toml, uv_lock_file] }
 
   let(:parser) do
     Dependabot::FileParsers.for_package_manager("uv").new(
@@ -30,199 +41,312 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
     )
   end
 
-  let(:uv_tree_output) { fixture("dependency_grapher", "uv_tree_output.txt") }
-
   describe "#relevant_dependency_file" do
-    context "when uv.lock is not present" do
-      it "falls back to pyproject.toml" do
-        expect(grapher.relevant_dependency_file).to eql(pyproject_toml)
-      end
+    it "returns the uv.lock" do
+      expect(grapher.relevant_dependency_file).to eql(uv_lock_file)
     end
 
-    context "when uv.lock is present" do
-      let(:uv_lock_file) do
+    context "when uv.lock exists in a nested path" do
+      let(:nested_uv_lock_file) do
         Dependabot::DependencyFile.new(
-          name: "uv.lock",
-          content: fixture("dependency_grapher", "uv_lock_with_relationships.lock"),
+          name: "projects/manufacturing/ops-assistant/uv.lock",
+          content: uv_lock_content,
           directory: "/"
         )
       end
+      let(:dependency_files) { [pyproject_toml, nested_uv_lock_file] }
 
-      let(:dependency_files) { [pyproject_toml, uv_lock_file] }
+      it "returns the nested uv.lock" do
+        expect(grapher.relevant_dependency_file).to eql(nested_uv_lock_file)
+      end
+    end
 
-      it "specifies the uv.lock as the relevant dependency file" do
-        expect(grapher.relevant_dependency_file).to eql(uv_lock_file)
+    context "when uv.lock is missing" do
+      let(:dependency_files) { [pyproject_toml] }
+
+      it "raises a DependabotError" do
+        expect { grapher.relevant_dependency_file }
+          .to raise_error(Dependabot::DependabotError, /No uv.lock present/)
       end
     end
   end
 
   describe "#resolved_dependencies" do
-    context "when uv.lock is present" do
-      let(:uv_lock_file) do
-        Dependabot::DependencyFile.new(
-          name: "uv.lock",
-          content: uv_lock_content,
-          directory: "/"
-        )
-      end
-
-      let(:dependency_files) { [pyproject_toml, uv_lock_file] }
-
-      let(:uv_lock_content) { fixture("dependency_grapher", "uv_lock_with_relationships.lock") }
-
-      it "prefers lockfile relationships and does not call uv tree" do
-        expect(parser).not_to receive(:run_in_parsed_context)
-
-        resolved_dependencies = grapher.resolved_dependencies
-
-        expect(resolved_dependencies.fetch("pkg:pypi/flask@3.1.3").dependencies).to eq(
-          [
-            "pkg:pypi/blinker@1.9.0",
-            "pkg:pypi/click@8.3.1",
-            "pkg:pypi/itsdangerous@2.2.0",
-            "pkg:pypi/jinja2@3.1.6",
-            "pkg:pypi/markupsafe@3.0.3",
-            "pkg:pypi/werkzeug@3.1.6"
-          ]
-        )
-      end
-    end
-
     context "when uv.lock is missing" do
-      let(:generated_uv_lock) { fixture("dependency_grapher", "generated_uv.lock") }
-
-      before do
-        allow(parser).to receive(:run_in_parsed_context)
-          .with("pyenv exec uv lock --color never --no-progress && cat uv.lock")
-          .and_return(generated_uv_lock)
-      end
-
-      it "generates an ephemeral lockfile for relationship extraction" do
-        resolved_dependencies = grapher.resolved_dependencies
-
-        expect(parser).not_to have_received(:run_in_parsed_context)
-          .with("pyenv exec uv tree -q --color never --no-progress --frozen")
-        expect(resolved_dependencies.keys).to include("pkg:pypi/flask")
-      end
-    end
-
-    context "when lockfile graph extraction fails" do
-      before do
-        allow(parser).to receive(:run_in_parsed_context)
-          .with("pyenv exec uv lock --color never --no-progress && cat uv.lock")
-          .and_raise(StandardError.new("lock failed"))
-
-        allow(parser).to receive(:run_in_parsed_context)
-          .with("pyenv exec uv tree -q --color never --no-progress --frozen")
-          .and_return(uv_tree_output)
-      end
-
-      it "falls back to parsing uv tree output" do
-        resolved_dependencies = grapher.resolved_dependencies
-
-        expect(parser).to have_received(:run_in_parsed_context)
-          .with("pyenv exec uv tree -q --color never --no-progress --frozen")
-        expect(resolved_dependencies.keys).to include("pkg:pypi/flask")
-      end
-    end
-
-    context "when lockfile parsing raises an error" do
-      let(:uv_lock_file) do
-        Dependabot::DependencyFile.new(
-          name: "uv.lock",
-          content: "not valid toml {{{",
-          directory: "/"
-        )
-      end
-
-      let(:dependency_files) { [pyproject_toml, uv_lock_file] }
-
-      it "sets errored_fetching_subdependencies and subdependency_error" do
-        grapher.resolved_dependencies
-
-        expect(grapher.errored_fetching_subdependencies).to be(true)
-        expect(grapher.subdependency_error).to be_a(StandardError)
-      end
-    end
-
-    context "when serializing lockfile-backed dependencies" do
-      let(:uv_lock_file) do
-        Dependabot::DependencyFile.new(
-          name: "uv.lock",
-          content: uv_lock_content,
-          directory: "/"
-        )
-      end
-
-      let(:dependency_files) { [pyproject_toml, uv_lock_file] }
-
-      let(:uv_lock_content) { fixture("dependency_grapher", "uv_lock_with_relationships.lock") }
-
-      it "serializes dependencies with relationship data" do
-        resolved_dependencies = grapher.resolved_dependencies
-
-        expect(resolved_dependencies.keys).to include(
-          "pkg:pypi/flask@3.1.3",
-          "pkg:pypi/requests@2.32.5",
-          "pkg:pypi/ruff@0.15.4",
-          "pkg:pypi/markupsafe@3.0.3"
-        )
-
-        flask = resolved_dependencies.fetch("pkg:pypi/flask@3.1.3")
-        expect(flask.direct).to be(true)
-        expect(flask.runtime).to be(true)
-        expect(flask.dependencies).to eq(
-          [
-            "pkg:pypi/blinker@1.9.0",
-            "pkg:pypi/click@8.3.1",
-            "pkg:pypi/itsdangerous@2.2.0",
-            "pkg:pypi/jinja2@3.1.6",
-            "pkg:pypi/markupsafe@3.0.3",
-            "pkg:pypi/werkzeug@3.1.6"
-          ]
-        )
-
-        requests = resolved_dependencies.fetch("pkg:pypi/requests@2.32.5")
-        expect(requests.dependencies).to eq(
-          [
-            "pkg:pypi/certifi@2026.2.25",
-            "pkg:pypi/charset-normalizer@3.4.4",
-            "pkg:pypi/idna@3.11",
-            "pkg:pypi/urllib3@2.6.3"
-          ]
-        )
-
-        markupsafe = resolved_dependencies.fetch("pkg:pypi/markupsafe@3.0.3")
-        expect(markupsafe.direct).to be(false)
-        expect(markupsafe.dependencies).to eq([])
-      end
-    end
-
-    context "when dependencies have extras in their names" do
-      let(:pyproject_toml) do
-        Dependabot::DependencyFile.new(
-          name: "pyproject.toml",
-          content: fixture("pyproject_files", "uv_dependency_grapher_extras.toml"),
-          directory: "/"
-        )
-      end
-
       let(:dependency_files) { [pyproject_toml] }
 
-      let(:generated_uv_lock) { fixture("dependency_grapher", "generated_uv.lock") }
-
-      before do
-        allow(parser).to receive(:run_in_parsed_context)
-          .with("pyenv exec uv lock --color never --no-progress && cat uv.lock")
-          .and_return(generated_uv_lock)
+      it "raises a DependabotError" do
+        expect { grapher.resolved_dependencies }
+          .to raise_error(Dependabot::DependabotError, /No uv.lock present/)
       end
+    end
 
-      it "strips extras from PURL names" do
+    context "when uv.lock exists in a nested path" do
+      let(:nested_uv_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "projects/manufacturing/ops-assistant/uv.lock",
+          content: uv_lock_content,
+          directory: "/"
+        )
+      end
+      let(:dependency_files) { [pyproject_toml, nested_uv_lock_file] }
+
+      it "extracts dependencies from the nested uv.lock" do
         resolved_dependencies = grapher.resolved_dependencies
 
-        purl_keys = resolved_dependencies.keys
-        expect(purl_keys).to include(a_string_matching(%r{^pkg:pypi/cachecontrol}))
-        expect(purl_keys).not_to include(a_string_matching(/\[/))
+        expect(resolved_dependencies).to include("pkg:pypi/flask@3.1.3")
+      end
+    end
+
+    it "extracts relationships from uv.lock without shelling out" do
+      expect(parser).not_to receive(:run_in_parsed_context)
+
+      resolved_dependencies = grapher.resolved_dependencies
+
+      expect(resolved_dependencies.fetch("pkg:pypi/flask@3.1.3").dependencies).to eq(
+        [
+          "pkg:pypi/blinker@1.9.0",
+          "pkg:pypi/click@8.3.1",
+          "pkg:pypi/itsdangerous@2.2.0",
+          "pkg:pypi/jinja2@3.1.6",
+          "pkg:pypi/markupsafe@3.0.3",
+          "pkg:pypi/werkzeug@3.1.6"
+        ]
+      )
+    end
+
+    it "marks runtime direct dependencies (root `dependencies`) as direct + runtime" do
+      resolved_dependencies = grapher.resolved_dependencies
+
+      flask = resolved_dependencies.fetch("pkg:pypi/flask@3.1.3")
+      expect(flask.direct).to be(true)
+      expect(flask.runtime).to be(true)
+
+      requests = resolved_dependencies.fetch("pkg:pypi/requests@2.32.5")
+      expect(requests.direct).to be(true)
+      expect(requests.runtime).to be(true)
+    end
+
+    it "marks dev direct dependencies (`[package.dev-dependencies]`) as direct + non-runtime" do
+      resolved_dependencies = grapher.resolved_dependencies
+
+      ruff = resolved_dependencies.fetch("pkg:pypi/ruff@0.15.4")
+      expect(ruff.direct).to be(true)
+      expect(ruff.runtime).to be(false)
+
+      ty = resolved_dependencies.fetch("pkg:pypi/ty@0.0.19")
+      expect(ty.direct).to be(true)
+      expect(ty.runtime).to be(false)
+    end
+
+    it "marks transitive dependencies as not direct" do
+      resolved_dependencies = grapher.resolved_dependencies
+
+      markupsafe = resolved_dependencies.fetch("pkg:pypi/markupsafe@3.0.3")
+      expect(markupsafe.direct).to be(false)
+      expect(markupsafe.dependencies).to eq([])
+    end
+
+    it "includes the root project package as an indirect entry (preserving prior behaviour)" do
+      # The fixture's root package is `name = "test"` with `source = { virtual = "." }`.
+      resolved_dependencies = grapher.resolved_dependencies
+
+      root = resolved_dependencies.fetch("pkg:pypi/test@0.1.0")
+      expect(root.direct).to be(false)
+      expect(root.runtime).to be(true)
+      # Mirrors uv's `create_dependencies` in cyclonedx_json.rs (chains
+      # `dependencies` + `optional-dependencies` + `dev-dependencies` into one
+      # edge list).
+      expect(root.dependencies).to contain_exactly(
+        "pkg:pypi/flask@3.1.3",
+        "pkg:pypi/requests@2.32.5",
+        "pkg:pypi/ruff@0.15.4",
+        "pkg:pypi/ty@0.0.19"
+      )
+    end
+
+    context "when the root has `[package.optional-dependencies]` (extras)" do
+      # Mirrors uv's `ExportableRequirements::from_lock` --all-extras behaviour:
+      # extras-declared deps are direct-from-root, since `uv sync --all-extras`
+      # would install them. The dependency graph reports what *could* be
+      # installed, not what's selected for a particular sync.
+      let(:uv_lock_content) do
+        <<~LOCK
+          version = 1
+          requires-python = ">=3.12"
+
+          [[package]]
+          name = "project"
+          version = "0.1.0"
+          source = { virtual = "." }
+          dependencies = [
+              { name = "requests" },
+          ]
+
+          [package.optional-dependencies]
+          aws = [
+              { name = "boto3" },
+          ]
+          vertex = [
+              { name = "google-auth" },
+          ]
+
+          [[package]]
+          name = "requests"
+          version = "2.32.5"
+          source = { registry = "https://pypi.org/simple" }
+
+          [[package]]
+          name = "boto3"
+          version = "1.42.69"
+          source = { registry = "https://pypi.org/simple" }
+
+          [[package]]
+          name = "google-auth"
+          version = "2.49.1"
+          source = { registry = "https://pypi.org/simple" }
+        LOCK
+      end
+
+      it "treats optional-dependencies on the root as direct/runtime" do
+        resolved = grapher.resolved_dependencies
+
+        boto3 = resolved.fetch("pkg:pypi/boto3@1.42.69")
+        expect(boto3.direct).to be(true)
+        expect(boto3.runtime).to be(true)
+
+        google_auth = resolved.fetch("pkg:pypi/google-auth@2.49.1")
+        expect(google_auth.direct).to be(true)
+        expect(google_auth.runtime).to be(true)
+      end
+    end
+
+    context "when a transitive package has optional-dependencies or dev-dependencies" do
+      # Mirrors uv's `create_dependencies` which chains a package's
+      # `dependencies`, `optional-dependencies`, and `dev-dependencies` when
+      # building the SBOM dependency graph edges.
+      let(:uv_lock_content) do
+        <<~LOCK
+          version = 1
+          requires-python = ">=3.12"
+
+          [[package]]
+          name = "project"
+          version = "0.1.0"
+          source = { virtual = "." }
+          dependencies = [
+              { name = "django" },
+          ]
+
+          [[package]]
+          name = "django"
+          version = "5.0.0"
+          source = { registry = "https://pypi.org/simple" }
+          dependencies = [
+              { name = "sqlparse" },
+          ]
+
+          [package.optional-dependencies]
+          argon2 = [
+              { name = "argon2-cffi" },
+          ]
+
+          [package.dev-dependencies]
+          test = [
+              { name = "pytest" },
+          ]
+
+          [[package]]
+          name = "sqlparse"
+          version = "0.5.0"
+          source = { registry = "https://pypi.org/simple" }
+
+          [[package]]
+          name = "argon2-cffi"
+          version = "23.1.0"
+          source = { registry = "https://pypi.org/simple" }
+
+          [[package]]
+          name = "pytest"
+          version = "8.0.0"
+          source = { registry = "https://pypi.org/simple" }
+        LOCK
+      end
+
+      it "records optional and dev edges from the transitive package" do
+        resolved = grapher.resolved_dependencies
+
+        django = resolved.fetch("pkg:pypi/django@5.0.0")
+        expect(django.dependencies).to contain_exactly(
+          "pkg:pypi/sqlparse@0.5.0",
+          "pkg:pypi/argon2-cffi@23.1.0",
+          "pkg:pypi/pytest@8.0.0"
+        )
+      end
+    end
+
+    context "when [manifest] members lists workspace members explicitly" do
+      let(:uv_lock_content) do
+        <<~LOCK
+          version = 1
+          requires-python = ">=3.12"
+
+          [manifest]
+          members = ["alpha", "beta"]
+
+          [[package]]
+          name = "alpha"
+          version = "0.1.0"
+          source = { editable = "packages/alpha" }
+          dependencies = [
+              { name = "requests" },
+          ]
+
+          [[package]]
+          name = "beta"
+          version = "0.2.0"
+          source = { editable = "packages/beta" }
+          dependencies = [
+              { name = "requests" },
+          ]
+
+          [[package]]
+          name = "requests"
+          version = "2.32.5"
+          source = { registry = "https://pypi.org/simple" }
+
+          [[package]]
+          name = "not-a-member"
+          version = "0.3.0"
+          source = { virtual = "." }
+          dependencies = [
+              { name = "requests" },
+          ]
+        LOCK
+      end
+
+      it "treats only the declared members as roots (ignoring local-source heuristic)" do
+        resolved = grapher.resolved_dependencies
+
+        # `requests` is a direct dep of both alpha and beta — it's direct/runtime.
+        expect(resolved.fetch("pkg:pypi/requests@2.32.5").direct).to be(true)
+        expect(resolved.fetch("pkg:pypi/requests@2.32.5").runtime).to be(true)
+
+        # `not-a-member` has a virtual source but isn't in `[manifest] members`,
+        # so it's treated as an ordinary (indirect) package rather than a root.
+        expect(resolved.fetch("pkg:pypi/not-a-member@0.3.0").direct).to be(false)
+      end
+    end
+
+    context "when uv.lock is invalid TOML" do
+      let(:uv_lock_content) { "not valid toml {{{" }
+
+      it "marks subdependency fetching as errored without raising" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies).to eq({})
+        expect(grapher.errored_fetching_subdependencies).to be(true)
+        expect(grapher.subdependency_error).to be_a(StandardError)
       end
     end
   end

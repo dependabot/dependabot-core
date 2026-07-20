@@ -352,7 +352,10 @@ module Dependabot
             command: "update <dependency_names> --force --ignore-scripts --package-lock-only",
             fingerprint: "update <dependency_names> --force --ignore-scripts --package-lock-only"
           ) do
-            NativeHelpers.run_npm8_subdependency_update_command(dependency_names)
+            NativeHelpers.run_npm8_subdependency_update_command(
+              dependency_names,
+              security_updates_only: security_updates_only?
+            )
           end
 
           updated_content = File.read(lockfile_basename)
@@ -370,7 +373,7 @@ module Dependabot
                 command: "audit fix --force --package-lock-only --ignore-scripts",
                 fingerprint: "audit fix --force --package-lock-only --ignore-scripts"
               ) do
-                NativeHelpers.run_npm_audit_fix_command
+                NativeHelpers.run_npm_audit_fix_command(security_updates_only: security_updates_only?)
               end
               sub_dependencies.each { |dep| dep.metadata[:audit_fix_used] = true }
             rescue SharedHelpers::HelperSubprocessFailed

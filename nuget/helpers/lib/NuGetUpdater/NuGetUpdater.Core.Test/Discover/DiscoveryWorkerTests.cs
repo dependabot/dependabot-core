@@ -269,6 +269,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             expectedResult: new()
             {
                 Path = "src",
+                SolutionDirectory = "src",
                 Projects = [
                     new()
                     {
@@ -550,6 +551,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             expectedResult: new()
             {
                 Path = "",
+                SolutionDirectory = ".",
                 Projects = [
                     new()
                     {
@@ -816,6 +818,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             expectedResult: new()
             {
                 Path = "src",
+                SolutionDirectory = "src",
                 Projects = [
                     new()
                     {
@@ -831,6 +834,58 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
                         FilePath = "server/server.csproj",
                         TargetFrameworks = ["net8.0"],
                         Dependencies = [new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    }
+                ]
+            }
+        );
+    }
+
+    [Fact]
+    public async Task TestRepo_SolutionDirectoryIsCapturedAndHonored()
+    {
+        // the workspace directly contains a solution file, so the `SolutionDir` MSBuild property is faked during
+        // discovery; the project only references the package when `$(SolutionDir)` is set, and the resolved solution
+        // directory is reported on the discovery result so it can be retrieved later
+        await TestDiscoveryAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Solution.Scoped.Package", "9.0.1", "net8.0"),
+            ],
+            workspacePath: "",
+            files: new[]
+            {
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+
+                      <ItemGroup Condition="Exists('$(SolutionDir)')">
+                        <PackageReference Include="Solution.Scoped.Package" Version="9.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("solution.slnx", """
+                    <Solution>
+                      <Project Path="project.csproj" />
+                    </Solution>
+                    """)
+            },
+            expectedResult: new()
+            {
+                Path = "",
+                SolutionDirectory = ".",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new("Solution.Scoped.Package", "9.0.1", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])
+                        ],
                         ReferencedProjectPaths = [],
                         ImportedFiles = [],
                         AdditionalFiles = [],
@@ -874,6 +929,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             expectedResult: new()
             {
                 Path = "",
+                SolutionDirectory = ".",
                 Projects = [
                     new()
                     {
@@ -954,6 +1010,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             expectedResult: new()
             {
                 Path = "",
+                SolutionDirectory = ".",
                 Projects = [
                     new()
                     {
@@ -1037,6 +1094,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             expectedResult: new()
             {
                 Path = "",
+                SolutionDirectory = ".",
                 Projects = [
                     new()
                     {
@@ -2088,6 +2146,7 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
             expectedResult: new()
             {
                 Path = "",
+                SolutionDirectory = ".",
                 Projects = [
                     new()
                     {
@@ -2326,3 +2385,4 @@ public partial class DiscoveryWorkerTests : DiscoveryWorkerTestBase
         );
     }
 }
+

@@ -59,6 +59,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       repo_contents_path: repo_contents_path,
       security_advisories_for: security_advisories,
       updating_a_pull_request?: false,
+      blocked_versions_for?: false,
       source: source
     )
   end
@@ -490,6 +491,71 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         directory: Pathname.new(source_directory).cleanpath
       )
       expect(Dependabot::Workspace).to have_received(:cleanup!).once
+    end
+  end
+
+  describe "#compile_updates_for blocked versions ignored metric" do
+    let(:dependency) { dependencies.first }
+    let(:group) do
+      instance_double(
+        Dependabot::DependencyGroup,
+        name: "test-group",
+        dependencies: [dependency],
+        group_by_dependency_name?: false
+      )
+    end
+
+    let(:metrics_service) do
+      instance_double(Dependabot::Service, record_update_job_error: nil, increment_metric: nil)
+    end
+
+    before do
+      allow(test_instance).to receive_messages(
+        update_checker_for: checker,
+        raise_on_ignored?: false,
+        log_checking_for_update: nil,
+        all_versions_ignored?: false,
+        semver_rules_allow_grouping?: true,
+        log_up_to_date: nil,
+        requirements_to_unlock: [],
+        log_requirements_for_update: nil,
+        service: metrics_service
+      )
+      allow(job).to receive(:package_manager).and_return("bundler")
+      allow(checker).to receive(:up_to_date?).and_return(true)
+    end
+
+    context "when the dependency has an active GitHub Security block" do
+      before do
+        allow(job).to receive(:blocked_versions_for?).with(dependency).and_return(true)
+      end
+
+      it "increments the ignored metric tagged with group_update" do
+        test_instance.compile_updates_for(dependency, dependency_files, group)
+
+        expect(metrics_service).to have_received(:increment_metric).with(
+          "blocked_versions.ignored",
+          tags: {
+            operation: "group_update",
+            package_manager: "bundler"
+          }
+        )
+      end
+    end
+
+    context "when the dependency only has user ignore rules (no block)" do
+      before do
+        allow(job).to receive(:blocked_versions_for?).with(dependency).and_return(false)
+      end
+
+      it "does not increment the ignored metric" do
+        test_instance.compile_updates_for(dependency, dependency_files, group)
+
+        expect(metrics_service).not_to have_received(:increment_metric).with(
+          "blocked_versions.ignored",
+          tags: anything
+        )
+      end
     end
   end
 

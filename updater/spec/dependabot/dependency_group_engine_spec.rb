@@ -24,10 +24,13 @@ RSpec.describe Dependabot::DependencyGroupEngine do
   end
   let(:security_updates_only) { false }
   let(:dependencies) { nil }
+  let(:group_definitions) do
+    dependency_groups_config.map { |group| Dependabot::Job::DependencyGroupDefinition.from_hash(group) }
+  end
   let(:job) do
     instance_double(
       Dependabot::Job,
-      dependency_groups: dependency_groups_config,
+      dependency_groups: group_definitions,
       source: source,
       dependencies: dependencies,
       security_updates_only?: security_updates_only
@@ -518,7 +521,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
           let(:job) do
             instance_double(
               Dependabot::Job,
-              dependency_groups: dependency_groups_config,
+              dependency_groups: group_definitions,
               source: source,
               dependencies: nil,
               security_updates_only?: false,
@@ -540,7 +543,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
           let(:job) do
             instance_double(
               Dependabot::Job,
-              dependency_groups: dependency_groups_config,
+              dependency_groups: group_definitions,
               source: source,
               dependencies: nil,
               security_updates_only?: false,
@@ -595,7 +598,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
       let(:job) do
         instance_double(
           Dependabot::Job,
-          dependency_groups: dependency_groups_config,
+          dependency_groups: group_definitions,
           source: source,
           dependencies: nil,
           security_updates_only?: false,
@@ -626,7 +629,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
       let(:job) do
         instance_double(
           Dependabot::Job,
-          dependency_groups: dependency_groups_config,
+          dependency_groups: group_definitions,
           source: source,
           dependencies: nil,
           security_updates_only?: false,
@@ -725,7 +728,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
     let(:job) do
       instance_double(
         Dependabot::Job,
-        dependency_groups: dependency_groups_config,
+        dependency_groups: group_definitions,
         source: source,
         dependencies: nil,
         security_updates_only?: false,

@@ -63,6 +63,27 @@ RSpec.describe Dependabot::Deno::FileParser do
     end
   end
 
+  context "with a workspace" do
+    let(:files) do
+      project_dependency_files("deno/workspace")
+    end
+
+    it "parses dependencies from the root and member manifests" do
+      deps = parser.parse
+      expect(deps.map(&:name)).to contain_exactly("@std/assert", "@std/path", "chalk")
+    end
+
+    it "attributes each dependency to its declaring manifest" do
+      deps = parser.parse
+
+      expect(deps.find { |d| d.name == "@std/path" }.requirements.first[:file]).to eq("deno.json")
+      expect(deps.find { |d| d.name == "@std/assert" }.requirements.first[:file])
+        .to eq("packages/alpha/deno.json")
+      expect(deps.find { |d| d.name == "chalk" }.requirements.first[:file])
+        .to eq("packages/beta/deno.json")
+    end
+  end
+
   context "with scoped npm packages" do
     let(:files) do
       project_dependency_files("deno/scoped_npm")

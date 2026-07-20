@@ -4,8 +4,12 @@
 require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/dependency_change"
+require "dependabot/errors"
+require "dependabot/experiments"
+require "dependabot/file_parsers"
 require "dependabot/file_updaters"
 require "dependabot/dependency_group"
+require "dependabot/updater/blocked_version_detector"
 
 # This class is responsible for generating a DependencyChange for a given
 # set of dependencies and dependency files.
@@ -67,6 +71,7 @@ module Dependabot
       @updated_dependencies = updated_dependencies
       @change_source = change_source
       @notices = notices
+      @regenerated_dependency_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
     end
 
     sig { returns(Dependabot::DependencyChange) }
@@ -76,6 +81,8 @@ module Dependabot
       unless updated_files.any?
         raise DependabotError, "FileUpdater failed to update any files for: #{dependency_info_for_error}"
       end
+
+      enforce_blocked_transitive_versions!
 
       # Remove any unchanged dependencies from the updated list
       updated_deps = updated_dependencies.reject do |d|
@@ -151,14 +158,20 @@ module Dependabot
       # Create file updater and collect notices from it
       file_updater = file_updater_for(relevant_dependencies)
 
-      # Exclude support files since they are not manifests, just needed for supporting the update
+      # Collect all regenerated files (including support files). When non-support
+      # files exist, we exclude support files since they are contextual (not manifests).
+      # When the updater only modified support files, they ARE the primary update targets
+      # (e.g. provider requirements in Terraform local modules, build-system deps in UV
+      # workspace members) and must be included.
       all_files = file_updater.updated_dependency_files
+      @regenerated_dependency_files = all_files
 
       # Collect notices from file updater after update attempt
       updater_notices = T.let(file_updater.notices, T::Array[Dependabot::Notice])
       @notices.concat(updater_notices)
 
       updated_files = all_files.reject(&:support_file?)
+      updated_files = all_files if updated_files.empty? && all_files.any?
       updated_files
     end
 
@@ -189,8 +202,109 @@ module Dependabot
         dependency_files: dependency_files,
         repo_contents_path: job.repo_contents_path,
         credentials: job.credentials,
-        options: job.experiments.merge(security_updates_only: job.security_updates_only?)
+        options: job.experiments.merge(
+          security_updates_only: job.security_updates_only?,
+          update_cooldown: job.security_updates_only? ? nil : job.cooldown
+        )
       )
+    end
+
+    # When the blocked_versions experiment is enabled, re-parse the regenerated
+    # files to surface which transitive (indirect) dependencies changed, and
+    # reject the change if any change introduces a blocked version. This is the
+    # ecosystem-agnostic safety net: it guarantees a blocked transitive version
+    # is never shipped, even when the resolver does not constrain it natively.
+    sig { void }
+    def enforce_blocked_transitive_versions!
+      return unless Dependabot::Experiments.enabled?(:blocked_versions)
+
+      # No blocked rules means nothing can ever be blocked, so skip the extra
+      # re-parsing work entirely rather than computing transitive changes we
+      # would only discard.
+      return if job.blocked_versions.empty?
+
+      detector = blocked_version_detector
+      return unless detector
+
+      log_transitive_dependency_changes(detector.transitive_changes)
+
+      blocked = detector.blocked_changes.first
+      return unless blocked
+
+      raise Dependabot::BlockedDependencyVersion.new(
+        dependency_name: blocked.name,
+        blocked_version: blocked.new_version,
+        version_requirement: T.must(blocked.blocked_requirement),
+        reason: blocked.reason
+      )
+    end
+
+    sig { returns(T.nilable(Dependabot::Updater::BlockedVersionDetector)) }
+    def blocked_version_detector
+      Dependabot::Updater::BlockedVersionDetector.new(
+        package_manager: job.package_manager,
+        blocked_versions: job.blocked_versions,
+        previous_dependencies: parse_dependencies(dependency_files),
+        current_dependencies: parse_dependencies(regenerated_dependency_files)
+      )
+    rescue StandardError => e
+      # Detection must never break a valid update. If re-parsing fails we log and
+      # fall back to allowing the update (the resolver-level constraints in
+      # Phase 2 still apply where supported).
+      Dependabot.logger.warn(
+        "Skipping transitive dependency blocking check: #{e.class}"
+      )
+      nil
+    end
+
+    sig do
+      params(changes: T::Array[Dependabot::Updater::BlockedVersionDetector::TransitiveChange]).void
+    end
+    def log_transitive_dependency_changes(changes)
+      return if changes.empty?
+
+      # Keep logging cheap on successful updates: emit a single info summary, and
+      # push the full per-dependency list to debug since it can be very large for
+      # big lockfiles. Blocked changes are always surfaced at info because they
+      # explain why an update was rejected.
+      Dependabot.logger.info(
+        "Regenerating the lockfile changed #{changes.length} transitive " \
+        "#{changes.length == 1 ? 'dependency' : 'dependencies'}"
+      )
+
+      changes.each do |change|
+        if change.blocked?
+          Dependabot.logger.info("  #{change.humanized} (blocked by '#{change.blocked_requirement}')")
+        else
+          Dependabot.logger.debug("  #{change.humanized}")
+        end
+      end
+    end
+
+    # The complete set of files representing the regenerated project state:
+    # the original files for the directory, overlaid with any files the
+    # FileUpdater changed (including support files).
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
+    def regenerated_dependency_files
+      regenerated = @regenerated_dependency_files
+      return dependency_files if regenerated.nil?
+
+      by_name = T.let({}, T::Hash[String, Dependabot::DependencyFile])
+      dependency_files.each { |file| by_name[file.name] = file }
+      regenerated.each { |file| by_name[file.name] = file }
+      by_name.values
+    end
+
+    sig { params(files: T::Array[Dependabot::DependencyFile]).returns(T::Array[Dependabot::Dependency]) }
+    def parse_dependencies(files)
+      Dependabot::FileParsers.for_package_manager(job.package_manager).new(
+        dependency_files: files,
+        repo_contents_path: job.repo_contents_path,
+        source: job.source,
+        credentials: job.credentials,
+        reject_external_code: job.reject_external_code?,
+        options: job.experiments
+      ).parse
     end
   end
 end

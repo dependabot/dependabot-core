@@ -1,32 +1,32 @@
 PATH
   remote: bazel
   specs:
-    dependabot-bazel (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-bazel (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: bun
   specs:
-    dependabot-bun (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-bun (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: bundler
   specs:
-    dependabot-bundler (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-bundler (0.387.0)
+      dependabot-common (= 0.387.0)
       parallel (~> 1.24)
 
 PATH
   remote: cargo
   specs:
-    dependabot-cargo (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-cargo (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: common
   specs:
-    dependabot-common (0.379.0)
+    dependabot-common (0.387.0)
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
       bundler (>= 2.4, < 5.0.0)
@@ -51,185 +51,185 @@ PATH
 PATH
   remote: composer
   specs:
-    dependabot-composer (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-composer (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: conda
   specs:
-    dependabot-conda (0.379.0)
-      dependabot-common (= 0.379.0)
-      dependabot-python (= 0.379.0)
+    dependabot-conda (0.387.0)
+      dependabot-common (= 0.387.0)
+      dependabot-python (= 0.387.0)
 
 PATH
   remote: deno
   specs:
-    dependabot-deno (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-deno (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: devcontainers
   specs:
-    dependabot-devcontainers (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-devcontainers (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: docker
   specs:
-    dependabot-docker (0.379.0)
-      dependabot-common (= 0.379.0)
-    dependabot-docker_compose (0.379.0)
-      dependabot-common (= 0.379.0)
-      dependabot-docker (= 0.379.0)
+    dependabot-docker (0.387.0)
+      dependabot-common (= 0.387.0)
+    dependabot-docker_compose (0.387.0)
+      dependabot-common (= 0.387.0)
+      dependabot-docker (= 0.387.0)
 
 PATH
   remote: dotnet_sdk
   specs:
-    dependabot-dotnet_sdk (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-dotnet_sdk (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: elm
   specs:
-    dependabot-elm (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-elm (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: git_submodules
   specs:
-    dependabot-git_submodules (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-git_submodules (0.387.0)
+      dependabot-common (= 0.387.0)
       parseconfig (~> 1.0, < 1.2.0)
 
 PATH
   remote: github_actions
   specs:
-    dependabot-github_actions (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-github_actions (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: go_modules
   specs:
-    dependabot-go_modules (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-go_modules (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: gradle
   specs:
-    dependabot-gradle (0.379.0)
-      dependabot-common (= 0.379.0)
-      dependabot-maven (= 0.379.0)
+    dependabot-gradle (0.387.0)
+      dependabot-common (= 0.387.0)
+      dependabot-maven (= 0.387.0)
 
 PATH
   remote: helm
   specs:
-    dependabot-helm (0.379.0)
-      dependabot-common (= 0.379.0)
-      dependabot-docker (= 0.379.0)
+    dependabot-helm (0.387.0)
+      dependabot-common (= 0.387.0)
+      dependabot-docker (= 0.387.0)
 
 PATH
   remote: hex
   specs:
-    dependabot-hex (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-hex (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: julia
   specs:
-    dependabot-julia (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-julia (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: maven
   specs:
-    dependabot-maven (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-maven (0.387.0)
+      dependabot-common (= 0.387.0)
       rexml (~> 3.4.1)
 
 PATH
   remote: npm_and_yarn
   specs:
-    dependabot-npm_and_yarn (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-npm_and_yarn (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: nuget
   specs:
-    dependabot-nuget (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-nuget (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: opentofu
   specs:
-    dependabot-opentofu (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-opentofu (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: pre_commit
   specs:
-    dependabot-pre_commit (0.379.0)
-      dependabot-bundler (= 0.379.0)
-      dependabot-cargo (= 0.379.0)
-      dependabot-common (= 0.379.0)
-      dependabot-go_modules (= 0.379.0)
-      dependabot-npm_and_yarn (= 0.379.0)
-      dependabot-python (= 0.379.0)
+    dependabot-pre_commit (0.387.0)
+      dependabot-bundler (= 0.387.0)
+      dependabot-cargo (= 0.387.0)
+      dependabot-common (= 0.387.0)
+      dependabot-go_modules (= 0.387.0)
+      dependabot-npm_and_yarn (= 0.387.0)
+      dependabot-python (= 0.387.0)
 
 PATH
   remote: pub
   specs:
-    dependabot-pub (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-pub (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: python
   specs:
-    dependabot-python (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-python (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: rust_toolchain
   specs:
-    dependabot-rust_toolchain (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-rust_toolchain (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: sbt
   specs:
-    dependabot-sbt (0.379.0)
-      dependabot-common (= 0.379.0)
-      dependabot-maven (= 0.379.0)
+    dependabot-sbt (0.387.0)
+      dependabot-common (= 0.387.0)
+      dependabot-maven (= 0.387.0)
 
 PATH
   remote: silent
   specs:
-    dependabot-silent (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-silent (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: swift
   specs:
-    dependabot-swift (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-swift (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: terraform
   specs:
-    dependabot-terraform (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-terraform (0.387.0)
+      dependabot-common (= 0.387.0)
 
 PATH
   remote: uv
   specs:
-    dependabot-uv (0.379.0)
-      dependabot-common (= 0.379.0)
-      dependabot-python (= 0.379.0)
+    dependabot-uv (0.387.0)
+      dependabot-common (= 0.387.0)
+      dependabot-python (= 0.387.0)
 
 PATH
   remote: vcpkg
   specs:
-    dependabot-vcpkg (0.379.0)
-      dependabot-common (= 0.379.0)
+    dependabot-vcpkg (0.387.0)
+      dependabot-common (= 0.387.0)
 
 GEM
   remote: https://rubygems.org/
@@ -354,12 +354,12 @@ GEM
     racc (1.8.1)
     rainbow (3.1.1)
     rake (13.3.1)
-    rbi (0.3.9)
+    rbi (0.3.13)
       prism (~> 1.0)
-      rbs (>= 3.4.4)
-    rbs (4.0.0.dev.5)
+      rbs (>= 4.0.1)
+    rbs (4.1.0.pre.1)
       logger
-      prism (>= 1.3.0)
+      prism (>= 1.6.0)
       tsort
     rdoc (7.2.0)
       erb
@@ -414,6 +414,8 @@ GEM
       lint_roller
       rubocop (>= 1.75.2)
     ruby-progressbar (1.13.0)
+    rubydex (0.2.5-arm64-darwin)
+    rubydex (0.2.5-x86_64-linux)
     sawyer (0.9.3)
       addressable (>= 2.3.5)
       faraday (>= 0.17.3, < 3)
@@ -423,35 +425,36 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.12.3)
     simplecov_json_formatter (0.1.4)
-    sorbet (0.6.13208)
-      sorbet-static (= 0.6.13208)
-    sorbet-runtime (0.6.13208)
-    sorbet-static (0.6.13208-universal-darwin)
-    sorbet-static (0.6.13208-x86_64-linux)
-    sorbet-static-and-runtime (0.6.13208)
-      sorbet (= 0.6.13208)
-      sorbet-runtime (= 0.6.13208)
-    spoom (1.7.11)
+    sorbet (0.6.13296)
+      sorbet-static (= 0.6.13296)
+    sorbet-runtime (0.6.13296)
+    sorbet-static (0.6.13296-universal-darwin)
+    sorbet-static (0.6.13296-x86_64-linux)
+    sorbet-static-and-runtime (0.6.13296)
+      sorbet (= 0.6.13296)
+      sorbet-runtime (= 0.6.13296)
+    spoom (1.7.16)
       erubi (>= 1.10.0)
       prism (>= 0.28.0)
       rbi (>= 0.3.3)
-      rbs (>= 4.0.0.dev.4)
+      rbs (>= 4.0.0.dev.5)
       rexml (>= 3.2.6)
       sorbet-static-and-runtime (>= 0.5.10187)
       thor (>= 0.19.2)
     stackprof (0.2.28)
     stringio (3.2.0)
-    tapioca (0.17.10)
+    tapioca (0.19.1)
       benchmark
       bundler (>= 2.2.25)
       netrc (>= 0.11.0)
       parallel (>= 1.21.0)
       rbi (>= 0.3.7)
       require-hooks (>= 0.2.2)
-      sorbet-static-and-runtime (>= 0.5.11087)
+      rubydex (>= 0.1.0.beta10)
+      sorbet-static-and-runtime (>= 0.6.12698)
       spoom (>= 1.7.9)
       thor (>= 1.2.0)
-      yard-sorbet
+      tsort
     terminal-table (4.0.0)
       unicode-display_width (>= 1.1.1, < 4)
     thor (1.5.0)
@@ -472,10 +475,6 @@ GEM
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
     webrick (1.9.2)
-    yard (0.9.38)
-    yard-sorbet (0.9.0)
-      sorbet-runtime
-      yard
     zeitwerk (2.7.5)
 
 PLATFORMS
@@ -547,6 +546,7 @@ CHECKSUMS
   base64 (0.3.0) sha256=27337aeabad6ffae05c265c450490628ef3ebd4b67be58257393227588f5a97b
   benchmark (0.5.0) sha256=465df122341aedcb81a2a24b4d3bd19b6c67c1530713fd533f3ff034e419236c
   bigdecimal (4.1.2) sha256=53d217666027eab4280346fba98e7d5b66baaae1b9c3c1c0ffe89d48188a3fbd
+  bundler (4.0.14) sha256=d09a0a965cf772266a7e49e83610be7c2f4e49e61134c42a56804bb383cc24b8
   citrus (3.0.2) sha256=4ec2412fc389ad186735f4baee1460f7900a8e130ffe3f216b30d4f9c684f650
   commonmarker (2.8.2-arm64-darwin) sha256=cd7364f1fb9735d60218e4af0a4afbbeedbc465eb81cccca56f29a4efe2b5013
   commonmarker (2.8.2-x86_64-linux) sha256=42cfb6532b15dd5821ce99e47397923255f32dcfc81024ef4c17e01e66ac7d75
@@ -554,40 +554,40 @@ CHECKSUMS
   csv (3.3.5) sha256=6e5134ac3383ef728b7f02725d9872934f523cb40b961479f69cf3afa6c8e73f
   date (3.5.1) sha256=750d06384d7b9c15d562c76291407d89e368dda4d4fff957eb94962d325a0dc0
   debug (1.11.1) sha256=2e0b0ac6119f2207a6f8ac7d4a73ca8eb4e440f64da0a3136c30343146e952b6
-  dependabot-bazel (0.379.0)
-  dependabot-bun (0.379.0)
-  dependabot-bundler (0.379.0)
-  dependabot-cargo (0.379.0)
-  dependabot-common (0.379.0)
-  dependabot-composer (0.379.0)
-  dependabot-conda (0.379.0)
-  dependabot-deno (0.379.0)
-  dependabot-devcontainers (0.379.0)
-  dependabot-docker (0.379.0)
-  dependabot-docker_compose (0.379.0)
-  dependabot-dotnet_sdk (0.379.0)
-  dependabot-elm (0.379.0)
-  dependabot-git_submodules (0.379.0)
-  dependabot-github_actions (0.379.0)
-  dependabot-go_modules (0.379.0)
-  dependabot-gradle (0.379.0)
-  dependabot-helm (0.379.0)
-  dependabot-hex (0.379.0)
-  dependabot-julia (0.379.0)
-  dependabot-maven (0.379.0)
-  dependabot-npm_and_yarn (0.379.0)
-  dependabot-nuget (0.379.0)
-  dependabot-opentofu (0.379.0)
-  dependabot-pre_commit (0.379.0)
-  dependabot-pub (0.379.0)
-  dependabot-python (0.379.0)
-  dependabot-rust_toolchain (0.379.0)
-  dependabot-sbt (0.379.0)
-  dependabot-silent (0.379.0)
-  dependabot-swift (0.379.0)
-  dependabot-terraform (0.379.0)
-  dependabot-uv (0.379.0)
-  dependabot-vcpkg (0.379.0)
+  dependabot-bazel (0.387.0)
+  dependabot-bun (0.387.0)
+  dependabot-bundler (0.387.0)
+  dependabot-cargo (0.387.0)
+  dependabot-common (0.387.0)
+  dependabot-composer (0.387.0)
+  dependabot-conda (0.387.0)
+  dependabot-deno (0.387.0)
+  dependabot-devcontainers (0.387.0)
+  dependabot-docker (0.387.0)
+  dependabot-docker_compose (0.387.0)
+  dependabot-dotnet_sdk (0.387.0)
+  dependabot-elm (0.387.0)
+  dependabot-git_submodules (0.387.0)
+  dependabot-github_actions (0.387.0)
+  dependabot-go_modules (0.387.0)
+  dependabot-gradle (0.387.0)
+  dependabot-helm (0.387.0)
+  dependabot-hex (0.387.0)
+  dependabot-julia (0.387.0)
+  dependabot-maven (0.387.0)
+  dependabot-npm_and_yarn (0.387.0)
+  dependabot-nuget (0.387.0)
+  dependabot-opentofu (0.387.0)
+  dependabot-pre_commit (0.387.0)
+  dependabot-pub (0.387.0)
+  dependabot-python (0.387.0)
+  dependabot-rust_toolchain (0.387.0)
+  dependabot-sbt (0.387.0)
+  dependabot-silent (0.387.0)
+  dependabot-swift (0.387.0)
+  dependabot-terraform (0.387.0)
+  dependabot-uv (0.387.0)
+  dependabot-vcpkg (0.387.0)
   diff-lcs (1.6.2) sha256=9ae0d2cba7d4df3075fe8cd8602a8604993efc0dfa934cff568969efb1909962
   docile (1.4.0) sha256=5f1734bde23721245c20c3d723e76c104208e1aa01277a69901ce770f0ebb8d3
   docker_registry2 (1.19.0) sha256=e50fbe316422b33740c5c2c49b68d938314c2cf4367a381fa3277eb1c79b8623
@@ -634,8 +634,8 @@ CHECKSUMS
   racc (1.8.1) sha256=4a7f6929691dbec8b5209a0b373bc2614882b55fc5d2e447a21aaa691303d62f
   rainbow (3.1.1) sha256=039491aa3a89f42efa1d6dec2fc4e62ede96eb6acd95e52f1ad581182b79bc6a
   rake (13.3.1) sha256=8c9e89d09f66a26a01264e7e3480ec0607f0c497a861ef16063604b1b08eb19c
-  rbi (0.3.9) sha256=d6a187bd0b376e999d3d82a5e5798a61178be98b894b7b35741c14162c9ea015
-  rbs (4.0.0.dev.5) sha256=273938e5a9c7f06b041be583588f2aa1976149bda2ce213e33e129c51534e174
+  rbi (0.3.13) sha256=6afd53a574268abcc71daed4c025673561f27a990b3b087e7889e8b073ab2d7a
+  rbs (4.1.0.pre.1) sha256=d078568ca2acb006889f2934ecb486294bf672ad8394f295dc4cfa878e99156d
   rdoc (7.2.0) sha256=8650f76cd4009c3b54955eb5d7e3a075c60a57276766ebf36f9085e8c9f23192
   regexp_parser (2.11.3) sha256=ca13f381a173b7a93450e53459075c9b76a10433caadcb2f1180f2c741fc55a4
   reline (0.6.3) sha256=1198b04973565b36ec0f11542ab3f5cfeeec34823f4e54cebde90968092b1835
@@ -654,19 +654,21 @@ CHECKSUMS
   rubocop-rspec (3.9.0) sha256=8fa70a3619408237d789aeecfb9beef40576acc855173e60939d63332fdb55e2
   rubocop-sorbet (0.12.0) sha256=195521e132500555819313df5accaaf56bf721a63de3e5b7b1d0b25f696b1f39
   ruby-progressbar (1.13.0) sha256=80fc9c47a9b640d6834e0dc7b3c94c9df37f08cb072b7761e4a71e22cff29b33
+  rubydex (0.2.5-arm64-darwin) sha256=487cab3df687ccb2f3360c23236300320d402b1042643054cd4d09221e13915a
+  rubydex (0.2.5-x86_64-linux) sha256=4b05f0424b867071c41a1b2ac7d91e965829a422c806a532d43ffdb45ec33604
   sawyer (0.9.3) sha256=0d0f19298408047037638639fe62f4794483fb04320269169bd41af2bdcf5e41
   simplecov (0.22.0) sha256=fe2622c7834ff23b98066bb0a854284b2729a569ac659f82621fc22ef36213a5
   simplecov-html (0.12.3) sha256=4b1aad33259ffba8b29c6876c12db70e5750cb9df829486e4c6e5da4fa0aa07b
   simplecov_json_formatter (0.1.4) sha256=529418fbe8de1713ac2b2d612aa3daa56d316975d307244399fa4838c601b428
-  sorbet (0.6.13208) sha256=040b8de0b8746a2c7a0cabaab6f38b8508c215f344372bf818245986a9ee7240
-  sorbet-runtime (0.6.13208) sha256=2ae9a6e52bbfdd39916448b09bfb165357190effb28fd8c554c5dd2c52be0a32
-  sorbet-static (0.6.13208-universal-darwin) sha256=d72a02d6cfaa5c58f23204e68c056a1b764ab4d6033a39b0e168641a6a7f63c6
-  sorbet-static (0.6.13208-x86_64-linux) sha256=bc210d5256c877106c21643f8d5fa8c5b445d5e1a825c0b3b1d0030aed128b09
-  sorbet-static-and-runtime (0.6.13208) sha256=31aa780d04cc6abf39f062cd334bcd243ac8566107ca37440883cac82bae88b7
-  spoom (1.7.11) sha256=4e27384af6d3fde5aadc0287c51e6f76c0802259cbb3b6a67603bf718352f4cf
+  sorbet (0.6.13296) sha256=15b3a9b0a61dcfd3ff030152aebc6db8951ed92a3784bd83388719de37f45353
+  sorbet-runtime (0.6.13296) sha256=6c38b37727d254e272a1384a0c56e86f7b02df1aba127e24383f2a239ad8d0cd
+  sorbet-static (0.6.13296-universal-darwin) sha256=2f848a022cadd396eb3d28a61063b448d73116f74762f2cf17da33ae94524fae
+  sorbet-static (0.6.13296-x86_64-linux) sha256=a0afa02e921a82866bd98a44784fbb59baeb413b75b8d88fa217044c9b0ae44f
+  sorbet-static-and-runtime (0.6.13296) sha256=b1a3b871d91373c1bfc68dd8a40d4a87cc520631064e0bbd038fce7507f7fb01
+  spoom (1.7.16) sha256=b6033d1aaede800ef37505474d260d57a02fa63364b4725ea40b6f606e932d59
   stackprof (0.2.28) sha256=4ec2ace02f386012b40ca20ef80c030ad711831f59511da12e83b34efb0f9a04
   stringio (3.2.0) sha256=c37cb2e58b4ffbd33fe5cd948c05934af997b36e0b6ca6fdf43afa234cf222e1
-  tapioca (0.17.10) sha256=880a682ca8314f798dd09e9f104134fbf1a713c13be51f7dd4741dd434e6471b
+  tapioca (0.19.1) sha256=5de94d458950897ffe3d4e86a21eec48bb6a8775af85f80b1486b7ae7ba51823
   terminal-table (4.0.0) sha256=f504793203f8251b2ea7c7068333053f0beeea26093ec9962e62ea79f94301d2
   thor (1.5.0) sha256=e3a9e55fe857e44859ce104a84675ab6e8cd59c650a49106a05f55f136425e73
   toml-rb (4.2.0) sha256=10a48c91613e20cf63483a7a776767dfb3cd7d70e9327c0237443da601e13776
@@ -678,9 +680,7 @@ CHECKSUMS
   vcr (6.4.0) sha256=077ac92cc16efc5904eb90492a18153b5e6ca5398046d8a249a7c96a9ea24ae6
   webmock (3.26.1) sha256=4f696fb57c90a827c20aadb2d4f9058bbff10f7f043bd0d4c3f58791143b1cd7
   webrick (1.9.2) sha256=beb4a15fc474defed24a3bda4ffd88a490d517c9e4e6118c3edce59e45864131
-  yard (0.9.38) sha256=721fb82afb10532aa49860655f6cc2eaa7130889df291b052e1e6b268283010f
-  yard-sorbet (0.9.0) sha256=03d1aa461b9e9c82b886919a13aa3e09fcf4d1852239d2967ed97e92723ffe21
   zeitwerk (2.7.5) sha256=d8da92128c09ea6ec62c949011b00ed4a20242b255293dd66bf41545398f73dd
 
 BUNDLED WITH
-   2.7.2
+  4.0.14

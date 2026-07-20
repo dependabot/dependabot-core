@@ -28,13 +28,14 @@ module Dependabot
         dependency.version
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         return dependency.requirements unless latest_version
 
-        dependency.requirements.map do |req|
+        updated = dependency.requirements.map do |req|
           req.merge(requirement: updated_constraint(req[:requirement]))
         end
+        wrap_requirements(updated)
       end
 
       private

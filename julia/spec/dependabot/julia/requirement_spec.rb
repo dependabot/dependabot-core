@@ -78,6 +78,34 @@ RSpec.describe Dependabot::Julia::Requirement do
       it_behaves_like "version satisfaction", "2", ["2.0.0", "2.6.0", "2.99.99"], ["3.0.0", "1.9.9"]
     end
 
+    context "with hyphen ranges (Julia docs)" do
+      # Ranges require spaces around the hyphen. A fully-specified end version
+      # is inclusive; a partial end version acts as a wildcard.
+      # "1.2.3 - 4.5.6" -> [1.2.3, 4.5.6]
+      it_behaves_like "version satisfaction",
+                      "1.2.3 - 4.5.6",
+                      ["1.2.3", "2.0.0", "4.5.6"],
+                      ["1.2.2", "4.5.7", "4.6.0"]
+
+      # "0.2 - 0.5" -> [0.2.0, 0.6.0)
+      it_behaves_like "version satisfaction",
+                      "0.2 - 0.5",
+                      ["0.2.0", "0.5.0", "0.5.9"],
+                      ["0.1.9", "0.6.0"]
+
+      # "1 - 3" -> [1.0.0, 4.0.0)
+      it_behaves_like "version satisfaction",
+                      "1 - 3",
+                      ["1.0.0", "3.9.9"],
+                      ["0.9.9", "4.0.0"]
+
+      # "0.2 - 0.5.6" -> [0.2.0, 0.5.6]
+      it_behaves_like "version satisfaction",
+                      "0.2 - 0.5.6",
+                      ["0.2.0", "0.5.6"],
+                      ["0.5.7", "0.6.0"]
+    end
+
     context "with special constraints" do
       context "with wildcard" do
         let(:requirement_string) { "*" }

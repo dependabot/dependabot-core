@@ -130,6 +130,39 @@ module Dependabot
         raise Dependabot::PrivateSourceBadResponse, host
       end
 
+      # Fetch the package hashes for every platform of a given provider version.
+      # Returns a Hash mapping "<os>_<arch>" strings to arrays of hash strings
+      # (e.g. {"linux_amd64" => ["h1:...", "zh:..."], "darwin_arm64" => [...]}).
+      # Returns nil when the registry does not include the `packages` field
+      # (e.g. the Terraform registry).
+      sig do
+        params(identifier: String, version: String)
+          .returns(T.nilable(T::Hash[String, T::Array[String]]))
+      end
+      def all_provider_package_hashes(identifier:, version:)
+        base_url = service_url_for_registry("providers.v1")
+        response = http_get!(URI.join(base_url, "#{identifier}/#{version}/download/linux/amd64"))
+        body = JSON.parse(response.body)
+
+        packages = body["packages"]
+        return nil unless packages.is_a?(Hash)
+
+        packages.each_with_object({}) do |(platform, info), result|
+          next unless info.is_a?(Hash)
+
+          hashes = Array(info["hashes"])
+          if hashes.empty?
+            Dependabot.logger.debug(
+              "No package hashes for #{identifier} v#{version} on platform #{platform}; " \
+              "registry returned hashes=#{info['hashes'].inspect}"
+            )
+          end
+          result[platform] = hashes
+        end
+      rescue Excon::Error, JSON::ParserError
+        raise error("Could not fetch provider package hashes for #{identifier} v#{version}")
+      end
+
       # Fetch all the versions of a provider, and return a Version
       # representation of them.
       #
@@ -185,7 +218,7 @@ module Dependabot
           return nil unless response.status == 204
 
           source_url = response.headers.fetch("X-OpenTofu-Get")
-          source_url = URI.join(download_url, source_url) if
+          source_url = URI.join(download_url, source_url).to_s if
             source_url.start_with?("/", "./", "../")
           source_url = RegistryClient.get_proxied_source(source_url) if source_url
         when "provider", "providers"
@@ -233,8 +266,8 @@ module Dependabot
         ).returns(Excon::Response)
       end
       def self.oci_get(url, host:, credentials:)
-        cred = credentials.find do |c|
-          c["type"] == "opentofu_registry" && (c["host"] == host || c["registry"] == host)
+        cred = credentials.reverse_each.find do |c|
+          ACCEPTED_CREDENTIAL_TYPES.include?(c["type"]) && (c["host"] == host || c["registry"] == host)
         end
 
         headers = {}
@@ -299,11 +332,7 @@ module Dependabot
 
       sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
       def self.oci_token_cache
-        @oci_token_cache = T.let(
-          @oci_token_cache,
-          T.nilable(T::Hash[String, T::Hash[Symbol, T.untyped]])
-        )
-        @oci_token_cache ||= {}
+        @oci_token_cache ||= T.let({}, T.nilable(T::Hash[String, T::Hash[Symbol, T.untyped]]))
       end
       private_class_method :oci_token_cache
 

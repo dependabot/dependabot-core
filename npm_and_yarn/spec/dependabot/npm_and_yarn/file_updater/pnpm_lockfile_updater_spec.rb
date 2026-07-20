@@ -814,4 +814,63 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
   end
+
+  describe "security_updates_only flag" do
+    let(:project_name) { "pnpm/simple" }
+    let(:files) { project_dependency_files(project_name) }
+
+    context "when security_updates_only is true" do
+      let(:updater) do
+        described_class.new(
+          dependency_files: files,
+          dependencies: dependencies,
+          credentials: credentials,
+          repo_contents_path: repo_contents_path,
+          security_updates_only: true
+        )
+      end
+
+      it "passes --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false to pnpm update" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          # Override any minimumReleaseAge set in pnpm-workspace.yaml: security fixes must not be
+          # blocked by a release-age gate the user configured for regular updates.
+          expect(cmd).to include("--config.minimumReleaseAge=0")
+          expect(cmd).to include("--config.minimumReleaseAgeStrict=false")
+          ""
+        end.at_least(:once)
+
+        updater.send(:run_pnpm_update_packages)
+      end
+
+      it "passes --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false to pnpm install" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          expect(cmd).to include("--config.minimumReleaseAge=0")
+          expect(cmd).to include("--config.minimumReleaseAgeStrict=false")
+          ""
+        end
+
+        updater.send(:run_pnpm_install)
+      end
+    end
+
+    context "when security_updates_only is false (default)" do
+      it "does not pass --config.minimumReleaseAge=0 to pnpm update" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          expect(cmd).not_to include("--config.minimumReleaseAge=0")
+          ""
+        end
+
+        updater.send(:run_pnpm_update_packages)
+      end
+
+      it "does not pass --config.minimumReleaseAge=0 to pnpm install" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          expect(cmd).not_to include("--config.minimumReleaseAge=0")
+          ""
+        end
+
+        updater.send(:run_pnpm_install)
+      end
+    end
+  end
 end
