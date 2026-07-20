@@ -24,6 +24,14 @@ module Dependabot
       class PackageDetailsFetcher
         extend T::Sig
 
+        # git error output emitted when the pinned SHA cannot be found in the cloned
+        # repository (e.g. the commit was force-pushed away, garbage-collected, or
+        # belongs to a fork). In these cases there is no containing branch to resolve.
+        COMMIT_NOT_FOUND_REGEX = T.let(
+          /no such commit|malformed object name|bad object|not a valid object name/i,
+          Regexp
+        )
+
         sig do
           params(
             dependency: Dependabot::Dependency,
@@ -253,6 +261,12 @@ module Dependabot
           else
             branches_including_ref.first
           end
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          # A missing commit is expected for some pins and must not fail the whole
+          # update job; any other subprocess failure (e.g. out of disk) should surface.
+          raise unless e.message.match?(COMMIT_NOT_FOUND_REGEX)
+
+          nil
         end
 
         sig do
