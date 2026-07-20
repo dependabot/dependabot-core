@@ -403,7 +403,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     let(:requirements) { [] }
     let(:previous_requirements) { [] }
 
-    let(:enable_audit_fix_fallback) { false }
+    before do
+      # Isolate the up -R path under test; the shared setup above hard-codes
+      # this experiment to true, which would let a broken up -R silently pass
+      # via the audit-fix fallback instead of failing.
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:enable_audit_fix_fallback).and_return(false)
+    end
 
     it "updates the resolved version" do
       expect(updated_yarn_lock_content).to include("tmp@npm:0.2.7")
