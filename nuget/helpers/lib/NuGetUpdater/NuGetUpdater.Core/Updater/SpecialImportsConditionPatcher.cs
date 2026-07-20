@@ -8,7 +8,7 @@ namespace NuGetUpdater.Core.Updater
 {
     internal class SpecialImportsConditionPatcher : IDisposable
     {
-        private readonly List<string?> _capturedConditions = new List<string?>();
+        private readonly List<IXmlElementSyntax> _capturedElements = [];
         private readonly XmlFilePreAndPostProcessor _processor;
 
         // These files only ship with a full Visual Studio install
@@ -60,20 +60,14 @@ namespace NuGetUpdater.Core.Updater
                 preProcessor: (i, n) =>
                 {
                     var element = (IXmlElementSyntax)n;
-                    _capturedConditions.Add(element.GetAttributeValue("Condition"));
+                    _capturedElements.Add(element);
                     return (XmlNodeSyntax)element.RemoveAttributeByName("Condition").WithAttribute("Condition", "false");
                 },
                 postProcessor: (i, n) =>
                 {
                     var element = (IXmlElementSyntax)n;
-                    var newElement = element.RemoveAttributeByName("Condition");
-                    var capturedCondition = _capturedConditions[i];
-                    if (capturedCondition is not null)
-                    {
-                        newElement = newElement.WithAttribute("Condition", capturedCondition);
-                    }
-
-                    return (XmlNodeSyntax)newElement;
+                    var originalElement = _capturedElements[i];
+                    return (XmlNodeSyntax)originalElement;
                 }
             );
         }

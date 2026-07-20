@@ -79,6 +79,27 @@ public class SpecialFilePatcherTests
             """
         ];
 
+        // one-off test to verify no whitespace before end tag is supported
+        yield return
+        [
+            // fileContent
+            """
+            <Project>
+              <Import Project="Unrelated.One.targets" />
+              <Import Project="Some\Path\Microsoft.WebApplication.targets"/>
+              <Import Project="Unrelated.Two.targets" />
+            </Project>
+            """,
+            // expectedPatchedContent
+            """
+            <Project>
+              <Import Project="Unrelated.One.targets" />
+              <Import Project="Some\Path\Microsoft.WebApplication.targets" Condition="false" />
+              <Import Project="Unrelated.Two.targets" />
+            </Project>
+            """
+        ];
+
         // one-off test to verify existing conditions are restored
         yield return
         [
@@ -87,6 +108,28 @@ public class SpecialFilePatcherTests
             <Project>
               <Import Project="Unrelated.One.targets" />
               <Import Project="Some\Path\Microsoft.WebApplication.targets" Condition="existing condition" />
+              <Import Project="Unrelated.Two.targets" />
+            </Project>
+            """,
+            // expectedPatchedContent
+            """
+            <Project>
+              <Import Project="Unrelated.One.targets" />
+              <Import Project="Some\Path\Microsoft.WebApplication.targets" Condition="false" />
+              <Import Project="Unrelated.Two.targets" />
+            </Project>
+            """
+        ];
+
+        // one-off test to verify existing conditions are restored when on a different line
+        yield return
+        [
+            // fileContent
+            """
+            <Project>
+              <Import Project="Unrelated.One.targets" />
+              <Import Project="Some\Path\Microsoft.WebApplication.targets"
+                      Condition="existing condition on a different line" />
               <Import Project="Unrelated.Two.targets" />
             </Project>
             """,
