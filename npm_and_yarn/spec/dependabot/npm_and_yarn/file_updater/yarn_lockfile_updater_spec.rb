@@ -393,6 +393,22 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     end
   end
 
+  context "when a yarn berry sub-dependency is pinned via a package.json resolutions entry" do
+    let(:files) { project_dependency_files("yarn_berry/resolutions_subdependency") }
+
+    let(:dependency_name) { "tmp" }
+    let(:version) { "0.2.7" }
+    let(:previous_version) { "0.2.5" }
+    let(:requirements) { [] }
+    let(:previous_requirements) { [] }
+
+    let(:enable_audit_fix_fallback) { false }
+
+    it "updates the resolved version" do
+      expect(updated_yarn_lock_content).to include("tmp@npm:0.2.7")
+    end
+  end
+
   context "when updating a yarn berry lockfile without packageManager or .yarnrc.yml" do
     let(:files) { project_dependency_files("yarn_berry/simple_without_package_manager") }
     let(:temporary_config_files) { [] }
