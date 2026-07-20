@@ -377,7 +377,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     let(:previous_requirements) { [] }
 
     before do
-      # Stub run_yarn_commands to simulate a no-op (lockfile still has previous_version)
+      # Stub run_yarn_command/run_yarn_commands to simulate a no-op (lockfile still has previous_version)
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_command)
       allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_commands)
       allow(Dependabot::NpmAndYarn::NativeHelpers)
         .to receive(:run_yarn_audit_fix_command).and_return("")
@@ -387,7 +388,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
       expect(Dependabot::NpmAndYarn::NativeHelpers)
         .to receive(:run_yarn_audit_fix_command).once.and_return("")
 
-      # Trigger the update via the public API; the stubbed run_yarn_commands
+      # Trigger the update via the public API; the stubbed run_yarn_command(s)
       # simulates a no-op so the updater should fall back to yarn audit fix.
       updated_yarn_lock_content
     end
