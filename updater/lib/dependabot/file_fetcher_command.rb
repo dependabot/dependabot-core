@@ -100,16 +100,24 @@ module Dependabot
       directory_to_use = directory || job.source.directory
 
       job_definition = Environment.job_definition
-      job_credentials_metadata = job_definition.fetch("job", {}).fetch("credentials-metadata", [])
+      job_details = job_definition["job"]
+      job_credentials_metadata =
+        if job_details.is_a?(Hash)
+          T.cast(job_details["credentials-metadata"], Object) || []
+        else
+          []
+        end
 
       # prefer credentials directly from the root of the file (will contain secrets) but if not specified, fall back to
       # the job's credentials-metadata that has no secrets
-      credentials = job_definition.fetch("credentials", job_credentials_metadata)
+      credentials = Job::Definition.credentials_from(
+        job_definition.fetch("credentials", job_credentials_metadata)
+      )
 
       args = {
         source: job.source.clone.tap { |s| s.directory = directory_to_use },
         credentials: credentials,
-        options: T.unsafe(job.experiments)
+        options: job.experiments
       }
       args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || already_cloned?
       args[:update_config] = job.update_config
