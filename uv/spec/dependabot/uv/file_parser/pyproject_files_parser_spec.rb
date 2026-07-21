@@ -251,7 +251,7 @@ RSpec.describe Dependabot::Uv::FileParser::PyprojectFilesParser do
       let(:pyproject_fixture_name) { "package_specify_source.toml" }
 
       it "specifies a package source" do
-        expect(dependency.requirements[0].source).to eq("custom")
+        expect(dependency.requirements[0].source).to eq(type: "registry", name: "custom")
       end
     end
   end

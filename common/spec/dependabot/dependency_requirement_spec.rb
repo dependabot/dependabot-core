@@ -188,5 +188,9 @@ RSpec.describe Dependabot::DependencyRequirement do
       expect(requirement.source).to be_frozen
       expect(requirement.metadata).to be_frozen
     end
+
+    it "serializes as its wire hash" do
+      expect(JSON.parse(JSON.dump(requirement))).to eq(JSON.parse(requirement_hash.to_json))
+    end
   end
 end

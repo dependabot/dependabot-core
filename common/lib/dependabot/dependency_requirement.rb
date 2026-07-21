@@ -1,6 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "json"
 require "sorbet-runtime"
 
 module Dependabot
@@ -93,6 +94,11 @@ module Dependabot
       )
       result[:metadata] = metadata if metadata_present
       result
+    end
+
+    sig { params(_state: T.nilable(Object)).returns(String) }
+    def to_json(_state = nil)
+      JSON.generate(to_h)
     end
 
     sig { params(other: Object).returns(T::Boolean) }

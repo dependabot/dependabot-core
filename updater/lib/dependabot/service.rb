@@ -172,7 +172,7 @@ module Dependabot
         {
           name: dep.name,
           version: dep.version,
-          requirements: dep.requirements
+          requirements: dep.requirements.map(&:to_h)
         }
       end
       dependency_file_paths = dependency_snapshot.all_dependency_files.reject(&:support_file).map(&:path)

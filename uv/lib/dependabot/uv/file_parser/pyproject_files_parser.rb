@@ -170,10 +170,11 @@ module Dependabot
                 groups: [type]
               }
             else
+              source_value = T.cast(requirement.fetch("source", nil), T.nilable(Object))
               {
                 requirement: requirement["version"],
                 file: T.must(pyproject).name,
-                source: requirement.fetch("source", nil),
+                source: resolve_source(source_value),
                 groups: [type]
               }
             end
@@ -190,6 +191,56 @@ module Dependabot
           !parsed_pyproject.dig("project", "dependencies").nil? ||
             !parsed_pyproject.dig("project", "optional-dependencies").nil? ||
             !parsed_pyproject.dig("build-system", "requires").nil?
+        end
+
+        sig do
+          params(
+            source_value: T.nilable(Object)
+          ).returns(T.nilable(T::Hash[Dependabot::DependencyRequirement::Key, Object]))
+        end
+        def resolve_source(source_value)
+          return if source_value.nil?
+          return details_hash(source_value) if source_value.is_a?(Hash)
+          return unless source_value.is_a?(String)
+
+          details = T.let(
+            {
+              type: "registry",
+              name: source_value
+            },
+            T::Hash[Dependabot::DependencyRequirement::Key, Object]
+          )
+          raw_sources = T.cast(parsed_pyproject.dig("tool", "poetry", "source"), T.nilable(Object))
+          return details unless raw_sources.is_a?(Array)
+
+          source_definition = raw_sources.find do |raw_source|
+            source = T.cast(raw_source, Object)
+            next false unless source.is_a?(Hash)
+
+            source["name"] == source_value
+          end
+
+          if source_definition.is_a?(Hash)
+            url = T.cast(source_definition["url"], Object)
+            details[:url] = url if url.is_a?(String)
+          end
+          details
+        end
+
+        sig do
+          params(
+            value: T::Hash[T.anything, T.anything]
+          ).returns(T::Hash[Dependabot::DependencyRequirement::Key, Object])
+        end
+        def details_hash(value)
+          value.each_with_object(
+            T.let({}, T::Hash[Dependabot::DependencyRequirement::Key, Object])
+          ) do |(raw_key, raw_value), result|
+            key = T.cast(raw_key, Object)
+            next unless key.is_a?(String) || key.is_a?(Symbol)
+
+            result[key] = T.cast(raw_value, Object)
+          end
         end
 
         sig { returns(T.nilable(T::Hash[String, T.untyped])) }
