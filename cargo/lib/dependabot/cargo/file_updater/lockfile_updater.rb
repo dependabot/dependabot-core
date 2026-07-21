@@ -121,7 +121,7 @@ module Dependabot
         def validate_dependency_update(updated_lockfile)
           raise "Failed to update #{dependency.name}!" unless previous_package_replaced?(updated_lockfile, dependency)
 
-          return if updated_lockfile.include?(desired_lockfile_content)
+          return if desired_version_present?(updated_lockfile)
 
           raise "Failed to update #{dependency.name}!" unless dependency_updated?(updated_lockfile, dependency)
 
@@ -263,6 +263,20 @@ module Dependabot
           return T.must(dependency.version) if git_dependency?
 
           %(name = "#{dependency.name}"\nversion = "#{dependency.version}")
+        end
+
+        # The desired name/version pair may also appear under another source
+        # (e.g. a git fork at the released version), so scope the check to the
+        # locked package's source identity for numeric versions. Git
+        # dependencies keep the SHA substring check.
+        sig { params(updated_lockfile: String).returns(T::Boolean) }
+        def desired_version_present?(updated_lockfile)
+          version = T.must(dependency.version)
+          if git_dependency? || !version_class.correct?(version)
+            return updated_lockfile.include?(desired_lockfile_content)
+          end
+
+          package_version_count(updated_lockfile, dependency, version).positive?
         end
 
         sig { params(command: String, fingerprint: String).void }

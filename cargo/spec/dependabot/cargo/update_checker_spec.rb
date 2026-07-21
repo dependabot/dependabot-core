@@ -708,6 +708,32 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
         end
       end
 
+      context "when one line is at its ceiling and the other line's updates are all ignored" do
+        let(:raise_on_ignored) { true }
+
+        before do
+          allow(Dependabot::Cargo::UpdateChecker::LatestVersionFinder).to receive(:new) do |dependency:, **|
+            finder = instance_double(Dependabot::Cargo::UpdateChecker::LatestVersionFinder)
+            if dependency.version == "0.4.2"
+              allow(finder).to receive(:latest_version).and_raise(Dependabot::AllVersionsIgnored)
+            else
+              allow(finder).to receive(:latest_version).and_return(Dependabot::Cargo::Version.new("0.4.2"))
+            end
+            finder
+          end
+          allow(Dependabot::Cargo::UpdateChecker::VersionResolver).to receive(:new) do |dependency:, **|
+            instance_double(
+              Dependabot::Cargo::UpdateChecker::VersionResolver,
+              latest_resolvable_version: Dependabot::Cargo::Version.new(dependency.version)
+            )
+          end
+        end
+
+        it "re-raises instead of reporting the dependency as current" do
+          expect { checker.up_to_date? }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+
       context "when all updates for every locked line are ignored" do
         let(:raise_on_ignored) { true }
 

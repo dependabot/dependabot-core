@@ -406,6 +406,46 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
             expect { updated_lockfile_content }.to raise_error("Failed to update anyhow!")
           end
         end
+
+        context "when only the git copy carries the desired version" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "anyhow",
+              version: "1.0.104",
+              previous_version: "1.0.103",
+              requirements: [],
+              previous_requirements: [],
+              package_manager: "cargo",
+              metadata: { cargo_package_source: "registry+https://github.com/rust-lang/crates.io-index" }
+            )
+          end
+          let(:registry_entry) do
+            <<~ENTRY
+              [[package]]
+              name = "anyhow"
+              version = "1.0.103"
+              source = "registry+https://github.com/rust-lang/crates.io-index"
+              checksum = "a0d55e7d47770a83cb46b28ea9e11ab7f9a109d1c2ba6a2b26b9563b6ac290f6"
+
+            ENTRY
+          end
+
+          before do
+            allow(updater).to receive(:run_cargo_command) do
+              content = File.read("Cargo.lock")
+              content = content.sub(registry_entry, "")
+              content = content.sub(
+                %(version = "1.0.103"\nsource = "git+),
+                %(version = "1.0.104"\nsource = "git+)
+              )
+              File.write("Cargo.lock", content)
+            end
+          end
+
+          it "does not accept another source's copy of the desired version" do
+            expect { updated_lockfile_content }.to raise_error("Failed to update anyhow!")
+          end
+        end
       end
 
       context "with an old format lockfile" do

@@ -10,7 +10,7 @@ require "dependabot/update_checkers/base"
 
 module Dependabot
   module Cargo
-    class UpdateChecker < Dependabot::UpdateCheckers::Base
+    class UpdateChecker < Dependabot::UpdateCheckers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
       require_relative "update_checker/latest_version_finder"
@@ -22,18 +22,26 @@ module Dependabot
       def up_to_date?
         return super unless multiple_locked_versions?
 
-        locked_version_results(true) do |checker|
+        results, ignored_count = locked_version_results(true) do |checker|
           checker.up_to_date? || checker.latest_resolvable_version&.to_s == checker.dependency.version
-        end.all?
+        end
+        current = results.all?
+        raise Dependabot::AllVersionsIgnored if ignored_count.positive? && current
+
+        current
       end
 
       sig { override.params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Boolean) }
       def can_update?(requirements_to_unlock:)
         return super unless multiple_locked_versions?
 
-        locked_version_results(false) do |checker|
+        results, ignored_count = locked_version_results(false) do |checker|
           checker.can_update?(requirements_to_unlock: requirements_to_unlock)
-        end.any?
+        end
+        updatable = results.any?
+        raise Dependabot::AllVersionsIgnored if ignored_count.positive? && !updatable
+
+        updatable
       end
 
       sig do
@@ -43,9 +51,13 @@ module Dependabot
       def updated_dependencies(requirements_to_unlock:)
         return super unless multiple_locked_versions?
 
-        locked_version_results([]) do |checker|
+        results, ignored_count = locked_version_results([]) do |checker|
           checker.updated_dependencies(requirements_to_unlock: requirements_to_unlock)
-        end.flatten
+        end
+        updates = results.flatten
+        raise Dependabot::AllVersionsIgnored if ignored_count.positive? && updates.empty?
+
+        updates
       end
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
@@ -423,15 +435,16 @@ module Dependabot
       end
 
       # Evaluates the block for every locked-line checker, substituting
-      # ignored_result for lines whose updates are all ignored. Re-raises
-      # AllVersionsIgnored when every line is ignored so the aggregate result
-      # cannot mask an entirely ignored dependency.
+      # ignored_result for lines whose updates are all ignored. Returns the
+      # results alongside the ignored-line count so callers can re-raise
+      # AllVersionsIgnored when ignored lines exist and no other line yields
+      # an actionable result.
       sig do
         type_parameters(:U)
           .params(
             ignored_result: T.type_parameter(:U),
             _blk: T.proc.params(checker: Dependabot::Cargo::UpdateChecker).returns(T.type_parameter(:U))
-          ).returns(T::Array[T.type_parameter(:U)])
+          ).returns([T::Array[T.type_parameter(:U)], Integer])
       end
       def locked_version_results(ignored_result, &_blk)
         ignored_count = 0
@@ -441,9 +454,8 @@ module Dependabot
           ignored_count += 1
           ignored_result
         end
-        raise Dependabot::AllVersionsIgnored if ignored_count.positive? && ignored_count == results.length
 
-        results
+        [results, ignored_count]
       end
 
       sig { returns(T::Array[Dependabot::Dependency]) }
