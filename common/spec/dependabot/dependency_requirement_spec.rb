@@ -39,6 +39,56 @@ RSpec.describe Dependabot::DependencyRequirement do
       expect(copy).to eq(original)
       expect(copy).not_to equal(original)
     end
+
+    it "rejects missing required keys" do
+      expect do
+        described_class.create(requirement: ">= 1.0", file: "Gemfile", groups: [])
+      end.to raise_error(ArgumentError, /required keys/)
+    end
+
+    it "rejects unknown keys" do
+      expect do
+        described_class.create(requirement_hash.merge(unknown: "value"))
+      end.to raise_error(ArgumentError, /unknown keys/)
+    end
+
+    it "rejects blank requirement strings" do
+      expect do
+        described_class.create(requirement_hash.merge(requirement: ""))
+      end.to raise_error(ArgumentError, "blank strings must not be provided as requirements")
+    end
+
+    it "rejects malformed known fields" do
+      expect do
+        described_class.create(requirement_hash.merge(file: 1))
+      end.to raise_error(TypeError, "file must be a string or nil")
+
+      expect do
+        described_class.create(requirement_hash.merge(groups: ["default", 1]))
+      end.to raise_error(TypeError, "groups must be an array of strings or symbols, or nil")
+
+      expect do
+        described_class.create(requirement_hash.merge(source: "rubygems"))
+      end.to raise_error(TypeError, "source must be a hash or nil")
+
+      expect do
+        described_class.create(requirement_hash.merge(metadata: "rails.version"))
+      end.to raise_error(TypeError, "metadata must be a hash or nil")
+    end
+
+    it "accepts the unfixable requirement sentinel" do
+      requirement = described_class.create(requirement_hash.merge(requirement: :unfixable))
+
+      expect(requirement).to be_unfixable
+      expect(requirement.requirement).to be_nil
+      expect(requirement.to_h[:requirement]).to eq(:unfixable)
+    end
+
+    it "rejects other requirement symbols" do
+      expect do
+        described_class.create(requirement_hash.merge(requirement: :unknown))
+      end.to raise_error(TypeError, "requirement must be a string, :unfixable, or nil")
+    end
   end
 
   describe "typed readers" do
@@ -64,6 +114,53 @@ RSpec.describe Dependabot::DependencyRequirement do
       req = described_class.create(requirement: ">= 1.0", file: "Gemfile", groups: nil, source: nil)
 
       expect(req.groups).to be_nil
+    end
+
+    it "preserves mixed string and symbol groups" do
+      req = described_class.create(
+        requirement: ">= 1.0",
+        file: "Gemfile",
+        groups: ["development", :default],
+        source: nil
+      )
+
+      expect(req.groups).to eq(["development", :default])
+    end
+  end
+
+  describe "typed copies" do
+    subject(:requirement) { described_class.create(requirement_hash) }
+
+    it "replaces the requirement" do
+      updated = requirement.with_requirement(">= 2.0")
+
+      expect(updated.requirement).to eq(">= 2.0")
+      expect(requirement.requirement).to eq(">= 1.0, < 2.0")
+    end
+
+    it "replaces source and metadata" do
+      updated = requirement
+                .with_source(type: "git", url: "https://github.com/dependabot/dependabot-core")
+                .with_metadata(property_name: "dependabot.version")
+
+      expect(updated.source).to eq(
+        type: "git",
+        url: "https://github.com/dependabot/dependabot-core"
+      )
+      expect(updated.metadata).to eq(property_name: "dependabot.version")
+    end
+
+    it "preserves whether metadata was absent" do
+      without_metadata = described_class.create(
+        requirement: ">= 1.0",
+        file: "Gemfile",
+        groups: [],
+        source: nil
+      )
+
+      expect(without_metadata.to_h).not_to have_key(:metadata)
+      expect(without_metadata.with_requirement(">= 2.0").to_h).not_to have_key(:metadata)
+      expect(without_metadata.with_metadata(nil).to_h).to have_key(:metadata)
     end
   end
 
