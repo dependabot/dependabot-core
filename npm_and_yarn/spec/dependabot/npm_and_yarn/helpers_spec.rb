@@ -591,6 +591,13 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
           "The remote server failed to provide the requested resource"
       end
 
+      let(:http_404_error_message) do
+        "Preparing pnpm@10.34.4 for immediate activation...\n" \
+          "Internal Error: Server answered with HTTP 404 when performing the request to " \
+          "https://jfrogghdemo.jfrog.io/artifactory/api/npm/db-dependabot-local/pnpm/10.34.4; " \
+          "for troubleshooting help, see https://github.com/nodejs/corepack#troubleshooting"
+      end
+
       it "retries without private registry env and installs successfully from public npm" do
         # First call: fails with 404 from Azure Artifacts
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
@@ -608,6 +615,43 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         ).and_return("Preparing pnpm@10.34.4 for immediate activation...")
 
         # package_manager_version after successful retry
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack pnpm -v",
+          fingerprint: "corepack pnpm -v",
+          env: env_without_registry
+        ).and_return("10.34.4")
+
+        expect(Dependabot.logger).to receive(:info).with("Installing \"pnpm@10.34.4\"")
+        expect(Dependabot.logger).to receive(:warn).with(
+          "Private registry returned 404 for pnpm@10.34.4. " \
+          "Retrying with public registry."
+        )
+        expect(Dependabot.logger).to receive(:info).with("Installing \"pnpm@10.34.4\"")
+        expect(Dependabot.logger).to receive(:info).with("pnpm@10.34.4 successfully installed.")
+        expect(Dependabot.logger).to receive(:info).with(
+          "Activating currently installed version of pnpm: 10.34.4"
+        )
+        expect(Dependabot.logger).to receive(:info).with("Fetching version for package manager: pnpm")
+        expect(Dependabot.logger).to receive(:info).with("Installed version of pnpm: 10.34.4")
+
+        result = described_class.install("pnpm", "10.34.4", env: private_registry_env)
+        expect(result).to eq("10.34.4")
+      end
+
+      it "retries when corepack reports HTTP 404 in the newer error format" do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare pnpm@10.34.4 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: private_registry_env
+        ).and_raise(StandardError, http_404_error_message)
+
+        env_without_registry = {}
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare pnpm@10.34.4 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: env_without_registry
+        ).and_return("Preparing pnpm@10.34.4 for immediate activation...")
+
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack pnpm -v",
           fingerprint: "corepack pnpm -v",

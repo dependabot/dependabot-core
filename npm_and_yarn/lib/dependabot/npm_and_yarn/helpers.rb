@@ -680,10 +680,7 @@ module Dependabot
 
       sig { params(error: StandardError).void }
       def self.raise_registry_error_if_not_found(error)
-        if error.message.match?(/Response Code.*:.*404.*\(Not Found\)/) &&
-           error.message.include?("The remote server failed to provide the requested resource")
-          raise RegistryError.new(404, "The remote server failed to provide the requested resource")
-        end
+        raise RegistryError.new(404, COREPACK_NOT_FOUND_ERROR) if corepack_not_found_response?(error.message)
       end
 
       sig { params(error: StandardError, env: T.nilable(T::Hash[String, String])).returns(T::Boolean) }
@@ -706,10 +703,15 @@ module Dependabot
         return false unless registry
         return false if default_npm_registry?(registry)
 
-        return error.status == 404 && error.message.include?(COREPACK_NOT_FOUND_ERROR) if error.is_a?(RegistryError)
+        return error.status == 404 if error.is_a?(RegistryError)
 
-        error.message.include?(COREPACK_NOT_FOUND_ERROR) &&
-          error.message.match?(/Response Code.*:.*404.*\(Not Found\)/)
+        corepack_not_found_response?(error.message)
+      end
+
+      sig { params(error_message: String).returns(T::Boolean) }
+      def self.corepack_not_found_response?(error_message)
+        error_message.match?(/Response Code.*:.*404.*\(Not Found\)/) ||
+          error_message.match?(/HTTP 404\b/)
       end
 
       sig { params(env: T.nilable(T::Hash[String, String])).returns(T::Hash[String, String]) }
@@ -731,6 +733,7 @@ module Dependabot
       end
 
       private_class_method :run_single_yarn_command
+      private_class_method :corepack_not_found_response?
 
       sig { params(pnpm_lock: DependencyFile).returns(T.nilable(String)) }
       def self.pnpm_lockfile_version(pnpm_lock)
