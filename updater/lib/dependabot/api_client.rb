@@ -22,7 +22,7 @@ module Dependabot
   class ApiClient # rubocop:disable Metrics/ClassLength
     extend T::Sig
 
-    ErrorDetails = T.type_alias { T::Hash[T.any(String, Symbol), T.anything] }
+    ErrorDetails = T.type_alias { Dependabot::ErrorDetails::Detail }
 
     MAX_REQUEST_RETRIES = 3
     INVALID_REQUEST_MSG = /The request contains invalid or unauthorized changes/

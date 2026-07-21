@@ -15,15 +15,30 @@ RSpec.describe Dependabot::Updater::UpdateTypeHelper do
 
   let(:helper) { helper_class.new }
 
-  # Simple test version class that supports semver_parts
   let(:version_with_semver_parts) do
-    Struct.new(:semver_parts, :to_s)
+    Class.new(Dependabot::Version) do
+      def semver_parts
+        [1, 2, 3]
+      end
+    end
+  end
+
+  let(:version_without_semver_parts) do
+    Class.new(Dependabot::Version) do
+      def semver_parts
+        nil
+      end
+
+      def to_s
+        "invalid"
+      end
+    end
   end
 
   describe "#semver_parts" do
     context "when version responds to semver_parts" do
       it "returns SemverParts from the version's semver_parts method" do
-        version = version_with_semver_parts.new([1, 2, 3], "1.2.3")
+        version = version_with_semver_parts.new("1.2.3")
 
         result = helper.semver_parts(version)
 
@@ -34,7 +49,7 @@ RSpec.describe Dependabot::Updater::UpdateTypeHelper do
       end
 
       it "returns nil when semver_parts returns nil" do
-        version = version_with_semver_parts.new(nil, "invalid")
+        version = version_without_semver_parts.new("1.0.0")
 
         result = helper.semver_parts(version)
 
