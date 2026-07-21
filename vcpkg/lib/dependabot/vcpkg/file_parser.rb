@@ -261,7 +261,7 @@ module Dependabot
       end
 
       sig do
-        params(file_name: String, metadata: T::Hash[Symbol, T.untyped]).returns(Dependabot::Dependency)
+        params(file_name: String, metadata: Dependabot::Dependency::Metadata).returns(Dependabot::Dependency)
       end
       def synthetic_baseline_dependency(file_name:, metadata: {})
         Dependabot::Dependency.new(

@@ -136,10 +136,11 @@ module Dependabot
         sig { params(version: T.nilable(Dependabot::Version)).returns(T::Boolean) }
         def satisfies_previous_reqs?(version)
           T.must(dependency.previous_requirements).all? do |req|
-            next true unless req.fetch(:requirement)
+            requirement = req.requirement
+            next true unless requirement
 
             requirement_class
-              .requirements_array(req.fetch(:requirement))
+              .requirements_array(requirement)
               .all? { |r| r.satisfied_by?(version) }
           end
         end
@@ -151,7 +152,7 @@ module Dependabot
           # internally
           return false if dependency.package_manager == "composer"
 
-          sources = requirements&.map { |r| r.fetch(:source) }&.uniq&.compact
+          sources = requirements&.filter_map(&:source)&.uniq
           return false if sources.nil? || sources.empty?
 
           sources.all? { |s| s[:type] == "git" || s["type"] == "git" }
@@ -167,20 +168,14 @@ module Dependabot
         def previous_ref
           return unless git_source?(dependency.previous_requirements)
 
-          previous_refs = T.must(dependency.previous_requirements).filter_map do |r|
-            r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.uniq
-          previous_refs.first if previous_refs.one?
+          dependency.previous_ref
         end
 
         sig { returns(T.nilable(String)) }
         def new_ref
           return unless git_source?(dependency.previous_requirements)
 
-          new_refs = dependency.requirements.filter_map do |r|
-            r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.uniq
-          new_refs.first if new_refs.one?
+          dependency.new_ref
         end
 
         sig { params(tag: String, version: T.nilable(String)).returns(T::Boolean) }

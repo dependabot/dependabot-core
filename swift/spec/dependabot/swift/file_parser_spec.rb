@@ -570,18 +570,18 @@ RSpec.describe Dependabot::Swift::FileParser do
         dep = parser.parse.first
         req = dep.requirements.first
 
-        expect(req[:requirement]).to eq(">= 2.54.0, < 3.0.0")
-        expect(req[:file]).to eq("MyApp.xcodeproj/project.pbxproj")
-        expect(req[:metadata][:requirement_string]).to eq("from: \"2.54.0\"")
+        expect(req.requirement).to eq(">= 2.54.0, < 3.0.0")
+        expect(req.file).to eq("MyApp.xcodeproj/project.pbxproj")
+        expect(req.metadata_string(:requirement_string)).to eq("from: \"2.54.0\"")
       end
 
       it "sets correct source info" do
         dep = parser.parse.first
-        source = dep.requirements.first[:source]
+        requirement = dep.requirements.first
 
-        expect(source[:type]).to eq("git")
-        expect(source[:url]).to eq("https://github.com/apple/swift-nio.git")
-        expect(source[:ref]).to eq("2.54.0")
+        expect(requirement.source_string(:type)).to eq("git")
+        expect(requirement.source_string(:url)).to eq("https://github.com/apple/swift-nio.git")
+        expect(requirement.source_string(:ref)).to eq("2.54.0")
       end
     end
 
@@ -700,10 +700,10 @@ RSpec.describe Dependabot::Swift::FileParser do
         parser_dep = deps.find { |d| d.name == "github.com/apple/swift-argument-parser" }
         log = deps.find { |d| d.name == "github.com/apple/swift-log" }
 
-        expect(nio.requirements.first[:requirement]).to eq(">= 2.54.0, < 3.0.0")
-        expect(collections.requirements.first[:requirement]).to eq(">= 1.0.0, < 1.1.0")
-        expect(parser_dep.requirements.first[:requirement]).to eq("= 1.2.0")
-        expect(log.requirements.first[:requirement]).to eq(">= 1.4.0, < 2.0.0")
+        expect(nio.requirements.first.requirement).to eq(">= 2.54.0, < 3.0.0")
+        expect(collections.requirements.first.requirement).to eq(">= 1.0.0, < 1.1.0")
+        expect(parser_dep.requirements.first.requirement).to eq("= 1.2.0")
+        expect(log.requirements.first.requirement).to eq(">= 1.4.0, < 2.0.0")
       end
     end
 
@@ -763,8 +763,8 @@ RSpec.describe Dependabot::Swift::FileParser do
         collections_dep = deps.find { |d| d.name == "github.com/apple/swift-collections" }
 
         # With scoped requirements, swift-nio comes from AppA and swift-collections from AppB
-        expect(nio_dep.requirements.first[:file]).to eq("AppA.xcodeproj/project.pbxproj")
-        expect(collections_dep.requirements.first[:file]).to eq("AppB.xcodeproj/project.pbxproj")
+        expect(nio_dep.requirements.first.file).to eq("AppA.xcodeproj/project.pbxproj")
+        expect(collections_dep.requirements.first.file).to eq("AppB.xcodeproj/project.pbxproj")
       end
     end
 
@@ -800,8 +800,8 @@ RSpec.describe Dependabot::Swift::FileParser do
 
       it "records revision in source ref" do
         dep = parser.parse.first
-        source = dep.requirements.first[:source]
-        expect(source[:ref]).to eq("6213ba7a06febe8fef60563a4a7d26a4085783cf")
+        requirement = dep.requirements.first
+        expect(requirement.source_string(:ref)).to eq("6213ba7a06febe8fef60563a4a7d26a4085783cf")
       end
     end
 
@@ -833,7 +833,7 @@ RSpec.describe Dependabot::Swift::FileParser do
         expect(dep.name).to eq("github.com/apple/swift-nio")
         expect(dep.version).to eq("2.54.0")
         # Without pbxproj, requirement comes from Package.resolved only
-        expect(dep.requirements.first[:requirement]).to eq("= 2.54.0")
+        expect(dep.requirements.first.requirement).to eq("= 2.54.0")
       end
     end
 
@@ -967,7 +967,7 @@ RSpec.describe Dependabot::Swift::FileParser do
         # Classic SPM parses via swift CLI, so requirements come from Package.swift
         dep = deps.find { |d| d.name == "github.com/apple/swift-nio" }
         expect(dep).not_to be_nil
-        expect(dep.requirements.first[:file]).to eq("Package.swift")
+        expect(dep.requirements.first.file).to eq("Package.swift")
       end
     end
   end

@@ -7,7 +7,7 @@ require "dependabot/gradle/update_checker/requirements_updater"
 RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
-      requirements: requirements,
+      requirements: requirements.map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) },
       latest_version: latest_version,
       source_url: "new_url",
       properties_to_update: []
@@ -51,50 +51,50 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
       context "when a LATEST requirement was previously specified" do
         let(:pom_req_string) { "LATEST" }
 
-        its([:requirement]) { is_expected.to eq("23.6-jre") }
+        its(:requirement) { is_expected.to eq("23.6-jre") }
       end
 
       context "when a soft requirement was previously specified" do
         let(:pom_req_string) { "23.3-jre" }
 
-        its([:requirement]) { is_expected.to eq("23.6-jre") }
-        its([:source]) { is_expected.to eq(type: "maven_repo", url: "new_url") }
+        its(:requirement) { is_expected.to eq("23.6-jre") }
+        its(:source) { is_expected.to eq(type: "maven_repo", url: "new_url") }
 
         context "when the requirement includes multiple dashes" do
           let(:pom_req_string) { "v2-rev398-1.24.1" }
           let(:latest_version) { version_class.new("v2-rev404-1.25.0") }
 
-          its([:requirement]) { is_expected.to eq("v2-rev404-1.25.0") }
+          its(:requirement) { is_expected.to eq("v2-rev404-1.25.0") }
         end
       end
 
       context "when the requirement includes uppercase letters" do
         let(:pom_req_string) { "23.3.RELEASE" }
 
-        its([:requirement]) { is_expected.to eq("23.6-jre") }
+        its(:requirement) { is_expected.to eq("23.6-jre") }
       end
 
       context "when a hard requirement was previously specified" do
         let(:pom_req_string) { "[23.3-jre]" }
 
-        its([:requirement]) { is_expected.to eq("[23.6-jre]") }
+        its(:requirement) { is_expected.to eq("[23.6-jre]") }
       end
 
       context "when a dynamic requirement was previously specified" do
         let(:pom_req_string) { "22.+" }
 
-        its([:requirement]) { is_expected.to eq("23.+") }
+        its(:requirement) { is_expected.to eq("23.+") }
 
         context "when the requirement omits the dot before the plus" do
           let(:pom_req_string) { "22.1+" }
 
-          its([:requirement]) { is_expected.to eq("23.6+") }
+          its(:requirement) { is_expected.to eq("23.6+") }
         end
 
         context "when the requirement is just a plus" do
           let(:pom_req_string) { "+" }
 
-          its([:requirement]) { is_expected.to eq("+") }
+          its(:requirement) { is_expected.to eq("+") }
         end
       end
 

@@ -1398,6 +1398,10 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
     requirements:,
     directory:
   )
+    parsed_requirements = requirements.map do |requirement|
+      Dependabot::DependencyRequirement.from_hash(requirement)
+    end
+
     instance_double(
       Dependabot::Dependency,
       name: name,
@@ -1405,17 +1409,17 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       previous_version: previous_version,
       metadata: metadata,
       package_manager: package_manager,
-      requirements: requirements,
+      requirements: parsed_requirements,
       directory: directory
     ).tap do |dep|
-      stub_production_check(dep, requirements)
+      stub_production_check(dep, parsed_requirements)
       stub_attribution_methods(dep)
     end
   end
 
   def stub_production_check(dep, requirements)
     allow(dep).to receive(:production?) do
-      groups = requirements.flat_map { |r| r.fetch(:groups, []).map(&:to_s) }
+      groups = requirements.flat_map { |requirement| (requirement.groups || []).map(&:to_s) }
 
       groups.empty? || groups.include?("runtime") || groups.include?("default") || groups.any? do |g|
         g.include?("prod")

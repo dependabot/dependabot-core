@@ -451,18 +451,12 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def previous_ref
-          previous_refs = dependency.previous_requirements&.filter_map do |r|
-            r.dig(:source, "ref") || r.dig(:source, :ref)
-          end&.uniq
-          previous_refs.first if previous_refs&.one?
+          dependency.previous_ref
         end
 
         sig { returns(T.nilable(String)) }
         def new_ref
-          new_refs = dependency.requirements.filter_map do |r|
-            r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.uniq
-          new_refs.first if new_refs.one?
+          dependency.new_ref
         end
 
         sig { returns(T::Boolean) }
@@ -478,8 +472,7 @@ module Dependabot
           # internally
           return false if dependency.package_manager == "composer"
 
-          requirements = dependency.requirements
-          sources = requirements.map { |r| r.fetch(:source) }.uniq.compact
+          sources = dependency.requirements.filter_map(&:source).uniq
           return false if sources.empty?
 
           sources.all? { |s| s[:type] == "git" || s["type"] == "git" }

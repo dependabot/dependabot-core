@@ -347,8 +347,9 @@ module Dependabot
         def current_version
           if release_type_sha?
             source = dependency.source_details(allowed_types: ["git"])
-            ref = source && (source[:ref] || source["ref"])
-            return ref if ref.is_a?(String)
+            requirement = dependency.requirements.find { |req| req.source == source }
+            ref = requirement&.source_string(:ref)
+            return ref if ref
           end
 
           T.let(dependency.numeric_version, T.nilable(Dependabot::Version))

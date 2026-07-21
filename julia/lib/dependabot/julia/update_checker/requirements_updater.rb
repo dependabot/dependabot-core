@@ -19,7 +19,7 @@ module Dependabot
       end
       def initialize(requirements:, target_version:, update_strategy:)
         @requirements = T.let(
-          requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
+          requirements,
           T::Array[Dependabot::DependencyRequirement]
         )
         @target_version = target_version
@@ -58,7 +58,7 @@ module Dependabot
         ).returns(Dependabot::DependencyRequirement)
       end
       def update_requirement(requirement, target_version)
-        current_requirement = requirement[:requirement]
+        current_requirement = requirement.requirement
 
         # If requirement is nil (no compat entry), use target version
         new_requirement = if current_requirement.nil?
@@ -67,7 +67,7 @@ module Dependabot
                             updated_version_requirement(current_requirement, target_version)
                           end
 
-        Dependabot::DependencyRequirement.create(requirement.merge(requirement: new_requirement))
+        requirement.with_requirement(new_requirement)
       end
 
       sig { params(requirement_string: String, target_version: Dependabot::Julia::Version).returns(String) }

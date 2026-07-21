@@ -3,7 +3,7 @@
 
 require "spec_helper"
 
-require "dependabot/dependency"
+require "dependabot/dependency_requirement"
 require "dependabot/dependency_file"
 require "dependabot/credential"
 
@@ -270,16 +270,18 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
 
       it "updates the git ref to the commit SHA from the latest release" do
         expect(updated_requirements).to eq(
-          [{
-            requirement: nil,
-            groups: [],
-            source: {
-              type: "git",
-              url: "https://github.com/microsoft/vcpkg.git",
-              ref: commit_sha
-            },
-            file: "vcpkg.json"
-          }]
+          [
+            Dependabot::DependencyRequirement.from_hash(
+              requirement: nil,
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/microsoft/vcpkg.git",
+                ref: commit_sha
+              },
+              file: "vcpkg.json"
+            )
+          ]
         )
       end
 
@@ -300,12 +302,14 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
 
         it "returns the original requirement unchanged" do
           expect(updated_requirements).to eq(
-            [{
-              requirement: nil,
-              groups: [],
-              source: nil,
-              file: "vcpkg.json"
-            }]
+            [
+              Dependabot::DependencyRequirement.from_hash(
+                requirement: nil,
+                groups: [],
+                source: nil,
+                file: "vcpkg.json"
+              )
+            ]
           )
         end
       end
@@ -481,12 +485,14 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
 
         it "updates the version constraint" do
           expect(updated_requirements).to eq(
-            [{
-              requirement: ">=#{latest_version}",
-              groups: [],
-              source: nil,
-              file: "vcpkg.json"
-            }]
+            [
+              Dependabot::DependencyRequirement.from_hash(
+                requirement: ">=#{latest_version}",
+                groups: [],
+                source: nil,
+                file: "vcpkg.json"
+              )
+            ]
           )
         end
       end
@@ -575,16 +581,18 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
 
     it "sets the baseline ref to the latest release commit SHA" do
       expect(checker.updated_requirements).to eq(
-        [{
-          requirement: nil,
-          groups: [],
-          source: {
-            type: "git",
-            url: "https://github.com/microsoft/vcpkg.git",
-            ref: commit_sha
-          },
-          file: "vcpkg.json"
-        }]
+        [
+          Dependabot::DependencyRequirement.from_hash(
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/microsoft/vcpkg.git",
+              ref: commit_sha
+            },
+            file: "vcpkg.json"
+          )
+        ]
       )
     end
   end

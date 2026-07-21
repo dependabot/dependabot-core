@@ -95,17 +95,15 @@ module Dependabot
           T.must(@crates_listing)
         end
 
-        sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.anything])) }
+        sig { returns(T.nilable(Dependabot::DependencyRequirement::Details)) }
         def fetch_dependency_info
-          T.cast(
-            dependency.requirements.filter_map { |r| r[:source] }.first,
-            T.nilable(T::Hash[T.any(String, Symbol), T.anything])
-          )
+          dependency.requirements.filter_map(&:source).first
         end
 
-        sig { params(info: T.nilable(T::Hash[T.any(String, Symbol), T.anything])).returns(String) }
+        sig { params(info: T.nilable(Dependabot::DependencyRequirement::Details)).returns(String) }
         def fetch_index(info)
-          T.cast((info && (info[:index] || info["index"])) || CRATES_IO_API, String)
+          raw_index = info && (info[:index] || info["index"])
+          raw_index.is_a?(String) ? raw_index : CRATES_IO_API
         end
 
         sig { returns(T::Hash[String, String]) }
@@ -113,9 +111,13 @@ module Dependabot
           { "User-Agent" => "Dependabot (dependabot.com)" }
         end
 
-        sig { params(info: T.nilable(T::Hash[T.any(String, Symbol), T.anything])).returns(T::Hash[String, String]) }
+        sig do
+          params(info: T.nilable(Dependabot::DependencyRequirement::Details))
+            .returns(T::Hash[String, String])
+        end
         def auth_headers(info)
-          registry_name = T.cast(info && (info[:name] || info["name"]), T.nilable(String))
+          raw_registry_name = info && (info[:name] || info["name"])
+          registry_name = raw_registry_name if raw_registry_name.is_a?(String)
           registry_creds = credentials.find do |cred|
             cred["type"] == "cargo_registry" && cred["registry"] == registry_name
           end
@@ -178,7 +180,7 @@ module Dependabot
           return true if dependency.numeric_version&.prerelease?
 
           dependency.requirements.any? do |req|
-            reqs = (req.fetch(:requirement) || "").split(",").map(&:strip)
+            reqs = (req.requirement || "").split(",").map(&:strip)
             reqs.any? { |r| r.match?(/[A-Za-z]/) }
           end
         end

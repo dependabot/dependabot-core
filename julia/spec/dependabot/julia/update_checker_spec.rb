@@ -286,8 +286,8 @@ RSpec.describe Dependabot::Julia::UpdateChecker do
     it "returns updated requirements structure" do
       expect(updated_requirements).to be_an(Array)
       if updated_requirements.any?
-        expect(updated_requirements.first).to include(:requirement)
-        expect(updated_requirements.first[:requirement]).to be_a(String)
+        expect(updated_requirements.first).to be_a(Dependabot::DependencyRequirement)
+        expect(updated_requirements.first.requirement).to be_a(String)
       end
     end
   end

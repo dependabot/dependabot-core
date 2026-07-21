@@ -50,9 +50,11 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_git_url
-        info = dependency.requirements.filter_map { |r| r[:source] }.first
+        info = T.must(dependency.requirements.filter_map(&:source).first)
 
         url = info[:url] || info.fetch("url")
+        return unless url.is_a?(String)
+
         Source.from_url(url)
       end
 

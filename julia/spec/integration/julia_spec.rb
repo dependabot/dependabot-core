@@ -105,14 +105,14 @@ RSpec.describe Dependabot::Julia do
         # Should have requirements from all 3 files with their specific compat specifiers
         expect(json_dep.requirements.length).to eq(3)
 
-        main_req = json_dep.requirements.find { |r| r[:file] == "Project.toml" }
-        expect(main_req[:requirement]).to eq("0.21.4")
+        main_req = json_dep.requirements.find { |r| r.file == "Project.toml" }
+        expect(main_req.requirement).to eq("0.21.4")
 
-        docs_req = json_dep.requirements.find { |r| r[:file] == "docs/Project.toml" }
-        expect(docs_req[:requirement]).to eq("0.21")
+        docs_req = json_dep.requirements.find { |r| r.file == "docs/Project.toml" }
+        expect(docs_req.requirement).to eq("0.21")
 
-        test_req = json_dep.requirements.find { |r| r[:file] == "test/Project.toml" }
-        expect(test_req[:requirement]).to eq("0.21")
+        test_req = json_dep.requirements.find { |r| r.file == "test/Project.toml" }
+        expect(test_req.requirement).to eq("0.21")
       end
 
       it "updates all workspace Project.toml files with their specific requirements" do
@@ -176,7 +176,7 @@ RSpec.describe Dependabot::Julia do
         documenter_dep = dependencies.find { |d| d.name == "Documenter" }
         expect(documenter_dep).not_to be_nil
         expect(documenter_dep.requirements.length).to eq(1)
-        expect(documenter_dep.requirements.first[:file]).to eq("docs/Project.toml")
+        expect(documenter_dep.requirements.first.file).to eq("docs/Project.toml")
       end
     end
   end

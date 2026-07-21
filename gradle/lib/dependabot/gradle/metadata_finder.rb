@@ -67,11 +67,11 @@ module Dependabot
       sig { override.returns(String) }
       def maven_repo_url
         source = dependency.requirements
-                           .find { |r| r.fetch(:source) }&.fetch(:source)
+                           .filter_map(&:source)
+                           .first
+        url = source&.[](:url) || source&.[]("url")
 
-        source&.fetch(:url, nil) ||
-          source&.fetch("url") ||
-          Gradle::FileParser::RepositoriesFinder::CENTRAL_REPO_URL
+        url.is_a?(String) ? url : Gradle::FileParser::RepositoriesFinder::CENTRAL_REPO_URL
       end
 
       sig { override.returns(String) }
@@ -81,12 +81,12 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def plugin?
-        dependency.requirements.any? { |r| r.fetch(:groups).include? "plugins" }
+        dependency.requirements.any? { |requirement| requirement.groups&.include?("plugins") }
       end
 
       sig { returns(T::Boolean) }
       def kotlin_plugin?
-        plugin? && dependency.requirements.any? { |r| r.fetch(:groups).include? "kotlin" }
+        plugin? && dependency.requirements.any? { |requirement| requirement.groups&.include?("kotlin") }
       end
     end
   end

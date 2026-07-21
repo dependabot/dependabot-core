@@ -7,7 +7,7 @@ require "dependabot/sbt/update_checker/requirements_updater"
 RSpec.describe Dependabot::Sbt::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
-      requirements: requirements,
+      requirements: requirements.map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) },
       latest_version: latest_version,
       source_url: "https://repo.maven.apache.org/maven2",
       properties_to_update: properties_to_update
@@ -72,8 +72,8 @@ RSpec.describe Dependabot::Sbt::UpdateChecker::RequirementsUpdater do
         let(:sbt_req_string) { "33.0.0-jre" }
         let(:latest_version) { version_class.new("33.4.0-jre") }
 
-        its(:first) do
-          is_expected.to include(requirement: "33.4.0-jre")
+        it "updates the requirement" do
+          expect(updated_requirements.first.requirement).to eq("33.4.0-jre")
         end
       end
 
@@ -100,8 +100,8 @@ RSpec.describe Dependabot::Sbt::UpdateChecker::RequirementsUpdater do
       context "when the property is in properties_to_update" do
         let(:properties_to_update) { ["catsVersion"] }
 
-        its(:first) do
-          is_expected.to include(requirement: "2.12.0")
+        it "updates the requirement" do
+          expect(updated_requirements.first.requirement).to eq("2.12.0")
         end
       end
 
@@ -109,7 +109,7 @@ RSpec.describe Dependabot::Sbt::UpdateChecker::RequirementsUpdater do
         let(:properties_to_update) { [] }
 
         it "does not update the requirement" do
-          expect(updated_requirements.first[:requirement]).to eq("2.10.0")
+          expect(updated_requirements.first.requirement).to eq("2.10.0")
         end
       end
     end
@@ -128,8 +128,8 @@ RSpec.describe Dependabot::Sbt::UpdateChecker::RequirementsUpdater do
 
       it "updates both requirements" do
         expect(updated_requirements.count).to eq(2)
-        expect(updated_requirements[0][:requirement]).to eq("2.12.0")
-        expect(updated_requirements[1][:requirement]).to eq("2.12.0")
+        expect(updated_requirements[0].requirement).to eq("2.12.0")
+        expect(updated_requirements[1].requirement).to eq("2.12.0")
       end
     end
   end

@@ -50,41 +50,41 @@ RSpec.describe Dependabot::PreCommit do
         dependencies = parser.parse
 
         additional_deps = dependencies.select do |dep|
-          dep.requirements.any? { |req| req[:source]&.dig(:type) == "additional_dependency" }
+          dep.requirements.any? { |requirement| requirement.source&.[](:type) == "additional_dependency" }
         end
 
         expect(additional_deps.length).to eq(8)
 
         eslint = additional_deps.find do |dep|
-          dep.requirements.first[:source][:package_name] == "eslint"
+          dep.requirements.first.source&.[](:package_name) == "eslint"
         end
         expect(eslint).not_to be_nil
         expect(eslint.version).to eq("4.15.0")
-        expect(eslint.requirements.first[:requirement]).to eq("4.15.0")
-        expect(eslint.requirements.first[:source][:language]).to eq("node")
-        expect(eslint.requirements.first[:source][:hook_id]).to eq("eslint")
-        expect(eslint.requirements.first[:source][:original_string]).to eq("eslint@4.15.0")
+        expect(eslint.requirements.first.requirement).to eq("4.15.0")
+        expect(eslint.requirements.first.source&.[](:language)).to eq("node")
+        expect(eslint.requirements.first.source&.[](:hook_id)).to eq("eslint")
+        expect(eslint.requirements.first.source&.[](:original_string)).to eq("eslint@4.15.0")
 
         scoped = additional_deps.find do |dep|
-          dep.requirements.first[:source][:package_name] == "@prettier/plugin-xml"
+          dep.requirements.first.source&.[](:package_name) == "@prettier/plugin-xml"
         end
         expect(scoped).not_to be_nil
         expect(scoped.version).to eq("3.2.0")
-        expect(scoped.requirements.first[:source][:original_string]).to eq("@prettier/plugin-xml@3.2.0")
+        expect(scoped.requirements.first.source&.[](:original_string)).to eq("@prettier/plugin-xml@3.2.0")
 
         ts = additional_deps.find do |dep|
-          dep.requirements.first[:source][:package_name] == "typescript"
+          dep.requirements.first.source&.[](:package_name) == "typescript"
         end
         expect(ts).not_to be_nil
         expect(ts.version).to eq("5.3.0")
-        expect(ts.requirements.first[:requirement]).to eq("~5.3.0")
+        expect(ts.requirements.first.requirement).to eq("~5.3.0")
 
         ts_node = additional_deps.find do |dep|
-          dep.requirements.first[:source][:package_name] == "ts-node"
+          dep.requirements.first.source&.[](:package_name) == "ts-node"
         end
         expect(ts_node).not_to be_nil
         expect(ts_node.version).to eq("10.9.0")
-        expect(ts_node.requirements.first[:requirement]).to eq("^10.9.0")
+        expect(ts_node.requirements.first.requirement).to eq("^10.9.0")
       end
     end
 
@@ -101,7 +101,7 @@ RSpec.describe Dependabot::PreCommit do
 
       let(:dependency) do
         dependencies.find do |dep|
-          dep.requirements.first[:source]&.dig(:package_name) == "eslint"
+          dep.requirements.first.source&.[](:package_name) == "eslint"
         end
       end
 
@@ -141,8 +141,8 @@ RSpec.describe Dependabot::PreCommit do
 
       it "generates updated requirements with correct format" do
         updated_reqs = update_checker.updated_requirements
-        expect(updated_reqs.first[:requirement]).to eq("9.0.0")
-        expect(updated_reqs.first[:source][:original_string]).to eq("eslint@9.0.0")
+        expect(updated_reqs.first.requirement).to eq("9.0.0")
+        expect(updated_reqs.first.source&.[](:original_string)).to eq("eslint@9.0.0")
       end
     end
 
@@ -159,23 +159,25 @@ RSpec.describe Dependabot::PreCommit do
 
       let(:dependency) do
         dependencies.find do |dep|
-          dep.requirements.first[:source]&.dig(:package_name) == "eslint"
+          dep.requirements.first.source&.[](:package_name) == "eslint"
         end
       end
 
       let(:updated_dependency) do
+        requirement = dependency.requirements.first
+        updated_requirement = requirement
+                              .with_requirement("9.0.0")
+                              .with_source(
+                                T.must(requirement.source).merge(
+                                  original_string: "eslint@9.0.0"
+                                )
+                              )
+
         Dependabot::Dependency.new(
           name: dependency.name,
           version: "9.0.0",
           previous_version: dependency.version,
-          requirements: [{
-            requirement: "9.0.0",
-            groups: ["additional_dependencies"],
-            file: ".pre-commit-config.yaml",
-            source: dependency.requirements.first[:source].merge(
-              original_string: "eslint@9.0.0"
-            )
-          }],
+          requirements: [updated_requirement],
           previous_requirements: dependency.requirements,
           package_manager: "pre_commit"
         )
@@ -205,23 +207,25 @@ RSpec.describe Dependabot::PreCommit do
       context "when updating a scoped package" do
         let(:dependency) do
           dependencies.find do |dep|
-            dep.requirements.first[:source]&.dig(:package_name) == "@prettier/plugin-xml"
+            dep.requirements.first.source&.[](:package_name) == "@prettier/plugin-xml"
           end
         end
 
         let(:updated_dependency) do
+          requirement = dependency.requirements.first
+          updated_requirement = requirement
+                                .with_requirement("3.3.0")
+                                .with_source(
+                                  T.must(requirement.source).merge(
+                                    original_string: "@prettier/plugin-xml@3.3.0"
+                                  )
+                                )
+
           Dependabot::Dependency.new(
             name: dependency.name,
             version: "3.3.0",
             previous_version: dependency.version,
-            requirements: [{
-              requirement: "3.3.0",
-              groups: ["additional_dependencies"],
-              file: ".pre-commit-config.yaml",
-              source: dependency.requirements.first[:source].merge(
-                original_string: "@prettier/plugin-xml@3.3.0"
-              )
-            }],
+            requirements: [updated_requirement],
             previous_requirements: dependency.requirements,
             package_manager: "pre_commit"
           )
@@ -239,23 +243,25 @@ RSpec.describe Dependabot::PreCommit do
       context "when updating a range dependency" do
         let(:dependency) do
           dependencies.find do |dep|
-            dep.requirements.first[:source]&.dig(:package_name) == "ts-node"
+            dep.requirements.first.source&.[](:package_name) == "ts-node"
           end
         end
 
         let(:updated_dependency) do
+          requirement = dependency.requirements.first
+          updated_requirement = requirement
+                                .with_requirement("^10.10.0")
+                                .with_source(
+                                  T.must(requirement.source).merge(
+                                    original_string: "ts-node@^10.10.0"
+                                  )
+                                )
+
           Dependabot::Dependency.new(
             name: dependency.name,
             version: "10.10.0",
             previous_version: dependency.version,
-            requirements: [{
-              requirement: "^10.10.0",
-              groups: ["additional_dependencies"],
-              file: ".pre-commit-config.yaml",
-              source: dependency.requirements.first[:source].merge(
-                original_string: "ts-node@^10.10.0"
-              )
-            }],
+            requirements: [updated_requirement],
             previous_requirements: dependency.requirements,
             package_manager: "pre_commit"
           )
@@ -281,7 +287,7 @@ RSpec.describe Dependabot::PreCommit do
         dependencies = parser.parse
 
         additional_dep = dependencies.find do |dep|
-          dep.requirements.first[:source]&.dig(:package_name) == "eslint"
+          dep.requirements.first.source&.[](:package_name) == "eslint"
         end
         expect(additional_dep).not_to be_nil
 
@@ -307,8 +313,8 @@ RSpec.describe Dependabot::PreCommit do
         expect(latest).to eq("9.0.0")
 
         updated_reqs = update_checker.updated_requirements
-        expect(updated_reqs.first[:requirement]).to eq("9.0.0")
-        expect(updated_reqs.first[:source][:original_string]).to eq("eslint@9.0.0")
+        expect(updated_reqs.first.requirement).to eq("9.0.0")
+        expect(updated_reqs.first.source&.[](:original_string)).to eq("eslint@9.0.0")
 
         updated_dep = Dependabot::Dependency.new(
           name: additional_dep.name,

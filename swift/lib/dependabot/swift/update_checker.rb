@@ -171,7 +171,7 @@ module Dependabot
         Version.new(lowest_resolvable_security_fix_version)
       end
 
-      sig { params(requirements: T::Array[T::Hash[Symbol, Object]]).returns(VersionResolver) }
+      sig { params(requirements: T::Array[Dependabot::DependencyRequirement]).returns(VersionResolver) }
       def version_resolver_for(requirements)
         VersionResolver.new(
           dependency: dependency,
@@ -187,21 +187,25 @@ module Dependabot
         git_commit_checker.local_tag_for_latest_version(update_cooldown)
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def unlocked_requirements
         NativeRequirement.map_requirements(old_requirements) do |_old_requirement|
           "\"#{dependency.version}\"...\"#{latest_version}\""
         end
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def force_lowest_security_fix_requirements
         NativeRequirement.map_requirements(old_requirements) do |_old_requirement|
           "\"#{lowest_security_fix_version}\"...\"#{lowest_security_fix_version}\""
         end
       end
 
-      sig { params(new_requirements: T::Array[T::Hash[Symbol, Object]]).returns(Dependabot::DependencyFile) }
+      sig do
+        params(
+          new_requirements: T::Array[Dependabot::DependencyRequirement]
+        ).returns(Dependabot::DependencyFile)
+      end
       def prepare_manifest_for(new_requirements)
         manifest_file = T.must(manifest)
 

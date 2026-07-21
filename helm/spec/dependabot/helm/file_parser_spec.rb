@@ -242,8 +242,8 @@ RSpec.describe Dependabot::Helm::FileParser do
         curl_dep = dependencies.find { |d| d.name == "quay.io/curl/curl" }
         expect(curl_dep).to be_a(Dependabot::Dependency)
         expect(curl_dep.version).to eq("8.12.0")
-        expect(curl_dep.requirements.first[:source][:registry]).to eq("quay.io")
-        expect(curl_dep.requirements.first[:source][:tag]).to eq("8.12.0")
+        expect(curl_dep.requirements.first.source_string(:registry)).to eq("quay.io")
+        expect(curl_dep.requirements.first.source_string(:tag)).to eq("8.12.0")
       end
 
       it "correctly handles images with registry in repository field" do
@@ -252,8 +252,8 @@ RSpec.describe Dependabot::Helm::FileParser do
         argocli_dep = dependencies.find { |d| d.name == "quay.io/argoproj/argocli" }
         expect(argocli_dep).to be_a(Dependabot::Dependency)
         expect(argocli_dep.version).to eq("v3.6.6")
-        expect(argocli_dep.requirements.first[:source][:registry]).to eq("quay.io")
-        expect(argocli_dep.requirements.first[:source][:tag]).to eq("v3.6.6")
+        expect(argocli_dep.requirements.first.source_string(:registry)).to eq("quay.io")
+        expect(argocli_dep.requirements.first.source_string(:tag)).to eq("v3.6.6")
       end
 
       it "prevents registry doubling when repository already contains registry" do

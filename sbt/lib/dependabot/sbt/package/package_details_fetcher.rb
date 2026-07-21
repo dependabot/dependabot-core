@@ -140,7 +140,7 @@ module Dependabot
         # SBT plugins are identified by having "plugins" in their groups.
         sig { returns(T::Boolean) }
         def sbt_plugin?
-          dependency.requirements.any? { |req| req.fetch(:groups, []).include?("plugins") }
+          dependency.requirements.any? { |requirement| requirement.groups&.include?("plugins") }
         end
 
         # SBT 1.x plugins use Scala 2.12; SBT 2.x plugins use Scala 3.

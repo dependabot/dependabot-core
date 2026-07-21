@@ -80,8 +80,8 @@ module Dependabot
 
         sig { params(dependency: Dependabot::Dependency).returns(Symbol) }
         def dependency_type(dependency)
-          return :http_archive if dependency.requirements.any? { |req| req.dig(:source, :type) == "http_archive" }
-          return :git_repository if dependency.requirements.any? { |req| req.dig(:source, :type) == "git_repository" }
+          return :http_archive if dependency.requirements.any? { |req| req.source&.[](:type) == "http_archive" }
+          return :git_repository if dependency.requirements.any? { |req| req.source&.[](:type) == "git_repository" }
 
           :unknown
         end

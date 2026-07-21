@@ -56,19 +56,19 @@ module Dependabot
           changed_requirements =
             dependency.requirements - (dependency.previous_requirements || [])
 
-          changed_requirements.any? { |f| f[:file] == file.name }
+          changed_requirements.any? { |f| f.file == file.name }
         end
 
         sig { params(content: String, filename: String, dependency: Dependabot::Dependency).returns(String) }
         def update_requirement(content:, filename:, dependency:)
           updated_req =
-            dependency.requirements.find { |r| r[:file] == filename }
-                                   &.fetch(:requirement)
+            dependency.requirements.find { |r| r.file == filename }
+                                   &.requirement
 
           old_req =
             dependency.previous_requirements
-                      &.find { |r| r[:file] == filename }
-                      &.fetch(:requirement)
+                      &.find { |r| r.file == filename }
+                      &.requirement
 
           return content unless old_req
 
@@ -83,15 +83,12 @@ module Dependabot
         sig { params(content: String, filename: String, dependency: Dependabot::Dependency).returns(String) }
         def update_git_pin(content:, filename:, dependency:)
           updated_pin =
-            dependency.requirements.find { |r| r[:file] == filename }
-                                   &.dig(:source, :ref)
+            source_ref(dependency.requirements.find { |r| r.file == filename })
 
           old_pin =
-            dependency.previous_requirements
-                      &.find { |r| r[:file] == filename }
-                      &.dig(:source, :ref)
+            source_ref(dependency.previous_requirements&.find { |r| r.file == filename })
 
-          return content unless old_pin
+          return content unless old_pin && updated_pin
           return content if old_pin == updated_pin
 
           MixfileGitPinUpdater.new(
@@ -100,6 +97,15 @@ module Dependabot
             previous_pin: old_pin,
             updated_pin: updated_pin
           ).updated_content
+        end
+
+        sig do
+          params(requirement: T.nilable(Dependabot::DependencyRequirement))
+            .returns(T.nilable(String))
+        end
+        def source_ref(requirement)
+          ref = requirement&.source&.[](:ref)
+          ref if ref.is_a?(String)
         end
       end
     end

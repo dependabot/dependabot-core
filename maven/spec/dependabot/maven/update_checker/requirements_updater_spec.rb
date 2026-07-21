@@ -7,7 +7,7 @@ require "dependabot/maven/update_checker/requirements_updater"
 RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
-      requirements: requirements,
+      requirements: requirements.map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) },
       latest_version: latest_version,
       source_url: "new_url",
       properties_to_update: []
@@ -51,20 +51,20 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
       context "when a LATEST requirement was previously specified" do
         let(:pom_req_string) { "LATEST" }
 
-        its([:requirement]) { is_expected.to eq("23.6-jre") }
+        its(:requirement) { is_expected.to eq("23.6-jre") }
       end
 
       context "when a soft requirement was previously specified" do
         let(:pom_req_string) { "23.3-jre" }
 
-        its([:requirement]) { is_expected.to eq("23.6-jre") }
-        its([:source]) { is_expected.to eq(type: "maven_repo", url: "new_url") }
+        its(:requirement) { is_expected.to eq("23.6-jre") }
+        its(:source) { is_expected.to eq(type: "maven_repo", url: "new_url") }
 
         context "when including multiple dashes" do
           let(:pom_req_string) { "v2-rev398-1.24.1" }
           let(:latest_version) { version_class.new("v2-rev404-1.25.0") }
 
-          its([:requirement]) { is_expected.to eq("v2-rev404-1.25.0") }
+          its(:requirement) { is_expected.to eq("v2-rev404-1.25.0") }
         end
       end
 
@@ -93,20 +93,20 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
         it "returns the original requirement without updating source" do
           result = updater.updated_requirements.first
           expect(result).to eq(pom_req)
-          expect(result[:source]).to be_nil
+          expect(result.source).to be_nil
         end
       end
 
       context "when the version is including capitals" do
         let(:pom_req_string) { "23.3.RELEASE" }
 
-        its([:requirement]) { is_expected.to eq("23.6-jre") }
+        its(:requirement) { is_expected.to eq("23.6-jre") }
       end
 
       context "when a hard requirement was previously specified" do
         let(:pom_req_string) { "[23.3-jre]" }
 
-        its([:requirement]) { is_expected.to eq("[23.6-jre]") }
+        its(:requirement) { is_expected.to eq("[23.6-jre]") }
       end
 
       context "when there were multiple requirements" do

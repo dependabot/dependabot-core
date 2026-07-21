@@ -122,16 +122,16 @@ module Dependabot
         sig { params(file: Dependabot::DependencyFile, old_version: String).returns(T.nilable(String)) }
         def updated_requirement_string(file, old_version)
           reqs = dependency.requirements.select do |r|
-            r[:file] == file.name && r.dig(:metadata, :type) == :helm_chart
+            r.file == file.name && r.metadata&.[](:type) == :helm_chart
           end
-          req = reqs.find { |r| r.dig(:source, :tag) == old_version } || reqs.first
-          req && req[:requirement]
+          req = reqs.find { |r| r.source&.[](:tag) == old_version } || reqs.first
+          req&.requirement
         end
 
         sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
         def update_chart_dependency?(file)
-          reqs = dependency.requirements.select { |r| r[:file] == file.name }
-          reqs.any? { |r| r[:metadata]&.dig(:type) == :helm_chart }
+          reqs = dependency.requirements.select { |r| r.file == file.name }
+          reqs.any? { |r| r.metadata&.[](:type) == :helm_chart }
         end
       end
     end

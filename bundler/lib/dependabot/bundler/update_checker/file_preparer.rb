@@ -273,20 +273,21 @@ module Dependabot
         sig { params(filename: String).returns(String) }
         def updated_version_req_lower_bound(filename) # rubocop:disable Metrics/CyclomaticComplexity
           original_req = dependency.requirements
-                                   .find { |r| r.fetch(:file) == filename }
-                                   &.fetch(:requirement)
+                                   .find { |r| r.file == filename }
+                                   &.requirement
 
           if original_req && !unlock_requirement? then original_req
           elsif dependency.version&.match?(/^[0-9a-f]{40}$/) then ">= 0"
           elsif dependency.version then ">= #{dependency.version}"
           else
             version_for_requirement =
-              dependency.requirements.map { |r| r[:requirement] }
-                                     .reject { |req_string| req_string.start_with?("<") }
-                                     .select { |req_string| req_string.match?(VERSION_REGEX) }
-                                     .map { |req_string| req_string.match(VERSION_REGEX)&.to_s }
-                                     .select { |version| Bundler::Version.correct?(version) }
-                                     .max_by { |version| Bundler::Version.new(version) }
+              dependency.requirements
+                        .filter_map(&:requirement)
+                        .reject { |req_string| req_string.start_with?("<") }
+                        .select { |req_string| req_string.match?(VERSION_REGEX) }
+                        .map { |req_string| req_string.match(VERSION_REGEX)&.to_s }
+                        .select { |version| Bundler::Version.correct?(version) }
+                        .max_by { |version| Bundler::Version.new(version) }
 
             ">= #{version_for_requirement || 0}"
           end

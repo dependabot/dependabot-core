@@ -392,11 +392,13 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def registry_source_url # rubocop:disable Metrics/PerceivedComplexity
-          sources = dependency&.requirements
-                              &.map { |r| r.fetch(:source) }&.uniq&.compact
-                              &.sort_by { |source| self.class.central_registry?(source[:url]) ? 1 : 0 }
+          sources = dependency&.requirements&.filter_map(&:source)&.uniq&.sort_by do |source|
+            url = source[:url]
+            url.is_a?(String) && self.class.central_registry?(url) ? 1 : 0
+          end
 
-          sources&.find { |s| s[:type] == "registry" }&.fetch(:url)
+          source = sources&.find { |candidate| candidate[:type].is_a?(String) && candidate[:type] == "registry" }
+          source&.[](:url)&.then { |url| url if url.is_a?(String) }
         end
 
         sig { returns(T.nilable(T::Hash[String, T.untyped])) }

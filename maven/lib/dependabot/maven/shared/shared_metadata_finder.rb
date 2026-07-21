@@ -171,11 +171,11 @@ module Dependabot
         sig { overridable.returns(String) }
         def maven_repo_url
           source = dependency.requirements
-                             .find { |r| r.fetch(:source) }&.fetch(:source)
+                             .filter_map(&:source)
+                             .first
+          url = source&.[](:url) || source&.[]("url")
 
-          source&.fetch(:url, nil) ||
-            source&.fetch("url", nil) ||
-            central_repo_url
+          url.is_a?(String) ? url : central_repo_url
         end
 
         sig { overridable.returns(String) }

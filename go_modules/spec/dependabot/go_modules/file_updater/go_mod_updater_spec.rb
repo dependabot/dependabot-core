@@ -578,7 +578,15 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         }]
       end
       let(:previous_requirements) do
-        [requirements.first.merge(requirement: "1.6.2")]
+        [{
+          file: "go.mod",
+          requirement: "1.6.2",
+          groups: [],
+          source: {
+            type: "default",
+            source: "github.com/gorilla/csrf"
+          }
+        }]
       end
 
       it do

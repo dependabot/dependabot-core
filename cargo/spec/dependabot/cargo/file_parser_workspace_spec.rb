@@ -39,7 +39,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
 
       it "parses workspace dependencies from root Cargo.toml" do
         workspace_deps = dependencies.select do |dep|
-          dep.requirements.any? { |r| r[:groups].include?("workspace.dependencies") }
+          dep.requirements.any? { |r| r.groups.include?("workspace.dependencies") }
         end
 
         expect(workspace_deps.map(&:name)).to match_array(%w(wasmtime serde thiserror anyhow))
@@ -48,7 +48,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
       it "does not include workspace-inherited dependencies from member manifests" do
         # These dependencies use { workspace = true } and should be skipped
         member_deps = dependencies.select do |dep|
-          dep.requirements.any? { |r| r[:file] == "fvm/Cargo.toml" }
+          dep.requirements.any? { |r| r.file == "fvm/Cargo.toml" }
         end
 
         # Only cid should be included (it's a direct dependency)
@@ -67,16 +67,16 @@ RSpec.describe Dependabot::Cargo::FileParser do
 
       it "sets correct groups for workspace dependencies" do
         wasmtime = dependencies.find { |d| d.name == "wasmtime" }
-        workspace_req = wasmtime.requirements.find { |r| r[:file] == "Cargo.toml" }
+        workspace_req = wasmtime.requirements.find { |r| r.file == "Cargo.toml" }
 
-        expect(workspace_req[:groups]).to include("workspace.dependencies")
+        expect(workspace_req.groups).to include("workspace.dependencies")
       end
 
       it "includes non-workspace dependencies from member manifests" do
         cid = dependencies.find { |d| d.name == "cid" }
         expect(cid).not_to be_nil
         expect(cid.version).to eq("0.11.1")
-        expect(cid.requirements.first[:file]).to eq("fvm/Cargo.toml")
+        expect(cid.requirements.first.file).to eq("fvm/Cargo.toml")
       end
     end
   end
@@ -117,7 +117,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
 
       # Check that wasmtime and serde from mixed/Cargo.toml are not included
       mixed_deps = dependencies.select do |dep|
-        dep.requirements.any? { |r| r[:file] == "mixed/Cargo.toml" }
+        dep.requirements.any? { |r| r.file == "mixed/Cargo.toml" }
       end
 
       expect(mixed_deps.map(&:name)).to eq(["tokio"])

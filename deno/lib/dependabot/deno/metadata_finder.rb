@@ -15,7 +15,7 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
-        source_type = dependency.requirements.first&.dig(:source, :type)
+        source_type = dependency.requirements.first&.source_string(:type)
 
         case source_type
         when "npm"

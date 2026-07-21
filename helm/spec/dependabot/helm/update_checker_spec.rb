@@ -226,7 +226,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       before { allow(checker).to receive(:latest_version).and_return(Dependabot::Helm::Version.new("20.11.3")) }
 
       it "overwrites the requirement with the exact latest version" do
-        expect(checker.updated_requirements.first[:requirement]).to eq("20.11.3")
+        expect(checker.updated_requirements.first.requirement).to eq("20.11.3")
       end
     end
 
@@ -236,7 +236,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       before { allow(checker).to receive(:latest_version).and_return(Dependabot::Helm::Version.new("20.11.3")) }
 
       it "leaves the requirement unchanged" do
-        expect(checker.updated_requirements.first[:requirement]).to be_nil
+        expect(checker.updated_requirements.first.requirement).to be_nil
       end
     end
   end
@@ -268,7 +268,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
         end
 
         it "bumps the constraint to ^2.0.0" do
-          expect(checker.updated_requirements.first[:requirement]).to eq("^2.0.0")
+          expect(checker.updated_requirements.first.requirement).to eq("^2.0.0")
         end
       end
     end
@@ -289,7 +289,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       let(:latest) { Dependabot::Helm::Version.new("1.0.5") }
 
       it "bumps the caret floor" do
-        expect(checker.updated_requirements.first[:requirement]).to eq("^1.0.5")
+        expect(checker.updated_requirements.first.requirement).to eq("^1.0.5")
       end
 
       it "reports an update even though it is in range" do
@@ -307,7 +307,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
 
       it "does not raise and widens the range" do
         expect { checker.can_update?(requirements_to_unlock: :own) }.not_to raise_error
-        expect(checker.updated_requirements.first[:requirement]).to eq(">=1.0.0 <3.0.0")
+        expect(checker.updated_requirements.first.requirement).to eq(">=1.0.0 <3.0.0")
       end
     end
 
@@ -323,7 +323,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       end
 
       it "leaves the requirement unchanged" do
-        expect(checker.updated_requirements.first[:requirement]).to eq(">=1.0.0 <2.0.0")
+        expect(checker.updated_requirements.first.requirement).to eq(">=1.0.0 <2.0.0")
       end
     end
 
@@ -333,7 +333,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
 
       it "reports an update and widens the upper bound" do
         expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
-        expect(checker.updated_requirements.first[:requirement]).to eq(">=1.0.0 <3.0.0")
+        expect(checker.updated_requirements.first.requirement).to eq(">=1.0.0 <3.0.0")
       end
     end
 
@@ -347,7 +347,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
 
       it "reports an update and appends a new alternative" do
         expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
-        expect(checker.updated_requirements.first[:requirement]).to eq("^0.5.0 || ^1.0.0 || ^3.0.0")
+        expect(checker.updated_requirements.first.requirement).to eq("^0.5.0 || ^1.0.0 || ^3.0.0")
       end
     end
 
@@ -382,7 +382,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
 
       it "updates each requirement by its own authored constraint" do
         expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
-        updated = checker.updated_requirements.map { |r| [r.dig(:source, :tag), r[:requirement]] }
+        updated = checker.updated_requirements.map { |r| [r.source_string(:tag), r.requirement] }
         expect(updated).to contain_exactly(["^1.0.0", "^1.5.0"], ["1.2.0", "1.5.0"])
       end
 
@@ -420,7 +420,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
 
       it "reports an update and widens the upper bound" do
         expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
-        expect(checker.updated_requirements.first[:requirement]).to eq("<3.0.0")
+        expect(checker.updated_requirements.first.requirement).to eq("<3.0.0")
       end
     end
 

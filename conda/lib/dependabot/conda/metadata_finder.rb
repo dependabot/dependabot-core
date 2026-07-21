@@ -29,7 +29,7 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def pip_dependency?
-        dependency.requirements.any? { |req| req[:groups]&.include?("pip") }
+        dependency.requirements.any? { |req| req.groups&.include?("pip") }
       end
 
       sig { returns(Dependabot::Python::MetadataFinder) }
@@ -50,9 +50,7 @@ module Dependabot
           name: dependency.name,
           version: dependency.version,
           requirements: dependency.requirements.map do |req|
-            req.merge(
-              source: nil
-            )
+            req.with_source(nil)
           end,
           package_manager: "pip"
         )

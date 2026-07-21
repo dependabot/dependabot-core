@@ -61,7 +61,7 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
             expect(dependency.name).to eq("github.com/microsoft/vcpkg")
             expect(dependency.version).to eq("fe1cde61e971d53c9687cf9a46308f8f55da19fa")
             expect(dependency.package_manager).to eq("vcpkg")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 file: "vcpkg.json",
                 requirement: nil,
@@ -107,12 +107,12 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
           openssl_dep = dependencies.find { |d| d.name == "openssl" }
           expect(openssl_dep).not_to be_nil
           expect(openssl_dep.version).to eq("3.1")
-          expect(openssl_dep.requirements.first[:requirement]).to eq(">=3.1")
+          expect(openssl_dep.requirements.first.requirement).to eq(">=3.1")
 
           zlib_dep = dependencies.find { |d| d.name == "zlib" }
           expect(zlib_dep).not_to be_nil
           expect(zlib_dep.version).to eq("1.2.11")
-          expect(zlib_dep.requirements.first[:requirement]).to eq(">=1.2.11#3")
+          expect(zlib_dep.requirements.first.requirement).to eq(">=1.2.11#3")
         end
 
         it "logs warnings for dependencies without version constraints" do
@@ -143,7 +143,7 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
           openssl_dep = dependencies.find { |d| d.name == "openssl" }
           expect(openssl_dep.version).to eq("3.1")
           expect(openssl_dep.package_manager).to eq("vcpkg")
-          expect(openssl_dep.requirements).to eq(
+          expect(openssl_dep.requirements.map(&:to_h)).to eq(
             [{
               file: "vcpkg.json",
               requirement: ">=3.1",
@@ -201,7 +201,7 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
           baseline_dep = dependencies.first
           expect(baseline_dep.name).to eq("github.com/microsoft/vcpkg")
           expect(baseline_dep.version).to be_nil
-          expect(baseline_dep.requirements).to eq(
+          expect(baseline_dep.requirements.map(&:to_h)).to eq(
             [{
               requirement: nil,
               groups: [],
@@ -271,7 +271,7 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
           baseline_dep = dependencies.first
           expect(baseline_dep.name).to eq("github.com/microsoft/vcpkg")
           expect(baseline_dep.version).to be_nil
-          expect(baseline_dep.requirements.first[:file]).to eq("vcpkg.json")
+          expect(baseline_dep.requirements.first.file).to eq("vcpkg.json")
           expect(baseline_dep.metadata).to eq({})
         end
       end
@@ -299,7 +299,7 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
           baseline_dep = dependencies.find { |d| d.name == "github.com/microsoft/vcpkg" }
           expect(baseline_dep).not_to be_nil
           expect(baseline_dep.version).to be_nil
-          expect(baseline_dep.requirements.first[:file]).to eq("vcpkg-configuration.json")
+          expect(baseline_dep.requirements.first.file).to eq("vcpkg-configuration.json")
           expect(baseline_dep.metadata).to eq(default: true, create_default_registry: true)
         end
       end
@@ -378,14 +378,15 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
         builtin_dependency = dependencies.find { |d| d.name == "github.com/microsoft/vcpkg" }
         expect(builtin_dependency).not_to be_nil
         expect(builtin_dependency.version).to eq("fe1cde61e971d53c9687cf9a46308f8f55da19fa")
-        expect(builtin_dependency.requirements.first[:file]).to eq("vcpkg.json")
+        expect(builtin_dependency.requirements.first.file).to eq("vcpkg.json")
 
         # Second dependency should be from vcpkg-configuration.json default-registry
         registry_dependency = dependencies.find { |d| d.name == "https://github.com/microsoft/vcpkg" }
         expect(registry_dependency).not_to be_nil
         expect(registry_dependency.version).to eq("fe1cde61e971d53c9687cf9a46308f8f55da19fa")
-        expect(registry_dependency.requirements.first[:file]).to eq("vcpkg-configuration.json")
-        expect(registry_dependency.requirements.first[:source][:url]).to eq("https://github.com/microsoft/vcpkg")
+        expect(registry_dependency.requirements.first.file).to eq("vcpkg-configuration.json")
+        expect(registry_dependency.requirements.first.source)
+          .to include(url: "https://github.com/microsoft/vcpkg")
       end
     end
 
@@ -414,10 +415,12 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
           expect(dependency.name).to eq("github.com/microsoft/vcpkg")
           expect(dependency.version).to eq("abc123def456789012345678901234567890abcd")
           expect(dependency.package_manager).to eq("vcpkg")
-          expect(dependency.requirements.first[:file]).to eq("vcpkg-configuration.json")
-          expect(dependency.requirements.first[:source][:type]).to eq("git")
-          expect(dependency.requirements.first[:source][:url]).to eq("https://github.com/microsoft/vcpkg.git")
-          expect(dependency.requirements.first[:source][:ref]).to eq("master")
+          expect(dependency.requirements.first.file).to eq("vcpkg-configuration.json")
+          expect(dependency.requirements.first.source).to include(
+            type: "git",
+            url: "https://github.com/microsoft/vcpkg.git",
+            ref: "master"
+          )
         end
       end
 
@@ -453,14 +456,15 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
           expect(git_registry).not_to be_nil
           expect(git_registry.name).to eq("https://github.com/custom/registry")
           expect(git_registry.version).to eq("123abc456def789012345678901234567890abcd")
-          expect(git_registry.requirements.first[:source][:url]).to eq("https://github.com/custom/registry")
-          expect(git_registry.requirements.first[:source][:ref]).to eq("main")
+          expect(git_registry.requirements.first.source)
+            .to include(url: "https://github.com/custom/registry", ref: "main")
 
           builtin_registry = dependencies.find { |d| d.name.include?("microsoft/vcpkg") }
           expect(builtin_registry).not_to be_nil
           expect(builtin_registry.name).to eq("github.com/microsoft/vcpkg")
           expect(builtin_registry.version).to eq("def456789012345678901234567890abcd123abc")
-          expect(builtin_registry.requirements.first[:source][:url]).to eq("https://github.com/microsoft/vcpkg.git")
+          expect(builtin_registry.requirements.first.source)
+            .to include(url: "https://github.com/microsoft/vcpkg.git")
         end
       end
 

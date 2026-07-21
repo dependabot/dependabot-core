@@ -168,7 +168,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
           define_method(:lowest_security_fix_version) { nil }
           define_method(:lowest_resolvable_security_fix_version) { nil }
           define_method(:updated_requirements) do
-            dependency.requirements.map { |r| r.merge(requirement: "~> 5.0") }
+            dependency.requirements.map { |requirement| requirement.with_requirement("~> 5.0") }
           end
           define_method(:up_to_date?) { false }
           define_method(:requirements_unlocked_or_can_be?) { true }
@@ -177,7 +177,9 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
             [Dependabot::Dependency.new(
               name: dependency.name,
               version: "5.0.0",
-              requirements: dependency.requirements.map { |r| r.merge(requirement: "~> 5.0") },
+              requirements: dependency.requirements.map do |requirement|
+                requirement.with_requirement("~> 5.0")
+              end,
               previous_version: "4.0.0",
               previous_requirements: dependency.requirements,
               package_manager: "terraform",

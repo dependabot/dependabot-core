@@ -85,8 +85,16 @@ module Dependabot
             return unless git?
 
             source_details =
-              dependency.requirements.map { |r| r.fetch(:source) }
-                                     .uniq.compact.first
+              T.must(
+                dependency.requirements
+                          .map(&:source)
+                          .uniq.compact.first
+              )
+            source_url = source_details[:url]
+            raise TypeError, "dependency source URL must be a string" unless source_url.is_a?(String)
+
+            source_branch = source_details[:branch]
+            source_branch = nil unless source_branch.is_a?(String)
 
             SharedHelpers.with_git_configured(credentials: credentials) do
               in_a_native_bundler_context do |tmp_dir|
@@ -99,8 +107,8 @@ module Dependabot
                     gemfile_name: T.must(gemfile).name,
                     dependency_name: dependency.name,
                     credentials: credentials,
-                    dependency_source_url: source_details[:url],
-                    dependency_source_branch: source_details[:branch]
+                    dependency_source_url: source_url,
+                    dependency_source_branch: source_branch
                   }
                 )
               end

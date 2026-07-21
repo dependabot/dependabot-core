@@ -97,7 +97,7 @@ RSpec.describe Dependabot::Sbt::FileParser do
         it "is parsed as a dependency" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.version).to eq("2.13.12")
-          expect(dependency.requirements.first[:metadata]).to eq({ property_source: "scalaVersion" })
+          expect(dependency.requirements.first.metadata).to eq({ property_source: "scalaVersion" })
         end
       end
     end
@@ -113,7 +113,7 @@ RSpec.describe Dependabot::Sbt::FileParser do
         it "resolves the val to the correct version" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.version).to eq("2.10.0")
-          expect(dependency.requirements.first[:metadata]).to include(
+          expect(dependency.requirements.first.metadata).to include(
             property_name: "catsVersion",
             property_source: "build.sbt"
           )
@@ -156,7 +156,7 @@ RSpec.describe Dependabot::Sbt::FileParser do
       let(:dependency_files) { [build_sbt, plugins_sbt] }
 
       it "parses plugin dependencies" do
-        plugin_deps = dependencies.select { |d| d.requirements.any? { |r| r[:groups].include?("plugins") } }
+        plugin_deps = dependencies.select { |d| d.requirements.any? { |r| r.groups&.include?("plugins") } }
         expect(plugin_deps.length).to eq(2)
       end
 
@@ -290,7 +290,7 @@ RSpec.describe Dependabot::Sbt::FileParser do
       cats_dep = dependencies.find { |d| d.name == "org.typelevel:cats-core_2.13" }
       expect(cats_dep).to be_a(Dependabot::Dependency)
       expect(cats_dep.version).to eq("2.10.0")
-      expect(cats_dep.requirements.first[:metadata]).to include(
+      expect(cats_dep.requirements.first.metadata).to include(
         property_name: "catsVersion",
         property_source: "project/Dependencies.scala"
       )
@@ -333,7 +333,7 @@ RSpec.describe Dependabot::Sbt::FileParser do
       scalafix_dep = dependencies.find { |d| d.name.start_with?("ch.epfl.scala:scalafix-core") }
       expect(scalafix_dep).to be_a(Dependabot::Dependency)
       expect(scalafix_dep.version).to eq("0.9.34")
-      expect(scalafix_dep.requirements.first[:metadata]).to include(
+      expect(scalafix_dep.requirements.first.metadata).to include(
         property_name: "V.scalafixVersion"
       )
     end

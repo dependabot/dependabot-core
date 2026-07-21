@@ -555,7 +555,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
   describe "#updated_requirements" do
     subject(:first_updated_requirements) { checker.updated_requirements.first }
 
-    its([:requirement]) { is_expected.to eq("==2.6.0") }
+    its(:requirement) { is_expected.to eq("==2.6.0") }
 
     context "when the requirement was in a constraint file" do
       let(:dependency) do
@@ -572,7 +572,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
         )
       end
 
-      its([:file]) { is_expected.to eq("constraints.txt") }
+      its(:file) { is_expected.to eq("constraints.txt") }
     end
 
     context "when the requirement had a lower precision" do
@@ -590,7 +590,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
         )
       end
 
-      its([:requirement]) { is_expected.to eq("==2.6.0") }
+      its(:requirement) { is_expected.to eq("==2.6.0") }
     end
 
     context "when there is a pyproject.toml file with poetry dependencies" do
@@ -603,7 +603,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
         let(:dependency) { requirements_dependency }
 
         it "does not get affected by whether it's a library or not and updates using the :increase strategy" do
-          expect(first_updated_requirements[:requirement]).to eq("==2.6.0")
+          expect(first_updated_requirements.requirement).to eq("==2.6.0")
         end
       end
     end
@@ -641,7 +641,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
               )
           end
 
-          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+          its(:requirement) { is_expected.to eq(">=1.0,<2.20") }
         end
 
         context "when dealing with a non-library" do
@@ -650,7 +650,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
               .to_return(status: 404)
           end
 
-          its([:requirement]) { is_expected.to eq("~=2.19.1") }
+          its(:requirement) { is_expected.to eq("~=2.19.1") }
         end
       end
 
@@ -660,7 +660,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
         let(:dependency) { requirements_dependency }
 
         it "does not get affected by whether it's a library or not and updates using the :increase strategy" do
-          expect(first_updated_requirements[:requirement]).to eq("==2.6.0")
+          expect(first_updated_requirements.requirement).to eq("==2.6.0")
         end
       end
     end
@@ -698,7 +698,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
               )
           end
 
-          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+          its(:requirement) { is_expected.to eq(">=1.0,<2.20") }
         end
 
         context "when dealing with a non-library" do
@@ -707,7 +707,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
               .to_return(status: 404)
           end
 
-          its([:requirement]) { is_expected.to eq("~=2.19.1") }
+          its(:requirement) { is_expected.to eq("~=2.19.1") }
         end
       end
 
@@ -717,7 +717,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
         let(:dependency) { requirements_dependency }
 
         it "does not get affected by whether it's a library or not and updates using the :increase strategy" do
-          expect(first_updated_requirements[:requirement]).to eq("==2.6.0")
+          expect(first_updated_requirements.requirement).to eq("==2.6.0")
         end
       end
     end

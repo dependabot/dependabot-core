@@ -182,7 +182,9 @@ module Dependabot
         sig { returns(T::Array[[String, String]]) }
         def normalized_requirement_files
           dependency.requirements.filter_map do |req|
-            raw_file = T.cast(req.fetch(:file), String)
+            raw_file = req.file
+            next unless raw_file
+
             [raw_file, normalize_path(raw_file)]
           end
         end

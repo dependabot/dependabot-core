@@ -46,10 +46,10 @@ module Dependabot
         attr_reader :credentials
 
         sig { returns(T::Array[GitTagWithDetail]) }
-        def fetch_tag_and_release_date_from_provider # rubocop:disable Metrics/AbcSize,Metrics/PerceivedComplexity
+        def fetch_tag_and_release_date_from_provider # rubocop:disable Metrics/AbcSize
           return [] unless dependency_source_details
 
-          url = RELEASE_URL_FOR_PROVIDER + dependency_source_details&.fetch(:module_identifier) +
+          url = RELEASE_URL_FOR_PROVIDER + T.must(source_string(dependency_source_details, "module_identifier")) +
                 INCLUDE_FOR_PROVIDER
           Dependabot.logger.info("Fetching provider release details from URL: #{url}")
           result_lines = T.let([], T::Array[GitTagWithDetail])
@@ -81,7 +81,7 @@ module Dependabot
         def fetch_tag_and_release_date_from_module
           return [] unless dependency_source_details
 
-          url = RELEASE_URL_FOR_MODULE + dependency_source_details&.fetch(:module_identifier) +
+          url = RELEASE_URL_FOR_MODULE + T.must(source_string(dependency_source_details, "module_identifier")) +
                 INCLUDE_FOR_MODULE
           Dependabot.logger.info("Fetching provider release details from URL: #{url}")
           result_lines = T.let([], T::Array[GitTagWithDetail])
@@ -106,11 +106,24 @@ module Dependabot
           result_lines.sort_by(&:tag).reverse
         end
 
-        sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped])) }
+        sig { returns(T.nilable(Dependabot::DependencyRequirement::Details)) }
         def dependency_source_details
           return nil unless @dependency.source_details
 
           @dependency.source_details(allowed_types: ELIGIBLE_SOURCE_TYPES)
+        end
+
+        sig do
+          params(
+            source: T.nilable(Dependabot::DependencyRequirement::Details),
+            key: String
+          ).returns(T.nilable(String))
+        end
+        def source_string(source, key)
+          return unless source
+
+          value = source[key] || source[key.to_sym]
+          value if value.is_a?(String)
         end
       end
     end

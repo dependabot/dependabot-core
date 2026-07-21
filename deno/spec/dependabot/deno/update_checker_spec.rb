@@ -78,7 +78,7 @@ RSpec.describe Dependabot::Deno::UpdateChecker do
 
     it "updates requirements" do
       updated = checker.updated_requirements
-      expect(updated.first[:requirement]).to eq("^1.1.4")
+      expect(updated.first.requirement).to eq("^1.1.4")
     end
   end
 
@@ -206,7 +206,7 @@ RSpec.describe Dependabot::Deno::UpdateChecker do
     end
 
     it "bumps the pin to the new exact version" do
-      expect(checker.updated_requirements.first[:requirement]).to eq("=1.1.4")
+      expect(checker.updated_requirements.first.requirement).to eq("=1.1.4")
     end
   end
 
@@ -247,7 +247,7 @@ RSpec.describe Dependabot::Deno::UpdateChecker do
         let(:range_constraint) { constraint }
 
         it "is left unchanged" do
-          expect(checker.updated_requirements.first[:requirement]).to eq(constraint)
+          expect(checker.updated_requirements.first.requirement).to eq(constraint)
         end
       end
     end

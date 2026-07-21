@@ -54,16 +54,19 @@ module Dependabot
           # requirement at index `i` to correspond to the previous requirement
           # at the same index.
           requirements.map do |req|
-            next req if req.fetch(:requirement).nil?
-            next req if req.fetch(:requirement).include?(",")
+            next req if req.unfixable?
 
-            property_name = req.dig(:metadata, :property_name)
+            requirement = req.requirement
+            next req unless requirement
+            next req if requirement.include?(",")
+
+            property_name = metadata_string(req, :property_name)
             next req if property_name && !properties_to_update.include?(property_name)
 
-            new_req = update_requirement(req[:requirement])
-            next req if new_req == req[:requirement]
+            new_req = update_requirement(requirement)
+            next req if new_req == requirement
 
-            Dependabot::DependencyRequirement.create(req.merge(requirement: new_req, source: updated_source))
+            req.with_requirement(new_req).with_source(updated_source)
           end
         end
 
@@ -104,9 +107,20 @@ module Dependabot
           Maven::Requirement
         end
 
-        sig { returns(T::Hash[Symbol, String]) }
+        sig { returns(Dependabot::DependencyRequirement::Details) }
         def updated_source
           { type: "maven_repo", url: source_url }
+        end
+
+        sig do
+          params(
+            requirement: Dependabot::DependencyRequirement,
+            key: Symbol
+          ).returns(T.nilable(String))
+        end
+        def metadata_string(requirement, key)
+          value = requirement.metadata&.[](key)
+          value if value.is_a?(String)
         end
       end
     end

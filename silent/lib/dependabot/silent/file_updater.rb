@@ -51,10 +51,10 @@ module SilentPackageManager
         # If this was a multi-version update, assume we've updated all versions to be the same.
         info.delete("versions") if info["versions"]
 
-        info["version"] = requirements(file).first&.fetch(:requirement)
+        info["version"] = requirements(file).first&.requirement
         if info["depends-on"]
           # also bump dependants to the same version
-          original_content[info["depends-on"]]["version"] = requirements(file).first&.fetch(:requirement)
+          original_content[info["depends-on"]]["version"] = requirements(file).first&.requirement
         end
       end
       c = JSON.pretty_generate(original_content)
@@ -62,14 +62,18 @@ module SilentPackageManager
       c
     end
 
-    sig { params(file: Dependabot::DependencyFile).returns(T::Array[T::Hash[Symbol, String]]) }
+    sig { params(file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyRequirement]) }
     def requirements(file)
-      dependency&.requirements&.filter { |r| r[:file] == file.name } || []
+      dependency&.requirements&.filter { |r| r.file == file.name } || []
     end
 
-    sig { params(file: T.untyped).returns(T::Array[T::Hash[Symbol, String]]) }
+    sig do
+      params(
+        file: Dependabot::DependencyFile
+      ).returns(T::Array[Dependabot::DependencyRequirement])
+    end
     def previous_requirements(file)
-      dependency&.previous_requirements&.filter { |r| r[:file] == file.name } || []
+      dependency&.previous_requirements&.filter { |r| r.file == file.name } || []
     end
   end
 end

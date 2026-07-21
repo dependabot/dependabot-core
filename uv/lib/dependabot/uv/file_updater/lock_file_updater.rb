@@ -83,7 +83,7 @@ module Dependabot
         def build_system_only_dependency?
           return false unless dependency
 
-          groups = T.must(dependency).requirements.flat_map { |req| req[:groups] || [] }.compact.uniq
+          groups = T.must(dependency).requirements.flat_map { |requirement| requirement.groups || [] }.uniq
           return false if groups.empty?
 
           groups.all?("build-system")
@@ -132,7 +132,7 @@ module Dependabot
           updated_content = content.dup
 
           T.must(dependency).requirements.zip(T.must(T.must(dependency).previous_requirements)).each do |new_r, old_r|
-            next unless new_r[:file] == file.name && T.must(old_r)[:file] == file.name
+            next unless new_r.file == file.name && T.must(old_r).file == file.name
 
             updated_content = replace_dep(T.must(dependency), updated_content, new_r, T.must(old_r))
           end
@@ -146,13 +146,17 @@ module Dependabot
           params(
             dep: Dependabot::Dependency,
             content: String,
-            new_r: T::Hash[Symbol, T.untyped],
-            old_r: T::Hash[Symbol, T.untyped]
+            new_r: Dependabot::DependencyRequirement,
+            old_r: Dependabot::DependencyRequirement
           ).returns(String)
         end
         def replace_dep(dep, content, new_r, old_r)
-          new_req = new_r[:requirement]
-          old_req = old_r[:requirement]
+          return content if new_r.unfixable? || old_r.unfixable?
+
+          new_req = new_r.requirement
+          old_req = old_r.requirement
+          return content unless new_req && old_req
+
           escaped_name = escape_package_name(dep.name)
 
           regex = /(["']#{escaped_name})([^"']+)(["'])/x
@@ -163,8 +167,6 @@ module Dependabot
             captured_requirement = Regexp.last_match(2)
 
             requirement_body, suffix = RequirementSuffixHelper.split(T.must(captured_requirement))
-
-            next Regexp.last_match(0) unless old_req
 
             if requirements_match?(T.must(requirement_body), old_req)
               replaced = true
@@ -634,7 +636,7 @@ module Dependabot
           return false unless file
 
           dependencies.any? do |dep|
-            dep.requirements.any? { |r| r[:file] == file.name } &&
+            dep.requirements.any? { |requirement| requirement.file == file.name } &&
               requirement_changed?(file, dep)
           end
         end
@@ -647,7 +649,7 @@ module Dependabot
           changed_requirements =
             dependency.requirements - T.must(dependency.previous_requirements)
 
-          changed_requirements.any? { |f| f[:file] == T.must(file).name }
+          changed_requirements.any? { |requirement| requirement.file == T.must(file).name }
         end
 
         sig { params(file: Dependabot::DependencyFile, content: String).returns(Dependabot::DependencyFile) }
@@ -719,7 +721,7 @@ module Dependabot
         def create_or_update_lock_file?
           return true if lockfile && T.must(dependency).requirements.empty?
 
-          T.must(dependency).requirements.select { _1[:file].end_with?(*REQUIRED_FILES) }.any?
+          T.must(dependency).requirements.any? { |requirement| requirement.file&.end_with?(*REQUIRED_FILES) }
         end
 
         sig { returns(T::Hash[String, String]) }

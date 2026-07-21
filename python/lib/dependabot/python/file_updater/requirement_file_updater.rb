@@ -58,9 +58,9 @@ module Dependabot
           updated_contents = T.let({}, T::Hash[String, String])
 
           unique_requirement_changes.each do |pair|
-            new_req = T.must(pair[0])
+            new_req = pair[0]
             old_req = pair[1]
-            filename = new_req.fetch(:file)
+            filename = T.must(new_req.file)
             content = updated_contents[filename] || T.must(T.must(get_original_file(filename)).content)
             updated_contents[filename] = updated_requirement_or_setup_file_content(content, new_req, old_req)
           end
@@ -77,12 +77,20 @@ module Dependabot
         # Deduplicates requirements that share the same file and requirement strings.
         # The replacer's regex matches all extras variants at once, so one call per
         # unique (file, old_requirement, new_requirement) is sufficient.
-        sig { returns(T::Array[T::Array[T.nilable(T::Hash[Symbol, T.untyped])]]) }
+        sig do
+          returns(
+            T::Array[
+              [Dependabot::DependencyRequirement, T.nilable(Dependabot::DependencyRequirement)]
+            ]
+          )
+        end
         def unique_requirement_changes
           previous_reqs = dependency.previous_requirements || []
 
           changes = dependency.requirements.filter_map do |new_req|
-            old_req = previous_reqs.find { |r| r[:file] == new_req[:file] && r[:groups] == new_req[:groups] }
+            old_req = previous_reqs.find do |requirement|
+              requirement.file == new_req.file && requirement.groups == new_req.groups
+            end
             next if new_req == old_req
 
             [new_req, old_req]
@@ -91,23 +99,28 @@ module Dependabot
           changes.uniq do |pair|
             new_req = pair[0]
             old_req = pair[1]
-            [new_req[:file], old_req&.fetch(:requirement), new_req.fetch(:requirement)]
+            [new_req.file, old_req&.requirement, new_req.requirement]
           end
         end
 
         sig do
           params(
             content: String,
-            new_req: T::Hash[Symbol, T.untyped],
-            old_req: T.nilable(T::Hash[Symbol, T.untyped])
+            new_req: Dependabot::DependencyRequirement,
+            old_req: T.nilable(Dependabot::DependencyRequirement)
           ).returns(String)
         end
         def updated_requirement_or_setup_file_content(content, new_req, old_req)
+          return content if new_req.unfixable? || old_req&.unfixable?
+
+          new_requirement = new_req.requirement
+          return content unless new_requirement
+
           RequirementReplacer.new(
             content: content,
             dependency_name: dependency.name,
-            old_requirement: old_req&.fetch(:requirement),
-            new_requirement: new_req.fetch(:requirement),
+            old_requirement: old_req&.requirement,
+            new_requirement: new_requirement,
             new_hash_version: dependency.version,
             index_urls: @index_urls
           ).updated_content

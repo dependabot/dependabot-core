@@ -60,7 +60,7 @@ RSpec.describe Dependabot::Nix::FileParser do
         expect(nixpkgs).to be_a(Dependabot::Dependency)
         expect(nixpkgs.version).to eq("3030f185ba6a4bf4f18b87f345f104e6a6961f34")
         expect(nixpkgs.package_manager).to eq("nix")
-        expect(nixpkgs.requirements).to eq(
+        expect(nixpkgs.requirements.map(&:to_h)).to eq(
           [{
             requirement: nil,
             file: "flake.lock",
@@ -79,7 +79,7 @@ RSpec.describe Dependabot::Nix::FileParser do
         flake_utils = dependencies.find { |d| d.name == "flake-utils" }
         expect(flake_utils).to be_a(Dependabot::Dependency)
         expect(flake_utils.version).to eq("b1d9ab70662946ef0850d488da1c9019f3a9752a")
-        expect(flake_utils.requirements).to eq(
+        expect(flake_utils.requirements.map(&:to_h)).to eq(
           [{
             requirement: nil,
             file: "flake.lock",
@@ -127,8 +127,8 @@ RSpec.describe Dependabot::Nix::FileParser do
 
       it "builds gitlab URLs correctly" do
         gitlab_dep = dependencies.find { |d| d.name == "my-gitlab-dep" }
-        expect(gitlab_dep.requirements.first[:source][:url])
-          .to eq("https://gitlab.com/myorg/myrepo")
+        expect(gitlab_dep.requirements.first.source)
+          .to include(url: "https://gitlab.com/myorg/myrepo")
       end
     end
 
@@ -143,8 +143,8 @@ RSpec.describe Dependabot::Nix::FileParser do
       it "resolves the overlay dependency correctly" do
         overlay = dependencies.find { |d| d.name == "my-overlay" }
         expect(overlay.version).to eq("aaaa1111bbbb2222cccc3333dddd4444eeee5555")
-        expect(overlay.requirements.first[:source][:url])
-          .to eq("https://github.com/example/my-overlay")
+        expect(overlay.requirements.first.source)
+          .to include(url: "https://github.com/example/my-overlay")
       end
     end
 
@@ -153,8 +153,8 @@ RSpec.describe Dependabot::Nix::FileParser do
 
       it "uses the host field in the URL" do
         dep = dependencies.find { |d| d.name == "internal-lib" }
-        expect(dep.requirements.first[:source][:url])
-          .to eq("https://github.corp.example.com/myteam/internal-lib")
+        expect(dep.requirements.first.source)
+          .to include(url: "https://github.corp.example.com/myteam/internal-lib")
       end
     end
 
@@ -166,24 +166,26 @@ RSpec.describe Dependabot::Nix::FileParser do
         expect(nixpkgs).to be_a(Dependabot::Dependency)
         expect(nixpkgs.version).to eq("bd0ff2d3eac24699c3664d5966b9ef36f388e2ca")
         expect(nixpkgs.requirements).to eq(
-          [{
-            requirement: nil,
-            file: "flake.lock",
-            source: {
-              type: "tarball",
-              url: "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz",
-              branch: nil,
-              ref: "nixos-26.05"
-            },
-            groups: []
-          }]
+          [
+            Dependabot::DependencyRequirement.from_hash(
+              requirement: nil,
+              file: "flake.lock",
+              source: {
+                type: "tarball",
+                url: "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz",
+                branch: nil,
+                ref: "nixos-26.05"
+              },
+              groups: []
+            )
+          ]
         )
       end
 
       it "still parses git-backed inputs alongside it" do
         expect(dependencies.map(&:name)).to contain_exactly("nixpkgs", "flake-utils")
         flake_utils = dependencies.find { |d| d.name == "flake-utils" }
-        expect(flake_utils.requirements.first[:source][:type]).to eq("git")
+        expect(flake_utils.requirements.first.source).to include(type: "git")
       end
     end
 

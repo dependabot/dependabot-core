@@ -27,13 +27,15 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
   let(:dependency_version) { "4.5.3" }
   let(:dependency_metadata) { { packaging_type: "jar" } }
   let(:declaring_requirement) do
-    {
-      requirement: dependency_version,
-      file: "pom.xml",
-      groups: groups,
-      source: nil,
-      metadata: dependency_metadata
-    }
+    Dependabot::DependencyRequirement.from_hash(
+      {
+        requirement: dependency_version,
+        file: "pom.xml",
+        groups: groups,
+        source: nil,
+        metadata: dependency_metadata
+      }
+    )
   end
   let(:dependency_files) { [pom] }
   let(:pom) do
@@ -319,13 +321,15 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
       let(:dependency_name) { "uk.me.lwood.sigtran:sigtran-tcap" }
       let(:dependency_version) { "0.9-SNAPSHOT" }
       let(:declaring_requirement) do
-        {
-          requirement: dependency_version,
-          file: "map/pom.xml",
-          groups: [],
-          source: nil,
-          metadata: { property_name: "project.version", packaging_type: "jar" }
-        }
+        Dependabot::DependencyRequirement.from_hash(
+          {
+            requirement: dependency_version,
+            file: "map/pom.xml",
+            groups: [],
+            source: nil,
+            metadata: { property_name: "project.version", packaging_type: "jar" }
+          }
+        )
       end
 
       it "finds the declaration" do
@@ -352,13 +356,15 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
         let(:dependency_name) { "io.reactivex.rxjava2:rxjava" }
         let(:dependency_version) { "2.1.6" }
         let(:declaring_requirement) do
-          {
-            requirement: dependency_version,
-            file: "pom.xml",
-            groups: [],
-            source: nil,
-            metadata: { packaging_type: "jar" }
-          }
+          Dependabot::DependencyRequirement.from_hash(
+            {
+              requirement: dependency_version,
+              file: "pom.xml",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }
+          )
         end
 
         it "finds the declaration" do
@@ -400,13 +406,15 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
         { property_name: "spring.version", packaging_type: "jar" }
       end
       let(:declaring_requirement) do
-        {
-          requirement: dependency_version,
-          file: "legacy/some-spring-project/pom.xml",
-          groups: [],
-          source: nil,
-          metadata: dependency_metadata
-        }
+        Dependabot::DependencyRequirement.from_hash(
+          {
+            requirement: dependency_version,
+            file: "legacy/some-spring-project/pom.xml",
+            groups: [],
+            source: nil,
+            metadata: dependency_metadata
+          }
+        )
       end
 
       it "finds the declaration" do
@@ -430,13 +438,15 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
       let(:dependency_name) { "org.jetbrains.kotlin:kotlin-maven-plugin" }
       let(:dependency_version) { "1.4.30" }
       let(:declaring_requirement) do
-        {
-          requirement: dependency_version,
-          file: "pom.xml",
-          groups: ["plugin"],
-          source: nil,
-          metadata: { packaging_type: "jar", property_name: "kotlin.version" }
-        }
+        Dependabot::DependencyRequirement.from_hash(
+          {
+            requirement: dependency_version,
+            file: "pom.xml",
+            groups: ["plugin"],
+            source: nil,
+            metadata: { packaging_type: "jar", property_name: "kotlin.version" }
+          }
+        )
       end
 
       it "finds the declaration" do

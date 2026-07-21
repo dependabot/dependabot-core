@@ -53,7 +53,7 @@ RSpec.describe "Python additional_dependencies integration" do
 
       # Find additional_dependency dependencies
       additional_deps = dependencies.select do |dep|
-        dep.requirements.any? { |req| req[:source]&.dig(:type) == "additional_dependency" }
+        dep.requirements.any? { |requirement| requirement.source&.[](:type) == "additional_dependency" }
       end
 
       # We have 12 parseable additional_dependencies in the fixture (those with versions)
@@ -61,41 +61,41 @@ RSpec.describe "Python additional_dependencies integration" do
 
       # Verify types-requests
       types_requests = additional_deps.find do |dep|
-        dep.requirements.first[:source][:package_name] == "types-requests"
+        dep.requirements.first.source&.[](:package_name) == "types-requests"
       end
       expect(types_requests).not_to be_nil
       expect(types_requests.name).to eq("types-requests")
       expect(types_requests.version).to eq("2.31.0.1")
-      expect(types_requests.requirements.first[:requirement]).to eq("==2.31.0.1")
-      expect(types_requests.requirements.first[:source][:language]).to eq("python")
-      expect(types_requests.requirements.first[:source][:hook_id]).to eq("mypy")
+      expect(types_requests.requirements.first.requirement).to eq("==2.31.0.1")
+      expect(types_requests.requirements.first.source&.[](:language)).to eq("python")
+      expect(types_requests.requirements.first.source&.[](:hook_id)).to eq("mypy")
 
       # Verify types-PyYAML (normalized to types-pyyaml)
       types_pyyaml = additional_deps.find do |dep|
-        dep.requirements.first[:source][:package_name] == "types-pyyaml"
+        dep.requirements.first.source&.[](:package_name) == "types-pyyaml"
       end
       expect(types_pyyaml).not_to be_nil
       expect(types_pyyaml.version).to eq("6.0.0")
-      expect(types_pyyaml.requirements.first[:requirement]).to eq(">=6.0.0")
+      expect(types_pyyaml.requirements.first.requirement).to eq(">=6.0.0")
 
       # Verify black[d]
       black = additional_deps.find do |dep|
-        dep.requirements.first[:source][:package_name] == "black"
+        dep.requirements.first.source&.[](:package_name) == "black"
       end
       expect(black).not_to be_nil
       expect(black.version).to eq("23.0.0")
-      expect(black.requirements.first[:requirement]).to eq(">=23.0.0")
-      expect(black.requirements.first[:source][:original_name]).to eq("black")
-      expect(black.requirements.first[:source][:hook_id]).to eq("black")
+      expect(black.requirements.first.requirement).to eq(">=23.0.0")
+      expect(black.requirements.first.source&.[](:original_name)).to eq("black")
+      expect(black.requirements.first.source&.[](:hook_id)).to eq("black")
 
       # Verify flake8-docstrings
       flake8_docstrings = additional_deps.find do |dep|
-        dep.requirements.first[:source][:package_name] == "flake8-docstrings"
+        dep.requirements.first.source&.[](:package_name) == "flake8-docstrings"
       end
       expect(flake8_docstrings).not_to be_nil
       expect(flake8_docstrings.version).to eq("1.7.0")
-      expect(flake8_docstrings.requirements.first[:requirement]).to eq("~=1.7.0")
-      expect(flake8_docstrings.requirements.first[:source][:hook_id]).to eq("flake8")
+      expect(flake8_docstrings.requirements.first.requirement).to eq("~=1.7.0")
+      expect(flake8_docstrings.requirements.first.source&.[](:hook_id)).to eq("flake8")
     end
 
     it "creates unique dependency names for same package in different hooks" do
@@ -120,7 +120,7 @@ RSpec.describe "Python additional_dependencies integration" do
 
     let(:dependency) do
       dependencies.find do |dep|
-        dep.requirements.first[:source]&.dig(:package_name) == "types-requests"
+        dep.requirements.first.source&.[](:package_name) == "types-requests"
       end
     end
 
@@ -161,8 +161,8 @@ RSpec.describe "Python additional_dependencies integration" do
 
     it "generates updated requirements with correct format" do
       updated_reqs = update_checker.updated_requirements
-      expect(updated_reqs.first[:requirement]).to eq("==2.31.0.20")
-      expect(updated_reqs.first[:source][:original_string]).to eq("types-requests==2.31.0.20")
+      expect(updated_reqs.first.requirement).to eq("==2.31.0.20")
+      expect(updated_reqs.first.source&.[](:original_string)).to eq("types-requests==2.31.0.20")
     end
 
     it "detects when update is available" do
@@ -185,23 +185,25 @@ RSpec.describe "Python additional_dependencies integration" do
 
     let(:dependency) do
       dependencies.find do |dep|
-        dep.requirements.first[:source]&.dig(:package_name) == "types-requests"
+        dep.requirements.first.source&.[](:package_name) == "types-requests"
       end
     end
 
     let(:updated_dependency) do
+      requirement = dependency.requirements.first
+      updated_requirement = requirement
+                            .with_requirement("==2.31.0.20")
+                            .with_source(
+                              T.must(requirement.source).merge(
+                                original_string: "types-requests==2.31.0.20"
+                              )
+                            )
+
       Dependabot::Dependency.new(
         name: dependency.name,
         version: "2.31.0.20",
         previous_version: dependency.version,
-        requirements: [{
-          requirement: "==2.31.0.20",
-          groups: ["additional_dependencies"],
-          file: ".pre-commit-config.yaml",
-          source: dependency.requirements.first[:source].merge(
-            original_string: "types-requests==2.31.0.20"
-          )
-        }],
+        requirements: [updated_requirement],
         previous_requirements: dependency.requirements,
         package_manager: "pre_commit"
       )
@@ -232,23 +234,25 @@ RSpec.describe "Python additional_dependencies integration" do
     context "when updating dependency with extras" do
       let(:dependency) do
         dependencies.find do |dep|
-          dep.requirements.first[:source]&.dig(:package_name) == "black"
+          dep.requirements.first.source&.[](:package_name) == "black"
         end
       end
 
       let(:updated_dependency) do
+        requirement = dependency.requirements.first
+        updated_requirement = requirement
+                              .with_requirement(">=24.0.0")
+                              .with_source(
+                                T.must(requirement.source).merge(
+                                  original_string: "black[d]>=24.0.0"
+                                )
+                              )
+
         Dependabot::Dependency.new(
           name: dependency.name,
           version: "24.0.0",
           previous_version: dependency.version,
-          requirements: [{
-            requirement: ">=24.0.0",
-            groups: ["additional_dependencies"],
-            file: ".pre-commit-config.yaml",
-            source: dependency.requirements.first[:source].merge(
-              original_string: "black[d]>=24.0.0"
-            )
-          }],
+          requirements: [updated_requirement],
           previous_requirements: dependency.requirements,
           package_manager: "pre_commit"
         )
@@ -266,23 +270,25 @@ RSpec.describe "Python additional_dependencies integration" do
     context "when updating dependency with ~= operator" do
       let(:dependency) do
         dependencies.find do |dep|
-          dep.requirements.first[:source]&.dig(:package_name) == "flake8-docstrings"
+          dep.requirements.first.source&.[](:package_name) == "flake8-docstrings"
         end
       end
 
       let(:updated_dependency) do
+        requirement = dependency.requirements.first
+        updated_requirement = requirement
+                              .with_requirement("~=1.8.0")
+                              .with_source(
+                                T.must(requirement.source).merge(
+                                  original_string: "flake8-docstrings~=1.8.0"
+                                )
+                              )
+
         Dependabot::Dependency.new(
           name: dependency.name,
           version: "1.8.0",
           previous_version: dependency.version,
-          requirements: [{
-            requirement: "~=1.8.0",
-            groups: ["additional_dependencies"],
-            file: ".pre-commit-config.yaml",
-            source: dependency.requirements.first[:source].merge(
-              original_string: "flake8-docstrings~=1.8.0"
-            )
-          }],
+          requirements: [updated_requirement],
           previous_requirements: dependency.requirements,
           package_manager: "pre_commit"
         )
@@ -309,7 +315,7 @@ RSpec.describe "Python additional_dependencies integration" do
       dependencies = parser.parse
 
       additional_dep = dependencies.find do |dep|
-        dep.requirements.first[:source]&.dig(:package_name) == "types-requests"
+        dep.requirements.first.source&.[](:package_name) == "types-requests"
       end
       expect(additional_dep).not_to be_nil
 
@@ -332,7 +338,7 @@ RSpec.describe "Python additional_dependencies integration" do
       expect(latest).to eq("2.31.0.20")
 
       updated_reqs = update_checker.updated_requirements
-      expect(updated_reqs.first[:requirement]).to eq("==2.31.0.20")
+      expect(updated_reqs.first.requirement).to eq("==2.31.0.20")
 
       # Step 3: Update the file
       updated_dep = Dependabot::Dependency.new(

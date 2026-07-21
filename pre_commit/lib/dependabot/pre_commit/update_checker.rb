@@ -47,31 +47,54 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        return wrap_requirements(additional_dependency_updated_requirements) if additional_dependency?
+        return additional_dependency_updated_requirements if additional_dependency?
 
         updated_reqs = dependency.requirements.map do |req|
-          source = T.cast(req[:source], T.nilable(T::Hash[Symbol, Object]))
+          source = req.source
           updated = updated_ref(source)
           next req unless updated
 
-          current = T.cast(source&.[](:ref), T.nilable(String))
-
           # Maintain short git hash when the updated SHA starts with the current SHA
-          if T.cast(req[:type], T.nilable(String)) == "git" &&
-             git_commit_checker.ref_looks_like_commit_sha?(updated) &&
-             current && git_commit_checker.ref_looks_like_commit_sha?(current) &&
-             updated.start_with?(current)
-            next req
-          end
+          next req if preserve_short_git_ref?(source, updated)
 
           new_source = T.must(source).merge(ref: updated)
           new_metadata = updated_comment_version_metadata(req, updated)
-          req.merge(source: new_source, metadata: new_metadata)
+          req.with_source(new_source).with_metadata(new_metadata)
         end
-        wrap_requirements(updated_reqs)
+        updated_reqs
       end
 
       private
+
+      sig do
+        params(
+          source: T.nilable(Dependabot::DependencyRequirement::Details),
+          updated_ref: String
+        ).returns(T::Boolean)
+      end
+      def preserve_short_git_ref?(source, updated_ref)
+        return false unless source
+
+        current = string_detail(source, :ref)
+        type = string_detail(source, :type)
+        return false unless current
+
+        type == "git" &&
+          git_commit_checker.ref_looks_like_commit_sha?(updated_ref) &&
+          git_commit_checker.ref_looks_like_commit_sha?(current) &&
+          updated_ref.start_with?(current)
+      end
+
+      sig do
+        params(
+          details: Dependabot::DependencyRequirement::Details,
+          key: Symbol
+        ).returns(T.nilable(String))
+      end
+      def string_detail(details, key)
+        value = details[key] || details[key.to_s]
+        value if value.is_a?(String)
+      end
 
       sig { returns(T.nilable(Dependabot::PreCommit::UpdateChecker::LatestVersionFinder)) }
       def latest_version_finder
@@ -166,7 +189,11 @@ module Dependabot
         )
       end
 
-      sig { params(source: T.nilable(T::Hash[Symbol, Object])).returns(T.nilable(String)) }
+      sig do
+        params(
+          source: T.nilable(Dependabot::DependencyRequirement::Details)
+        ).returns(T.nilable(String))
+      end
       def updated_ref(source)
         return unless git_commit_checker.git_dependency?
 
@@ -213,13 +240,14 @@ module Dependabot
 
       sig do
         params(
-          req: T::Hash[Symbol, Object],
+          req: Dependabot::DependencyRequirement,
           new_ref: String
-        ).returns(T::Hash[Symbol, Object])
+        ).returns(Dependabot::DependencyRequirement::Details)
       end
       def updated_comment_version_metadata(req, new_ref)
-        existing_metadata = T.cast(req.fetch(:metadata, {}), T::Hash[Symbol, Object])
-        comment = T.cast(existing_metadata[:comment], T.nilable(String))
+        existing_metadata = req.metadata || {}
+        comment_value = existing_metadata[:comment] || existing_metadata["comment"]
+        comment = comment_value if comment_value.is_a?(String)
         return existing_metadata unless comment
 
         old_version = extract_version_from_comment(comment)
@@ -244,8 +272,8 @@ module Dependabot
             comment = T.let(
               @dependency.requirements
                 .filter_map do |req|
-                  val = T.cast(req.fetch(:metadata, {}), T::Hash[Symbol, Object])[:comment]
-                  T.cast(val, T.nilable(String))
+                  value = req.metadata&.[](:comment) || req.metadata&.[]("comment")
+                  value if value.is_a?(String)
                 end
                 .first,
               T.nilable(String)
@@ -310,16 +338,20 @@ module Dependabot
         requirement = dependency.requirements.first
         return false unless requirement
 
-        source = T.cast(requirement[:source], T.nilable(T::Hash[Symbol, Object]))
+        source = requirement.source
         return false unless source
 
-        T.cast(source[:type], T.nilable(String)) == "additional_dependency"
+        type = source[:type] || source["type"]
+        type.is_a?(String) && type == "additional_dependency"
       end
 
       sig { returns(T.nilable(T.any(String, Gem::Version))) }
       def additional_dependency_latest_version
-        source = T.cast(dependency.requirements.first&.dig(:source), T::Hash[Symbol, Object])
-        language = T.cast(source[:language], T.nilable(String))
+        source = dependency.requirements.first&.source
+        return nil unless source
+
+        language_value = source[:language] || source["language"]
+        language = language_value if language_value.is_a?(String)
         return nil unless language && AdditionalDependencyCheckers.supported?(language)
 
         checker = additional_dependency_checker(language, source)
@@ -331,10 +363,13 @@ module Dependabot
         latest
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def additional_dependency_updated_requirements
-        source = T.cast(dependency.requirements.first&.dig(:source), T::Hash[Symbol, Object])
-        language = T.cast(source[:language], T.nilable(String))
+        source = dependency.requirements.first&.source
+        return dependency.requirements unless source
+
+        language_value = source[:language] || source["language"]
+        language = language_value if language_value.is_a?(String)
         return dependency.requirements unless language && AdditionalDependencyCheckers.supported?(language)
 
         checker = additional_dependency_checker(language, source)
@@ -349,7 +384,7 @@ module Dependabot
       sig do
         params(
           language: String,
-          source: T::Hash[Symbol, Object]
+          source: Dependabot::DependencyRequirement::Details
         ).returns(T.nilable(Dependabot::PreCommit::AdditionalDependencyCheckers::Base))
       end
       def additional_dependency_checker(language, source)

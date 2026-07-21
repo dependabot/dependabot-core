@@ -209,7 +209,7 @@ module Dependabot
       # @return [nil, Dependabot::Source]
       sig { params(dependency: Dependabot::Dependency).returns(T.nilable(Dependabot::Source)) }
       def source(dependency:)
-        type = T.must(dependency.requirements.first)[:source][:type]
+        type = T.must(dependency.source_type)
         base_url = url_for_api("/registry/docs/")
         case type
         when "module", "modules", "registry"

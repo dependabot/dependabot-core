@@ -15,10 +15,7 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
-        url = dependency.requirements.first&.fetch(:source)&.fetch(:url) ||
-              dependency.requirements.first&.fetch(:source)&.fetch("url")
-
-        Source.from_url(url)
+        Source.from_url(dependency.requirements.first&.source_string(:url))
       end
     end
   end

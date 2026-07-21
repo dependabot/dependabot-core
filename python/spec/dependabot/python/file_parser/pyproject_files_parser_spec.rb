@@ -363,7 +363,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       it "resolves string registry sources to hashes with type and url" do
         # String sources (registry name references) are resolved to their definitions
         # from [[tool.poetry.source]] to create proper hash sources
-        expect(dependency.requirements[0][:source]).to be_nil # No source def in this fixture
+        expect(dependency.requirements[0].source).to be_nil # No source def in this fixture
       end
     end
 
@@ -374,7 +374,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       it "resolves string registry sources to hashes with type and url" do
         # String source "custom" should be resolved to the source definition
-        expect(dependency.requirements[0][:source]).to eq(
+        expect(dependency.requirements[0].source).to eq(
           {
             type: "registry",
             url: "https://some.internal.registry.com/pypi/",
@@ -404,7 +404,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
         it "marks PEP 621 deps with the project.dependencies group" do
           requests = dependencies.find { |d| d.name == "requests" }
-          expect(requests.requirements.first[:groups]).to eq(["dependencies"])
+          expect(requests.requirements.first.groups).to eq(["dependencies"])
         end
 
         it "parses the v2 lock file metadata" do
@@ -415,8 +415,8 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         it "preserves the requirement strings from project.dependencies" do
           requests = dependencies.find { |d| d.name == "requests" }
           urllib3 = dependencies.find { |d| d.name == "urllib3" }
-          expect(requests.requirements.first[:requirement]).to eq("<3.0,>=2.28.0")
-          expect(urllib3.requirements.first[:requirement]).to eq(">=1.26.0")
+          expect(requests.requirements.first.requirement).to eq("<3.0,>=2.28.0")
+          expect(urllib3.requirements.first.requirement).to eq(">=1.26.0")
         end
 
         it "requires poetry-core>=2.0 as the build backend" do
@@ -876,11 +876,11 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
           fastapi = dependencies.find { |d| d.name == "fastapi" }
           expect(fastapi.version).to eq("0.115.5")
-          expect(fastapi.requirements.first[:groups]).to eq(["dependencies"])
+          expect(fastapi.requirements.first.groups).to eq(["dependencies"])
 
           pydantic = dependencies.find { |d| d.name == "pydantic" }
           expect(pydantic.version).to eq("2.8.2")
-          expect(pydantic.requirements.first[:groups]).to eq(["dependencies"])
+          expect(pydantic.requirements.first.groups).to eq(["dependencies"])
         end
       end
 
@@ -895,7 +895,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           # since they are marked as dynamic and managed by Poetry
           expect(dep_names).to include("requests", "django")
           dependencies.each do |dep|
-            expect(dep.requirements.first[:groups]).to eq(["dependencies"])
+            expect(dep.requirements.first.groups).to eq(["dependencies"])
           end
         end
 
@@ -918,7 +918,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           # requests comes from [project] dependencies (not dynamic)
           expect(dep_names).to include("requests")
           req = dependencies.find { |d| d.name == "requests" }
-          expect(req.requirements.first[:groups]).to eq(["dependencies"])
+          expect(req.requirements.first.groups).to eq(["dependencies"])
         end
 
         it "does not duplicate optional deps from PEP 621 when dynamic" do

@@ -55,21 +55,24 @@ module Dependabot
         updated_requirement_pairs =
           dependency.requirements.zip(T.must(dependency.previous_requirements))
                     .reject do |new_req, old_req|
-            next true if new_req[:file] != file.name
+            next true if new_req.file != file.name
 
-            new_req[:source] == T.must(old_req)[:source]
+            new_req.source == T.must(old_req).source
           end
 
         updated_content = T.must(file.content)
 
         updated_requirement_pairs.each do |new_req, old_req|
           # TODO: Support updating Docker sources
-          next unless new_req.fetch(:source).fetch(:type) == "git"
+          next unless new_req.source_string(:type) == "git"
 
-          old_ref = T.must(old_req).fetch(:source).fetch(:ref)
-          new_ref = new_req.fetch(:source).fetch(:ref)
+          old_ref = required_string_detail(T.must(old_req).source_string(:ref), :ref)
+          new_ref = required_string_detail(new_req.source_string(:ref), :ref)
 
-          old_declaration = T.must(old_req).fetch(:metadata).fetch(:declaration_string)
+          old_declaration = required_string_detail(
+            T.must(old_req).metadata_string(:declaration_string),
+            :declaration_string
+          )
           new_declaration =
             old_declaration
             .gsub(/@.*+/, "@#{new_ref}")
@@ -98,6 +101,18 @@ module Dependabot
         updated_content
       end
       # rubocop:enable Metrics/AbcSize
+
+      sig do
+        params(
+          value: T.nilable(String),
+          key: Symbol
+        ).returns(String)
+      end
+      def required_string_detail(value, key)
+        raise TypeError, "Expected #{key} to be a String" unless value
+
+        value
+      end
 
       sig { params(comment: T.nilable(String), old_ref: String, new_ref: String).returns(T.nilable(String)) }
       def updated_version_comment(comment, old_ref, new_ref)

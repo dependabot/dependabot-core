@@ -68,7 +68,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "has the right details for the dependency (default registry with version)" do
         expect(dependencies[2].name).to eq("hashicorp/consul/aws")
         expect(dependencies[2].version).to eq("0.1.0")
-        expect(dependencies[2].requirements).to eq(
+        expect(dependencies[2].requirements.map(&:to_h)).to eq(
           [{
             requirement: "0.1.0",
             groups: [],
@@ -85,7 +85,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "has the right details for the second dependency (private registry with version)" do
         expect(dependencies[1].name).to eq("example_corp/vpc/aws")
         expect(dependencies[1].version).to eq("0.9.3")
-        expect(dependencies[1].requirements).to eq(
+        expect(dependencies[1].requirements.map(&:to_h)).to eq(
           [{
             requirement: "0.9.3",
             groups: [],
@@ -102,7 +102,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "has the right details for the dependency (default registry with version req)" do
         expect(dependencies[4].name).to eq("terraform-aws-modules/rds/aws")
         expect(dependencies[4].version).to be_nil
-        expect(dependencies[4].requirements).to eq(
+        expect(dependencies[4].requirements.map(&:to_h)).to eq(
           [{
             requirement: "~> 1.0.0",
             groups: [],
@@ -119,7 +119,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "has the right details for the dependency (default registry with no version)" do
         expect(dependencies[0].name).to eq("devops-workflow/members/github")
         expect(dependencies[0].version).to be_nil
-        expect(dependencies[0].requirements).to eq(
+        expect(dependencies[0].requirements.map(&:to_h)).to eq(
           [{
             requirement: nil,
             groups: [],
@@ -136,7 +136,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "has the right details for the dependency (default registry with a sub-directory)" do
         expect(dependencies[3].name).to eq("mongodb/ecs-task-definition/aws")
         expect(dependencies[3].version).to be_nil
-        expect(dependencies[3].requirements).to eq(
+        expect(dependencies[3].requirements.map(&:to_h)).to eq(
           [{
             requirement: nil,
             groups: [],
@@ -158,7 +158,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         module_dep = dependencies.find { |d| d.name == "terraform-aws-modules/vpc/aws" }
         expect(module_dep).not_to be_nil
         expect(module_dep.version).to eq("5.5.1")
-        expect(module_dep.requirements).to eq(
+        expect(module_dep.requirements.map(&:to_h)).to eq(
           [{
             requirement: "5.5.1",
             groups: [],
@@ -180,7 +180,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         expect(dependencies.length).to eq(1)
         expect(dependencies[0].name).to eq("namespace/name")
         expect(dependencies[0].version).to eq("0.1.0")
-        expect(dependencies[0].requirements).to eq(
+        expect(dependencies[0].requirements.map(&:to_h)).to eq(
           [{
             requirement: "0.1.0",
             groups: [],
@@ -202,7 +202,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         expect(dependencies.length).to eq(1)
         expect(dependencies[0].name).to eq("namespace/name")
         expect(dependencies[0].version).to be_nil
-        expect(dependencies[0].requirements).to eq(
+        expect(dependencies[0].requirements.map(&:to_h)).to eq(
           [{
             requirement: "~> 0.1",
             groups: [],
@@ -227,7 +227,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "parses the dependency correctly" do
         expect(dependencies[0].name).to eq("hashicorp/http")
         expect(dependencies[0].version).to eq("2.1.0")
-        expect(dependencies[0].requirements).to eq(
+        expect(dependencies[0].requirements.map(&:to_h)).to eq(
           [{
             requirement: "~> 2.0",
             groups: [],
@@ -288,7 +288,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "has the right details for the dependency (which uses bitbucket.org with no tag)" do
         expect(dependencies[0].name).to eq("distribution_label::bitbucket::cloudposse/terraform-null-label")
         expect(dependencies[0].version).to be_nil
-        expect(dependencies[0].requirements).to eq(
+        expect(dependencies[0].requirements.map(&:to_h)).to eq(
           [{
             requirement: nil,
             groups: [],
@@ -306,7 +306,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "has the right details for the dependency (which has a subdirectory and a tag)" do
         expect(dependencies[1].name).to eq("dns::github::cloudposse/terraform-aws-route53-al::tags/0.2.5")
         expect(dependencies[1].version).to eq("0.2.5")
-        expect(dependencies[1].requirements).to eq(
+        expect(dependencies[1].requirements.map(&:to_h)).to eq(
           [{
             requirement: nil,
             groups: [],
@@ -324,7 +324,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "has the right details for the dependency" do
         expect(dependencies[2].name).to eq("duplicate_label::github::cloudposse/terraform-null-label::tags/0.3.7")
         expect(dependencies[2].version).to eq("0.3.7")
-        expect(dependencies[2].requirements).to eq(
+        expect(dependencies[2].requirements.map(&:to_h)).to eq(
           [{
             requirement: nil,
             groups: [],
@@ -344,7 +344,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           "github_ssh_without_protocol::github::cloudposse/terraform-aws-jenkins::tags/0.4.0"
         )
         expect(dependencies[3].version).to eq("0.4.0")
-        expect(dependencies[3].requirements).to eq(
+        expect(dependencies[3].requirements.map(&:to_h)).to eq(
           [{
             requirement: nil,
             groups: [],
@@ -386,7 +386,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
 
       it "has the right source for the dependency" do
-        expect(dependencies[0].requirements).to eq(
+        expect(dependencies[0].requirements.map(&:to_h)).to eq(
           [{
             requirement: nil,
             groups: [],
@@ -455,7 +455,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           end
           expect(dependency).not_to be_nil
           expect(dependency.version).to be_nil
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: nil,
               groups: [],
@@ -476,7 +476,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           end
           expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.2.5")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: nil,
               groups: [],
@@ -497,7 +497,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           end
           expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.3.7")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: nil,
               groups: [],
@@ -518,7 +518,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           end
           expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.4.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: nil,
               groups: [],
@@ -728,7 +728,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           end
           expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.4.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: nil,
               groups: [],
@@ -769,7 +769,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("hashicorp/consul/aws")
             expect(dependency.version).to eq("0.1.0")
-            expect(dependency.requirements).to eq(expected_requirements)
+            expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
           end
         end
 
@@ -793,7 +793,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("devops-workflow/members/github")
             expect(dependency.version).to be_nil
-            expect(dependency.requirements).to eq(expected_requirements)
+            expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
           end
         end
 
@@ -817,7 +817,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("mongodb/ecs-task-definition/aws")
             expect(dependency.version).to be_nil
-            expect(dependency.requirements).to eq(expected_requirements)
+            expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
           end
         end
 
@@ -841,7 +841,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("terraform-aws-modules/rds/aws")
             expect(dependency.version).to be_nil
-            expect(dependency.requirements).to eq(expected_requirements)
+            expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
           end
         end
 
@@ -865,7 +865,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("example_corp/vpc/aws")
             expect(dependency.version).to eq("0.9.3")
-            expect(dependency.requirements).to eq(expected_requirements)
+            expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
           end
         end
       end
@@ -879,7 +879,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         it "has the right details for the first dependency" do
           expect(dependencies[0].name).to eq("gruntwork-io/modules-example")
           expect(dependencies[0].version).to eq("0.0.2")
-          expect(dependencies[0].requirements).to eq(
+          expect(dependencies[0].requirements.map(&:to_h)).to eq(
             [{
               requirement: nil,
               groups: [],
@@ -919,7 +919,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         dependency = dependencies.find { |d| d.name == "hashicorp/http" }
 
         expect(dependency.version).to be_nil
-        expect(dependency.requirements).to eq(
+        expect(dependency.requirements.map(&:to_h)).to eq(
           [{
             requirement: "~> 2.0",
             groups: [],
@@ -945,7 +945,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         expect(dependency.requirements.length).to eq(3)
 
         # Check that we found providers in main file and both nested modules
-        file_names = dependency.requirements.map { |r| r[:file] }.sort
+        file_names = dependency.requirements.filter_map(&:file).sort
         expect(file_names).to eq(
           [
             "modules/foo/providers.tf",
@@ -956,9 +956,8 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
         # All should have the same version requirement
         dependency.requirements.each do |req|
-          expect(req[:requirement]).to eq("5.75.1")
-          expect(req[:source][:type]).to eq("provider")
-          expect(req[:source][:module_identifier]).to eq("hashicorp/aws")
+          expect(req.requirement).to eq("5.75.1")
+          expect(req.source).to include(type: "provider", module_identifier: "hashicorp/aws")
         end
       end
     end
@@ -982,7 +981,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         dependency = dependencies.find { |d| d.name == "oci" }
 
         expect(dependency.version).to eq("3.27")
-        expect(dependency.requirements.first[:source][:module_identifier]).to eq("hashicorp/oci")
+        expect(dependency.requirements.first.source).to include(module_identifier: "hashicorp/oci")
       end
     end
 
@@ -994,7 +993,8 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
         expect(module_dependency).not_to be_nil
         expect(module_dependency.version).to eq("2.2.0")
-        expect(module_dependency.requirements.first[:source][:module_identifier]).to eq("babbel/cloudfront-bucket/aws")
+        expect(module_dependency.requirements.first.source)
+          .to include(module_identifier: "babbel/cloudfront-bucket/aws")
       end
     end
 
@@ -1017,7 +1017,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         dependency = dependencies.find { |d| d.name == "hashicorp/random" }
 
         expect(dependency.version).to eq("2.2.1")
-        expect(dependency.requirements.first[:source][:module_identifier]).to eq("hashicorp/random")
+        expect(dependency.requirements.first.source).to include(module_identifier: "hashicorp/random")
       end
     end
 
@@ -1030,7 +1030,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         expect(dependency).not_to be_nil
         expect(dependency.requirements.length).to eq(2)
         dependency.requirements.each do |req|
-          expect(req[:source][:module_identifier]).to eq("mongey/confluentcloud")
+          expect(req.source).to include(module_identifier: "mongey/confluentcloud")
         end
       end
 
@@ -1064,7 +1064,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("org/name/provider")
           expect(dependency.version).to eq("1.2.3")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -1125,7 +1125,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           expect(dependencies.length).to eq(1)
           expect(dependencies.first.name).to eq("hashicorp/aws")
           expect(dependencies.first.version).to eq("5.75.1")
-          expect(dependencies.first.requirements.first[:file]).to eq("modules/local/providers.tf")
+          expect(dependencies.first.requirements.first.file).to eq("modules/local/providers.tf")
         end
       end
     end

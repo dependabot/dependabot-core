@@ -80,9 +80,7 @@ module Dependabot
       # so we cap the attempts to avoid rate limiting or excessive latency.
       MAX_PLATFORM_VALIDATION_ATTEMPTS = T.let(5, Integer)
 
-      DockerSource = T.type_alias do
-        T::Hash[Symbol, T.nilable(String)]
-      end
+      DockerSource = T.type_alias { Dependabot::DependencyRequirement::Details }
 
       ManifestHash = T.type_alias do
         T::Hash[T.any(String, Symbol), Object]
@@ -155,26 +153,50 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        updated = dependency.requirements.map do |req|
-          updated_source = req.fetch(:source).dup
+        dependency.requirements.map do |req|
+          source = T.must(req.source)
+          tag = req.source_string(:tag)
+          digest = req.source_string(:digest)
 
-          tag = req[:source][:tag]
-          digest = req[:source][:digest]
+          updated_source =
+            if tag
+              updated_tag = latest_version_from(tag)
+              source_with_updated_tag(source, tag, updated_tag, digest)
+            elsif digest
+              source.merge(digest: digest_within_cooldown?("latest") ? digest : digest_of("latest"))
+            else
+              source
+            end
 
-          if tag
-            updated_tag = latest_version_from(tag)
-            updated_source[:tag] = updated_tag
-            updated_source[:digest] = resolved_digest_for(tag, updated_tag, digest) if digest || pin_digests?
-          elsif digest
-            updated_source[:digest] = digest_within_cooldown?("latest") ? digest : digest_of("latest")
-          end
-
-          req.merge(source: updated_source)
+          req.with_source(updated_source)
         end
-        wrap_requirements(updated)
       end
 
       private
+
+      sig do
+        params(
+          source: DockerSource,
+          current_tag: String,
+          updated_tag: String,
+          digest: T.nilable(String)
+        ).returns(DockerSource)
+      end
+      def source_with_updated_tag(source, current_tag, updated_tag, digest)
+        updated_source = source.merge(tag: updated_tag)
+        return updated_source unless digest || pin_digests?
+
+        updated_source.merge(digest: resolved_digest_for(current_tag, updated_tag, digest))
+      end
+
+      sig { params(source: DockerSource, key: Symbol).returns(T.nilable(String)) }
+      def source_string(source, key)
+        value = source[key] || source[key.to_s]
+        return if value.nil?
+        raise TypeError, "Expected Docker source #{key} to be a String" unless value.is_a?(String)
+
+        value
+      end
 
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
@@ -234,9 +256,10 @@ module Dependabot
 
       sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
       def digest_requirement_up_to_date?(req)
-        source = req.fetch(:source)
-        source_digest = source.fetch(:digest)
-        source_tag = source[:tag]
+        source = T.must(req.source)
+        source_digest = req.source_string(:digest)
+        source_tag = req.source_string(:tag)
+        raise TypeError, "Expected Docker source digest to be a String" unless source_digest
 
         if source_tag
           latest_tag = latest_tag_from(source_tag)
@@ -807,9 +830,8 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def registry_hostname
-        if dependency.requirements.first&.dig(:source, :registry)
-          return T.must(dependency.requirements.first).dig(:source, :registry)
-        end
+        registry = dependency.requirements.first&.source_string(:registry)
+        return registry if registry
 
         credentials_finder.base_registry
       end
@@ -942,8 +964,8 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def digest_requirements
-        dependency.requirements.select do |requirement|
-          requirement.dig(:source, :digest)
+        dependency.requirements.reject do |requirement|
+          requirement.source_string(:digest).nil?
         end
       end
 
@@ -1085,7 +1107,7 @@ module Dependabot
         # Either reference is single-platform or couldn't be fetched: can't prove a no-op.
         return false if current.nil? || candidate.nil?
 
-        pinned = pinned_platform_key(source[:platform])
+        pinned = pinned_platform_key(source_string(source, :platform))
         if pinned
           current_platform = current[pinned]
           candidate_platform = candidate[pinned]

@@ -38,14 +38,14 @@ RSpec.describe Dependabot::Deno::FileParser do
 
     it "parses jsr dependencies" do
       deps = parser.parse
-      jsr_deps = deps.select { |d| d.requirements.first[:source][:type] == "jsr" }
+      jsr_deps = deps.select { |d| d.requirements.first.source_string(:type) == "jsr" }
       expect(jsr_deps.length).to eq(2)
       expect(jsr_deps.map(&:name)).to contain_exactly("@std/path", "@std/fs")
     end
 
     it "parses npm dependencies" do
       deps = parser.parse
-      npm_deps = deps.select { |d| d.requirements.first[:source][:type] == "npm" }
+      npm_deps = deps.select { |d| d.requirements.first.source_string(:type) == "npm" }
       expect(npm_deps.length).to eq(2)
       expect(npm_deps.map(&:name)).to contain_exactly("chalk", "lodash")
     end
@@ -53,13 +53,13 @@ RSpec.describe Dependabot::Deno::FileParser do
     it "extracts version constraints" do
       deps = parser.parse
       chalk = deps.find { |d| d.name == "chalk" }
-      expect(chalk.requirements.first[:requirement]).to eq("^5.3.0")
+      expect(chalk.requirements.first.requirement).to eq("^5.3.0")
     end
 
     it "sets the manifest file as the requirement source" do
       deps = parser.parse
       dep = deps.first
-      expect(dep.requirements.first[:file]).to eq("deno.json")
+      expect(dep.requirements.first.file).to eq("deno.json")
     end
   end
 
@@ -76,10 +76,10 @@ RSpec.describe Dependabot::Deno::FileParser do
     it "attributes each dependency to its declaring manifest" do
       deps = parser.parse
 
-      expect(deps.find { |d| d.name == "@std/path" }.requirements.first[:file]).to eq("deno.json")
-      expect(deps.find { |d| d.name == "@std/assert" }.requirements.first[:file])
+      expect(deps.find { |d| d.name == "@std/path" }.requirements.first.file).to eq("deno.json")
+      expect(deps.find { |d| d.name == "@std/assert" }.requirements.first.file)
         .to eq("packages/alpha/deno.json")
-      expect(deps.find { |d| d.name == "chalk" }.requirements.first[:file])
+      expect(deps.find { |d| d.name == "chalk" }.requirements.first.file)
         .to eq("packages/beta/deno.json")
     end
   end
@@ -91,7 +91,7 @@ RSpec.describe Dependabot::Deno::FileParser do
 
     it "parses scoped npm packages" do
       deps = parser.parse
-      npm_deps = deps.select { |d| d.requirements.first[:source][:type] == "npm" }
+      npm_deps = deps.select { |d| d.requirements.first.source_string(:type) == "npm" }
       expect(npm_deps.map(&:name)).to contain_exactly(
         "@aws-sdk/client-polly", "@sentry/deno", "chalk"
       )
@@ -100,7 +100,7 @@ RSpec.describe Dependabot::Deno::FileParser do
     it "extracts scoped package constraints" do
       deps = parser.parse
       polly = deps.find { |d| d.name == "@aws-sdk/client-polly" }
-      expect(polly.requirements.first[:requirement]).to eq("^3.600.0")
+      expect(polly.requirements.first.requirement).to eq("^3.600.0")
     end
   end
 
@@ -119,7 +119,7 @@ RSpec.describe Dependabot::Deno::FileParser do
     it "sets nil requirement for versionless specifiers" do
       deps = parser.parse
       chalk = deps.find { |d| d.name == "chalk" }
-      expect(chalk.requirements.first[:requirement]).to be_nil
+      expect(chalk.requirements.first.requirement).to be_nil
     end
 
     it "sets nil version for versionless specifiers" do
@@ -131,7 +131,7 @@ RSpec.describe Dependabot::Deno::FileParser do
     it "still parses versioned specifiers normally" do
       deps = parser.parse
       lodash = deps.find { |d| d.name == "lodash" }
-      expect(lodash.requirements.first[:requirement]).to eq("^4.17.21")
+      expect(lodash.requirements.first.requirement).to eq("^4.17.21")
     end
   end
 
@@ -148,7 +148,7 @@ RSpec.describe Dependabot::Deno::FileParser do
     it "preserves the version constraint" do
       deps = parser.parse
       path = deps.find { |d| d.name == "@std/path" }
-      expect(path.requirements.first[:requirement]).to eq("^1.0.0")
+      expect(path.requirements.first.requirement).to eq("^1.0.0")
     end
   end
 
@@ -278,7 +278,7 @@ RSpec.describe Dependabot::Deno::FileParser do
       deps = parser.parse
       expect(deps.length).to eq(1)
       expect(deps.first.name).to eq("@std/path")
-      expect(deps.first.requirements.first[:requirement]).to eq("^1.0.0")
+      expect(deps.first.requirements.first.requirement).to eq("^1.0.0")
     end
   end
 
@@ -296,7 +296,7 @@ RSpec.describe Dependabot::Deno::FileParser do
       deps = parser.parse
       expect(deps.length).to eq(1)
       expect(deps.first.name).to eq("@scope/foo")
-      expect(deps.first.requirements.map { |r| r[:requirement] }).to contain_exactly("^1.0.0", "^2.0.0")
+      expect(deps.first.requirements.map(&:requirement)).to contain_exactly("^1.0.0", "^2.0.0")
     end
   end
 
@@ -313,7 +313,7 @@ RSpec.describe Dependabot::Deno::FileParser do
     it "treats them as separate dependencies" do
       deps = parser.parse
       expect(deps.length).to eq(2)
-      expect(deps.map { |d| d.requirements.first[:source][:type] }).to contain_exactly("jsr", "npm")
+      expect(deps.map { |d| d.requirements.first.source_string(:type) }).to contain_exactly("jsr", "npm")
     end
   end
 

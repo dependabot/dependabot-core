@@ -50,7 +50,10 @@ module Dependabot
           @dependencies_to_update = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
           @property_name = T.let(nil, T.nilable(String))
           @dependency_set = T.let(nil, T.nilable(T::Hash[Symbol, String]))
-          @updated_requirements = T.let({}, T::Hash[String, T::Array[T::Hash[Symbol, Object]]])
+          @updated_requirements = T.let(
+            {},
+            T::Hash[String, T::Array[Dependabot::DependencyRequirement]]
+          )
         end
         sig { returns(T::Boolean) }
         def update_possible?
@@ -128,8 +131,8 @@ module Dependabot
               source: nil
             ).parse.select do |dep|
               dep.requirements.any? do |r|
-                tmp_p_name = r.dig(:metadata, :property_name)
-                tmp_dep_set = r.dig(:metadata, :dependency_set)
+                tmp_p_name = metadata_string(r, :property_name)
+                tmp_dep_set = metadata_dependency_set(r)
                 next true if property_name && tmp_p_name == property_name
 
                 dependency_set && tmp_dep_set == dependency_set
@@ -140,18 +143,26 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def property_name
           @property_name ||= dependency.requirements
-                                       .find { |r| r.dig(:metadata, :property_name) }
-                                       &.dig(:metadata, :property_name)
+                                       .filter_map do |requirement|
+                                         metadata_string(requirement, :property_name)
+                                       end
+                                       .first
         end
 
         sig { returns(T.nilable(T::Hash[Symbol, String])) }
         def dependency_set
           @dependency_set ||= dependency.requirements
-                                        .find { |r| r.dig(:metadata, :dependency_set) }
-                                        &.dig(:metadata, :dependency_set)
+                                        .filter_map do |requirement|
+                                          metadata_dependency_set(requirement)
+                                        end
+                                        .first
         end
 
-        sig { params(dep: Dependabot::Dependency).returns(T::Array[T::Hash[Symbol, Object]]) }
+        sig do
+          params(
+            dep: Dependabot::Dependency
+          ).returns(T::Array[Dependabot::DependencyRequirement])
+        end
         def updated_requirements(dep)
           @updated_requirements[dep.name] ||=
             RequirementsUpdater.new(
@@ -160,6 +171,35 @@ module Dependabot
               source_url: source_url,
               properties_to_update: [property_name].compact
             ).updated_requirements
+        end
+
+        sig do
+          params(
+            requirement: Dependabot::DependencyRequirement,
+            key: Symbol
+          ).returns(T.nilable(String))
+        end
+        def metadata_string(requirement, key)
+          value = requirement.metadata&.[](key)
+          value if value.is_a?(String)
+        end
+
+        sig do
+          params(
+            requirement: Dependabot::DependencyRequirement
+          ).returns(T.nilable(T::Hash[Symbol, String]))
+        end
+        def metadata_dependency_set(requirement)
+          value = requirement.metadata&.[](:dependency_set)
+          return unless value.is_a?(Hash)
+
+          details = T.let(value, T::Hash[Object, Object])
+          details.each_with_object(T.let({}, T::Hash[Symbol, String])) do |(key, entry), result|
+            valid_entry = key.is_a?(Symbol) && entry.is_a?(String)
+            raise TypeError, "dependency_set metadata must use symbol keys and string values" unless valid_entry
+
+            result[key] = entry
+          end
         end
       end
     end

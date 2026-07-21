@@ -11,10 +11,6 @@ module Dependabot
     class MetadataFinder < Dependabot::MetadataFinders::Base
       extend T::Sig
 
-      DockerSource = T.type_alias do
-        T::Hash[Symbol, T.nilable(String)]
-      end
-
       ImageDetails = T.type_alias do
         T::Hash[String, Object]
       end
@@ -27,15 +23,20 @@ module Dependabot
       def look_up_source
         return if dependency.requirements.empty?
 
-        new_source = dependency.requirements.first&.fetch(:source)
-        return unless new_source && new_source[:registry] && (new_source[:tag] || new_source[:digest])
+        requirement = dependency.requirements.first
+        return unless requirement
 
-        details = image_details(new_source)
+        registry = requirement.source_string(:registry)
+        tag = requirement.source_string(:tag)
+        digest = requirement.source_string(:digest)
+        return unless registry && (tag || digest)
+
+        details = image_details(requirement)
         image_source = image_label(details, "org.opencontainers.image.source")
         return unless image_source
 
         # If we have a tag, return the source directly without additional version metadata
-        return Dependabot::Source.from_url(image_source) if new_source[:tag]
+        return Dependabot::Source.from_url(image_source) if tag
 
         # If we only have a digest, we need to look for the version label to build the source
         build_source_from_image_version(image_source, details)
@@ -46,15 +47,15 @@ module Dependabot
 
       sig do
         params(
-          source: DockerSource
+          requirement: Dependabot::DependencyRequirement
         ).returns(
           ImageDetails
         )
       end
-      def image_details(source)
-        registry = source[:registry].to_s.sub(%r{^oci://}, "")
-        tag = source[:tag]
-        digest = source[:digest]
+      def image_details(requirement)
+        registry = requirement.source_string(:registry).to_s.sub(%r{^oci://}, "")
+        tag = requirement.source_string(:tag)
+        digest = requirement.source_string(:digest)
 
         image_ref =
           # If both tag and digest are present, use the digest as docker ignores the tag when a digest is present

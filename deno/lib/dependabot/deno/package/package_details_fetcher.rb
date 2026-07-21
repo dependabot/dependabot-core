@@ -25,7 +25,7 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
         def available_versions
-          source_type = dependency.requirements.first&.dig(:source, :type)
+          source_type = dependency.requirements.first&.source_string(:type)
 
           case source_type
           when "jsr"

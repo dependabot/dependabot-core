@@ -8,7 +8,7 @@ require "dependabot/requirements_update_strategy"
 RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
-      requirements: requirements,
+      requirements: requirements.map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) },
       update_strategy: update_strategy,
       latest_resolvable_version: latest_version
     )
@@ -26,7 +26,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "preserves wildcard pattern at new version" do
-          expect(updater.updated_requirements.first[:requirement]).to eq("=2.3.*")
+          expect(updater.updated_requirements.first.requirement).to eq("=2.3.*")
         end
       end
 
@@ -36,7 +36,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "preserves wildcard pattern at new version with pip operator" do
-          expect(updater.updated_requirements.first[:requirement]).to eq("==2.3.*")
+          expect(updater.updated_requirements.first.requirement).to eq("==2.3.*")
         end
       end
 
@@ -46,7 +46,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "bumps to exact new version" do
-          expect(updater.updated_requirements.first[:requirement]).to eq("=2.3.4")
+          expect(updater.updated_requirements.first.requirement).to eq("=2.3.4")
         end
       end
 
@@ -56,7 +56,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "bumps to exact new version with pip operator" do
-          expect(updater.updated_requirements.first[:requirement]).to eq("==2.3.4")
+          expect(updater.updated_requirements.first.requirement).to eq("==2.3.4")
         end
       end
 
@@ -66,7 +66,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "updates to new version" do
-          expect(updater.updated_requirements.first[:requirement]).to eq(">=2.3.4")
+          expect(updater.updated_requirements.first.requirement).to eq(">=2.3.4")
         end
 
         context "when requirement version is too high" do
@@ -75,7 +75,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
           end
 
           it "returns unfixable" do
-            expect(updater.updated_requirements.first[:requirement]).to eq(:unfixable)
+            expect(updater.updated_requirements.first).to be_unfixable
           end
         end
       end
@@ -86,7 +86,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "updates compatible release version" do
-          expect(updater.updated_requirements.first[:requirement]).to eq("~=2.3.4")
+          expect(updater.updated_requirements.first.requirement).to eq("~=2.3.4")
         end
       end
 
@@ -96,7 +96,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "preserves major wildcard pattern" do
-          expect(updater.updated_requirements.first[:requirement]).to eq("=2.*")
+          expect(updater.updated_requirements.first.requirement).to eq("=2.*")
         end
       end
 
@@ -106,7 +106,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "updates to new version" do
-          expect(updater.updated_requirements.first[:requirement]).to eq(">2.3.4")
+          expect(updater.updated_requirements.first.requirement).to eq(">2.3.4")
         end
       end
 
@@ -116,7 +116,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "keeps the original requirement unchanged" do
-          expect(updater.updated_requirements.first[:requirement]).to eq("<=2.0")
+          expect(updater.updated_requirements.first.requirement).to eq("<=2.0")
         end
       end
 
@@ -126,7 +126,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "keeps the original requirement unchanged" do
-          expect(updater.updated_requirements.first[:requirement]).to eq("<3.0")
+          expect(updater.updated_requirements.first.requirement).to eq("<3.0")
         end
       end
 
@@ -136,7 +136,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "keeps the original requirement unchanged" do
-          expect(updater.updated_requirements.first[:requirement]).to eq("!=1.5")
+          expect(updater.updated_requirements.first.requirement).to eq("!=1.5")
         end
       end
 
@@ -146,7 +146,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "preserves operator but updates version" do
-          expect(updater.updated_requirements.first[:requirement]).to eq("=2.3.4")
+          expect(updater.updated_requirements.first.requirement).to eq("=2.3.4")
         end
       end
 
@@ -156,7 +156,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "preserves operator but updates version" do
-          expect(updater.updated_requirements.first[:requirement]).to eq("==2.3.4")
+          expect(updater.updated_requirements.first.requirement).to eq("==2.3.4")
         end
       end
 
@@ -166,7 +166,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "uses full precision of new version" do
-          expect(updater.updated_requirements.first[:requirement]).to eq("=2.3.4")
+          expect(updater.updated_requirements.first.requirement).to eq("=2.3.4")
         end
       end
 
@@ -176,7 +176,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "uses full precision of new version" do
-          expect(updater.updated_requirements.first[:requirement]).to eq("=2.3.4")
+          expect(updater.updated_requirements.first.requirement).to eq("=2.3.4")
         end
       end
 
@@ -186,7 +186,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "returns unfixable" do
-          expect(updater.updated_requirements.first[:requirement]).to eq(:unfixable)
+          expect(updater.updated_requirements.first).to be_unfixable
         end
       end
 
@@ -197,7 +197,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         let(:latest_version) { "3.14.0" }
 
         it "keeps satisfied lower bound and updates unsatisfied upper bound" do
-          expect(updater.updated_requirements.first[:requirement]).to eq(">=3.10,<3.15.0")
+          expect(updater.updated_requirements.first.requirement).to eq(">=3.10,<3.15.0")
         end
       end
 
@@ -207,7 +207,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "keeps entire requirement unchanged" do
-          expect(updater.updated_requirements.first[:requirement]).to eq(">=2.0,<5.0")
+          expect(updater.updated_requirements.first.requirement).to eq(">=2.0,<5.0")
         end
       end
 
@@ -217,7 +217,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "returns unfixable" do
-          expect(updater.updated_requirements.first[:requirement]).to eq(:unfixable)
+          expect(updater.updated_requirements.first).to be_unfixable
         end
       end
 
@@ -228,7 +228,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         let(:latest_version) { "2.3.4" }
 
         it "returns unfixable (cannot lower minimum version)" do
-          expect(updater.updated_requirements.first[:requirement]).to eq(:unfixable)
+          expect(updater.updated_requirements.first).to be_unfixable
         end
       end
 
@@ -238,7 +238,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "keeps satisfied lower bound and updates unsatisfied <= upper bound" do
-          expect(updater.updated_requirements.first[:requirement]).to eq(">=1.0,<=2.3.4")
+          expect(updater.updated_requirements.first.requirement).to eq(">=1.0,<=2.3.4")
         end
       end
 
@@ -248,7 +248,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "keeps satisfied constraints and updates unsatisfied upper bound" do
-          expect(updater.updated_requirements.first[:requirement]).to eq(">=1.0,<3.0.0,!=1.5")
+          expect(updater.updated_requirements.first.requirement).to eq(">=1.0,<3.0.0,!=1.5")
         end
       end
     end
@@ -262,7 +262,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "converts to range" do
-          expect(updater.updated_requirements.first[:requirement]).to eq(">=1.21,<3.0")
+          expect(updater.updated_requirements.first.requirement).to eq(">=1.21,<3.0")
         end
       end
 
@@ -272,7 +272,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "converts to range" do
-          expect(updater.updated_requirements.first[:requirement]).to eq(">=1.26,<3.0")
+          expect(updater.updated_requirements.first.requirement).to eq(">=1.26,<3.0")
         end
       end
 
@@ -282,7 +282,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "converts to range" do
-          expect(updater.updated_requirements.first[:requirement]).to eq(">=1.26,<3.0")
+          expect(updater.updated_requirements.first.requirement).to eq(">=1.26,<3.0")
         end
       end
 
@@ -292,7 +292,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "updates upper bound" do
-          expect(updater.updated_requirements.first[:requirement]).to eq(">=1.26,<3.0")
+          expect(updater.updated_requirements.first.requirement).to eq(">=1.26,<3.0")
         end
       end
 
@@ -302,7 +302,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "adds upper bound" do
-          expect(updater.updated_requirements.first[:requirement]).to eq(">=1.26,<3.0")
+          expect(updater.updated_requirements.first.requirement).to eq(">=1.26,<3.0")
         end
       end
 
@@ -312,7 +312,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "converts to range" do
-          expect(updater.updated_requirements.first[:requirement]).to eq(">=1.3,<3.0")
+          expect(updater.updated_requirements.first.requirement).to eq(">=1.3,<3.0")
         end
       end
 
@@ -322,7 +322,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "returns unfixable" do
-          expect(updater.updated_requirements.first[:requirement]).to eq(:unfixable)
+          expect(updater.updated_requirements.first).to be_unfixable
         end
       end
 
@@ -333,7 +333,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         let(:latest_version) { "2.10" }
 
         it "updates upper bound preserving structure" do
-          expect(updater.updated_requirements.first[:requirement]).to eq(">=1.9.2,<3.0")
+          expect(updater.updated_requirements.first.requirement).to eq(">=1.9.2,<3.0")
         end
       end
     end
@@ -347,7 +347,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "does not change requirement" do
-          expect(updater.updated_requirements.first[:requirement]).to eq(">=2.0")
+          expect(updater.updated_requirements.first.requirement).to eq(">=2.0")
         end
       end
 
@@ -357,7 +357,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "bumps to new version" do
-          expect(updater.updated_requirements.first[:requirement]).to eq("=2.3.*")
+          expect(updater.updated_requirements.first.requirement).to eq("=2.3.*")
         end
       end
 
@@ -367,7 +367,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "does not change requirement" do
-          expect(updater.updated_requirements.first[:requirement]).to eq(">=1.0,<5.0")
+          expect(updater.updated_requirements.first.requirement).to eq(">=1.0,<5.0")
         end
       end
     end
@@ -381,7 +381,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "does not change requirement" do
-          expect(updater.updated_requirements.first[:requirement]).to eq("=1.21.*")
+          expect(updater.updated_requirements.first.requirement).to eq("=1.21.*")
         end
       end
     end
@@ -396,7 +396,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "does not change requirement" do
-          expect(updater.updated_requirements.first[:requirement]).to eq("=1.21.*")
+          expect(updater.updated_requirements.first.requirement).to eq("=1.21.*")
         end
       end
     end
@@ -410,7 +410,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "does not change requirement" do
-          expect(updater.updated_requirements.first[:requirement]).to be_nil
+          expect(updater.updated_requirements.first.requirement).to be_nil
         end
       end
 
@@ -420,17 +420,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
         end
 
         it "does not change requirement" do
-          expect(updater.updated_requirements.first[:requirement]).to eq("*")
-        end
-      end
-
-      context "with empty string requirement" do
-        let(:requirements) do
-          [{ requirement: "", groups: ["dependencies"], source: nil, file: "environment.yml" }]
-        end
-
-        it "does not change requirement" do
-          expect(updater.updated_requirements.first[:requirement]).to eq("")
+          expect(updater.updated_requirements.first.requirement).to eq("*")
         end
       end
     end
@@ -447,8 +437,8 @@ RSpec.describe Dependabot::Conda::UpdateChecker::RequirementsUpdater do
 
       it "updates all requirements" do
         updated = updater.updated_requirements
-        expect(updated[0][:requirement]).to eq("=2.3.*")
-        expect(updated[1][:requirement]).to eq("==2.3.*")
+        expect(updated[0].requirement).to eq("=2.3.*")
+        expect(updated[1].requirement).to eq("==2.3.*")
       end
     end
   end

@@ -11,6 +11,7 @@ require "sorbet-runtime"
 require "dependabot/composer/requirement"
 require "dependabot/composer/update_checker"
 require "dependabot/composer/version"
+require "dependabot/dependency_requirement"
 require "dependabot/requirements_update_strategy"
 
 module Dependabot
@@ -36,7 +37,7 @@ module Dependabot
 
         sig do
           params(
-            requirements: T::Array[T::Hash[Symbol, String]],
+            requirements: T::Array[Dependabot::DependencyRequirement],
             update_strategy: Dependabot::RequirementsUpdateStrategy,
             latest_resolvable_version: T.nilable(T.any(String, Composer::Version))
           ).void
@@ -59,7 +60,7 @@ module Dependabot
           )
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, String]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_requirements
           return requirements if update_strategy.lockfile_only?
           return requirements unless latest_resolvable_version
@@ -69,7 +70,7 @@ module Dependabot
 
         private
 
-        sig { returns(T::Array[T::Hash[Symbol, String]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :requirements
 
         sig { returns(Dependabot::RequirementsUpdateStrategy) }
@@ -85,9 +86,12 @@ module Dependabot
           raise "Unknown update strategy: #{update_strategy}"
         end
 
-        sig { params(req: T::Hash[Symbol, String]).returns(T::Hash[Symbol, String]) }
+        sig do
+          params(req: Dependabot::DependencyRequirement)
+            .returns(Dependabot::DependencyRequirement)
+        end
         def updated_requirement(req)
-          req_string = T.must(req[:requirement]).strip
+          req_string = T.must(req.requirement).strip
           or_string_reqs = req_string.split(OR_SEPARATOR)
           or_separator = req_string.match(OR_SEPARATOR)&.to_s || " || "
           branch_or_string_reqs, numeric_or_string_reqs = or_string_reqs
@@ -110,12 +114,16 @@ module Dependabot
           # Add a T.must for new_req as it's defined in the case statement with multiple options
           new_req = T.must(new_req)
           new_req_string =
-            [new_req[:requirement], *branch_or_string_reqs].join(or_separator)
-          new_req.merge(requirement: new_req_string)
+            [T.must(new_req.requirement), *branch_or_string_reqs].join(or_separator)
+          new_req.with_requirement(new_req_string)
         end
-        sig { params(req: T::Hash[Symbol, String]).returns(T::Hash[Symbol, String]) }
+
+        sig do
+          params(req: Dependabot::DependencyRequirement)
+            .returns(Dependabot::DependencyRequirement)
+        end
         def updated_alias(req)
-          req_string = T.must(req[:requirement])
+          req_string = T.must(req.requirement)
           parts = req_string.split(/\sas\s/)
           real_version = T.must(parts.first).strip
 
@@ -125,13 +133,18 @@ module Dependabot
 
           new_version_string = T.must(latest_resolvable_version).to_s
           new_req = req_string.sub(real_version, new_version_string)
-          req.merge(requirement: new_req)
+          req.with_requirement(new_req)
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
-        sig { params(req: T::Hash[Symbol, String], or_separator: String).returns(T::Hash[Symbol, String]) }
+        sig do
+          params(
+            req: Dependabot::DependencyRequirement,
+            or_separator: String
+          ).returns(Dependabot::DependencyRequirement)
+        end
         def widen_requirement(req, or_separator)
-          current_requirement = T.must(req[:requirement])
+          current_requirement = T.must(req.requirement)
           reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
 
           updated_requirement =
@@ -147,13 +160,18 @@ module Dependabot
               update_version_string(current_requirement)
             end
 
-          req.merge(requirement: updated_requirement)
+          req.with_requirement(updated_requirement)
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
-        sig { params(req: T::Hash[Symbol, String], or_separator: String).returns(T::Hash[Symbol, String]) }
+        sig do
+          params(
+            req: Dependabot::DependencyRequirement,
+            or_separator: String
+          ).returns(Dependabot::DependencyRequirement)
+        end
         def update_requirement_version(req, or_separator)
-          current_requirement = T.must(req[:requirement])
+          current_requirement = T.must(req.requirement)
           reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
 
           updated_requirement =
@@ -167,7 +185,7 @@ module Dependabot
               update_version_string(current_requirement)
             end
 
-          req.merge(requirement: updated_requirement)
+          req.with_requirement(updated_requirement)
         end
 
         sig { params(requirement_string: String).returns(T::Boolean) }

@@ -29,8 +29,8 @@ module Dependabot
           content = T.must(manifest.content).dup
 
           dependencies.each do |dep|
-            prev_reqs = (dep.previous_requirements || []).select { |r| r[:file] == manifest.name }
-            new_reqs = dep.requirements.select { |r| r[:file] == manifest.name }
+            prev_reqs = (dep.previous_requirements || []).select { |r| r.file == manifest.name }
+            new_reqs = dep.requirements.select { |r| r.file == manifest.name }
 
             prev_reqs.zip(new_reqs).each do |prev_req, new_req|
               content = apply_substitution(content, dep, prev_req, T.must(new_req))
@@ -52,15 +52,16 @@ module Dependabot
           params(
             content: String,
             dep: Dependabot::Dependency,
-            prev_req: T::Hash[Symbol, T.anything],
-            new_req: T::Hash[Symbol, T.anything]
+            prev_req: Dependabot::DependencyRequirement,
+            new_req: Dependabot::DependencyRequirement
           ).returns(String)
         end
         def apply_substitution(content, dep, prev_req, new_req)
-          source = T.cast(prev_req[:source], T::Hash[Symbol, T.anything])
-          source_type = T.cast(source[:type], String)
-          prev_req_str = T.cast(prev_req[:requirement], T.nilable(String))
-          new_req_str = T.cast(new_req[:requirement], T.nilable(String))
+          source_type = prev_req.source_string(:type)
+          raise TypeError, "Expected dependency source type to be a String" unless source_type.is_a?(String)
+
+          prev_req_str = prev_req.requirement
+          new_req_str = new_req.requirement
 
           base = "#{source_type}:#{dep.name}"
           old_specifier = prev_req_str ? "#{base}@#{prev_req_str}" : base

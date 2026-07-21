@@ -65,7 +65,7 @@ module Dependabot
           changed_requirements =
             dependency.requirements - (dependency.previous_requirements || [])
 
-          changed_requirements.any? { |f| f[:file] == file.name }
+          changed_requirements.any? { |f| f.file == file.name }
         end
 
         sig { params(content: String, filename: String, dependency: Dependabot::Dependency).returns(String) }
@@ -82,16 +82,16 @@ module Dependabot
           reqs.each do |new_req, old_req|
             next if old_req.nil?
 
-            raise "Bad req match" unless new_req[:file] == old_req[:file]
-            next if new_req[:requirement] == old_req[:requirement]
-            next unless new_req[:file] == filename
+            raise "Bad req match" unless new_req.file == old_req.file
+            next if new_req.requirement == old_req.requirement
+            next unless new_req.file == filename
 
             updated_content =
               update_manifest_req(
                 content: updated_content,
                 dep: dependency,
-                old_req: old_req.fetch(:requirement),
-                new_req: new_req.fetch(:requirement)
+                old_req: T.must(old_req.requirement),
+                new_req: T.must(new_req.requirement)
               )
           end
 
@@ -102,15 +102,15 @@ module Dependabot
         def update_git_pin(content:, filename:, dependency:)
           updated_pin =
             dependency.requirements
-                      .find { |r| r[:file] == filename }
-                      &.dig(:source, :ref)
+                      .find { |r| r.file == filename }
+                      &.source&.[](:ref)
 
           old_pin =
             dependency.previous_requirements
-                      &.find { |r| r[:file] == filename }
-                      &.dig(:source, :ref)
+                      &.find { |r| r.file == filename }
+                      &.source&.[](:ref)
 
-          return content unless old_pin
+          return content unless old_pin.is_a?(String) && updated_pin.is_a?(String)
 
           update_manifest_pin(
             content: content,

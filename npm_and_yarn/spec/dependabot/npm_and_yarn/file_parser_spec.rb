@@ -1266,7 +1266,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             dep = top_level_dependencies.find { |d| d.name == "is-number" }
             expect(dep).not_to be_nil
             expect(dep.version).to be_nil
-            expect(dep.requirements.first[:requirement]).to eq("^7.0.0")
+            expect(dep.requirements.first.requirement).to eq("^7.0.0")
           end
 
           it "still includes non-aliased packages" do

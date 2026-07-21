@@ -238,8 +238,8 @@ module Dependabot
         sig { params(filename: String).returns(String) }
         def temporary_requirement_for_resolution(filename)
           original_req = dependency.requirements
-                                   .find { |r| r.fetch(:file) == filename }
-                                   &.fetch(:requirement)
+                                   .find { |r| r.file == filename }
+                                   &.requirement
 
           lower_bound_req =
             if original_req && !unlock_requirement?
@@ -268,11 +268,12 @@ module Dependabot
               dependency.version
             else
               version_from_requirement =
-                dependency.requirements.filter_map { |r| r.fetch(:requirement) }
-                                       .flat_map { |req_str| Cargo::Requirement.new(req_str) }
-                                       .flat_map(&:requirements)
-                                       .reject { |req_array| req_array.first.start_with?("<") }
-                                       .map(&:last)
+                dependency.requirements
+                          .filter_map(&:requirement)
+                          .flat_map { |req_str| Cargo::Requirement.new(req_str) }
+                          .flat_map(&:requirements)
+                          .reject { |req_array| req_array.first.start_with?("<") }
+                          .map(&:last)
                           .max&.to_s
 
               version_from_requirement || 0

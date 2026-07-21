@@ -320,8 +320,8 @@ module Dependabot
             next content unless Composer::Version.correct?(updated_req)
 
             old_req =
-              dep.requirements.find { |r| r[:file] == PackageManager::MANIFEST_FILENAME }
-                              &.fetch(:requirement)
+              dep.requirements.find { |r| r.file == PackageManager::MANIFEST_FILENAME }
+                              &.requirement
 
             # When updating a subdep there won't be an old requirement
             next content unless old_req

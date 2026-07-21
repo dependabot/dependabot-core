@@ -116,9 +116,11 @@ module Dependabot
         end
         def update_version_tags(value_node, content, dependency_version)
           dependency.requirements.each do |req|
-            next unless req[:metadata][:type] == :docker_image
+            next unless req.metadata&.[](:type) == :docker_image
 
-            tag_value = req[:source][:tag]
+            tag_value = req.source&.[](:tag)
+            next unless tag_value.is_a?(String)
+
             version_scalar = value_node.children.find do |node|
               node.is_a?(Psych::Nodes::Scalar) && node.value == tag_value
             end

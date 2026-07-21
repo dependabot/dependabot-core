@@ -11,7 +11,7 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Go do
     described_class.new(
       source: source,
       credentials: credentials,
-      requirements: requirements,
+      requirements: requirements.map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) },
       current_version: current_version
     )
   end
@@ -70,9 +70,9 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Go do
         expect(dep.name).to eq("golang.org/x/tools")
         expect(dep.version).to eq("0.28.0")
         expect(dep.package_manager).to eq("go_modules")
-        expect(dep.requirements.first[:requirement]).to eq("v0.28.0")
-        expect(dep.requirements.first[:file]).to eq("go.mod")
-        expect(dep.requirements.first[:source]).to eq({ type: "default", source: "golang.org/x/tools" })
+        expect(dep.requirements.first.requirement).to eq("v0.28.0")
+        expect(dep.requirements.first.file).to eq("go.mod")
+        expect(dep.requirements.first.source).to eq({ type: "default", source: "golang.org/x/tools" })
         go_checker
       end
 
@@ -156,12 +156,12 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Go do
 
       it "updates the requirement with v prefix" do
         updated = checker.updated_requirements(latest_version)
-        expect(updated.first[:requirement]).to eq("v0.29.0")
+        expect(updated.first.requirement).to eq("v0.29.0")
       end
 
       it "updates the original_string in source" do
         updated = checker.updated_requirements(latest_version)
-        expect(updated.first[:source][:original_string]).to eq("golang.org/x/tools@v0.29.0")
+        expect(updated.first.source&.[](:original_string)).to eq("golang.org/x/tools@v0.29.0")
       end
     end
 
@@ -170,8 +170,8 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Go do
 
       it "updates the requirement" do
         updated = checker.updated_requirements(latest_version)
-        expect(updated.first[:requirement]).to eq("v1.0.0")
-        expect(updated.first[:source][:original_string]).to eq("golang.org/x/tools@v1.0.0")
+        expect(updated.first.requirement).to eq("v1.0.0")
+        expect(updated.first.source&.[](:original_string)).to eq("golang.org/x/tools@v1.0.0")
       end
     end
 
@@ -199,8 +199,8 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Go do
 
       it "updates to the new patch version" do
         updated = checker.updated_requirements("1.9.1")
-        expect(updated.first[:requirement]).to eq("v1.9.1")
-        expect(updated.first[:source][:original_string]).to eq("github.com/stretchr/testify@v1.9.1")
+        expect(updated.first.requirement).to eq("v1.9.1")
+        expect(updated.first.source&.[](:original_string)).to eq("github.com/stretchr/testify@v1.9.1")
       end
     end
 
@@ -222,13 +222,13 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Go do
 
     it "preserves all requirement properties" do
       updated = checker.updated_requirements("0.29.0")
-      expect(updated.first[:groups]).to eq(["additional_dependencies"])
-      expect(updated.first[:file]).to eq(".pre-commit-config.yaml")
-      expect(updated.first[:source][:type]).to eq("additional_dependency")
-      expect(updated.first[:source][:language]).to eq("golang")
-      expect(updated.first[:source][:hook_id]).to eq("golangci-lint")
-      expect(updated.first[:source][:hook_repo]).to eq("https://github.com/golangci/golangci-lint")
-      expect(updated.first[:source][:package_name]).to eq("golang.org/x/tools")
+      expect(updated.first.groups).to eq(["additional_dependencies"])
+      expect(updated.first.file).to eq(".pre-commit-config.yaml")
+      expect(updated.first.source&.[](:type)).to eq("additional_dependency")
+      expect(updated.first.source&.[](:language)).to eq("golang")
+      expect(updated.first.source&.[](:hook_id)).to eq("golangci-lint")
+      expect(updated.first.source&.[](:hook_repo)).to eq("https://github.com/golangci/golangci-lint")
+      expect(updated.first.source&.[](:package_name)).to eq("golang.org/x/tools")
     end
 
     context "when original_name is missing (falls back to package_name)" do
@@ -245,7 +245,7 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Go do
 
       it "uses package_name for the original_string" do
         updated = checker.updated_requirements("0.29.0")
-        expect(updated.first[:source][:original_string]).to eq("golang.org/x/tools@v0.29.0")
+        expect(updated.first.source&.[](:original_string)).to eq("golang.org/x/tools@v0.29.0")
       end
     end
   end

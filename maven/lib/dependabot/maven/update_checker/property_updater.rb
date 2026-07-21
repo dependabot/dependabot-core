@@ -122,9 +122,9 @@ module Dependabot
               source: nil
             ).parse.select do |dep|
               dep.requirements.any? do |r|
-                next unless r.dig(:metadata, :property_name) == property_name
+                next unless metadata_string(r, :property_name) == property_name
 
-                r.dig(:metadata, :property_source) == property_source
+                metadata_string(r, :property_source) == property_source
               end
             end,
             T.nilable(T::Array[Dependabot::Dependency])
@@ -135,8 +135,8 @@ module Dependabot
         def property_name
           @property_name ||= T.let(
             dependency.requirements
-                      .find { |r| r.dig(:metadata, :property_name) }
-                      &.dig(:metadata, :property_name),
+                      .filter_map { |requirement| metadata_string(requirement, :property_name) }
+                      .first,
             T.nilable(String)
           )
 
@@ -147,10 +147,11 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def property_source
-          @property_source ||= T.let(
+          requirement =
             dependency.requirements
-                      .find { |r| r.dig(:metadata, :property_name) == property_name }
-                      &.dig(:metadata, :property_source),
+                      .find { |candidate| metadata_string(candidate, :property_name) == property_name }
+          @property_source ||= T.let(
+            requirement ? metadata_string(requirement, :property_source) : nil,
             T.nilable(String)
           )
         end
@@ -192,10 +193,10 @@ module Dependabot
         sig { params(dep: Dependabot::Dependency).returns(String) }
         def current_property_value(dep)
           declaring_requirement = declaring_property_requirement(dep)
-          callsite_pom = dependency_files.find { |f| f.name == declaring_requirement.fetch(:file) }
+          callsite_pom = dependency_files.find { |file| file.name == declaring_requirement.file }
           unless callsite_pom
             raise DependencyFileNotEvaluatable,
-                  "POM not found: #{declaring_requirement.fetch(:file)} for property #{property_name}"
+                  "POM not found: #{declaring_requirement.file} for property #{property_name}"
           end
 
           property_value =
@@ -212,9 +213,9 @@ module Dependabot
         def declaring_property_requirement(dep)
           declaring_requirement =
             dep.requirements.find do |r|
-              next false unless r.dig(:metadata, :property_name) == property_name
+              next false unless metadata_string(r, :property_name) == property_name
 
-              r.dig(:metadata, :property_source) == property_source
+              metadata_string(r, :property_source) == property_source
             end
 
           return declaring_requirement if declaring_requirement
@@ -233,6 +234,17 @@ module Dependabot
               source_url: source_url,
               properties_to_update: [property_name]
             ).updated_requirements
+        end
+
+        sig do
+          params(
+            requirement: Dependabot::DependencyRequirement,
+            key: Symbol
+          ).returns(T.nilable(String))
+        end
+        def metadata_string(requirement, key)
+          value = requirement.metadata&.[](key)
+          value if value.is_a?(String)
         end
 
         sig { returns(Dependabot::Maven::FileParser::PropertyValueFinder) }

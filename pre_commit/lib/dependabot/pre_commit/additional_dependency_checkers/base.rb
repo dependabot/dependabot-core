@@ -41,9 +41,9 @@ module Dependabot
 
         sig do
           params(
-            source: T::Hash[Symbol, Object],
+            source: Dependabot::DependencyRequirement::Details,
             credentials: T::Array[Dependabot::Credential],
-            requirements: T::Array[T::Hash[Symbol, Object]],
+            requirements: T::Array[Dependabot::DependencyRequirement],
             current_version: T.nilable(String),
             cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
@@ -65,18 +65,18 @@ module Dependabot
         # Generate updated requirements for the new version
         # Should preserve the original version constraint operator (>=, ~=, etc.)
         # and update the source hash with the new original_string
-        sig { abstract.params(latest_version: String).returns(T::Array[T::Hash[Symbol, Object]]) }
+        sig { abstract.params(latest_version: String).returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_requirements(latest_version); end
 
         private
 
-        sig { returns(T::Hash[Symbol, Object]) }
+        sig { returns(Dependabot::DependencyRequirement::Details) }
         attr_reader :source
 
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
-        sig { returns(T::Array[T::Hash[Symbol, Object]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :requirements
 
         sig { returns(T.nilable(String)) }
@@ -90,9 +90,21 @@ module Dependabot
           source[:package_name]&.to_s
         end
 
-        sig { params(requirement: T.nilable(T::Hash[Symbol, Object])).returns(T.nilable(String)) }
+        sig { params(requirement: T.nilable(Dependabot::DependencyRequirement)).returns(T.nilable(String)) }
         def requirement_string(requirement)
-          value = requirement&.dig(:requirement)
+          return if requirement&.unfixable?
+
+          requirement&.requirement
+        end
+
+        sig do
+          params(
+            details: Dependabot::DependencyRequirement::Details,
+            key: Symbol
+          ).returns(T.nilable(String))
+        end
+        def string_detail(details, key)
+          value = details[key] || details[key.to_s]
           value if value.is_a?(String)
         end
       end

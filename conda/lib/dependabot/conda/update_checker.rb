@@ -50,7 +50,7 @@ module Dependabot
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_version
-        return nil if dependency.requirements.all? { |req| req[:requirement].nil? || req[:requirement] == "*" }
+        return nil if dependency.requirements.all? { |req| req.requirement.nil? || req.requirement == "*" }
 
         @latest_version ||= fetch_latest_version
       end

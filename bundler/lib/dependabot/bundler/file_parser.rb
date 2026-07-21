@@ -104,7 +104,7 @@ module Dependabot
       sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(T::Boolean) }
       def git_source?(dependencies)
         dependencies.any? do |dep|
-          dep.requirements.any? { |req| req.fetch(:source)&.fetch(:type) == "git" }
+          dep.requirements.any? { |req| req.source&.[](:type) == "git" }
         end
       end
 
@@ -380,7 +380,7 @@ module Dependabot
       sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
       def production?(dependency)
         groups = dependency.requirements
-                           .flat_map { |r| r.fetch(:groups) }
+                           .flat_map { |r| r.groups || [] }
                            .map(&:to_s)
 
         return true if groups.empty?

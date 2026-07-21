@@ -61,7 +61,7 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def pip_dependency?
-          dependency.requirements.any? { |req| req[:groups]&.include?("pip") }
+          dependency.requirements.any? { |req| req.groups&.include?("pip") }
         end
 
         sig { returns(T.nilable(Dependabot::Package::PackageDetails)) }
@@ -117,7 +117,7 @@ module Dependabot
         def extract_channel_from_source
           return nil unless dependency.requirements.first
 
-          source = T.let(T.must(dependency.requirements.first)[:source], T.nilable(T::Hash[Symbol, Object]))
+          source = T.must(dependency.requirements.first).source
           return nil unless source
 
           channel = source[:channel]
@@ -130,7 +130,7 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def extract_channel_from_requirement
           dependency.requirements.each do |req|
-            requirement_string = req[:requirement]
+            requirement_string = req.requirement
             next unless requirement_string&.include?("::")
 
             channel = requirement_string.split("::").first
@@ -185,12 +185,10 @@ module Dependabot
           )
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.anything]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         def python_compatible_requirements
           dependency.requirements.map do |req|
-            req.merge(
-              requirement: convert_conda_requirement_to_pip(req[:requirement])
-            )
+            req.with_requirement(convert_conda_requirement_to_pip(req.requirement))
           end
         end
 

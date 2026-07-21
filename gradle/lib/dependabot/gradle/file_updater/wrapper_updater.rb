@@ -59,7 +59,7 @@ module Dependabot
 
           # we only run this updater if the build file has a requirement for this dependency
           target_requirements = dependency.requirements.select do |req|
-            T.let(req[:file], String) == build_file.name
+            req.file == build_file.name
           end
           return [] unless target_requirements.any?
 

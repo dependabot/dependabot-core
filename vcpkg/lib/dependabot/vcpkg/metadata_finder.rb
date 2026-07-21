@@ -29,15 +29,23 @@ module Dependabot
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
         # Check if this is a Git dependency with a specific source
-        info = dependency.requirements.filter_map { |r| r[:source] }.first
+        info = dependency.requirements.filter_map(&:source).first
 
-        url =
-          if info.nil?
-            VCPKG_DEFAULT_BASELINE_URL
-          else
-            info[:url] || info.fetch("url", VCPKG_DEFAULT_BASELINE_URL)
-          end
+        url = source_string(info, "url") || VCPKG_DEFAULT_BASELINE_URL
         Source.from_url(url)
+      end
+
+      sig do
+        params(
+          source: T.nilable(Dependabot::DependencyRequirement::Details),
+          key: String
+        ).returns(T.nilable(String))
+      end
+      def source_string(source, key)
+        return unless source
+
+        value = source[key] || source[key.to_sym]
+        value if value.is_a?(String)
       end
 
       sig { override.returns(T.nilable(String)) }

@@ -39,9 +39,9 @@ module Dependabot
       sig { returns(Symbol) }
       def source_type
         return :bazel_dep if dependency.requirements.empty?
-        return :bazel_dep if dependency.requirements.any? { |r| r[:source].nil? }
+        return :bazel_dep if dependency.requirements.any? { |requirement| requirement.source.nil? }
 
-        source_details = dependency.requirements.first&.dig(:source)
+        source_details = dependency.requirements.first&.source
         return :bazel_dep unless source_details
 
         case source_details[:type]
@@ -65,16 +65,16 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_http_archive
-        url = dependency.requirements.first&.dig(:source, :url)
-        return nil unless url
+        url = dependency.requirements.first&.source&.[](:url)
+        return nil unless url.is_a?(String)
 
         source_from_url(url)
       end
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_git_repository
-        remote_url = dependency.requirements.first&.dig(:source, :remote)
-        return nil unless remote_url
+        remote_url = dependency.requirements.first&.source&.[](:remote)
+        return nil unless remote_url.is_a?(String)
 
         Dependabot::Source.from_url(remote_url)
       end

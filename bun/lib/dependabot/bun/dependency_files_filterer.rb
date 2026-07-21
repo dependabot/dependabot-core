@@ -17,6 +17,7 @@ module Dependabot
       def initialize(dependency_files:, updated_dependencies:)
         @dependency_files = dependency_files
         @updated_dependencies = updated_dependencies
+        @dependency_manifest_requirements = T.let(nil, T.nilable(T::Array[String]))
       end
 
       sig { returns(T::Array[String]) }
@@ -66,12 +67,11 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def dependency_manifest_requirements
-        @dependency_manifest_requirements ||= T.let(
-          updated_dependencies.flat_map do |dep|
-            dep.requirements.map { |requirement| requirement[:file] }
-          end,
-          T.nilable(T::Array[String])
-        )
+        return @dependency_manifest_requirements if @dependency_manifest_requirements
+
+        @dependency_manifest_requirements = updated_dependencies.flat_map do |dep|
+          dep.requirements.filter_map(&:file)
+        end
       end
 
       sig { params(lockfile: DependencyFile).returns(T::Boolean) }

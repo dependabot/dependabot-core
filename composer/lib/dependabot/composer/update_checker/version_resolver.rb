@@ -271,22 +271,22 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/AbcSize
         sig { returns(String) }
         def updated_version_requirement_string
           lower_bound =
             if requirements_to_unlock == :none
-              dependency.requirements.first&.fetch(:requirement) || ">= 0"
+              dependency.requirements.first&.requirement || ">= 0"
             elsif dependency.version
               ">= #{dependency.version}"
             else
               version_for_requirement =
-                dependency.requirements.filter_map { |r| r[:requirement] }
-                                       .reject { |req_string| req_string.start_with?("<") }
-                                       .select { |req_string| req_string.match?(VERSION_REGEX) }
-                                       .map { |req_string| req_string.match(VERSION_REGEX) }
-                                       .select { |version| requirement_valid?(">= #{version}") }
-                                       .max_by { |version| Composer::Version.new(version.to_s) }
+                dependency.requirements
+                          .filter_map(&:requirement)
+                          .reject { |req_string| req_string.start_with?("<") }
+                          .select { |req_string| req_string.match?(VERSION_REGEX) }
+                          .map { |req_string| req_string.match(VERSION_REGEX) }
+                          .select { |version| requirement_valid?(">= #{version}") }
+                          .max_by { |version| Composer::Version.new(version.to_s) }
 
               ">= #{version_for_requirement || 0}"
             end
@@ -307,7 +307,6 @@ module Dependabot
           lower_bound + ", == #{latest_allowable_version}"
         end
         # rubocop:enable Metrics/PerceivedComplexity
-        # rubocop:enable Metrics/AbcSize
 
         # TODO: Extract error handling and share between the lockfile updater
         #

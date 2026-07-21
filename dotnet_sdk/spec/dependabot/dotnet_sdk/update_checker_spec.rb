@@ -100,4 +100,23 @@ RSpec.describe Dependabot::DotnetSdk::UpdateChecker do
       it { is_expected.to eq(Dependabot::Version.new("8.0.300")) }
     end
   end
+
+  describe "#updated_requirements" do
+    include_context "when the config is in root"
+
+    let(:requirement) do
+      dependency.requirements.first.with_metadata(property_name: "sdk.version")
+    end
+
+    before do
+      allow(dependency).to receive(:requirements).and_return([requirement])
+      allow(Dependabot::DotnetSdk::UpdateChecker::LatestVersionFinder)
+        .to receive(:new).and_return(latest_version_finder)
+      allow(latest_version_finder).to receive(:latest_version).and_return(Dependabot::Version.new("8.0.301"))
+    end
+
+    it "updates the version while preserving requirement metadata" do
+      expect(checker.updated_requirements).to eq([requirement.with_requirement("8.0.301")])
+    end
+  end
 end

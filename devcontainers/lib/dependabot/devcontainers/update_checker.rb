@@ -33,8 +33,11 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        updated_reqs = dependency.requirements.map do |requirement|
-          required_version = T.cast(version_class.new(requirement[:requirement]), Dependabot::Devcontainers::Version)
+        dependency.requirements.map do |requirement|
+          required_version = T.cast(
+            Dependabot::Devcontainers::Version.new(T.must(requirement.requirement)),
+            Dependabot::Devcontainers::Version
+          )
           versions = T.cast(release_versions, T::Array[Dependabot::Devcontainers::Version])
           precision_matches = remove_precision_changes(versions, required_version)
           # When the published tags don't include a precision-matching tag (e.g. a feature
@@ -47,14 +50,8 @@ module Dependabot
             else
               versions.last&.truncate_to_precision_of(required_version)
             end
-          {
-            file: requirement[:file],
-            requirement: updated_requirement&.to_s || requirement[:requirement],
-            groups: requirement[:groups],
-            source: requirement[:source]
-          }
+          requirement.with_requirement(updated_requirement&.to_s || requirement.requirement)
         end
-        wrap_requirements(updated_reqs)
       end
 
       private

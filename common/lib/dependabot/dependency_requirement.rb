@@ -34,12 +34,9 @@ module Dependabot
     Group = T.type_alias { T.any(String, Symbol) }
     Details = T.type_alias { T::Hash[Key, Object] }
 
-    # Keep the Hash bridge untyped until every caller has moved to readers.
-    # rubocop:disable Sorbet/ForbidTUntyped
     K = type_member { { fixed: Symbol } }
-    V = type_member { { fixed: T.untyped } }
-    Elem = type_member { { fixed: [Symbol, T.untyped] } }
-    # rubocop:enable Sorbet/ForbidTUntyped
+    V = type_member { { fixed: Object } }
+    Elem = type_member { { fixed: [Symbol, Object] } }
 
     REQUIRED_KEYS = T.let(%i(requirement file groups source).freeze, T::Array[Symbol])
     OPTIONAL_KEYS = T.let(%i(metadata).freeze, T::Array[Symbol])
@@ -118,6 +115,16 @@ module Dependabot
       T.cast(self[:metadata], T.nilable(Details))
     end
 
+    sig { params(key: Key).returns(T.nilable(String)) }
+    def source_string(key)
+      details_string(source, key)
+    end
+
+    sig { params(key: Key).returns(T.nilable(String)) }
+    def metadata_string(key)
+      details_string(metadata, key)
+    end
+
     sig { params(value: T.nilable(T.any(String, Symbol))).returns(DependencyRequirement) }
     def with_requirement(value)
       self.class.from_hash(to_h.merge(requirement: value))
@@ -149,6 +156,16 @@ module Dependabot
         hash[key] = value
       end
     end
+
+    sig { params(details: T.nilable(Details), key: Key).returns(T.nilable(String)) }
+    def details_string(details, key)
+      return unless details
+
+      alternate_key = key.is_a?(String) ? key.to_sym : key.to_s
+      value = details[key] || details[alternate_key]
+      value if value.is_a?(String)
+    end
+    private :details_string
 
     class << self
       extend T::Sig

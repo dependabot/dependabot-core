@@ -291,9 +291,9 @@ module Dependabot
           return unless version
 
           dep_name = T.cast(dep[:name], String)
-          reqs = dep[:requirements]
-          return if reqs.nil? || reqs.empty?
-          return if reqs.any? { |req| req[:source] && req[:source][:type] == "git" }
+          reqs = dependency_requirements(dep[:requirements])
+          return if reqs.empty?
+          return if reqs.any? { |req| git_requirement?(req) }
           return if BerryLockfileHandler.version_matches?(parsed_lockfile, dep_name, T.cast(version, String))
 
           saved_package_jsons = save_package_jsons
@@ -305,7 +305,7 @@ module Dependabot
           )
 
           reqs.each do |req|
-            requirement = req[:requirement]
+            requirement = req.requirement
             next unless requirement
 
             BerryLockfileHandler.replace_declaration(yarn_lock.name, dep_name, T.cast(version, String), requirement)
@@ -315,6 +315,19 @@ module Dependabot
           # same as yarn classic's replaceLockfileDeclaration flow.
           restore_package_jsons(saved_package_jsons)
           Helpers.run_yarn_command("install #{yarn_berry_args}".strip, env: yarn_time_gate_env)
+        end
+
+        sig { params(raw_requirements: Object).returns(T::Array[Dependabot::DependencyRequirement]) }
+        def dependency_requirements(raw_requirements)
+          return [] unless raw_requirements.is_a?(Array)
+
+          raw_requirements.grep(Dependabot::DependencyRequirement)
+        end
+
+        sig { params(requirement: Dependabot::DependencyRequirement).returns(T::Boolean) }
+        def git_requirement?(requirement)
+          source_type = requirement.source&.[](:type)
+          source_type.is_a?(String) && source_type == "git"
         end
 
         sig { returns(T::Hash[String, String]) }
@@ -431,18 +444,19 @@ module Dependabot
 
         sig do
           params(
-            requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            requirements: T::Array[Dependabot::DependencyRequirement],
             path: String
           )
-            .returns(T::Array[T::Hash[Symbol, T.untyped]])
+            .returns(T::Array[Dependabot::DependencyRequirement])
         end
         def requirements_for_path(requirements, path)
           return requirements if path.to_s == "."
 
           requirements.filter_map do |r|
-            next unless r[:file].start_with?("#{path}/")
+            file = r.file
+            next unless file&.start_with?("#{path}/")
 
-            r.merge(file: r[:file].gsub(/^#{Regexp.quote("#{path}/")}/, ""))
+            r.with_file(file.gsub(/^#{Regexp.quote("#{path}/")}/, ""))
           end
         end
 

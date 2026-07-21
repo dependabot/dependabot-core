@@ -14,13 +14,15 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
-        info = dependency.requirements.filter_map { |r| r[:source] }.first
+        info = dependency.requirements.filter_map(&:source).first
 
         url =
           if info.nil?
             dependency.name
           else
-            info[:url] || info[:repo_url] || info["url"] || dependency.name
+            values = [info[:url], info[:repo_url], info["url"], info["repo_url"]]
+            value = values.find { |candidate| candidate.is_a?(String) }
+            value.is_a?(String) ? value : dependency.name
           end
         Source.from_url(url)
       end

@@ -48,7 +48,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
 
   before do
     normalized_updated_requirements = updated_requirements.map do |requirement|
-      Dependabot::DependencyRequirement.create(requirement)
+      Dependabot::DependencyRequirement.from_hash(requirement)
     end
 
     allow(updater_instance)

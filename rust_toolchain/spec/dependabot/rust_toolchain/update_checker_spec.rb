@@ -43,16 +43,17 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
     Dependabot::Dependency.new(
       name: "rust",
       version: dependency_version,
-      requirements: [
-        {
-          file: "rust-toolchain.toml",
-          requirement: dependency_requirement,
-          groups: [],
-          source: nil
-        }
-      ],
+      requirements: requirements,
       package_manager: "rust_toolchain"
     )
+  end
+  let(:requirements) do
+    [{
+      file: "rust-toolchain.toml",
+      requirement: dependency_requirement,
+      groups: [],
+      source: nil
+    }]
   end
   let(:dependency_version) { "1.72" }
   let(:dependency_requirement) { "1.72" }
@@ -130,18 +131,16 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
   describe "#updated_requirements" do
     let(:latest_version) { Dependabot::RustToolchain::Version.new("1.73.0") }
     let(:requirements) do
-      [
-        {
-          file: "rust-toolchain.toml",
-          requirement: "1.72",
-          groups: [],
-          source: nil
-        }
-      ]
+      [{
+        file: "rust-toolchain.toml",
+        requirement: "1.72",
+        groups: [],
+        source: nil,
+        metadata: { property_name: "toolchain.channel" }
+      }]
     end
 
     before do
-      allow(dependency).to receive(:requirements).and_return(requirements)
       allow(latest_version_finder)
         .to receive(:latest_version)
         .and_return(latest_version)
@@ -156,7 +155,8 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
             file: "rust-toolchain.toml",
             requirement: latest_version.to_s,
             groups: [],
-            source: nil
+            source: nil,
+            metadata: { property_name: "toolchain.channel" }
           }
         ]
       )
@@ -169,7 +169,8 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
             file: "rust-toolchain.toml",
             requirement: "1.72",
             groups: [],
-            source: nil
+            source: nil,
+            metadata: { property_name: "toolchain.channel" }
           },
           {
             file: "other-file.toml",
@@ -189,7 +190,8 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
               file: "rust-toolchain.toml",
               requirement: latest_version.to_s,
               groups: [],
-              source: nil
+              source: nil,
+              metadata: { property_name: "toolchain.channel" }
             },
             {
               file: "other-file.toml",
@@ -214,7 +216,8 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
               file: "rust-toolchain.toml",
               requirement: "stable",
               groups: [],
-              source: nil
+              source: nil,
+              metadata: { property_name: "toolchain.channel" }
             }
           ]
         )

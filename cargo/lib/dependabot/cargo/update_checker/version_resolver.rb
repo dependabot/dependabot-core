@@ -367,8 +367,9 @@ module Dependabot
             )
             next unless checker.git_dependency?
 
-            url = T.must(dep.requirements.find { |r| r.dig(:source, :type) == "git" })
-                   .fetch(:source).fetch(:url)
+            requirement = T.must(dep.requirements.find { |r| r.source&.[](:type) == "git" })
+            url = T.must(requirement.source)[:url]
+            raise TypeError, "git source URL must be a string" unless url.is_a?(String)
 
             if checker.git_repo_reachable?
               T.must(@reachable_git_urls) << url
@@ -497,9 +498,10 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def git_source_url
-          dependency.requirements
-                    .find { |r| r.dig(:source, :type) == "git" }
-                    &.dig(:source, :url)
+          url = dependency.requirements
+                          .find { |r| r.source&.[](:type) == "git" }
+                          &.source&.[](:url)
+          url if url.is_a?(String)
         end
 
         sig { returns(String) }

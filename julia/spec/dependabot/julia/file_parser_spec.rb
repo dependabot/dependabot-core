@@ -52,9 +52,9 @@ RSpec.describe Dependabot::Julia::FileParser do
       expect(example_dep.package_manager).to eq("julia")
 
       requirement = example_dep.requirements.first
-      expect(requirement[:requirement]).to eq("0.4")
-      expect(requirement[:file]).to eq("Project.toml")
-      expect(requirement[:groups]).to eq(["deps"])
+      expect(requirement.requirement).to eq("0.4")
+      expect(requirement.file).to eq("Project.toml")
+      expect(requirement.groups).to eq(["deps"])
     end
 
     context "when only Project.toml exists (no Manifest.toml)" do
@@ -66,7 +66,7 @@ RSpec.describe Dependabot::Julia::FileParser do
         example_dep = dependencies.find { |d| d.name == "Example" }
         expect(example_dep.name).to eq("Example")
         expect(example_dep.version).to be_nil # No Manifest.toml to get exact version
-        expect(example_dep.requirements.first[:requirement]).to eq("0.4")
+        expect(example_dep.requirements.first.requirement).to eq("0.4")
       end
     end
 
@@ -94,16 +94,16 @@ RSpec.describe Dependabot::Julia::FileParser do
         expect(example_dep).to be_a(Dependabot::Dependency)
         expect(example_dep.name).to eq("Example")
         expect(example_dep.version).to eq("0.4.1") # Installed version from Manifest.toml
-        expect(example_dep.requirements.first[:groups]).to eq(["deps"])
-        expect(example_dep.requirements.first[:requirement]).to eq("0.4")
+        expect(example_dep.requirements.first.groups).to eq(["deps"])
+        expect(example_dep.requirements.first.requirement).to eq("0.4")
 
         # Weak dependency with compat entry
         json_dep = dependencies.find { |d| d.name == "JSON" }
         expect(json_dep).to be_a(Dependabot::Dependency)
         expect(json_dep.name).to eq("JSON")
         expect(json_dep.version).to eq("0.21.4") # Weakdeps also get manifest versions
-        expect(json_dep.requirements.first[:groups]).to eq(["weakdeps"])
-        expect(json_dep.requirements.first[:requirement]).to eq("0.21")
+        expect(json_dep.requirements.first.groups).to eq(["weakdeps"])
+        expect(json_dep.requirements.first.requirement).to eq("0.21")
       end
     end
 
@@ -201,17 +201,17 @@ RSpec.describe Dependabot::Julia::FileParser do
         expect(json_dep.requirements.length).to eq(3)
 
         # Verify requirements point to the correct files
-        main_req = json_dep.requirements.find { |r| r[:file] == "Project.toml" }
+        main_req = json_dep.requirements.find { |r| r.file == "Project.toml" }
         expect(main_req).not_to be_nil
-        expect(main_req[:requirement]).to eq("0.21.4")
+        expect(main_req.requirement).to eq("0.21.4")
 
-        docs_req = json_dep.requirements.find { |r| r[:file] == "docs/Project.toml" }
+        docs_req = json_dep.requirements.find { |r| r.file == "docs/Project.toml" }
         expect(docs_req).not_to be_nil
-        expect(docs_req[:requirement]).to eq("0.21")
+        expect(docs_req.requirement).to eq("0.21")
 
-        test_req = json_dep.requirements.find { |r| r[:file] == "test/Project.toml" }
+        test_req = json_dep.requirements.find { |r| r.file == "test/Project.toml" }
         expect(test_req).not_to be_nil
-        expect(test_req[:requirement]).to eq("0.21")
+        expect(test_req.requirement).to eq("0.21")
       end
 
       it "parses dependencies unique to specific Project.toml files" do
@@ -219,15 +219,15 @@ RSpec.describe Dependabot::Julia::FileParser do
         documenter_dep = dependencies.find { |d| d.name == "Documenter" }
         expect(documenter_dep).not_to be_nil
         expect(documenter_dep.requirements.length).to eq(1)
-        expect(documenter_dep.requirements.first[:file]).to eq("docs/Project.toml")
-        expect(documenter_dep.requirements.first[:requirement]).to eq("1")
+        expect(documenter_dep.requirements.first.file).to eq("docs/Project.toml")
+        expect(documenter_dep.requirements.first.requirement).to eq("1")
 
         # Test should only be in test/Project.toml (but has no compat entry)
         test_dep = dependencies.find { |d| d.name == "Test" }
         expect(test_dep).not_to be_nil
         expect(test_dep.requirements.length).to eq(1)
-        expect(test_dep.requirements.first[:file]).to eq("test/Project.toml")
-        expect(test_dep.requirements.first[:requirement]).to be_nil # No compat entry
+        expect(test_dep.requirements.first.file).to eq("test/Project.toml")
+        expect(test_dep.requirements.first.requirement).to be_nil # No compat entry
       end
     end
   end

@@ -36,8 +36,8 @@ module DummyPackageManager
 
     def updated_file_content(file)
       updated_content = file.content.gsub(
-        /#{dependency.name} = #{previous_requirements(file).first[:requirement]}/,
-        "#{dependency.name} = #{requirements(file).first[:requirement]}"
+        /#{dependency.name} = #{previous_requirements(file).first.requirement}/,
+        "#{dependency.name} = #{requirements(file).first.requirement}"
       )
 
       raise "Expected content to change!" if updated_content == file.content
@@ -47,12 +47,12 @@ module DummyPackageManager
 
     def requirements(file)
       dependency.requirements
-                .select { |r| r[:file] == file.name }
+                .select { |requirement| requirement.file == file.name }
     end
 
     def previous_requirements(file)
       dependency.previous_requirements
-                .select { |r| r[:file] == file.name }
+                .select { |requirement| requirement.file == file.name }
     end
   end
 end

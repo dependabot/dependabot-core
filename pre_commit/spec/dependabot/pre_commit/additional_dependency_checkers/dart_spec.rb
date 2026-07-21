@@ -11,7 +11,7 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Dart do
     described_class.new(
       source: source,
       credentials: credentials,
-      requirements: requirements,
+      requirements: requirements.map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) },
       current_version: current_version
     )
   end
@@ -125,8 +125,8 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Dart do
     context "with exact version (no operator)" do
       it "updates to the new exact version" do
         updated = checker.updated_requirements("0.19.0")
-        expect(updated.first[:requirement]).to eq("0.19.0")
-        expect(updated.first[:source][:original_string]).to eq("intl:0.19.0")
+        expect(updated.first.requirement).to eq("0.19.0")
+        expect(updated.first.source&.[](:original_string)).to eq("intl:0.19.0")
       end
     end
 
@@ -154,8 +154,8 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Dart do
 
       it "preserves the ^ operator" do
         updated = checker.updated_requirements("4.9.0")
-        expect(updated.first[:requirement]).to eq("^4.9.0")
-        expect(updated.first[:source][:original_string]).to eq("json_annotation:^4.9.0")
+        expect(updated.first.requirement).to eq("^4.9.0")
+        expect(updated.first.source&.[](:original_string)).to eq("json_annotation:^4.9.0")
       end
     end
 
@@ -183,8 +183,8 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Dart do
 
       it "preserves the ~ operator" do
         updated = checker.updated_requirements("3.2.0")
-        expect(updated.first[:requirement]).to eq("~3.2.0")
-        expect(updated.first[:source][:original_string]).to eq("yaml:~3.2.0")
+        expect(updated.first.requirement).to eq("~3.2.0")
+        expect(updated.first.source&.[](:original_string)).to eq("yaml:~3.2.0")
       end
     end
 
@@ -212,20 +212,20 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Dart do
 
       it "preserves the >= operator" do
         updated = checker.updated_requirements("1.18.0")
-        expect(updated.first[:requirement]).to eq(">=1.18.0")
-        expect(updated.first[:source][:original_string]).to eq("collection:>=1.18.0")
+        expect(updated.first.requirement).to eq(">=1.18.0")
+        expect(updated.first.source&.[](:original_string)).to eq("collection:>=1.18.0")
       end
     end
 
     it "preserves all requirement properties" do
       updated = checker.updated_requirements("0.19.0")
-      expect(updated.first[:groups]).to eq(["additional_dependencies"])
-      expect(updated.first[:file]).to eq(".pre-commit-config.yaml")
-      expect(updated.first[:source][:type]).to eq("additional_dependency")
-      expect(updated.first[:source][:language]).to eq("dart")
-      expect(updated.first[:source][:hook_id]).to eq("dart-format")
-      expect(updated.first[:source][:hook_repo]).to eq("https://github.com/aspect-build/rules_lint")
-      expect(updated.first[:source][:package_name]).to eq("intl")
+      expect(updated.first.groups).to eq(["additional_dependencies"])
+      expect(updated.first.file).to eq(".pre-commit-config.yaml")
+      expect(updated.first.source&.[](:type)).to eq("additional_dependency")
+      expect(updated.first.source&.[](:language)).to eq("dart")
+      expect(updated.first.source&.[](:hook_id)).to eq("dart-format")
+      expect(updated.first.source&.[](:hook_repo)).to eq("https://github.com/aspect-build/rules_lint")
+      expect(updated.first.source&.[](:package_name)).to eq("intl")
     end
   end
 

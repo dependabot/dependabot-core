@@ -41,9 +41,9 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RequirementsUpdater do
       it "preserves other requirement attributes" do
         updated = updater.updated_requirements
 
-        expect(updated.first[:file]).to eq("MODULE.bazel")
-        expect(updated.first[:groups]).to eq([])
-        expect(updated.first[:source]).to be_nil
+        expect(updated.first.file).to eq("MODULE.bazel")
+        expect(updated.first.groups).to eq([])
+        expect(updated.first.source).to be_nil
       end
     end
 
@@ -89,13 +89,13 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RequirementsUpdater do
       it "preserves individual requirement attributes" do
         updated = updater.updated_requirements
 
-        expect(updated[0][:file]).to eq("MODULE.bazel")
-        expect(updated[0][:groups]).to eq([])
-        expect(updated[0][:source]).to be_nil
+        expect(updated[0].file).to eq("MODULE.bazel")
+        expect(updated[0].groups).to eq([])
+        expect(updated[0].source).to be_nil
 
-        expect(updated[1][:file]).to eq("other/MODULE.bazel")
-        expect(updated[1][:groups]).to eq(["dev"])
-        expect(updated[1][:source]).to eq({ type: "git" })
+        expect(updated[1].file).to eq("other/MODULE.bazel")
+        expect(updated[1].groups).to eq(["dev"])
+        expect(updated[1].source).to eq({ type: "git" })
       end
     end
 
@@ -166,11 +166,10 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RequirementsUpdater do
 
       it "creates independent copies" do
         updated = updater.updated_requirements
-        updated.first[:requirement] = "modified"
-
         fresh_updated = updater.updated_requirements
 
-        expect(fresh_updated.first[:requirement]).to eq("0.57.0")
+        expect(fresh_updated.first).not_to equal(updated.first)
+        expect(fresh_updated.first.requirement).to eq("0.57.0")
       end
     end
   end

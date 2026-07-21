@@ -353,7 +353,7 @@ RSpec.describe Dependabot::Uv::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("psycopg2")
           expect(dependency.version).to be_nil
-          expect(dependency.requirements.first[:requirement]).to be_nil
+          expect(dependency.requirements.first.requirement).to be_nil
         end
       end
     end
@@ -370,7 +370,7 @@ RSpec.describe Dependabot::Uv::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("psycopg2")
           expect(dependency.version).to be_nil
-          expect(dependency.requirements.first[:requirement]).to eq("==2.6.*")
+          expect(dependency.requirements.first.requirement).to eq("==2.6.*")
         end
       end
     end
@@ -387,7 +387,7 @@ RSpec.describe Dependabot::Uv::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("psycopg2")
           expect(dependency.version).to be_nil
-          expect(dependency.requirements.first[:requirement])
+          expect(dependency.requirements.first.requirement)
             .to eq("<=3.0.0,==2.6.1")
         end
       end
@@ -901,7 +901,7 @@ RSpec.describe Dependabot::Uv::FileParser do
         dep = dependencies.find { |d| d.name == "hatchling" }
         expect(dep).not_to be_nil
         req = dep.requirements.first
-        expect(req[:groups]).to include("build-system")
+        expect(req.groups).to include("build-system")
       end
     end
 

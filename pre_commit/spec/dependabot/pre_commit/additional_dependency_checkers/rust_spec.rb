@@ -11,7 +11,7 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Rust do
     described_class.new(
       source: source,
       credentials: credentials,
-      requirements: requirements,
+      requirements: requirements.map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) },
       current_version: current_version
     )
   end
@@ -125,8 +125,8 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Rust do
     context "with exact version (no operator)" do
       it "updates to the new exact version" do
         updated = checker.updated_requirements("1.0.200")
-        expect(updated.first[:requirement]).to eq("1.0.200")
-        expect(updated.first[:source][:original_string]).to eq("serde:1.0.200")
+        expect(updated.first.requirement).to eq("1.0.200")
+        expect(updated.first.source&.[](:original_string)).to eq("serde:1.0.200")
       end
     end
 
@@ -157,8 +157,8 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Rust do
 
       it "preserves the cli: prefix in the original_string" do
         updated = checker.updated_requirements("1.7.0")
-        expect(updated.first[:requirement]).to eq("1.7.0")
-        expect(updated.first[:source][:original_string]).to eq("cli:rustfmt-nightly:1.7.0")
+        expect(updated.first.requirement).to eq("1.7.0")
+        expect(updated.first.source&.[](:original_string)).to eq("cli:rustfmt-nightly:1.7.0")
       end
     end
 
@@ -186,8 +186,8 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Rust do
 
       it "preserves the ^ operator" do
         updated = checker.updated_requirements("4.5.0")
-        expect(updated.first[:requirement]).to eq("^4.5.0")
-        expect(updated.first[:source][:original_string]).to eq("clap:^4.5.0")
+        expect(updated.first.requirement).to eq("^4.5.0")
+        expect(updated.first.source&.[](:original_string)).to eq("clap:^4.5.0")
       end
     end
 
@@ -215,20 +215,20 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Rust do
 
       it "preserves the ~ operator" do
         updated = checker.updated_requirements("1.1.0")
-        expect(updated.first[:requirement]).to eq("~1.1.0")
-        expect(updated.first[:source][:original_string]).to eq("anyhow:~1.1.0")
+        expect(updated.first.requirement).to eq("~1.1.0")
+        expect(updated.first.source&.[](:original_string)).to eq("anyhow:~1.1.0")
       end
     end
 
     it "preserves all requirement properties" do
       updated = checker.updated_requirements("1.0.200")
-      expect(updated.first[:groups]).to eq(["additional_dependencies"])
-      expect(updated.first[:file]).to eq(".pre-commit-config.yaml")
-      expect(updated.first[:source][:type]).to eq("additional_dependency")
-      expect(updated.first[:source][:language]).to eq("rust")
-      expect(updated.first[:source][:hook_id]).to eq("nickel-lint")
-      expect(updated.first[:source][:hook_repo]).to eq("https://github.com/nickel-org/rust-nickel")
-      expect(updated.first[:source][:package_name]).to eq("serde")
+      expect(updated.first.groups).to eq(["additional_dependencies"])
+      expect(updated.first.file).to eq(".pre-commit-config.yaml")
+      expect(updated.first.source&.[](:type)).to eq("additional_dependency")
+      expect(updated.first.source&.[](:language)).to eq("rust")
+      expect(updated.first.source&.[](:hook_id)).to eq("nickel-lint")
+      expect(updated.first.source&.[](:hook_repo)).to eq("https://github.com/nickel-org/rust-nickel")
+      expect(updated.first.source&.[](:package_name)).to eq("serde")
     end
   end
 

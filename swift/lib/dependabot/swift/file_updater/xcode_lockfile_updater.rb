@@ -169,9 +169,8 @@ module Dependabot
           state = pin["state"]
           return unless state.is_a?(Hash)
 
-          source = dependency.requirements.first&.dig(:source)
           new_version = dependency.version
-          new_ref = source&.dig(:ref)
+          new_ref = dependency.requirements.first&.source_string(:ref)
 
           if new_version
             state["version"] = new_version
@@ -228,7 +227,7 @@ module Dependabot
           @dependencies_for_file ||= T.let(
             dependencies.select do |dep|
               dep.requirements.any? do |req|
-                req_file_matches_resolved_scope?(req[:file])
+                req_file_matches_resolved_scope?(req.file)
               end
             end,
             T.nilable(T::Array[Dependabot::Dependency])

@@ -39,7 +39,7 @@ module Dependabot
 
         sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
         def workspace_dependency?(dep)
-          dep.requirements.any? { |r| r[:groups]&.include?("workspace.dependencies") }
+          dep.requirements.any? { |r| r.groups&.include?("workspace.dependencies") }
         end
 
         sig { params(content: String, dep: Dependabot::Dependency).returns(String) }
@@ -66,8 +66,8 @@ module Dependabot
 
         sig { params(requirements: T.nilable(T::Array[Dependabot::DependencyRequirement])).returns(T.nilable(String)) }
         def find_workspace_requirement(requirements)
-          requirements&.find { |r| r[:groups]&.include?("workspace.dependencies") }
-                      &.fetch(:requirement)
+          requirements&.find { |r| r.groups&.include?("workspace.dependencies") }
+                      &.requirement
         end
 
         sig { params(section: String, dep_name: String, old_req: String, new_req: String).returns(String) }

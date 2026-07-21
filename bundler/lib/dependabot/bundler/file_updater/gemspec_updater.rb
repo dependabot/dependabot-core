@@ -50,17 +50,18 @@ module Dependabot
 
           updated_requirement =
             T.must(
-              dependency.requirements
-                                    .find { |r| r[:file] == gemspec.name }
+              T.must(
+                dependency.requirements
+                                      .find { |r| r.file == gemspec.name }
+              ).requirement
             )
-             .fetch(:requirement)
 
           previous_requirement =
             T.must(
               T.must(dependency.previous_requirements)
-                                    .find { |r| r[:file] == gemspec.name }
+                                    .find { |r| r.file == gemspec.name }
             )
-             .fetch(:requirement)
+             .requirement
 
           RequirementReplacer.new(
             dependency: dependency,
@@ -75,7 +76,7 @@ module Dependabot
           changed_requirements =
             dependency.requirements - T.must(dependency.previous_requirements)
 
-          changed_requirements.any? { |f| f[:file] == file.name }
+          changed_requirements.any? { |f| f.file == file.name }
         end
       end
     end

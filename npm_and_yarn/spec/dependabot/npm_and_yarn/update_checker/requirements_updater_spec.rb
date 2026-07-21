@@ -9,7 +9,7 @@ require "dependabot/requirements_update_strategy"
 RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
-      requirements: requirements,
+      requirements: requirements.map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) },
       updated_source: updated_source,
       update_strategy: update_strategy,
       latest_resolvable_version: latest_resolvable_version
@@ -43,19 +43,19 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
     context "when there is no resolvable version" do
       let(:latest_resolvable_version) { nil }
 
-      its([:requirement]) { is_expected.to eq(package_json_req_string) }
+      its(:requirement) { is_expected.to eq(package_json_req_string) }
     end
 
     context "with a dist tag" do
       let(:latest_resolvable_version) { Gem::Version.new("1.5.0") }
       let(:package_json_req_string) { "latest" }
 
-      its([:requirement]) { is_expected.to eq(package_json_req_string) }
+      its(:requirement) { is_expected.to eq(package_json_req_string) }
 
       context "when it starts with a v" do
         let(:package_json_req_string) { "very-latest" }
 
-        its([:requirement]) { is_expected.to eq(package_json_req_string) }
+        its(:requirement) { is_expected.to eq(package_json_req_string) }
       end
     end
 
@@ -167,74 +167,74 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
         context "when a full version was previously specified" do
           let(:package_json_req_string) { "1.2.3" }
 
-          its([:requirement]) { is_expected.to eq("1.5.0") }
+          its(:requirement) { is_expected.to eq("1.5.0") }
         end
 
         context "when v-prefix was previously used" do
           let(:package_json_req_string) { "v1.2.3" }
 
-          its([:requirement]) { is_expected.to eq("v1.5.0") }
+          its(:requirement) { is_expected.to eq("v1.5.0") }
 
           context "when requirement is capitalised (and therefore invalid)" do
             let(:package_json_req_string) { "V1.2.3" }
 
-            its([:requirement]) { is_expected.to eq("V1.2.3") }
+            its(:requirement) { is_expected.to eq("V1.2.3") }
           end
         end
 
         context "when a partial version was previously specified" do
           let(:package_json_req_string) { "0.1" }
 
-          its([:requirement]) { is_expected.to eq("1.5") }
+          its(:requirement) { is_expected.to eq("1.5") }
         end
 
         context "when only the major part was previously specified" do
           let(:package_json_req_string) { "1" }
           let(:latest_resolvable_version) { Gem::Version.new("4.5.0") }
 
-          its([:requirement]) { is_expected.to eq("4") }
+          its(:requirement) { is_expected.to eq("4") }
         end
 
         context "when the new version has fewer digits than the old one" do
           let(:package_json_req_string) { "1.1.0.1" }
 
-          its([:requirement]) { is_expected.to eq("1.5.0") }
+          its(:requirement) { is_expected.to eq("1.5.0") }
         end
 
         context "when the new version has much fewer digits than the old one" do
           let(:package_json_req_string) { "1.1.0.1" }
           let(:latest_resolvable_version) { Gem::Version.new("4") }
 
-          its([:requirement]) { is_expected.to eq("4") }
+          its(:requirement) { is_expected.to eq("4") }
         end
 
         context "when a caret was previously specified" do
           let(:package_json_req_string) { "^1.2.3" }
 
-          its([:requirement]) { is_expected.to eq("^1.5.0") }
+          its(:requirement) { is_expected.to eq("^1.5.0") }
 
           context "when v-prefix was previously used" do
             let(:package_json_req_string) { "^v1.2.3" }
 
-            its([:requirement]) { is_expected.to eq("^v1.5.0") }
+            its(:requirement) { is_expected.to eq("^v1.5.0") }
           end
 
           context "with a || separator" do
             let(:package_json_req_string) { "^0.5.1 || ^1.2.3" }
 
-            its([:requirement]) { is_expected.to eq("^1.5.0") }
+            its(:requirement) { is_expected.to eq("^1.5.0") }
           end
         end
 
         context "when a pre-release was previously specified" do
           let(:package_json_req_string) { "^1.2.3-rc1" }
 
-          its([:requirement]) { is_expected.to eq("^1.5.0") }
+          its(:requirement) { is_expected.to eq("^1.5.0") }
 
           context "when needing an update" do
             let(:package_json_req_string) { "1.2.3-rc1" }
 
-            its([:requirement]) { is_expected.to eq("1.5.0") }
+            its(:requirement) { is_expected.to eq("1.5.0") }
 
             context "when the version is new pre-release version" do
               let(:latest_resolvable_version) do
@@ -242,7 +242,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
               end
               let(:package_json_req_string) { "1.2.3-beta" }
 
-              its([:requirement]) { is_expected.to eq("1.2.3-beta.2") }
+              its(:requirement) { is_expected.to eq("1.2.3-beta.2") }
             end
           end
         end
@@ -250,43 +250,43 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
         context "with just *" do
           let(:package_json_req_string) { "*" }
 
-          its([:requirement]) { is_expected.to eq("*") }
+          its(:requirement) { is_expected.to eq("*") }
         end
 
         context "with a < condition" do
           let(:package_json_req_string) { "< 1.2.0" }
 
-          its([:requirement]) { is_expected.to eq("< 1.6.0") }
+          its(:requirement) { is_expected.to eq("< 1.6.0") }
         end
 
         context "when there were multiple range specifications" do
           let(:package_json_req_string) { "> 1.0.0 < 1.2.0" }
 
-          its([:requirement]) { is_expected.to eq("> 1.0.0 < 1.6.0") }
+          its(:requirement) { is_expected.to eq("> 1.0.0 < 1.6.0") }
 
           context "when requirement is already valid" do
             let(:package_json_req_string) { "> 1.0.0 < 1.7.0" }
 
-            its([:requirement]) { is_expected.to eq(package_json_req_string) }
+            its(:requirement) { is_expected.to eq(package_json_req_string) }
           end
 
           context "when including a pre-release" do
             let(:package_json_req_string) { ">=1.2.0 <1.4.0-dev" }
 
-            its([:requirement]) { is_expected.to eq(">=1.2.0 <1.6.0") }
+            its(:requirement) { is_expected.to eq(">=1.2.0 <1.6.0") }
           end
         end
 
         context "when an x.x was previously specified" do
           let(:package_json_req_string) { "^0.x.x" }
 
-          its([:requirement]) { is_expected.to eq("^1.x.x") }
+          its(:requirement) { is_expected.to eq("^1.x.x") }
         end
 
         context "when an x.x was previously specified with four places" do
           let(:package_json_req_string) { "^0.x.x.rc1" }
 
-          its([:requirement]) { is_expected.to eq("^1.x.x") }
+          its(:requirement) { is_expected.to eq("^1.x.x") }
         end
 
         context "when there were multiple requirements" do
@@ -360,41 +360,41 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
         context "when a full version was previously specified" do
           let(:package_json_req_string) { "1.2.3" }
 
-          its([:requirement]) { is_expected.to eq("1.5.0") }
+          its(:requirement) { is_expected.to eq("1.5.0") }
         end
 
         context "when v-prefix was previously used" do
           let(:package_json_req_string) { "v1.2.3" }
 
-          its([:requirement]) { is_expected.to eq("v1.5.0") }
+          its(:requirement) { is_expected.to eq("v1.5.0") }
 
           context "when requirement is capitalised (and therefore invalid)" do
             let(:package_json_req_string) { "V1.2.3" }
 
-            its([:requirement]) { is_expected.to eq("V1.2.3") }
+            its(:requirement) { is_expected.to eq("V1.2.3") }
           end
         end
 
         context "when a caret was previously specified" do
           let(:package_json_req_string) { "^1.2.3" }
 
-          its([:requirement]) { is_expected.to eq("^1.2.3") }
+          its(:requirement) { is_expected.to eq("^1.2.3") }
 
           context "when this version doesn't satisfy" do
             let(:package_json_req_string) { "^v0.2.3" }
 
-            its([:requirement]) { is_expected.to eq("^v1.5.0") }
+            its(:requirement) { is_expected.to eq("^v1.5.0") }
           end
 
           context "with a || separator" do
             let(:package_json_req_string) { "^0.5.1 || ^1.2.3" }
 
-            its([:requirement]) { is_expected.to eq(package_json_req_string) }
+            its(:requirement) { is_expected.to eq(package_json_req_string) }
 
             context "when this version doesn't satisfy" do
               let(:latest_resolvable_version) { "2.1.0" }
 
-              its([:requirement]) { is_expected.to eq("^2.1.0") }
+              its(:requirement) { is_expected.to eq("^2.1.0") }
             end
           end
         end
@@ -410,101 +410,101 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
         context "when a full version was previously specified" do
           let(:package_json_req_string) { "1.2.3" }
 
-          its([:requirement]) { is_expected.to eq("1.5.0") }
+          its(:requirement) { is_expected.to eq("1.5.0") }
         end
 
         context "when v-prefix was previously used" do
           let(:package_json_req_string) { "v1.2.3" }
 
-          its([:requirement]) { is_expected.to eq("v1.5.0") }
+          its(:requirement) { is_expected.to eq("v1.5.0") }
         end
 
         context "when a partial version was previously specified" do
           let(:package_json_req_string) { "0.1" }
 
-          its([:requirement]) { is_expected.to eq("1.5") }
+          its(:requirement) { is_expected.to eq("1.5") }
         end
 
         context "when only the major part was previously specified" do
           let(:package_json_req_string) { "1" }
           let(:latest_resolvable_version) { Gem::Version.new("4.5.0") }
 
-          its([:requirement]) { is_expected.to eq("4") }
+          its(:requirement) { is_expected.to eq("4") }
         end
 
         context "when the new version has fewer digits than the old one" do
           let(:package_json_req_string) { "1.1.0.1" }
 
-          its([:requirement]) { is_expected.to eq("1.5.0") }
+          its(:requirement) { is_expected.to eq("1.5.0") }
         end
 
         context "when the new version has much fewer digits than the old one" do
           let(:package_json_req_string) { "1.1.0.1" }
           let(:latest_resolvable_version) { Gem::Version.new("4") }
 
-          its([:requirement]) { is_expected.to eq("4") }
+          its(:requirement) { is_expected.to eq("4") }
         end
 
         context "with a < condition" do
           let(:package_json_req_string) { "< 1.2.0" }
 
-          its([:requirement]) { is_expected.to eq("< 1.6.0") }
+          its(:requirement) { is_expected.to eq("< 1.6.0") }
         end
 
         context "when a - was previously specified" do
           let(:package_json_req_string) { "1.2.3 - 1.4.0" }
 
-          its([:requirement]) { is_expected.to eq("1.2.3 - 1.6.0") }
+          its(:requirement) { is_expected.to eq("1.2.3 - 1.6.0") }
 
           context "with a pre-release version" do
             let(:package_json_req_string) { "1.2.3-rc1 - 1.4.0" }
 
-            its([:requirement]) { is_expected.to eq("1.2.3-rc1 - 1.6.0") }
+            its(:requirement) { is_expected.to eq("1.2.3-rc1 - 1.6.0") }
           end
         end
 
         context "when a pre-release was previously specified" do
           let(:package_json_req_string) { "1.2.3-rc1" }
 
-          its([:requirement]) { is_expected.to eq("1.5.0") }
+          its(:requirement) { is_expected.to eq("1.5.0") }
         end
 
         context "when a caret was previously specified" do
           context "when the latest version satisfies" do
             let(:package_json_req_string) { "^1.2.3" }
 
-            its([:requirement]) { is_expected.to eq("^1.2.3") }
+            its(:requirement) { is_expected.to eq("^1.2.3") }
           end
 
           context "when the latest version does not satisfy" do
             let(:package_json_req_string) { "^0.8.0" }
 
-            its([:requirement]) { is_expected.to eq("^1.5.0") }
+            its(:requirement) { is_expected.to eq("^1.5.0") }
           end
 
           context "when including a pre-release" do
             let(:package_json_req_string) { "^1.2.3-rc1" }
 
-            its([:requirement]) { is_expected.to eq("^1.2.3-rc1") }
+            its(:requirement) { is_expected.to eq("^1.2.3-rc1") }
           end
 
           context "when updating to a pre-release of a new major version" do
             let(:package_json_req_string) { "^1.0.0-beta1" }
             let(:latest_resolvable_version) { version_class.new("2.0.0-alpha") }
 
-            its([:requirement]) { is_expected.to eq("^2.0.0-alpha") }
+            its(:requirement) { is_expected.to eq("^2.0.0-alpha") }
           end
 
           context "when including an x" do
             let(:latest_resolvable_version) { Gem::Version.new("0.0.2") }
             let(:package_json_req_string) { "^0.0.x" }
 
-            its([:requirement]) { is_expected.to eq("^0.0.x") }
+            its(:requirement) { is_expected.to eq("^0.0.x") }
 
             context "when the range isn't covered" do
               let(:latest_resolvable_version) { Gem::Version.new("0.2.0") }
 
-              its([:requirement]) { is_expected.to eq("^0.2.x") }
+              its(:requirement) { is_expected.to eq("^0.2.x") }
             end
           end
 
@@ -512,26 +512,26 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
             let(:latest_resolvable_version) { Gem::Version.new("0.0.2") }
             let(:package_json_req_string) { "^0.0.0" }
 
-            its([:requirement]) { is_expected.to eq("^0.0.2") }
+            its(:requirement) { is_expected.to eq("^0.0.2") }
           end
         end
 
         context "when an x.x was previously specified" do
           let(:package_json_req_string) { "0.x.x" }
 
-          its([:requirement]) { is_expected.to eq("1.x.x") }
+          its(:requirement) { is_expected.to eq("1.x.x") }
 
           context "when dealing with four places" do
             let(:package_json_req_string) { "0.x.x.rc1" }
 
-            its([:requirement]) { is_expected.to eq("1.x.x") }
+            its(:requirement) { is_expected.to eq("1.x.x") }
           end
         end
 
         context "with just *" do
           let(:package_json_req_string) { "*" }
 
-          its([:requirement]) { is_expected.to eq("*") }
+          its(:requirement) { is_expected.to eq("*") }
         end
 
         context "when a ~> was previously specified" do
@@ -540,13 +540,13 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
           context "when the latest version satisfies" do
             let(:package_json_req_string) { "~>2.5.1" }
 
-            its([:requirement]) { is_expected.to eq("~>2.5.1") }
+            its(:requirement) { is_expected.to eq("~>2.5.1") }
           end
 
           context "when the latest version does not satisfy" do
             let(:package_json_req_string) { "~>2.4.1" }
 
-            its([:requirement]) { is_expected.to eq("~>2.5.3") }
+            its(:requirement) { is_expected.to eq("~>2.5.3") }
           end
         end
 
@@ -556,30 +556,30 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
           context "when the latest version satisfies" do
             let(:package_json_req_string) { "~2.5.1" }
 
-            its([:requirement]) { is_expected.to eq("~2.5.1") }
+            its(:requirement) { is_expected.to eq("~2.5.1") }
           end
 
           context "when the latest version does not satisfy" do
             let(:package_json_req_string) { "~2.4.1" }
 
-            its([:requirement]) { is_expected.to eq("~2.5.3") }
+            its(:requirement) { is_expected.to eq("~2.5.3") }
           end
 
           context "when including a pre-release" do
             let(:package_json_req_string) { "~2.5.1-rc1" }
 
-            its([:requirement]) { is_expected.to eq("~2.5.1-rc1") }
+            its(:requirement) { is_expected.to eq("~2.5.1-rc1") }
           end
 
           context "when including an x" do
             let(:package_json_req_string) { "~2.x.x" }
 
-            its([:requirement]) { is_expected.to eq("~2.x.x") }
+            its(:requirement) { is_expected.to eq("~2.x.x") }
 
             context "when the range isn't covered" do
               let(:package_json_req_string) { "~2.4.x" }
 
-              its([:requirement]) { is_expected.to eq("~2.5.x") }
+              its(:requirement) { is_expected.to eq("~2.5.x") }
             end
           end
         end
@@ -587,24 +587,24 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
         context "when there were multiple specifications" do
           let(:package_json_req_string) { "> 1.0.0 < 1.2.0" }
 
-          its([:requirement]) { is_expected.to eq("> 1.0.0 < 1.6.0") }
+          its(:requirement) { is_expected.to eq("> 1.0.0 < 1.6.0") }
 
           context "when requirement is already valid" do
             let(:package_json_req_string) { "> 1.0.0 < 1.7.0" }
 
-            its([:requirement]) { is_expected.to eq(package_json_req_string) }
+            its(:requirement) { is_expected.to eq(package_json_req_string) }
           end
 
           context "when specified with || and valid" do
             let(:package_json_req_string) { "^1.0.0 || ^2.0.0" }
 
-            its([:requirement]) { is_expected.to eq(package_json_req_string) }
+            its(:requirement) { is_expected.to eq(package_json_req_string) }
           end
 
           context "when including a pre-release" do
             let(:package_json_req_string) { ">=1.2.0 <1.4.0-dev" }
 
-            its([:requirement]) { is_expected.to eq(">=1.2.0 <1.6.0") }
+            its(:requirement) { is_expected.to eq(">=1.2.0 <1.6.0") }
           end
         end
 
@@ -680,7 +680,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
       let(:latest_resolvable_version) { Gem::Version.new("3.2.0") }
       let(:package_json_req_string) { "jsr:^3.0.0" }
 
-      its([:requirement]) { is_expected.to eq("jsr:^3.2.0") }
+      its(:requirement) { is_expected.to eq("jsr:^3.2.0") }
     end
 
     context "with a JSR long form requirement" do
@@ -688,7 +688,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
       let(:latest_resolvable_version) { Gem::Version.new("3.2.0") }
       let(:package_json_req_string) { "jsr:@arendjr/text-clipper@^3.0.0" }
 
-      its([:requirement]) { is_expected.to eq("jsr:@arendjr/text-clipper@^3.2.0") }
+      its(:requirement) { is_expected.to eq("jsr:@arendjr/text-clipper@^3.2.0") }
     end
 
     context "with a JSR requirement when version is already satisfied" do
@@ -696,7 +696,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
       let(:latest_resolvable_version) { Gem::Version.new("3.0.5") }
       let(:package_json_req_string) { "jsr:^3.0.0" }
 
-      its([:requirement]) { is_expected.to eq("jsr:^3.0.0") }
+      its(:requirement) { is_expected.to eq("jsr:^3.0.0") }
     end
 
     context "with a JSR requirement when widening ranges" do
@@ -704,7 +704,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
       let(:latest_resolvable_version) { Gem::Version.new("4.0.0") }
       let(:package_json_req_string) { "jsr:^3.0.0" }
 
-      its([:requirement]) { is_expected.to eq("jsr:^4.0.0") }
+      its(:requirement) { is_expected.to eq("jsr:^4.0.0") }
     end
 
     context "when dealing with a requirement being left alone" do

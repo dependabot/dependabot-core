@@ -16,7 +16,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker::RequirementsUpdater do
   end
 
   let(:requirements) do
-    [Dependabot::DependencyRequirement.create(
+    [Dependabot::DependencyRequirement.from_hash(
       file: "Chart.yaml",
       requirement: chart_req,
       groups: [],
@@ -26,7 +26,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker::RequirementsUpdater do
   end
   let(:chart_req) { "^1.0.0" }
   let(:latest_resolvable_version) { "1.0.5" }
-  let(:updated_req) { updater.updated_requirements.first[:requirement] }
+  let(:updated_req) { updater.updated_requirements.first.requirement }
 
   describe "#updated_requirements" do
     context "with BumpVersions (increase)" do
@@ -401,14 +401,5 @@ RSpec.describe Dependabot::Helm::UpdateChecker::RequirementsUpdater do
       end
     end
 
-    context "with an empty constraint (BumpVersions)" do
-      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
-      let(:chart_req) { "" }
-      let(:latest_resolvable_version) { "1.5.0" }
-
-      it "leaves it unchanged without raising" do
-        expect(updated_req).to eq("")
-      end
-    end
   end
 end

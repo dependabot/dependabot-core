@@ -201,9 +201,10 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def git_source_url
-          dependency.previous_requirements
-                    &.find { |r| r.dig(:source, :type) == "git" }
-                    &.dig(:source, :url)
+          url = dependency.previous_requirements
+                          &.find { |r| r.source&.[](:type) == "git" }
+                          &.source&.[](:url)
+          url if url.is_a?(String)
         end
 
         sig { returns(String) }

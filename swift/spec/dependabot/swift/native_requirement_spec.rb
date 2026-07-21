@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency"
 require "dependabot/swift/native_requirement"
 
 RSpec.describe Dependabot::Swift::NativeRequirement do
@@ -82,6 +83,33 @@ RSpec.describe Dependabot::Swift::NativeRequirement do
         expect(described_class.new('"1.0.0"..."2.0.0", traits: [], foo: "bar"').to_s)
           .to eq(">= 1.0.0, <= 2.0.0")
       end
+    end
+  end
+
+  describe ".map_requirements" do
+    let(:requirement) do
+      Dependabot::Dependency.new(
+        name: "swift-nio",
+        version: "1.0.0",
+        requirements: [{
+          requirement: ">= 1.0.0, < 2.0.0",
+          file: "Package.swift",
+          groups: ["dependencies"],
+          source: { type: "git", url: "https://github.com/apple/swift-nio.git" },
+          metadata: { requirement_string: 'from: "1.0.0"', custom: "preserved" }
+        }],
+        package_manager: "swift"
+      ).requirements.first
+    end
+
+    it "updates the native requirement while preserving its other fields and metadata" do
+      updated = described_class.map_requirements([requirement]) { 'from: "2.0.0"' }.first
+
+      expect(updated.requirement).to eq(">= 2.0.0, < 3.0.0")
+      expect(updated.file).to eq(requirement.file)
+      expect(updated.groups).to eq(requirement.groups)
+      expect(updated.source).to eq(requirement.source)
+      expect(updated.metadata).to eq(requirement_string: 'from: "2.0.0"', custom: "preserved")
     end
   end
 end

@@ -402,14 +402,16 @@ module Dependabot
         def update_req_file(file, updated_req)
           return T.must(file.content) unless file.name.end_with?(".in")
 
-          req = dependency.requirements.find { |r| r[:file] == file.name }
+          req = dependency.requirements.find { |requirement| requirement.file == file.name }
+          return T.must(file.content) if req&.unfixable?
 
-          return T.must(file.content) + "\n#{dependency.name} #{updated_req}" unless req&.fetch(:requirement)
+          old_requirement = req&.requirement
+          return T.must(file.content) + "\n#{dependency.name} #{updated_req}" unless old_requirement
 
           Python::FileUpdater::RequirementReplacer.new(
             content: T.must(file.content),
             dependency_name: dependency.name,
-            old_requirement: req[:requirement],
+            old_requirement: old_requirement,
             new_requirement: updated_req
           ).updated_content
         end
@@ -428,7 +430,7 @@ module Dependabot
         def filenames_to_compile
           files_from_reqs =
             dependency.requirements
-                      .map { |r| r[:file] }
+                      .filter_map(&:file)
                       .select { |fn| fn.end_with?(".in") }
 
           files_from_compiled_files =

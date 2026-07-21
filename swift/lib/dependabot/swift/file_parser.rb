@@ -52,9 +52,12 @@ module Dependabot
 
         dependency_parser.parse.map do |dep|
           if dep.top_level?
-            source = T.must(dep.requirements.first)[:source]
+            requirement = T.must(dep.requirements.first)
 
-            requirements = ManifestParser.new(T.must(package_manifest_file), source: source).requirements
+            requirements = ManifestParser.new(
+              T.must(package_manifest_file),
+              requirement: requirement
+            ).requirements
 
             dependency_set << Dependency.new(
               name: dep.name,

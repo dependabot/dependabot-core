@@ -233,7 +233,7 @@ module Dependabot
         requirements = dependency.requirements
         requirement = nil
 
-        requirement = requirements.first&.dig(:requirement) unless requirements.empty?
+        requirement = requirements.first&.requirement unless requirements.empty?
 
         return requirement if requirement && !requirement.empty?
 

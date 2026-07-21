@@ -160,7 +160,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::LatestVersionFinder do
 
       it "converts conda equality to pip equality" do
         python_dependency = finder.send(:python_compatible_dependency)
-        expect(python_dependency.requirements.first[:requirement]).to eq("==1.21.0")
+        expect(python_dependency.requirements.first.requirement).to eq("==1.21.0")
         expect(python_dependency.package_manager).to eq("pip")
       end
     end
@@ -170,7 +170,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::LatestVersionFinder do
 
       it "converts conda wildcard to pip range" do
         python_dependency = finder.send(:python_compatible_dependency)
-        expect(python_dependency.requirements.first[:requirement]).to eq(">=1.21.0,<1.22.0")
+        expect(python_dependency.requirements.first.requirement).to eq(">=1.21.0,<1.22.0")
       end
     end
 
@@ -179,7 +179,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker::LatestVersionFinder do
 
       it "preserves conda range requirements" do
         python_dependency = finder.send(:python_compatible_dependency)
-        expect(python_dependency.requirements.first[:requirement]).to eq(">=1.21.0,<1.25.0")
+        expect(python_dependency.requirements.first.requirement).to eq(">=1.21.0,<1.25.0")
       end
     end
 
@@ -193,8 +193,8 @@ RSpec.describe Dependabot::Conda::UpdateChecker::LatestVersionFinder do
 
       it "converts all requirements appropriately" do
         python_dependency = finder.send(:python_compatible_dependency)
-        expect(python_dependency.requirements.first[:requirement]).to eq("==1.21.0")
-        expect(python_dependency.requirements.last[:requirement]).to eq(">=1.20.0")
+        expect(python_dependency.requirements.first.requirement).to eq("==1.21.0")
+        expect(python_dependency.requirements.last.requirement).to eq(">=1.20.0")
       end
     end
   end

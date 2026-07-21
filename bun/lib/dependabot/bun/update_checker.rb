@@ -368,9 +368,10 @@ module Dependabot
       sig { returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_resolvable_version_with_no_unlock_for_git_dependency
         reqs = dependency.requirements.filter_map do |r|
-          next if r.fetch(:requirement).nil?
+          requirement = r.requirement
+          next unless requirement
 
-          requirement_class.requirements_array(r.fetch(:requirement))
+          requirement_class.requirements_array(requirement)
         end
 
         current_version =
@@ -469,8 +470,8 @@ module Dependabot
       def latest_git_version_details
         semver_req =
           dependency.requirements
-                    .find { |req| req.dig(:source, :type) == "git" }
-                    &.fetch(:requirement)
+                    .find { |req| source_string(req.source, :type) == "git" }
+                    &.requirement
 
         # If there was a semver requirement provided or the dependency was
         # pinned to a version, look for the latest tag
@@ -491,7 +492,7 @@ module Dependabot
         { sha: dependency.version }
       end
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { returns(T.nilable(Dependabot::DependencyRequirement::Details)) }
       def updated_source
         # Never need to update source, unless a git_dependency
         return dependency_source_details unless git_dependency?
@@ -525,25 +526,33 @@ module Dependabot
         security_advisories.any?
       end
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { returns(T.nilable(Dependabot::DependencyRequirement::Details)) }
       def dependency_source_details
         original_source(dependency)
       end
 
       sig do
         params(updated_dependency: Dependabot::Dependency)
-          .returns(T.nilable(T::Hash[Symbol, T.untyped]))
+          .returns(T.nilable(Dependabot::DependencyRequirement::Details))
       end
       def original_source(updated_dependency)
-        sources =
-          updated_dependency
-          .requirements.map { |r| r.fetch(:source) }
-                       .uniq.compact
-          .sort_by do |source|
-            Package::RegistryFinder.central_registry?(source[:url]) ? 1 : 0
-          end
+        sources = updated_dependency.requirements.filter_map(&:source).uniq.sort_by do |source|
+          url = source_string(source, :url)
+          url && Package::RegistryFinder.central_registry?(url) ? 1 : 0
+        end
 
         sources.first
+      end
+
+      sig do
+        params(
+          source: T.nilable(Dependabot::DependencyRequirement::Details),
+          key: Dependabot::DependencyRequirement::Key
+        ).returns(T.nilable(String))
+      end
+      def source_string(source, key)
+        value = source&.[](key)
+        value if value.is_a?(String)
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

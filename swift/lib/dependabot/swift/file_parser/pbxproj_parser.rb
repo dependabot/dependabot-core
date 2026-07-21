@@ -20,6 +20,16 @@ module Dependabot
       class PbxprojParser
         extend T::Sig
 
+        class RequirementInfo < T::Struct
+          const :requirement, T.nilable(String)
+          const :requirement_string, T.nilable(String)
+          const :kind, String
+          const :url, String
+          const :file, String
+          const :branch, T.nilable(String), default: nil
+          const :revision, T.nilable(String), default: nil
+        end
+
         # Regex to extract XCRemoteSwiftPackageReference blocks from pbxproj.
         # Uses [^}]* to match the requirement block content — this is safe because
         # Xcode requirement blocks are always flat dictionaries with no nested braces.
@@ -49,12 +59,12 @@ module Dependabot
         # Returns a hash mapping normalized URL to requirement metadata.
         # Each entry includes the Dependabot requirement string and the raw
         # Xcode requirement kind/version info for use in metadata.
-        sig { returns(T::Hash[String, T::Hash[Symbol, Object]]) }
+        sig { returns(T::Hash[String, RequirementInfo]) }
         def parse
           content = pbxproj_file.content
           return {} unless content
 
-          requirements = T.let({}, T::Hash[String, T::Hash[Symbol, Object]])
+          requirements = T.let({}, T::Hash[String, RequirementInfo])
 
           content.scan(PACKAGE_REF_BLOCK).each do |url, requirement_block|
             url = T.cast(url, String)
@@ -62,13 +72,10 @@ module Dependabot
             normalized_url = SharedHelpers.scp_to_standard(url)
             name = UrlHelpers.normalize_name(normalized_url)
 
-            req_info = parse_requirement_block(requirement_block)
+            req_info = parse_requirement_block(requirement_block, normalized_url)
             next unless req_info
 
-            requirements[name] = req_info.merge(
-              url: normalized_url,
-              file: pbxproj_file.name
-            )
+            requirements[name] = req_info
           end
 
           requirements
@@ -80,104 +87,132 @@ module Dependabot
         attr_reader :pbxproj_file
 
         sig do
-          params(block: String)
-            .returns(T.nilable(T::Hash[Symbol, Object]))
+          params(block: String, url: String)
+            .returns(T.nilable(RequirementInfo))
         end
-        def parse_requirement_block(block)
+        def parse_requirement_block(block, url)
           kind = block.match(KIND_PATTERN)&.captures&.first
           return nil unless kind
 
           case kind
           when "upToNextMajorVersion"
-            build_up_to_next_major(block)
+            build_up_to_next_major(block, url)
           when "upToNextMinorVersion"
-            build_up_to_next_minor(block)
+            build_up_to_next_minor(block, url)
           when "exactVersion"
-            build_exact(block)
+            build_exact(block, url)
           when "versionRange"
-            build_range(block)
+            build_range(block, url)
           when "branch"
-            build_branch(block)
+            build_branch(block, url)
           when "revision"
-            build_revision(block)
+            build_revision(block, url)
           end
         end
 
-        sig { params(block: String).returns(T::Hash[Symbol, Object]) }
-        def build_up_to_next_major(block)
+        sig { params(block: String, url: String).returns(RequirementInfo) }
+        def build_up_to_next_major(block, url)
           min_version = extract_version(block, MIN_VERSION_PATTERN)
           requirement_string = "from: \"#{min_version}\""
           requirement = parse_native_requirement(requirement_string)
 
-          {
+          requirement_info(
             requirement: requirement,
             requirement_string: requirement_string,
-            kind: "upToNextMajorVersion"
-          }
+            kind: "upToNextMajorVersion",
+            url: url
+          )
         end
 
-        sig { params(block: String).returns(T::Hash[Symbol, Object]) }
-        def build_up_to_next_minor(block)
+        sig { params(block: String, url: String).returns(RequirementInfo) }
+        def build_up_to_next_minor(block, url)
           min_version = extract_version(block, MIN_VERSION_PATTERN)
           requirement_string = ".upToNextMinor(from: \"#{min_version}\")"
           requirement = parse_native_requirement(requirement_string)
 
-          {
+          requirement_info(
             requirement: requirement,
             requirement_string: requirement_string,
-            kind: "upToNextMinorVersion"
-          }
+            kind: "upToNextMinorVersion",
+            url: url
+          )
         end
 
-        sig { params(block: String).returns(T::Hash[Symbol, Object]) }
-        def build_exact(block)
+        sig { params(block: String, url: String).returns(RequirementInfo) }
+        def build_exact(block, url)
           version = extract_version(block, MIN_VERSION_PATTERN) || extract_version(block, VERSION_PATTERN)
           requirement_string = "exact: \"#{version}\""
           requirement = parse_native_requirement(requirement_string)
 
-          {
+          requirement_info(
             requirement: requirement,
             requirement_string: requirement_string,
-            kind: "exactVersion"
-          }
+            kind: "exactVersion",
+            url: url
+          )
         end
 
-        sig { params(block: String).returns(T::Hash[Symbol, Object]) }
-        def build_range(block)
+        sig { params(block: String, url: String).returns(RequirementInfo) }
+        def build_range(block, url)
           min_version = extract_version(block, MIN_VERSION_PATTERN)
           max_version = extract_version(block, MAX_VERSION_PATTERN)
           requirement_string = "\"#{min_version}\"..<\"#{max_version}\""
           requirement = parse_native_requirement(requirement_string)
 
-          {
+          requirement_info(
             requirement: requirement,
             requirement_string: requirement_string,
-            kind: "versionRange"
-          }
+            kind: "versionRange",
+            url: url
+          )
         end
 
-        sig { params(block: String).returns(T::Hash[Symbol, Object]) }
-        def build_branch(block)
+        sig { params(block: String, url: String).returns(RequirementInfo) }
+        def build_branch(block, url)
           branch = block.match(BRANCH_PATTERN)&.captures&.first
 
-          {
+          requirement_info(
             requirement: nil,
             requirement_string: nil,
             kind: "branch",
+            url: url,
             branch: branch
-          }
+          )
         end
 
-        sig { params(block: String).returns(T::Hash[Symbol, Object]) }
-        def build_revision(block)
+        sig { params(block: String, url: String).returns(RequirementInfo) }
+        def build_revision(block, url)
           revision = block.match(REVISION_PATTERN)&.captures&.first
 
-          {
+          requirement_info(
             requirement: nil,
             requirement_string: nil,
             kind: "revision",
+            url: url,
             revision: revision
-          }
+          )
+        end
+
+        sig do
+          params(
+            requirement: T.nilable(String),
+            requirement_string: T.nilable(String),
+            kind: String,
+            url: String,
+            branch: T.nilable(String),
+            revision: T.nilable(String)
+          ).returns(RequirementInfo)
+        end
+        def requirement_info(requirement:, requirement_string:, kind:, url:, branch: nil, revision: nil)
+          RequirementInfo.new(
+            requirement: requirement,
+            requirement_string: requirement_string,
+            kind: kind,
+            url: url,
+            file: pbxproj_file.name,
+            branch: branch,
+            revision: revision
+          )
         end
 
         sig { params(block: String, pattern: Regexp).returns(T.nilable(String)) }

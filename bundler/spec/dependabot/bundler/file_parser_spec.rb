@@ -622,7 +622,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         it "is only loaded with its own gemspec as requirement" do
           expect(dependency.name).to eq("rake")
           expect(dependency.requirements.size).to eq(1)
-          expect(dependency.requirements.first[:file]).to eq("another.gemspec")
+          expect(dependency.requirements.first.file).to eq("another.gemspec")
         end
       end
     end

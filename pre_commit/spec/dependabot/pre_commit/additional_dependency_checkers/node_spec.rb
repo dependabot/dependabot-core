@@ -11,7 +11,7 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Node do
     described_class.new(
       source: source,
       credentials: credentials,
-      requirements: requirements,
+      requirements: requirements.map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) },
       current_version: current_version
     )
   end
@@ -171,8 +171,8 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Node do
 
       it "updates to the new exact version" do
         updated = checker.updated_requirements("9.0.0")
-        expect(updated.first[:requirement]).to eq("9.0.0")
-        expect(updated.first[:source][:original_string]).to eq("eslint@9.0.0")
+        expect(updated.first.requirement).to eq("9.0.0")
+        expect(updated.first.source&.[](:original_string)).to eq("eslint@9.0.0")
       end
     end
 
@@ -200,8 +200,8 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Node do
 
       it "preserves the ^ operator" do
         updated = checker.updated_requirements("10.10.0")
-        expect(updated.first[:requirement]).to eq("^10.10.0")
-        expect(updated.first[:source][:original_string]).to eq("ts-node@^10.10.0")
+        expect(updated.first.requirement).to eq("^10.10.0")
+        expect(updated.first.source&.[](:original_string)).to eq("ts-node@^10.10.0")
       end
     end
 
@@ -229,8 +229,8 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Node do
 
       it "preserves the ~ operator" do
         updated = checker.updated_requirements("5.4.0")
-        expect(updated.first[:requirement]).to eq("~5.4.0")
-        expect(updated.first[:source][:original_string]).to eq("typescript@~5.4.0")
+        expect(updated.first.requirement).to eq("~5.4.0")
+        expect(updated.first.source&.[](:original_string)).to eq("typescript@~5.4.0")
       end
     end
 
@@ -258,8 +258,8 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Node do
 
       it "preserves the >= operator" do
         updated = checker.updated_requirements("9.0.0")
-        expect(updated.first[:requirement]).to eq(">=9.0.0")
-        expect(updated.first[:source][:original_string]).to eq("eslint@>=9.0.0")
+        expect(updated.first.requirement).to eq(">=9.0.0")
+        expect(updated.first.source&.[](:original_string)).to eq("eslint@>=9.0.0")
       end
     end
 
@@ -287,20 +287,20 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Node do
 
       it "correctly formats the scoped package update" do
         updated = checker.updated_requirements("3.3.0")
-        expect(updated.first[:requirement]).to eq("3.3.0")
-        expect(updated.first[:source][:original_string]).to eq("@prettier/plugin-xml@3.3.0")
+        expect(updated.first.requirement).to eq("3.3.0")
+        expect(updated.first.source&.[](:original_string)).to eq("@prettier/plugin-xml@3.3.0")
       end
     end
 
     it "preserves all requirement properties" do
       updated = checker.updated_requirements("9.0.0")
-      expect(updated.first[:groups]).to eq(["additional_dependencies"])
-      expect(updated.first[:file]).to eq(".pre-commit-config.yaml")
-      expect(updated.first[:source][:type]).to eq("additional_dependency")
-      expect(updated.first[:source][:language]).to eq("node")
-      expect(updated.first[:source][:hook_id]).to eq("eslint")
-      expect(updated.first[:source][:hook_repo]).to eq("https://github.com/pre-commit/mirrors-eslint")
-      expect(updated.first[:source][:package_name]).to eq("eslint")
+      expect(updated.first.groups).to eq(["additional_dependencies"])
+      expect(updated.first.file).to eq(".pre-commit-config.yaml")
+      expect(updated.first.source&.[](:type)).to eq("additional_dependency")
+      expect(updated.first.source&.[](:language)).to eq("node")
+      expect(updated.first.source&.[](:hook_id)).to eq("eslint")
+      expect(updated.first.source&.[](:hook_repo)).to eq("https://github.com/pre-commit/mirrors-eslint")
+      expect(updated.first.source&.[](:package_name)).to eq("eslint")
     end
   end
 

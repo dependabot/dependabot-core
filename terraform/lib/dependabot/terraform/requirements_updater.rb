@@ -62,10 +62,7 @@ module Dependabot
         ).void
       end
       def initialize(requirements:, latest_version:, tag_for_latest_version:)
-        @requirements = T.let(
-          requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
-          T::Array[Dependabot::DependencyRequirement]
-        )
+        @requirements = T.let(requirements, T::Array[Dependabot::DependencyRequirement])
         @tag_for_latest_version = tag_for_latest_version
 
         return unless latest_version
@@ -85,7 +82,7 @@ module Dependabot
         # requirement at index `i` to correspond to the previous requirement
         # at the same index.
         requirements.map do |req|
-          case req.dig(:source, :type)
+          case source_string(req.source, "type")
           when "git" then update_git_requirement(req)
           when "registry", "provider" then update_registry_requirement(req)
           else req
@@ -106,20 +103,23 @@ module Dependabot
 
       sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
       def update_git_requirement(req)
-        return req unless req.dig(:source, :ref)
+        source = req.source
+        return req unless source
+        return req unless source_string(source, "ref")
         return req unless tag_for_latest_version
 
-        Dependabot::DependencyRequirement.create(req.merge(source: req[:source].merge(ref: tag_for_latest_version)))
+        req.with_source(source.merge(ref: tag_for_latest_version))
       end
 
       sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
       def update_registry_requirement(req)
-        return req if req.fetch(:requirement).nil?
+        requirement = req.requirement
+        return req if requirement.nil?
 
         latest = latest_version
         return req if latest.nil?
 
-        string_req = req.fetch(:requirement).strip
+        string_req = requirement.strip
         ruby_req = requirement_class.new(string_req)
         return req if ruby_req.satisfied_by?(latest)
 
@@ -131,7 +131,20 @@ module Dependabot
             update_range(string_req).join(", ")
           end
 
-        Dependabot::DependencyRequirement.create(req.merge(requirement: new_req))
+        req.with_requirement(new_req)
+      end
+
+      sig do
+        params(
+          source: T.nilable(Dependabot::DependencyRequirement::Details),
+          key: String
+        ).returns(T.nilable(String))
+      end
+      def source_string(source, key)
+        return unless source
+
+        value = source[key] || source[key.to_sym]
+        value if value.is_a?(String)
       end
 
       # Updates the version in a "~>" constraint to allow the given version

@@ -74,10 +74,11 @@ module Dependabot
                          .reject { |new_req, old_req| new_req == old_req }
         # Loop through each changed requirement and update the buildfiles
         reqs.each do |new_req, old_req|
-          raise "Bad req match" if old_req.nil? || T.let(new_req[:file], String) != T.let(old_req[:file], String)
-          next if T.let(new_req[:requirement], String) == T.let(old_req[:requirement], String)
+          raise "Bad req match" if old_req.nil? || new_req.file != old_req.file
+          next if new_req.requirement == old_req.requirement &&
+                  new_req.unfixable? == old_req.unfixable?
 
-          buildfile = files.find { |f| f.name == T.let(new_req.fetch(:file), String) }
+          buildfile = files.find { |file| file.name == new_req.file }
 
           # Currently, Dependabot assumes that Gradle projects using Gradle submodules are all in a single
           # repo. However, some projects are actually using git submodule references for the Gradle submodules.
@@ -85,13 +86,11 @@ module Dependabot
           # but then the FileUpdater filters out the git submodule reference from the build file. So we end up
           # with no relevant build file, leaving us with no way to update that dependency.
           # TODO: Figure out a way to actually navigate this rather than throwing an exception.
-
           raise DependencyFileNotResolvable, "No build file found to update the dependency" if buildfile.nil?
 
-          metadata = symbol_object_hash(T.cast(new_req[:metadata], T.nilable(Object)))
-          if metadata && metadata[:property_name].is_a?(String)
+          if metadata_string(new_req, :property_name)
             files = update_files_for_property_change(files, old_req, new_req)
-          elsif metadata && symbol_object_hash(metadata[:dependency_set])
+          elsif metadata_dependency_set(new_req)
             files = update_files_for_dep_set_change(files, old_req, new_req)
           else
             files[T.must(files.index(buildfile))] = update_version_in_buildfile(dependency, buildfile, old_req, new_req)
@@ -156,47 +155,45 @@ module Dependabot
       sig do
         params(
           buildfiles: T::Array[Dependabot::DependencyFile],
-          old_req: T::Hash[Symbol, Object],
-          new_req: T::Hash[Symbol, Object]
+          old_req: Dependabot::DependencyRequirement,
+          new_req: Dependabot::DependencyRequirement
         )
           .returns(T::Array[Dependabot::DependencyFile])
       end
       def update_files_for_property_change(buildfiles, old_req, new_req)
         files = buildfiles.dup
-        metadata = symbol_object_hash_value(new_req, :metadata)
-        property_name = string_value(metadata, :property_name)
-        file = string_value(new_req, :file)
+        property_name = T.must(metadata_string(new_req, :property_name))
+        file = T.must(new_req.file)
         buildfile = T.must(files.find { |f| f.name == file })
 
         PropertyValueUpdater.new(dependency_files: files)
                             .update_files_for_property_change(
                               property_name: property_name,
                               callsite_buildfile: buildfile,
-                              previous_value: string_value(old_req, :requirement),
-                              updated_value: string_value(new_req, :requirement)
+                              previous_value: T.must(old_req.requirement),
+                              updated_value: T.must(new_req.requirement)
                             )
       end
 
       sig do
         params(
           buildfiles: T::Array[Dependabot::DependencyFile],
-          old_req: T::Hash[Symbol, Object],
-          new_req: T::Hash[Symbol, Object]
+          old_req: Dependabot::DependencyRequirement,
+          new_req: Dependabot::DependencyRequirement
         )
           .returns(T::Array[Dependabot::DependencyFile])
       end
       def update_files_for_dep_set_change(buildfiles, old_req, new_req)
         files = buildfiles.dup
-        metadata = symbol_object_hash_value(new_req, :metadata)
-        dependency_set = symbol_string_hash_value(metadata, :dependency_set)
-        buildfile = T.must(files.find { |f| f.name == string_value(new_req, :file) })
+        dependency_set = T.must(metadata_dependency_set(new_req))
+        buildfile = T.must(files.find { |file| file.name == new_req.file })
 
         DependencySetUpdater.new(dependency_files: files)
                             .update_files_for_dep_set_change(
                               dependency_set: dependency_set,
                               buildfile: buildfile,
-                              previous_requirement: string_value(old_req, :requirement),
-                              updated_requirement: string_value(new_req, :requirement)
+                              previous_requirement: T.must(old_req.requirement),
+                              updated_requirement: T.must(new_req.requirement)
                             )
       end
 
@@ -204,8 +201,8 @@ module Dependabot
         params(
           dependency: Dependabot::Dependency,
           buildfile: Dependabot::DependencyFile,
-          previous_req: T::Hash[Symbol, Object],
-          requirement: T::Hash[Symbol, Object]
+          previous_req: Dependabot::DependencyRequirement,
+          requirement: Dependabot::DependencyRequirement
         )
           .returns(Dependabot::DependencyFile)
       end
@@ -235,13 +232,13 @@ module Dependabot
       sig do
         params(
           dependency: Dependabot::Dependency,
-          requirement: T::Hash[Symbol, Object]
+          requirement: Dependabot::DependencyRequirement
         ).returns(T::Array[String])
       end
       def original_buildfile_declarations(dependency, requirement)
         # This implementation is limited to declarations that appear on a
         # single line.
-        file = string_value(requirement, :file)
+        file = T.must(requirement.file)
         buildfile = T.must(buildfiles.find { |f| f.name == file })
 
         T.must(buildfile.content).lines.select do |line|
@@ -252,11 +249,8 @@ module Dependabot
             dep_parts = dependency.name.split(":")
             next false unless line.include?(T.must(dep_parts.first)) || line.include?(T.must(dep_parts.last))
           elsif file.end_with?(".properties")
-            source = requirement[:source]
-            property = T.let(nil, T.nilable(String))
-            source_hash = symbol_object_hash(source)
-            source_property = source_hash&.[](:property)
-            property = source_property if source_property.is_a?(String)
+            source_property = requirement.source&.[](:property)
+            property = source_property.is_a?(String) ? source_property : nil
             next false unless property && line.start_with?(property)
           elsif file.end_with?(".toml")
             next false unless line.include?(dependency.name)
@@ -266,7 +260,7 @@ module Dependabot
             next false unless line.match?(name_regex)
           end
 
-          line.include?(string_value(requirement, :requirement))
+          line.include?(T.must(requirement.requirement))
         end
       end
       # rubocop:enable Metrics/AbcSize
@@ -301,55 +295,44 @@ module Dependabot
       sig do
         params(
           original_buildfile_declaration: String,
-          previous_req: T::Hash[Symbol, Object],
-          requirement: T::Hash[Symbol, Object]
+          previous_req: Dependabot::DependencyRequirement,
+          requirement: Dependabot::DependencyRequirement
         ).returns(String)
       end
       def updated_buildfile_declaration(original_buildfile_declaration, previous_req, requirement)
-        original_req_string = string_value(previous_req, :requirement)
-        new_req_string = string_value(requirement, :requirement)
+        original_req_string = T.must(previous_req.requirement)
+        new_req_string = T.must(requirement.requirement)
 
         original_buildfile_declaration.gsub(original_req_string, new_req_string)
       end
 
-      sig { params(hash: T::Hash[Symbol, Object], key: Symbol).returns(String) }
-      def string_value(hash, key)
-        value = hash.fetch(key)
-        raise TypeError, "Expected #{key} to be a String" unless value.is_a?(String)
-
-        value
+      sig do
+        params(
+          requirement: Dependabot::DependencyRequirement,
+          key: Symbol
+        ).returns(T.nilable(String))
+      end
+      def metadata_string(requirement, key)
+        value = requirement.metadata&.[](key)
+        value if value.is_a?(String)
       end
 
-      sig { params(hash: T::Hash[Symbol, Object], key: Symbol).returns(T::Hash[Symbol, Object]) }
-      def symbol_object_hash_value(hash, key)
-        value = hash.fetch(key)
-        raise TypeError, "Expected #{key} to be a Hash" unless value.is_a?(Hash)
-
-        value
+      sig do
+        params(
+          requirement: Dependabot::DependencyRequirement
+        ).returns(T.nilable(T::Hash[Symbol, String]))
       end
-
-      sig { params(hash: T::Hash[Symbol, Object], key: Symbol).returns(T::Hash[Symbol, String]) }
-      def symbol_string_hash_value(hash, key)
-        value = hash.fetch(key)
-        raise TypeError, "Expected #{key} to be a Hash" unless value.is_a?(Hash)
-
-        result = T.let({}, T::Hash[Symbol, String])
-        value.each_pair do |hash_key_object, hash_value_object|
-          hash_key = T.cast(hash_key_object, T.nilable(Object))
-          hash_value = T.cast(hash_value_object, T.nilable(Object))
-          raise TypeError, "Expected #{key} keys and values to be Symbols and Strings" unless hash_key.is_a?(Symbol) &&
-                                                                                              hash_value.is_a?(String)
-
-          result[hash_key] = hash_value
-        end
-        result
-      end
-
-      sig { params(value: T.nilable(Object)).returns(T.nilable(T::Hash[Symbol, Object])) }
-      def symbol_object_hash(value)
+      def metadata_dependency_set(requirement)
+        value = requirement.metadata&.[](:dependency_set)
         return unless value.is_a?(Hash)
 
-        value
+        details = T.let(value, T::Hash[Object, Object])
+        details.each_with_object(T.let({}, T::Hash[Symbol, String])) do |(key, entry), result|
+          valid_entry = key.is_a?(Symbol) && entry.is_a?(String)
+          raise TypeError, "dependency_set metadata must use symbol keys and string values" unless valid_entry
+
+          result[key] = entry
+        end
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

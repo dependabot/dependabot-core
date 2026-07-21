@@ -14,8 +14,8 @@ module Dependabot
         sig do
           params(
             content: String,
-            old_requirements: T::Array[T::Hash[Symbol, Object]],
-            new_requirements: T::Array[T::Hash[Symbol, Object]]
+            old_requirements: T::Array[Dependabot::DependencyRequirement],
+            new_requirements: T::Array[Dependabot::DependencyRequirement]
           )
             .void
         end
@@ -30,13 +30,11 @@ module Dependabot
           updated_content = content
 
           old_requirements.zip(new_requirements).each do |old, new|
-            old_metadata = metadata(old)
-            new_metadata = metadata(T.must(new))
             updated_content = RequirementReplacer.new(
               content: updated_content,
-              declaration: string_value(old_metadata, :declaration_string),
-              old_requirement: string_value(old_metadata, :requirement_string),
-              new_requirement: string_value(new_metadata, :requirement_string)
+              declaration: required_metadata_string(old, :declaration_string),
+              old_requirement: required_metadata_string(old, :requirement_string),
+              new_requirement: required_metadata_string(T.must(new), :requirement_string)
             ).updated_content
           end
 
@@ -48,23 +46,20 @@ module Dependabot
         sig { returns(String) }
         attr_reader :content
 
-        sig { returns(T::Array[T::Hash[Symbol, Object]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :old_requirements
 
-        sig { returns(T::Array[T::Hash[Symbol, Object]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :new_requirements
 
-        sig { params(requirement: T::Hash[Symbol, Object]).returns(T::Hash[Symbol, Object]) }
-        def metadata(requirement)
-          value = requirement[:metadata]
-          raise TypeError, "Expected metadata to be a Hash" unless value.is_a?(Hash)
-
-          value
+        sig do
+          params(
+            requirement: Dependabot::DependencyRequirement,
+            key: Symbol
+          ).returns(String)
         end
-
-        sig { params(hash: T::Hash[Symbol, Object], key: Symbol).returns(String) }
-        def string_value(hash, key)
-          value = hash.fetch(key)
+        def required_metadata_string(requirement, key)
+          value = requirement.metadata_string(key)
           raise TypeError, "Expected #{key} to be a String" unless value.is_a?(String)
 
           value

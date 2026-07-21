@@ -67,19 +67,20 @@ module Dependabot
 
         # Loop through each changed requirement and update the files
         reqs.each do |new_req, old_req|
-          raise "Bad req match" unless new_req[:file] == T.must(old_req)[:file]
-          next if new_req[:requirement] == T.must(old_req)[:requirement]
+          old_req = T.must(old_req)
+          raise "Bad req match" unless new_req.file == old_req.file
+          next if requirement_unchanged?(new_req, old_req)
 
-          file_name = T.let(new_req.fetch(:file) || new_req.dig(:metadata, :pom_file), String)
-          if new_req.dig(:metadata, :property_name)
+          file_name = T.must(new_req.file || metadata_string(new_req, :pom_file))
+          if metadata_string(new_req, :property_name)
             files = update_pomfiles_for_property_change(files, new_req)
             pom = files.find { |f| f.name == file_name }
             files[T.must(files.index(pom))] =
-              remove_property_suffix_in_pom(dependency, T.must(pom), T.must(old_req))
+              remove_property_suffix_in_pom(dependency, T.must(pom), old_req)
           else
             file = files.find { |f| f.name == file_name }
             files[T.must(files.index(file))] =
-              update_version_in_file(dependency, T.must(file), T.must(old_req), new_req)
+              update_version_in_file(dependency, T.must(file), old_req, new_req)
           end
         end
 
@@ -89,19 +90,30 @@ module Dependabot
 
       sig do
         params(
+          requirement: Dependabot::DependencyRequirement,
+          previous_requirement: Dependabot::DependencyRequirement
+        ).returns(T::Boolean)
+      end
+      def requirement_unchanged?(requirement, previous_requirement)
+        requirement.requirement == previous_requirement.requirement &&
+          requirement.unfixable? == previous_requirement.unfixable?
+      end
+
+      sig do
+        params(
           pomfiles: T::Array[Dependabot::DependencyFile],
           req: Dependabot::DependencyRequirement
         )
           .returns(T::Array[Dependabot::DependencyFile])
       end
       def update_pomfiles_for_property_change(pomfiles, req)
-        property_name = req.fetch(:metadata).fetch(:property_name)
+        property_name = T.must(metadata_string(req, :property_name))
 
         PropertyValueUpdater.new(dependency_files: pomfiles)
                             .update_pomfiles_for_property_change(
                               property_name: property_name,
-                              callsite_pom: T.must(pomfiles.find { |f| f.name == req.fetch(:file) }),
-                              updated_value: req.fetch(:requirement)
+                              callsite_pom: T.must(pomfiles.find { |f| f.name == req.file }),
+                              updated_value: T.must(req.requirement)
                             )
       end
 
@@ -254,11 +266,11 @@ module Dependabot
           .returns(String)
       end
       def updated_file_declaration(old_declaration, previous_req, requirement)
-        original_req_string = previous_req.fetch(:requirement)
+        original_req_string = T.must(previous_req.requirement)
 
         old_declaration.gsub(
           /(?<=\s|>)#{Regexp.quote(original_req_string)}(?=\s|<)/,
-          requirement.fetch(:requirement)
+          T.must(requirement.requirement)
         )
       end
 
@@ -333,8 +345,19 @@ module Dependabot
         artifact_id.text = dependency.name.split(":").last
         dependency_node.add_text("\n#{current_indentation_level}")
         version = REXML::Element.new("version", dependency_node)
-        version.text = requirement.fetch(:requirement)
+        version.text = T.must(requirement.requirement)
         dependency_node.add_text("\n#{parent_indentation_level}")
+      end
+
+      sig do
+        params(
+          requirement: Dependabot::DependencyRequirement,
+          key: Symbol
+        ).returns(T.nilable(String))
+      end
+      def metadata_string(requirement, key)
+        value = requirement.metadata&.[](key)
+        value if value.is_a?(String)
       end
 
       sig { params(base_indentation: String, is_tabs: T::Boolean).returns(Integer) }

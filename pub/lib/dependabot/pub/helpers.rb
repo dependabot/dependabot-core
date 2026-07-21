@@ -9,6 +9,7 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/logger"
 require "dependabot/pub/requirement"
+require "dependabot/pub/source_description"
 require "dependabot/requirements_update_strategy"
 require "dependabot/shared_helpers"
 
@@ -62,8 +63,8 @@ module Dependabot
 
       sig { params(dependency: Dependabot::Dependency).returns(String) }
       def repository_url(dependency)
-        source = dependency.requirements.first&.dig(:source)
-        source&.dig("description", "url") || options[:pub_hosted_url] || "https://pub.dev"
+        source = dependency.requirements.first&.source
+        SourceDescription.value(source, "url") || options[:pub_hosted_url] || "https://pub.dev"
       end
 
       sig { params(dependency: Dependabot::Dependency).returns(T::Hash[String, T.untyped]) }
@@ -412,17 +413,14 @@ module Dependabot
           nil
         else
           deps = dependencies.map do |d|
-            source = d.requirements.empty? ? nil : d.requirements.first&.[](:source)
+            source = d.requirements.first&.source
             obj = {
               "name" => d.name,
               "version" => d.version,
               "source" => source
             }
 
-            unless d.requirements.nil? || d.requirements.empty?
-              obj["constraint"] =
-                d.requirements[0]&.[](:requirement).to_s
-            end
+            obj["constraint"] = d.requirements.first&.requirement.to_s unless d.requirements.empty?
             obj
           end
           JSON.generate(

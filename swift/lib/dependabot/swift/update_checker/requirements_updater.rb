@@ -22,7 +22,7 @@ module Dependabot
         end
         def initialize(requirements:, target_version:, xcode_mode: false, target_commit_sha: nil)
           @requirements = T.let(
-            requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
+            requirements,
             T::Array[Dependabot::DependencyRequirement]
           )
           @xcode_mode = xcode_mode
@@ -37,10 +37,9 @@ module Dependabot
         def updated_requirements
           return updated_xcode_requirements if xcode_mode
 
-          updated = NativeRequirement.map_requirements(requirements) do |requirement|
+          NativeRequirement.map_requirements(requirements) do |requirement|
             T.must(requirement.update_if_needed(T.must(target_version)))
           end
-          updated.map { |req| Dependabot::DependencyRequirement.create(req) }
         end
 
         private
@@ -70,31 +69,29 @@ module Dependabot
 
         sig { params(requirement: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_xcode_requirement(requirement)
-          metadata = requirement[:metadata] || {}
-          requirement_string = metadata[:requirement_string]
-          kind = metadata[:kind]
+          metadata = T.let(
+            requirement.metadata || {},
+            Dependabot::DependencyRequirement::Details
+          )
+          requirement_string = requirement.metadata_string(:requirement_string)
+          kind = requirement.metadata_string(:kind)
 
           new_requirement_string = build_xcode_requirement_string(requirement_string, kind)
           new_requirement = build_xcode_requirement(requirement_string, kind)
 
           # Update source ref to target version
-          updated_source = update_source_ref(requirement[:source])
+          updated_source = update_source_ref(requirement.source)
 
-          Dependabot::DependencyRequirement.create(
-            requirement.merge(
-              requirement: new_requirement,
-              source: updated_source,
-              metadata: metadata.merge(
-                requirement_string: new_requirement_string
-              ).compact
-            )
-          )
+          requirement
+            .with_requirement(new_requirement)
+            .with_source(updated_source)
+            .with_metadata(metadata.merge(requirement_string: new_requirement_string).compact)
         end
 
         sig do
           params(
-            source: T.nilable(T::Hash[T.any(String, Symbol), Object])
-          ).returns(T.nilable(T::Hash[T.any(String, Symbol), Object]))
+            source: T.nilable(Dependabot::DependencyRequirement::Details)
+          ).returns(T.nilable(Dependabot::DependencyRequirement::Details))
         end
         def update_source_ref(source)
           return source unless source && target_version
@@ -103,10 +100,7 @@ module Dependabot
           # otherwise fall back to version string
           ref = target_commit_sha || target_version.to_s
 
-          updated_source = source.dup
-          updated_source[:ref] = ref
-          updated_source["ref"] = ref
-          updated_source
+          source.merge(ref: ref, "ref" => ref)
         end
 
         sig do

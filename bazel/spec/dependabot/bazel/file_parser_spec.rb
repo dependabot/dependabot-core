@@ -39,7 +39,7 @@ RSpec.describe Dependabot::Bazel::FileParser do
       rules_cc_dep = dependencies.find { |d| d.name == "rules_cc" }
       expect(rules_cc_dep.version).to eq("0.1.1")
       expect(rules_cc_dep.package_manager).to eq("bazel")
-      expect(rules_cc_dep.requirements.first[:file]).to eq("MODULE.bazel")
+      expect(rules_cc_dep.requirements.first.file).to eq("MODULE.bazel")
     end
   end
 
@@ -97,7 +97,7 @@ RSpec.describe Dependabot::Bazel::FileParser do
       # Should include MODULE.bazel deps plus load references
       expect(dependencies.length).to be >= 3
 
-      load_deps = dependencies.select { |d| d.requirements.any? { |req| req[:groups] == ["load_references"] } }
+      load_deps = dependencies.select { |d| d.requirements.any? { |req| req.groups == ["load_references"] } }
       expect(load_deps.map(&:name)).to include("rules_go", "rules_cc")
     end
   end
@@ -127,16 +127,16 @@ RSpec.describe Dependabot::Bazel::FileParser do
       # Dependency from main MODULE.bazel
       rules_cc_dep = dependencies.find { |d| d.name == "rules_cc" }
       expect(rules_cc_dep.version).to eq("0.1.1")
-      expect(rules_cc_dep.requirements.first[:file]).to eq("MODULE.bazel")
+      expect(rules_cc_dep.requirements.first.file).to eq("MODULE.bazel")
 
       # Dependencies from deps.MODULE.bazel
       platforms_dep = dependencies.find { |d| d.name == "platforms" }
       expect(platforms_dep.version).to eq("0.0.11")
-      expect(platforms_dep.requirements.first[:file]).to eq("deps.MODULE.bazel")
+      expect(platforms_dep.requirements.first.file).to eq("deps.MODULE.bazel")
 
       abseil_dep = dependencies.find { |d| d.name == "abseil-cpp" }
       expect(abseil_dep.version).to eq("20230125.3")
-      expect(abseil_dep.requirements.first[:file]).to eq("deps.MODULE.bazel")
+      expect(abseil_dep.requirements.first.file).to eq("deps.MODULE.bazel")
     end
   end
 
@@ -193,9 +193,9 @@ RSpec.describe Dependabot::Bazel::FileParser do
       expect(protobuf).not_to be_nil
 
       requirement = protobuf.requirements.first
-      expect(requirement[:source][:type]).to eq("git_repository")
-      expect(requirement[:source][:tag]).to eq("v3.19.4")
-      expect(requirement[:source][:remote]).to eq("https://github.com/protocolbuffers/protobuf")
+      expect(requirement.source_string(:type)).to eq("git_repository")
+      expect(requirement.source_string(:tag)).to eq("v3.19.4")
+      expect(requirement.source_string(:remote)).to eq("https://github.com/protocolbuffers/protobuf")
     end
 
     it "captures URLs from http_archive dependencies" do
@@ -205,8 +205,8 @@ RSpec.describe Dependabot::Bazel::FileParser do
       expect(rules_go).not_to be_nil
 
       requirement = rules_go.requirements.first
-      expect(requirement[:source][:type]).to eq("http_archive")
-      expect(requirement[:source][:url]).to include("github.com/bazelbuild/rules_go")
+      expect(requirement.source_string(:type)).to eq("http_archive")
+      expect(requirement.source_string(:url)).to include("github.com/bazelbuild/rules_go")
     end
   end
 
@@ -217,12 +217,12 @@ RSpec.describe Dependabot::Bazel::FileParser do
       dependencies = parser.parse
 
       # Should include MODULE.bazel deps plus load references
-      load_deps = dependencies.select { |d| d.requirements.any? { |req| req[:groups] == ["load_references"] } }
+      load_deps = dependencies.select { |d| d.requirements.any? { |req| req.groups == ["load_references"] } }
 
       expect(load_deps.map(&:name)).to include("rules_go", "rules_cc", "io_bazel_rules_docker")
 
       rules_go_load = load_deps.find { |d| d.name == "rules_go" }
-      expect(rules_go_load.requirements.first[:file]).to eq("BUILD.bazel")
+      expect(rules_go_load.requirements.first.file).to eq("BUILD.bazel")
     end
   end
 
@@ -233,15 +233,15 @@ RSpec.describe Dependabot::Bazel::FileParser do
       dependencies = parser.parse
 
       # MODULE.bazel deps
-      module_deps = dependencies.select { |d| d.requirements.first[:file] == "MODULE.bazel" }
+      module_deps = dependencies.select { |d| d.requirements.first.file == "MODULE.bazel" }
       expect(module_deps.map(&:name)).to include("rules_cc", "platforms", "abseil-cpp")
 
       # WORKSPACE deps
-      workspace_deps = dependencies.select { |d| d.requirements.first[:file] == "WORKSPACE" }
+      workspace_deps = dependencies.select { |d| d.requirements.first.file == "WORKSPACE" }
       expect(workspace_deps.map(&:name)).to include("rules_python")
 
       # BUILD load deps
-      load_deps = dependencies.select { |d| d.requirements.any? { |req| req[:groups] == ["load_references"] } }
+      load_deps = dependencies.select { |d| d.requirements.any? { |req| req.groups == ["load_references"] } }
       expect(load_deps.map(&:name)).to include("rules_cc")
 
       # Bazel version detection
@@ -326,7 +326,7 @@ RSpec.describe Dependabot::Bazel::FileParser do
       # All should be Bazel dependencies
       dependencies.each do |dep|
         expect(dep.package_manager).to eq("bazel")
-        expect(dep.requirements.first[:file]).to eq("MODULE.bazel")
+        expect(dep.requirements.first.file).to eq("MODULE.bazel")
       end
     end
   end

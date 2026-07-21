@@ -24,26 +24,24 @@ module Dependabot
           )
         end
 
-        sig { override.params(latest_version: String).returns(T::Array[T::Hash[Symbol, Object]]) }
+        sig { override.params(latest_version: String).returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_requirements(latest_version)
           requirements.map do |original_req|
-            original_source = original_req[:source]
-            next original_req unless original_source.is_a?(Hash)
-            next original_req unless original_source[:type] == "additional_dependency"
+            original_source = original_req.source
+            next original_req unless original_source
+            next original_req unless string_detail(original_source, :type) == "additional_dependency"
 
             new_requirement = "v#{latest_version}"
 
             new_original_string = build_original_string(
-              original_name: original_source[:original_name] || original_source[:package_name],
+              original_name: string_detail(original_source, :original_name) ||
+                string_detail(original_source, :package_name),
               requirement: new_requirement
             )
 
             new_source = original_source.merge(original_string: new_original_string)
 
-            original_req.merge(
-              requirement: new_requirement,
-              source: new_source
-            )
+            original_req.with_requirement(new_requirement).with_source(new_source)
           end
         end
 
@@ -115,11 +113,14 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def extract_version_from_requirement
-          req_string = requirements.first&.dig(:requirement)
+          requirement = requirements.first
+          return nil if requirement&.unfixable?
+
+          req_string = requirement&.requirement
           return nil unless req_string
 
           # Go versions are like "v1.2.3" — strip the leading "v"
-          version = req_string.to_s.delete_prefix("v")
+          version = req_string.delete_prefix("v")
           return nil unless Dependabot::GoModules::Version.correct?(version)
 
           version

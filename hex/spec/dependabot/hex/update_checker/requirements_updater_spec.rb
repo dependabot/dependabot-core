@@ -7,7 +7,7 @@ require "dependabot/hex/update_checker/requirements_updater"
 RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
-      requirements: requirements,
+      requirements: requirements.map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) },
       latest_resolvable_version: latest_resolvable_version,
       updated_source: updated_source
     )
@@ -38,7 +38,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
     context "when there is no resolvable version" do
       let(:latest_resolvable_version) { nil }
 
-      its([:requirement]) { is_expected.to eq(mixfile_req_string) }
+      its(:requirement) { is_expected.to eq(mixfile_req_string) }
     end
 
     context "with a git dependency" do
@@ -90,66 +90,66 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
       context "when a full version was previously specified" do
         let(:mixfile_req_string) { "1.2.3" }
 
-        its([:requirement]) { is_expected.to eq("1.5.0") }
+        its(:requirement) { is_expected.to eq("1.5.0") }
 
         context "with an == operator" do
           let(:mixfile_req_string) { "== 1.2.3" }
 
-          its([:requirement]) { is_expected.to eq("== 1.5.0") }
+          its(:requirement) { is_expected.to eq("== 1.5.0") }
         end
       end
 
       context "when a partial version was previously specified" do
         let(:mixfile_req_string) { "0.1" }
 
-        its([:requirement]) { is_expected.to eq("1.5") }
+        its(:requirement) { is_expected.to eq("1.5") }
       end
 
       context "when the new version has fewer digits than the old one" do
         let(:mixfile_req_string) { "1.1.0.1" }
 
-        its([:requirement]) { is_expected.to eq("1.5.0") }
+        its(:requirement) { is_expected.to eq("1.5.0") }
       end
 
       context "when a tilde was previously specified" do
         let(:mixfile_req_string) { "~> 0.2.3" }
 
-        its([:requirement]) { is_expected.to eq("~> 1.5.0") }
+        its(:requirement) { is_expected.to eq("~> 1.5.0") }
 
         context "when the specification is two digits" do
           let(:mixfile_req_string) { "~> 0.2" }
 
-          its([:requirement]) { is_expected.to eq("~> 1.5") }
+          its(:requirement) { is_expected.to eq("~> 1.5") }
         end
 
         context "when the specification is already satisfied" do
           let(:mixfile_req_string) { "~> 1.2" }
 
-          its([:requirement]) { is_expected.to eq(mixfile_req_string) }
+          its(:requirement) { is_expected.to eq(mixfile_req_string) }
         end
       end
 
       context "when a < was previously specified" do
         let(:mixfile_req_string) { "< 1.2.3" }
 
-        its([:requirement]) { is_expected.to eq("< 1.5.1") }
+        its(:requirement) { is_expected.to eq("< 1.5.1") }
 
         context "when the specification is already satisfied" do
           let(:mixfile_req_string) { "< 2.0.0" }
 
-          its([:requirement]) { is_expected.to eq(mixfile_req_string) }
+          its(:requirement) { is_expected.to eq(mixfile_req_string) }
         end
       end
 
       context "when there are multiple specifications" do
         let(:mixfile_req_string) { "> 1.0.0 and < 1.2.0" }
 
-        its([:requirement]) { is_expected.to eq("> 1.0.0 and < 1.6.0") }
+        its(:requirement) { is_expected.to eq("> 1.0.0 and < 1.6.0") }
 
         context "when the specifications are already satisfied" do
           let(:mixfile_req_string) { "> 1.0.0 and < 2.0.0" }
 
-          its([:requirement]) { is_expected.to eq(mixfile_req_string) }
+          its(:requirement) { is_expected.to eq(mixfile_req_string) }
         end
 
         context "when the specification is specified with an or" do
@@ -157,14 +157,14 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
 
           let(:mixfile_req_string) { "~> 0.2 or ~> 1.0" }
 
-          its([:requirement]) do
+          its(:requirement) do
             is_expected.to eq("~> 0.2 or ~> 1.0 or ~> 2.5")
           end
 
           context "when a specification is already satisfied" do
             let(:mixfile_req_string) { "~> 0.2 or < 3.0.0" }
 
-            its([:requirement]) { is_expected.to eq(mixfile_req_string) }
+            its(:requirement) { is_expected.to eq(mixfile_req_string) }
           end
         end
       end

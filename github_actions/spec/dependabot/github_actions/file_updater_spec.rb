@@ -416,15 +416,14 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         end
 
         it "updates SHA version" do
-          old_sha = dependency.previous_requirements.first.dig(:source, :ref)
-          expect(updated_workflow_file.content).to include "#{dependency.name}@#{dependency.requirements.first.dig(
-            :source, :ref
-          )}"
+          old_sha = dependency.previous_requirements.first.source_string(:ref)
+          new_sha = dependency.requirements.first.source_string(:ref)
+          expect(updated_workflow_file.content).to include "#{dependency.name}@#{new_sha}"
           expect(updated_workflow_file.content).not_to match(/#{old_sha}['"]?\s+#.*#{dependency.previous_version}/)
         end
 
         it "updates version comment" do
-          new_sha = dependency.requirements.first.dig(:source, :ref)
+          new_sha = dependency.requirements.first.source_string(:ref)
           expect(updated_workflow_file.content).not_to match(/@#{new_sha}['"]?\s+#.*#{dependency.previous_version}\s*$/)
 
           expect(updated_workflow_file.content).to include "# v#{dependency.version}"
@@ -447,7 +446,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         end
 
         it "doesn't update version comments when @ref is not a SHA" do
-          old_version = dependency.previous_requirements[1].dig(:source, :ref)
+          old_version = dependency.previous_requirements[1].source_string(:ref)
           expect(updated_workflow_file.content).not_to match(/@#{old_version}\s+#.*#{dependency.version}/)
         end
 
@@ -460,11 +459,15 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
 
         context "when the previous SHA is not tagged" do
           before do
-            dependency.previous_requirements.first[:source][:ref] = "85b1f35505da871133b65f059e96210c65650a8b"
+            previous_requirement = dependency.previous_requirements.first
+            source = previous_requirement.source
+            dependency.previous_requirements[0] = previous_requirement.with_source(
+              source.merge(ref: "85b1f35505da871133b65f059e96210c65650a8b")
+            )
           end
 
           it "updates SHA version but not the comment" do
-            new_sha = dependency.requirements.first.dig(:source, :ref)
+            new_sha = dependency.requirements.first.source_string(:ref)
             expect(updated_workflow_file.content).to match(/#{new_sha}['"]?\s+#.*#{dependency.previous_version}/)
           end
         end
@@ -479,7 +482,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
               most_specific_version_tags_for_sha: ["v2.1.0"]
             )
             allow(git_checker).to receive(:most_specific_version_tag_for_sha).and_return(nil, nil)
-            old_version = dependency.previous_requirements[1].dig(:source, :ref)
+            old_version = dependency.previous_requirements[1].source_string(:ref)
             expect(updated_workflow_file.content).not_to match(/@#{old_version}\s+#.*#{dependency.version}/)
           end
         end

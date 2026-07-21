@@ -38,7 +38,8 @@ module Dependabot
             dep = parse_specifier(specifier.to_s, file)
             next unless dep
 
-            key = [dep.name, T.must(dep.requirements.first)[:source][:type]]
+            source_type = dependency_source_type(T.must(dep.requirements.first))
+            key = [dep.name, source_type]
             existing = deps_by_key[key]
             deps_by_key[key] = if existing
                                  Dependabot::Dependency.new(
@@ -57,6 +58,14 @@ module Dependabot
       end
 
       private
+
+      sig { params(requirement: Dependabot::DependencyRequirement).returns(String) }
+      def dependency_source_type(requirement)
+        value = requirement.source_string(:type)
+        raise TypeError, "Expected dependency source type to be a String" unless value.is_a?(String)
+
+        value
+      end
 
       sig { override.void }
       def check_required_files

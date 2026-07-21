@@ -60,19 +60,16 @@ module Dependabot
 
       sig do
         params(file: Dependabot::DependencyFile)
-          .returns(T::Array[[T::Hash[Symbol, Object], T::Hash[Symbol, Object]]])
+          .returns(T::Array[[Dependabot::DependencyRequirement, Dependabot::DependencyRequirement]])
       end
       def requirement_pairs_for_file(file)
         pairs = dependency.requirements.zip(T.must(dependency.previous_requirements))
         filtered_pairs = pairs.reject do |new_req, old_req|
           next true unless old_req
 
-          file_name = T.cast(new_req[:file], T.nilable(String))
-          next true if file_name != file.name
+          next true if new_req.file != file.name
 
-          new_source = T.cast(new_req[:source], T.nilable(T::Hash[Symbol, Object]))
-          old_source = T.cast(old_req[:source], T.nilable(T::Hash[Symbol, Object]))
-          new_source == old_source
+          new_req.source == old_req.source
         end
 
         filtered_pairs.map { |new_req, old_req| [new_req, T.must(old_req)] }
@@ -81,13 +78,13 @@ module Dependabot
       sig do
         params(
           content: String,
-          new_req: T::Hash[Symbol, Object],
-          old_req: T::Hash[Symbol, Object]
+          new_req: Dependabot::DependencyRequirement,
+          old_req: Dependabot::DependencyRequirement
         ).returns(String)
       end
       def apply_requirement_update(content, new_req, old_req)
-        new_source = T.cast(new_req.fetch(:source), T::Hash[Symbol, Object])
-        source_type = T.cast(new_source.fetch(:type), String)
+        new_source = requirement_source(new_req)
+        source_type = required_string_detail(new_source, :type)
 
         case source_type
         when "git"
@@ -102,20 +99,20 @@ module Dependabot
       sig do
         params(
           content: String,
-          new_req: T::Hash[Symbol, Object],
-          old_req: T::Hash[Symbol, Object]
+          new_req: Dependabot::DependencyRequirement,
+          old_req: Dependabot::DependencyRequirement
         ).returns(String)
       end
       def apply_git_requirement_update(content, new_req, old_req)
-        new_source = T.cast(new_req.fetch(:source), T::Hash[Symbol, Object])
-        old_source = T.cast(old_req.fetch(:source), T::Hash[Symbol, Object])
-        repo_url = T.cast(old_source.fetch(:url), String)
-        old_ref = T.cast(old_source.fetch(:ref), String)
-        new_ref = T.cast(new_source.fetch(:ref), String)
+        new_source = requirement_source(new_req)
+        old_source = requirement_source(old_req)
+        repo_url = required_string_detail(old_source, :url)
+        old_ref = required_string_detail(old_source, :ref)
+        new_ref = required_string_detail(new_source, :ref)
 
-        new_metadata = T.cast(new_req.fetch(:metadata, {}), T::Hash[Symbol, Object])
-        old_version = T.cast(new_metadata[:comment_version], T.nilable(String))
-        new_version = T.cast(new_metadata[:new_comment_version], T.nilable(String))
+        new_metadata = new_req.metadata || {}
+        old_version = string_detail(new_metadata, :comment_version)
+        new_version = string_detail(new_metadata, :new_comment_version)
 
         replace_ref_in_content(
           content,
@@ -130,18 +127,54 @@ module Dependabot
       sig do
         params(
           content: String,
-          new_req: T::Hash[Symbol, Object],
-          old_req: T::Hash[Symbol, Object]
+          new_req: Dependabot::DependencyRequirement,
+          old_req: Dependabot::DependencyRequirement
         ).returns(String)
       end
       def apply_additional_dependency_update(content, new_req, old_req)
-        old_source = T.cast(old_req.fetch(:source), T::Hash[Symbol, Object])
-        new_source = T.cast(new_req.fetch(:source), T::Hash[Symbol, Object])
+        old_source = requirement_source(old_req)
+        new_source = requirement_source(new_req)
 
-        old_string = T.cast(old_source.fetch(:original_string), String)
-        new_string = T.cast(new_source.fetch(:original_string), String)
+        old_string = required_string_detail(old_source, :original_string)
+        new_string = required_string_detail(new_source, :original_string)
 
         replace_additional_dependency_in_content(content, old_string, new_string)
+      end
+
+      sig do
+        params(
+          requirement: Dependabot::DependencyRequirement
+        ).returns(Dependabot::DependencyRequirement::Details)
+      end
+      def requirement_source(requirement)
+        source = requirement.source
+        raise KeyError, "key not found: :source" unless source
+
+        source
+      end
+
+      sig do
+        params(
+          details: Dependabot::DependencyRequirement::Details,
+          key: Symbol
+        ).returns(String)
+      end
+      def required_string_detail(details, key)
+        value = details.fetch(key) { details.fetch(key.to_s) }
+        raise TypeError, "#{key} must be a string" unless value.is_a?(String)
+
+        value
+      end
+
+      sig do
+        params(
+          details: Dependabot::DependencyRequirement::Details,
+          key: Symbol
+        ).returns(T.nilable(String))
+      end
+      def string_detail(details, key)
+        value = details[key] || details[key.to_s]
+        value if value.is_a?(String)
       end
 
       sig do

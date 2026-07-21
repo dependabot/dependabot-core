@@ -2,11 +2,21 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency"
 require "dependabot/swift/update_checker/requirements_updater"
 require "dependabot/swift/version"
 
 RSpec.describe Dependabot::Swift::UpdateChecker::RequirementsUpdater do
   let(:requirements) do
+    Dependabot::Dependency.new(
+      name: "github.com/Quick/Quick",
+      version: "7.0.0",
+      requirements: requirement_hashes,
+      package_manager: "swift"
+    ).requirements
+  end
+
+  let(:requirement_hashes) do
     [{
       file: "MyApp.xcodeproj/project.pbxproj",
       requirement: ">= 7.0.0, < 8.0.0",
@@ -51,12 +61,12 @@ RSpec.describe Dependabot::Swift::UpdateChecker::RequirementsUpdater do
 
       it "updates the requirement string" do
         updated = updater.updated_requirements
-        expect(updated.first[:requirement]).to eq(">= 7.0.2, < 8.0.0")
+        expect(updated.first.requirement).to eq(">= 7.0.2, < 8.0.0")
       end
 
       it "updates the metadata requirement_string" do
         updated = updater.updated_requirements
-        expect(updated.first[:metadata][:requirement_string]).to eq("from: \"7.0.2\"")
+        expect(updated.first.metadata_string(:requirement_string)).to eq("from: \"7.0.2\"")
       end
     end
   end
@@ -67,7 +77,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker::RequirementsUpdater do
 
       it "uses the commit SHA for the ref" do
         updated = updater.updated_requirements
-        expect(updated.first[:source][:ref]).to eq("91132c0fe9a98e76f3d7381a608685aa41770706")
+        expect(updated.first.source_string(:ref)).to eq("91132c0fe9a98e76f3d7381a608685aa41770706")
       end
     end
 
@@ -76,12 +86,12 @@ RSpec.describe Dependabot::Swift::UpdateChecker::RequirementsUpdater do
 
       it "falls back to version string for the ref" do
         updated = updater.updated_requirements
-        expect(updated.first[:source][:ref]).to eq("7.0.2")
+        expect(updated.first.source_string(:ref)).to eq("7.0.2")
       end
     end
 
     context "when source is nil" do
-      let(:requirements) do
+      let(:requirement_hashes) do
         [{
           file: "MyApp.xcodeproj/project.pbxproj",
           requirement: ">= 7.0.0, < 8.0.0",
@@ -93,14 +103,14 @@ RSpec.describe Dependabot::Swift::UpdateChecker::RequirementsUpdater do
 
       it "returns nil source unchanged" do
         updated = updater.updated_requirements
-        expect(updated.first[:source]).to be_nil
+        expect(updated.first.source).to be_nil
       end
     end
   end
 
   describe "xcode requirement kinds" do
     context "with exactVersion" do
-      let(:requirements) do
+      let(:requirement_hashes) do
         [{
           file: "MyApp.xcodeproj/project.pbxproj",
           requirement: "= 7.0.0",
@@ -112,13 +122,13 @@ RSpec.describe Dependabot::Swift::UpdateChecker::RequirementsUpdater do
 
       it "updates to exact new version" do
         updated = updater.updated_requirements
-        expect(updated.first[:requirement]).to eq("= 7.0.2")
-        expect(updated.first[:metadata][:requirement_string]).to eq("exact: \"7.0.2\"")
+        expect(updated.first.requirement).to eq("= 7.0.2")
+        expect(updated.first.metadata_string(:requirement_string)).to eq("exact: \"7.0.2\"")
       end
     end
 
     context "with upToNextMinorVersion" do
-      let(:requirements) do
+      let(:requirement_hashes) do
         [{
           file: "MyApp.xcodeproj/project.pbxproj",
           requirement: ">= 7.0.0, < 7.1.0",
@@ -130,13 +140,13 @@ RSpec.describe Dependabot::Swift::UpdateChecker::RequirementsUpdater do
 
       it "updates to new minor range" do
         updated = updater.updated_requirements
-        expect(updated.first[:requirement]).to eq(">= 7.0.2, < 7.1.0")
-        expect(updated.first[:metadata][:requirement_string]).to eq(".upToNextMinor(from: \"7.0.2\")")
+        expect(updated.first.requirement).to eq(">= 7.0.2, < 7.1.0")
+        expect(updated.first.metadata_string(:requirement_string)).to eq(".upToNextMinor(from: \"7.0.2\")")
       end
     end
 
     context "with versionRange" do
-      let(:requirements) do
+      let(:requirement_hashes) do
         [{
           file: "MyApp.xcodeproj/project.pbxproj",
           requirement: ">= 7.0.0, < 8.0.0",
@@ -148,8 +158,8 @@ RSpec.describe Dependabot::Swift::UpdateChecker::RequirementsUpdater do
 
       it "updates min version while preserving max" do
         updated = updater.updated_requirements
-        expect(updated.first[:requirement]).to eq(">= 7.0.2, < 8.0.0")
-        expect(updated.first[:metadata][:requirement_string]).to eq("\"7.0.2\"..<\"8.0.0\"")
+        expect(updated.first.requirement).to eq(">= 7.0.2, < 8.0.0")
+        expect(updated.first.metadata_string(:requirement_string)).to eq("\"7.0.2\"..<\"8.0.0\"")
       end
     end
   end

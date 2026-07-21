@@ -428,7 +428,7 @@ module Dependabot
 
         sig { params(dependency: Dependabot::Dependency).returns(String) }
         def npm_install_args(dependency)
-          git_requirement = dependency.requirements.find { |req| req[:source] && req[:source][:type] == "git" }
+          git_requirement = dependency.requirements.find { |req| git_requirement?(req) }
 
           if git_requirement
             # NOTE: For git dependencies we loose some information about the
@@ -437,29 +437,42 @@ module Dependabot
             # `dependabot/depeendabot-core#semver:^0.1` - this is required to
             # pass the correct install argument to `npm install`
             updated_version_requirement = updated_version_requirement_for_dependency(dependency)
-            updated_version_requirement ||= git_requirement[:source][:url]
+            updated_version_requirement ||= requirement_source_url(git_requirement)
 
             # NOTE: Git is configured to auth over https while updating
-            updated_version_requirement = updated_version_requirement.gsub(
+            updated_version_requirement = T.must(updated_version_requirement).gsub(
               %r{git\+ssh://git@(.*?)[:/]}, 'https://\1/'
             )
 
             # NOTE: Keep any semver range that has already been updated by the
             # PackageJsonUpdater when installing the new version
-            if updated_version_requirement.include?(dependency.version)
+            version = T.must(dependency.version)
+            if updated_version_requirement.include?(version)
               "#{dependency.name}@#{updated_version_requirement}"
             else
-              "#{dependency.name}@#{updated_version_requirement.sub(/#.*/, '')}##{dependency.version}"
+              "#{dependency.name}@#{updated_version_requirement.sub(/#.*/, '')}##{version}"
             end
           else
             "#{dependency.name}@#{dependency.version}"
           end
         end
 
+        sig { params(requirement: Dependabot::DependencyRequirement).returns(T::Boolean) }
+        def git_requirement?(requirement)
+          source_type = requirement.source&.[](:type)
+          source_type.is_a?(String) && source_type == "git"
+        end
+
+        sig { params(requirement: Dependabot::DependencyRequirement).returns(T.nilable(String)) }
+        def requirement_source_url(requirement)
+          source_url = requirement.source&.[](:url)
+          source_url if source_url.is_a?(String)
+        end
+
         sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
         def dependency_in_package_json?(dependency)
           dependency.requirements.any? do |req|
-            req[:file] == T.must(package_json).name
+            req.file == T.must(package_json).name
           end
         end
 
@@ -473,7 +486,7 @@ module Dependabot
         sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
         def optional_dependency?(dependency)
           dependency.requirements.any? do |req|
-            req[:groups]&.include?("optionalDependencies")
+            req.groups&.include?("optionalDependencies")
           end
         end
 

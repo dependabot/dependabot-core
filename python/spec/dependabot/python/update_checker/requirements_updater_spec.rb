@@ -19,28 +19,34 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
   let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
   let(:requirements) { [requirement_txt_req, setup_py_req, setup_cfg_req].compact }
   let(:requirement_txt_req) do
-    {
-      file: "requirements.txt",
-      requirement: requirement_txt_req_string,
-      groups: [],
-      source: nil
-    }
+    Dependabot::DependencyRequirement.from_hash(
+      {
+        file: "requirements.txt",
+        requirement: requirement_txt_req_string,
+        groups: [],
+        source: nil
+      }
+    )
   end
   let(:setup_py_req) do
-    {
-      file: "setup.py",
-      requirement: setup_py_req_string,
-      groups: [],
-      source: nil
-    }
+    Dependabot::DependencyRequirement.from_hash(
+      {
+        file: "setup.py",
+        requirement: setup_py_req_string,
+        groups: [],
+        source: nil
+      }
+    )
   end
   let(:setup_cfg_req) do
-    {
-      file: "setup.cfg",
-      requirement: setup_cfg_req_string,
-      groups: [],
-      source: nil
-    }
+    Dependabot::DependencyRequirement.from_hash(
+      {
+        file: "setup.cfg",
+        requirement: setup_cfg_req_string,
+        groups: [],
+        source: nil
+      }
+    )
   end
   let(:requirement_txt_req_string) { "==1.4.0" }
   let(:setup_py_req_string) { ">= 1.4.0" }
@@ -54,7 +60,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
 
     context "when dealing with a requirements.txt dependency" do
       subject do
-        updated_requirements.find { |r| r[:file] == "requirements.txt" }
+        updated_requirements.find { |requirement| requirement.file == "requirements.txt" }
       end
 
       context "when there is no resolvable version" do
@@ -69,31 +75,31 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
         context "when a full version was previously pinned" do
           let(:requirement_txt_req_string) { "==1.4.0" }
 
-          its([:requirement]) { is_expected.to eq("==1.5.0") }
+          its(:requirement) { is_expected.to eq("==1.5.0") }
 
           context "when requirement version has fewer digits than the new version" do
             let(:requirement_txt_req_string) { "==1.4.0" }
             let(:latest_resolvable_version) { "1.5.0.1" }
 
-            its([:requirement]) { is_expected.to eq("==1.5.0.1") }
+            its(:requirement) { is_expected.to eq("==1.5.0.1") }
           end
 
           context "when requirement has a local version" do
             let(:requirement_txt_req_string) { "==1.4.0+gc.1" }
 
-            its([:requirement]) { is_expected.to eq("==1.5.0") }
+            its(:requirement) { is_expected.to eq("==1.5.0") }
           end
 
           context "when using the arbitrary equality matcher" do
             let(:requirement_txt_req_string) { "===1.4.0" }
 
-            its([:requirement]) { is_expected.to eq("===1.5.0") }
+            its(:requirement) { is_expected.to eq("===1.5.0") }
           end
 
           context "when using a single equals (Poetry)" do
             let(:requirement_txt_req_string) { "=1.4.0" }
 
-            its([:requirement]) { is_expected.to eq("=1.5.0") }
+            its(:requirement) { is_expected.to eq("=1.5.0") }
           end
         end
 
@@ -117,42 +123,42 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
           context "when dealing with exactly the version being updated to" do
             let(:requirement_txt_req_string) { "!=1.5.0" }
 
-            its([:requirement]) { is_expected.to eq(:unfixable) }
+            its(:unfixable?) { is_expected.to be(true) }
           end
         end
 
         context "when a range requirement was specified" do
           let(:requirement_txt_req_string) { ">=1.3.0" }
 
-          its([:requirement]) { is_expected.to eq(">=1.5.0") }
+          its(:requirement) { is_expected.to eq(">=1.5.0") }
 
           context "when requirement version is too high" do
             let(:requirement_txt_req_string) { ">=2.0.0" }
 
-            its([:requirement]) { is_expected.to eq(:unfixable) }
+            its(:unfixable?) { is_expected.to be(true) }
           end
 
           context "when requirement had a local version" do
             let(:requirement_txt_req_string) { ">=1.3.0+gc.1" }
 
-            its([:requirement]) { is_expected.to eq(">=1.5.0") }
+            its(:requirement) { is_expected.to eq(">=1.5.0") }
           end
 
           context "with an upper bound" do
             let(:requirement_txt_req_string) { ">=1.3.0, <=1.5.0" }
 
-            its([:requirement]) { is_expected.to eq(">=1.5.0,<=1.5.0") }
+            its(:requirement) { is_expected.to eq(">=1.5.0,<=1.5.0") }
 
             context "when needing an update" do
               let(:requirement_txt_req_string) { ">=1.3.0, <1.5" }
 
-              its([:requirement]) { is_expected.to eq(">=1.5.0,<1.6") }
+              its(:requirement) { is_expected.to eq(">=1.5.0,<1.6") }
 
               context "when requirement version has more digits than the new version" do
                 let(:requirement_txt_req_string) { "<=1.9.2,>=1.9" }
                 let(:latest_resolvable_version) { "1.10" }
 
-                its([:requirement]) { is_expected.to eq("<=1.10,>=1.10") }
+                its(:requirement) { is_expected.to eq("<=1.10,>=1.10") }
               end
             end
           end
@@ -161,30 +167,30 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             let(:requirement_txt_req_string) { ">=1.9.2, <2" }
             let(:latest_resolvable_version) { "1.10.1" }
 
-            its([:requirement]) { is_expected.to eq(">=1.10.1,<2") }
+            its(:requirement) { is_expected.to eq(">=1.10.1,<2") }
           end
         end
 
         context "when a compatibility requirement is specified" do
           let(:requirement_txt_req_string) { "~=1.3.0" }
 
-          its([:requirement]) { is_expected.to eq("~=1.5.0") }
+          its(:requirement) { is_expected.to eq("~=1.5.0") }
 
           context "when requirement supports the new version" do
             let(:requirement_txt_req_string) { "~=1.3" }
 
-            its([:requirement]) { is_expected.to eq("~=1.5") }
+            its(:requirement) { is_expected.to eq("~=1.5") }
 
             context "with the bump_versions_if_necessary update strategy" do
               let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
 
-              its([:requirement]) { is_expected.to eq("~=1.3") }
+              its(:requirement) { is_expected.to eq("~=1.3") }
             end
 
             context "with the widen_ranges update strategy" do
               let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
 
-              its([:requirement]) { is_expected.to eq("~=1.3") }
+              its(:requirement) { is_expected.to eq("~=1.3") }
             end
           end
 
@@ -192,18 +198,18 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             let(:requirement_txt_req_string) { "~=1.3" }
             let(:latest_resolvable_version) { "2.1.0" }
 
-            its([:requirement]) { is_expected.to eq("~=2.1") }
+            its(:requirement) { is_expected.to eq("~=2.1") }
 
             context "with the bump_versions_if_necessary update strategy" do
               let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
 
-              its([:requirement]) { is_expected.to eq("~=2.1") }
+              its(:requirement) { is_expected.to eq("~=2.1") }
             end
 
             context "with the widen_ranges update strategy" do
               let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
 
-              its([:requirement]) { is_expected.to eq(">=1.3,<3.0") }
+              its(:requirement) { is_expected.to eq(">=1.3,<3.0") }
             end
           end
 
@@ -211,12 +217,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             let(:requirement_txt_req_string) { "~=5.0.0" }
             let(:latest_resolvable_version) { "5.1" }
 
-            its([:requirement]) { is_expected.to eq("~=5.1.0") }
+            its(:requirement) { is_expected.to eq("~=5.1.0") }
 
             context "with the bump_versions_if_necessary update strategy" do
               let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
 
-              its([:requirement]) { is_expected.to eq("~=5.1.0") }
+              its(:requirement) { is_expected.to eq("~=5.1.0") }
             end
           end
         end
@@ -231,20 +237,20 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
           context "when needing an update" do
             let(:requirement_txt_req_string) { "==1.4.*" }
 
-            its([:requirement]) { is_expected.to eq("==1.5.*") }
+            its(:requirement) { is_expected.to eq("==1.5.*") }
           end
 
           context "when along with an exact match" do
             let(:requirement_txt_req_string) { "==1.4.*, ==1.4.1" }
 
-            its([:requirement]) { is_expected.to eq("==1.5.0") }
+            its(:requirement) { is_expected.to eq("==1.5.0") }
           end
         end
       end
     end
 
     context "when dealing with a setup.py dependency" do
-      subject { updated_requirements.find { |r| r[:file] == "setup.py" } }
+      subject { updated_requirements.find { |requirement| requirement.file == "setup.py" } }
 
       context "when there is no resolvable version" do
         let(:latest_resolvable_version) { nil }
@@ -258,19 +264,19 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
         context "when a full version was previously pinned" do
           let(:setup_py_req_string) { "==1.4.0" }
 
-          its([:requirement]) { is_expected.to eq("==1.5.0") }
+          its(:requirement) { is_expected.to eq("==1.5.0") }
 
           context "when the requirement version has fewer digits than the new version" do
             let(:setup_py_req_string) { "==1.4.0" }
             let(:latest_resolvable_version) { "1.5.0.1" }
 
-            its([:requirement]) { is_expected.to eq("==1.5.0.1") }
+            its(:requirement) { is_expected.to eq("==1.5.0.1") }
           end
 
           context "without leading == (technically invalid)" do
             let(:setup_py_req_string) { "1.4.0" }
 
-            its([:requirement]) { is_expected.to eq("1.5.0") }
+            its(:requirement) { is_expected.to eq("1.5.0") }
           end
         end
 
@@ -288,7 +294,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
           context "when the requirement version is too high" do
             let(:setup_py_req_string) { ">=2.0.0" }
 
-            its([:requirement]) { is_expected.to eq(:unfixable) }
+            its(:unfixable?) { is_expected.to be(true) }
           end
 
           context "with an upper bound" do
@@ -299,7 +305,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             context "when needing an update" do
               let(:setup_py_req_string) { ">=1.3.0, <1.5" }
 
-              its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
+              its(:requirement) { is_expected.to eq(">=1.3.0,<1.6") }
             end
           end
         end
@@ -307,7 +313,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
         context "when a compatibility requirement was specified" do
           let(:setup_py_req_string) { "~=1.3.0" }
 
-          its([:requirement]) { is_expected.to eq("~=1.5.0") }
+          its(:requirement) { is_expected.to eq("~=1.5.0") }
 
           context "when the requirement supports the new version" do
             let(:setup_py_req_string) { "~=1.3" }
@@ -319,21 +325,21 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             let(:setup_py_req_string) { "~=1.3" }
             let(:latest_resolvable_version) { "2.1.0" }
 
-            its([:requirement]) { is_expected.to eq("~=2.1") }
+            its(:requirement) { is_expected.to eq("~=2.1") }
           end
 
           context "when bumping from minor version 4.1 to 5.0 (issue example)" do
             let(:setup_py_req_string) { "~=4.1" }
             let(:latest_resolvable_version) { "5.0.0" }
 
-            its([:requirement]) { is_expected.to eq("~=5.0") }
+            its(:requirement) { is_expected.to eq("~=5.0") }
           end
 
           context "when maintaining precision with fewer segments in new version" do
             let(:setup_py_req_string) { "~=5.0.0" }
             let(:latest_resolvable_version) { "5.1" }
 
-            its([:requirement]) { is_expected.to eq("~=5.1.0") }
+            its(:requirement) { is_expected.to eq("~=5.1.0") }
           end
         end
 
@@ -347,20 +353,20 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
           context "when needing an update" do
             let(:setup_py_req_string) { "==1.4.*" }
 
-            its([:requirement]) { is_expected.to eq(">=1.4,<1.6") }
+            its(:requirement) { is_expected.to eq(">=1.4,<1.6") }
           end
 
           context "when along with an exact match" do
             let(:setup_py_req_string) { "==1.4.*, ==1.4.1" }
 
-            its([:requirement]) { is_expected.to eq("==1.5.0") }
+            its(:requirement) { is_expected.to eq("==1.5.0") }
           end
         end
       end
     end
 
     context "when dealing with a setup.cfg dependency" do
-      subject { updated_requirements.find { |r| r[:file] == "setup.cfg" } }
+      subject { updated_requirements.find { |requirement| requirement.file == "setup.cfg" } }
 
       context "when there is no resolvable version" do
         let(:latest_resolvable_version) { nil }
@@ -374,19 +380,19 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
         context "when a full version was previously pinned" do
           let(:setup_cfg_req_string) { "==1.4.0" }
 
-          its([:requirement]) { is_expected.to eq("==1.5.0") }
+          its(:requirement) { is_expected.to eq("==1.5.0") }
 
           context "when the requirement has fewer digits than the new version" do
             let(:setup_cfg_req_string) { "==1.4.0" }
             let(:latest_resolvable_version) { "1.5.0.1" }
 
-            its([:requirement]) { is_expected.to eq("==1.5.0.1") }
+            its(:requirement) { is_expected.to eq("==1.5.0.1") }
           end
 
           context "without leading == (technically invalid)" do
             let(:setup_cfg_req_string) { "1.4.0" }
 
-            its([:requirement]) { is_expected.to eq("1.5.0") }
+            its(:requirement) { is_expected.to eq("1.5.0") }
           end
         end
 
@@ -404,7 +410,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
           context "when the requirement version is too high" do
             let(:setup_cfg_req_string) { ">=2.0.0" }
 
-            its([:requirement]) { is_expected.to eq(:unfixable) }
+            its(:unfixable?) { is_expected.to be(true) }
           end
 
           context "with an upper bound" do
@@ -415,7 +421,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             context "when needing an update" do
               let(:setup_cfg_req_string) { ">=1.3.0, <1.5" }
 
-              its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
+              its(:requirement) { is_expected.to eq(">=1.3.0,<1.6") }
             end
           end
         end
@@ -423,7 +429,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
         context "when a compatibility requirement was specified" do
           let(:setup_cfg_req_string) { "~=1.3.0" }
 
-          its([:requirement]) { is_expected.to eq("~=1.5.0") }
+          its(:requirement) { is_expected.to eq("~=1.5.0") }
 
           context "when the requirement supports the new version" do
             let(:setup_cfg_req_string) { "~=1.3" }
@@ -435,21 +441,21 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             let(:setup_cfg_req_string) { "~=1.3" }
             let(:latest_resolvable_version) { "2.1.0" }
 
-            its([:requirement]) { is_expected.to eq("~=2.1") }
+            its(:requirement) { is_expected.to eq("~=2.1") }
           end
 
           context "when bumping from minor version 4.1 to 5.0 (issue example)" do
             let(:setup_cfg_req_string) { "~=4.1" }
             let(:latest_resolvable_version) { "5.0.0" }
 
-            its([:requirement]) { is_expected.to eq("~=5.0") }
+            its(:requirement) { is_expected.to eq("~=5.0") }
           end
 
           context "when maintaining precision with fewer segments in new version" do
             let(:setup_cfg_req_string) { "~=5.0.0" }
             let(:latest_resolvable_version) { "5.1" }
 
-            its([:requirement]) { is_expected.to eq("~=5.1.0") }
+            its(:requirement) { is_expected.to eq("~=5.1.0") }
           end
         end
 
@@ -463,29 +469,31 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
           context "when needing an update" do
             let(:setup_cfg_req_string) { "==1.4.*" }
 
-            its([:requirement]) { is_expected.to eq(">=1.4,<1.6") }
+            its(:requirement) { is_expected.to eq(">=1.4,<1.6") }
           end
 
           context "when along with an exact match" do
             let(:setup_cfg_req_string) { "==1.4.*, ==1.4.1" }
 
-            its([:requirement]) { is_expected.to eq("==1.5.0") }
+            its(:requirement) { is_expected.to eq("==1.5.0") }
           end
         end
       end
     end
 
     context "when dealing with a pyproject.toml dependency" do
-      subject { updated_requirements.find { |r| r[:file] == "pyproject.toml" } }
+      subject { updated_requirements.find { |requirement| requirement.file == "pyproject.toml" } }
 
       let(:requirements) { [pyproject_req].compact }
       let(:pyproject_req) do
-        {
-          file: "pyproject.toml",
-          requirement: pyproject_req_string,
-          groups: groups,
-          source: nil
-        }
+        Dependabot::DependencyRequirement.from_hash(
+          {
+            file: "pyproject.toml",
+            requirement: pyproject_req_string,
+            groups: groups,
+            source: nil
+          }
+        )
       end
       let(:groups) { [] }
 
@@ -510,30 +518,30 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             context "when a full version was previously pinned" do
               let(:pyproject_req_string) { "1.4.0" }
 
-              its([:requirement]) { is_expected.to eq("1.5.0") }
+              its(:requirement) { is_expected.to eq("1.5.0") }
 
               context "when the requirement has fewer digits than the new version" do
                 let(:pyproject_req_string) { "1.4" }
                 let(:latest_resolvable_version) { "1.5.0" }
 
-                its([:requirement]) { is_expected.to eq("1.5.0") }
+                its(:requirement) { is_expected.to eq("1.5.0") }
               end
 
               context "when the requirement had a local version" do
                 let(:pyproject_req_string) { "1.4.0+gc.1" }
 
-                its([:requirement]) { is_expected.to eq("1.5.0") }
+                its(:requirement) { is_expected.to eq("1.5.0") }
               end
 
               context "when using an equality matcher" do
                 let(:pyproject_req_string) { "==1.4.0" }
 
-                its([:requirement]) { is_expected.to eq("==1.5.0") }
+                its(:requirement) { is_expected.to eq("==1.5.0") }
 
                 context "with a single equals" do
                   let(:pyproject_req_string) { "=1.4.0" }
 
-                  its([:requirement]) { is_expected.to eq("=1.5.0") }
+                  its(:requirement) { is_expected.to eq("=1.5.0") }
                 end
               end
             end
@@ -547,7 +555,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             context "when a range requirement was specified" do
               let(:pyproject_req_string) { ">=1.3.0" }
 
-              its([:requirement]) do
+              its(:requirement) do
                 is_expected.to eq(
                   if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
                     ">=1.5.0"
@@ -560,13 +568,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
               context "when the requirement version is too high" do
                 let(:pyproject_req_string) { ">=2.0.0" }
 
-                its([:requirement]) { is_expected.to eq(:unfixable) }
+                its(:unfixable?) { is_expected.to be(true) }
               end
 
               context "when the requirement had a local version" do
                 let(:pyproject_req_string) { ">=1.3.0+gc.1" }
 
-                its([:requirement]) do
+                its(:requirement) do
                   is_expected.to eq(
                     if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
                       ">=1.5.0"
@@ -580,7 +588,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
               context "with an upper bound" do
                 let(:pyproject_req_string) { ">=1.3.0, <=1.5.0" }
 
-                its([:requirement]) do
+                its(:requirement) do
                   is_expected.to eq(
                     if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
                       ">=1.5.0,<=1.5.0"
@@ -593,7 +601,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
                 context "when needing an update" do
                   let(:pyproject_req_string) { ">=1.3.0, <1.5" }
 
-                  its([:requirement]) do
+                  its(:requirement) do
                     is_expected.to eq(
                       if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
                         ">=1.5.0,<1.6"
@@ -608,7 +616,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
                   # This matches the issue scenario: deps like ">=1.0.0,<2" should bump the lower bound
                   let(:pyproject_req_string) { ">=1.0.0, <2" }
 
-                  its([:requirement]) do
+                  its(:requirement) do
                     is_expected.to eq(
                       if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
                         ">=1.5.0,<2"
@@ -622,7 +630,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
                 context "with a strict lower bound (>)" do
                   let(:pyproject_req_string) { ">1.0.0, <2.0.0" }
 
-                  its([:requirement]) do
+                  its(:requirement) do
                     is_expected.to eq(
                       if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
                         ">=1.5.0,<2.0.0"
@@ -636,7 +644,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
                 context "with a != exclusion alongside a range" do
                   let(:pyproject_req_string) { "!=1.4.0, >=1.3.0, <2.0.0" }
 
-                  its([:requirement]) do
+                  its(:requirement) do
                     is_expected.to eq(
                       if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
                         "!=1.4.0,>=1.5.0,<2.0.0"
@@ -652,33 +660,33 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             context "when a ~= requirement was specified" do
               let(:pyproject_req_string) { "~=1.3.0" }
 
-              its([:requirement]) { is_expected.to eq("~=1.5.0") }
+              its(:requirement) { is_expected.to eq("~=1.5.0") }
 
               context "when maintaining precision with fewer segments in new version" do
                 let(:pyproject_req_string) { "~=5.0.0" }
                 let(:latest_resolvable_version) { "5.1" }
 
-                its([:requirement]) { is_expected.to eq("~=5.1.0") }
+                its(:requirement) { is_expected.to eq("~=5.1.0") }
               end
             end
 
             context "when a ~ requirement was specified" do
               let(:pyproject_req_string) { "~1.3.0" }
 
-              its([:requirement]) { is_expected.to eq("~1.5.0") }
+              its(:requirement) { is_expected.to eq("~1.5.0") }
 
               context "when maintaining precision with fewer segments in new version" do
                 let(:pyproject_req_string) { "~5.0.0" }
                 let(:latest_resolvable_version) { "5.1" }
 
-                its([:requirement]) { is_expected.to eq("~5.1.0") }
+                its(:requirement) { is_expected.to eq("~5.1.0") }
               end
             end
 
             context "when a ^ requirement was specified" do
               let(:pyproject_req_string) { "^1.3.0" }
 
-              its([:requirement]) do
+              its(:requirement) do
                 is_expected.to eq(
                   if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
                     "^1.5.0"
@@ -691,7 +699,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
               context "without a lockfile" do
                 let(:has_lockfile) { false }
 
-                its([:requirement]) do
+                its(:requirement) do
                   is_expected.to eq(
                     if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersions
                       "^1.5.0"
@@ -704,14 +712,14 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
                 context "when needing an update" do
                   let(:latest_resolvable_version) { "2.5.0" }
 
-                  its([:requirement]) { is_expected.to eq("^2.5.0") }
+                  its(:requirement) { is_expected.to eq("^2.5.0") }
                 end
               end
 
               context "with an || specifier" do
                 let(:pyproject_req_string) { "^0.8.0 || ^1.3.0" }
 
-                its([:requirement]) { is_expected.to eq("^0.8.0 || ^1.3.0") }
+                its(:requirement) { is_expected.to eq("^0.8.0 || ^1.3.0") }
               end
             end
 
@@ -725,13 +733,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
               context "when needing an update" do
                 let(:pyproject_req_string) { "==1.4.*" }
 
-                its([:requirement]) { is_expected.to eq("==1.5.*") }
+                its(:requirement) { is_expected.to eq("==1.5.*") }
               end
 
               context "when along with an exact match" do
                 let(:pyproject_req_string) { "==1.4.*, ==1.4.1" }
 
-                its([:requirement]) { is_expected.to eq("==1.5.0") }
+                its(:requirement) { is_expected.to eq("==1.5.0") }
               end
             end
           end
@@ -753,25 +761,25 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
           context "when a full version was previously pinned" do
             let(:pyproject_req_string) { "1.4.0" }
 
-            its([:requirement]) { is_expected.to eq("1.5.0") }
+            its(:requirement) { is_expected.to eq("1.5.0") }
 
             context "when the requirement has fewer digits than the new version" do
               let(:pyproject_req_string) { "1.4" }
               let(:latest_resolvable_version) { "1.5.0" }
 
-              its([:requirement]) { is_expected.to eq("1.5.0") }
+              its(:requirement) { is_expected.to eq("1.5.0") }
             end
 
             context "when the requirement had a local version" do
               let(:pyproject_req_string) { "1.4.0+gc.1" }
 
-              its([:requirement]) { is_expected.to eq("1.5.0") }
+              its(:requirement) { is_expected.to eq("1.5.0") }
             end
 
             context "when using an equality matcher" do
               let(:pyproject_req_string) { "==1.4.0" }
 
-              its([:requirement]) { is_expected.to eq("==1.5.0") }
+              its(:requirement) { is_expected.to eq("==1.5.0") }
             end
           end
 
@@ -795,7 +803,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             context "when the requirement is too high" do
               let(:pyproject_req_string) { ">=2.0.0" }
 
-              its([:requirement]) { is_expected.to eq(:unfixable) }
+              its(:unfixable?) { is_expected.to be(true) }
             end
 
             context "with an upper bound" do
@@ -806,7 +814,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
               context "when needing an update" do
                 let(:pyproject_req_string) { ">=1.3.0, <1.5" }
 
-                its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
+                its(:requirement) { is_expected.to eq(">=1.3.0,<1.6") }
               end
             end
           end
@@ -814,23 +822,23 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
           context "when a ~= requirement was specified" do
             let(:pyproject_req_string) { "~=1.3.0" }
 
-            its([:requirement]) { is_expected.to eq(">=1.3,<1.6") }
+            its(:requirement) { is_expected.to eq(">=1.3,<1.6") }
           end
 
           context "when a ~ requirement was specified" do
             let(:pyproject_req_string) { "~1.3.0" }
 
-            its([:requirement]) { is_expected.to eq(">=1.3,<1.6") }
+            its(:requirement) { is_expected.to eq(">=1.3,<1.6") }
 
             context "when dealing with the major version" do
               let(:pyproject_req_string) { "~1" }
 
-              its([:requirement]) { is_expected.to eq("~1") }
+              its(:requirement) { is_expected.to eq("~1") }
 
               context "when needing an update" do
                 let(:latest_resolvable_version) { "2.5.0" }
 
-                its([:requirement]) { is_expected.to eq(">=1,<3") }
+                its(:requirement) { is_expected.to eq(">=1,<3") }
               end
             end
           end
@@ -838,50 +846,50 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
           context "when a ^ requirement was specified" do
             let(:pyproject_req_string) { "^1.3.0" }
 
-            its([:requirement]) { is_expected.to eq("^1.3.0") }
+            its(:requirement) { is_expected.to eq("^1.3.0") }
 
             context "when dealing with a development dependency" do
               let(:groups) { ["dev-dependencies"] }
 
-              its([:requirement]) { is_expected.to eq("^1.5.0") }
+              its(:requirement) { is_expected.to eq("^1.5.0") }
 
               context "without a lockfile" do
                 let(:has_lockfile) { false }
 
-                its([:requirement]) { is_expected.to eq("^1.3.0") }
+                its(:requirement) { is_expected.to eq("^1.3.0") }
               end
             end
 
             context "when needing an update" do
               let(:latest_resolvable_version) { "2.5.0" }
 
-              its([:requirement]) { is_expected.to eq(">=1.3,<3.0") }
+              its(:requirement) { is_expected.to eq(">=1.3,<3.0") }
 
               context "when the version is pre-1.0.0" do
                 let(:pyproject_req_string) { "^0.3.0" }
                 let(:latest_resolvable_version) { "0.5.0" }
 
-                its([:requirement]) { is_expected.to eq(">=0.3,<0.6") }
+                its(:requirement) { is_expected.to eq(">=0.3,<0.6") }
               end
 
               context "when the version is pre-0.1.0" do
                 let(:pyproject_req_string) { "^0.0.3" }
                 let(:latest_resolvable_version) { "0.0.5" }
 
-                its([:requirement]) { is_expected.to eq(">=0.0.3,<0.0.6") }
+                its(:requirement) { is_expected.to eq(">=0.0.3,<0.0.6") }
               end
 
               context "when the version is all zeros" do
                 let(:pyproject_req_string) { "^0.0.0" }
                 let(:latest_resolvable_version) { "0.0.2" }
 
-                its([:requirement]) { is_expected.to eq(">=0.0.0,<0.0.3") }
+                its(:requirement) { is_expected.to eq(">=0.0.0,<0.0.3") }
               end
 
               context "when dealing with a development dependency" do
                 let(:groups) { ["dev-dependencies"] }
 
-                its([:requirement]) { is_expected.to eq("^2.5.0") }
+                its(:requirement) { is_expected.to eq("^2.5.0") }
               end
             end
           end
@@ -896,19 +904,19 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
             context "when needing an update" do
               let(:pyproject_req_string) { "==1.4.*" }
 
-              its([:requirement]) { is_expected.to eq(">=1.4,<1.6") }
+              its(:requirement) { is_expected.to eq(">=1.4,<1.6") }
             end
 
             context "when along with an exact match" do
               let(:pyproject_req_string) { "==1.4.*, ==1.4.1" }
 
-              its([:requirement]) { is_expected.to eq("==1.5.0") }
+              its(:requirement) { is_expected.to eq("==1.5.0") }
             end
 
             context "when part of an || condition" do
               let(:pyproject_req_string) { "1.3.* || 1.4.*" }
 
-              its([:requirement]) do
+              its(:requirement) do
                 is_expected.to eq("1.3.* || 1.4.* || 1.5.*")
               end
             end

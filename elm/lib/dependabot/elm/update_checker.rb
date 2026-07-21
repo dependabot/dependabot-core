@@ -39,12 +39,10 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        wrap_requirements(
-          RequirementsUpdater.new(
-            requirements: dependency.requirements,
-            latest_resolvable_version: latest_resolvable_version
-          ).updated_requirements
-        )
+        RequirementsUpdater.new(
+          requirements: dependency.requirements,
+          latest_resolvable_version: latest_resolvable_version
+        ).updated_requirements
       end
 
       # Overwrite the base class to allow multi-dependency update PRs for
@@ -70,7 +68,7 @@ module Dependabot
       def latest_version_finder_elm19
         @latest_version_finder_elm19 ||= T.let(
           begin
-            unless dependency.requirements.any? { |r| r.fetch(:file) == MANIFEST_FILE }
+            unless dependency.requirements.any? { |r| r.file == MANIFEST_FILE }
               raise Dependabot::DependencyFileNotResolvable, "No #{MANIFEST_FILE} found"
             end
 
@@ -120,7 +118,7 @@ module Dependabot
         return false unless latest_version
 
         dependency.requirements
-                  .map { |r| r.fetch(:requirement) }
+                  .map(&:requirement)
                   .map { |r| requirement_class.new(r) }
                   .all? { |r| r.satisfied_by?(latest_version) }
       end

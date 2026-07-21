@@ -1,9 +1,10 @@
 # typed: strong
 # frozen_string_literal: true
 
-require "dependabot/elm/version"
+require "dependabot/dependency_requirement"
 require "dependabot/elm/requirement"
 require "dependabot/elm/update_checker"
+require "dependabot/elm/version"
 
 module Dependabot
   module Elm
@@ -17,12 +18,12 @@ module Dependabot
 
         sig do
           params(
-            requirements: T::Array[T::Hash[Symbol, T.nilable(String)]],
+            requirements: T::Array[Dependabot::DependencyRequirement],
             latest_resolvable_version: T.nilable(T.any(String, Integer, Dependabot::Version))
           ).void
         end
         def initialize(requirements:, latest_resolvable_version:)
-          @requirements = T.let(requirements, T::Array[T::Hash[Symbol, T.nilable(String)]])
+          @requirements = T.let(requirements, T::Array[Dependabot::DependencyRequirement])
 
           return unless latest_resolvable_version
           return unless version_class.correct?(latest_resolvable_version)
@@ -33,23 +34,23 @@ module Dependabot
           )
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_requirements
           return requirements unless latest_resolvable_version
 
           requirements.map do |req|
             updated_req_string = update_requirement(
-              req[:requirement],
+              req.requirement,
               T.must(latest_resolvable_version)
             )
 
-            req.merge(requirement: updated_req_string)
+            req.with_requirement(updated_req_string)
           end
         end
 
         private
 
-        sig { returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :requirements
 
         sig { returns(T.nilable(Dependabot::Version)) }

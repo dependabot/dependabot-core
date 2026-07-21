@@ -29,11 +29,11 @@ RSpec.describe Dependabot::Swift::FileParser::PbxprojParser do
         expect(name).to eq("github.com/apple/swift-nio")
 
         req_info = reqs[name]
-        expect(req_info[:requirement]).to eq(">= 2.54.0, < 3.0.0")
-        expect(req_info[:requirement_string]).to eq("from: \"2.54.0\"")
-        expect(req_info[:kind]).to eq("upToNextMajorVersion")
-        expect(req_info[:file]).to eq(file_name)
-        expect(req_info[:url]).to eq("https://github.com/apple/swift-nio.git")
+        expect(req_info.requirement).to eq(">= 2.54.0, < 3.0.0")
+        expect(req_info.requirement_string).to eq("from: \"2.54.0\"")
+        expect(req_info.kind).to eq("upToNextMajorVersion")
+        expect(req_info.file).to eq(file_name)
+        expect(req_info.url).to eq("https://github.com/apple/swift-nio.git")
       end
     end
 
@@ -48,30 +48,30 @@ RSpec.describe Dependabot::Swift::FileParser::PbxprojParser do
 
       it "parses upToNextMajorVersion correctly" do
         req = parser.parse["github.com/apple/swift-nio"]
-        expect(req[:requirement]).to eq(">= 2.54.0, < 3.0.0")
-        expect(req[:requirement_string]).to eq("from: \"2.54.0\"")
-        expect(req[:kind]).to eq("upToNextMajorVersion")
+        expect(req.requirement).to eq(">= 2.54.0, < 3.0.0")
+        expect(req.requirement_string).to eq("from: \"2.54.0\"")
+        expect(req.kind).to eq("upToNextMajorVersion")
       end
 
       it "parses upToNextMinorVersion correctly" do
         req = parser.parse["github.com/apple/swift-collections"]
-        expect(req[:requirement]).to eq(">= 1.0.0, < 1.1.0")
-        expect(req[:requirement_string]).to eq(".upToNextMinor(from: \"1.0.0\")")
-        expect(req[:kind]).to eq("upToNextMinorVersion")
+        expect(req.requirement).to eq(">= 1.0.0, < 1.1.0")
+        expect(req.requirement_string).to eq(".upToNextMinor(from: \"1.0.0\")")
+        expect(req.kind).to eq("upToNextMinorVersion")
       end
 
       it "parses exactVersion correctly" do
         req = parser.parse["github.com/apple/swift-argument-parser"]
-        expect(req[:requirement]).to eq("= 1.2.0")
-        expect(req[:requirement_string]).to eq("exact: \"1.2.0\"")
-        expect(req[:kind]).to eq("exactVersion")
+        expect(req.requirement).to eq("= 1.2.0")
+        expect(req.requirement_string).to eq("exact: \"1.2.0\"")
+        expect(req.kind).to eq("exactVersion")
       end
 
       it "parses versionRange correctly" do
         req = parser.parse["github.com/apple/swift-log"]
-        expect(req[:requirement]).to eq(">= 1.4.0, < 2.0.0")
-        expect(req[:requirement_string]).to eq("\"1.4.0\"..<\"2.0.0\"")
-        expect(req[:kind]).to eq("versionRange")
+        expect(req.requirement).to eq(">= 1.4.0, < 2.0.0")
+        expect(req.requirement_string).to eq("\"1.4.0\"..<\"2.0.0\"")
+        expect(req.kind).to eq("versionRange")
       end
     end
 
@@ -86,10 +86,10 @@ RSpec.describe Dependabot::Swift::FileParser::PbxprojParser do
         expect(reqs.length).to eq(1)
 
         req = reqs["github.com/apple/swift-nio"]
-        expect(req[:requirement]).to be_nil
-        expect(req[:requirement_string]).to be_nil
-        expect(req[:kind]).to eq("revision")
-        expect(req[:revision]).to eq("6213ba7a06febe8fef60563a4a7d26a4085783cf")
+        expect(req.requirement).to be_nil
+        expect(req.requirement_string).to be_nil
+        expect(req.kind).to eq("revision")
+        expect(req.revision).to eq("6213ba7a06febe8fef60563a4a7d26a4085783cf")
       end
     end
 
@@ -137,9 +137,9 @@ RSpec.describe Dependabot::Swift::FileParser::PbxprojParser do
 
       it "returns nil requirement with branch info" do
         req = parser.parse["github.com/apple/swift-nio"]
-        expect(req[:requirement]).to be_nil
-        expect(req[:kind]).to eq("branch")
-        expect(req[:branch]).to eq("main")
+        expect(req.requirement).to be_nil
+        expect(req.kind).to eq("branch")
+        expect(req.branch).to eq("main")
       end
     end
 
@@ -168,9 +168,9 @@ RSpec.describe Dependabot::Swift::FileParser::PbxprojParser do
         req = parser.parse["github.com/apple/swift-nio"]
         # Rendered in canonical SemVer form (not the RubyGems-normalized "2.54.0.pre.beta.1")
         # because boundaries are parsed as Swift::Version.
-        expect(req[:requirement]).to eq(">= 2.54.0-beta.1, < 3.0.0.0")
-        expect(req[:requirement_string]).to eq("from: \"2.54.0-beta.1\"")
-        expect(req[:kind]).to eq("upToNextMajorVersion")
+        expect(req.requirement).to eq(">= 2.54.0-beta.1, < 3.0.0.0")
+        expect(req.requirement_string).to eq("from: \"2.54.0-beta.1\"")
+        expect(req.kind).to eq("upToNextMajorVersion")
       end
     end
   end

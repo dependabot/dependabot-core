@@ -117,7 +117,7 @@ module Dependabot
       # @return [nil, Dependabot::Source]
       sig { params(dependency: Dependabot::Dependency).returns(T.nilable(Dependabot::Source)) }
       def source(dependency:)
-        type = T.must(dependency.requirements.first)[:source][:type]
+        type = T.must(dependency.source_type)
         base_url = service_url_for(service_key_for(type))
         case type
         # https://www.terraform.io/internals/module-registry-protocol#download-source-code-for-a-specific-module-version

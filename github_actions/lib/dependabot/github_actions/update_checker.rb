@@ -55,24 +55,25 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         updated_reqs = dependency.requirements.map do |req|
-          source = req[:source]
+          source = req.source
           updated = updated_ref(source)
           next req unless updated
 
-          current = source[:ref]
+          current = req.source_string(:ref)
+          source_type = req.source_string(:type)
+          raise TypeError, "Expected dependency source ref to be a String" unless current
 
           # Maintain a short git hash only if it matches the latest
-          if req[:type] == "git" &&
+          if source_type == "git" &&
              git_commit_checker.ref_looks_like_commit_sha?(updated) &&
              git_commit_checker.ref_looks_like_commit_sha?(current) &&
              updated.start_with?(current)
             next req
           end
 
-          new_source = source.merge(ref: updated)
-          req.merge(source: new_source)
+          req.with_source(T.must(source).merge(ref: updated))
         end
-        wrap_requirements(updated_reqs)
+        updated_reqs
       end
 
       private
@@ -140,7 +141,11 @@ module Dependabot
         )
       end
 
-      sig { params(source: T.nilable(T::Hash[Symbol, String])).returns(T.nilable(String)) }
+      sig do
+        params(
+          source: T.nilable(Dependabot::DependencyRequirement::Details)
+        ).returns(T.nilable(String))
+      end
       def updated_ref(source)
         # TODO: Support Docker sources
         return unless git_commit_checker.git_dependency?

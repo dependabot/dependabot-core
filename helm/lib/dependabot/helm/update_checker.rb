@@ -48,13 +48,13 @@ module Dependabot
         return dependency.requirements unless latest_version
 
         updated_reqs = dependency.requirements.map do |req|
-          case req.dig(:metadata, :type)
+          case req.metadata&.[](:type)
           when nil then req
           when :helm_chart then updated_chart_requirement(req)
-          else req.merge(requirement: latest_version.to_s) # image deps: exact overwrite
+          else req.with_requirement(latest_version.to_s) # image deps: exact overwrite
           end
         end
-        wrap_requirements(updated_reqs)
+        updated_reqs
       end
 
       private
@@ -68,7 +68,7 @@ module Dependabot
       sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
       def updated_chart_requirement(req)
         current_constraint = chart_constraint_for(req)
-        synthetic = T.cast(req.merge(requirement: current_constraint), Dependabot::DependencyRequirement)
+        synthetic = req.with_requirement(current_constraint)
 
         T.must(
           RequirementsUpdater.new(
@@ -85,7 +85,13 @@ module Dependabot
       # or ranges) into one dependency with a single combined version.
       sig { params(req: Dependabot::DependencyRequirement).returns(String) }
       def chart_constraint_for(req)
-        (req[:requirement] || req.dig(:source, :tag) || dependency.version).to_s
+        requirement = req.requirement
+        return requirement if requirement
+
+        tag = req.source&.[](:tag)
+        return tag if tag.is_a?(String)
+
+        dependency.version.to_s
       end
 
       sig { returns(Dependabot::RequirementsUpdateStrategy) }
@@ -111,7 +117,7 @@ module Dependabot
       sig { returns(Dependabot::Version) }
       def chart_anchor_version
         constraints = dependency.requirements
-                                .select { |r| r.dig(:metadata, :type) == :helm_chart }
+                                .select { |r| r.metadata&.[](:type) == :helm_chart }
                                 .map { |r| chart_constraint_for(r) }
         constraints = [dependency.version.to_s] if constraints.empty?
         T.must(constraints.map { |c| anchor_for_constraint(c) }.min)
@@ -283,12 +289,14 @@ module Dependabot
       # name across files/entries); an update is warranted if even one changes.
       sig { returns(T::Boolean) }
       def chart_requirement_changes?
-        chart_reqs = dependency.requirements.select { |r| r.dig(:metadata, :type) == :helm_chart }
+        chart_reqs = dependency.requirements.select { |r| r.metadata&.[](:type) == :helm_chart }
         chart_reqs = dependency.requirements if chart_reqs.empty?
         return true if chart_reqs.empty?
 
         chart_reqs.any? do |req|
-          updated_chart_requirement(req)[:requirement].to_s != chart_constraint_for(req)
+          updated = updated_chart_requirement(req)
+          updated_constraint = updated.unfixable? ? :unfixable.to_s : updated.requirement.to_s
+          updated_constraint != chart_constraint_for(req)
         end
       end
 
@@ -307,9 +315,9 @@ module Dependabot
       sig { returns(Symbol) }
       def dependency_type
         req = dependency.requirements.first
-        type = T.must(req).dig(:metadata, :type)
+        type = T.must(req).metadata&.[](:type)
 
-        type || :unknown
+        type.is_a?(Symbol) ? type : :unknown
       end
 
       sig do
@@ -350,8 +358,8 @@ module Dependabot
       sig { returns(T.nilable(Gem::Version)) }
       def fetch_latest_chart_version
         chart_name = dependency.name
-        source = dependency.requirements.first&.dig(:source)
-        repo_url = source&.dig(:registry)
+        registry = dependency.requirements.first&.source&.[](:registry)
+        repo_url = registry if registry.is_a?(String)
         repo_name = extract_repo_name(repo_url)
         releases = fetch_releases_with_helm_cli(chart_name, repo_name, repo_url)
         return releases if releases
@@ -518,19 +526,22 @@ module Dependabot
 
       sig { returns(Dependabot::Dependency) }
       def build_docker_dependency
-        source = T.must(dependency.requirements.first)[:source]
+        requirement = T.must(dependency.requirements.first)
+        source = T.must(requirement.source)
         name = dependency.name
         version = dependency.version
 
-        if source[:path]
-          parts = source[:path].split(".")
+        path = source[:path]
+        if path.is_a?(String)
+          parts = path.split(".")
           if parts.length > 1 && (parts.last == "tag" || parts.last == "image")
             # The actual image name might be in image.repository
-            name = parts[0...-1].join(".")
+            name = parts.first(parts.length - 1).join(".")
           end
         end
 
-        registry = source[:registry] || nil
+        registry_value = source[:registry]
+        registry = registry_value if registry_value.is_a?(String)
 
         Dependency.new(
           name: name,
@@ -538,7 +549,7 @@ module Dependabot
           requirements: [{
             requirement: nil,
             groups: [],
-            file: T.must(dependency.requirements.first)[:file],
+            file: T.must(requirement.file),
             source: {
               registry: registry,
               tag: version

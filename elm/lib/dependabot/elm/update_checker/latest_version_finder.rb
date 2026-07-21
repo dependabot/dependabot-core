@@ -161,7 +161,7 @@ module Dependabot
             next unless new_version
 
             old_reqs = original_dep.requirements.map do |req|
-              requirement_class.new(req[:requirement])
+              requirement_class.new(req.requirement)
             end
 
             next if old_reqs.all? { |req| req.satisfied_by?(new_version) }

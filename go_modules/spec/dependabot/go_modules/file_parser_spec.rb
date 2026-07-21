@@ -630,7 +630,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
 
       it "preserves requirement file provenance for shared deps" do
         color_dep = dependencies.find { |d| d.name == "github.com/fatih/color" }
-        req_files = color_dep.requirements.map { |r| r[:file] }
+        req_files = color_dep.requirements.map(&:file)
         expect(req_files).to include("go.mod")
       end
 

@@ -66,7 +66,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater::WrapperUpdater do
   context "when the current wrapper file has no checksum requirement" do
     let(:target_requirements) do
       dependency.requirements.select do |req|
-        req[:file] == "gradle/wrapper/gradle-wrapper.properties"
+        req.file == "gradle/wrapper/gradle-wrapper.properties"
       end
     end
 

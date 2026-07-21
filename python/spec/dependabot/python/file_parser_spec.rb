@@ -354,7 +354,7 @@ RSpec.describe Dependabot::Python::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("psycopg2")
           expect(dependency.version).to be_nil
-          expect(dependency.requirements.first[:requirement]).to be_nil
+          expect(dependency.requirements.first.requirement).to be_nil
         end
       end
     end
@@ -371,7 +371,7 @@ RSpec.describe Dependabot::Python::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("psycopg2")
           expect(dependency.version).to be_nil
-          expect(dependency.requirements.first[:requirement]).to eq("==2.6.*")
+          expect(dependency.requirements.first.requirement).to eq("==2.6.*")
         end
       end
     end
@@ -388,7 +388,7 @@ RSpec.describe Dependabot::Python::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("psycopg2")
           expect(dependency.version).to be_nil
-          expect(dependency.requirements.first[:requirement])
+          expect(dependency.requirements.first.requirement)
             .to eq("<=3.0.0,==2.6.1")
         end
       end
@@ -427,7 +427,7 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("requests")
             expect(dependency.version).to be_nil
-            expect(dependency.requirements.map { |r| r[:requirement] })
+            expect(dependency.requirements.map(&:requirement))
               .to contain_exactly("<2.0.0", nil)
           end
         end

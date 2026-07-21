@@ -94,7 +94,7 @@ module Dependabot
         # rubocop:disable Metrics/AbcSize
         sig { returns(T::Array[Dependabot::Dependency]) }
         def force_update
-          requirement = dependency.requirements.find { |req| req[:file] == T.must(gemfile).name }
+          requirement = dependency.requirements.find { |req| req.file == T.must(gemfile).name }
 
           valid_gem_version?(target_version)
 
@@ -192,11 +192,14 @@ module Dependabot
           )
         end
 
-        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig do
+          params(dependency: Dependabot::Dependency)
+            .returns(T.nilable(Dependabot::DependencyRequirement::Details))
+        end
         def source_for(dependency)
           dependency.requirements
-                    .find { |r| r.fetch(:source) }
-                    &.fetch(:source)
+                    .find(&:source)
+                    &.source
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }

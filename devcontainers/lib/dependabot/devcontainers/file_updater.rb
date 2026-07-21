@@ -17,7 +17,7 @@ module Dependabot
         updated_files = []
 
         manifests.each do |manifest|
-          requirement = dependency.requirements.find { |req| req[:file] == manifest.name }
+          requirement = dependency.requirements.find { |req| req.file == manifest.name }
           next unless requirement
 
           config_contents, lockfile_contents = update(manifest, requirement)
@@ -77,14 +77,14 @@ module Dependabot
       sig do
         params(
           manifest: Dependabot::DependencyFile,
-          requirement: T::Hash[Symbol, T.anything]
+          requirement: Dependabot::DependencyRequirement
         )
           .returns(T::Array[String])
       end
       def update(manifest, requirement)
         ConfigUpdater.new(
           feature: dependency.name,
-          requirement: T.cast(requirement[:requirement], T.nilable(String)),
+          requirement: requirement.requirement,
           version: T.must(dependency.version),
           manifest: manifest,
           repo_contents_path: T.must(repo_contents_path),

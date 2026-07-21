@@ -19,12 +19,24 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
-        source = dependency.requirements.first&.fetch(:source, nil)
-        url = source && (source[:url] || source["url"])
+        url = source_string(dependency.requirements.first&.source, "url")
 
         return Source.from_url(NIXPKGS_SOURCE_URL) if Channel.channel_url?(url)
 
         Source.from_url(url)
+      end
+
+      sig do
+        params(
+          source: T.nilable(Dependabot::DependencyRequirement::Details),
+          key: String
+        ).returns(T.nilable(String))
+      end
+      def source_string(source, key)
+        return unless source
+
+        value = source[key] || source[key.to_sym]
+        value if value.is_a?(String)
       end
     end
   end

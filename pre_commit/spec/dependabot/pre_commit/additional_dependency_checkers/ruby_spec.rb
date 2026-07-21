@@ -10,7 +10,7 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Ruby do
     described_class.new(
       source: source,
       credentials: credentials,
-      requirements: requirements,
+      requirements: requirements.map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) },
       current_version: current_version
     )
   end
@@ -173,8 +173,8 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Ruby do
 
       it "updates to the new exact version" do
         updated = checker.updated_requirements("0.60.0")
-        expect(updated.first[:requirement]).to eq("0.60.0")
-        expect(updated.first[:source][:original_string]).to eq("scss_lint:0.60.0")
+        expect(updated.first.requirement).to eq("0.60.0")
+        expect(updated.first.source&.[](:original_string)).to eq("scss_lint:0.60.0")
       end
     end
 
@@ -202,8 +202,8 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Ruby do
 
       it "preserves the ~> operator" do
         updated = checker.updated_requirements("1.60.0")
-        expect(updated.first[:requirement]).to eq("~> 1.60.0")
-        expect(updated.first[:source][:original_string]).to eq("rubocop:~> 1.60.0")
+        expect(updated.first.requirement).to eq("~> 1.60.0")
+        expect(updated.first.source&.[](:original_string)).to eq("rubocop:~> 1.60.0")
       end
     end
 
@@ -231,8 +231,8 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Ruby do
 
       it "preserves the >= operator" do
         updated = checker.updated_requirements("1.60.0")
-        expect(updated.first[:requirement]).to eq(">= 1.60.0")
-        expect(updated.first[:source][:original_string]).to eq("rubocop:>= 1.60.0")
+        expect(updated.first.requirement).to eq(">= 1.60.0")
+        expect(updated.first.source&.[](:original_string)).to eq("rubocop:>= 1.60.0")
       end
     end
 
@@ -260,20 +260,20 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Ruby do
 
       it "preserves the = operator" do
         updated = checker.updated_requirements("1.60.0")
-        expect(updated.first[:requirement]).to eq("= 1.60.0")
-        expect(updated.first[:source][:original_string]).to eq("rubocop:= 1.60.0")
+        expect(updated.first.requirement).to eq("= 1.60.0")
+        expect(updated.first.source&.[](:original_string)).to eq("rubocop:= 1.60.0")
       end
     end
 
     it "preserves all requirement properties" do
       updated = checker.updated_requirements("0.60.0")
-      expect(updated.first[:groups]).to eq(["additional_dependencies"])
-      expect(updated.first[:file]).to eq(".pre-commit-config.yaml")
-      expect(updated.first[:source][:type]).to eq("additional_dependency")
-      expect(updated.first[:source][:language]).to eq("ruby")
-      expect(updated.first[:source][:hook_id]).to eq("scss-lint")
-      expect(updated.first[:source][:hook_repo]).to eq("https://github.com/pre-commit/mirrors-scss-lint")
-      expect(updated.first[:source][:package_name]).to eq("scss_lint")
+      expect(updated.first.groups).to eq(["additional_dependencies"])
+      expect(updated.first.file).to eq(".pre-commit-config.yaml")
+      expect(updated.first.source&.[](:type)).to eq("additional_dependency")
+      expect(updated.first.source&.[](:language)).to eq("ruby")
+      expect(updated.first.source&.[](:hook_id)).to eq("scss-lint")
+      expect(updated.first.source&.[](:hook_repo)).to eq("https://github.com/pre-commit/mirrors-scss-lint")
+      expect(updated.first.source&.[](:package_name)).to eq("scss_lint")
     end
   end
 

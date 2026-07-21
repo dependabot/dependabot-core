@@ -84,12 +84,26 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def new_source_ref
-        dependency.requirements.first&.dig(:source, :ref)
+        requirement_source_string(dependency.requirements.first, "ref")
       end
 
       sig { returns(T.nilable(String)) }
       def old_source_ref
-        dependency.previous_requirements&.first&.dig(:source, :ref)
+        requirement_source_string(dependency.previous_requirements&.first, "ref")
+      end
+
+      sig do
+        params(
+          requirement: T.nilable(Dependabot::DependencyRequirement),
+          key: String
+        ).returns(T.nilable(String))
+      end
+      def requirement_source_string(requirement, key)
+        source = requirement&.source
+        return unless source
+
+        value = source[key] || source[key.to_sym]
+        value if value.is_a?(String)
       end
 
       sig { override.void }

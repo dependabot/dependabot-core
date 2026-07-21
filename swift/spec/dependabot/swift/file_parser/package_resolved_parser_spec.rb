@@ -45,10 +45,10 @@ RSpec.describe Dependabot::Swift::FileParser::PackageResolvedParser do
         dep = parser.parse.first
         req = dep.requirements.first
 
-        expect(req[:requirement]).to eq("= 2.54.0")
-        expect(req[:groups]).to eq(["dependencies"])
-        expect(req[:file]).to eq(file_name)
-        expect(req[:source]).to eq(
+        expect(req.requirement).to eq("= 2.54.0")
+        expect(req.groups).to eq(["dependencies"])
+        expect(req.file).to eq(file_name)
+        expect(req.source).to eq(
           {
             type: "git",
             url: "https://github.com/apple/swift-nio.git",
@@ -140,15 +140,15 @@ RSpec.describe Dependabot::Swift::FileParser::PackageResolvedParser do
 
       it "uses revision as ref in source" do
         dep = parser.parse.first
-        source = dep.requirements.first[:source]
+        requirement = dep.requirements.first
 
-        expect(source[:ref]).to eq("6213ba7a06febe8fef60563a4a7d26a4085783cf")
-        expect(source[:branch]).to be_nil
+        expect(requirement.source_string(:ref)).to eq("6213ba7a06febe8fef60563a4a7d26a4085783cf")
+        expect(requirement.source_string(:branch)).to be_nil
       end
 
       it "sets requirement to nil for revision-only pins" do
         dep = parser.parse.first
-        expect(dep.requirements.first[:requirement]).to be_nil
+        expect(dep.requirements.first.requirement).to be_nil
       end
     end
 
@@ -265,7 +265,7 @@ RSpec.describe Dependabot::Swift::FileParser::PackageResolvedParser do
       it "normalizes URLs correctly" do
         quick_dep = parser.parse.find { |d| d.metadata[:identity] == "quick" }
         expect(quick_dep.name).to eq("github.com/quick/quick")
-        expect(quick_dep.requirements.first[:source][:url]).to eq("https://github.com/Quick/Quick.git")
+        expect(quick_dep.requirements.first.source_string(:url)).to eq("https://github.com/Quick/Quick.git")
       end
     end
 
@@ -290,7 +290,7 @@ RSpec.describe Dependabot::Swift::FileParser::PackageResolvedParser do
       it "normalizes SCP URLs to HTTPS" do
         dep = parser.parse.first
         expect(dep.name).to eq("github.com/owner/my-package")
-        expect(dep.requirements.first[:source][:url]).to eq("https://github.com/owner/my-package.git")
+        expect(dep.requirements.first.source_string(:url)).to eq("https://github.com/owner/my-package.git")
       end
     end
   end

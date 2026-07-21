@@ -506,30 +506,20 @@ module Dependabot
         merged = []
         used_indices = Set.new
         requirements.each_with_index do |dep_scan_req, i|
-          next if used_indices.include?(i) || dep_scan_req.dig(:metadata, :pom_file).nil?
+          pom_file = metadata_string(dep_scan_req, :pom_file)
+          next if used_indices.include?(i) || pom_file.nil?
 
           # Look for another requirement where pom_file matches property_source
           match_index = requirements.find_index.with_index do |parsing_req, j|
             j > i &&
               !used_indices.include?(j) &&
-              dep_scan_req.dig(:metadata, :pom_file) == parsing_req.fetch(:file)
+              pom_file == parsing_req.file
           end
 
           if match_index
             parsing_req = T.must(requirements[match_index])
 
-            # Merge the two requirements
-            # We prefer file and requirement properties from parsed requirements,
-            # because they include correct file and not evaluated property value.
-            merged_req = {
-              requirement: parsing_req[:requirement],
-              file: parsing_req[:file],
-              groups: [*dep_scan_req[:groups], *parsing_req[:groups]].uniq.compact,
-              source: dep_scan_req[:source],
-              metadata: merge_metadata(dep_scan_req[:metadata], parsing_req[:metadata])
-            }
-
-            merged << Dependabot::DependencyRequirement.create(merged_req)
+            merged << merge_requirement_pair(dep_scan_req, parsing_req)
             used_indices.add(i)
             used_indices.add(match_index)
           else
@@ -542,12 +532,35 @@ module Dependabot
         merged
       end
 
+      sig do
+        params(
+          dep_scan_req: Dependabot::DependencyRequirement,
+          parsing_req: Dependabot::DependencyRequirement
+        ).returns(Dependabot::DependencyRequirement)
+      end
+      def merge_requirement_pair(dep_scan_req, parsing_req)
+        # Parsed requirements contain the correct file and unevaluated property value.
+        parsed_requirement = parsing_req.unfixable? ? :unfixable : parsing_req.requirement
+        groups = (dep_scan_req.groups || []) + (parsing_req.groups || [])
+
+        dep_scan_req
+          .with_requirement(parsed_requirement)
+          .with_file(parsing_req.file)
+          .with_groups(groups.uniq)
+          .with_metadata(
+            merge_metadata(
+              T.must(dep_scan_req.metadata),
+              T.must(parsing_req.metadata)
+            )
+          )
+      end
+
       # Merge metadata from two requirements, combining all keys
       sig do
         params(
-          metadata1: T::Hash[Symbol, Object],
-          metadata2: T::Hash[Symbol, Object]
-        ).returns(T::Hash[Symbol, Object])
+          metadata1: Dependabot::DependencyRequirement::Details,
+          metadata2: Dependabot::DependencyRequirement::Details
+        ).returns(Dependabot::DependencyRequirement::Details)
       end
       def merge_metadata(metadata1, metadata2)
         metadata1.merge(metadata2) do |_key, old_value, new_value|
@@ -560,6 +573,17 @@ module Dependabot
             [*old_value, *new_value].uniq
           end
         end
+      end
+
+      sig do
+        params(
+          requirement: Dependabot::DependencyRequirement,
+          key: Symbol
+        ).returns(T.nilable(String))
+      end
+      def metadata_string(requirement, key)
+        value = requirement.metadata&.[](key)
+        value if value.is_a?(String)
       end
 
       sig { params(doc: Nokogiri::XML::Document).returns(Nokogiri::XML::NodeSet) }

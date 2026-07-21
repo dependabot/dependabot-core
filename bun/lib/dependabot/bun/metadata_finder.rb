@@ -117,11 +117,12 @@ module Dependabot
         potential_sources.first
       end
 
-      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), String])) }
+      sig { returns(T.nilable(Dependabot::DependencyRequirement::Details)) }
       def new_source
-        sources = dependency.requirements
-                            .map { |r| r.fetch(:source) }.uniq.compact
-                            .sort_by { |source| Package::RegistryFinder.central_registry?(source[:url]) ? 1 : 0 }
+        sources = dependency.requirements.filter_map(&:source).uniq.sort_by do |source|
+          url = source[:url]
+          url.is_a?(String) && Package::RegistryFinder.central_registry?(url) ? 1 : 0
+        end
 
         sources.first
       end
@@ -170,8 +171,9 @@ module Dependabot
 
       sig { returns(T.nilable(Source)) }
       def find_source_from_git_url
-        url = new_source&.[](:url) || new_source&.fetch("url")
-        Source.from_url(url)
+        source = new_source
+        url = source&.[](:url) || source&.[]("url")
+        Source.from_url(url) if url.is_a?(String)
       end
 
       sig { returns(T::Hash[String, T.untyped]) }
@@ -266,10 +268,13 @@ module Dependabot
 
       sig { returns(String) }
       def dependency_registry
-        if new_source.nil? then "registry.npmjs.org"
-        else
-          T.must(new_source).fetch(:url).gsub("https://", "").gsub("http://", "")
-        end
+        source = new_source
+        return "registry.npmjs.org" unless source
+
+        url = source[:url]
+        return "registry.npmjs.org" unless url.is_a?(String)
+
+        url.gsub("https://", "").gsub("http://", "")
       end
 
       sig { returns(T.nilable(String)) }

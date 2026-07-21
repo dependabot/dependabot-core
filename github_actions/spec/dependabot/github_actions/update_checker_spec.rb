@@ -987,7 +987,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           let(:upload_pack_fixture) { "github-workflows" }
 
           it "changes precision to avoid the vulnerability" do
-            expect(updated_requirements.first[:source][:ref]).to eq("v2.7.5")
+            expect(updated_requirements.first.source_string(:ref)).to eq("v2.7.5")
           end
         end
 
@@ -995,7 +995,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           let(:upload_pack_fixture) { "github-workflows-with-v3" }
 
           it "bumps to the lowest fixed version that keeps precision" do
-            expect(updated_requirements.first[:source][:ref]).to eq("v3")
+            expect(updated_requirements.first.source_string(:ref)).to eq("v3")
           end
         end
 
@@ -1003,7 +1003,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           let(:upload_pack_fixture) { "github-workflows-no-tags" }
 
           it "stays on the vulnerable version" do
-            expect(updated_requirements.first[:source][:ref]).to eq(reference)
+            expect(updated_requirements.first.source_string(:ref)).to eq(reference)
           end
         end
       end
@@ -1026,7 +1026,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       let(:upload_pack_fixture) { "vault-action" }
 
       it "stays on the current major" do
-        expect(updated_requirements.first[:source][:ref]).to eq("v2")
+        expect(updated_requirements.first.source_string(:ref)).to eq("v2")
       end
     end
 
@@ -1114,7 +1114,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       it "keeps metadata and rewritten version tag aligned to cooled-down target" do
         expect(checker.latest_version).to eq(Dependabot::GithubActions::Version.new("2.7.0"))
-        expect(updated_requirements.first.dig(:source, :ref)).to eq("v2.7.0")
+        expect(updated_requirements.first.source_string(:ref)).to eq("v2.7.0")
       end
     end
 
@@ -1138,7 +1138,8 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       it "rewrites SHA to the cooled-down tag commit, not the uncooldowned latest tag commit" do
         expect(checker.latest_version).to eq(Dependabot::GithubActions::Version.new("2.7.0"))
-        expect(updated_requirements.first.dig(:source, :ref)).to eq("ee0669bd1cc54295c223e0bb666b733df41de1c5")
+        expect(updated_requirements.first.source_string(:ref))
+          .to eq("ee0669bd1cc54295c223e0bb666b733df41de1c5")
       end
     end
 

@@ -50,7 +50,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
       it "handles both dotted and table notation" do
         dependencies = parser.parse
         workspace_deps = dependencies.select do |dep|
-          dep.requirements.any? { |r| r[:groups]&.include?("workspace.dependencies") }
+          dep.requirements.any? { |r| r.groups&.include?("workspace.dependencies") }
         end
 
         expect(workspace_deps.map(&:name)).to match_array(%w(serde tokio local-crate))
@@ -91,7 +91,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
         # Should only have one async-trait from workspace.dependencies
         async_trait_deps = dependencies.select { |d| d.name == "async-trait" }
         expect(async_trait_deps.count).to eq(1)
-        expect(async_trait_deps.first.requirements.first[:groups]).to include("workspace.dependencies")
+        expect(async_trait_deps.first.requirements.first.groups).to include("workspace.dependencies")
       end
     end
 
@@ -145,7 +145,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
         malformed.each do |dep|
           # These should have no version requirement since workspace = "true"/1
           # is not a valid version specification
-          expect(dep.requirements.first[:requirement]).to be_nil
+          expect(dep.requirements.first.requirement).to be_nil
         end
       end
     end
@@ -233,7 +233,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
         # Should only have one clap from workspace.dependencies
         clap_deps = dependencies.select { |d| d.name == "clap" }
         expect(clap_deps.count).to eq(1)
-        expect(clap_deps.first.requirements.first[:file]).to eq("Cargo.toml")
+        expect(clap_deps.first.requirements.first.file).to eq("Cargo.toml")
       end
     end
 

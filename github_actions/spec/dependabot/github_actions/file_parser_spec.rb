@@ -965,7 +965,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         allow(Dependabot::GitCommitChecker).to receive(:new).and_wrap_original do |method, **kwargs|
           dependency = kwargs.fetch(:dependency)
           git_checker = method.call(**kwargs)
-          declaration_string = dependency.requirements.first.dig(:metadata, :declaration_string)
+          declaration_string = dependency.requirements.first.metadata_string(:declaration_string)
 
           resolved_version = case declaration_string
                              when /create-github-app-token/

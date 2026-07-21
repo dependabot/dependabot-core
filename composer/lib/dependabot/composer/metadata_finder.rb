@@ -36,10 +36,8 @@ module Dependabot
 
       sig { returns(T.nilable(Source)) }
       def source_from_dependency
-        source_url =
-          dependency.requirements
-                    .filter_map { |r| r.fetch(:source) }
-                    .first&.fetch(:url, nil)
+        source_url = dependency.requirements.filter_map(&:source).first&.[](:url)
+        return unless source_url.is_a?(String)
 
         Source.from_url(source_url)
       end

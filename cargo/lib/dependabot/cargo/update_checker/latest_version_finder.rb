@@ -49,7 +49,7 @@ module Dependabot
           return true if dependency.numeric_version&.prerelease?
 
           dependency.requirements.any? do |req|
-            reqs = (req.fetch(:requirement) || "").split(",").map(&:strip)
+            reqs = (req.requirement || "").split(",").map(&:strip)
             reqs.any? { |r| r.match?(/[A-Za-z]/) }
           end
         end

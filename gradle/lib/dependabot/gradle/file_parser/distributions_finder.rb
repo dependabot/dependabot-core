@@ -26,7 +26,7 @@ module Dependabot
           version = match.fetch("version")
 
           requirements = T.let(
-            [DependencyRequirement.create(
+            [DependencyRequirement.from_hash(
               {
                 requirement: version,
                 file: properties_file.name,
@@ -42,7 +42,7 @@ module Dependabot
           )
 
           if checksum
-            requirements << DependencyRequirement.create(
+            requirements << DependencyRequirement.from_hash(
               {
                 requirement: checksum,
                 file: properties_file.name,

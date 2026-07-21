@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency"
 require "dependabot/julia/update_checker/requirements_updater"
 require "dependabot/julia/version"
 
@@ -17,16 +18,21 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
   end
 
   let(:requirements) do
-    [{
-      requirement: requirement_string,
-      file: "Project.toml",
-      groups: ["dependencies"],
-      source: nil
-    }]
+    Dependabot::Dependency.new(
+      name: "Example",
+      version: "0.0.0",
+      requirements: [{
+        requirement: requirement_string,
+        file: "Project.toml",
+        groups: ["dependencies"],
+        source: nil
+      }],
+      package_manager: "julia"
+    ).requirements
   end
 
   describe "#updated_requirements" do
-    subject(:result) { updater.updated_requirements.first[:requirement] }
+    subject(:result) { updater.updated_requirements.first.requirement }
 
     # Test cases: [requirement, target_version, expected_result]
     {
@@ -81,7 +87,7 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
 
     context "with special cases" do
       context "with nil requirement (no compat entry)" do
-        let(:requirements) { [{ requirement: nil, file: "Project.toml", groups: ["dependencies"], source: nil }] }
+        let(:requirement_string) { nil }
         let(:target_version) { "0.35.0" }
 
         it { is_expected.to eq("0.35.0") }

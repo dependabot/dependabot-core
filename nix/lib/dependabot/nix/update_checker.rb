@@ -41,11 +41,11 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         if tarball_channel_input?
-          wrap_requirements(updated_requirements_for_channel)
+          updated_requirements_for_channel
         elsif ref_pinned_to_version_tag?
-          wrap_requirements(updated_requirements_for_tag)
+          updated_requirements_for_tag
         elsif ref_is_versioned_branch?
-          wrap_requirements(updated_requirements_for_versioned_branch)
+          updated_requirements_for_versioned_branch
         else
           dependency.requirements
         end
@@ -92,16 +92,16 @@ module Dependabot
         latest_channel&.fetch(:commit_sha) || channel_version_finder.current_channel_revision
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements_for_channel
         result = latest_channel
         return dependency.requirements unless result
 
         dependency.requirements.map do |req|
-          source = req[:source]
+          source = req.source
           next req unless source
 
-          req.merge(source: source.merge(ref: result[:channel], url: result[:url]))
+          req.with_source(source.merge(ref: result[:channel], url: result[:url]))
         end
       end
 
@@ -149,16 +149,16 @@ module Dependabot
 
       # --- Tag-pinned ref support ---
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements_for_tag
         new_tag = latest_version_tag
         return dependency.requirements unless new_tag
 
         dependency.requirements.map do |req|
-          source = req[:source]
+          source = req.source
           next req unless source
 
-          req.merge(source: source.merge(ref: new_tag[:tag], branch: nil))
+          req.with_source(source.merge(ref: new_tag[:tag], branch: nil))
         end
       end
 
@@ -178,16 +178,16 @@ module Dependabot
 
       # --- Versioned branch support ---
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements_for_versioned_branch
         result = latest_versioned_branch
         return dependency.requirements unless result
 
         dependency.requirements.map do |req|
-          source = req[:source]
+          source = req.source
           next req unless source
 
-          req.merge(source: source.merge(ref: result[:branch], branch: nil))
+          req.with_source(source.merge(ref: result[:branch], branch: nil))
         end
       end
 

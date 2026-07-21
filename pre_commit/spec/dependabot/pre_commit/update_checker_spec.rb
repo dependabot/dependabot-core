@@ -251,7 +251,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
       let(:reference) { "v4.4.0" }
 
       it "updates the ref in the source" do
-        expect(updated_requirements.first[:source][:ref]).not_to eq(reference)
+        expect(updated_requirements.first.source&.[](:ref)).not_to eq(reference)
       end
     end
 
@@ -286,7 +286,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
         # When latest_version_tag is nil,
         # latest_commit_sha should fall back to latest_version
         expect(updated_requirements).to be_an(Array)
-        expect(updated_requirements.first[:source][:ref]).to eq(new_commit_sha)
+        expect(updated_requirements.first.source&.[](:ref)).to eq(new_commit_sha)
       end
 
       it "does not raise 'No files changed!' error" do

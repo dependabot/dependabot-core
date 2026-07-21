@@ -76,14 +76,27 @@ module Dependabot
           req = dependency.requirements.first
           return unless req
 
-          source = req[:source]
-          return unless source && source[:type] == "provider"
+          source = req.source
+          return unless source_string(source, "type") == "provider"
 
-          hostname = source[:registry_hostname] || DEFAULT_REGISTRY
-          identifier = source[:module_identifier]
+          hostname = source_string(source, "registry_hostname") || DEFAULT_REGISTRY
+          identifier = source_string(source, "module_identifier")
           return unless identifier
 
           "#{hostname}/#{identifier}".downcase
+        end
+
+        sig do
+          params(
+            source: T.nilable(Dependabot::DependencyRequirement::Details),
+            key: String
+          ).returns(T.nilable(String))
+        end
+        def source_string(source, key)
+          return unless source
+
+          value = source[key] || source[key.to_sym]
+          value if value.is_a?(String)
         end
 
         sig { returns(T::Array[String]) }

@@ -20,12 +20,11 @@ module Dependabot
               <path>.*?</path>|
               <artifactItem>.*?</artifactItem>
             }mx
-        Requirement = T.type_alias { T.any(Dependabot::DependencyRequirement, T::Hash[Symbol, Object]) }
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
-        sig { returns(Requirement) }
+        sig { returns(Dependabot::DependencyRequirement) }
         attr_reader :declaring_requirement
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -35,7 +34,7 @@ module Dependabot
           params(
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
-            declaring_requirement: Requirement
+            declaring_requirement: Dependabot::DependencyRequirement
           ).void
         end
         def initialize(dependency:, dependency_files:, declaring_requirement:)
@@ -62,7 +61,7 @@ module Dependabot
 
         sig { returns(Dependabot::DependencyFile) }
         def declaring_pom
-          filename = declaring_requirement.fetch(:file) || declaring_requirement.dig(:metadata, :pom_file)
+          filename = declaring_requirement.file || metadata_string(declaring_requirement, :pom_file)
           declaring_pom = dependency_files.find { |f| f.name == filename }
           return declaring_pom if declaring_pom
 
@@ -90,7 +89,7 @@ module Dependabot
             next false unless classifier_matches?(node)
             next false unless node_name == dependency_name
             next false unless packaging_type_matches?(node)
-            next false unless declaring_requirement.fetch(:groups) == ["plugin"] || scope_matches?(node)
+            next false unless declaring_requirement.groups == ["plugin"] || scope_matches?(node)
 
             declaring_requirement_matches?(node)
           end
@@ -114,8 +113,9 @@ module Dependabot
         sig { params(node: Nokogiri::XML::Document).returns(T::Boolean) }
         def declaring_requirement_matches?(node)
           node_requirement = node.at_css("version")&.content&.strip
+          requirement_property_name = metadata_string(declaring_requirement, :property_name)
 
-          if declaring_requirement.dig(:metadata, :property_name)
+          if requirement_property_name
             return false unless node_requirement
 
             property_name =
@@ -124,15 +124,15 @@ module Dependabot
               &.named_captures
               &.fetch("property")
 
-            property_name == declaring_requirement[:metadata][:property_name]
+            property_name == requirement_property_name
           else
-            node_requirement == declaring_requirement.fetch(:requirement)
+            node_requirement == declaring_requirement.requirement
           end
         end
 
         sig { params(node: Nokogiri::XML::Document).returns(T::Boolean) }
         def packaging_type_matches?(node)
-          type = declaring_requirement.dig(:metadata, :packaging_type)
+          type = metadata_string(declaring_requirement, :packaging_type)
           type == packaging_type(node)
         end
 
@@ -141,13 +141,14 @@ module Dependabot
           return true unless node.at_xpath("./*/classifier")
 
           classifier = evaluated_value(node.at_xpath("./*/classifier").content.strip)
-          dep_classifier = dependency.requirements.first&.dig(:metadata, :classifier)
+          first_requirement = dependency.requirements.first
+          dep_classifier = first_requirement ? metadata_string(first_requirement, :classifier) : nil
           classifier == dep_classifier
         end
 
         sig { params(node: Nokogiri::XML::Document).returns(T::Boolean) }
         def scope_matches?(node)
-          dependency_type = declaring_requirement.fetch(:groups)
+          dependency_type = declaring_requirement.groups
 
           node_type = dependency_scope(node) == "test" ? ["test"] : []
 
@@ -198,6 +199,17 @@ module Dependabot
             match_data.to_s,
             property_value
           )
+        end
+
+        sig do
+          params(
+            requirement: Dependabot::DependencyRequirement,
+            key: Symbol
+          ).returns(T.nilable(String))
+        end
+        def metadata_string(requirement, key)
+          value = requirement.metadata&.[](key)
+          value if value.is_a?(String)
         end
 
         sig { returns(Maven::FileParser::PropertyValueFinder) }

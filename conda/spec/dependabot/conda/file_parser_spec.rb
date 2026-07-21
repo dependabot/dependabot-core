@@ -93,7 +93,7 @@ RSpec.describe Dependabot::Conda::FileParser do
         dependencies = parser.parse
         conda_dep = dependencies.find { |dep| dep.name == "conda" }
 
-        expect(conda_dep.requirements.first[:requirement]).to eq("==25.5.1")
+        expect(conda_dep.requirements.first.requirement).to eq("==25.5.1")
       end
 
       it "does not treat == as fully qualified spec" do
@@ -122,7 +122,7 @@ RSpec.describe Dependabot::Conda::FileParser do
 
         expect(conda_dep).not_to be_nil
         expect(conda_dep.version).to eq("25.5.1")
-        expect(conda_dep.requirements.first[:requirement]).to eq("==25.5.1")
+        expect(conda_dep.requirements.first.requirement).to eq("==25.5.1")
       end
 
       it "handles bracket syntax dependencies" do
@@ -179,7 +179,7 @@ RSpec.describe Dependabot::Conda::FileParser do
         dependencies = parser.parse
         hmmlearn_dep = dependencies.find { |dep| dep.name == "hmmlearn" }
 
-        expect(hmmlearn_dep.requirements.first[:requirement]).to eq("==0.2")
+        expect(hmmlearn_dep.requirements.first.requirement).to eq("==0.2")
         # NOTE: Removed groups check since conda doesn't use groups like other ecosystems
       end
     end
@@ -210,7 +210,7 @@ RSpec.describe Dependabot::Conda::FileParser do
         dependencies = parser.parse
         numpy_dep = dependencies.find { |dep| dep.name == "numpy" }
 
-        expect(numpy_dep.requirements.first[:requirement]).to eq("=1.21.0")
+        expect(numpy_dep.requirements.first.requirement).to eq("=1.21.0")
         # Channel info should be preserved in the source or elsewhere if needed
         expect(dependencies.map(&:name)).to match_array(%w(python numpy pandas))
       end
@@ -233,8 +233,8 @@ RSpec.describe Dependabot::Conda::FileParser do
         numpy_dep = dependencies.find { |dep| dep.name == "numpy" }
         pandas_dep = dependencies.find { |dep| dep.name == "pandas" }
 
-        expect(numpy_dep.requirements.first[:requirement]).to eq(">=1.19.0")
-        expect(pandas_dep.requirements.first[:requirement]).to eq("=1.3.*")
+        expect(numpy_dep.requirements.first.requirement).to eq(">=1.19.0")
+        expect(pandas_dep.requirements.first.requirement).to eq("=1.3.*")
       end
     end
 
@@ -255,7 +255,7 @@ RSpec.describe Dependabot::Conda::FileParser do
 
         r_dep = dependencies.find { |dep| dep.name == "r-base" }
         expect(r_dep.version).to eq("4.0.3")
-        expect(r_dep.requirements.first[:groups]).to eq(["dependencies"])
+        expect(r_dep.requirements.first.groups).to eq(["dependencies"])
       end
     end
 
@@ -278,7 +278,7 @@ RSpec.describe Dependabot::Conda::FileParser do
         dependencies = parser.parse
 
         dependencies.each do |dep|
-          expect(dep.requirements.first[:groups]).to eq(["pip"])
+          expect(dep.requirements.first.groups).to eq(["pip"])
         end
       end
     end
@@ -372,7 +372,7 @@ RSpec.describe Dependabot::Conda::FileParser do
         cartopy_dep = dependencies.find { |dep| dep.name == "cartopy" }
 
         expect(cartopy_dep).not_to be_nil
-        expect(cartopy_dep.requirements.first[:requirement]).to eq(">=0.24.1,<=0.25.0")
+        expect(cartopy_dep.requirements.first.requirement).to eq(">=0.24.1,<=0.25.0")
       end
     end
 
@@ -389,7 +389,7 @@ RSpec.describe Dependabot::Conda::FileParser do
         pkg_dep = dependencies.find { |dep| dep.name == "pkg" }
 
         expect(pkg_dep).not_to be_nil
-        expect(pkg_dep.requirements.first[:requirement]).to eq(">=6,<=7")
+        expect(pkg_dep.requirements.first.requirement).to eq(">=6,<=7")
       end
     end
 
@@ -407,7 +407,7 @@ RSpec.describe Dependabot::Conda::FileParser do
         numpy_dep = dependencies.find { |dep| dep.name == "numpy" }
 
         expect(numpy_dep.version).to eq("1.21.0")
-        expect(numpy_dep.requirements.first[:requirement]).to eq("~=1.21.0")
+        expect(numpy_dep.requirements.first.requirement).to eq("~=1.21.0")
       end
     end
 
@@ -432,7 +432,7 @@ RSpec.describe Dependabot::Conda::FileParser do
 
         expect(requests_dep).not_to be_nil
         expect(requests_dep.version).to be_nil # > doesn't provide current version
-        expect(requests_dep.requirements.first[:requirement]).to eq(">2.0.0")
+        expect(requests_dep.requirements.first.requirement).to eq(">2.0.0")
       end
 
       it "correctly parses <= operator (less than or equal)" do
@@ -441,7 +441,7 @@ RSpec.describe Dependabot::Conda::FileParser do
 
         expect(flask_dep).not_to be_nil
         expect(flask_dep.version).to be_nil # <= doesn't provide current version
-        expect(flask_dep.requirements.first[:requirement]).to eq("<=2.0.0")
+        expect(flask_dep.requirements.first.requirement).to eq("<=2.0.0")
       end
 
       it "correctly parses < operator (less than)" do
@@ -450,7 +450,7 @@ RSpec.describe Dependabot::Conda::FileParser do
 
         expect(click_dep).not_to be_nil
         expect(click_dep.version).to be_nil # < doesn't provide current version
-        expect(click_dep.requirements.first[:requirement]).to eq("<8.0.0")
+        expect(click_dep.requirements.first.requirement).to eq("<8.0.0")
       end
 
       it "correctly parses != operator (not equal)" do
@@ -459,7 +459,7 @@ RSpec.describe Dependabot::Conda::FileParser do
 
         expect(urllib3_dep).not_to be_nil
         expect(urllib3_dep.version).to be_nil # != doesn't provide current version
-        expect(urllib3_dep.requirements.first[:requirement]).to eq("!=1.25.0")
+        expect(urllib3_dep.requirements.first.requirement).to eq("!=1.25.0")
       end
 
       it "correctly parses ~= operator for pip packages" do
@@ -468,7 +468,7 @@ RSpec.describe Dependabot::Conda::FileParser do
 
         expect(six_dep).not_to be_nil
         expect(six_dep.version).to eq("1.16.0") # ~= provides current version
-        expect(six_dep.requirements.first[:requirement]).to eq("~=1.16.0")
+        expect(six_dep.requirements.first.requirement).to eq("~=1.16.0")
       end
 
       it "correctly parses dependencies without version constraints" do

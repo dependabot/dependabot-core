@@ -77,13 +77,11 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        wrap_requirements(
-          RequirementsUpdater.new(
-            requirements: dependency.requirements,
-            latest_resolvable_version: preferred_resolvable_version&.to_s,
-            update_strategy: T.must(requirements_update_strategy)
-          ).updated_requirements
-        )
+        RequirementsUpdater.new(
+          requirements: dependency.requirements,
+          latest_resolvable_version: preferred_resolvable_version&.to_s,
+          update_strategy: T.must(requirements_update_strategy)
+        ).updated_requirements
       end
 
       sig { returns(T::Boolean) }
@@ -156,13 +154,13 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def path_dependency?
-        dependency.requirements.any? { |r| r.dig(:source, :type) == "path" }
+        dependency.requirements.any? { |r| r.source&.[](:type) == "path" }
       end
 
       # To be a true git dependency, it must have a branch.
       sig { returns(T::Boolean) }
       def git_dependency?
-        dependency.requirements.any? { |r| r.dig(:source, :branch) }
+        dependency.requirements.any? { |r| r.source&.[](:branch) }
       end
 
       sig { returns(Dependabot::DependencyFile) }

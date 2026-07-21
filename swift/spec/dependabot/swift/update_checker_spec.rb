@@ -109,7 +109,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
       subject(:updated_requirements) { checker.updated_requirements }
 
       it "does not update them" do
-        expect(updated_requirements.first[:requirement]).to eq(">= 7.0.0, < 8.0.0")
+        expect(updated_requirements.first.requirement).to eq(">= 7.0.0, < 8.0.0")
       end
     end
   end
@@ -143,7 +143,7 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
       subject(:updated_requirements) { checker.updated_requirements }
 
       it "updates them to match new version" do
-        expect(updated_requirements.first[:requirement]).to eq("= 12.0.1")
+        expect(updated_requirements.first.requirement).to eq("= 12.0.1")
       end
     end
   end
@@ -389,13 +389,13 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
         subject(:updated_requirements) { checker.updated_requirements }
 
         it "returns updated requirements with new version" do
-          expect(updated_requirements.first[:requirement]).to eq(">= 7.0.2, < 8.0.0")
-          expect(updated_requirements.first[:file]).to eq("MyApp.xcodeproj/project.pbxproj")
+          expect(updated_requirements.first.requirement).to eq(">= 7.0.2, < 8.0.0")
+          expect(updated_requirements.first.file).to eq("MyApp.xcodeproj/project.pbxproj")
         end
 
         it "updates the source ref to the commit SHA" do
           # The ref should be a git commit SHA (40 hex chars) for Package.resolved
-          expect(updated_requirements.first[:source][:ref]).to match(/\A[0-9a-f]{40}\z/)
+          expect(updated_requirements.first.source_string(:ref)).to match(/\A[0-9a-f]{40}\z/)
         end
       end
     end
@@ -479,15 +479,15 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
         subject(:updated_requirements) { checker.updated_requirements }
 
         it "returns updated requirements with new exact version" do
-          expect(updated_requirements.first[:requirement]).to eq("= 7.0.2")
-          expect(updated_requirements.first[:file]).to eq("MyApp.xcodeproj/project.pbxproj")
-          expect(updated_requirements.first[:metadata][:kind]).to eq("exactVersion")
-          expect(updated_requirements.first[:metadata][:requirement_string]).to eq("exact: \"7.0.2\"")
+          expect(updated_requirements.first.requirement).to eq("= 7.0.2")
+          expect(updated_requirements.first.file).to eq("MyApp.xcodeproj/project.pbxproj")
+          expect(updated_requirements.first.metadata_string(:kind)).to eq("exactVersion")
+          expect(updated_requirements.first.metadata_string(:requirement_string)).to eq("exact: \"7.0.2\"")
         end
 
         it "updates the source ref to the commit SHA" do
           # The ref should be a git commit SHA (40 hex chars) for Package.resolved
-          expect(updated_requirements.first[:source][:ref]).to match(/\A[0-9a-f]{40}\z/)
+          expect(updated_requirements.first.source_string(:ref)).to match(/\A[0-9a-f]{40}\z/)
         end
       end
     end
@@ -528,14 +528,15 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
         subject(:updated_requirements) { checker.updated_requirements }
 
         it "returns updated requirements with new minor version range" do
-          expect(updated_requirements.first[:requirement]).to eq(">= 7.0.2, < 7.1.0")
-          expect(updated_requirements.first[:file]).to eq("MyApp.xcodeproj/project.pbxproj")
-          expect(updated_requirements.first[:metadata][:kind]).to eq("upToNextMinorVersion")
-          expect(updated_requirements.first[:metadata][:requirement_string]).to eq(".upToNextMinor(from: \"7.0.2\")")
+          expect(updated_requirements.first.requirement).to eq(">= 7.0.2, < 7.1.0")
+          expect(updated_requirements.first.file).to eq("MyApp.xcodeproj/project.pbxproj")
+          expect(updated_requirements.first.metadata_string(:kind)).to eq("upToNextMinorVersion")
+          expect(updated_requirements.first.metadata_string(:requirement_string))
+            .to eq(".upToNextMinor(from: \"7.0.2\")")
         end
 
         it "updates the source ref to the commit SHA" do
-          expect(updated_requirements.first[:source][:ref]).to match(/\A[0-9a-f]{40}\z/)
+          expect(updated_requirements.first.source_string(:ref)).to match(/\A[0-9a-f]{40}\z/)
         end
       end
     end
@@ -578,13 +579,13 @@ RSpec.describe Dependabot::Swift::UpdateChecker do
 
         it "returns updated requirements with version within range" do
           # minimum is updated to target version, maximum stays the same
-          expect(updated_requirements.first[:requirement]).to eq(">= 7.0.0, < 7.0.1")
-          expect(updated_requirements.first[:file]).to eq("MyApp.xcodeproj/project.pbxproj")
-          expect(updated_requirements.first[:metadata][:kind]).to eq("versionRange")
+          expect(updated_requirements.first.requirement).to eq(">= 7.0.0, < 7.0.1")
+          expect(updated_requirements.first.file).to eq("MyApp.xcodeproj/project.pbxproj")
+          expect(updated_requirements.first.metadata_string(:kind)).to eq("versionRange")
         end
 
         it "updates the source ref to the commit SHA" do
-          expect(updated_requirements.first[:source][:ref]).to match(/\A[0-9a-f]{40}\z/)
+          expect(updated_requirements.first.source_string(:ref)).to match(/\A[0-9a-f]{40}\z/)
         end
       end
     end

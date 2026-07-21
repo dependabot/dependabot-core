@@ -15,13 +15,16 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
-        info = dependency.requirements.filter_map { |r| r[:source] }.first
+        requirement = dependency.requirements.find(&:source)
 
         url =
-          if info.nil?
+          if requirement.nil?
             "https://#{source_hostname}/#{dependency.name}"
           else
-            info[:url] || info.fetch("url")
+            source_url = requirement.source_string(:url)
+            raise TypeError, "Expected dependency source URL to be a String" unless source_url
+
+            source_url
           end
         Source.from_url(url)
       end

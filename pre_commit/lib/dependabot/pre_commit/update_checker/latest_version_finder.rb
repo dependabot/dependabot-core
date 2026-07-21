@@ -388,13 +388,15 @@ module Dependabot
         # when the dependency's stored version is a commit SHA.
         sig { returns(T.nilable(Dependabot::Version)) }
         def version_from_frozen_comment
-          comment = dependency.requirements.first&.dig(:metadata, :comment)
+          comment_value = dependency.requirements.first&.metadata&.[](:comment) ||
+                          dependency.requirements.first&.metadata&.[]("comment")
+          comment = comment_value if comment_value.is_a?(String)
           return nil unless comment
 
           match = comment.match(CommentVersionHelper::FROZEN_COMMENT_REF_PATTERN)
           return nil unless match
 
-          version_str = match[1].sub(/\Av/i, "")
+          version_str = T.must(match[1]).sub(/\Av/i, "")
           return nil unless Dependabot::PreCommit::Version.correct?(version_str)
 
           Dependabot::PreCommit::Version.new(version_str)

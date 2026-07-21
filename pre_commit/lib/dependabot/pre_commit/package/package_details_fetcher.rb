@@ -159,7 +159,9 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def frozen_comment_ref
-          comment = dependency.requirements.first&.dig(:metadata, :comment)
+          comment_value = dependency.requirements.first&.metadata&.[](:comment) ||
+                          dependency.requirements.first&.metadata&.[]("comment")
+          comment = comment_value if comment_value.is_a?(String)
           return nil unless comment
 
           match = comment.match(CommentVersionHelper::FROZEN_COMMENT_REF_PATTERN)
@@ -173,7 +175,9 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def version_comment?
-          comment = dependency.requirements.first&.dig(:metadata, :comment)
+          comment_value = dependency.requirements.first&.metadata&.[](:comment) ||
+                          dependency.requirements.first&.metadata&.[]("comment")
+          comment = comment_value if comment_value.is_a?(String)
           return false unless comment
 
           comment.match?(CommentVersionHelper::COMMENT_VERSION_PATTERN)

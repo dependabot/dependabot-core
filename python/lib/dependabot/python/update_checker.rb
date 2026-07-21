@@ -144,7 +144,7 @@ module Dependabot
         return dependency.requirements unless updated_source
 
         dependency.requirements.map do |req|
-          Dependabot::DependencyRequirement.create(req.merge(source: updated_source))
+          req.with_source(updated_source)
         end
       end
 
@@ -253,12 +253,11 @@ module Dependabot
         :requirements
       end
 
-      sig { params(reqs: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Boolean) }
+      sig { params(reqs: T::Array[Dependabot::DependencyRequirement]).returns(T::Boolean) }
       def exact_requirement?(reqs)
-        reqs = reqs.map { |r| r.fetch(:requirement) }
-        reqs = reqs.compact
-        reqs = reqs.flat_map { |r| r.split(",").map(&:strip) }
-        reqs.any? { |r| Python::Requirement.new(r).exact? }
+        requirement_strings = reqs.reject(&:unfixable?).filter_map(&:requirement)
+        requirement_strings = requirement_strings.flat_map { |requirement| requirement.split(",").map(&:strip) }
+        requirement_strings.any? { |requirement| Python::Requirement.new(requirement).exact? }
       end
 
       sig { returns(PipenvVersionResolver) }
@@ -332,12 +331,14 @@ module Dependabot
         return if reqs.none?
 
         requirement = reqs.find do |r|
-          file = r[:file]
+          file = r.file
 
-          file == "Pipfile" || file == "pyproject.toml" || file.end_with?(".in") || file.end_with?(".txt")
+          file == "Pipfile" || file == "pyproject.toml" || file&.end_with?(".in") || file&.end_with?(".txt")
         end
 
-        requirement&.fetch(:requirement)
+        return if requirement&.unfixable?
+
+        requirement&.requirement
       end
 
       sig { returns(String) }
@@ -362,7 +363,7 @@ module Dependabot
         return ">=#{dependency.version}" if dependency.version
 
         version_for_requirement =
-          requirements.filter_map { |r| r[:requirement] }
+          requirements.reject(&:unfixable?).filter_map(&:requirement)
                       .reject { |req_string| req_string.start_with?("<") }
                       .select { |req_string| req_string.match?(VERSION_REGEX) }
                       .map { |req_string| req_string.match(VERSION_REGEX).to_s }
@@ -450,10 +451,10 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def requirement_files
-        requirements.map { |r| r.fetch(:file) }
+        requirements.filter_map(&:file)
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def requirements
         dependency.requirements
       end

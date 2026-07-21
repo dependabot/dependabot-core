@@ -26,28 +26,26 @@ module Dependabot
           )
         end
 
-        sig { override.params(latest_version: String).returns(T::Array[T::Hash[Symbol, Object]]) }
+        sig { override.params(latest_version: String).returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_requirements(latest_version)
           requirements.map do |original_req|
-            original_source = original_req[:source]
-            next original_req unless original_source.is_a?(Hash)
-            next original_req unless original_source[:type] == "additional_dependency"
+            original_source = original_req.source
+            next original_req unless original_source
+            next original_req unless string_detail(original_source, :type) == "additional_dependency"
 
             original_requirement = requirement_string(original_req)
             new_requirement = build_updated_requirement(original_requirement, latest_version)
 
             new_original_string = build_original_string(
-              original_name: original_source[:original_name] || original_source[:package_name],
-              extras: original_source[:extras],
+              original_name: string_detail(original_source, :original_name) ||
+                string_detail(original_source, :package_name),
+              extras: string_detail(original_source, :extras),
               requirement: new_requirement
             )
 
             new_source = original_source.merge(original_string: new_original_string)
 
-            original_req.merge(
-              requirement: new_requirement,
-              source: new_source
-            )
+            original_req.with_requirement(new_requirement).with_source(new_source)
           end
         end
 
@@ -166,7 +164,7 @@ module Dependabot
           return ">=#{new_version}" unless original_requirement
 
           updater = Dependabot::Python::UpdateChecker::RequirementsUpdater.new(
-            requirements: [Dependabot::DependencyRequirement.create(
+            requirements: [Dependabot::DependencyRequirement.from_hash(
               {
                 requirement: original_requirement,
                 file: "requirements.txt",
@@ -179,10 +177,10 @@ module Dependabot
             latest_resolvable_version: new_version
           )
 
-          updated_reqs = updater.updated_requirements
-          updated_req = updated_reqs.first&.fetch(:requirement, nil)
+          updated_requirement = updater.updated_requirements.first
+          return ">=#{new_version}" if updated_requirement&.unfixable?
 
-          return ">=#{new_version}" if updated_req == :unfixable
+          updated_req = updated_requirement&.requirement
 
           if updated_req == original_requirement
             force_bump_lower_bounds(original_requirement, new_version)

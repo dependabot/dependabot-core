@@ -74,7 +74,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
   it "parses the Dockerfile into a digest-pinned golang:alpine dependency" do
     expect(dependencies.map(&:name)).to contain_exactly("golang", "alpine")
-    expect(golang_dependency.requirements.first[:source]).to include(
+    expect(golang_dependency.requirements.first.source).to include(
       tag: "alpine",
       digest: "f85330846cde1e57ca9ec309382da3b8e6ae3ab943d2739500e08c86393a21b1"
     )

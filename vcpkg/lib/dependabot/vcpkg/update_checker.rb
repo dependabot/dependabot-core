@@ -44,36 +44,34 @@ module Dependabot
       def updated_requirements
         return dependency.requirements unless latest_version
 
-        updated = dependency.requirements.filter_map do |requirement|
-          source = T.cast(requirement[:source], T.nilable(T::Hash[Symbol, T.untyped]))
-          requirement_constraint = requirement[:requirement]
+        dependency.requirements.map do |requirement|
+          source = requirement.source
+          requirement_constraint = requirement.requirement
 
           if source && registry_dependency?
             # For git dependencies (baselines), update the git ref with the commit SHA
-            latest_commit_sha = latest_version_finder.latest_release_info&.details&.dig("commit_sha")
-            requirement.merge(source: source.merge(ref: latest_commit_sha))
+            requirement.with_source(source.merge(ref: latest_release_commit_sha))
           elsif source.nil? && requirement_constraint
             # For port dependencies (no source but has requirement), update the version constraint
-            requirement.merge(requirement: ">=#{latest_version}")
+            requirement.with_requirement(">=#{latest_version}")
           else
             # Keep the original requirement unchanged for other cases
             requirement
           end
         end
-        wrap_requirements(updated)
       end
 
       private
 
       sig { returns(T::Boolean) }
       def registry_dependency?
-        dependency.source_details(allowed_types: ["git"]) in { type: "git" }
+        source_string(dependency.source_details(allowed_types: ["git"]), "type") == "git"
       end
 
       sig { returns(T::Boolean) }
       def port_dependency?
         # A port dependency has no git source but has a requirement constraint
-        !registry_dependency? && dependency.requirements.any? { |req| req[:requirement] }
+        !registry_dependency? && dependency.requirements.any?(&:requirement)
       end
 
       # `latest_version` is a git tag but the baseline is a commit SHA, so the base check never
@@ -82,13 +80,29 @@ module Dependabot
       def sha1_version_up_to_date?
         return super unless registry_dependency?
 
-        latest_commit_sha = T.cast(
-          latest_version_finder.latest_release_info&.details&.dig("commit_sha"),
-          T.nilable(String)
-        )
+        latest_commit_sha = latest_release_commit_sha
         return super unless latest_commit_sha
 
         latest_commit_sha.start_with?(T.must(dependency.version))
+      end
+
+      sig { returns(T.nilable(String)) }
+      def latest_release_commit_sha
+        value = T.cast(latest_version_finder.latest_release_info&.details&.[]("commit_sha"), Object)
+        value if value.is_a?(String)
+      end
+
+      sig do
+        params(
+          source: T.nilable(Dependabot::DependencyRequirement::Details),
+          key: String
+        ).returns(T.nilable(String))
+      end
+      def source_string(source, key)
+        return unless source
+
+        value = source[key] || source[key.to_sym]
+        value if value.is_a?(String)
       end
 
       # Vcpkg doesn't support full unlocking since dependencies are tracked via baselines

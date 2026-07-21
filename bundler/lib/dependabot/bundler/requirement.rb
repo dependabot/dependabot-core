@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 
+require "dependabot/dependency_requirement"
 require "dependabot/requirement"
 require "dependabot/utils"
 
@@ -13,9 +14,14 @@ module Dependabot
 
       GEM_DEP_SPLIT = T.let(/\A(?<name>[a-zA-Z0-9_\-]+):(?<version>.+)\z/, Regexp)
 
-      sig { params(req: T::Hash[Symbol, String], version: Gem::Version).returns(T::Boolean) }
+      sig do
+        params(
+          req: Dependabot::DependencyRequirement,
+          version: Gem::Version
+        ).returns(T::Boolean)
+      end
       def self.satisfied_by?(req, version)
-        new(req[:requirement]).satisfied_by?(version)
+        new(T.must(req.requirement)).satisfied_by?(version)
       end
 
       # For consistency with other languages, we define a requirements array.

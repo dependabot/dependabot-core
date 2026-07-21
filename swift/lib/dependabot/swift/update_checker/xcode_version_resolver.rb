@@ -123,7 +123,7 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::Swift::Requirement)) }
         def dependency_requirement
-          req_string = dependency.requirements.first&.dig(:requirement)
+          req_string = dependency.requirements.first&.requirement
           return nil unless req_string
 
           Dependabot::Swift::Requirement.new(req_string)
@@ -133,7 +133,7 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def requirement_kind
-          dependency.requirements.first&.dig(:metadata, :kind)
+          dependency.requirements.first&.metadata_string(:kind)
         end
 
         sig { params(version: Object).returns(T::Boolean) }
@@ -171,8 +171,8 @@ module Dependabot
         sig { returns(T::Boolean) }
         def package_resolved_requirement?
           dependency.requirements.any? do |req|
-            file = req[:file]
-            file.is_a?(String) && XcodeFileHelpers.xcode_resolved_path?(file)
+            file = req.file
+            !file.nil? && XcodeFileHelpers.xcode_resolved_path?(file)
           end
         end
 

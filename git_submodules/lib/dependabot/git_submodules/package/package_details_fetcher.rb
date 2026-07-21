@@ -121,10 +121,11 @@ module Dependabot
         sig { returns(String) }
         def url
           source = dependency.source_details
-          raw_url = source && (source[:url] || source["url"])
-          raise TypeError, "dependency source URL must be a string" unless raw_url.is_a?(String)
+          requirement = dependency.requirements.find { |req| req.source == source }
+          url = requirement&.source_string(:url)
+          raise TypeError, "dependency source URL must be a string" unless url
 
-          raw_url
+          url
         end
 
         sig { returns(T::Hash[String, T::Array[String]]) }

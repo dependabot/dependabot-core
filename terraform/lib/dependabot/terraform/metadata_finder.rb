@@ -32,20 +32,33 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_git_url
-        info = dependency.requirements.filter_map { |r| r[:source] }.first
+        info = dependency.requirements.filter_map(&:source).first
 
-        url = info[:url] || info.fetch("url")
+        url = source_string(info, "url")
         Source.from_url(url)
       end
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_registry_details
-        info = dependency.requirements.filter_map { |r| r[:source] }.first
-        hostname = info[:registry_hostname] || info["registry_hostname"]
+        info = dependency.requirements.filter_map(&:source).first
+        hostname = source_string(info, "registry_hostname") || RegistryClient::PUBLIC_HOSTNAME
 
         RegistryClient
           .new(hostname: hostname, credentials: credentials)
           .source(dependency: dependency)
+      end
+
+      sig do
+        params(
+          source: T.nilable(Dependabot::DependencyRequirement::Details),
+          key: String
+        ).returns(T.nilable(String))
+      end
+      def source_string(source, key)
+        return unless source
+
+        value = source[key] || source[key.to_sym]
+        value if value.is_a?(String)
       end
     end
   end

@@ -286,9 +286,7 @@ module Dependabot
           dist_tags = package_details&.dist_tags
           return nil unless dist_tags
 
-          dist_tag_req = dependency.requirements
-                                   .find { |r| dist_tags.include?(r[:requirement]) }
-                                   &.fetch(:requirement)
+          dist_tag_req = requested_dist_tag(dist_tags)
 
           # For cooldown filtering, use filtered releases
           releases = available_versions
@@ -314,6 +312,11 @@ module Dependabot
           nil
         end
 
+        sig { params(dist_tags: T::Hash[String, String]).returns(T.nilable(String)) }
+        def requested_dist_tag(dist_tags)
+          dependency.requirements.filter_map(&:requirement).find { |requirement| dist_tags.include?(requirement) }
+        end
+
         sig do
           params(
             dist_tag: T.nilable(String),
@@ -337,9 +340,10 @@ module Dependabot
         sig { returns(T::Boolean) }
         def specified_dist_tag_requirement?
           dependency.requirements.any? do |req|
-            next false if req[:requirement].nil?
+            requirement = req.requirement
+            next false unless requirement
 
-            req_string = req[:requirement].sub(NpmAndYarn::Requirement::JSR_PREFIX, "")
+            req_string = requirement.sub(NpmAndYarn::Requirement::JSR_PREFIX, "")
             next false unless req_string.match?(/^[A-Za-z]/)
 
             !req_string.match?(/^v\d/i)
@@ -363,11 +367,11 @@ module Dependabot
         sig { params(version: Dependabot::Version).returns(T::Boolean) }
         def current_requirement_greater_than?(version)
           dependency.requirements.any? do |req|
-            next false unless req[:requirement]
+            requirement = req.requirement
+            next false unless requirement
 
-            req_version = req[:requirement]
-                          .sub(NpmAndYarn::Requirement::JSR_PREFIX, "")
-                          .sub(/^\^|~|>=?/, "")
+            req_version = requirement.sub(NpmAndYarn::Requirement::JSR_PREFIX, "")
+                                     .sub(/^\^|~|>=?/, "")
             next false unless version_class.correct?(req_version)
 
             version_class.new(req_version) > version
@@ -383,10 +387,11 @@ module Dependabot
           end
 
           dependency.requirements.any? do |req|
-            next unless req[:requirement]&.match?(/\d-[A-Za-z]/)
+            requirement = req.requirement
+            next unless requirement&.match?(/\d-[A-Za-z]/)
 
             NpmAndYarn::Requirement
-              .requirements_array(req.fetch(:requirement))
+              .requirements_array(requirement)
               .any? do |r|
                 r.requirements.any? { |a| a.last.release == version.release }
               end
@@ -413,7 +418,10 @@ module Dependabot
         end
         def filter_out_of_range_versions(releases)
           reqs = dependency.requirements.filter_map do |r|
-            NpmAndYarn::Requirement.requirements_array(r.fetch(:requirement))
+            requirement = r.requirement
+            next unless requirement
+
+            NpmAndYarn::Requirement.requirements_array(requirement)
           end
 
           releases.select do |release|

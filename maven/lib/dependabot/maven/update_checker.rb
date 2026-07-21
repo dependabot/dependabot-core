@@ -107,7 +107,7 @@ module Dependabot
       def updated_requirements
         property_names =
           declarations_using_a_property
-          .map { |req| req.dig(:metadata, :property_name) }
+          .filter_map { |requirement| metadata_string(requirement, :property_name) }
 
         RequirementsUpdater.new(
           requirements: dependency.requirements,
@@ -120,8 +120,8 @@ module Dependabot
       sig { override.returns(T::Boolean) }
       def requirements_unlocked_or_can_be?
         declarations_using_a_property.none? do |requirement|
-          prop_name = requirement.dig(:metadata, :property_name)
-          pom = dependency_files.find { |f| f.name == requirement[:file] }
+          prop_name = metadata_string(requirement, :property_name)
+          pom = dependency_files.find { |file| file.name == requirement.file }
 
           return false unless prop_name && pom
 
@@ -217,17 +217,16 @@ module Dependabot
       sig { returns(T::Boolean) }
       def version_comes_from_multi_dependency_property?
         declarations_using_a_property.any? do |requirement|
-          property_name = requirement.fetch(:metadata).fetch(:property_name)
-          property_source = requirement.fetch(:metadata)
-                                       .fetch(:property_source)
+          property_name = metadata_string(requirement, :property_name)
+          property_source = metadata_string(requirement, :property_source)
 
           all_property_based_dependencies.any? do |dep|
             next false if dep.name == dependency.name
 
             dep.requirements.any? do |req|
-              next unless req.dig(:metadata, :property_name) == property_name
+              next unless metadata_string(req, :property_name) == property_name
 
-              req.dig(:metadata, :property_source) == property_source
+              metadata_string(req, :property_source) == property_source
             end
           end
         end
@@ -237,7 +236,7 @@ module Dependabot
       def declarations_using_a_property
         @declarations_using_a_property ||=
           dependency.requirements
-                    .select { |req| req.dig(:metadata, :property_name) }
+                    .select { |requirement| metadata_string(requirement, :property_name) }
       end
 
       sig { returns(T::Array[Dependabot::Dependency]) }
@@ -247,15 +246,26 @@ module Dependabot
             dependency_files: dependency_files,
             source: nil
           ).parse.select do |dep|
-            dep.requirements.any? { |req| req.dig(:metadata, :property_name) }
+            dep.requirements.any? { |requirement| metadata_string(requirement, :property_name) }
           end
       end
 
       sig { returns(T::Boolean) }
       def version_comes_from_project_parent_version?
         declarations_using_a_property.any? do |requirement|
-          requirement.dig(:metadata, :property_name) == "project.parent.version"
+          metadata_string(requirement, :property_name) == "project.parent.version"
         end
+      end
+
+      sig do
+        params(
+          requirement: Dependabot::DependencyRequirement,
+          key: Symbol
+        ).returns(T.nilable(String))
+      end
+      def metadata_string(requirement, key)
+        value = requirement.metadata&.[](key)
+        value if value.is_a?(String)
       end
     end
   end

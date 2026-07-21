@@ -48,10 +48,7 @@ module Dependabot
           has_lockfile:,
           latest_resolvable_version:
         )
-          @requirements = T.let(
-            requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
-            T::Array[Dependabot::DependencyRequirement]
-          )
+          @requirements = T.let(requirements, T::Array[Dependabot::DependencyRequirement])
           @update_strategy = T.let(update_strategy, Dependabot::RequirementsUpdateStrategy)
           @has_lockfile = T.let(has_lockfile, T::Boolean)
           @latest_resolvable_version = T.let(nil, T.nilable(Dependabot::Python::Version))
@@ -66,12 +63,12 @@ module Dependabot
           return requirements if update_strategy.lockfile_only?
 
           requirements.map do |req|
-            case req[:file]
+            case req.file
             when /setup\.(?:py|cfg)$/ then updated_setup_requirement(req)
-            when ->(file) { file.end_with?("pyproject.toml") } then updated_pyproject_requirement(req)
+            when ->(file) { file&.end_with?("pyproject.toml") } then updated_pyproject_requirement(req)
             when "Pipfile" then updated_pipfile_requirement(req)
             when /\.txt$|\.in$/ then updated_requirement(req)
-            else raise "Unexpected filename: #{req[:file]}"
+            else raise "Unexpected filename: #{req.file}"
             end
           end
         end
@@ -82,27 +79,30 @@ module Dependabot
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def updated_setup_requirement(req)
           return req unless latest_resolvable_version
-          return req unless req.fetch(:requirement)
+          return req if req.unfixable?
+
+          requirement = req.requirement
+          return req unless requirement
           return req if new_version_satisfies?(req)
 
-          req_strings = req[:requirement].split(",").map(&:strip)
+          req_strings = requirement.split(",").map(&:strip)
 
           new_requirement =
             if req_strings.any? { |r| requirement_class.new(r).exact? }
               find_and_update_equality_match(req_strings)
             elsif req_strings.any? { |r| r.start_with?("~=") }
               tw_req = req_strings.find { |r| r.start_with?("~=") }
-              bump_version(tw_req, latest_resolvable_version.to_s)
+              bump_version(T.must(tw_req), latest_resolvable_version.to_s)
             elsif req_strings.any? { |r| r.start_with?("==") }
               tw_req = req_strings.find { |r| r.start_with?("==") }
-              convert_to_range(tw_req, T.must(latest_resolvable_version))
+              convert_to_range(T.must(tw_req), T.must(latest_resolvable_version))
             else
               update_requirements_range(req_strings)
             end
 
-          Dependabot::DependencyRequirement.create(req.merge(requirement: new_requirement))
+          req.with_requirement(new_requirement)
         rescue UnfixableRequirement
-          Dependabot::DependencyRequirement.create(req.merge(requirement: :unfixable))
+          req.with_requirement(:unfixable)
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
@@ -116,12 +116,13 @@ module Dependabot
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def updated_pyproject_requirement(req)
           return req unless latest_resolvable_version
-          return req unless req.fetch(:requirement)
+          return req if req.unfixable?
+          return req unless req.requirement
           return req if skip_pyproject_update?(req)
 
           pyproject_update_for_strategy(req)
         rescue UnfixableRequirement
-          Dependabot::DependencyRequirement.create(req.merge(requirement: :unfixable))
+          req.with_requirement(:unfixable)
         end
 
         sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
@@ -132,11 +133,13 @@ module Dependabot
 
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def pyproject_update_for_strategy(req)
+          requirement = T.must(req.requirement)
+
           # If the requirement uses || syntax then we always want to widen it
-          return widen_pyproject_requirement(req) if req.fetch(:requirement).match?(PYPROJECT_OR_SEPARATOR)
+          return widen_pyproject_requirement(req) if requirement.match?(PYPROJECT_OR_SEPARATOR)
 
           # If the requirement is a development dependency we always want to bump it
-          return update_pyproject_version(req) if req.fetch(:groups).include?("dev-dependencies")
+          return update_pyproject_version(req) if (req.groups || []).include?("dev-dependencies")
 
           case update_strategy
           when RequirementsUpdateStrategy::WidenRanges then widen_pyproject_requirement(req)
@@ -155,7 +158,7 @@ module Dependabot
 
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_pyproject_version(req)
-          return req if req[:requirement] == "*"
+          return req if req.requirement == "*"
 
           update_pyproject_version_core(req, bump_lower_bound: true)
         end
@@ -167,35 +170,36 @@ module Dependabot
           ).returns(Dependabot::DependencyRequirement)
         end
         def update_pyproject_version_core(req, bump_lower_bound:)
-          requirement_strings = req[:requirement].split(",").map(&:strip)
+          requirement_strings = T.must(req.requirement).split(",").map(&:strip)
 
           new_requirement =
             if requirement_strings.any? { |r| r.match?(/^=|^\d/) }
               find_and_update_equality_match(requirement_strings)
             elsif requirement_strings.any? { |r| r.start_with?("~", "^") }
               v_req = requirement_strings.find { |r| r.start_with?("~", "^") }
-              bump_version(v_req, latest_resolvable_version.to_s)
+              bump_version(T.must(v_req), latest_resolvable_version.to_s)
             elsif bump_lower_bound
               bump_requirements_range(requirement_strings)
             else
               update_requirements_range(requirement_strings)
             end
 
-          Dependabot::DependencyRequirement.create(req.merge(requirement: new_requirement))
+          req.with_requirement(new_requirement)
         end
 
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def widen_pyproject_requirement(req)
           return req if new_version_satisfies?(req)
 
+          requirement = T.must(req.requirement)
           new_requirement =
-            if req[:requirement].match?(PYPROJECT_OR_SEPARATOR)
-              add_new_requirement_option(req[:requirement])
+            if requirement.match?(PYPROJECT_OR_SEPARATOR)
+              add_new_requirement_option(requirement)
             else
-              widen_requirement_range(req[:requirement])
+              widen_requirement_range(requirement)
             end
 
-          Dependabot::DependencyRequirement.create(req.merge(requirement: new_requirement))
+          req.with_requirement(new_requirement)
         end
 
         sig { params(req_string: String).returns(String) }
@@ -248,7 +252,8 @@ module Dependabot
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def updated_requirement(req)
           return req unless latest_resolvable_version
-          return req unless req.fetch(:requirement)
+          return req if req.unfixable?
+          return req unless req.requirement
 
           case update_strategy
           when RequirementsUpdateStrategy::WidenRanges
@@ -272,24 +277,25 @@ module Dependabot
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_requirement(req)
           new_requirement = updated_requirement_string(req)
-          Dependabot::DependencyRequirement.create(req.merge(requirement: new_requirement))
+          req.with_requirement(new_requirement)
         rescue UnfixableRequirement
-          Dependabot::DependencyRequirement.create(req.merge(requirement: :unfixable))
+          req.with_requirement(:unfixable)
         end
 
-        sig { params(req: Dependabot::DependencyRequirement).returns(T.any(String, Symbol)) }
+        sig { params(req: Dependabot::DependencyRequirement).returns(String) }
         def updated_requirement_string(req)
-          requirement_strings = req[:requirement].split(",").map(&:strip)
+          requirement = T.must(req.requirement)
+          requirement_strings = requirement.split(",").map(&:strip)
 
           if requirement_strings.any? { |r| r.match?(/^[=\d]/) }
             find_and_update_equality_match(requirement_strings)
           elsif requirement_strings.any? { |r| r.start_with?("~=") }
             tw_req = requirement_strings.find { |r| r.start_with?("~=") }
-            bump_version(tw_req, latest_resolvable_version.to_s)
+            bump_version(T.must(tw_req), latest_resolvable_version.to_s)
           elsif bump_lower_bound?(requirement_strings)
             bump_requirements_range(requirement_strings)
           elsif new_version_satisfies?(req)
-            req.fetch(:requirement)
+            requirement
           else
             update_requirements_range(requirement_strings)
           end
@@ -305,15 +311,20 @@ module Dependabot
         def widen_requirement(req)
           return req if new_version_satisfies?(req)
 
-          new_requirement = widen_requirement_range(req[:requirement])
+          new_requirement = widen_requirement_range(T.must(req.requirement))
 
-          Dependabot::DependencyRequirement.create(req.merge(requirement: new_requirement))
+          req.with_requirement(new_requirement)
         end
 
         sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
         def new_version_satisfies?(req)
+          return false if req.unfixable?
+
+          requirement = req.requirement
+          return false unless requirement
+
           requirement_class
-            .requirements_array(req.fetch(:requirement))
+            .requirements_array(requirement)
             .any? { |r| r.satisfied_by?(T.must(latest_resolvable_version)) }
         end
 

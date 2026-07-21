@@ -1837,7 +1837,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           ).and_call_original
 
         expect(updated_requirements.count).to eq(1)
-        expect(updated_requirements.first[:requirement]).to eq("~> 1.13.0")
+        expect(updated_requirements.first.requirement).to eq("~> 1.13.0")
       end
 
       context "with a security vulnerability" do
@@ -1862,7 +1862,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             ).and_call_original
 
           expect(updated_requirements.count).to eq(1)
-          expect(updated_requirements.first[:requirement]).to eq("~> 1.5.0")
+          expect(updated_requirements.first.requirement).to eq("~> 1.5.0")
         end
       end
 
@@ -1898,8 +1898,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             ).and_call_original
 
           expect(updated_requirements.count).to eq(1)
-          expect(updated_requirements.first[:requirement]).to eq("~> 1.13.0")
-          expect(updated_requirements.first[:file]).to eq("gems.rb")
+          expect(updated_requirements.first.requirement).to eq("~> 1.13.0")
+          expect(updated_requirements.first.file).to eq("gems.rb")
         end
       end
 
@@ -1958,7 +1958,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             ).and_call_original
 
           expect(updated_requirements.count).to eq(1)
-          expect(updated_requirements.first[:requirement])
+          expect(updated_requirements.first.requirement)
             .to start_with("~> 1.")
         end
 
@@ -1999,8 +1999,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 ).and_call_original
 
               expect(updated_requirements.count).to eq(1)
-              expect(updated_requirements.first[:requirement]).to eq(">= 0")
-              expect(updated_requirements.first[:source]).not_to be_nil
+              expect(updated_requirements.first.requirement).to eq(">= 0")
+              expect(updated_requirements.first.source).not_to be_nil
             end
           end
         end
@@ -2037,8 +2037,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           ).and_call_original
 
         expect(updated_requirements.count).to eq(2)
-        expect(updated_requirements.first[:requirement]).to eq("~> 1.13.0")
-        expect(updated_requirements.last[:requirement]).to eq("~> 1.0")
+        expect(updated_requirements.first.requirement).to eq("~> 1.13.0")
+        expect(updated_requirements.last.requirement).to eq("~> 1.0")
       end
     end
 
@@ -2072,8 +2072,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           ).and_call_original
 
         expect(updated_requirements.count).to eq(2)
-        expect(updated_requirements.first[:requirement]).to eq("~> 1.13.0")
-        expect(updated_requirements.last[:requirement]).to eq("~> 1.0")
+        expect(updated_requirements.first.requirement).to eq("~> 1.13.0")
+        expect(updated_requirements.last.requirement).to eq("~> 1.0")
       end
     end
 
@@ -2101,7 +2101,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           ).and_call_original
 
         expect(updated_requirements.count).to eq(1)
-        expect(updated_requirements.first[:requirement]).to eq("~> 1.13.0")
+        expect(updated_requirements.first.requirement).to eq("~> 1.13.0")
       end
     end
 
@@ -2129,7 +2129,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           ).and_call_original
 
         expect(updated_requirements.count).to eq(1)
-        expect(updated_requirements.first[:requirement]).to eq(">= 0.9, < 2.0")
+        expect(updated_requirements.first.requirement).to eq(">= 0.9, < 2.0")
       end
     end
   end

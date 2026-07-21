@@ -97,8 +97,8 @@ module Dependabot
         dependencies.each do |dependency|
           # Find the new requirement for this dependency in this file
           new_requirement = dependency.requirements
-                                      .find { |req| T.cast(req[:file], String) == proj_file.name }
-                                      &.fetch(:requirement)
+                                      .find { |req| req.file == proj_file.name }
+                                      &.requirement
 
           next unless new_requirement
 

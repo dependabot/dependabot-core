@@ -290,9 +290,10 @@ module Dependabot
       end
       def filter_out_of_range_versions(releases)
         reqs = dependency.requirements.filter_map do |r|
-          next if r.fetch(:requirement).nil?
+          requirement = r.requirement
+          next unless requirement
 
-          requirement_class.requirements_array(r.fetch(:requirement))
+          requirement_class.requirements_array(requirement)
         end
 
         releases
@@ -325,7 +326,7 @@ module Dependabot
         return true if dependency.numeric_version&.prerelease?
 
         dependency.requirements.any? do |req|
-          req_string = req.fetch(:requirement) || ""
+          req_string = req.requirement || ""
           req_string.split(",").map(&:strip).any? do |r|
             version_str = r.gsub(/^\s*[!<>=~^]+\s*/, "").strip
             next false unless version_class.correct?(version_str)

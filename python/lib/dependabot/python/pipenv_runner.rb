@@ -143,7 +143,7 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def lockfile_section
         if current_dependency.requirements.any?
-          T.must(current_dependency.requirements.first)[:groups].first
+          (T.must(current_dependency.requirements.first).groups || []).first&.to_s
         else
           parsed_lockfile = JSON.parse(T.must(T.must(lockfile).content))
           Python::FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|

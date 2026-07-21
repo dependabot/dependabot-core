@@ -199,9 +199,9 @@ module Dependabot
         def update_uncompiled_files(updated_files)
           updated_filenames = updated_files.map(&:name)
           old_reqs = T.must(T.must(dependency).previous_requirements)
-                      .reject { |r| updated_filenames.include?(r[:file]) }
+                      .reject { |requirement| updated_filenames.include?(requirement.file) }
           new_reqs = T.must(dependency).requirements
-                      .reject { |r| updated_filenames.include?(r[:file]) }
+                      .reject { |requirement| updated_filenames.include?(requirement.file) }
 
           return [] if new_reqs.none?
 
@@ -329,15 +329,18 @@ module Dependabot
           return file.content unless file.name.end_with?(".in")
 
           old_req = T.must(T.must(dependency).previous_requirements)
-                     .find { |r| r[:file] == file.name }
+                     .find { |requirement| requirement.file == file.name }
 
           return file.content unless old_req
           return file.content if old_req == "==#{T.must(dependency).version}"
 
+          old_requirement = requirement_string(old_req)
+          return file.content unless old_requirement
+
           RequirementReplacer.new(
             content: T.must(file.content),
             dependency_name: T.must(dependency).name,
-            old_requirement: old_req[:requirement],
+            old_requirement: old_requirement,
             new_requirement: "==#{T.must(dependency).version}",
             index_urls: @index_urls
           ).updated_content
@@ -348,19 +351,33 @@ module Dependabot
           return file.content unless file.name.end_with?(".in")
 
           old_req = T.must(T.must(dependency).previous_requirements)
-                     .find { |r| r[:file] == file.name }
+                     .find { |requirement| requirement.file == file.name }
           new_req = T.must(dependency).requirements
-                     .find { |r| r[:file] == file.name }
-          return file.content unless old_req&.fetch(:requirement)
+                     .find { |requirement| requirement.file == file.name }
+
+          old_requirement = requirement_string(old_req)
+          new_requirement = requirement_string(new_req)
+          return file.content unless old_requirement && new_requirement
           return file.content if old_req == new_req
 
           RequirementReplacer.new(
             content: T.must(file.content),
             dependency_name: T.must(dependency).name,
-            old_requirement: old_req[:requirement],
-            new_requirement: T.must(new_req)[:requirement],
+            old_requirement: old_requirement,
+            new_requirement: new_requirement,
             index_urls: @index_urls
           ).updated_content
+        end
+
+        sig do
+          params(
+            requirement: T.nilable(Dependabot::DependencyRequirement)
+          ).returns(T.nilable(String))
+        end
+        def requirement_string(requirement)
+          return if requirement&.unfixable?
+
+          requirement&.requirement
         end
 
         sig { params(updated_content: String, file: Dependabot::DependencyFile).returns(String) }
@@ -679,7 +696,7 @@ module Dependabot
         def filenames_to_compile
           files_from_reqs =
             T.must(dependency).requirements
-             .map { |r| r[:file] }
+             .filter_map(&:file)
              .select { |fn| fn.end_with?(".in") }
 
           files_from_compiled_files =

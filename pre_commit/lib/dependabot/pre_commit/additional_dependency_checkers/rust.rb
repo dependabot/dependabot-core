@@ -25,28 +25,26 @@ module Dependabot
           )
         end
 
-        sig { override.params(latest_version: String).returns(T::Array[T::Hash[Symbol, Object]]) }
+        sig { override.params(latest_version: String).returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_requirements(latest_version)
           requirements.map do |original_req|
-            original_source = original_req[:source]
-            next original_req unless original_source.is_a?(Hash)
-            next original_req unless original_source[:type] == "additional_dependency"
+            original_source = original_req.source
+            next original_req unless original_source
+            next original_req unless string_detail(original_source, :type) == "additional_dependency"
 
             original_requirement = requirement_string(original_req)
             new_requirement = build_updated_requirement(original_requirement, latest_version)
 
             new_original_string = build_original_string(
-              package_name: original_source[:original_name] || original_source[:package_name],
+              package_name: string_detail(original_source, :original_name) ||
+                string_detail(original_source, :package_name),
               requirement: new_requirement,
-              cli: original_source[:extras] == "cli"
+              cli: string_detail(original_source, :extras) == "cli"
             )
 
             new_source = original_source.merge(original_string: new_original_string)
 
-            original_req.merge(
-              requirement: new_requirement,
-              source: new_source
-            )
+            original_req.with_requirement(new_requirement).with_source(new_source)
           end
         end
 

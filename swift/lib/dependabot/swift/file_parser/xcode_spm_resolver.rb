@@ -21,6 +21,9 @@ module Dependabot
       class XcodeSpmResolver
         extend T::Sig
 
+        PbxprojRequirements = T.type_alias { T::Hash[String, PbxprojParser::RequirementInfo] }
+        ScopedPbxprojRequirements = T.type_alias { T::Hash[T.nilable(String), PbxprojRequirements] }
+
         sig do
           params(
             xcode_resolved_files: T::Array[Dependabot::DependencyFile],
@@ -65,9 +68,9 @@ module Dependabot
         # Collects requirement info from all project.pbxproj support files,
         # keyed by Xcode scope directory so each resolved file can be enriched
         # by requirements from its closest matching Xcode scope.
-        sig { returns(T::Hash[T.nilable(String), T::Hash[String, T::Hash[Symbol, Object]]]) }
+        sig { returns(ScopedPbxprojRequirements) }
         def aggregate_pbxproj_requirements
-          scoped = T.let({}, T::Hash[T.nilable(String), T::Hash[String, T::Hash[Symbol, Object]]])
+          scoped = T.let({}, ScopedPbxprojRequirements)
 
           pbxproj_files.each do |pbxproj_file|
             xcode_scope_dir = extract_xcode_scope_dir(pbxproj_file.name)
@@ -83,20 +86,20 @@ module Dependabot
 
         sig do
           params(
-            scoped_requirements: T::Hash[T.nilable(String), T::Hash[String, T::Hash[Symbol, Object]]]
-          ).returns(T::Hash[String, T::Hash[Symbol, Object]])
+            scoped_requirements: ScopedPbxprojRequirements
+          ).returns(PbxprojRequirements)
         end
         def merge_scopes(scoped_requirements)
-          scoped_requirements.values.each_with_object({}) do |requirements, merged|
+          scoped_requirements.values.each_with_object(T.let({}, PbxprojRequirements)) do |requirements, merged|
             requirements.each { |name, req_info| merged[name] = req_info }
           end
         end
 
         sig do
           params(
-            scoped_requirements: T::Hash[T.nilable(String), T::Hash[String, T::Hash[Symbol, Object]]],
+            scoped_requirements: ScopedPbxprojRequirements,
             resolved_file_name: String
-          ).returns(T::Hash[String, T::Hash[Symbol, Object]])
+          ).returns(PbxprojRequirements)
         end
         def requirements_for_resolved_file(scoped_requirements:, resolved_file_name:)
           scope_dir = extract_xcode_scope_dir(resolved_file_name)
@@ -129,30 +132,31 @@ module Dependabot
         sig do
           params(
             dep: Dependabot::Dependency,
-            pbxproj_requirements: T::Hash[String, T::Hash[Symbol, Object]]
+            pbxproj_requirements: PbxprojRequirements
           ).returns(Dependabot::Dependency)
         end
         def enrich_with_pbxproj_requirements(dep, pbxproj_requirements)
           req_info = pbxproj_requirements[dep.name]
           return dep unless req_info
 
-          pbxproj_file = req_info[:file]
-          requirement_str = req_info[:requirement]
-          requirement_string = req_info[:requirement_string]
-          kind = req_info[:kind]
+          pbxproj_file = req_info.file
+          requirement_str = req_info.requirement
+          requirement_string = req_info.requirement_string
+          kind = req_info.kind
 
           new_requirements = dep.requirements.map do |req|
-            req.merge(
-              requirement: requirement_str || req[:requirement],
-              file: pbxproj_file,
-              metadata: {
-                # declaration_string is not applicable for Xcode-managed SPM
-                # (no Package.swift manifest to extract it from)
-                declaration_string: nil,
-                requirement_string: requirement_string,
-                kind: kind
-              }.compact
-            )
+            metadata = T.let(req.metadata || {}, Dependabot::DependencyRequirement::Details).merge(
+              # declaration_string is not applicable for Xcode-managed SPM
+              # (no Package.swift manifest to extract it from)
+              declaration_string: nil,
+              requirement_string: requirement_string,
+              kind: kind
+            ).compact
+
+            req
+              .with_requirement(requirement_str || req.requirement)
+              .with_file(pbxproj_file)
+              .with_metadata(metadata)
           end
 
           Dependency.new(

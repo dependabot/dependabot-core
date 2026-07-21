@@ -53,15 +53,21 @@ module Dependabot
 
           # Loop through each changed requirement
           reqs.each do |new_req, old_req|
-            raise "Bad req match" unless new_req[:file] == T.must(old_req)[:file]
-            next if new_req[:requirement] == T.must(old_req)[:requirement]
-            next unless new_req[:file] == manifest.name
+            old_req = T.must(old_req)
+            raise "Bad req match" unless new_req.file == old_req.file
+            next if new_req.unfixable? || old_req.unfixable?
+            next if new_req.requirement == old_req.requirement
+            next unless new_req.file == manifest.name
+
+            old_requirement = old_req.requirement
+            new_requirement = new_req.requirement
+            next unless old_requirement && new_requirement
 
             updated_content = update_manifest_req(
               content: updated_content,
               dep: dependency,
-              old_req: T.must(old_req).fetch(:requirement),
-              new_req: new_req.fetch(:requirement)
+              old_req: old_requirement,
+              new_req: new_requirement
             )
           end
 
@@ -118,7 +124,7 @@ module Dependabot
           changed_requirements =
             dependency.requirements - T.must(dependency.previous_requirements)
 
-          changed_requirements.any? { |f| f[:file] == manifest.name }
+          changed_requirements.any? { |requirement| requirement.file == manifest.name }
         end
       end
     end

@@ -333,7 +333,7 @@ module Dependabot
           end
 
           # If this is a sub-dependency, add the new requirement
-          unless dependency.requirements.find { |r| r[:file] == T.must(pyproject).name }
+          unless dependency.requirements.find { |requirement| requirement.file == T.must(pyproject).name }
             poetry_object[subdep_type] ||= {}
             poetry_object[subdep_type][dependency.name] = updated_requirement
           end

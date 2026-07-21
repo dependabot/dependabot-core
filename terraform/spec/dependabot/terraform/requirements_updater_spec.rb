@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency_requirement"
 require "dependabot/terraform/version"
 require "dependabot/terraform/requirements_updater"
 
@@ -15,7 +16,14 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
   end
 
   let(:requirements) do
-    [{ requirement: requirement, groups: [], file: "main.tf", source: source }]
+    [
+      Dependabot::DependencyRequirement.from_hash(
+        requirement: requirement,
+        groups: [],
+        file: "main.tf",
+        source: source
+      )
+    ]
   end
   let(:latest_version) { version_class.new("0.3.7") }
   let(:tag_for_latest_version) { nil }
@@ -75,7 +83,7 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
         end
 
         it "still updates the git ref via tag_for_latest_version" do
-          expect(updated_requirements[:source][:ref]).to eq("v0.4.0")
+          expect(updated_requirements.source).to include(ref: "v0.4.0")
         end
       end
     end
@@ -92,12 +100,12 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
       context "when an exact requirement was previously specified" do
         let(:requirement) { "0.3.1" }
 
-        its([:requirement]) { is_expected.to eq("0.3.7") }
+        its(:requirement) { is_expected.to eq("0.3.7") }
 
         context "when a pre-release version" do
           let(:latest_version) { version_class.new("0.3.7-pre") }
 
-          its([:requirement]) { is_expected.to eq("0.3.7-pre") }
+          its(:requirement) { is_expected.to eq("0.3.7-pre") }
         end
       end
 
@@ -111,13 +119,13 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
         context "when not satisfied" do
           let(:requirement) { "~> 0.2.1" }
 
-          its([:requirement]) { is_expected.to eq("~> 0.3.7") }
+          its(:requirement) { is_expected.to eq("~> 0.3.7") }
 
           context "when specifying two digits" do
             let(:requirement) { "~> 0.2" }
             let(:latest_version) { "1.1.0" }
 
-            its([:requirement]) { is_expected.to eq("~> 1.1") }
+            its(:requirement) { is_expected.to eq("~> 1.1") }
           end
         end
       end
@@ -132,34 +140,34 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
         context "when it is not satisfied" do
           let(:requirement) { "<= 0.1.9" }
 
-          its([:requirement]) { is_expected.to eq("<= 0.3.7") }
+          its(:requirement) { is_expected.to eq("<= 0.3.7") }
 
           context "when specifying two version segments" do
             let(:requirement) { "<= 0.3" }
             let(:latest_version) { version_class.new("2.8.5") }
 
-            its([:requirement]) { is_expected.to eq("<= 2.8.5") }
+            its(:requirement) { is_expected.to eq("<= 2.8.5") }
           end
 
           context "when specifying three version segments" do
             let(:requirement) { "<= 0.3.7" }
             let(:latest_version) { version_class.new("2.8.5") }
 
-            its([:requirement]) { is_expected.to eq("<= 2.8.5") }
+            its(:requirement) { is_expected.to eq("<= 2.8.5") }
           end
 
           context "when minor and patch updated" do
             let(:requirement) { "<= 0.3.7" }
             let(:latest_version) { version_class.new("0.4.0") }
 
-            its([:requirement]) { is_expected.to eq("<= 0.4.0") }
+            its(:requirement) { is_expected.to eq("<= 0.4.0") }
           end
 
           context "when major, minor and patch updated" do
             let(:requirement) { "<= 0.3.7" }
             let(:latest_version) { version_class.new("1.4.0") }
 
-            its([:requirement]) { is_expected.to eq("<= 1.4.0") }
+            its(:requirement) { is_expected.to eq("<= 1.4.0") }
           end
         end
       end
@@ -169,35 +177,35 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
           let(:requirement) { ">= 0.2.1, < 0.4.0" }
           let(:latest_version) { "0.3.7" }
 
-          its([:requirement]) { is_expected.to eq(">= 0.2.1, < 0.4.0") }
+          its(:requirement) { is_expected.to eq(">= 0.2.1, < 0.4.0") }
         end
 
         context "when not satisfied, 0 patch version" do
           let(:requirement) { ">= 0.2.1, < 0.3.0, <= 0.3.0" }
           let(:latest_version) { "0.3.7" }
 
-          its([:requirement]) { is_expected.to eq(">= 0.2.1, < 0.3.8, <= 0.3.7") }
+          its(:requirement) { is_expected.to eq(">= 0.2.1, < 0.3.8, <= 0.3.7") }
         end
 
         context "when not satisfied, non-0 patch version" do
           let(:requirement) { ">= 0.2.1, < 0.3.2, <= 0.3.2" }
           let(:latest_version) { "0.3.7" }
 
-          its([:requirement]) { is_expected.to eq(">= 0.2.1, < 0.3.8, <= 0.3.7") }
+          its(:requirement) { is_expected.to eq(">= 0.2.1, < 0.3.8, <= 0.3.7") }
         end
 
         context "when not satisfied, major and minor only" do
           let(:requirement) { ">= 0.2.1, < 0.3, <= 0.3" }
           let(:latest_version) { "0.3.7" }
 
-          its([:requirement]) { is_expected.to eq(">= 0.2.1, < 0.4, <= 0.3.7") }
+          its(:requirement) { is_expected.to eq(">= 0.2.1, < 0.4, <= 0.3.7") }
         end
 
         context "when not satisfied, major and minor only" do
           let(:requirement) { ">= 0.2.1, < 0.3, <= 0.3" }
           let(:latest_version) { "1.4.0" }
 
-          its([:requirement]) { is_expected.to eq(">= 0.2.1, < 1.5, <= 1.4.0") }
+          its(:requirement) { is_expected.to eq(">= 0.2.1, < 1.5, <= 1.4.0") }
         end
       end
     end
@@ -207,7 +215,7 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
       let(:tag_for_latest_version) { "tags/0.4.1" }
       let(:requirements) do
         [
-          {
+          Dependabot::DependencyRequirement.from_hash(
             requirement: nil,
             groups: [],
             file: "main.tf",
@@ -217,16 +225,16 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
               branch: nil,
               ref: "tags/0.3.7"
             }
-          }
+          )
         ]
       end
 
       it "updates the source ref" do
-        expect(updated_requirements.dig(:source, :ref)).to eq("tags/0.4.1")
+        expect(updated_requirements.source).to include(ref: "tags/0.4.1")
       end
 
       it "does not touch the requirement" do
-        expect(updated_requirements[:requirement]).to be_nil
+        expect(updated_requirements.requirement).to be_nil
       end
     end
   end

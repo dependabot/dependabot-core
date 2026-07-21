@@ -651,14 +651,14 @@ module Dependabot
       def updating_a_property?
         T.must(dependencies.first)
          .requirements
-         .any? { |r| r.dig(:metadata, :property_name) }
+         .any? { |requirement| requirement.metadata&.key?(:property_name) }
       end
 
       sig { returns(T::Boolean) }
       def updating_a_dependency_set?
         T.must(dependencies.first)
          .requirements
-         .any? { |r| r.dig(:metadata, :dependency_set) }
+         .any? { |requirement| requirement.metadata&.key?(:dependency_set) }
       end
 
       sig { returns(T::Boolean) }
@@ -678,8 +678,8 @@ module Dependabot
           T.let(
             dependencies.first
               &.requirements
-              &.find { |r| r.dig(:metadata, :property_name) }
-              &.dig(:metadata, :property_name),
+              &.filter_map { |requirement| metadata_string(requirement, :property_name) }
+              &.first,
             T.nilable(String)
           )
 
@@ -694,9 +694,9 @@ module Dependabot
           T.let(
             dependencies.first
               &.requirements
-              &.find { |r| r.dig(:metadata, :dependency_set) }
-              &.dig(:metadata, :dependency_set),
-            T.nilable(T.nilable(T::Hash[Symbol, String]))
+              &.filter_map { |requirement| metadata_string_hash(requirement, :dependency_set) }
+              &.first,
+            T.nilable(T::Hash[Symbol, String])
           )
 
         raise "No dependency set!" unless @dependency_set
@@ -922,10 +922,10 @@ module Dependabot
           T.must(dependency.previous_requirements) - dependency.requirements
 
         gemspec =
-          old_reqs.find { |r| r[:file].match?(%r{^[^/]*\.gemspec$}) }
-        return gemspec.fetch(:requirement) if gemspec
+          old_reqs.find { |requirement| requirement.file&.match?(%r{^[^/]*\.gemspec$}) }
+        return gemspec.requirement if gemspec
 
-        req = T.must(old_reqs.first).fetch(:requirement)
+        req = T.must(old_reqs.first).requirement
         return req if req
 
         dependency.previous_ref if dependency.ref_changed?
@@ -937,14 +937,45 @@ module Dependabot
           dependency.requirements - T.must(dependency.previous_requirements)
 
         gemspec =
-          updated_reqs.find { |r| r[:file].match?(%r{^[^/]*\.gemspec$}) }
-        return gemspec.fetch(:requirement) if gemspec
+          updated_reqs.find { |requirement| requirement.file&.match?(%r{^[^/]*\.gemspec$}) }
+        return T.must(gemspec.requirement) if gemspec
 
-        req = T.must(updated_reqs.first).fetch(:requirement)
+        req = T.must(updated_reqs.first).requirement
         return req if req
         return T.must(dependency.new_ref) if dependency.ref_changed? && dependency.new_ref
 
         raise "No new requirement!"
+      end
+
+      sig do
+        params(
+          requirement: Dependabot::DependencyRequirement,
+          key: Symbol
+        ).returns(T.nilable(String))
+      end
+      def metadata_string(requirement, key)
+        value = requirement.metadata&.[](key)
+        value if value.is_a?(String)
+      end
+
+      sig do
+        params(
+          requirement: Dependabot::DependencyRequirement,
+          key: Symbol
+        ).returns(T.nilable(T::Hash[Symbol, String]))
+      end
+      def metadata_string_hash(requirement, key)
+        value = requirement.metadata&.[](key)
+        return unless value.is_a?(Hash)
+
+        value.each_with_object(T.let({}, T::Hash[Symbol, String])) do |(raw_key, raw_value), result|
+          parsed_key = T.cast(raw_key, Object)
+          unless (parsed_key.is_a?(String) || parsed_key.is_a?(Symbol)) && raw_value.is_a?(String)
+            raise TypeError, "#{key} metadata must be a string-valued hash"
+          end
+
+          result[parsed_key.to_sym] = raw_value
+        end
       end
 
       # TODO: Bring this in line with existing library checks that we do in the

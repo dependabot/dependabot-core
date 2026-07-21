@@ -123,8 +123,12 @@ module Dependabot
         # Returns the POM file for the dependency, if it exists.
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pom
-          filename = dependency.requirements.first&.fetch(:file) ||
-                     dependency.requirements.first&.dig(:metadata, :pom_file)
+          requirement = dependency.requirements.first
+          filename = requirement&.file
+          if requirement && filename.nil?
+            pom_file = requirement.metadata&.[](:pom_file)
+            filename = pom_file if pom_file.is_a?(String)
+          end
           dependency_files.find { |f| f.name == filename }
         end
       end

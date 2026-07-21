@@ -52,7 +52,7 @@ module Dependabot
       sig { params(dependency: Dependency).returns(Dependency) }
       def extract_base_version_from_requirement(dependency)
         requirements = dependency.requirements
-        requirement = T.must(requirements.first)[:requirement]
+        requirement = T.must(requirements.first).requirement
         version = requirement&.match(/\d+\.\d+\.\d+/)&.to_s
         Dependabot::Dependency.new(
           name: dependency.name,

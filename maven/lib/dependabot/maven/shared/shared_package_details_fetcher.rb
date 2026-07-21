@@ -83,8 +83,8 @@ module Dependabot
         def dependency_files_url(repository_url, version)
           _, artifact_id = dependency_parts
           base_url = dependency_base_url(repository_url)
-          type = dependency.requirements.first&.dig(:metadata, :packaging_type) || "jar"
-          classifier = dependency.requirements.first&.dig(:metadata, :classifier)
+          type = requirement_metadata_string(:packaging_type) || "jar"
+          classifier = requirement_metadata_string(:classifier)
           actual_classifier = classifier.nil? ? "" : "-#{classifier}"
 
           "#{base_url}/#{version}/#{artifact_id}-#{version}#{actual_classifier}.#{type}"
@@ -350,7 +350,7 @@ module Dependabot
               # the consumer POM omits <type>, causing the parser to default to "jar".
               # Only fall back when there's no classifier (classifier artifacts are specific).
               next false unless response.status == 404
-              next false if dependency.requirements.first&.dig(:metadata, :classifier)
+              next false if requirement_metadata_string(:classifier)
 
               pom_response = Dependabot::RegistryClient.head(
                 url: dependency_pom_url(url, version),
@@ -363,6 +363,12 @@ module Dependabot
             rescue URI::InvalidURIError => e
               raise DependencyFileNotResolvable, e.message
             end
+        end
+
+        sig { params(key: Symbol).returns(T.nilable(String)) }
+        def requirement_metadata_string(key)
+          value = dependency.requirements.first&.metadata&.[](key)
+          value if value.is_a?(String)
         end
 
         # -- Credential & Repository Helpers --

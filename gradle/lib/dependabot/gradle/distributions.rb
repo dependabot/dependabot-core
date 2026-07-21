@@ -14,7 +14,7 @@ module Dependabot
       sig { params(requirements: T::Array[Dependabot::DependencyRequirement]).returns(T::Boolean) }
       def self.distribution_requirements?(requirements)
         requirements.any? do |req|
-          req.dig(:source, :type) == DISTRIBUTION_DEPENDENCY_TYPE
+          req.source&.[](:type) == DISTRIBUTION_DEPENDENCY_TYPE
         end
       end
     end

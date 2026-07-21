@@ -19,11 +19,13 @@ module Dependabot
           sig do
             params(
               content: String,
-              new_r: T::Hash[Symbol, T.untyped],
-              old_r: T::Hash[Symbol, T.untyped]
+              new_r: Dependabot::DependencyRequirement,
+              old_r: Dependabot::DependencyRequirement
             ).returns(T.nilable(String))
           end
           def replace(content, new_r, old_r)
+            return if new_r.unfixable? || old_r.unfixable?
+
             raw_source_req = dep.metadata[:source_requirement]
             source_req = raw_source_req if raw_source_req.is_a?(String)
 
@@ -97,8 +99,8 @@ module Dependabot
             params(
               content: String,
               source_req: String,
-              new_r: T::Hash[Symbol, T.untyped],
-              old_r: T::Hash[Symbol, T.untyped]
+              new_r: Dependabot::DependencyRequirement,
+              old_r: Dependabot::DependencyRequirement
             ).returns(T.nilable(String))
           end
           def replace_with_source_requirement(content, source_req, new_r, old_r)
@@ -106,7 +108,11 @@ module Dependabot
             return unless match
 
             declaration = T.must(match[:declaration])
-            new_req_str = rewrite_pep508_requirement(source_req, old_r[:requirement], new_r[:requirement])
+            old_requirement = old_r.requirement
+            new_requirement = new_r.requirement
+            return unless old_requirement && new_requirement
+
+            new_req_str = rewrite_pep508_requirement(source_req, old_requirement, new_requirement)
             content.sub(declaration, declaration.sub(source_req, new_req_str))
           end
 
@@ -117,13 +123,14 @@ module Dependabot
           sig do
             params(
               content: String,
-              new_r: T::Hash[Symbol, T.untyped],
-              old_r: T::Hash[Symbol, T.untyped]
+              new_r: Dependabot::DependencyRequirement,
+              old_r: Dependabot::DependencyRequirement
             ).returns(T.nilable(String))
           end
           def replace_with_normalized_requirement(content, new_r, old_r)
-            old_req = old_r[:requirement]
-            new_req = new_r[:requirement]
+            old_req = old_r.requirement
+            new_req = new_r.requirement
+            return unless old_req && new_req
 
             match = content.match(normalized_declaration_regex(old_req))
             return unless match

@@ -54,25 +54,22 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_git_url
-        info = T.cast(
-          dependency.requirements.filter_map { |r| r[:source] }.first,
-          T.nilable(T::Hash[T.any(String, Symbol), T.anything])
-        )
+        info = dependency.requirements.filter_map(&:source).first
         return unless info
 
         url = info[:url] || info["url"]
-        Source.from_url(T.cast(url, T.nilable(String)))
+        return unless url.is_a?(String)
+
+        Source.from_url(url)
       end
 
       sig { returns(T.nilable(T::Hash[String, T.anything])) }
       def crates_listing
         return @crates_listing unless @crates_listing.nil?
 
-        info = T.cast(
-          dependency.requirements.filter_map { |r| r[:source] }.first,
-          T.nilable(T::Hash[T.any(String, Symbol), T.anything])
-        )
-        index = T.cast((info && (info[:index] || info["index"])) || CRATES_IO_API, String)
+        info = dependency.requirements.filter_map(&:source).first
+        raw_index = info && (info[:index] || info["index"])
+        index = raw_index.is_a?(String) ? raw_index : CRATES_IO_API
         hdrs = build_headers(index, info)
 
         url = metadata_fetch_url(dependency, index)
@@ -82,7 +79,7 @@ module Dependabot
       end
 
       sig do
-        params(index: String, info: T.nilable(T::Hash[T.any(String, Symbol), T.anything]))
+        params(index: String, info: T.nilable(Dependabot::DependencyRequirement::Details))
           .returns(T::Hash[String, String])
       end
       def build_headers(index, info)
@@ -91,7 +88,8 @@ module Dependabot
 
         return hdrs if info.nil?
 
-        registry_name = T.cast(info["name"] || info[:name], T.nilable(String))
+        raw_registry_name = info["name"] || info[:name]
+        registry_name = raw_registry_name if raw_registry_name.is_a?(String)
         credentials.find { |cred| cred["type"] == "cargo_registry" && cred["registry"] == registry_name }&.tap do |cred|
           hdrs["Authorization"] = "Token #{cred['token']}"
         end

@@ -111,7 +111,7 @@ module Dependabot
           return true if dependency.numeric_version&.prerelease?
 
           dependency.requirements.any? do |req|
-            req_string = T.cast(req.fetch(:requirement), T.nilable(String)).to_s
+            req_string = req.requirement.to_s
             req_string.split(",").any? do |segment|
               normalized = segment.strip.gsub(/\A[\[\(]\s*/, "")
                                   .gsub(/\s*[\]\)]\z/, "")

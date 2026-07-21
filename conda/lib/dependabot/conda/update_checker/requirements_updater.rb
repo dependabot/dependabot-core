@@ -31,10 +31,7 @@ module Dependabot
           ).void
         end
         def initialize(requirements:, update_strategy:, latest_resolvable_version:)
-          @requirements = T.let(
-            requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
-            T::Array[Dependabot::DependencyRequirement]
-          )
+          @requirements = requirements
           @update_strategy = update_strategy
           @latest_resolvable_version = T.let(
             (Conda::Version.new(latest_resolvable_version) if latest_resolvable_version),
@@ -72,15 +69,14 @@ module Dependabot
 
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_requirement(req)
-          return req unless req[:requirement]
-          return req if ["", "*"].include?(req[:requirement])
+          current_requirement = req.requirement
+          return req unless current_requirement
+          return req if ["", "*"].include?(current_requirement)
 
-          requirement_strings = req[:requirement].split(",").map(&:strip)
+          requirement_strings = current_requirement.split(",").map(&:strip)
           new_req = calculate_updated_requirement(req, requirement_strings)
 
-          Dependabot::DependencyRequirement.create(
-            new_req == :unfixable ? req.merge(requirement: :unfixable) : req.merge(requirement: new_req)
-          )
+          req.with_requirement(new_req)
         end
 
         sig do
@@ -121,7 +117,7 @@ module Dependabot
           # For BumpVersions strategy, always update to the new version
           if update_strategy == RequirementsUpdateStrategy::BumpVersionsIfNecessary &&
              new_version_satisfies?(req)
-            return req[:requirement]
+            return T.must(req.requirement)
           end
 
           update_requirements_range(requirement_strings)
@@ -133,10 +129,10 @@ module Dependabot
           # For BumpVersions strategy, always update to the new version
           if update_strategy == RequirementsUpdateStrategy::BumpVersionsIfNecessary &&
              new_version_satisfies?(req)
-            return req[:requirement]
+            return T.must(req.requirement)
           end
 
-          bump_version_string(req[:requirement], T.must(latest_resolvable_version).to_s)
+          bump_version_string(T.must(req.requirement), T.must(latest_resolvable_version).to_s)
         end
 
         sig do
@@ -174,21 +170,23 @@ module Dependabot
 
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def widen_requirement(req)
-          return req unless req[:requirement]
-          return req if ["", "*"].include?(req[:requirement])
+          current_requirement = req.requirement
+          return req unless current_requirement
+          return req if ["", "*"].include?(current_requirement)
 
           # For WidenRanges, always widen to ensure proper upper bounds
           # Don't return early even if version satisfies - we want to add/update bounds
-          new_requirement = widen_requirement_string(req[:requirement])
-          Dependabot::DependencyRequirement.create(req.merge(requirement: new_requirement))
+          new_requirement = widen_requirement_string(current_requirement)
+          req.with_requirement(new_requirement)
         end
 
         sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
         def new_version_satisfies?(req)
-          return false unless req[:requirement]
+          current_requirement = req.requirement
+          return false unless current_requirement
 
           Conda::Requirement
-            .requirements_array(req[:requirement])
+            .requirements_array(current_requirement)
             .all? { |r| r.satisfied_by?(T.must(latest_resolvable_version)) }
         end
 

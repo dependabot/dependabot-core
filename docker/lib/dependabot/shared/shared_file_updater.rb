@@ -16,6 +16,7 @@ module Dependabot
       abstract!
 
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i
+      DockerSource = T.type_alias { Dependabot::DependencyRequirement::Details }
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
@@ -72,16 +73,16 @@ module Dependabot
       sig do
         params(
           previous_content: String,
-          old_source: T::Hash[Symbol, T.nilable(String)],
-          new_source: T::Hash[Symbol, T.nilable(String)]
+          old_source: DockerSource,
+          new_source: DockerSource
         ).returns(String)
       end
       def update_digest_and_tag(previous_content, old_source, new_source)
-        old_digest = old_source[:digest]
-        new_digest = new_source[:digest]
+        old_digest = source_string(old_source, :digest)
+        new_digest = source_string(new_source, :digest)
 
-        old_tag = old_source[:tag]
-        new_tag = new_source[:tag]
+        old_tag = source_string(old_source, :tag)
+        new_tag = source_string(new_source, :tag)
 
         old_declaration =
           if private_registry_url(old_source)
@@ -178,19 +179,25 @@ module Dependabot
 
       sig { params(file: Dependabot::DependencyFile).returns(String) }
       def new_yaml_image(file)
-        element = T.must(dependency).requirements.find { |r| r[:file] == file.name }
-        prefix = element&.dig(:source, :registry) ? "#{element.fetch(:source)[:registry]}/" : ""
-        digest = element&.dig(:source, :digest) ? "@sha256:#{element.fetch(:source)[:digest]}" : ""
-        tag = element&.dig(:source, :tag) ? ":#{element.fetch(:source)[:tag]}" : ""
+        element = T.must(dependency).requirements.find { |r| r.file == file.name }
+        registry = element&.source_string(:registry)
+        source_digest = element&.source_string(:digest)
+        source_tag = element&.source_string(:tag)
+        prefix = registry ? "#{registry}/" : ""
+        digest = source_digest ? "@sha256:#{source_digest}" : ""
+        tag = source_tag ? ":#{source_tag}" : ""
         "#{prefix}#{T.must(dependency).name}#{tag}#{digest}"
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
       def old_yaml_images(file)
         T.must(previous_requirements(file)).map do |r|
-          prefix = r.fetch(:source)[:registry] ? "#{r.fetch(:source)[:registry]}/" : ""
-          digest = r.fetch(:source)[:digest] ? "@sha256:#{r.fetch(:source)[:digest]}" : ""
-          tag = r.fetch(:source)[:tag] ? ":#{r.fetch(:source)[:tag]}" : ""
+          registry = r.source_string(:registry)
+          source_digest = r.source_string(:digest)
+          source_tag = r.source_string(:tag)
+          prefix = registry ? "#{registry}/" : ""
+          digest = source_digest ? "@sha256:#{source_digest}" : ""
+          tag = source_tag ? ":#{source_tag}" : ""
           "#{prefix}#{T.must(dependency).name}#{tag}#{digest}"
         end
       end
@@ -198,17 +205,19 @@ module Dependabot
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[String]) }
       def old_helm_tags(file)
         T.must(previous_requirements(file)).map do |r|
-          tag = r.fetch(:source)[:tag] || ""
-          digest = r.fetch(:source)[:digest] ? "@sha256:#{r.fetch(:source)[:digest]}" : ""
+          tag = r.source_string(:tag) || ""
+          source_digest = r.source_string(:digest)
+          digest = source_digest ? "@sha256:#{source_digest}" : ""
           "#{tag}#{digest}"
         end
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(String) }
       def new_helm_tag(file)
-        element = T.must(dependency).requirements.find { |r| r[:file] == file.name }
-        tag = T.must(element).dig(:source, :tag) || ""
-        digest = T.must(element).dig(:source, :digest) ? "@sha256:#{T.must(element).dig(:source, :digest)}" : ""
+        element = T.must(T.must(dependency).requirements.find { |r| r.file == file.name })
+        tag = element.source_string(:tag) || ""
+        source_digest = element.source_string(:digest)
+        digest = source_digest ? "@sha256:#{source_digest}" : ""
         "#{tag}#{digest}"
       end
 
@@ -219,44 +228,53 @@ module Dependabot
         changed_requirements =
           dependency.requirements - T.must(dependency.previous_requirements)
 
-        changed_requirements.any? { |f| f[:file] == file.name }
+        changed_requirements.any? { |requirement| requirement.file == file.name }
       end
 
-      sig { params(source: T::Hash[Symbol, T.nilable(String)]).returns(T::Boolean) }
+      sig { params(source: DockerSource).returns(T::Boolean) }
       def specified_with_tag?(source)
-        !source[:tag].nil?
+        !source_string(source, :tag).nil?
       end
 
-      sig { params(source: T::Hash[Symbol, T.nilable(String)]).returns(T::Boolean) }
+      sig { params(source: DockerSource).returns(T::Boolean) }
       def specified_with_digest?(source)
-        !source[:digest].nil?
+        !source_string(source, :digest).nil?
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyRequirement]) }
       def requirements(file)
         T.must(dependency).requirements
-         .select { |r| r[:file] == file.name }
+         .select { |r| r.file == file.name }
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Array[Dependabot::DependencyRequirement])) }
       def previous_requirements(file)
         T.must(dependency).previous_requirements
-         &.select { |r| r[:file] == file.name }
+         &.select { |r| r.file == file.name }
       end
 
-      sig { params(source: T::Hash[Symbol, T.nilable(String)]).returns(T.nilable(String)) }
+      sig { params(source: DockerSource).returns(T.nilable(String)) }
       def private_registry_url(source)
-        source[:registry]
+        source_string(source, :registry)
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[DockerSource]) }
       def sources(file)
-        requirements(file).map { |r| r.fetch(:source) }
+        requirements(file).map { |r| T.must(r.source) }
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Array[T::Hash[Symbol, T.nilable(String)]])) }
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Array[DockerSource])) }
       def previous_sources(file)
-        previous_requirements(file)&.map { |r| r.fetch(:source) }
+        previous_requirements(file)&.map { |r| T.must(r.source) }
+      end
+
+      sig { params(source: DockerSource, key: Symbol).returns(T.nilable(String)) }
+      def source_string(source, key)
+        value = source[key] || source[key.to_s]
+        return if value.nil?
+        raise TypeError, "Expected Docker source #{key} to be a String" unless value.is_a?(String)
+
+        value
       end
 
       sig { returns(T.nilable(Dependabot::Dependency)) }

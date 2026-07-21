@@ -84,7 +84,7 @@ module Dependabot
         candidates = latest_version_finder.available_versions
         return nil if candidates.empty?
 
-        current_requirement = T.cast(dependency.requirements.first&.fetch(:requirement, nil), T.nilable(String))
+        current_requirement = dependency.requirements.first&.requirement
 
         best = if current_requirement.nil? || current_requirement.strip == "*"
                  candidates.max

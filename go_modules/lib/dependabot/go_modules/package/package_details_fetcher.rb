@@ -126,7 +126,7 @@ module Dependabot
         def go_mod
           @go_mod ||= T.let(
             begin
-              req_file = dependency.requirements.first&.fetch(:file, nil)
+              req_file = dependency.requirements.first&.file
               if req_file
                 dependency_files.find { |f| f.name == req_file }
               else

@@ -15,6 +15,13 @@ module Dependabot
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_finder"
 
+      VersionDetails = T.type_alias do
+        {
+          version: Dependabot::Version,
+          source_url: T.nilable(String)
+        }
+      end
+
       sig { override.returns(T.nilable(Dependabot::Version)) }
       def latest_version
         latest_version_details&.fetch(:version)
@@ -51,7 +58,7 @@ module Dependabot
       def updated_requirements
         property_names =
           declarations_using_a_property
-          .filter_map { |req| req.dig(:metadata, :property_name) }
+          .filter_map { |requirement| metadata_string(requirement, :property_name) }
 
         RequirementsUpdater.new(
           requirements: dependency.requirements,
@@ -96,19 +103,19 @@ module Dependabot
         super
       end
 
-      sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
+      sig { returns(T.nilable(VersionDetails)) }
       def preferred_version_details
         return lowest_security_fix_version_details if vulnerable?
 
         latest_version_details
       end
 
-      sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
+      sig { returns(T.nilable(VersionDetails)) }
       def latest_version_details
         version_finder.latest_version_details
       end
 
-      sig { returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
+      sig { returns(T.nilable(VersionDetails)) }
       def lowest_security_fix_version_details
         version_finder.lowest_security_fix_version_details
       end
@@ -132,8 +139,8 @@ module Dependabot
       sig { returns(T::Boolean) }
       def version_comes_from_multi_dependency_property?
         declarations_using_a_property.any? do |requirement|
-          property_name = requirement.dig(:metadata, :property_name)
-          property_source = requirement.dig(:metadata, :property_source)
+          property_name = metadata_string(requirement, :property_name)
+          property_source = metadata_string(requirement, :property_source)
 
           next false unless property_name
 
@@ -141,20 +148,20 @@ module Dependabot
             next false if dep.name == dependency.name
 
             dep.requirements.any? do |req|
-              next unless req.dig(:metadata, :property_name) == property_name
+              next unless metadata_string(req, :property_name) == property_name
 
-              req.dig(:metadata, :property_source) == property_source
+              metadata_string(req, :property_source) == property_source
             end
           end
         end
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def declarations_using_a_property
         @declarations_using_a_property ||= T.let(
           dependency.requirements
-                    .select { |req| req.dig(:metadata, :property_name) },
-          T.nilable(T::Array[T::Hash[Symbol, T.untyped]])
+                    .select { |requirement| metadata_string(requirement, :property_name) },
+          T.nilable(T::Array[Dependabot::DependencyRequirement])
         )
       end
 
@@ -165,10 +172,21 @@ module Dependabot
             dependency_files: dependency_files,
             source: nil
           ).parse.select do |dep|
-            dep.requirements.any? { |req| req.dig(:metadata, :property_name) }
+            dep.requirements.any? { |requirement| metadata_string(requirement, :property_name) }
           end,
           T.nilable(T::Array[Dependabot::Dependency])
         )
+      end
+
+      sig do
+        params(
+          requirement: Dependabot::DependencyRequirement,
+          key: Symbol
+        ).returns(T.nilable(String))
+      end
+      def metadata_string(requirement, key)
+        value = requirement.metadata&.[](key)
+        value if value.is_a?(String)
       end
     end
   end

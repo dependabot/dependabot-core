@@ -346,7 +346,7 @@ module Dependabot
         def dependency_repository_details
           requirement_files =
             dependency.requirements
-                      .map { |r| r.fetch(:file) }
+                      .map(&:file)
                       .map { |nm| dependency_files.find { |f| f.name == nm } }
 
           @dependency_repository_details ||=
@@ -396,7 +396,7 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pom
-          filename = T.must(dependency.requirements.first).fetch(:file)
+          filename = T.must(T.must(dependency.requirements.first).file)
           dependency_files.find { |f| f.name == filename }
         end
 
@@ -425,12 +425,12 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def plugin?
-          dependency.requirements.any? { |r| r.fetch(:groups).include? "plugins" }
+          dependency.requirements.any? { |requirement| requirement.groups&.include?("plugins") }
         end
 
         sig { returns(T.nilable(T::Boolean)) }
         def kotlin_plugin?
-          plugin? && dependency.requirements.any? { |r| r.fetch(:groups).include? "kotlin" }
+          plugin? && dependency.requirements.any? { |requirement| requirement.groups&.include?("kotlin") }
         end
 
         sig { returns(T::Boolean) }

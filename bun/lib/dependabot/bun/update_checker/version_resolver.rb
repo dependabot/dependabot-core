@@ -228,8 +228,10 @@ module Dependabot
             relevant_versions = latest_version_finder(dependency)
                                 .possible_previous_versions_with_details
                                 .map(&:first)
-            reqs = dep.requirements.filter_map { |r| r[:requirement] }
-                                   .map { |r| requirement_class.requirements_array(r) }
+            reqs =
+              dep.requirements
+                 .filter_map(&:requirement)
+                 .map { |r| requirement_class.requirements_array(r) }
 
             # Pick the lowest version from the max possible version from all
             # requirements. This matches the logic when combining the same
@@ -650,10 +652,15 @@ module Dependabot
           ).returns(String)
         end
         def version_install_arg(version:)
-          git_source = dependency.requirements.find { |req| req[:source] && req[:source][:type] == "git" }
+          git_source = dependency.requirements.find do |req|
+            source_type = req.source&.[](:type)
+            source_type.is_a?(String) && source_type == "git"
+          end
 
           if git_source
-            "#{dependency.name}@#{git_source[:source][:url]}##{version}"
+            source_url = git_source.source&.[](:url)
+            source_url = source_url.to_s unless source_url.is_a?(String)
+            "#{dependency.name}@#{source_url}##{version}"
           else
             "#{dependency.name}@#{version}"
           end
@@ -661,17 +668,18 @@ module Dependabot
 
         sig do
           params(
-            requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            requirements: T::Array[Dependabot::DependencyRequirement],
             path: String
-          ).returns(T::Array[T::Hash[Symbol, T.untyped]])
+          ).returns(T::Array[Dependabot::DependencyRequirement])
         end
         def requirements_for_path(requirements, path)
           return requirements if path.to_s == "."
 
           requirements.filter_map do |r|
-            next unless r[:file].start_with?("#{path}/")
+            file = r.file
+            next unless file&.start_with?("#{path}/")
 
-            r.merge(file: r[:file].gsub(/^#{Regexp.quote("#{path}/")}/, ""))
+            r.with_file(file.gsub(/^#{Regexp.quote("#{path}/")}/, ""))
           end
         end
 
@@ -719,13 +727,14 @@ module Dependabot
         def version_for_dependency(dep)
           return version_class.new(dep.version) if dep.version && version_class.correct?(dep.version)
 
-          dep.requirements.filter_map { |r| r[:requirement] }
-                          .reject { |req_string| req_string.start_with?("<") }
-                          .select { |req_string| req_string.match?(version_regex) }
-                          .map { |req_string| req_string.match(version_regex) }
-                          .select { |version| version_class.correct?(version.to_s) }
-                          .map { |version| version_class.new(version.to_s) }
-                          .max
+          dep.requirements
+             .filter_map(&:requirement)
+             .reject { |req_string| req_string.start_with?("<") }
+             .select { |req_string| req_string.match?(version_regex) }
+             .map { |req_string| req_string.match(version_regex) }
+             .select { |version| version_class.correct?(version.to_s) }
+             .map { |version| version_class.new(version.to_s) }
+             .max
         end
 
         sig { returns(T.class_of(Dependabot::Version)) }

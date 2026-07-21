@@ -556,7 +556,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
         it "resolves the registry from the ancestor config" do
           dependency = dependencies.find { |dep| dep.name == "private-dep" }
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.requirements.first[:source]).to include(
+          expect(dependency.requirements.first.source).to include(
             type: "registry",
             name: "my-registry",
             index: "sparse+https://private.example.com/index/"

@@ -59,18 +59,18 @@ RSpec.describe Dependabot::Swift::FileParser::XcodeSpmResolver do
         dep = resolver.parse.first
         req = dep.requirements.first
 
-        expect(req[:requirement]).to eq(">= 2.54.0, < 3.0.0")
-        expect(req[:file]).to eq("MyApp.xcodeproj/project.pbxproj")
-        expect(req[:metadata][:requirement_string]).to eq("from: \"2.54.0\"")
+        expect(req.requirement).to eq(">= 2.54.0, < 3.0.0")
+        expect(req.file).to eq("MyApp.xcodeproj/project.pbxproj")
+        expect(req.metadata_string(:requirement_string)).to eq("from: \"2.54.0\"")
       end
 
       it "sets correct source info" do
         dep = resolver.parse.first
-        source = dep.requirements.first[:source]
+        requirement = dep.requirements.first
 
-        expect(source[:type]).to eq("git")
-        expect(source[:url]).to eq("https://github.com/apple/swift-nio.git")
-        expect(source[:ref]).to eq("2.54.0")
+        expect(requirement.source_string(:type)).to eq("git")
+        expect(requirement.source_string(:url)).to eq("https://github.com/apple/swift-nio.git")
+        expect(requirement.source_string(:ref)).to eq("2.54.0")
       end
     end
 
@@ -132,8 +132,8 @@ RSpec.describe Dependabot::Swift::FileParser::XcodeSpmResolver do
         nio = deps.find { |d| d.name == "github.com/apple/swift-nio" }
         collections = deps.find { |d| d.name == "github.com/apple/swift-collections" }
 
-        expect(nio.requirements.first[:file]).to eq("AppA.xcodeproj/project.pbxproj")
-        expect(collections.requirements.first[:file]).to eq("AppB.xcodeproj/project.pbxproj")
+        expect(nio.requirements.first.file).to eq("AppA.xcodeproj/project.pbxproj")
+        expect(collections.requirements.first.file).to eq("AppB.xcodeproj/project.pbxproj")
       end
     end
 
@@ -168,8 +168,8 @@ RSpec.describe Dependabot::Swift::FileParser::XcodeSpmResolver do
         dep = resolver.parse.first
 
         expect(dep.name).to eq("github.com/apple/swift-nio")
-        expect(dep.requirements.first[:requirement]).to eq(">= 2.54.0, < 3.0.0")
-        expect(dep.requirements.first[:file]).to eq("AppA.xcodeproj/project.pbxproj")
+        expect(dep.requirements.first.requirement).to eq(">= 2.54.0, < 3.0.0")
+        expect(dep.requirements.first.file).to eq("AppA.xcodeproj/project.pbxproj")
       end
     end
 
@@ -203,9 +203,8 @@ RSpec.describe Dependabot::Swift::FileParser::XcodeSpmResolver do
       it "does not enrich requirements from unrelated scopes" do
         dep = resolver.parse.first
         req = dep.requirements.first
-
-        expect(req[:requirement]).to eq("= 2.54.0")
-        expect(req[:file]).to eq("MyApp.xcworkspace/xcshareddata/swiftpm/Package.resolved")
+        expect(req.requirement).to eq("= 2.54.0")
+        expect(req.file).to eq("MyApp.xcworkspace/xcshareddata/swiftpm/Package.resolved")
       end
     end
 
@@ -257,10 +256,10 @@ RSpec.describe Dependabot::Swift::FileParser::XcodeSpmResolver do
         parser_dep = deps.find { |d| d.name == "github.com/apple/swift-argument-parser" }
         log = deps.find { |d| d.name == "github.com/apple/swift-log" }
 
-        expect(nio.requirements.first[:requirement]).to eq(">= 2.54.0, < 3.0.0")
-        expect(collections.requirements.first[:requirement]).to eq(">= 1.0.0, < 1.1.0")
-        expect(parser_dep.requirements.first[:requirement]).to eq("= 1.2.0")
-        expect(log.requirements.first[:requirement]).to eq(">= 1.4.0, < 2.0.0")
+        expect(nio.requirements.first.requirement).to eq(">= 2.54.0, < 3.0.0")
+        expect(collections.requirements.first.requirement).to eq(">= 1.0.0, < 1.1.0")
+        expect(parser_dep.requirements.first.requirement).to eq("= 1.2.0")
+        expect(log.requirements.first.requirement).to eq(">= 1.4.0, < 2.0.0")
       end
     end
 
@@ -291,7 +290,7 @@ RSpec.describe Dependabot::Swift::FileParser::XcodeSpmResolver do
         dep = deps.first
         expect(dep.name).to eq("github.com/apple/swift-nio")
         expect(dep.version).to eq("2.54.0")
-        expect(dep.requirements.first[:requirement]).to eq("= 2.54.0")
+        expect(dep.requirements.first.requirement).to eq("= 2.54.0")
       end
     end
 
@@ -363,8 +362,8 @@ RSpec.describe Dependabot::Swift::FileParser::XcodeSpmResolver do
 
       it "records revision in source ref" do
         dep = resolver.parse.first
-        source = dep.requirements.first[:source]
-        expect(source[:ref]).to eq("6213ba7a06febe8fef60563a4a7d26a4085783cf")
+        requirement = dep.requirements.first
+        expect(requirement.source_string(:ref)).to eq("6213ba7a06febe8fef60563a4a7d26a4085783cf")
       end
     end
 

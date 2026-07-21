@@ -49,10 +49,9 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        updated = dependency.requirements.map do |req|
-          req.merge(requirement: latest_version&.to_s)
+        dependency.requirements.map do |requirement|
+          requirement.with_requirement(latest_version&.to_s)
         end
-        wrap_requirements(updated)
       end
 
       private

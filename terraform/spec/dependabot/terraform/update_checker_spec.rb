@@ -4,6 +4,7 @@
 require "spec_helper"
 require "dependabot/credential"
 require "dependabot/dependency"
+require "dependabot/dependency_requirement"
 require "dependabot/git_commit_checker"
 require "dependabot/git_tag_details"
 require "dependabot/package/release_cooldown_options"
@@ -22,7 +23,14 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
   end
   let(:requirement) { nil }
   let(:requirements) do
-    [{ requirement: requirement, groups: [], file: "main.tf", source: source }]
+    [
+      Dependabot::DependencyRequirement.from_hash(
+        requirement: requirement,
+        groups: [],
+        file: "main.tf",
+        source: source
+      )
+    ]
   end
   let(:version) { "0.3.7" }
   let(:dependency_name) { "origin_label" }
@@ -330,17 +338,19 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
         it "updates the reference" do
           expect(updated_requirements)
             .to eq(
-              [{
-                requirement: nil,
-                groups: [],
-                file: "main.tf",
-                source: {
-                  type: "git",
-                  url: "https://github.com/cloudposse/terraform-null-label.git",
-                  branch: nil,
-                  ref: "tags/0.4.1"
-                }
-              }]
+              [
+                Dependabot::DependencyRequirement.from_hash(
+                  requirement: nil,
+                  groups: [],
+                  file: "main.tf",
+                  source: {
+                    type: "git",
+                    url: "https://github.com/cloudposse/terraform-null-label.git",
+                    branch: nil,
+                    ref: "tags/0.4.1"
+                  }
+                )
+              ]
             )
         end
       end
@@ -376,16 +386,18 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
       it "updates the requirement" do
         expect(updated_requirements)
           .to eq(
-            [{
-              requirement: "~> 0.3.8",
-              groups: [],
-              file: "main.tf",
-              source: {
-                type: "registry",
-                registry_hostname: "registry.terraform.io",
-                module_identifier: "hashicorp/consul/aws"
-              }
-            }]
+            [
+              Dependabot::DependencyRequirement.from_hash(
+                requirement: "~> 0.3.8",
+                groups: [],
+                file: "main.tf",
+                source: {
+                  type: "registry",
+                  registry_hostname: "registry.terraform.io",
+                  module_identifier: "hashicorp/consul/aws"
+                }
+              )
+            ]
           )
       end
 
@@ -409,16 +421,18 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
       it "updates the requirement" do
         expect(updated_requirements)
           .to eq(
-            [{
-              requirement: "~> 3.42",
-              groups: [],
-              file: "main.tf",
-              source: {
-                type: "provider",
-                registry_hostname: "registry.terraform.io",
-                module_identifier: "hashicorp/aws"
-              }
-            }]
+            [
+              Dependabot::DependencyRequirement.from_hash(
+                requirement: "~> 3.42",
+                groups: [],
+                file: "main.tf",
+                source: {
+                  type: "provider",
+                  registry_hostname: "registry.terraform.io",
+                  module_identifier: "hashicorp/aws"
+                }
+              )
+            ]
           )
       end
     end

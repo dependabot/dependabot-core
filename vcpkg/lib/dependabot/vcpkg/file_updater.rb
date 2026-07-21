@@ -53,7 +53,7 @@ module Dependabot
         parsed_content = JSON.parse(content)
 
         dependencies
-          .filter_map { |dep| [dep, dep.requirements.find { |r| r[:file] == file.name }] }
+          .filter_map { |dep| [dep, dep.requirements.find { |requirement| requirement.file == file.name }] }
           .select { |_, requirement| requirement }
           .each { |dependency, _| update_dependency_in_content(parsed_content, dependency, file.name) }
 
@@ -68,7 +68,7 @@ module Dependabot
         parsed_content = JSON.parse(content)
 
         dependencies
-          .filter_map { |dep| [dep, dep.requirements.find { |r| r[:file] == file.name }] }
+          .filter_map { |dep| [dep, dep.requirements.find { |requirement| requirement.file == file.name }] }
           .select { |_, requirement| requirement }
           .each { |dependency, _| update_registry_dependency_in_content(parsed_content, dependency, file.name) }
 
@@ -106,7 +106,7 @@ module Dependabot
       sig { params(content: T::Hash[String, T.untyped], dependency: Dependabot::Dependency, filename: String).void }
       def update_registry_dependency_in_content(content, dependency, filename)
         # Check if this is a default registry update based on metadata
-        if dependency.metadata[:default]
+        if metadata_flag?(dependency, :default)
           update_default_registry(content, dependency, filename)
         else
           # For registries array, find by repository URL
@@ -119,7 +119,7 @@ module Dependabot
         default_registry = content["default-registry"]
         if default_registry.is_a?(Hash)
           update_baseline_field(default_registry, dependency, filename, "baseline")
-        elsif dependency.metadata[:create_default_registry]
+        elsif metadata_flag?(dependency, :create_default_registry)
           created_registry = build_default_registry(dependency, filename)
           content["default-registry"] = created_registry if created_registry
         end
@@ -130,19 +130,17 @@ module Dependabot
           .returns(T.nilable(T::Hash[String, String]))
       end
       def build_default_registry(dependency, filename)
-        requirement = dependency.requirements.find { |r| r[:file] == filename }
+        requirement = dependency.requirements.find { |req| req.file == filename }
         return unless requirement
 
-        case requirement[:source]
-        in { ref: String => baseline }
-          {
-            "kind" => "git",
-            "repository" => VCPKG_DEFAULT_REGISTRY_REPOSITORY,
-            "baseline" => baseline
-          }
-        else
-          nil
-        end
+        baseline = requirement_source_string(requirement, "ref")
+        return unless baseline
+
+        {
+          "kind" => "git",
+          "repository" => VCPKG_DEFAULT_REGISTRY_REPOSITORY,
+          "baseline" => baseline
+        }
       end
 
       sig { params(content: T::Hash[String, T.untyped], dependency: Dependabot::Dependency, filename: String).void }
@@ -167,16 +165,12 @@ module Dependabot
       end
       def update_baseline_field(target, dependency, filename, field_name)
         # Find the requirement for this specific file
-        requirement = dependency.requirements.find { |r| r[:file] == filename }
+        requirement = dependency.requirements.find { |req| req.file == filename }
         return unless requirement
 
         # Extract and validate the new baseline
-        case requirement[:source]
-        in { ref: String => new_baseline }
-          target[field_name] = new_baseline
-        else
-          # Skip if source doesn't have the expected structure
-        end
+        new_baseline = requirement_source_string(requirement, "ref")
+        target[field_name] = new_baseline if new_baseline
       end
 
       sig do
@@ -187,14 +181,33 @@ module Dependabot
           .returns(T.nilable(T::Hash[String, T.untyped]))
       end
       def find_target_registry(registries, dependency)
-        if dependency.metadata[:builtin]
+        if metadata_flag?(dependency, :builtin)
           # For builtin registries, find by kind
           registries.find { |r| r.is_a?(Hash) && r["kind"] == "builtin" }
         else
           # For git registries, find by repository URL
-          repository_url = dependency.requirements.first&.dig(:source, :url)
+          repository_url = requirement_source_string(dependency.requirements.first, "url")
           registries.find { |r| r.is_a?(Hash) && r["repository"] == repository_url }
         end
+      end
+
+      sig do
+        params(
+          requirement: T.nilable(Dependabot::DependencyRequirement),
+          key: String
+        ).returns(T.nilable(String))
+      end
+      def requirement_source_string(requirement, key)
+        source = requirement&.source
+        return unless source
+
+        value = source[key] || source[key.to_sym]
+        value if value.is_a?(String)
+      end
+
+      sig { params(dependency: Dependabot::Dependency, key: Symbol).returns(T::Boolean) }
+      def metadata_flag?(dependency, key)
+        dependency.metadata[key] == true
       end
     end
   end

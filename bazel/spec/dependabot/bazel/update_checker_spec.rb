@@ -447,8 +447,8 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
 
       it "preserves .bcr.X format in requirement string" do
         updated_reqs = checker.updated_requirements
-        expect(updated_reqs.first[:requirement]).to eq("1.6.50.bcr.1")
-        expect(updated_reqs.first[:requirement]).not_to eq("1.6.50")
+        expect(updated_reqs.first.requirement).to eq("1.6.50.bcr.1")
+        expect(updated_reqs.first.requirement).not_to eq("1.6.50")
       end
     end
 

@@ -165,43 +165,49 @@ module Dependabot
         )
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       sig { params(dep: Dependabot::Dependency).returns(T.nilable(String)) }
       def version(dep)
         return dep.version if version_class.correct?(dep.version)
 
-        source = dep.requirements.find { |r| r.fetch(:source) }&.fetch(:source)
-        type = source&.fetch("type", nil) || source&.fetch(:type)
+        source = dep.requirements.filter_map(&:source).first
+        type = source_string(source, "type")
         return dep.version unless type == "git"
 
-        ref = source.fetch("ref", nil) || source.fetch(:ref)
+        ref = source_string(source, "ref")
         version_from_ref = ref&.gsub(/^v/, "")
         return dep.version unless version_from_ref
         return dep.version unless version_class.correct?(version_from_ref)
 
         version_from_ref
       end
-      # rubocop:enable Metrics/PerceivedComplexity
-
-      # rubocop:disable Metrics/PerceivedComplexity
       sig { params(dep: Dependabot::Dependency).returns(T.nilable(String)) }
       def previous_version(dep)
         version_str = dep.previous_version
         return version_str if version_class.correct?(version_str)
 
-        source = T.must(dep.previous_requirements)
-                  .find { |r| r.fetch(:source) }&.fetch(:source)
-        type = source&.fetch("type", nil) || source&.fetch(:type)
+        source = T.must(dep.previous_requirements).filter_map(&:source).first
+        type = source_string(source, "type")
         return version_str unless type == "git"
 
-        ref = source.fetch("ref", nil) || source.fetch(:ref)
+        ref = source_string(source, "ref")
         version_from_ref = ref&.gsub(/^v/, "")
         return version_str unless version_from_ref
         return version_str unless version_class.correct?(version_from_ref)
 
         version_from_ref
       end
-      # rubocop:enable Metrics/PerceivedComplexity
+      sig do
+        params(
+          source: T.nilable(Dependabot::DependencyRequirement::Details),
+          key: String
+        ).returns(T.nilable(String))
+      end
+      def source_string(source, key)
+        return unless source
+
+        value = source[key] || source[key.to_sym]
+        value if value.is_a?(String)
+      end
 
       sig { returns(T.nilable(T::Array[String])) }
       def create_default_dependencies_label_if_required
