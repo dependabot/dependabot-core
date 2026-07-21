@@ -25,7 +25,7 @@ module DummyPackageManager
 
     def updated_requirements
       dependency.requirements.map do |req|
-        req.merge(requirement: "9.9.9")
+        req.with_requirement("9.9.9")
       end
     end
   end
