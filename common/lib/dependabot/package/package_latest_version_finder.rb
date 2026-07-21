@@ -175,7 +175,7 @@ module Dependabot
         end
 
         # If all releases were filtered out due to cooldown and we have a current version, use it as fallback
-        if filtered.empty? && !releases.empty? && dependency.version
+        if filtered.empty? && !releases.empty? && dependency.version && version_class.correct?(dependency.version)
           current_version_str = dependency.version
 
           Dependabot.logger.info(

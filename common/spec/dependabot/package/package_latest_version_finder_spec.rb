@@ -763,6 +763,28 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
       end
     end
 
+    context "when current version is a non-semver string" do
+      let(:dependency_version) { "80cf1194b6c80216b7dbd1f825bbe33af5682ffc" }
+
+      let(:available_releases) do
+        [{ version: "6.0.1", released_at: Time.now.strftime("%Y-%m-%d") }]
+      end
+
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 365)
+      end
+
+      it "returns nil when all versions filtered and current version is non-semver string" do
+        expect(finder.latest_version).to be_nil
+      end
+
+      it "does not attempt fallback" do
+        expect(Dependabot.logger).not_to receive(:info)
+          .with(/falling back to current version/)
+        finder.latest_version
+      end
+    end
+
     context "when no releases are available" do
       let(:available_releases) { [] }
 
