@@ -18,6 +18,42 @@ module Dependabot
       require_relative "update_checker/version_resolver"
       require_relative "update_checker/file_preparer"
 
+      sig { override.returns(T::Boolean) }
+      def up_to_date?
+        return super unless multiple_locked_versions?
+
+        locked_version_checkers.all? do |checker|
+          checker.up_to_date? || checker.latest_resolvable_version&.to_s == checker.dependency.version
+        rescue Dependabot::AllVersionsIgnored
+          true
+        end
+      end
+
+      sig { override.params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Boolean) }
+      def can_update?(requirements_to_unlock:)
+        return super unless multiple_locked_versions?
+
+        locked_version_checkers.any? do |checker|
+          checker.can_update?(requirements_to_unlock: requirements_to_unlock)
+        rescue Dependabot::AllVersionsIgnored
+          false
+        end
+      end
+
+      sig do
+        override.params(requirements_to_unlock: T.nilable(Symbol))
+                .returns(T::Array[Dependabot::Dependency])
+      end
+      def updated_dependencies(requirements_to_unlock:)
+        return super unless multiple_locked_versions?
+
+        locked_version_checkers.flat_map do |checker|
+          checker.updated_dependencies(requirements_to_unlock: requirements_to_unlock)
+        rescue Dependabot::AllVersionsIgnored
+          []
+        end
+      end
+
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
         return if path_dependency?
@@ -347,6 +383,59 @@ module Dependabot
       sig { returns(T::Boolean) }
       def path_dependency?
         dependency.source_type == "path"
+      end
+
+      sig { returns(T::Boolean) }
+      def multiple_locked_versions?
+        sources = locked_version_dependencies.map { |candidate| candidate.metadata[:cargo_package_source] }.uniq
+        !dependency.top_level? && locked_version_dependencies.length > 1 && sources.one?
+      end
+
+      sig { returns(T::Array[Dependabot::Dependency]) }
+      def locked_version_dependencies
+        @locked_version_dependencies ||= T.let(
+          begin
+            all_versions = dependency.metadata[:all_versions]
+            candidates = all_versions.is_a?(Array) ? all_versions.grep(Dependabot::Dependency) : []
+            numeric_candidates = candidates.select do |candidate|
+              !candidate.top_level? && version_class.correct?(candidate.version)
+            end
+            numeric_candidates.uniq { |candidate| [candidate.version, candidate.metadata[:cargo_package_source]] }
+          end,
+          T.nilable(T::Array[Dependabot::Dependency])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::Cargo::UpdateChecker]) }
+      def locked_version_checkers
+        @locked_version_checkers ||= T.let(
+          locked_version_dependencies_to_check.map do |locked_dependency|
+            self.class.new(
+              dependency: locked_dependency,
+              dependency_files: dependency_files,
+              repo_contents_path: repo_contents_path,
+              credentials: credentials,
+              ignored_versions: ignored_versions,
+              security_advisories: security_advisories,
+              raise_on_ignored: raise_on_ignored,
+              requirements_update_strategy: requirements_update_strategy,
+              dependency_group: dependency_group,
+              update_cooldown: update_cooldown,
+              options: options
+            )
+          end,
+          T.nilable(T::Array[Dependabot::Cargo::UpdateChecker])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::Dependency]) }
+      def locked_version_dependencies_to_check
+        return locked_version_dependencies if security_advisories.empty?
+
+        locked_version_dependencies.select do |candidate|
+          version = version_class.new(T.must(candidate.version))
+          security_advisories.any? { |advisory| advisory.vulnerable?(version) }
+        end
       end
 
       sig { returns(GitCommitChecker) }

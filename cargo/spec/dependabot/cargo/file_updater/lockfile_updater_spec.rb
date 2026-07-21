@@ -9,7 +9,7 @@ require "dependabot/cargo/file_updater/lockfile_updater"
 RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
   let(:updater) do
     described_class.new(
-      dependencies: [dependency],
+      dependencies: dependencies,
       dependency_files: dependency_files,
       credentials: [{
         "type" => "git_source",
@@ -17,6 +17,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
       }]
     )
   end
+  let(:dependencies) { [dependency] }
 
   let(:dependency_files) { [manifest, lockfile] }
   let(:manifest) do
@@ -258,6 +259,88 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         it "updates the dependency version in the lockfile" do
           expect(updated_lockfile_content)
             .to include(%(name = "rand"\nversion = "0.4.2"))
+        end
+      end
+
+      context "with multiple locked versions of a transitive dependency" do
+        let(:manifest_fixture_name) { "multiple_locked_versions" }
+        let(:lockfile_fixture_name) { "multiple_locked_versions" }
+        let(:dependency_name) { "getrandom" }
+        let(:dependency_version) { "0.4.3" }
+        let(:dependency_previous_version) { "0.4.2" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+        let(:updated_getrandom_versions) do
+          TomlRB.parse(updated_lockfile_content).fetch("package")
+                .select { |package| package["name"] == "getrandom" }
+                .map { |package| Gem::Version.new(package.fetch("version")) }
+        end
+
+        it "updates only the requested locked package" do
+          expect(updated_getrandom_versions).to include(Gem::Version.new("0.2.17"))
+          expect(updated_getrandom_versions).to include(
+            satisfy { |version| version >= Gem::Version.new("0.4.3") && version < Gem::Version.new("0.5.0") }
+          )
+          expect(updated_getrandom_versions).not_to include(Gem::Version.new("0.4.2"))
+        end
+
+        context "when more than one locked line is independently updateable" do
+          let(:dependencies) do
+            [
+              Dependabot::Dependency.new(
+                name: "getrandom",
+                version: "0.2.18",
+                previous_version: "0.2.17",
+                requirements: [],
+                previous_requirements: [],
+                package_manager: "cargo"
+              ),
+              dependency
+            ]
+          end
+          let(:commands) { [] }
+
+          before do
+            allow(updater).to receive(:run_cargo_command) do |command, **|
+              commands << command
+
+              content = File.read("Cargo.lock")
+              if command.include?("getrandom:0.2.17")
+                content = content.sub(
+                  %(name = "getrandom"\nversion = "0.2.17"),
+                  %(name = "getrandom"\nversion = "0.2.18")
+                )
+              end
+              if command.include?("getrandom:0.4.2")
+                content = content.sub(
+                  %(name = "getrandom"\nversion = "0.4.2"),
+                  %(name = "getrandom"\nversion = "0.4.3")
+                )
+              end
+              File.write("Cargo.lock", content)
+            end
+          end
+
+          it "applies each exact package update" do
+            expect(updated_lockfile_content).to include(%(name = "getrandom"\nversion = "0.2.18"))
+            expect(updated_lockfile_content).to include(%(name = "getrandom"\nversion = "0.4.3"))
+            expect(commands).to eq(
+              ["cargo update -p getrandom:0.2.17", "cargo update -p getrandom:0.4.2"]
+            )
+          end
+        end
+
+        context "when Cargo leaves the requested lower line unchanged" do
+          let(:dependency_version) { "0.2.18" }
+          let(:dependency_previous_version) { "0.2.17" }
+
+          before do
+            allow(updater).to receive(:run_cargo_command)
+          end
+
+          it "rejects the unchanged package even though a higher line exists" do
+            expect { updated_lockfile_content }.to raise_error("Failed to update getrandom!")
+          end
         end
       end
 
