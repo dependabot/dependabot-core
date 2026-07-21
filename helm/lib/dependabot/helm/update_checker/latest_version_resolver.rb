@@ -3,15 +3,14 @@
 
 require "dependabot/helm/package/package_details_fetcher"
 require "sorbet-runtime"
-require "dependabot/git_commit_checker"
+require "dependabot/git_tag_with_detail"
+require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/helm/version"
 
 module Dependabot
   module Helm
     class LatestVersionResolver
       extend T::Sig
-
-      DAY_IN_SECONDS = T.let(24 * 60 * 60, Integer)
 
       sig do
         params(
@@ -135,20 +134,24 @@ module Dependabot
         cooldown = @cooldown_options
         return false unless cooldown
 
-        return false if cooldown.nil?
+        released_at = parse_release_date(release_date)
+        return false unless released_at
 
-        # Calculate the number of seconds passed since the release
-        passed_seconds = Time.now.to_i - release_date_to_seconds(release_date)
-        # Check if the release is within the cooldown period
-        passed_seconds < cooldown.default_days * DAY_IN_SECONDS
+        # Delegate the cooldown-window arithmetic to the shared primitive so it
+        # stays consistent with every other ecosystem. helm resolves versions
+        # from heterogeneous chart/OCI tags, so it applies the flat default_days
+        # window rather than a semver-aware one.
+        Dependabot::UpdateCheckers::CooldownCalculation.within_cooldown_window?(
+          released_at, cooldown.default_days
+        )
       end
 
-      sig { params(release_date: String).returns(Integer) }
-      def release_date_to_seconds(release_date)
-        Time.parse(release_date).to_i
+      sig { params(release_date: String).returns(T.nilable(Time)) }
+      def parse_release_date(release_date)
+        Time.parse(release_date)
       rescue ArgumentError => e
         Dependabot.logger.error("Invalid release date format: #{release_date} and error: #{e.message}")
-        0 # Default to 360 days in seconds if parsing fails, so that it will not be in cooldown
+        nil
       end
 
       sig { params(tags_with_release_date: T::Array[GitTagWithDetail]).returns(T.nilable(T::Array[String])) }
