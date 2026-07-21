@@ -150,6 +150,20 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
         expect(result.find { |f| f.name == "external/gradle.lockfile" }.content).to eq("# external lockfile\n")
       end
 
+      it "does not add Gradle's regeneration comment to existing lockfiles" do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+          File.write(
+            File.join(cwd, "gradle.lockfile"),
+            "# root lockfile\n#{described_class::REGENERATION_COMMENT}\nupdated=1\n"
+          )
+        end
+
+        result = lockfile_updater.update_lockfiles(root_buildfile)
+
+        expect(result.find { |f| f.name == "gradle.lockfile" }.content)
+          .to eq("# root lockfile\nupdated=1\n")
+      end
+
       context "when a local gradlew script is available" do
         let(:dependency_files) do
           [

@@ -15,6 +15,7 @@ module Dependabot
         extend T::Sig
 
         INIT_SCRIPT_TASK_NAME = T.let("dependabotResolveAll", String)
+        REGENERATION_COMMENT = "# To regenerate this file, run: ./gradlew :app:dependencies --write-locks"
 
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
         def initialize(dependency_files:)
@@ -113,7 +114,7 @@ module Dependabot
               next
             end
 
-            content = File.read(lockfile_path)
+            content = normalize_generated_content(File.read(lockfile_path), file.content)
             next if content == file.content
 
             tmp_file = file.dup
@@ -132,6 +133,13 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig { params(content: String, original_content: T.nilable(String)).returns(String) }
+        def normalize_generated_content(content, original_content)
+          return content if original_content&.include?(REGENERATION_COMMENT)
+
+          content.lines.reject { |line| line.strip == REGENERATION_COMMENT }.join
+        end
 
         sig { params(file_path: String, root_dir: String).returns(T::Boolean) }
         def path_under_root?(file_path, root_dir)
