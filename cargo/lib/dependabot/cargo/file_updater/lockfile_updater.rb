@@ -693,7 +693,15 @@ module Dependabot
           entries.select! { |entry| entry.match?(/^name = "#{Regexp.escape(dependency.name)}"$/) }
 
           source = dependency.metadata[:cargo_package_source]
-          entries.select! { |entry| entry.include?(%(source = "#{source}")) } if source
+          if source
+            entries.select! { |entry| entry.include?(%(source = "#{source}")) }
+          else
+            # Dependencies on this path are always registry-sourced (git
+            # dependencies take the SHA path), so without an exact source
+            # identity scope to registry entries: a same-version copy from a
+            # git source must not satisfy the validation checks.
+            entries.select! { |entry| entry.match?(/^source = "registry\+/) }
+          end
           entries
         end
 

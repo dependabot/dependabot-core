@@ -407,6 +407,25 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           end
         end
 
+        context "when only the git line moved to the desired version" do
+          before do
+            allow(updater).to receive(:run_cargo_command) do
+              content = File.read("Cargo.lock")
+              File.write(
+                "Cargo.lock",
+                content.sub(
+                  %(version = "1.0.103"\nsource = "git+),
+                  %(version = "1.0.104"\nsource = "git+)
+                )
+              )
+            end
+          end
+
+          it "rejects the update of the wrong source's line" do
+            expect { updated_lockfile_content }.to raise_error("Failed to update anyhow!")
+          end
+        end
+
         context "when only the git copy carries the desired version" do
           let(:dependency) do
             Dependabot::Dependency.new(
