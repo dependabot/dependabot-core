@@ -22,22 +22,18 @@ module Dependabot
       def up_to_date?
         return super unless multiple_locked_versions?
 
-        locked_version_checkers.all? do |checker|
+        locked_version_results(true) do |checker|
           checker.up_to_date? || checker.latest_resolvable_version&.to_s == checker.dependency.version
-        rescue Dependabot::AllVersionsIgnored
-          true
-        end
+        end.all?
       end
 
       sig { override.params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Boolean) }
       def can_update?(requirements_to_unlock:)
         return super unless multiple_locked_versions?
 
-        locked_version_checkers.any? do |checker|
+        locked_version_results(false) do |checker|
           checker.can_update?(requirements_to_unlock: requirements_to_unlock)
-        rescue Dependabot::AllVersionsIgnored
-          false
-        end
+        end.any?
       end
 
       sig do
@@ -47,11 +43,9 @@ module Dependabot
       def updated_dependencies(requirements_to_unlock:)
         return super unless multiple_locked_versions?
 
-        locked_version_checkers.flat_map do |checker|
+        locked_version_results([]) do |checker|
           checker.updated_dependencies(requirements_to_unlock: requirements_to_unlock)
-        rescue Dependabot::AllVersionsIgnored
-          []
-        end
+        end.flatten
       end
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
@@ -426,6 +420,30 @@ module Dependabot
           end,
           T.nilable(T::Array[Dependabot::Cargo::UpdateChecker])
         )
+      end
+
+      # Evaluates the block for every locked-line checker, substituting
+      # ignored_result for lines whose updates are all ignored. Re-raises
+      # AllVersionsIgnored when every line is ignored so the aggregate result
+      # cannot mask an entirely ignored dependency.
+      sig do
+        type_parameters(:U)
+          .params(
+            ignored_result: T.type_parameter(:U),
+            _blk: T.proc.params(checker: Dependabot::Cargo::UpdateChecker).returns(T.type_parameter(:U))
+          ).returns(T::Array[T.type_parameter(:U)])
+      end
+      def locked_version_results(ignored_result, &_blk)
+        ignored_count = 0
+        results = locked_version_checkers.map do |checker|
+          yield(checker)
+        rescue Dependabot::AllVersionsIgnored
+          ignored_count += 1
+          ignored_result
+        end
+        raise Dependabot::AllVersionsIgnored if ignored_count.positive? && ignored_count == results.length
+
+        results
       end
 
       sig { returns(T::Array[Dependabot::Dependency]) }

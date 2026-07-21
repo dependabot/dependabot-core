@@ -344,6 +344,44 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         end
       end
 
+      context "when the previous version also exists from another source" do
+        let(:manifest_fixture_name) { "duplicate_source_versions" }
+        let(:lockfile_fixture_name) { "duplicate_source_versions" }
+        let(:dependency_name) { "anyhow" }
+        let(:dependency_version) { "1.0.104" }
+        let(:dependency_previous_version) { "1.0.103" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        before do
+          allow(updater).to receive(:run_cargo_command) do
+            content = File.read("Cargo.lock")
+            File.write(
+              "Cargo.lock",
+              content.sub(
+                %(name = "anyhow"\nversion = "1.0.103"\nsource = "registry),
+                %(name = "anyhow"\nversion = "1.0.104"\nsource = "registry)
+              )
+            )
+          end
+        end
+
+        it "accepts the update when a git copy of the previous version remains" do
+          expect(updated_lockfile_content).to include(%(name = "anyhow"\nversion = "1.0.104"\nsource = "registry))
+          expect(updated_lockfile_content).to include(%(version = "1.0.103"\nsource = "git+))
+        end
+
+        context "when Cargo leaves the registry line unchanged" do
+          before do
+            allow(updater).to receive(:run_cargo_command)
+          end
+
+          it "still rejects the unchanged package" do
+            expect { updated_lockfile_content }.to raise_error("Failed to update anyhow!")
+          end
+        end
+      end
+
       context "with an old format lockfile" do
         let(:manifest_fixture_name) { "old_lockfile" }
         let(:lockfile_fixture_name) { "old_lockfile" }

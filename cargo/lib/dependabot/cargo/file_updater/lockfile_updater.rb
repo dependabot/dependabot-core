@@ -677,18 +677,21 @@ module Dependabot
           return true unless previous_version
           return true if previous_version == dependency.version || git_dependency?
 
-          original_content = T.must(lockfile.content)
-          return true unless package_version_present?(original_content, dependency, previous_version)
+          # The same name and version can legitimately remain from another
+          # source (e.g. a git fork pinned at the released version), so require
+          # the entry count to decrease rather than reach zero.
+          original_count = package_version_count(T.must(lockfile.content), dependency, previous_version)
+          return true if original_count.zero?
 
-          !package_version_present?(updated_lockfile, dependency, previous_version)
+          package_version_count(updated_lockfile, dependency, previous_version) < original_count
         end
 
         sig do
           params(lockfile_content: String, dependency: Dependabot::Dependency, version: String)
-            .returns(T::Boolean)
+            .returns(Integer)
         end
-        def package_version_present?(lockfile_content, dependency, version)
-          dependency_lockfile_entries(lockfile_content, dependency).any? do |entry|
+        def package_version_count(lockfile_content, dependency, version)
+          dependency_lockfile_entries(lockfile_content, dependency).count do |entry|
             entry.match?(/^version = "#{Regexp.escape(version)}"$/)
           end
         end

@@ -708,6 +708,22 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
         end
       end
 
+      context "when all updates for every locked line are ignored" do
+        let(:raise_on_ignored) { true }
+
+        before do
+          allow(Dependabot::Cargo::UpdateChecker::LatestVersionFinder).to receive(:new) do
+            finder = instance_double(Dependabot::Cargo::UpdateChecker::LatestVersionFinder)
+            allow(finder).to receive(:latest_version).and_raise(Dependabot::AllVersionsIgnored)
+            finder
+          end
+        end
+
+        it "re-raises so the ignored status is reported" do
+          expect { checker.up_to_date? }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+
       context "when performing a security update" do
         let(:security_advisories) do
           [
