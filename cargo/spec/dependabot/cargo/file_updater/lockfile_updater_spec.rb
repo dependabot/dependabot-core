@@ -328,6 +328,32 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
               ["cargo update -p getrandom:0.2.17", "cargo update -p getrandom:0.4.2"]
             )
           end
+
+          context "when the first command already resolves the second line" do
+            before do
+              allow(updater).to receive(:run_cargo_command) do |command, **|
+                commands << command
+                next unless command.include?("getrandom:0.2.17")
+
+                content = File.read("Cargo.lock")
+                content = content.sub(
+                  %(name = "getrandom"\nversion = "0.2.17"),
+                  %(name = "getrandom"\nversion = "0.2.18")
+                )
+                content = content.sub(
+                  %(name = "getrandom"\nversion = "0.4.2"),
+                  %(name = "getrandom"\nversion = "0.4.3")
+                )
+                File.write("Cargo.lock", content)
+              end
+            end
+
+            it "skips the consumed package specification" do
+              expect(updated_lockfile_content).to include(%(name = "getrandom"\nversion = "0.2.18"))
+              expect(updated_lockfile_content).to include(%(name = "getrandom"\nversion = "0.4.3"))
+              expect(commands).to eq(["cargo update -p getrandom:0.2.17"])
+            end
+          end
         end
 
         context "when Cargo leaves the requested lower line unchanged" do

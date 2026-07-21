@@ -84,12 +84,27 @@ module Dependabot
             # so without doing an install (so it's fast).
             dependencies.each do |dependency_to_update|
               @current_dependency = dependency_to_update
+              next if previous_line_already_replaced?
+
               run_cargo_command(
                 "cargo update -p #{dependency_spec}",
                 fingerprint: "cargo update -p <dependency_spec>"
               )
             end
           end
+        end
+
+        # An earlier command in this run may already have resolved this
+        # dependency's line, in which case its package ID no longer exists and
+        # `cargo update -p` would fail hard. Skip the command and let
+        # validate_updates check the outcome.
+        sig { returns(T::Boolean) }
+        def previous_line_already_replaced?
+          previous_version = dependency.previous_version
+          return false unless previous_version
+          return false if previous_version == dependency.version || git_dependency?
+
+          previous_package_replaced?(File.read("Cargo.lock"), dependency)
         end
 
         sig { params(updated_lockfile: String).returns(String) }
