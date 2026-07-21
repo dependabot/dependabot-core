@@ -420,6 +420,7 @@ module Dependabot
             .gsub(/#{name_regex}-/i, "")
             .split(/-|\.tar\.|\.zip|\.whl/)
             .first
+            &.strip
         end
 
         sig do
