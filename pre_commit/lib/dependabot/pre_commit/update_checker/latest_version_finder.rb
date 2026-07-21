@@ -346,7 +346,11 @@ module Dependabot
 
         sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
         def current_version
-          return dependency.source_details(allowed_types: ["git"])&.fetch(:ref) if release_type_sha?
+          if release_type_sha?
+            source = dependency.source_details(allowed_types: ["git"])
+            ref = source && (source[:ref] || source["ref"])
+            return ref if ref.is_a?(String)
+          end
 
           # numeric_version handles plain versions like "4.4.0"
           numeric = dependency.numeric_version

@@ -9,9 +9,18 @@ module Dependabot
   class Dependency
     extend T::Sig
 
+    RequirementInput = T.type_alias do
+      T.any(
+        Dependabot::DependencyRequirement,
+        T::Hash[Dependabot::DependencyRequirement::Key, T.anything]
+      )
+    end
+    Metadata = T.type_alias { T::Hash[Symbol, Object] }
+    SubdependencyMetadata = T.type_alias { T::Hash[Symbol, Object] }
+
     @production_checks = T.let(
       {},
-      T::Hash[String, T.proc.params(arg0: T::Array[T.untyped]).returns(T::Boolean)]
+      T::Hash[String, T.proc.params(arg0: T::Array[String]).returns(T::Boolean)]
     )
     @display_name_builders = T.let({}, T::Hash[String, T.proc.params(arg0: String).returns(String)])
     @name_normalisers = T.let({}, T::Hash[String, T.proc.params(arg0: String).returns(String)])
@@ -21,7 +30,7 @@ module Dependabot
     )
 
     sig do
-      params(package_manager: String).returns(T.proc.params(arg0: T::Array[T.untyped]).returns(T::Boolean))
+      params(package_manager: String).returns(T.proc.params(arg0: T::Array[String]).returns(T::Boolean))
     end
     def self.production_check_for_package_manager(package_manager)
       production_check = @production_checks[package_manager]
@@ -33,9 +42,9 @@ module Dependabot
     sig do
       params(
         package_manager: String,
-        production_check: T.proc.params(arg0: T::Array[T.untyped]).returns(T::Boolean)
+        production_check: T.proc.params(arg0: T::Array[String]).returns(T::Boolean)
       )
-        .returns(T.proc.params(arg0: T::Array[T.untyped]).returns(T::Boolean))
+        .returns(T.proc.params(arg0: T::Array[String]).returns(T::Boolean))
     end
     def self.register_production_check(package_manager, production_check)
       @production_checks[package_manager] = production_check
@@ -106,10 +115,10 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     attr_accessor :directory
 
-    sig { returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
+    sig { returns(T.nilable(T::Array[SubdependencyMetadata])) }
     attr_reader :subdependency_metadata
 
-    sig { returns(T::Hash[Symbol, T.untyped]) }
+    sig { returns(Metadata) }
     attr_reader :metadata
 
     # Attribution metadata for group membership tracking
@@ -129,16 +138,17 @@ module Dependabot
     sig do
       params(
         name: String,
-        requirements: T::Array[T::Hash[T.any(Symbol, String), T.untyped]],
+        requirements: T::Array[RequirementInput],
         package_manager: String,
         # TODO: Make version a Dependabot::Version everywhere
         version: T.nilable(T.any(String, Dependabot::Version)),
         previous_version: T.nilable(String),
-        previous_requirements: T.nilable(T::Array[T::Hash[T.any(Symbol, String), T.untyped]]),
+        previous_requirements: T.nilable(T::Array[RequirementInput]),
         directory: T.nilable(String),
-        subdependency_metadata: T.nilable(T::Array[T::Hash[T.any(Symbol, String), String]]),
+        subdependency_metadata:
+          T.nilable(T::Array[T::Hash[Dependabot::DependencyRequirement::Key, T.anything]]),
         removed: T::Boolean,
-        metadata: T.nilable(T::Hash[T.any(Symbol, String), String])
+        metadata: T.nilable(T::Hash[Dependabot::DependencyRequirement::Key, T.anything])
       ).void
     end
     def initialize(
@@ -163,13 +173,13 @@ module Dependabot
       )
       @version = nil if @version == ""
       @requirements = T.let(
-        requirements.map { |req| DependencyRequirement.create(req) },
+        requirements.map { |req| parse_requirement(req) },
         T::Array[Dependabot::DependencyRequirement]
       )
       @previous_version = previous_version
       @previous_version = nil if @previous_version == ""
       @previous_requirements = T.let(
-        previous_requirements&.map { |req| DependencyRequirement.create(req) },
+        previous_requirements&.map { |req| parse_requirement(req) },
         T.nilable(T::Array[Dependabot::DependencyRequirement])
       )
       @package_manager = package_manager
@@ -177,11 +187,11 @@ module Dependabot
       unless top_level? || subdependency_metadata == []
         @subdependency_metadata = T.let(
           subdependency_metadata&.map { |h| symbolize_keys(h) },
-          T.nilable(T::Array[T::Hash[Symbol, T.untyped]])
+          T.nilable(T::Array[SubdependencyMetadata])
         )
       end
       @removed = removed
-      @metadata = T.let(symbolize_keys(metadata || {}), T::Hash[Symbol, T.untyped])
+      @metadata = T.let(symbolize_keys(metadata || {}), Metadata)
       check_values
     end
     # rubocop:enable Metrics/PerceivedComplexity
@@ -203,19 +213,23 @@ module Dependabot
       @numeric_version ||= T.let(version_class.new(T.must(version)), T.nilable(Dependabot::Version))
     end
 
-    sig { returns(T::Hash[String, T.untyped]) }
+    sig { returns(T::Hash[String, Object]) }
     def to_h
-      {
-        "name" => name,
-        "version" => version,
-        "requirements" => requirements,
-        "previous_version" => previous_version,
-        "previous_requirements" => previous_requirements,
-        "directory" => directory,
-        "package_manager" => package_manager,
-        "subdependency_metadata" => subdependency_metadata,
-        "removed" => removed? || nil
-      }.compact
+      result = T.let(
+        {
+          "name" => name,
+          "version" => version,
+          "requirements" => requirements.map(&:to_h),
+          "previous_version" => previous_version,
+          "previous_requirements" => previous_requirements&.map(&:to_h),
+          "directory" => directory,
+          "package_manager" => package_manager,
+          "subdependency_metadata" => subdependency_metadata,
+          "removed" => removed? || nil
+        },
+        T::Hash[String, Object]
+      )
+      result.compact
     end
 
     sig { returns(T::Boolean) }
@@ -227,7 +241,7 @@ module Dependabot
     def production?
       return subdependency_production_check unless top_level?
 
-      groups = requirements.flat_map { |r| r.fetch(:groups).map(&:to_s) }
+      groups = requirements.flat_map { |requirement| (requirement.groups || []).map(&:to_s) }
 
       self.class
           .production_check_for_package_manager(package_manager)
@@ -277,7 +291,7 @@ module Dependabot
     sig { params(requirements: T::Array[Dependabot::DependencyRequirement]).returns(T.nilable(String)) }
     def docker_digest_from_reqs(requirements)
       requirements
-        .filter_map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }
+        .filter_map { |requirement| string_detail(requirement.source, "digest") }
         .first
     end
 
@@ -285,16 +299,16 @@ module Dependabot
     def previous_ref
       return nil if previous_requirements.nil?
 
-      previous_refs = T.must(previous_requirements).filter_map do |r|
-        r.dig(:source, "ref") || r.dig(:source, :ref)
+      previous_refs = T.must(previous_requirements).filter_map do |requirement|
+        string_detail(requirement.source, "ref")
       end.uniq
       previous_refs.first if previous_refs.one?
     end
 
     sig { returns(T.nilable(String)) }
     def new_ref
-      new_refs = requirements.filter_map do |r|
-        r.dig(:source, "ref") || r.dig(:source, :ref)
+      new_refs = requirements.filter_map do |requirement|
+        string_detail(requirement.source, "ref")
       end.uniq
       new_refs.first if new_refs.one?
     end
@@ -311,7 +325,15 @@ module Dependabot
       all_versions = metadata[:all_versions]
       return [version].compact unless all_versions
 
-      all_versions.filter_map(&:version)
+      raise TypeError, "all_versions metadata must be an array of dependencies" unless all_versions.is_a?(Array)
+
+      all_versions.filter_map do |dependency|
+        case dependency
+        when Dependency then dependency.version
+        when String then dependency
+        else raise TypeError, "all_versions metadata must contain dependencies or version strings"
+        end
+      end
     end
 
     # This dependency is being indirectly updated by an update to another
@@ -319,7 +341,12 @@ module Dependabot
     # surface it to the user in the PR.
     sig { returns(T.nilable(T::Boolean)) }
     def informational_only?
-      metadata[:information_only]
+      value = metadata[:information_only]
+      case value
+      when nil then nil
+      when true, false then value
+      else raise TypeError, "information_only metadata must be a boolean"
+      end
     end
 
     sig { params(other: T.anything).returns(T::Boolean) }
@@ -344,7 +371,10 @@ module Dependabot
 
     sig { returns(T::Array[Dependabot::DependencyRequirement]) }
     def specific_requirements
-      requirements.select { |r| requirement_class.new(r.requirement).specific? }
+      requirements.select do |requirement|
+        value = requirement.requirement
+        value && requirement_class.new(value).specific?
+      end
     end
 
     sig { returns(T.class_of(Dependabot::Requirement)) }
@@ -361,7 +391,7 @@ module Dependabot
       params(
         allowed_types: T.nilable(T::Array[String])
       )
-        .returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped]))
+        .returns(T.nilable(Dependabot::DependencyRequirement::Details))
     end
     def source_details(allowed_types: nil)
       sources = all_sources.uniq.compact
@@ -381,15 +411,20 @@ module Dependabot
       details = source_details
       return "default" if details.nil?
 
-      details[:type] || details.fetch("type")
+      type = details[:type] || details["type"]
+      raise TypeError, "dependency source type must be a string" unless type.is_a?(String)
+
+      type
     end
 
-    sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+    sig { returns(T::Array[Dependabot::DependencyRequirement::Details]) }
     def all_sources
       if top_level?
-        requirements.map { |requirement| requirement.fetch(:source) }
+        requirements.filter_map(&:source)
       elsif subdependency_metadata
-        T.must(subdependency_metadata).filter_map { |data| data[:source] }
+        T.must(subdependency_metadata).filter_map do |data|
+          details_hash(data[:source], "subdependency source")
+        end
       else
         []
       end
@@ -438,32 +473,7 @@ module Dependabot
 
     sig { void }
     def check_values
-      check_requirement_fields
       check_subdependency_metadata
-    end
-
-    sig { void }
-    def check_requirement_fields
-      requirement_fields = [requirements, previous_requirements].compact
-      unless requirement_fields.all?(Array) &&
-             requirement_fields.flatten.all?(Hash)
-        raise ArgumentError, "requirements must be an array of hashes"
-      end
-
-      required_keys = %i(requirement file groups source)
-      optional_keys = %i(metadata)
-      unless requirement_fields.flatten
-                               .all? { |r| required_keys.sort == (r.keys - optional_keys).sort }
-        raise ArgumentError,
-              "each requirement must have the following " \
-              "required keys: #{required_keys.join(', ')}." \
-              "Optionally, it may have the following keys: " \
-              "#{optional_keys.join(', ')}."
-      end
-
-      return if requirement_fields.flatten.none? { |r| r[:requirement] == "" }
-
-      raise ArgumentError, "blank strings must not be provided as requirements"
     end
 
     sig { void }
@@ -476,9 +486,60 @@ module Dependabot
       end
     end
 
-    sig { params(hash: T::Hash[T.any(Symbol, String), T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+    sig do
+      params(
+        requirement: RequirementInput
+      ).returns(Dependabot::DependencyRequirement)
+    end
+    def parse_requirement(requirement)
+      return requirement if requirement.is_a?(Dependabot::DependencyRequirement)
+
+      Dependabot::DependencyRequirement.from_hash(requirement)
+    end
+
+    sig do
+      params(
+        hash: T::Hash[Dependabot::DependencyRequirement::Key, T.anything]
+      ).returns(T::Hash[Symbol, Object])
+    end
     def symbolize_keys(hash)
-      hash.keys.to_h { |k| [k.to_sym, hash[k]] }
+      hash.each_with_object(T.let({}, T::Hash[Symbol, Object])) do |(raw_key, raw_value), result|
+        key = T.let(raw_key, Object)
+        raise TypeError, "metadata keys must be strings or symbols" unless key.is_a?(String) || key.is_a?(Symbol)
+
+        result[key.to_sym] = T.cast(raw_value, Object)
+      end
+    end
+
+    sig do
+      params(
+        value: T.nilable(Object),
+        name: String
+      ).returns(T.nilable(Dependabot::DependencyRequirement::Details))
+    end
+    def details_hash(value, name)
+      return if value.nil?
+      raise TypeError, "#{name} must be a hash" unless value.is_a?(Hash)
+
+      value.each_with_object(T.let({}, Dependabot::DependencyRequirement::Details)) do |(raw_key, raw_value), result|
+        key = T.cast(raw_key, Object)
+        raise TypeError, "#{name} keys must be strings or symbols" unless key.is_a?(String) || key.is_a?(Symbol)
+
+        result[key] = T.cast(raw_value, Object)
+      end
+    end
+
+    sig do
+      params(
+        details: T.nilable(Dependabot::DependencyRequirement::Details),
+        key: String
+      ).returns(T.nilable(String))
+    end
+    def string_detail(details, key)
+      return unless details
+
+      value = details[key] || details[key.to_sym]
+      value if value.is_a?(String)
     end
   end
 end

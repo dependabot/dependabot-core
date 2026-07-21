@@ -47,13 +47,17 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
   let(:latest_resolvable_previous_version) { dependency.version }
 
   before do
+    normalized_updated_requirements = updated_requirements.map do |requirement|
+      Dependabot::DependencyRequirement.create(requirement)
+    end
+
     allow(updater_instance)
       .to receive_messages(
         latest_version: latest_version,
         latest_resolvable_version: latest_resolvable_version,
         latest_resolvable_version_with_no_unlock: latest_resolvable_version_with_no_unlock,
         latest_resolvable_previous_version: latest_resolvable_previous_version,
-        updated_requirements: updated_requirements
+        updated_requirements: normalized_updated_requirements
       )
   end
 

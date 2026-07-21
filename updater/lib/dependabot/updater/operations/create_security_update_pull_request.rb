@@ -219,9 +219,19 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
         sig { params(dependency: Dependabot::Dependency).returns(Dependabot::Dependency) }
         def vulnerable_version(dependency)
-          return dependency if dependency.metadata[:all_versions].one?
+          raw_versions = dependency.metadata[:all_versions]
+          raise TypeError, "all_versions metadata must be an array of dependencies" unless raw_versions.is_a?(Array)
+          return dependency if raw_versions.one?
 
-          vulnerable_dependency = dependency.metadata[:all_versions].find do |dep|
+          all_versions = raw_versions.map do |version_dependency|
+            unless version_dependency.is_a?(Dependabot::Dependency)
+              raise TypeError, "all_versions metadata must contain dependencies"
+            end
+
+            version_dependency
+          end
+
+          vulnerable_dependency = all_versions.find do |dep|
             checker = update_checker_for(dep)
             checker.version_class.correct?(dep.version) && checker.vulnerable?
           end

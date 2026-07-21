@@ -279,7 +279,7 @@ module Dependabot
       sig { returns(String) }
       def dependency_name_group_pr_name
         dep = T.must(dependencies.first)
-        directories = dep.metadata[:updated_directories] || [dep.metadata[:directory]].compact
+        directories = dependency_directories(dep)
 
         if directories.count > 1
           "bump #{dep.name} across #{directories.count} directories"
@@ -571,7 +571,7 @@ module Dependabot
       sig { returns(String) }
       def dependency_name_group_intro
         dep = T.must(dependencies.first)
-        directories = dep.metadata[:updated_directories] || [dep.metadata[:directory]].compact
+        directories = dependency_directories(dep)
 
         msg = "Bumps #{dependency_links.first}"
 
@@ -593,6 +593,21 @@ module Dependabot
 
         msg += "\n"
         msg
+      end
+
+      sig { params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
+      def dependency_directories(dependency)
+        updated_directories = dependency.metadata[:updated_directories]
+        if updated_directories
+          unless updated_directories.is_a?(Array) && updated_directories.all?(String)
+            raise TypeError, "updated_directories metadata must be an array of strings"
+          end
+
+          return updated_directories.map { |directory| T.cast(directory, String) }
+        end
+
+        directory = dependency.metadata[:directory]
+        directory.is_a?(String) ? [directory] : []
       end
 
       sig { returns(String) }

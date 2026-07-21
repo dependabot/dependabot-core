@@ -32,7 +32,12 @@ module Dependabot
       # metadata, but in most cases this will be empty.
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def fetch_subdependencies(dependency)
-        dependency.metadata.fetch(:depends_on, [])
+        depends_on = dependency.metadata.fetch(:depends_on, [])
+        unless depends_on.is_a?(Array) && depends_on.all?(String)
+          raise TypeError, "depends_on metadata must be an array of strings"
+        end
+
+        depends_on.map { |name| T.cast(name, String) }
       end
 
       # TODO: Delegate this to ecosystem-specific base classes

@@ -161,10 +161,14 @@ module Dependabot
 
         sig { params(tag_info: T::Hash[Symbol, T.untyped]).returns(Dependabot::Package::PackageRelease) }
         def create_registry_package_release(tag_info)
+          source = dependency.source_details
+          raw_url = source && (source[:url] || source["url"])
+          url = raw_url if raw_url.is_a?(String)
+
           Dependabot::Package::PackageRelease.new(
             version: Dependabot::Vcpkg::Version.new(tag_info.fetch(:tag)),
             tag: tag_info.fetch(:tag),
-            url: dependency.source_details&.dig(:url),
+            url: url,
             released_at: extract_release_date_from_tag(tag_info.fetch(:tag)),
             details: {
               "commit_sha" => tag_info.fetch(:commit_sha),

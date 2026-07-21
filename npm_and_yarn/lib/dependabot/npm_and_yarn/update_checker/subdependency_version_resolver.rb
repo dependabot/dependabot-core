@@ -147,9 +147,14 @@ module Dependabot
           return unless Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
           return unless current_version
 
-          all_versions = parsed_dep.metadata[:all_versions]
-          return unless all_versions&.any?
+          raw_versions = parsed_dep.metadata[:all_versions]
+          return unless raw_versions.is_a?(Array) && raw_versions.any?
 
+          all_versions = raw_versions.map do |dependency|
+            raise TypeError, "all_versions metadata must contain dependencies" unless dependency.is_a?(Dependency)
+
+            dependency
+          end
           best_candidate_version(all_versions, current_version)
         end
 

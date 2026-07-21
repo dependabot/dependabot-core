@@ -103,9 +103,13 @@ module Dependabot
 
         sig { returns(Dependabot::GitMetadataFetcher) }
         def git_metadata_fetcher
+          source = dependency.source_details
+          raw_url = source && (source[:url] || source["url"])
+          raise TypeError, "dependency source URL must be a string" unless raw_url.is_a?(String)
+
           @git_metadata_fetcher ||= T.let(
             Dependabot::GitMetadataFetcher.new(
-              url: dependency.source_details&.fetch(:url, nil),
+              url: raw_url,
               credentials: credentials
             ),
             T.nilable(Dependabot::GitMetadataFetcher)

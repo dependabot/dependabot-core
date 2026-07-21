@@ -38,9 +38,7 @@ module Dependabot
         prepare! unless prepared
 
         @dependencies.each_with_object({}) do |dep, resolved|
-          all_versions = dep.metadata[:all_versions] || [dep]
-
-          all_versions.each do |version_dep|
+          dependency_versions(dep).each do |version_dep|
             purl = build_purl(version_dep)
             next if resolved.key?(purl)
 
@@ -69,6 +67,21 @@ module Dependabot
       end
 
       private
+
+      sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::Dependency]) }
+      def dependency_versions(dependency)
+        raw_versions = dependency.metadata[:all_versions]
+        return [dependency] if raw_versions.nil?
+        raise TypeError, "all_versions metadata must be an array of dependencies" unless raw_versions.is_a?(Array)
+
+        raw_versions.map do |version_dependency|
+          unless version_dependency.is_a?(Dependabot::Dependency)
+            raise TypeError, "all_versions metadata must contain dependencies"
+          end
+
+          version_dependency
+        end
+      end
 
       sig { returns(Dependabot::DependencyFile) }
       def package_json

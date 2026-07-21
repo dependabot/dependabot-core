@@ -120,7 +120,11 @@ module Dependabot
 
         sig { returns(String) }
         def url
-          dependency.source_details&.fetch(:url, nil)
+          source = dependency.source_details
+          raw_url = source && (source[:url] || source["url"])
+          raise TypeError, "dependency source URL must be a string" unless raw_url.is_a?(String)
+
+          raw_url
         end
 
         sig { returns(T::Hash[String, T::Array[String]]) }

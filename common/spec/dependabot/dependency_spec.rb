@@ -398,7 +398,10 @@ RSpec.describe Dependabot::Dependency do
       before do
         described_class.register_humanized_previous_version_builder(
           "test_pm",
-          ->(dep) { dep.previous_requirements&.dig(0, :metadata, :comment_version) }
+          lambda do |dep|
+            value = dep.previous_requirements&.first&.metadata&.[](:comment_version)
+            value if value.is_a?(String)
+          end
         )
       end
 

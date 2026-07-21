@@ -36,7 +36,10 @@ module Dependabot
             File.write(manifest.name, manifest.content)
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              try_lockfile_update(dependency.metadata[:identity])
+              identity = dependency.metadata[:identity]
+              raise TypeError, "dependency identity must be a string" unless identity.is_a?(String)
+
+              try_lockfile_update(identity)
 
               File.read("Package.resolved")
             end

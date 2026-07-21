@@ -379,7 +379,7 @@ module Dependabot
           return false
         end
 
-        updated_requirements.none? { |r| r[:requirement] == :unfixable }
+        updated_requirements.none?(&:unfixable?)
       end
 
       sig { returns(T::Boolean) }
@@ -415,7 +415,7 @@ module Dependabot
       def version_from_requirements
         @version_from_requirements ||=
           T.let(
-            dependency.requirements.filter_map { |r| r.fetch(:requirement) }
+            dependency.requirements.filter_map(&:requirement)
                       .flat_map { |req_str| requirement_class.requirements_array(req_str) }
                       .flat_map(&:requirements)
                       .reject { |req_array| req_array.first.start_with?("<") }
@@ -429,7 +429,7 @@ module Dependabot
       def requirements_can_update?
         return false if changed_requirements.none?
 
-        changed_requirements.none? { |r| r[:requirement] == :unfixable }
+        changed_requirements.none?(&:unfixable?)
       end
     end
   end

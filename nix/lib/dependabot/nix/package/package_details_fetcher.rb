@@ -168,12 +168,16 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def source_url
-          dependency.source_details(allowed_types: ["git"])&.fetch(:url, nil)
+          source = dependency.source_details(allowed_types: ["git"])
+          url = source && (source[:url] || source["url"])
+          url if url.is_a?(String)
         end
 
         sig { returns(T.nilable(String)) }
         def branch_ref
-          dependency.source_details(allowed_types: ["git"])&.fetch(:ref, nil)
+          source = dependency.source_details(allowed_types: ["git"])
+          ref = source && (source[:ref] || source["ref"])
+          ref if ref.is_a?(String)
         end
 
         sig { returns(Dependabot::Clients::GithubWithRetries) }

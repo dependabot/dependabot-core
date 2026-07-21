@@ -35,7 +35,8 @@ module Dependabot
       def find_source_from_git_url
         info = dependency.source_details
 
-        url = info&.fetch(:url, nil) || info&.fetch("url")
+        raw_url = info && (info[:url] || info["url"])
+        url = raw_url if raw_url.is_a?(String)
         Source.from_url(url)
       end
 
