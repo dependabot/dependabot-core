@@ -577,7 +577,7 @@ RSpec.shared_examples "a Docker update checker" do
       let(:source) { { tag: version } }
 
       it "updates the tag" do
-        expect(checker.updated_requirements)
+        expect(checker.updated_requirements.map(&:to_h))
           .to eq(
             [{
               requirement: nil,
@@ -603,7 +603,7 @@ RSpec.shared_examples "a Docker update checker" do
       end
 
       it "updates the digest" do
-        expect(checker.updated_requirements)
+        expect(checker.updated_requirements.map(&:to_h))
           .to eq(
             [{
               requirement: nil,
@@ -629,7 +629,7 @@ RSpec.shared_examples "a Docker update checker" do
       end
 
       it "updates the tag and the digest" do
-        expect(checker.updated_requirements)
+        expect(checker.updated_requirements.map(&:to_h))
           .to eq(
             [{
               requirement: nil,

@@ -134,7 +134,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
 
         it "has a single dependency with the combined requirements" do
           expect(set_of_dependencies.dependencies.count).to eq(1)
-          expect(set_of_dependencies.dependencies.first.requirements)
+          expect(set_of_dependencies.dependencies.first.requirements.map(&:to_h))
             .to contain_exactly(
               { requirement: "1", file: "a", groups: nil, source: nil },
               { requirement: "1", file: "b", groups: nil, source: nil }

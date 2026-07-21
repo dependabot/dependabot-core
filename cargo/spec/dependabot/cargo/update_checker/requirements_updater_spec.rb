@@ -71,7 +71,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
         }
       end
 
-      it { is_expected.to eq(cargo_req) }
+      its(:to_h) { is_expected.to eq(cargo_req) }
 
       context "when asked to update the source" do
         let(:updated_source) { { type: "git", ref: "v1.5.0" } }
@@ -250,7 +250,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
           let(:other_requirement_string) { "^0.*.*" }
 
           it "updates both requirements" do
-            expect(updater.updated_requirements).to contain_exactly(
+            expect(updater.updated_requirements.map(&:to_h)).to contain_exactly(
               {
                 file: "Cargo.toml",
                 requirement: "^1.5.0",
@@ -418,7 +418,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
           let(:other_requirement_string) { "^0.*.*" }
 
           it "updates only the required requirements" do
-            expect(updater.updated_requirements).to contain_exactly(
+            expect(updater.updated_requirements.map(&:to_h)).to contain_exactly(
               {
                 file: "Cargo.toml",
                 requirement: req_string,
@@ -441,7 +441,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
       let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
       it "does not change any requirements" do
-        expect(updater.updated_requirements).to eq(requirements)
+        expect(updater.updated_requirements.map(&:to_h)).to eq(requirements)
       end
     end
   end

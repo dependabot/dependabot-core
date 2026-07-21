@@ -13,7 +13,7 @@ module Dependabot
         sig { params(requirements: T::Array[Dependabot::DependencyRequirement], latest_version: String).void }
         def initialize(requirements:, latest_version:)
           @requirements = T.let(
-            requirements.map { |req| Dependabot::DependencyRequirement.from_hash(req) },
+            requirements,
             T::Array[Dependabot::DependencyRequirement]
           )
           @latest_version = latest_version

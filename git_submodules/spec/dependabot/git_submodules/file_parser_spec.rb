@@ -49,7 +49,7 @@ RSpec.describe Dependabot::GitSubmodules::FileParser do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("about/documents")
         expect(dependency.version).to eq("sha2")
-        expect(dependency.requirements).to eq(
+        expect(dependency.requirements.map(&:to_h)).to eq(
           [{
             requirement: nil,
             file: ".gitmodules",
@@ -72,7 +72,7 @@ RSpec.describe Dependabot::GitSubmodules::FileParser do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("manifesto")
         expect(dependency.version).to eq("sha1")
-        expect(dependency.requirements).to eq(
+        expect(dependency.requirements.map(&:to_h)).to eq(
           [{
             requirement: nil,
             file: ".gitmodules",
@@ -95,7 +95,7 @@ RSpec.describe Dependabot::GitSubmodules::FileParser do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("relative/url")
         expect(dependency.version).to eq("sha3")
-        expect(dependency.requirements).to eq(
+        expect(dependency.requirements.map(&:to_h)).to eq(
           [{
             requirement: nil,
             file: ".gitmodules",

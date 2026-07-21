@@ -39,7 +39,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("co.aikar:acf-paper")
         expect(dependency.version).to eq("0.5.0-SNAPSHOT")
-        expect(dependency.requirements).to eq(
+        expect(dependency.requirements.map(&:to_h)).to eq(
           [{
             requirement: "0.5.0-SNAPSHOT",
             file: "build.gradle",
@@ -81,7 +81,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           expect(dependency.name)
             .to eq("org.jetbrains.kotlin:kotlin-stdlib-jre8")
           expect(dependency.version).to eq("1.1.4-3")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "1.1.4-3",
               file: "build.gradle",
@@ -107,7 +107,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           expect(dependency.version).to eq(
             "be5d2cd6deb8cf3ca2c9a740bdacec816871d4f7"
           )
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "be5d2cd6deb8cf3ca2c9a740bdacec816871d4f7",
               file: "build.gradle",
@@ -136,7 +136,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           expect(dependency.name)
             .to eq("com.github.salomonbrys.kotson:kotson")
           expect(dependency.version).to eq("2.5.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "2.5.0",
               file: "build.gradle",
@@ -221,7 +221,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           expect(dependency.name)
             .to eq("io.grpc:grpc-netty")
           expect(dependency.version).to eq("1.15.1")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "1.15.1",
               file: "build.gradle",
@@ -247,7 +247,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("org.springframework.boot")
           expect(dependency.version).to eq("2.0.5.RELEASE")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "2.0.5.RELEASE",
               file: "build.gradle",
@@ -273,7 +273,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           expect(dependency.name)
             .to eq("com.google.zxing:core")
           expect(dependency.version).to eq("3.3.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "3.3.0",
               file: "build.gradle",
@@ -299,7 +299,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           expect(dependency.name)
             .to eq("org.springframework:spring-web")
           expect(dependency.version).to eq("5.0.2.RELEASE")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "5.0.2.RELEASE",
               file: "build.gradle",
@@ -325,7 +325,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           expect(dependency.name)
             .to eq("com.squareup.leakcanary:leakcanary-android")
           expect(dependency.version).to eq("1.5.4")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "1.5.4",
               file: "build.gradle",
@@ -348,7 +348,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           expect(dependency.name)
             .to eq("com.nhaarman:mockito-kotlin-kt1.1")
           expect(dependency.version).to eq("1.5.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "1.5.0",
               file: "build.gradle",
@@ -379,7 +379,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("co.aikar:acf-paper")
           expect(dependency.version).to eq("0.5.0-SNAPSHOT")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "0.5.0-SNAPSHOT",
               file: "build.gradle",
@@ -418,7 +418,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           expect(dependency.name)
             .to eq("org.jetbrains.kotlinx:kotlinx-coroutines-core")
           expect(dependency.version).to eq("0.19.3")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "0.19.3",
               file: "gradle/dependencies.gradle",
@@ -470,7 +470,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("co.aikar:acf-paper")
           expect(dependency.version).to eq("0.5.0-SNAPSHOT")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "0.5.0-SNAPSHOT",
               file: "build.gradle.kts",
@@ -512,7 +512,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
             expect(dependency.name)
               .to eq("org.jetbrains.kotlin:kotlin-stdlib-jre8")
             expect(dependency.version).to eq("1.2.61")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "1.2.61",
                 file: "build.gradle.kts",
@@ -538,7 +538,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
             expect(dependency.version).to eq(
               "be5d2cd6deb8cf3ca2c9a740bdacec816871d4f7"
             )
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "be5d2cd6deb8cf3ca2c9a740bdacec816871d4f7",
                 file: "build.gradle.kts",
@@ -567,7 +567,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
             expect(dependency.name)
               .to eq("com.github.salomonbrys.kotson:kotson")
             expect(dependency.version).to eq("2.5.0")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "2.5.0",
                 file: "build.gradle.kts",
@@ -595,7 +595,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
             expect(dependency.name)
               .to eq("io.grpc:grpc-netty")
             expect(dependency.version).to eq("1.15.1")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "1.15.1",
                 file: "build.gradle.kts",
@@ -621,7 +621,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("org.springframework.boot")
             expect(dependency.version).to eq("2.0.5.RELEASE")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "2.0.5.RELEASE",
                 file: "build.gradle.kts",
@@ -642,7 +642,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("jvm")
             expect(dependency.version).to eq("1.3.72")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "1.3.72",
                 file: "build.gradle.kts",
@@ -663,7 +663,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("org.unbroken-dome.helm")
             expect(dependency.version).to eq("1.6.0")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "1.6.0",
                 file: "build.gradle.kts",
@@ -689,7 +689,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
             expect(dependency.name)
               .to eq("com.squareup.leakcanary:leakcanary-android")
             expect(dependency.version).to eq("1.5.4")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "1.5.4",
                 file: "build.gradle.kts",
@@ -712,7 +712,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
             expect(dependency.name)
               .to eq("com.nhaarman:mockito-kotlin-kt1.1")
             expect(dependency.version).to eq("1.5.0")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "1.5.0",
                 file: "build.gradle.kts",
@@ -743,7 +743,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("co.aikar:acf-paper")
             expect(dependency.version).to eq("0.5.0-SNAPSHOT")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "0.5.0-SNAPSHOT",
                 file: "build.gradle.kts",
@@ -782,7 +782,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
             expect(dependency.name)
               .to eq("org.jetbrains.kotlinx:kotlinx-coroutines-core")
             expect(dependency.version).to eq("0.19.3")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "0.19.3",
                 file: "gradle/dependencies.gradle.kts",
@@ -866,7 +866,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("gradle-wrapper")
               expect(dependency.version).to eq(version)
-              expect(dependency.requirements).to eq(requirements)
+              expect(dependency.requirements.map(&:to_h)).to eq(requirements)
             end
           end
         end
@@ -910,7 +910,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("co.aikar:acf-paper")
           expect(dependency.version).to eq("0.5.0-SNAPSHOT")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "0.5.0-SNAPSHOT",
               file: "build.gradle",
@@ -930,7 +930,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.version).to eq("3.5.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "3.5.0",
               file: "gradle/libs.versions.toml",
@@ -950,7 +950,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.version).to eq("1.7.20")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "1.7.20",
               file: "gradle/libs.versions.toml",
@@ -970,7 +970,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.version).to eq("9.0.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "10.0.0",
               file: "gradle/libs.versions.toml",
@@ -1008,7 +1008,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("androidx.activity:activity-compose")
           expect(dependency.version).to eq("1.3.1")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "1.3.1",
               file: "gradle/libs.versions.toml",
@@ -1060,7 +1060,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("co.aikar:acf-paper")
             expect(dependency.version).to eq("0.5.0-SNAPSHOT")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "0.5.0-SNAPSHOT",
                 file: "build.gradle",
@@ -1086,7 +1086,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("androidx.test.espresso:espresso-core")
             expect(dependency.version).to eq("3.5.0")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "3.5.0",
                 file: "gradle/libs.versions.toml",
@@ -1105,7 +1105,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("org.jmailen.kotlinter")
             expect(dependency.version).to eq("3.11.0")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "3.11.0",
                 file: "gradle/libs.versions.toml",

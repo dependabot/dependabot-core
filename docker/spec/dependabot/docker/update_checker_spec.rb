@@ -3169,7 +3169,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:source) { { tag: version } }
 
       it "updates the tag" do
-        expect(checker.updated_requirements)
+        expect(checker.updated_requirements.map(&:to_h))
           .to eq(
             [{
               requirement: nil,
@@ -3192,7 +3192,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
 
       it "updates the digest" do
-        expect(checker.updated_requirements)
+        expect(checker.updated_requirements.map(&:to_h))
           .to eq(
             [{
               requirement: nil,
@@ -3218,7 +3218,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
 
       it "updates the tag and the digest" do
-        expect(checker.updated_requirements)
+        expect(checker.updated_requirements.map(&:to_h))
           .to eq(
             [{
               requirement: nil,
@@ -3239,16 +3239,16 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:source) { { tag: "trusty-20170728" } }
 
       before do
-        dependency.requirements << {
+        dependency.requirements << Dependabot::DependencyRequirement.from_hash(
           requirement: nil,
           groups: [],
           file: "Dockerfile.other",
           source: { tag: "xenial-20170802" }
-        }
+        )
       end
 
       it "updates the tags" do
-        expect(checker.updated_requirements)
+        expect(checker.updated_requirements.map(&:to_h))
           .to eq(
             [{
               requirement: nil,
@@ -3283,7 +3283,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         let(:source) { { tag: version } }
 
         it "adds a digest to the tag" do
-          expect(checker.updated_requirements)
+          expect(checker.updated_requirements.map(&:to_h))
             .to eq(
               [{
                 requirement: nil,
@@ -3303,7 +3303,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         let(:source) { { digest: "old_digest", tag: "17.04" } }
 
         it "updates both the tag and the digest" do
-          expect(checker.updated_requirements)
+          expect(checker.updated_requirements.map(&:to_h))
             .to eq(
               [{
                 requirement: nil,
@@ -3333,7 +3333,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         let(:source) { { tag: version } }
 
         it "does not add a digest" do
-          expect(checker.updated_requirements)
+          expect(checker.updated_requirements.map(&:to_h))
             .to eq(
               [{
                 requirement: nil,

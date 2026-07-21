@@ -216,7 +216,7 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Go do
 
       it "returns the requirement unchanged" do
         updated = checker.updated_requirements("0.29.0")
-        expect(updated.first).to eq(requirements.first)
+        expect(updated.first.to_h).to eq(requirements.first)
       end
     end
 

@@ -278,7 +278,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
           let(:other_requirement_string) { "0.*.*" }
 
           it "updates both requirements" do
-            expect(updater.updated_requirements).to contain_exactly(
+            expect(updater.updated_requirements.map(&:to_h)).to contain_exactly(
               {
                 file: "composer.json",
                 requirement: "1.5.0",
@@ -540,7 +540,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
           let(:other_requirement_string) { "0.*.*" }
 
           it "updates both requirements" do
-            expect(updater.updated_requirements).to contain_exactly(
+            expect(updater.updated_requirements.map(&:to_h)).to contain_exactly(
               {
                 file: "composer.json",
                 requirement: "1.5.0",
@@ -797,7 +797,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
           let(:other_requirement_string) { "0.*.*" }
 
           it "updates the requirement that needs to be updated" do
-            expect(updater.updated_requirements).to contain_exactly(
+            expect(updater.updated_requirements.map(&:to_h)).to contain_exactly(
               {
                 file: "composer.json",
                 requirement: "^1.2.3",
@@ -820,7 +820,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
       let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
       it "does not update any requirements" do
-        expect(updater.updated_requirements).to eq(requirements)
+        expect(updater.updated_requirements.map(&:to_h)).to eq(requirements)
       end
     end
   end

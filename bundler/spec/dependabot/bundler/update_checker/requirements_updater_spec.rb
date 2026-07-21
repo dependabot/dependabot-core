@@ -59,7 +59,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
       context "when there is no resolvable version" do
         let(:latest_resolvable_version) { nil }
 
-        it { is_expected.to eq(gemfile_requirement) }
+        its(:to_h) { is_expected.to eq(gemfile_requirement) }
       end
 
       context "with a SHA-1 version" do
@@ -78,7 +78,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
           context "when no update to the requirements is required" do
             let(:gemfile_requirement_string) { ">= 0" }
 
-            it { is_expected.to eq(gemfile_requirement.merge(source: nil)) }
+            its(:to_h) { is_expected.to eq(gemfile_requirement.merge(source: nil)) }
           end
         end
 
@@ -163,7 +163,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
           context "when the new version satisfies the old requirements" do
             let(:gemfile_requirement_string) { "~> 1.4" }
 
-            it { is_expected.to eq(gemfile_requirement) }
+            its(:to_h) { is_expected.to eq(gemfile_requirement) }
           end
 
           context "when the new version does not satisfy the old requirements" do
@@ -278,13 +278,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
       context "when there is no latest version" do
         let(:latest_version) { nil }
 
-        it { is_expected.to eq(gemspec_requirement) }
+        its(:to_h) { is_expected.to eq(gemspec_requirement) }
       end
 
       context "when there is no resolvable version" do
         let(:latest_resolvable_version) { nil }
 
-        it { is_expected.to eq(gemspec_requirement) }
+        its(:to_h) { is_expected.to eq(gemspec_requirement) }
       end
 
       context "when there is a latest version" do
@@ -496,7 +496,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
       let(:gemspec_groups) { [] }
 
       it "updates both files" do
-        expect(updated_requirements).to contain_exactly(
+        expect(updated_requirements.map(&:to_h)).to contain_exactly(
           {
             file: "Gemfile",
             requirement: "~> 1.5.0",
@@ -534,7 +534,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
         let(:gemspec_source) { { type: "git", ref: "v1.4.0" } }
 
         it "updates both files" do
-          expect(updated_requirements).to contain_exactly(
+          expect(updated_requirements.map(&:to_h)).to contain_exactly(
             {
               file: "Gemfile",
               requirement: "~> 1.5.0",
@@ -554,7 +554,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
           let(:gemspec_source) { nil }
 
           it "leaves the gemspec source as `nil`" do
-            expect(updated_requirements).to contain_exactly(
+            expect(updated_requirements.map(&:to_h)).to contain_exactly(
               {
                 file: "Gemfile",
                 requirement: "~> 1.5.0",
@@ -577,7 +577,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::RequirementsUpdater do
       let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
       it "does not change any requirements" do
-        expect(updated_requirements).to eq(requirements)
+        expect(updated_requirements.map(&:to_h)).to eq(requirements)
       end
     end
   end

@@ -74,7 +74,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("actions/checkout")
         expect(dependency.version).to eq("1")
-        expect(dependency.requirements).to eq(expected_requirements)
+        expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
       end
     end
 
@@ -120,7 +120,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("actions/aws")
           expect(dependency.version).to eq("1.0.0")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -149,7 +149,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("actions/checkout")
         expect(dependency.version).to eq("2.1.0")
-        expect(dependency.requirements).to eq(expected_requirements)
+        expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
       end
     end
 
@@ -188,7 +188,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("actions/checkout")
         expect(dependency.version).to eq("3.5.0")
-        expect(dependency.requirements).to eq(expected_requirements)
+        expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
       end
     end
 
@@ -216,7 +216,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("actions/checkout/.github/workflows/test.yml")
         expect(dependency.version).to eq("2.1.0")
-        expect(dependency.requirements).to eq(expected_requirements)
+        expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
       end
     end
 
@@ -265,7 +265,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
             "/.github/workflows/action-one.yml"
           )
           expect(dependency.version).to eq("1.0.0")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
 
@@ -297,7 +297,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
             "/.github/workflows/action-two.yml"
           )
           expect(dependency.version).to eq("1.0.0")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -340,7 +340,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
             "/.github/workflows/action-test.yaml"
           )
           expect(dependency.version).to eq("1.0.0")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -384,7 +384,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("actions/checkout")
           expect(dependency.version).to eq("3.3.0")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -472,7 +472,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("actions/checkout")
           expect(dependency.version).to eq("1")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -529,7 +529,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("actions/checkout/.github/workflows/test.yml")
           expect(dependency.version).to eq("2.1.0")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -576,7 +576,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("actions/checkout")
           expect(dependency.version).to eq("2.1.0")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -632,7 +632,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("inactions/checkout")
           expect(dependency.version).to eq("2.1.0")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -673,7 +673,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("inaccessible/source")
           expect(dependency.version).to eq("1")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -723,7 +723,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("gopidesupavan/monorepo-actions/first/init@init/v1.0.0")
           expect(dependency.version).to eq("1.0.0")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
 
@@ -749,7 +749,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("gopidesupavan/monorepo-actions/first/run@run/v2.0.0")
           expect(dependency.version).to eq("2.0.0")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -799,7 +799,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("gopidesupavan/monorepo-actions/second/exec@exec/1.0.0")
           expect(dependency.version).to eq("1.0.0")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -850,7 +850,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("gopidesupavan/monorepo-actions/first/init@init/v1.0.0")
           expect(dependency.version).to eq("1.0.0")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
 
@@ -876,7 +876,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("actions/checkout")
           expect(dependency.version).to eq("1")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -927,7 +927,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("gopidesupavan/monorepo-actions/first/init@init/1.0.0")
           expect(dependency.version).to eq("1.0.0")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
 
@@ -953,7 +953,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("actions/checkout")
           expect(dependency.version).to eq("1")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -1018,7 +1018,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         it "keeps the path in the dependency identity" do
           expect(dependency.name).to eq("grafana/shared-workflows/actions/create-github-app-token")
           expect(dependency.version).to eq("0.2.0")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
 
@@ -1046,7 +1046,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         it "resolves the path specific tag version" do
           expect(dependency.name).to eq("grafana/shared-workflows/actions/get-vault-secrets")
           expect(dependency.version).to eq("1.2.1")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end

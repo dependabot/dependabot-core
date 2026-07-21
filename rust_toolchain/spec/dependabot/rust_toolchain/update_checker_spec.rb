@@ -149,7 +149,7 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
     it "returns updated requirements with latest version" do
       updated_reqs = update_checker.updated_requirements
 
-      expect(updated_reqs).to eq(
+      expect(updated_reqs.map(&:to_h)).to eq(
         [
           {
             file: "rust-toolchain.toml",
@@ -184,7 +184,7 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
       it "updates all requirements" do
         updated_reqs = update_checker.updated_requirements
 
-        expect(updated_reqs).to eq(
+        expect(updated_reqs.map(&:to_h)).to eq(
           [
             {
               file: "rust-toolchain.toml",
@@ -210,7 +210,7 @@ RSpec.describe Dependabot::RustToolchain::UpdateChecker do
       it "uses the string version in requirements" do
         updated_reqs = update_checker.updated_requirements
 
-        expect(updated_reqs).to eq(
+        expect(updated_reqs.map(&:to_h)).to eq(
           [
             {
               file: "rust-toolchain.toml",

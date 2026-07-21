@@ -673,13 +673,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       expect(described_class::RequirementsUpdater)
         .to receive(:new)
         .with(
-          requirements: dependency_requirements,
+          requirements: dependency.requirements,
           latest_version: "23.6-jre",
           source_url: "https://repo.maven.apache.org/maven2",
           properties_to_update: []
         )
         .and_call_original
-      expect(checker.updated_requirements)
+      expect(checker.updated_requirements.map(&:to_h))
         .to eq(
           [{
             file: "pom.xml",
@@ -718,13 +718,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
         expect(described_class::RequirementsUpdater)
           .to receive(:new)
           .with(
-            requirements: dependency_requirements,
+            requirements: dependency.requirements,
             latest_version: "20.0",
             source_url: "https://repo.maven.apache.org/maven2",
             properties_to_update: []
           )
           .and_call_original
-        expect(checker.updated_requirements)
+        expect(checker.updated_requirements.map(&:to_h))
           .to eq(
             [{
               file: "pom.xml",

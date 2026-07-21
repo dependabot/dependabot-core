@@ -87,7 +87,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
         let(:package_json_req_string) { nil }
 
         it "updates the source" do
-          expect(updater.updated_requirements)
+          expect(updater.updated_requirements.map(&:to_h))
             .to eq(
               [{
                 file: "package.json",
@@ -107,7 +107,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
           let(:updated_source) { nil }
 
           it "updates the source and requirement" do
-            expect(updater.updated_requirements)
+            expect(updater.updated_requirements.map(&:to_h))
               .to eq(
                 [{
                   file: "package.json",
@@ -124,7 +124,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
         let(:package_json_req_string) { "~0.9.0" }
 
         it "updates the source" do
-          expect(updater.updated_requirements)
+          expect(updater.updated_requirements.map(&:to_h))
             .to eq(
               [{
                 file: "package.json",
@@ -144,7 +144,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
           let(:updated_source) { nil }
 
           it "updates the source and requirement" do
-            expect(updater.updated_requirements)
+            expect(updater.updated_requirements.map(&:to_h))
               .to eq(
                 [{
                   file: "package.json",
@@ -304,7 +304,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
           let(:other_requirement_string) { "^0.x.x" }
 
           it "updates both requirements" do
-            expect(updater.updated_requirements).to contain_exactly(
+            expect(updater.updated_requirements.map(&:to_h)).to contain_exactly(
               {
                 file: "package.json",
                 requirement: "^1.5.0",
@@ -330,7 +330,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
               end
 
               it "updates the non-prerelease requirement" do
-                expect(updater.updated_requirements).to contain_exactly(
+                expect(updater.updated_requirements.map(&:to_h)).to contain_exactly(
                   {
                     file: "package.json",
                     requirement: "1.1.0-alpha.1",
@@ -623,7 +623,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
           let(:other_requirement_string) { "^0.x.x" }
 
           it "updates the requirement that needs to be updated" do
-            expect(updater.updated_requirements).to contain_exactly(
+            expect(updater.updated_requirements.map(&:to_h)).to contain_exactly(
               {
                 file: "package.json",
                 requirement: "^1.2.3",
@@ -655,7 +655,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
             end
 
             it "updates both requirements" do
-              expect(updater.updated_requirements).to contain_exactly(
+              expect(updater.updated_requirements.map(&:to_h)).to contain_exactly(
                 {
                   requirement: "1.5.x",
                   file: "package.json",
@@ -711,7 +711,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
       let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
       it "does not update any requirements" do
-        expect(updater.updated_requirements).to eq(requirements)
+        expect(updater.updated_requirements.map(&:to_h)).to eq(requirements)
       end
     end
   end

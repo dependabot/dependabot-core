@@ -29,14 +29,14 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
   let(:version_class) { Dependabot::Gradle::Version }
 
   describe "#updated_requirements" do
-    subject { updater.updated_requirements.first }
+    subject(:updated_requirement) { updater.updated_requirements.first }
 
     specify { expect(updater.updated_requirements.count).to eq(1) }
 
     context "when there is no latest version" do
       let(:latest_version) { nil }
 
-      it { is_expected.to eq(pom_req) }
+      it { expect(updated_requirement.to_h).to eq(pom_req) }
     end
 
     context "when there is a latest version" do
@@ -45,7 +45,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
       context "when no requirement was previously specified" do
         let(:pom_req_string) { nil }
 
-        it { is_expected.to eq(pom_req) }
+        it { expect(updated_requirement.to_h).to eq(pom_req) }
       end
 
       context "when a LATEST requirement was previously specified" do
@@ -113,7 +113,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
         let(:other_requirement_string) { "[23.4-jre]" }
 
         it "updates both requirements" do
-          expect(updater.updated_requirements).to contain_exactly(
+          expect(updater.updated_requirements.map(&:to_h)).to contain_exactly(
             {
               file: "pom.xml",
               requirement: "23.6-jre",
@@ -134,7 +134,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
           let(:other_requirement_string) { "[23.0,)" }
 
           it "updates only the specific requirement" do
-            expect(updater.updated_requirements).to contain_exactly(
+            expect(updater.updated_requirements.map(&:to_h)).to contain_exactly(
               {
                 file: "pom.xml",
                 requirement: "23.6-jre",
@@ -189,8 +189,8 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
       end
 
       it "updates url and checksum" do
-        expect(updater.updated_requirements).not_to eq(requirements)
-        expect(updater.updated_requirements).to eq(
+        expect(updater.updated_requirements.map(&:to_h)).not_to eq(requirements)
+        expect(updater.updated_requirements.map(&:to_h)).to eq(
           [
             {
               requirement: "9.0.0",
@@ -220,8 +220,8 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
         let(:requirements) { [distribution_req] }
 
         it "only updates url" do
-          expect(updater.updated_requirements).not_to eq(requirements)
-          expect(updater.updated_requirements).to eq(
+          expect(updater.updated_requirements.map(&:to_h)).not_to eq(requirements)
+          expect(updater.updated_requirements.map(&:to_h)).to eq(
             [
               {
                 requirement: "9.0.0",
@@ -265,8 +265,8 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
         end
 
         it "updates all of them" do
-          expect(updater.updated_requirements).not_to eq(requirements)
-          expect(updater.updated_requirements).to eq(
+          expect(updater.updated_requirements.map(&:to_h)).not_to eq(requirements)
+          expect(updater.updated_requirements.map(&:to_h)).to eq(
             [
               {
                 requirement: "9.0.0",

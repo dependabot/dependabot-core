@@ -51,7 +51,7 @@ RSpec.describe Dependabot::Sbt::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("org.typelevel:cats-core_2.13")
           expect(dependency.version).to eq("2.10.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "2.10.0",
               file: "build.sbt",
@@ -70,7 +70,7 @@ RSpec.describe Dependabot::Sbt::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("com.google.guava:guava")
           expect(dependency.version).to eq("33.0.0-jre")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "33.0.0-jre",
               file: "build.sbt",
@@ -166,7 +166,7 @@ RSpec.describe Dependabot::Sbt::FileParser do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.version).to eq("2.1.5")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "2.1.5",
               file: "project/plugins.sbt",
@@ -193,7 +193,7 @@ RSpec.describe Dependabot::Sbt::FileParser do
         sbt_dep = dependencies.find { |d| d.name == "org.scala-sbt:sbt" }
         expect(sbt_dep).to be_a(Dependabot::Dependency)
         expect(sbt_dep.version).to eq("1.9.8")
-        expect(sbt_dep.requirements).to eq(
+        expect(sbt_dep.requirements.map(&:to_h)).to eq(
           [{
             requirement: "1.9.8",
             file: "project/build.properties",

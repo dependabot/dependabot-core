@@ -52,7 +52,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("ubuntu")
         expect(dependency.version).to eq("17.04")
-        expect(dependency.requirements).to eq(expected_requirements)
+        expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
       end
     end
 
@@ -81,7 +81,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("my-fork/ubuntu")
           expect(dependency.version).to eq("17.04")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -105,7 +105,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("ubuntu")
           expect(dependency.version).to eq("artful")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -161,7 +161,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("ubuntu")
             expect(dependency.version).to eq("18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005")
-            expect(dependency.requirements).to eq(expected_requirements)
+            expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
           end
         end
 
@@ -210,7 +210,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
                 expect(dependency.version).to eq(
                   "18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
                 )
-                expect(dependency.requirements).to eq(expected_requirements)
+                expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
               end
             end
 
@@ -250,7 +250,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("ubuntu")
           expect(dependency.version).to eq("17.04")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
 
@@ -270,7 +270,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("python")
           expect(dependency.version).to eq("3.6.3")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
 
@@ -295,7 +295,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("node")
             expect(dependency.version).to eq("10-alpine")
-            expect(dependency.requirements).to eq(expected_requirements)
+            expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
           end
         end
       end
@@ -322,7 +322,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("myreg/ubuntu")
           expect(dependency.version).to eq("17.04")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -351,7 +351,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("myreg/ubuntu")
           expect(dependency.version).to eq("17.04")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
 
@@ -379,7 +379,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("myreg/ubuntu")
             expect(dependency.version).to eq("17.04")
-            expect(dependency.requirements).to eq(expected_requirements)
+            expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
           end
         end
       end
@@ -407,7 +407,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
           }]
         end
 
-        its(:requirements) { is_expected.to eq(expected_requirements) }
+        it { expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements) }
       end
     end
 
@@ -441,7 +441,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("ubuntu")
           expect(dependency.version).to eq("17.04")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
 
@@ -461,7 +461,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("my-fork/ubuntu")
           expect(dependency.version).to eq("17.04")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -485,7 +485,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("mariadb")
           expect(dependency.version).to eq("10.11.2-jammy")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -521,7 +521,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("minio/minio")
           expect(dependency.version).to eq("RELEASE.2025-01-20T14-49-07Z")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -638,7 +638,7 @@ RSpec.describe Dependabot::DockerCompose::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("ubuntu")
           expect(dependency.version).to eq("18.04")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end

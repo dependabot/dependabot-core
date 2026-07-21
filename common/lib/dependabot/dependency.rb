@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -62,7 +62,7 @@ module Dependabot
 
     sig { params(package_manager: String).returns(T.nilable(T.proc.params(arg0: String).returns(String))) }
     def self.name_normaliser_for_package_manager(package_manager)
-      @name_normalisers[package_manager] || ->(name) { name }
+      @name_normalisers[package_manager] || ->(name) { T.cast(name, String) }
     end
 
     sig do
@@ -521,11 +521,12 @@ module Dependabot
       return if value.nil?
       raise TypeError, "#{name} must be a hash" unless value.is_a?(Hash)
 
-      value.each_with_object(T.let({}, Dependabot::DependencyRequirement::Details)) do |(raw_key, raw_value), result|
-        key = T.cast(raw_key, Object)
+      hash = T.let(value, T::Hash[Object, Object])
+      hash.each_with_object(T.let({}, Dependabot::DependencyRequirement::Details)) do |(raw_key, raw_value), result|
+        key = raw_key
         raise TypeError, "#{name} keys must be strings or symbols" unless key.is_a?(String) || key.is_a?(Symbol)
 
-        result[key] = T.cast(raw_value, Object)
+        result[key] = raw_value
       end
     end
 

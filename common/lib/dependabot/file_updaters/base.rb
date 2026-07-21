@@ -79,7 +79,7 @@ module Dependabot
       def requirement_changed?(file, dependency)
         changed_requirements = dependency.requirements - T.must(dependency.previous_requirements)
 
-        changed_requirements.any? { |f| f[:file] == file.name }
+        changed_requirements.any? { |requirement| requirement.file == file.name }
       end
 
       sig { params(file: Dependabot::DependencyFile, content: String).returns(Dependabot::DependencyFile) }

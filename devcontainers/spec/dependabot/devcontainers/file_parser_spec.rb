@@ -43,9 +43,9 @@ RSpec.describe Dependabot::Devcontainers::FileParser do
         expect(dependency).to have_attributes(
           name: name,
           version: version,
-          requirements: requirements,
           metadata: metadata
         )
+        expect(dependency.requirements.map(&:to_h)).to eq(requirements)
       end
     end
   end

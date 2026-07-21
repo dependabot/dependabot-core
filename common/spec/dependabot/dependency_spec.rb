@@ -25,7 +25,7 @@ RSpec.describe Dependabot::Dependency do
     end
 
     it "converts string keys to symbols" do
-      expect(dependency.requirements)
+      expect(dependency.requirements.map(&:to_h))
         .to eq([{ file: "a.rb", requirement: ">= 0", groups: [], source: nil }])
     end
 

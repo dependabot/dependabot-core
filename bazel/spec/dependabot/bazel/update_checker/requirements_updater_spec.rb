@@ -7,7 +7,7 @@ require "dependabot/bazel/update_checker/requirements_updater"
 RSpec.describe Dependabot::Bazel::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
-      requirements: requirements,
+      requirements: requirements.map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) },
       latest_version: latest_version
     )
   end
@@ -28,7 +28,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RequirementsUpdater do
       it "updates the requirement to the latest version" do
         updated = updater.updated_requirements
 
-        expect(updated).to eq(
+        expect(updated.map(&:to_h)).to eq(
           [{
             file: "MODULE.bazel",
             requirement: "0.57.0",
@@ -68,7 +68,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RequirementsUpdater do
       it "updates all requirements to the latest version" do
         updated = updater.updated_requirements
 
-        expect(updated).to eq(
+        expect(updated.map(&:to_h)).to eq(
           [
             {
               file: "MODULE.bazel",
@@ -128,7 +128,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RequirementsUpdater do
       it "preserves all attributes while updating version" do
         updated = updater.updated_requirements
 
-        expect(updated).to eq(
+        expect(updated.map(&:to_h)).to eq(
           [{
             file: "MODULE.bazel",
             requirement: "0.57.0",

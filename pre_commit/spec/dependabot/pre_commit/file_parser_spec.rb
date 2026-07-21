@@ -42,7 +42,7 @@ RSpec.describe Dependabot::PreCommit::FileParser do
       expect(dep).not_to be_nil
       expect(dep.name).to eq("https://github.com/pre-commit/pre-commit-hooks")
       expect(dep.version).to eq("v4.4.0")
-      expect(dep.requirements).to eq(
+      expect(dep.requirements.map(&:to_h)).to eq(
         [{
           requirement: nil,
           groups: [],

@@ -965,13 +965,13 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
       expect(described_class::RequirementsUpdater)
         .to receive(:new)
         .with(
-          requirements: dependency_requirements,
+          requirements: dependency.requirements,
           updated_source: nil,
           latest_resolvable_version: "1.7.0",
           update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
         )
         .and_call_original
-      expect(checker.updated_requirements)
+      expect(checker.updated_requirements.map(&:to_h))
         .to eq(
           [{
             file: "package.json",
@@ -999,13 +999,13 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
         expect(described_class::RequirementsUpdater)
           .to receive(:new)
           .with(
-            requirements: dependency_requirements,
+            requirements: dependency.requirements,
             updated_source: nil,
             latest_resolvable_version: "1.2.1",
             update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
           )
           .and_call_original
-        expect(checker.updated_requirements)
+        expect(checker.updated_requirements.map(&:to_h))
           .to eq(
             [{
               file: "package.json",
@@ -1033,13 +1033,13 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
         expect(described_class::RequirementsUpdater)
           .to receive(:new)
           .with(
-            requirements: dependency_requirements,
+            requirements: dependency.requirements,
             updated_source: nil,
             latest_resolvable_version: "1.7.0",
             update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary
           )
           .and_call_original
-        expect(checker.updated_requirements)
+        expect(checker.updated_requirements.map(&:to_h))
           .to eq(
             [{
               file: "package.json",
@@ -1060,13 +1060,13 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
         expect(described_class::RequirementsUpdater)
           .to receive(:new)
           .with(
-            requirements: dependency_requirements,
+            requirements: dependency.requirements,
             updated_source: nil,
             latest_resolvable_version: "1.7.0",
             update_strategy: Dependabot::RequirementsUpdateStrategy::WidenRanges
           )
           .and_call_original
-        expect(checker.updated_requirements)
+        expect(checker.updated_requirements.map(&:to_h))
           .to eq(
             [{
               file: "package.json",
@@ -1136,7 +1136,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
         expect(described_class::RequirementsUpdater)
           .to receive(:new)
           .with(
-            requirements: dependency_requirements,
+            requirements: dependency.requirements,
             updated_source: {
               type: "git",
               url: "https://github.com/jonschlinkert/is-number",
@@ -1147,7 +1147,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
             update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
           )
           .and_call_original
-        expect(checker.updated_requirements)
+        expect(checker.updated_requirements.map(&:to_h))
           .to eq(
             [{
               file: "package.json",
@@ -1170,7 +1170,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
           expect(described_class::RequirementsUpdater)
             .to receive(:new)
             .with(
-              requirements: dependency_requirements,
+              requirements: dependency.requirements,
               updated_source: {
                 type: "git",
                 url: "https://github.com/jonschlinkert/is-number",
@@ -1181,7 +1181,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
               update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
             )
             .and_call_original
-          expect(checker.updated_requirements)
+          expect(checker.updated_requirements.map(&:to_h))
             .to eq(
               [{
                 file: "package.json",
@@ -1234,7 +1234,7 @@ RSpec.describe Dependabot::Bun::UpdateChecker do
       end
 
       it "prefers to private registry source" do
-        expect(checker.updated_requirements.first).to eq(
+        expect(checker.updated_requirements.first.to_h).to eq(
           {
             file: "package.json",
             groups: [],

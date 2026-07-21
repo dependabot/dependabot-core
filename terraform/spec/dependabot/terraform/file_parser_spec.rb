@@ -252,7 +252,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "has the right details for the dependency (which uses git:: with a tag)" do
         expect(dependencies[5].name).to eq("origin_label::github::cloudposse/terraform-null-label::tags/0.3.7")
         expect(dependencies[5].version).to eq("0.3.7")
-        expect(dependencies[5].requirements).to contain_exactly(
+        expect(dependencies[5].requirements.map(&:to_h)).to contain_exactly(
           {
             requirement: nil,
             groups: [],
@@ -270,7 +270,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "has the right details for the dependency (which uses github.com with a tag)" do
         expect(dependencies[4].name).to eq("logs::github::cloudposse/terraform-log-storage::tags/0.2.2")
         expect(dependencies[4].version).to eq("0.2.2")
-        expect(dependencies[4].requirements).to contain_exactly(
+        expect(dependencies[4].requirements.map(&:to_h)).to contain_exactly(
           {
             requirement: nil,
             groups: [],
@@ -413,7 +413,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           end
           expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.3.7")
-          expect(dependency.requirements).to contain_exactly(
+          expect(dependency.requirements.map(&:to_h)).to contain_exactly(
             {
               requirement: nil,
               groups: [],
@@ -434,7 +434,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           end
           expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.2.2")
-          expect(dependency.requirements).to contain_exactly(
+          expect(dependency.requirements.map(&:to_h)).to contain_exactly(
             {
               requirement: nil,
               groups: [],
@@ -544,7 +544,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           dependency = dependencies.find { |x| x.name == "child::github::cloudposse/terraform-aws-jenkins::tags/0.4.0" }
           expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.4.0")
-          expect(dependency.requirements).to contain_exactly(
+          expect(dependency.requirements.map(&:to_h)).to contain_exactly(
             {
               requirement: nil,
               groups: [],
@@ -565,7 +565,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           end
           expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.2.2")
-          expect(dependency.requirements).to contain_exactly(
+          expect(dependency.requirements.map(&:to_h)).to contain_exactly(
             {
               requirement: nil,
               groups: [],
@@ -584,7 +584,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           dependency = dependencies.find { |x| x.name == "distribution_label::github::cloudposse/terraform-null-label" }
           expect(dependency).not_to be_nil
           expect(dependency.version).to be_nil
-          expect(dependency.requirements).to contain_exactly(
+          expect(dependency.requirements.map(&:to_h)).to contain_exactly(
             {
               requirement: nil,
               groups: [],
@@ -605,7 +605,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           end
           expect(dependency).not_to be_nil
           expect(dependency.version).to be_nil
-          expect(dependency.requirements).to contain_exactly(
+          expect(dependency.requirements.map(&:to_h)).to contain_exactly(
             {
               requirement: nil,
               groups: [],
@@ -626,7 +626,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           end
           expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.2.5")
-          expect(dependency.requirements).to contain_exactly(
+          expect(dependency.requirements.map(&:to_h)).to contain_exactly(
             {
               requirement: nil,
               groups: [],
@@ -647,7 +647,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           end
           expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.2.5")
-          expect(dependency.requirements).to contain_exactly(
+          expect(dependency.requirements.map(&:to_h)).to contain_exactly(
             {
               requirement: nil,
               groups: [],
@@ -679,7 +679,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           end
           expect(dependency).not_to be_nil
           expect(dependency.version).to eq("0.10.0")
-          expect(dependency.requirements).to contain_exactly(
+          expect(dependency.requirements.map(&:to_h)).to contain_exactly(
             {
               requirement: nil,
               groups: [],
@@ -700,7 +700,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
           end
           expect(dependency).not_to be_nil
           expect(dependency.version).to eq("1.0.0")
-          expect(dependency.requirements).to contain_exactly(
+          expect(dependency.requirements.map(&:to_h)).to contain_exactly(
             {
               requirement: nil,
               groups: [],

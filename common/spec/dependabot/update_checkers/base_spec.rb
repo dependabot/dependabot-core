@@ -7,6 +7,16 @@ require "dependabot/security_advisory"
 require "dependabot/update_checkers/base"
 
 RSpec.describe Dependabot::UpdateCheckers::Base do
+  def parsed_requirements(requirements)
+    requirements.map do |requirement|
+      if requirement.is_a?(Dependabot::DependencyRequirement)
+        requirement
+      else
+        Dependabot::DependencyRequirement.from_hash(requirement)
+      end
+    end
+  end
+
   let(:updater_instance) do
     described_class.new(
       dependency: dependency,
@@ -47,9 +57,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
   let(:latest_resolvable_previous_version) { dependency.version }
 
   before do
-    normalized_updated_requirements = updated_requirements.map do |requirement|
-      Dependabot::DependencyRequirement.from_hash(requirement)
-    end
+    normalized_updated_requirements = parsed_requirements(updated_requirements)
 
     allow(updater_instance)
       .to receive_messages(
@@ -472,7 +480,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       its(:previous_version) { is_expected.to eq("1.5.0") }
       its(:package_manager) { is_expected.to eq(dependency.package_manager) }
       its(:name) { is_expected.to eq(dependency.name) }
-      its(:requirements) { is_expected.to eq(updated_requirements) }
+      its(:requirements) { is_expected.to eq(parsed_requirements(updated_requirements)) }
     end
 
     context "without a previous version" do
@@ -518,7 +526,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         its(:previous_version) { is_expected.to eq("1.5.0") }
         its(:package_manager) { is_expected.to eq(dependency.package_manager) }
         its(:name) { is_expected.to eq(dependency.name) }
-        its(:requirements) { is_expected.to eq(original_requirements) }
+        its(:requirements) { is_expected.to eq(parsed_requirements(original_requirements)) }
       end
 
       context "without a previous version" do

@@ -67,7 +67,7 @@ RSpec.describe Dependabot::Elm::FileParser do
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.version).to eq("1.0.0")
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: "1.0.0",
                   file: "elm.json",
@@ -94,7 +94,7 @@ RSpec.describe Dependabot::Elm::FileParser do
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.version).to eq("1.0.0")
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: "1.0.0",
                   file: "elm.json",
@@ -123,7 +123,7 @@ RSpec.describe Dependabot::Elm::FileParser do
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.version).to be_nil
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: "1.0.0 <= v < 2.0.0",
                   file: "elm.json",
@@ -140,7 +140,7 @@ RSpec.describe Dependabot::Elm::FileParser do
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.version).to be_nil
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: "1.0.0 <= v < 2.0.0",
                   file: "elm.json",

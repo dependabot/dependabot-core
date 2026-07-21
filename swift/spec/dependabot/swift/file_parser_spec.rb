@@ -58,7 +58,7 @@ RSpec.describe Dependabot::Swift::FileParser do
         expect(dependency.metadata).to eq({ identity: identity })
 
         if expected[:requirement]
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [
               {
                 requirement: expected[:requirement],

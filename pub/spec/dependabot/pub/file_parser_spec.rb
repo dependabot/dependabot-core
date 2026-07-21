@@ -34,7 +34,7 @@ RSpec.describe Dependabot::Pub::FileParser do
       it "has the right details for the dependency" do
         expect(dependencies[0].name).to eq("retry")
         expect(dependencies[0].version).to eq("2.0.0")
-        expect(dependencies[0].requirements).to eq(
+        expect(dependencies[0].requirements.map(&:to_h)).to eq(
           [{
             requirement: "2.0.0",
             groups: ["direct"],
@@ -54,7 +54,7 @@ RSpec.describe Dependabot::Pub::FileParser do
       it "has the right details for the retry (direct) dependency" do
         dep = dependencies.find { |d| d.name == "retry" }
         expect(dep.version).to eq("2.0.0")
-        expect(dep.requirements).to eq(
+        expect(dep.requirements.map(&:to_h)).to eq(
           [{
             requirement: "^2.0.0",
             groups: ["direct"],
@@ -67,7 +67,7 @@ RSpec.describe Dependabot::Pub::FileParser do
       it "has the right details for the test (dev) dependency" do
         dep = dependencies.find { |d| d.name == "test" }
         expect(dep.version).to eq("1.17.12")
-        expect(dep.requirements).to eq(
+        expect(dep.requirements.map(&:to_h)).to eq(
           [{
             requirement: ">=1.17.10 <=1.17.12",
             groups: ["dev"],

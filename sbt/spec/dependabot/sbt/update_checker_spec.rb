@@ -209,7 +209,7 @@ RSpec.describe Dependabot::Sbt::UpdateChecker do
     subject(:updated_requirements) { checker.updated_requirements }
 
     it "updates the requirement version" do
-      expect(updated_requirements).to eq(
+      expect(updated_requirements.map(&:to_h)).to eq(
         [{
           file: "build.sbt",
           requirement: "33.4.0-jre",

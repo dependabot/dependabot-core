@@ -39,7 +39,7 @@ RSpec.describe Dependabot::Sbt::UpdateChecker::RequirementsUpdater do
       let(:latest_version) { nil }
 
       it "returns the existing requirements unchanged" do
-        expect(updated_requirements.first).to eq(sbt_req)
+        expect(updated_requirements.first.to_h).to eq(sbt_req)
       end
     end
 
@@ -49,8 +49,8 @@ RSpec.describe Dependabot::Sbt::UpdateChecker::RequirementsUpdater do
       context "with a simple exact version" do
         let(:sbt_req_string) { "2.10.0" }
 
-        its(:first) do
-          is_expected.to eq(
+        it "updates the requirement" do
+          expect(updated_requirements.first.to_h).to eq(
             file: "build.sbt",
             requirement: "2.12.0",
             groups: [],
@@ -64,7 +64,7 @@ RSpec.describe Dependabot::Sbt::UpdateChecker::RequirementsUpdater do
         let(:sbt_req_string) { nil }
 
         it "returns the requirement unchanged" do
-          expect(updated_requirements.first).to eq(sbt_req)
+          expect(updated_requirements.first.to_h).to eq(sbt_req)
         end
       end
 
@@ -81,7 +81,7 @@ RSpec.describe Dependabot::Sbt::UpdateChecker::RequirementsUpdater do
         let(:sbt_req_string) { "[2.10.0,2.11.0]" }
 
         it "does not update range requirements" do
-          expect(updated_requirements.first).to eq(sbt_req)
+          expect(updated_requirements.first.to_h).to eq(sbt_req)
         end
       end
     end

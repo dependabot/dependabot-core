@@ -29,14 +29,14 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
   let(:version_class) { Dependabot::Maven::Version }
 
   describe "#updated_requirements" do
-    subject { updater.updated_requirements.first }
+    subject(:updated_requirement) { updater.updated_requirements.first }
 
     specify { expect(updater.updated_requirements.count).to eq(1) }
 
     context "when there is no latest version" do
       let(:latest_version) { nil }
 
-      it { is_expected.to eq(pom_req) }
+      it { expect(updated_requirement.to_h).to eq(pom_req) }
     end
 
     context "when there is a latest version" do
@@ -45,7 +45,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
       context "when there is no requirement was previously specified" do
         let(:pom_req_string) { nil }
 
-        it { is_expected.to eq(pom_req) }
+        it { expect(updated_requirement.to_h).to eq(pom_req) }
       end
 
       context "when a LATEST requirement was previously specified" do
@@ -73,7 +73,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
         let(:latest_version) { version_class.new("23.6-jre") }
 
         it "does not update the requirement or source" do
-          expect(updater.updated_requirements.first).to eq(pom_req)
+          expect(updater.updated_requirements.first.to_h).to eq(pom_req)
         end
       end
 
@@ -92,7 +92,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
 
         it "returns the original requirement without updating source" do
           result = updater.updated_requirements.first
-          expect(result).to eq(pom_req)
+          expect(result.to_h).to eq(pom_req)
           expect(result.source).to be_nil
         end
       end
@@ -124,7 +124,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
         let(:other_requirement_string) { "[23.4-jre]" }
 
         it "updates both requirements" do
-          expect(updater.updated_requirements).to contain_exactly(
+          expect(updater.updated_requirements.map(&:to_h)).to contain_exactly(
             {
               file: "pom.xml",
               requirement: "23.6-jre",
@@ -145,7 +145,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
           let(:other_requirement_string) { "[23.0,)" }
 
           it "updates only the specific requirement" do
-            expect(updater.updated_requirements).to contain_exactly(
+            expect(updater.updated_requirements.map(&:to_h)).to contain_exactly(
               {
                 file: "pom.xml",
                 requirement: "23.6-jre",
@@ -167,7 +167,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
           let(:other_requirement_string) { "23.3-jre" }
 
           it "only updates the outdated requirement" do
-            expect(updater.updated_requirements).to contain_exactly(
+            expect(updater.updated_requirements.map(&:to_h)).to contain_exactly(
               {
                 file: "pom.xml",
                 requirement: "23.6-jre",

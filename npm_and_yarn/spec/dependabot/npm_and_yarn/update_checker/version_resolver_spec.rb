@@ -1933,7 +1933,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       it "gets the right list of dependencies to update" do
         resolved_dependencies = resolver.dependency_updates_from_full_unlock
         react = resolved_dependencies.find { |d| d[:dependency].name == "react" }
-        expect(react[:dependency].requirements).to contain_exactly(
+        expect(react[:dependency].requirements.map(&:to_h)).to contain_exactly(
           {
             file: "packages/package1/package.json",
             requirement: "15.6.2",

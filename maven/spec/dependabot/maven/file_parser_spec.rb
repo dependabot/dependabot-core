@@ -40,7 +40,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("com.google.guava:guava")
           expect(dependency.version).to eq("23.3-jre")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "23.3-jre",
               file: "pom.xml",
@@ -59,7 +59,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("org.apache.httpcomponents:httpclient")
           expect(dependency.version).to eq("4.5.3")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "4.5.3",
               file: "pom.xml",
@@ -78,7 +78,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("io.mockk:mockk")
           expect(dependency.version).to eq("1.0.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "1.0.0",
               file: "pom.xml",
@@ -108,7 +108,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("io.takari.polyglot:polyglot-yaml")
           expect(dependency.version).to eq("0.4.6")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "0.4.6",
               file: ".mvn/extensions.xml",
@@ -135,7 +135,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("commons-io:commons-io")
           expect(dependency.version).to eq("2.11.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "2.11.0",
               file: "releng/myproject.target",
@@ -160,7 +160,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("com.google.guava:guava")
           expect(dependency.version).to eq("23.3-jre")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "23.3-jre",
               file: "pom.xml",
@@ -187,7 +187,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("com.google.guava:guava")
           expect(dependency.version).to eq("23.3-jre")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "23.3-jre",
               file: "pom.xml",
@@ -213,7 +213,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency.name)
             .to eq("org.springframework.boot:spring-boot-maven-plugin")
           expect(dependency.version).to eq("1.5.8.RELEASE")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "1.5.8.RELEASE",
               file: "pom.xml",
@@ -240,7 +240,7 @@ RSpec.describe Dependabot::Maven::FileParser do
             expect(dependency.name)
               .to eq("org.apache.maven.plugins:spring-boot-maven-plugin")
             expect(dependency.version).to eq("1.5.8.RELEASE")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "1.5.8.RELEASE",
                 file: "pom.xml",
@@ -277,7 +277,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency.name)
             .to eq("com.eclipsesource.minimal-json:minimal-json")
           expect(dependency.version).to eq("0.9.4")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "0.9.4",
               file: "pom.xml",
@@ -297,7 +297,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency.name)
             .to eq("org.ow2.asm:asm")
           expect(dependency.version).to eq("9.1")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "9.1",
               file: "pom.xml",
@@ -325,7 +325,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency.name)
             .to eq("org.springframework.boot:spring-boot-maven-extension")
           expect(dependency.version).to eq("1.5.8.RELEASE")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "1.5.8.RELEASE",
               file: "pom.xml",
@@ -352,7 +352,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("com.google.errorprone:error_prone_core")
           expect(dependency.version).to eq("2.9.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "2.9.0",
               file: "pom.xml",
@@ -380,7 +380,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency.name)
             .to eq("org.springframework.boot:spring-boot-maven-plugin")
           expect(dependency.version).to eq("1.5.8.RELEASE")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "1.5.8.RELEASE",
               file: "pom.xml",
@@ -405,7 +405,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("org.springframework:spring-beans")
           expect(dependency.version).to eq("4.3.12.RELEASE")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "4.3.12.RELEASE",
               file: "pom.xml",
@@ -428,7 +428,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("org.springframework:spring-context")
           expect(dependency.version).to eq("4.3.12.RELEASE")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "4.3.12.RELEASE",
               file: "pom.xml",
@@ -454,7 +454,7 @@ RSpec.describe Dependabot::Maven::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("org.springframework:spring-context")
             expect(dependency.version).to eq("4.3.12.RELEASE-context")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "4.3.12.RELEASE-context",
                 file: "pom.xml",
@@ -483,7 +483,7 @@ RSpec.describe Dependabot::Maven::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("org.springframework:spring-beans")
             expect(dependency.version).to eq("0.0.2-RELEASE")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "0.0.2-RELEASE",
                 file: "pom.xml",
@@ -542,7 +542,7 @@ RSpec.describe Dependabot::Maven::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("uk.me.lwood.sigtran:sigtran-tcap")
             expect(dependency.version).to eq("0.9-SNAPSHOT")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 file: "pom.xml",
                 requirement: "0.9-SNAPSHOT",
@@ -574,7 +574,7 @@ RSpec.describe Dependabot::Maven::FileParser do
             "org.springframework.boot:spring-boot-starter-parent"
           )
           expect(dependency.version).to eq("1.5.9.RELEASE")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "1.5.9.RELEASE",
               file: "pom.xml",
@@ -635,7 +635,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("com.google.guava:guava")
           expect(dependency.version).to be_nil
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "[23.3-jre,)",
               file: "pom.xml",
@@ -660,7 +660,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("com.google.guava:guava")
           expect(dependency.version).to eq("23.3-jre")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "[23.3-jre]",
               file: "pom.xml",
@@ -685,7 +685,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("com.google.guava:guava")
           expect(dependency.version).to be_nil
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: nil,
               file: "pom.xml",
@@ -710,7 +710,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("com.google.guava:guava")
           expect(dependency.version).to be_nil
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: nil,
               file: "pom.xml",
@@ -736,7 +736,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency.name)
             .to eq("org.apache.maven.plugins:maven-javadoc-plugin")
           expect(dependency.version).to eq("2.10.4")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "3.0.0-M1",
               file: "pom.xml",
@@ -771,7 +771,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("com.google.guava:guava")
           expect(dependency.version).to eq("23.3-jre")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "23.3-jre",
               file: "pom.xml",
@@ -850,7 +850,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency.name)
             .to eq("com.google.guava:guava")
           expect(dependency.version).to eq("23.0-jre")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "23.0-jre",
               file: "pom.xml",
@@ -924,7 +924,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency.name)
             .to eq("org.apache.httpcomponents:httpclient")
           expect(dependency.version).to eq("4.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "4.0",
               file: "submodule-one/pom.xml",
@@ -946,7 +946,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency.name)
             .to eq("org.springframework:spring-core")
           expect(dependency.version).to eq("4.3.11.RELEASE")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "4.3.11.RELEASE",
               file: "submodule-three/some-other-name.xml",
@@ -998,7 +998,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency.name)
             .to eq("org.apache.httpcomponents:httpclient")
           expect(dependency.version).to eq("4.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "4.0",
               file: "pom.xml",
@@ -1020,7 +1020,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency.name)
             .to eq("org.springframework:spring-aop")
           expect(dependency.version).to eq("4.0.5.RELEASE")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "4.0.5.RELEASE",
               file: "parentpom.xml",
@@ -1080,7 +1080,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency.name)
             .to eq("org.example:maven-test-no-parent-artifact")
           expect(dependency.version).to eq("1.0-SNAPSHOT")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "1.0-SNAPSHOT",
               file: "pom_without_existing_parent.xml",
@@ -1222,7 +1222,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("com.dependabot:basic-pom")
           expect(dependency.version).to eq("0.0.1-RELEASE")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "0.0.1-RELEASE",
               file: nil,
@@ -1245,7 +1245,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("com.google.guava:guava")
           expect(dependency.version).to eq("23.3-jre")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "23.3-jre",
               file: "pom.xml",

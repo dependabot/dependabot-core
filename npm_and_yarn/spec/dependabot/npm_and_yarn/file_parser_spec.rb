@@ -7,6 +7,14 @@ require "dependabot/dependency_file"
 require "dependabot/npm_and_yarn/file_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
+RSpec::Matchers.define :equal_requirement_hashes do |expected|
+  match { |actual| actual.map(&:to_h) == expected }
+end
+
+RSpec::Matchers.define :contain_exactly_requirement_hashes do |*expected|
+  match { |actual| actual.map(&:to_h).tally == expected.tally }
+end
+
 RSpec.describe Dependabot::NpmAndYarn::FileParser do
   let(:credentials) do
     [Dependabot::Credential.new(
@@ -101,7 +109,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("0.0.1") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^0.0.1",
                   file: "package.json",
@@ -124,7 +132,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("0.2.1") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "*",
                   file: "package.json",
@@ -169,7 +177,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("1.1.4") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^1.1.4",
                   file: "package.json",
@@ -194,7 +202,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("1.8.1") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^1.0.0",
                   file: "package.json",
@@ -219,7 +227,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to be_nil }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "0.1.x",
                   file: "package.json",
@@ -249,7 +257,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("2.3.0") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^2.0.0",
                   file: "package.json",
@@ -271,7 +279,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("1.8.1") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^1.0.0",
                   file: "package.json",
@@ -293,7 +301,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("2.0.14") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^2.0.1",
                   file: "package.json",
@@ -319,7 +327,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               end
 
               its(:requirements) do
-                is_expected.to eq(
+                is_expected.to equal_requirement_hashes(
                   [{
                     requirement: "^2.0.1",
                     file: "package.json",
@@ -342,7 +350,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("2.0.14") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^2.0.1",
                   file: "package.json",
@@ -365,7 +373,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("2.0.14") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^2.0.1",
                   file: "package.json",
@@ -388,7 +396,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("0.0.1") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^0.0.1",
                   file: "package.json",
@@ -422,7 +430,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               end
 
               its(:requirements) do
-                is_expected.to eq(
+                is_expected.to equal_requirement_hashes(
                   [{
                     requirement: "^0.0.1",
                     file: "package.json",
@@ -448,7 +456,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                 end
 
                 its(:requirements) do
-                  is_expected.to eq(
+                  is_expected.to equal_requirement_hashes(
                     [{
                       requirement: "^0.0.1",
                       file: "package.json",
@@ -473,7 +481,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("2.0.14") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^2.0.1",
                   file: "package.json",
@@ -501,7 +509,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("1.8.1") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^1.0.0",
                   file: "package.json",
@@ -545,7 +553,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: nil,
                   file: "package.json",
@@ -591,7 +599,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: nil,
                   file: "package.json",
@@ -638,7 +646,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               its(:version) { is_expected.to eq("2.0.2") }
 
               its(:requirements) do
-                is_expected.to eq(
+                is_expected.to equal_requirement_hashes(
                   [{
                     requirement: "^2.0.0",
                     file: "package.json",
@@ -695,7 +703,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               end
 
               its(:requirements) do
-                is_expected.to eq(
+                is_expected.to equal_requirement_hashes(
                   [{
                     requirement: nil,
                     file: "package.json",
@@ -730,7 +738,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               end
 
               its(:requirements) do
-                is_expected.to eq(
+                is_expected.to equal_requirement_hashes(
                   [{
                     requirement: nil,
                     file: "package.json",
@@ -762,7 +770,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to be_nil }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^0.0.1",
                   file: "package.json",
@@ -786,7 +794,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               its(:version) { is_expected.to be_nil }
 
               its(:requirements) do
-                is_expected.to eq(
+                is_expected.to equal_requirement_hashes(
                   [{
                     requirement: nil,
                     file: "package.json",
@@ -833,7 +841,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("0.0.1") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^0.0.1",
                   file: "package.json",
@@ -859,7 +867,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               its(:version) { is_expected.to eq("0.0.1") }
 
               its(:requirements) do
-                is_expected.to eq(
+                is_expected.to equal_requirement_hashes(
                   [{
                     requirement: "^0.0.1",
                     file: "package.json",
@@ -887,7 +895,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("0.0.1") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^0.0.1",
                   file: "package.json",
@@ -910,7 +918,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("5.8.0") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "next",
                   file: "package.json",
@@ -933,7 +941,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("1.8.0") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^1.0.0",
                   file: "package.json",
@@ -958,7 +966,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("1.7.0") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^1.0.0",
                   file: "package.json",
@@ -984,7 +992,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("lodash")
               expect(dependency.version).to eq("0.1.0")
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: "^0.1.0",
                   file: "package.json",
@@ -1009,7 +1017,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("2.0.2") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^2.0.0",
                   file: "package.json",
@@ -1038,7 +1046,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               its(:version) { is_expected.to eq("2.0.2") }
 
               its(:requirements) do
-                is_expected.to eq(
+                is_expected.to equal_requirement_hashes(
                   [{
                     requirement: "^2.0.0",
                     file: "package.json",
@@ -1069,7 +1077,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("2.3.0") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^2.0.0",
                   file: "package.json",
@@ -1091,7 +1099,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("1.8.0") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^1.0.0",
                   file: "package.json",
@@ -1290,7 +1298,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: nil,
                   file: "package.json",
@@ -1316,7 +1324,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               end
 
               its(:requirements) do
-                is_expected.to eq(
+                is_expected.to equal_requirement_hashes(
                   [{
                     requirement: nil,
                     file: "package.json",
@@ -1349,7 +1357,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               end
 
               its(:requirements) do
-                is_expected.to eq(
+                is_expected.to equal_requirement_hashes(
                   [{
                     requirement: nil,
                     file: "package.json",
@@ -1380,7 +1388,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
               end
 
               its(:requirements) do
-                is_expected.to eq(
+                is_expected.to equal_requirement_hashes(
                   [{
                     requirement: nil,
                     file: "package.json",
@@ -1404,7 +1412,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                 subject { top_level_dependencies.last }
 
                 its(:requirements) do
-                  is_expected.to eq(
+                  is_expected.to equal_requirement_hashes(
                     [{
                       requirement: nil,
                       file: "package.json",
@@ -1434,7 +1442,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("2.4.1") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^2.0.0",
                   file: "package.json",
@@ -1459,7 +1467,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("1.8.1") }
 
             its(:requirements) do
-              is_expected.to contain_exactly(
+              is_expected.to contain_exactly_requirement_hashes(
                 {
                   requirement: "^1.1.0",
                   file: "packages/package1/package.json",
@@ -1484,7 +1492,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("1.2.0") }
 
             its(:requirements) do
-              is_expected.to contain_exactly(
+              is_expected.to contain_exactly_requirement_hashes(
                 {
                   requirement: "1.2.0",
                   file: "package.json",
@@ -1518,7 +1526,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("lerna")
             expect(dependency.version).to eq("3.6.0")
-            expect(dependency.requirements).to contain_exactly(
+            expect(dependency.requirements.map(&:to_h)).to contain_exactly(
               {
                 requirement: "^3.6.0",
                 file: "package.json",
@@ -1533,7 +1541,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("etag")
             expect(dependency.version).to eq("1.8.0")
-            expect(dependency.requirements).to contain_exactly(
+            expect(dependency.requirements.map(&:to_h)).to contain_exactly(
               {
                 requirement: "^1.1.0",
                 file: "packages/package1/package.json",
@@ -1565,7 +1573,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             its(:version) { is_expected.to eq("0.0.1") }
 
             its(:requirements) do
-              is_expected.to eq(
+              is_expected.to equal_requirement_hashes(
                 [{
                   requirement: "^0.0.1",
                   file: "package.json",
@@ -1591,7 +1599,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           its(:version) { is_expected.to eq("1.8.1") }
 
           its(:requirements) do
-            is_expected.to contain_exactly(
+            is_expected.to contain_exactly_requirement_hashes(
               {
                 requirement: "^1.1.0",
                 file: "packages/package1/package.json",
@@ -1616,7 +1624,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           its(:version) { is_expected.to eq("1.2.0") }
 
           its(:requirements) do
-            is_expected.to contain_exactly(
+            is_expected.to contain_exactly_requirement_hashes(
               {
                 requirement: "1.2.0",
                 file: "package.json",
@@ -1709,7 +1717,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           expected_dependencies.each_with_index do |expected, index|
             expect(dependencies[index].name).to eq(expected[:name])
             expect(dependencies[index].version).to eq(expected[:version])
-            expect(dependencies[index].requirements).to eq(expected[:requirements])
+            expect(dependencies[index].requirements.map(&:to_h)).to eq(expected[:requirements])
           end
         end
       end
@@ -1738,7 +1746,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         it "parses the JSR dependency with a JSR registry source" do
           dep = parsed_file.find { |d| d.name == "@arendjr/text-clipper" }
           expect(dep).not_to be_nil
-          expect(dep.requirements).to contain_exactly(
+          expect(dep.requirements.map(&:to_h)).to contain_exactly(
             {
               requirement: "jsr:^3.0.0",
               file: "package.json",
@@ -1757,7 +1765,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         it "parses the JSR dependency with a JSR registry source" do
           dep = parsed_file.find { |d| d.name == "@arendjr/text-clipper" }
           expect(dep).not_to be_nil
-          expect(dep.requirements).to contain_exactly(
+          expect(dep.requirements.map(&:to_h)).to contain_exactly(
             {
               requirement: "jsr:@arendjr/text-clipper@^3.0.0",
               file: "package.json",
@@ -1782,7 +1790,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
       it "includes both registries" do
         expect(parsed_file.count).to be(1)
-        expect(parsed_file[0].requirements).to contain_exactly(
+        expect(parsed_file[0].requirements.map(&:to_h)).to contain_exactly(
           {
             requirement: "^10.5.12",
             file: "package.json",

@@ -394,7 +394,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
       it "returns updated requirements with new version" do
         updated_reqs = checker.updated_requirements
 
-        expect(updated_reqs).to eq(
+        expect(updated_reqs.map(&:to_h)).to eq(
           [{
             file: "MODULE.bazel",
             requirement: "0.57.0",
@@ -411,7 +411,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
       end
 
       it "returns the original requirements" do
-        expect(checker.updated_requirements).to eq(dependency_requirements)
+        expect(checker.updated_requirements.map(&:to_h)).to eq(dependency_requirements)
       end
     end
 
@@ -435,7 +435,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
       it "updates requirements to .bcr.X version" do
         updated_reqs = checker.updated_requirements
 
-        expect(updated_reqs).to eq(
+        expect(updated_reqs.map(&:to_h)).to eq(
           [{
             file: "MODULE.bazel",
             requirement: "1.6.50.bcr.1",
@@ -477,7 +477,7 @@ RSpec.describe Dependabot::Bazel::UpdateChecker do
       it "updates all requirements" do
         updated_reqs = checker.updated_requirements
 
-        expect(updated_reqs).to eq(
+        expect(updated_reqs.map(&:to_h)).to eq(
           [
             {
               file: "MODULE.bazel",

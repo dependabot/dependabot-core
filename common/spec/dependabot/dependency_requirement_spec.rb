@@ -15,16 +15,16 @@ RSpec.describe Dependabot::DependencyRequirement do
     }
   end
 
-  describe ".create" do
+  describe ".from_hash" do
     it "symbolises string keys" do
-      requirement = described_class.create(
+      requirement = described_class.from_hash(
         "requirement" => ">= 1.0",
         "file" => "Gemfile",
         "groups" => [],
         "source" => nil
       )
 
-      expect(requirement).to eq(
+      expect(requirement.to_h).to eq(
         requirement: ">= 1.0",
         file: "Gemfile",
         groups: [],
@@ -32,52 +32,44 @@ RSpec.describe Dependabot::DependencyRequirement do
       )
     end
 
-    it "returns a new instance when given a DependencyRequirement" do
-      original = described_class.create(requirement_hash)
-      copy = described_class.create(original)
-
-      expect(copy).to eq(original)
-      expect(copy).not_to equal(original)
-    end
-
     it "rejects missing required keys" do
       expect do
-        described_class.create(requirement: ">= 1.0", file: "Gemfile", groups: [])
+        described_class.from_hash(requirement: ">= 1.0", file: "Gemfile", groups: [])
       end.to raise_error(ArgumentError, /required keys/)
     end
 
     it "rejects unknown keys" do
       expect do
-        described_class.create(requirement_hash.merge(unknown: "value"))
+        described_class.from_hash(requirement_hash.merge(unknown: "value"))
       end.to raise_error(ArgumentError, /unknown keys/)
     end
 
     it "rejects blank requirement strings" do
       expect do
-        described_class.create(requirement_hash.merge(requirement: ""))
+        described_class.from_hash(requirement_hash.merge(requirement: ""))
       end.to raise_error(ArgumentError, "blank strings must not be provided as requirements")
     end
 
     it "rejects malformed known fields" do
       expect do
-        described_class.create(requirement_hash.merge(file: 1))
+        described_class.from_hash(requirement_hash.merge(file: 1))
       end.to raise_error(TypeError, "file must be a string or nil")
 
       expect do
-        described_class.create(requirement_hash.merge(groups: ["default", 1]))
+        described_class.from_hash(requirement_hash.merge(groups: ["default", 1]))
       end.to raise_error(TypeError, "groups must be an array of strings or symbols, or nil")
 
       expect do
-        described_class.create(requirement_hash.merge(source: "rubygems"))
+        described_class.from_hash(requirement_hash.merge(source: "rubygems"))
       end.to raise_error(TypeError, "source must be a hash or nil")
 
       expect do
-        described_class.create(requirement_hash.merge(metadata: "rails.version"))
+        described_class.from_hash(requirement_hash.merge(metadata: "rails.version"))
       end.to raise_error(TypeError, "metadata must be a hash or nil")
     end
 
     it "accepts the unfixable requirement sentinel" do
-      requirement = described_class.create(requirement_hash.merge(requirement: :unfixable))
+      requirement = described_class.from_hash(requirement_hash.merge(requirement: :unfixable))
 
       expect(requirement).to be_unfixable
       expect(requirement.requirement).to be_nil
@@ -86,13 +78,13 @@ RSpec.describe Dependabot::DependencyRequirement do
 
     it "rejects other requirement symbols" do
       expect do
-        described_class.create(requirement_hash.merge(requirement: :unknown))
+        described_class.from_hash(requirement_hash.merge(requirement: :unknown))
       end.to raise_error(TypeError, "requirement must be a string, :unfixable, or nil")
     end
   end
 
   describe "typed readers" do
-    subject(:requirement) { described_class.create(requirement_hash) }
+    subject(:requirement) { described_class.from_hash(requirement_hash) }
 
     it "exposes the well-known keys" do
       expect(requirement.requirement).to eq(">= 1.0, < 2.0")
@@ -103,7 +95,7 @@ RSpec.describe Dependabot::DependencyRequirement do
     end
 
     it "returns nil for absent optional keys" do
-      minimal = described_class.create(requirement: nil, file: "Gemfile", groups: [], source: nil)
+      minimal = described_class.from_hash(requirement: nil, file: "Gemfile", groups: [], source: nil)
 
       expect(minimal.requirement).to be_nil
       expect(minimal.source).to be_nil
@@ -111,13 +103,13 @@ RSpec.describe Dependabot::DependencyRequirement do
     end
 
     it "returns nil groups without raising when the entry has groups: nil" do
-      req = described_class.create(requirement: ">= 1.0", file: "Gemfile", groups: nil, source: nil)
+      req = described_class.from_hash(requirement: ">= 1.0", file: "Gemfile", groups: nil, source: nil)
 
       expect(req.groups).to be_nil
     end
 
     it "preserves mixed string and symbol groups" do
-      req = described_class.create(
+      req = described_class.from_hash(
         requirement: ">= 1.0",
         file: "Gemfile",
         groups: ["development", :default],
@@ -129,7 +121,7 @@ RSpec.describe Dependabot::DependencyRequirement do
   end
 
   describe "typed copies" do
-    subject(:requirement) { described_class.create(requirement_hash) }
+    subject(:requirement) { described_class.from_hash(requirement_hash) }
 
     it "replaces the requirement" do
       updated = requirement.with_requirement(">= 2.0")
@@ -151,7 +143,7 @@ RSpec.describe Dependabot::DependencyRequirement do
     end
 
     it "preserves whether metadata was absent" do
-      without_metadata = described_class.create(
+      without_metadata = described_class.from_hash(
         requirement: ">= 1.0",
         file: "Gemfile",
         groups: [],
@@ -164,38 +156,37 @@ RSpec.describe Dependabot::DependencyRequirement do
     end
   end
 
-  describe "hash compatibility" do
-    subject(:requirement) { described_class.create(requirement_hash) }
+  describe "value semantics" do
+    subject(:requirement) { described_class.from_hash(requirement_hash) }
 
-    it "supports hash-style access" do
-      expect(requirement[:file]).to eq("Gemfile")
-      expect(requirement.fetch(:requirement)).to eq(">= 1.0, < 2.0")
-      expect(requirement.dig(:source, :type)).to eq("rubygems")
+    it "does not expose the Hash API" do
+      expect(requirement).not_to respond_to(:[])
+      expect(requirement).not_to respond_to(:fetch)
+      expect(requirement).not_to respond_to(:dig)
+      expect(requirement).not_to respond_to(:merge)
     end
 
-    it "compares equal to a plain hash with the same content" do
-      expect(requirement).to eq(requirement_hash)
-      expect(requirement_hash).to eq(requirement)
-      expect(requirement.eql?(requirement_hash)).to be(true)
-      expect(requirement.hash).to eq(requirement_hash.hash)
+    it "compares equal to another requirement with the same content" do
+      copy = described_class.from_hash(requirement_hash)
+
+      expect(requirement).to eq(copy)
+      expect(requirement.eql?(copy)).to be(true)
+      expect(requirement.hash).to eq(copy.hash)
+      expect(requirement).not_to eq(requirement_hash)
     end
 
-    it "interoperates with plain hashes in Array and Set operations" do
-      expect([requirement] - [requirement_hash]).to be_empty
-      expect([requirement_hash, requirement].uniq.length).to eq(1)
-      expect(Set.new([requirement_hash])).to include(requirement)
+    it "interoperates in Array and Set operations by value" do
+      copy = described_class.from_hash(requirement_hash)
+
+      expect([requirement] - [copy]).to be_empty
+      expect([requirement, copy].uniq.length).to eq(1)
+      expect(Set.new([requirement])).to include(copy)
     end
 
-    it "preserves the class through merge" do
-      merged = requirement.merge(requirement: ">= 2.0")
-
-      expect(merged).to be_a(described_class)
-      expect(merged.requirement).to eq(">= 2.0")
-      expect(requirement.requirement).to eq(">= 1.0, < 2.0")
-    end
-
-    it "serialises to JSON like a plain hash" do
-      expect(JSON.parse(requirement.to_json)).to eq(JSON.parse(requirement_hash.to_json))
+    it "freezes collection fields" do
+      expect(requirement.groups).to be_frozen
+      expect(requirement.source).to be_frozen
+      expect(requirement.metadata).to be_frozen
     end
   end
 end

@@ -294,7 +294,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("rsc.io/quote")
           expect(dependency.version).to eq("1.4.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "v1.4.0",
               file: "go.mod",
@@ -317,7 +317,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("github.com/fatih/Color")
           expect(dependency.version).to eq("1.7.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "v1.7.0",
               file: "go.mod",
@@ -344,7 +344,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
             expect(dependency.name).to eq("golang.org/x/crypto")
             expect(dependency.version)
               .to eq("0.0.0-20180617042118-027cca12c2d6")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 file: "go.mod",
                 groups: [],
