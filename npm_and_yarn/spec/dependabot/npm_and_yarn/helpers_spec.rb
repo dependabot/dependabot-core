@@ -583,12 +583,12 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
       let(:not_found_error_message) do
         "Preparing pnpm@10.34.4 for immediate activation...\n" \
-        "Error when performing the request to " \
-        "https://pkgs.dev.azure.com/org/_packaging/feed/npm/registry/pnpm/10.34.4; " \
-        "for troubleshooting help, see " \
-        "https://github.com/nodejs/corepack#troubleshooting\n" \
-        "Response Code: 404 (Not Found)\n" \
-        "The remote server failed to provide the requested resource"
+          "Error when performing the request to " \
+          "https://pkgs.dev.azure.com/org/_packaging/feed/npm/registry/pnpm/10.34.4; " \
+          "for troubleshooting help, see " \
+          "https://github.com/nodejs/corepack#troubleshooting\n" \
+          "Response Code: 404 (Not Found)\n" \
+          "The remote server failed to provide the requested resource"
       end
 
       it "retries without private registry env and installs successfully from public npm" do
@@ -600,7 +600,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         ).and_raise(StandardError, not_found_error_message)
 
         # Retry without private registry succeeds
-        env_without_registry = { "COREPACK_NPM_TOKEN" => "azure-token" }
+        env_without_registry = {}
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack prepare pnpm@10.34.4 --activate",
           fingerprint: "corepack prepare <name>@<version> --activate",
@@ -664,9 +664,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         ).and_return("9.0.0")
 
         expect(Dependabot.logger).to receive(:info).with("Installing \"pnpm@99.99.99\"")
-        expect(Dependabot.logger).to receive(:error).with(
-          a_string_matching(/Error activating pnpm@99.99.99/)
-        )
+        allow(Dependabot.logger).to receive(:error)
         expect(Dependabot.logger).to receive(:info).with(
           "Falling back to activate the currently installed version of pnpm."
         )
@@ -678,6 +676,9 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         result = described_class.install("pnpm", "99.99.99", env: default_registry_env)
         expect(result).to eq("9.0.0")
+        expect(Dependabot.logger).to have_received(:error).with(
+          a_string_matching(/Error activating pnpm@99.99.99/)
+        )
       end
 
       it "does not retry when env has no COREPACK_NPM_REGISTRY" do
@@ -709,9 +710,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         ).and_return("9.0.0")
 
         expect(Dependabot.logger).to receive(:info).with("Installing \"pnpm@10.34.4\"")
-        expect(Dependabot.logger).to receive(:error).with(
-          a_string_matching(/Error activating pnpm@10.34.4/)
-        )
+        allow(Dependabot.logger).to receive(:error)
         expect(Dependabot.logger).to receive(:info).with(
           "Falling back to activate the currently installed version of pnpm."
         )
@@ -723,6 +722,9 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         result = described_class.install("pnpm", "10.34.4", env: env_without_registry)
         expect(result).to eq("9.0.0")
+        expect(Dependabot.logger).to have_received(:error).with(
+          a_string_matching(/Error activating pnpm@10.34.4/)
+        )
       end
     end
   end

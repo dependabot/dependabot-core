@@ -706,6 +706,8 @@ module Dependabot
         return false unless registry
         return false if default_npm_registry?(registry)
 
+        return error.status == 404 && error.message.include?(COREPACK_NOT_FOUND_ERROR) if error.is_a?(RegistryError)
+
         error.message.include?(COREPACK_NOT_FOUND_ERROR) &&
           error.message.match?(/Response Code.*:.*404.*\(Not Found\)/)
       end
@@ -716,6 +718,7 @@ module Dependabot
 
         env.except(
           RegistryHelper::COREPACK_NPM_REGISTRY_ENV,
+          RegistryHelper::COREPACK_NPM_TOKEN_ENV,
           RegistryHelper::NPM_CONFIG_REGISTRY_ENV,
           RegistryHelper::REGISTRY_KEY
         )
