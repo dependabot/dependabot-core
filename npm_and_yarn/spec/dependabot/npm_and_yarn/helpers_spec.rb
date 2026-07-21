@@ -675,6 +675,56 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         expect(result).to eq("10.34.4")
       end
 
+      it "falls back to locally installed pnpm when public registry retry is not accessible" do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare pnpm@10.34.4 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: private_registry_env
+        ).and_raise(StandardError, http_404_error_message)
+
+        env_without_registry = {}
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare pnpm@10.34.4 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: env_without_registry
+        ).and_raise(StandardError, "request to https://registry.npmjs.org/pnpm failed: connect ECONNREFUSED")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "pnpm -v",
+          fingerprint: "pnpm -v"
+        ).and_return("10.16.0")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare pnpm@10.16.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: env_without_registry
+        ).and_return("Preparing pnpm@10.16.0 for immediate activation...")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack pnpm -v",
+          fingerprint: "corepack pnpm -v",
+          env: env_without_registry
+        ).and_return("10.16.0")
+
+        expect(Dependabot.logger).to receive(:info).with("Installing \"pnpm@10.34.4\"").twice
+        expect(Dependabot.logger).to receive(:warn).with(
+          "Private registry returned 404 for pnpm@10.34.4. " \
+          "Retrying with public registry."
+        )
+        allow(Dependabot.logger).to receive(:error)
+        expect(Dependabot.logger).to receive(:info).with(
+          "Falling back to activate the currently installed version of pnpm."
+        )
+        expect(Dependabot.logger).to receive(:info).with(
+          "Activating currently installed version of pnpm: 10.16.0"
+        )
+        expect(Dependabot.logger).to receive(:info).with("Fetching version for package manager: pnpm")
+        expect(Dependabot.logger).to receive(:info).with("Installed version of pnpm: 10.16.0")
+
+        result = described_class.install("pnpm", "10.34.4", env: private_registry_env)
+        expect(result).to eq("10.16.0")
+      end
+
       it "does not retry when registry is the default npm registry" do
         default_registry_env = {
           "COREPACK_NPM_REGISTRY" => "https://registry.npmjs.org",
