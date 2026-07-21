@@ -29,11 +29,7 @@ module Dependabot
           releases = filter_ignored_versions(releases)
 
           # if there are no releases after applying filters, we fallback to the current tag to avoid empty results
-          if releases.empty?
-            Dependabot.logger.info("No releases found for #{dependency.name} after applying filters.")
-            return dependency.version
-          end
-
+          releases = apply_post_fetch_latest_versions_filter(releases)
           releases.max_by(&:version)&.tag
         end
 
@@ -47,6 +43,59 @@ module Dependabot
               ).available_versions,
               T.nilable(T::Array[Dependabot::Package::PackageRelease])
             )
+        end
+
+        protected
+
+        sig do
+          override.params(releases: T::Array[Dependabot::Package::PackageRelease])
+                  .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def filter_by_cooldown(releases)
+          return releases unless cooldown_enabled?
+          return releases unless cooldown_options
+
+          filtered = releases.reject { |release| in_cooldown_period?(release) }
+
+          if releases.count > filtered.count
+            Dependabot.logger.info("Filtered out #{releases.count - filtered.count} versions due to cooldown")
+          end
+
+          if filtered.empty? && !releases.empty? && dependency.version
+            Dependabot.logger.info(
+              "All versions filtered by cooldown for #{dependency.name}, " \
+              "falling back to current version #{dependency.version}"
+            )
+
+            return [
+              Dependabot::Package::PackageRelease.new(
+                version: GitSubmodules::Version.new("0.0.0-0.0"),
+                tag: dependency.version
+              )
+            ]
+          end
+
+          filtered
+        end
+
+        private
+
+        sig do
+          params(releases: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def apply_post_fetch_latest_versions_filter(releases)
+          if releases.empty?
+            Dependabot.logger.info("No releases found for #{dependency.name} after applying filters.")
+            return releases
+          end
+
+          releases << Dependabot::Package::PackageRelease.new(
+            version: GitSubmodules::Version.new("0.0.0-0.0"), # Lower than versions from package_details_fetcher
+            tag: dependency.version
+          )
+
+          releases
         end
 
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }

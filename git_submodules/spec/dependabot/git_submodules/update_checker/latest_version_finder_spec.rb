@@ -198,8 +198,8 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker::LatestVersionFinder do
         ]
       end
 
-      it "returns the current version" do
-        expect(checker.latest_tag).to eq(dependency.version)
+      it "returns nil" do
+        expect(checker.latest_tag).to be_nil
       end
 
       context "when raise_on_ignored is set" do
