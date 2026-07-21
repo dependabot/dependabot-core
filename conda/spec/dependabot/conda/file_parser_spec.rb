@@ -44,7 +44,7 @@ RSpec.describe Dependabot::Conda::FileParser do
 
         expect(numpy_dep.version).to eq("1.26")
         expect(numpy_dep.package_manager).to eq("conda")
-        expect(numpy_dep.requirements).to eq(
+        expect(numpy_dep.requirements.map(&:to_h)).to eq(
           [{
             requirement: "=1.26",
             file: "environment.yml",
@@ -60,7 +60,7 @@ RSpec.describe Dependabot::Conda::FileParser do
 
         expect(pydantic_dep.version).to eq("2.0")
         expect(pydantic_dep.package_manager).to eq("pip")
-        expect(pydantic_dep.requirements).to eq(
+        expect(pydantic_dep.requirements.map(&:to_h)).to eq(
           [{
             requirement: ">=2.0",
             file: "environment.yml",

@@ -481,14 +481,14 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
       expect(described_class::RequirementsUpdater)
         .to receive(:new)
         .with(
-          requirements: requirements,
+          requirements: dependency.requirements,
           updated_source: nil,
           target_version: "0.1.40",
           update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary
         )
         .and_call_original
       # "0.1.12" (caret) already allows 0.1.40, so the requirement is left as-is.
-      expect(checker.updated_requirements)
+      expect(checker.updated_requirements.map(&:to_h))
         .to eq(
           [{
             file: "Cargo.toml",
@@ -515,14 +515,14 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
         expect(described_class::RequirementsUpdater)
           .to receive(:new)
           .with(
-            requirements: requirements,
+            requirements: dependency.requirements,
             updated_source: nil,
             target_version: "0.1.39",
             update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary
           )
           .and_call_original
         # "0.1.12" already allows the 0.1.39 fix, so only the lockfile changes.
-        expect(checker.updated_requirements)
+        expect(checker.updated_requirements.map(&:to_h))
           .to eq(
             [{
               file: "Cargo.toml",

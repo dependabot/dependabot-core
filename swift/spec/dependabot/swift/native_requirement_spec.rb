@@ -102,14 +102,14 @@ RSpec.describe Dependabot::Swift::NativeRequirement do
       ).requirements.first
     end
 
-    it "updates the native requirement while preserving its other fields and metadata" do
+    it "updates the native requirement and replaces its update metadata" do
       updated = described_class.map_requirements([requirement]) { 'from: "2.0.0"' }.first
 
       expect(updated.requirement).to eq(">= 2.0.0, < 3.0.0")
       expect(updated.file).to eq(requirement.file)
       expect(updated.groups).to eq(requirement.groups)
       expect(updated.source).to eq(requirement.source)
-      expect(updated.metadata).to eq(requirement_string: 'from: "2.0.0"', custom: "preserved")
+      expect(updated.metadata).to eq(requirement_string: 'from: "2.0.0"')
     end
   end
 end

@@ -1829,7 +1829,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       it "delegates to Bundler::RequirementsUpdater with the right params" do
         expect(requirements_updater)
           .to receive(:new).with(
-            requirements: requirements,
+            requirements: dependency.requirements,
             update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
             latest_version: "1.13.0",
             latest_resolvable_version: "1.13.0",
@@ -1854,7 +1854,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         it "delegates to Bundler::RequirementsUpdater with the right params" do
           expect(requirements_updater)
             .to receive(:new).with(
-              requirements: requirements,
+              requirements: dependency.requirements,
               update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
               latest_version: "1.13.0",
               latest_resolvable_version: "1.5.0",
@@ -1890,7 +1890,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         it "delegates to Bundler::RequirementsUpdater" do
           expect(requirements_updater)
             .to receive(:new).with(
-              requirements: requirements,
+              requirements: dependency.requirements,
               update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
               latest_version: "1.13.0",
               latest_resolvable_version: "1.13.0",
@@ -1950,7 +1950,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           skip "Skipping as this fails after removing a feature flag that is rolled out to 100%"
           expect(requirements_updater)
             .to receive(:new).with(
-              requirements: requirements,
+              requirements: dependency.requirements,
               update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
               latest_version: "1.0.1",
               latest_resolvable_version: "1.0.1",
@@ -1991,7 +1991,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               skip "Skipping as this fails after removing a feature flag that is rolled out to 100%"
               expect(requirements_updater)
                 .to receive(:new).with(
-                  requirements: requirements,
+                  requirements: dependency.requirements,
                   update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
                   latest_version: /^2./,
                   latest_resolvable_version: /^1./,
@@ -2029,7 +2029,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       it "delegates to Bundler::RequirementsUpdater with the right params" do
         expect(requirements_updater)
           .to receive(:new).with(
-            requirements: requirements,
+            requirements: dependency.requirements,
             update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
             latest_version: "1.13.0",
             latest_resolvable_version: "1.13.0",
@@ -2064,7 +2064,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       it "delegates to Bundler::RequirementsUpdater with the right params" do
         expect(requirements_updater)
           .to receive(:new).with(
-            requirements: requirements,
+            requirements: dependency.requirements,
             update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary,
             latest_version: "1.13.0",
             latest_resolvable_version: "1.13.0",
@@ -2093,7 +2093,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       it "delegates to Bundler::RequirementsUpdater with the right params" do
         expect(requirements_updater)
           .to receive(:new).with(
-            requirements: requirements,
+            requirements: dependency.requirements,
             update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary,
             latest_version: "1.13.0",
             latest_resolvable_version: "1.13.0",
@@ -2121,7 +2121,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       it "delegates to Bundler::RequirementsUpdater with the right params" do
         expect(requirements_updater)
           .to receive(:new).with(
-            requirements: requirements,
+            requirements: dependency.requirements,
             update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary,
             latest_version: "1.13.0",
             latest_resolvable_version: "1.13.0",

@@ -41,9 +41,9 @@ RSpec.describe Dependabot::DotnetSdk::FileParser do
         expect(dependency).to have_attributes(
           name: name,
           version: version,
-          requirements: requirements,
           metadata: metadata
         )
+        expect(dependency.requirements.map(&:to_h)).to eq(requirements)
       end
 
       ecosystem = parser.ecosystem

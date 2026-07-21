@@ -884,12 +884,12 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       expect(described_class::RequirementsUpdater)
         .to receive(:new)
         .with(
-          requirements: dependency_requirements,
+          requirements: dependency.requirements,
           latest_resolvable_version: "1.6.0",
           update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary
         )
         .and_call_original
-      expect(checker.updated_requirements)
+      expect(checker.updated_requirements.map(&:to_h))
         .to eq(
           [{
             file: "composer.json",
@@ -921,12 +921,12 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         expect(described_class::RequirementsUpdater)
           .to receive(:new)
           .with(
-            requirements: dependency_requirements,
+            requirements: dependency.requirements,
             latest_resolvable_version: "1.5.0",
             update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary
           )
           .and_call_original
-        expect(checker.updated_requirements)
+        expect(checker.updated_requirements.map(&:to_h))
           .to eq(
             [{
               file: "composer.json",

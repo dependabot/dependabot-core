@@ -33,7 +33,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("boto3")
           expect(dependency.version).to eq("1.3.1")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==1.3.1",
               file: "setup.py",
@@ -51,7 +51,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("numpy")
           expect(dependency.version).to eq("1.11.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==1.11.0",
               file: "setup.py",
@@ -69,7 +69,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("responses")
           expect(dependency.version).to eq("0.5.1")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==0.5.1",
               file: "setup.py",
@@ -87,7 +87,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("flask")
           expect(dependency.version).to eq("0.12.2")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==0.12.2",
               file: "setup.py",
@@ -185,7 +185,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("boto3")
           expect(dependency.version).to eq("1.3.1")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==1.3.1",
               file: "setup.cfg",
@@ -203,7 +203,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("numpy")
           expect(dependency.version).to eq("1.11.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==1.11.0",
               file: "setup.cfg",
@@ -221,7 +221,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("responses")
           expect(dependency.version).to eq("0.5.1")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==0.5.1",
               file: "setup.cfg",
@@ -239,7 +239,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("flask")
           expect(dependency.version).to eq("0.12.2")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==0.12.2",
               file: "setup.cfg",
@@ -279,7 +279,7 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("boto3")
           expect(dependency.version).to eq("1.3.1")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==1.3.1",
               file: "setup.cfg",

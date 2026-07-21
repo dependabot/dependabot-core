@@ -223,7 +223,7 @@ RSpec.describe Dependabot::Conda::UpdateChecker do
         source: nil,
         groups: ["dependencies"]
       }]
-      expect(checker.updated_requirements).to eq(expected_requirements)
+      expect(checker.updated_requirements.map(&:to_h)).to eq(expected_requirements)
     end
   end
 

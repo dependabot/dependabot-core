@@ -48,7 +48,7 @@ RSpec.describe Dependabot::Python::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("psycopg2")
           expect(dependency.version).to eq("2.6.1")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==2.6.1",
               file: "requirements.txt",
@@ -93,7 +93,7 @@ RSpec.describe Dependabot::Python::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("psycopg2")
           expect(dependency.version).to eq("2.6.1")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==2.6.1",
               file: "requirements.txt",
@@ -121,7 +121,7 @@ RSpec.describe Dependabot::Python::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("distro")
           expect(dependency.version).to eq("1.0.4")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==1.0.4",
               file: "requirements.txt",
@@ -147,7 +147,7 @@ RSpec.describe Dependabot::Python::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("distro")
           expect(dependency.version).to eq("1.3.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==1.3.0",
               file: "requirements.txt",
@@ -174,7 +174,7 @@ RSpec.describe Dependabot::Python::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("arrow")
           expect(dependency.version).to eq("1.3.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==1.3.0",
               file: "requirements.txt",
@@ -196,7 +196,7 @@ RSpec.describe Dependabot::Python::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("cryptography")
           expect(dependency.version).to eq("2.7")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==2.7",
               file: "requirements.txt",
@@ -230,7 +230,7 @@ RSpec.describe Dependabot::Python::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("psycopg2")
           expect(dependency.version).to eq("2.6.1")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==2.6.1",
               file: "requirements.txt",
@@ -450,7 +450,7 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("requests")
             expect(dependency.version).to eq("2.0.0")
-            expect(dependency.requirements).to contain_exactly(
+            expect(dependency.requirements.map(&:to_h)).to contain_exactly(
               {
                 requirement: nil,
                 file: "requirements.txt",
@@ -479,7 +479,7 @@ RSpec.describe Dependabot::Python::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("requests")
               expect(dependency.version).to eq("2.0.0")
-              expect(dependency.requirements).to contain_exactly(
+              expect(dependency.requirements.map(&:to_h)).to contain_exactly(
                 {
                   requirement: "==2.0.0",
                   file: "constraints.txt",
@@ -517,7 +517,7 @@ RSpec.describe Dependabot::Python::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("psycopg2")
           expect(dependency.version).to eq("2.6.1")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==2.6.1",
               file: "requirements-dev.txt",
@@ -547,7 +547,7 @@ RSpec.describe Dependabot::Python::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("psycopg2")
           expect(dependency.version).to eq("2.6.1")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==2.6.1",
               file: "dev-requirements.txt",
@@ -577,7 +577,7 @@ RSpec.describe Dependabot::Python::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("psycopg2")
           expect(dependency.version).to eq("2.6.1")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==2.6.1",
               file: "requirements/dev.txt",
@@ -614,7 +614,7 @@ RSpec.describe Dependabot::Python::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("requests")
           expect(dependency.version).to eq("2.1.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==2.1.0",
               file: "requirements.txt",
@@ -637,7 +637,7 @@ RSpec.describe Dependabot::Python::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("flask")
           expect(dependency.version).to eq("0.12.2")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==0.12.2",
               file: "setup.py",
@@ -691,7 +691,7 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("requests")
             expect(dependency.version).to eq("2.1.0")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "==2.1.0",
                 file: "requirements.txt",
@@ -720,7 +720,7 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("flask")
             expect(dependency.version).to eq("0.12.2")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "==0.12.2",
                 file: "setup.py",
@@ -756,7 +756,7 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("raven")
             expect(dependency.version).to be_nil
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: nil,
                 file: "setup.py",
@@ -885,7 +885,7 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("attrs")
             expect(dependency.version).to eq("17.3.0")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: nil,
                 file: "requirements/test.in",
@@ -911,7 +911,7 @@ RSpec.describe Dependabot::Python::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("apipkg")
               expect(dependency.version).to eq("1.4")
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: "==1.4",
                   file: "requirements.txt",
@@ -929,7 +929,7 @@ RSpec.describe Dependabot::Python::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("attrs")
               expect(dependency.version).to eq("17.3.0")
-              expect(dependency.requirements).to contain_exactly(
+              expect(dependency.requirements.map(&:to_h)).to contain_exactly(
                 {
                   requirement: nil,
                   file: "requirements/test.in",
@@ -958,7 +958,7 @@ RSpec.describe Dependabot::Python::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("attrs")
               expect(dependency.version).to eq("17.3.0")
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: "<=17.4.0",
                   file: "requirements/test.in",
@@ -1014,7 +1014,7 @@ RSpec.describe Dependabot::Python::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("boto3")
           expect(dependency.version).to eq("1.3.1")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==1.3.1",
               file: "setup.py",
@@ -1040,7 +1040,7 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("boto3")
             expect(dependency.version).to eq("1.3.1")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "==1.3.1",
                 file: "setup.py",
@@ -1069,7 +1069,7 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("requests")
             expect(dependency.version).to be_nil
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "==2.12.*",
                 file: "setup.py",
@@ -1101,7 +1101,7 @@ RSpec.describe Dependabot::Python::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("boto3")
           expect(dependency.version).to eq("1.3.1")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "==1.3.1",
               file: "setup.cfg",
@@ -1127,7 +1127,7 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("boto3")
             expect(dependency.version).to eq("1.3.1")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "==1.3.1",
                 file: "setup.cfg",
@@ -1156,7 +1156,7 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("requests")
             expect(dependency.version).to be_nil
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "==2.12.*",
                 file: "setup.cfg",
@@ -1197,7 +1197,7 @@ RSpec.describe Dependabot::Python::FileParser do
         its(:length) { is_expected.to eq(2) }
 
         describe "the first dependency" do
-          subject { dependencies.first }
+          subject(:dependency) { dependencies.first }
 
           let(:expected_requirements) do
             [{
@@ -1211,7 +1211,10 @@ RSpec.describe Dependabot::Python::FileParser do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("requests") }
           its(:version) { is_expected.to eq("2.18.0") }
-          its(:requirements) { is_expected.to eq(expected_requirements) }
+
+          it "has the expected requirements" do
+            expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
+          end
         end
       end
 
@@ -1257,7 +1260,7 @@ RSpec.describe Dependabot::Python::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("requests")
           expect(dependency.version).to be_nil
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "*",
               file: "Pipfile",
@@ -1286,7 +1289,7 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("requests")
             expect(dependency.version).to be_nil
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "*",
                 file: "Pipfile",
@@ -1304,7 +1307,7 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("psycopg2")
             expect(dependency.version).to eq("2.6.1")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "==2.6.1",
                 file: "requirements.txt",
@@ -1346,7 +1349,7 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("geopy")
             expect(dependency.version).to eq("1.14.0")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "^1.13",
                 file: "pyproject.toml",
@@ -1377,7 +1380,7 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("requests")
             expect(dependency.version).to be_nil
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "*",
                 file: "pyproject.toml",
@@ -1396,7 +1399,7 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("pytest")
             expect(dependency.version).to eq("3.4.0")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "*",
                 file: "pyproject.toml",
@@ -1420,7 +1423,7 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("psycopg2")
             expect(dependency.version).to eq("2.6.1")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "==2.6.1",
                 file: "requirements.txt",
@@ -1440,7 +1443,7 @@ RSpec.describe Dependabot::Python::FileParser do
             expect(dependency.name).to eq("attrs")
             expect(dependency.version).to eq("18.0.0")
             # it only has 1 requirement since it isn't in version_not_specified.toml
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "==18.0.0",
                 file: "requirements.txt",

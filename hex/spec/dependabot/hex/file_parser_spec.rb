@@ -56,7 +56,7 @@ RSpec.describe Dependabot::Hex::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("plug")
           expect(dependency.version).to be_nil
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "~> 1.3.0",
               file: "mix.exs",
@@ -78,7 +78,7 @@ RSpec.describe Dependabot::Hex::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("plug")
           expect(dependency.version).to eq("1.3.5")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "~> 1.3.0",
               file: "mix.exs",
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::Hex::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("phoenix")
           expect(dependency.version).to eq("1.2.1")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "== 1.2.1",
               file: "mix.exs",
@@ -121,7 +121,7 @@ RSpec.describe Dependabot::Hex::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("plug")
           expect(dependency.version).to eq("1.3.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "1.3.0",
               file: "mix.exs",
@@ -144,7 +144,7 @@ RSpec.describe Dependabot::Hex::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("plug")
           expect(dependency.version).to eq("1.3.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: nil,
               file: "mix.exs",
@@ -168,7 +168,7 @@ RSpec.describe Dependabot::Hex::FileParser do
           expect(dependency.name).to eq("wsecli")
           expect(dependency.version)
             .to eq("a89054cf71c5ee9e780998e5acb2a78fd3419dd9")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: nil,
               file: "mix.exs",
@@ -198,7 +198,7 @@ RSpec.describe Dependabot::Hex::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("phoenix")
           expect(dependency.version).to eq("1.2.1")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "== 1.2.1",
               file: "mix.exs",
@@ -216,7 +216,7 @@ RSpec.describe Dependabot::Hex::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("plug")
           expect(dependency.version).to eq("1.3.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "1.3.0",
               file: "mix.exs",
@@ -464,7 +464,7 @@ RSpec.describe Dependabot::Hex::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("pulsar")
           expect(dependency.version).to eq("2.8.7")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "~> 2.8.7",
               file: "mix.exs",

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/dependency_requirement"
 require "dependabot/gradle/file_updater"
 require "dependabot/gradle/version"
 
@@ -18,6 +19,10 @@ RSpec.describe Dependabot::Gradle::FileUpdater::Wrapper::CommandBuilder do
   let(:gradle_version) { nil }
 
   let(:requirements) do
+    raw_requirements.map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) }
+  end
+
+  let(:raw_requirements) do
     [{
       file: "gradle/wrapper/gradle-wrapper.properties",
       requirement: "9.0.0",
@@ -39,7 +44,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater::Wrapper::CommandBuilder do
   end
 
   context "with a mirror host that contains 'bin' in the domain" do
-    let(:requirements) do
+    let(:raw_requirements) do
       [{
         file: "gradle/wrapper/gradle-wrapper.properties",
         requirement: "9.0.0",
@@ -59,7 +64,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater::Wrapper::CommandBuilder do
   end
 
   context "with a checksum requirement" do
-    let(:requirements) do
+    let(:raw_requirements) do
       super() + [{
         file: "gradle/wrapper/gradle-wrapper.properties",
         requirement: "deadbeef",
@@ -146,7 +151,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater::Wrapper::CommandBuilder do
   end
 
   context "with a custom mirror URL that omits the bin/all marker" do
-    let(:requirements) do
+    let(:raw_requirements) do
       [{
         file: "gradle/wrapper/gradle-wrapper.properties",
         requirement: "9.0.0",

@@ -50,7 +50,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("time")
             expect(dependency.version).to be_nil
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "0.1.12",
                 file: "Cargo.toml",
@@ -72,7 +72,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("time")
             expect(dependency.version).to be_nil
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: nil,
                 file: "Cargo.toml",
@@ -96,7 +96,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("regex")
             expect(dependency.version).to be_nil
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "0.1.41",
                 file: "Cargo.toml",
@@ -130,7 +130,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("time")
             expect(dependency.version).to be_nil
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [
                 {
                   requirement: "0.1.12",
@@ -176,7 +176,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("cargo-registry-s3")
               expect(dependency.version).to eq("0.2.0")
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: "0.2.0",
                   file: "Cargo.toml",
@@ -194,7 +194,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("regex")
               expect(dependency.version).to eq("0.1.38")
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: "=0.1.38",
                   file: "Cargo.toml",
@@ -232,7 +232,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("regex")
               expect(dependency.version).to eq("0.2.10")
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: "=0.2.10",
                   file: "Cargo.toml",
@@ -250,7 +250,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("log")
               expect(dependency.version).to eq("0.4.0")
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: "=0.4.0",
                   file: "lib/sub_crate/Cargo.toml",
@@ -321,7 +321,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
                 expect(dependency).to be_a(Dependabot::Dependency)
                 expect(dependency.name).to eq("log")
                 expect(dependency.version).to eq("0.4.0")
-                expect(dependency.requirements).to eq(
+                expect(dependency.requirements.map(&:to_h)).to eq(
                   [{
                     requirement: "=0.4.0",
                     file: "src/sub_crate/Cargo.toml",
@@ -339,7 +339,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
                 expect(dependency).to be_a(Dependabot::Dependency)
                 expect(dependency.name).to eq("dependabot_sub_crate")
                 expect(dependency.version).to eq("0.2.0")
-                expect(dependency.requirements).to eq(
+                expect(dependency.requirements.map(&:to_h)).to eq(
                   [
                     {
                       requirement: nil,
@@ -398,7 +398,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("log")
               expect(dependency.version).to eq("0.4.0")
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [
                   {
                     requirement: "=0.4.0",
@@ -423,7 +423,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("utf8-ranges")
             expect(dependency.version).to be_nil
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: nil,
                 file: "Cargo.toml",
@@ -449,7 +449,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("utf8-ranges")
               expect(dependency.version).to be_nil
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: nil,
                   file: "Cargo.toml",
@@ -476,7 +476,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("utf8-ranges")
               expect(dependency.version).to be_nil
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: nil,
                   file: "Cargo.toml",
@@ -504,7 +504,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("utf8-ranges")
             expect(dependency.version).to be_nil
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "0.1.3",
                 file: "Cargo.toml",
@@ -607,7 +607,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
             expect(dependency.name).to eq("time")
             # Surprisingly, Rust's treats bare requirements as semver reqs
             expect(dependency.version).to eq("0.1.38")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "0.1.12",
                 file: "Cargo.toml",
@@ -629,7 +629,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("time")
               expect(dependency.version).to eq("0.1.38")
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: nil,
                   file: "Cargo.toml",
@@ -652,7 +652,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("time")
               expect(dependency.version).to eq("0.1.12")
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: "<= 0.1.12",
                   file: "Cargo.toml",
@@ -675,7 +675,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("zstd")
               expect(dependency.version).to eq("0.4.19+zstd.1.3.5")
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: "0.4.17+zstd.1.3.3",
                   file: "Cargo.toml",
@@ -701,7 +701,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
               expect(dependency.name).to eq("time")
               # Surprisingly, Rust's treats bare requirements as semver reqs
               expect(dependency.version).to eq("0.1.39")
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: "0.1.12",
                   file: "Cargo.toml",
@@ -727,7 +727,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
               expect(dependency.name).to eq("rand")
               # Surprisingly, Rust treats bare requirements as semver reqs
               expect(dependency.version).to eq("0.4.1")
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: "0.4",
                   file: "Cargo.toml",
@@ -751,7 +751,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
                 expect(dependency.name).to eq("rand")
                 # Surprisingly, Rust treats bare requirements as semver reqs
                 expect(dependency.version).to eq("0.4.1")
-                expect(dependency.requirements).to eq(
+                expect(dependency.requirements.map(&:to_h)).to eq(
                   [{
                     requirement: "0.4",
                     file: "Cargo.toml",
@@ -778,7 +778,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
               expect(dependency.name).to eq("utf8-ranges")
               expect(dependency.version)
                 .to eq("d5094c7e9456f2965dec20de671094a98c6929c2")
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: nil,
                   file: "Cargo.toml",
@@ -806,7 +806,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
                 expect(dependency.name).to eq("utf8-ranges")
                 expect(dependency.version)
                   .to eq("83141b376b93484341c68fbca3ca110ae5cd2708")
-                expect(dependency.requirements).to eq(
+                expect(dependency.requirements.map(&:to_h)).to eq(
                   [{
                     requirement: nil,
                     file: "Cargo.toml",
@@ -835,7 +835,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
               expect(dependency).to be_a(Dependabot::Dependency)
               expect(dependency.name).to eq("gtk")
               expect(dependency.version).to eq("0.3.0")
-              expect(dependency.requirements).to eq(
+              expect(dependency.requirements.map(&:to_h)).to eq(
                 [{
                   requirement: "0.3.0",
                   file: "Cargo.toml",
@@ -856,7 +856,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
                 expect(dependency).to be_a(Dependabot::Dependency)
                 expect(dependency.name).to eq("gtk")
                 expect(dependency.version).to eq("0.3.0")
-                expect(dependency.requirements).to eq(
+                expect(dependency.requirements.map(&:to_h)).to eq(
                   [{
                     requirement: nil,
                     file: "Cargo.toml",

@@ -192,7 +192,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
 
     context "when specified with a tag in helm chart" do
       it "updates the requirement" do
-        expect(checker.updated_requirements).to eq(
+        expect(checker.updated_requirements.map(&:to_h)).to eq(
           [{
             groups: [],
             file: "Chart.yaml",
@@ -207,7 +207,7 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
         let(:file_name) { "values.yaml" }
 
         it "updates the requirement" do
-          expect(checker.updated_requirements).to eq(
+          expect(checker.updated_requirements.map(&:to_h)).to eq(
             [{
               groups: [],
               file: "values.yaml",

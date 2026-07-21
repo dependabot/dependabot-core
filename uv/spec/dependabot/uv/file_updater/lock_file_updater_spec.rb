@@ -1578,8 +1578,8 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       )
     end
 
-    let(:new_req) { { requirement: ">=0.115.12,<0.122" } }
-    let(:old_req) { { requirement: ">=0.115.12,<0.116" } }
+    let(:new_req) { dependency.requirements.first }
+    let(:old_req) { dependency.previous_requirements.first }
 
     it "replaces the requirement with the new version" do
       result = replace_dep
@@ -1593,7 +1593,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
 
     context "when operators are in different order" do
-      let(:old_req) { { requirement: "<0.116,>=0.115.12" } }
+      let(:old_req) { dependency.previous_requirements.first.with_requirement("<0.116,>=0.115.12") }
 
       it "still matches and replaces correctly" do
         result = replace_dep
@@ -1635,8 +1635,8 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         TOML
       end
 
-      let(:new_req) { { requirement: "==0.122.0" } }
-      let(:old_req) { { requirement: "==0.115.12" } }
+      let(:new_req) { dependency.requirements.first.with_requirement("==0.122.0") }
+      let(:old_req) { dependency.previous_requirements.first.with_requirement("==0.115.12") }
 
       it "replaces the exact version" do
         result = replace_dep
@@ -1655,8 +1655,8 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         TOML
       end
 
-      let(:new_req) { { requirement: "~=0.122.0" } }
-      let(:old_req) { { requirement: "~=0.115.0" } }
+      let(:new_req) { dependency.requirements.first.with_requirement("~=0.122.0") }
+      let(:old_req) { dependency.previous_requirements.first.with_requirement("~=0.115.0") }
 
       it "replaces the tilde requirement" do
         result = replace_dep
@@ -1704,8 +1704,8 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         )
       end
 
-      let(:new_req) { { requirement: ">=0.18.6,<0.20" } }
-      let(:old_req) { { requirement: ">=0.18.6,<0.19" } }
+      let(:new_req) { dependency.requirements.first }
+      let(:old_req) { dependency.previous_requirements.first }
 
       context "when package name uses dots" do
         let(:content) do
@@ -1768,8 +1768,8 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
           TOML
         end
 
-        let(:new_req) { { requirement: "==0.20.0" } }
-        let(:old_req) { { requirement: "==0.18.6" } }
+        let(:new_req) { dependency.requirements.first.with_requirement("==0.20.0") }
+        let(:old_req) { dependency.previous_requirements.first.with_requirement("==0.18.6") }
 
         it "replaces the exact version" do
           result = replace_dep
@@ -1801,8 +1801,8 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         )
       end
 
-      let(:new_req) { { requirement: "~=3.25.0" } }
-      let(:old_req) { { requirement: "~=3.24.0" } }
+      let(:new_req) { dependency.requirements.first }
+      let(:old_req) { dependency.previous_requirements.first }
 
       let(:content) do
         <<~TOML
@@ -1842,8 +1842,8 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         )
       end
 
-      let(:new_req) { { requirement: "~=3.25.0" } }
-      let(:old_req) { { requirement: "~=3.24.0" } }
+      let(:new_req) { dependency.requirements.first }
+      let(:old_req) { dependency.previous_requirements.first }
 
       let(:content) do
         <<~TOML
@@ -1883,8 +1883,8 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         )
       end
 
-      let(:new_req) { { requirement: "~=3.25.0" } }
-      let(:old_req) { { requirement: "~=3.24.0" } }
+      let(:new_req) { dependency.requirements.first }
+      let(:old_req) { dependency.previous_requirements.first }
 
       let(:content) do
         <<~TOML

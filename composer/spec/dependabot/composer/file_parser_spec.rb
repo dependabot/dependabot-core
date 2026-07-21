@@ -44,7 +44,7 @@ RSpec.describe Dependabot::Composer::FileParser do
                 type: "git",
                 url: "https://github.com/Seldaek/monolog.git"
               }
-            }]
+            }].map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) }
           )
         end
       end
@@ -120,7 +120,7 @@ RSpec.describe Dependabot::Composer::FileParser do
                 type: "git",
                 url: "https://github.com/Seldaek/monolog.git"
               }
-            }]
+            }].map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) }
           )
         end
       end
@@ -209,7 +209,7 @@ RSpec.describe Dependabot::Composer::FileParser do
                 branch: "example",
                 ref: nil
               }
-            }]
+            }].map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) }
           )
         end
 
@@ -228,7 +228,7 @@ RSpec.describe Dependabot::Composer::FileParser do
                   branch: "example",
                   ref: nil
                 }
-              }]
+              }].map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) }
             )
           end
         end
@@ -250,7 +250,7 @@ RSpec.describe Dependabot::Composer::FileParser do
                   branch: "master",
                   ref: nil
                 }
-              }]
+              }].map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) }
             )
           end
         end
@@ -282,7 +282,7 @@ RSpec.describe Dependabot::Composer::FileParser do
               file: "composer.json",
               groups: ["runtime"],
               source: { type: "path" }
-            }]
+            }].map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) }
           )
         end
       end
@@ -307,7 +307,7 @@ RSpec.describe Dependabot::Composer::FileParser do
               file: "composer.json",
               groups: ["runtime"],
               source: nil
-            }]
+            }].map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) }
           )
         end
       end
@@ -333,7 +333,7 @@ RSpec.describe Dependabot::Composer::FileParser do
                 file: "composer.json",
                 groups: ["development"],
                 source: nil
-              }]
+              }].map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) }
             )
           end
         end
@@ -366,7 +366,7 @@ RSpec.describe Dependabot::Composer::FileParser do
                 file: "composer.json",
                 groups: ["runtime"],
                 source: nil
-              }]
+              }].map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) }
             )
           end
         end

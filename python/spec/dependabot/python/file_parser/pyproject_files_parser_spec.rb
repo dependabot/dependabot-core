@@ -38,7 +38,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("geopy")
           expect(dependency.version).to be_nil
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "^1.13",
               file: "pyproject.toml",
@@ -105,7 +105,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("fastapi")
             expect(dependency.version).to be_nil
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: nil,
                 file: "pyproject.toml",
@@ -273,7 +273,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("geopy")
           expect(dependency.version).to eq("1.14.0")
-          expect(dependency.requirements).to eq(
+          expect(dependency.requirements.map(&:to_h)).to eq(
             [{
               requirement: "^1.13",
               file: "pyproject.toml",
@@ -290,7 +290,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("pillow")
             expect(dependency.version).to eq("5.1.0")
-            expect(dependency.requirements).to eq(
+            expect(dependency.requirements.map(&:to_h)).to eq(
               [{
                 requirement: "^5.1",
                 file: "pyproject.toml",
@@ -741,7 +741,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("ansys-templates")
         expect(dependency.version).to eq("0.3.0")
-        expect(dependency.requirements).to eq(
+        expect(dependency.requirements.map(&:to_h)).to eq(
           [{
             requirement: "==0.3.0",
             file: "pyproject.toml",
@@ -823,7 +823,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       let(:pyproject_fixture_name) { "optional_dependencies_only.toml" }
 
-      its(:length) { is_expected.to be > 0 }
+      its(:length) { is_expected.to be_positive }
     end
 
     describe "parse standard python files" do
@@ -861,7 +861,7 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
         let(:pyproject_fixture_name) { "pyproject_1_0_0_optional_deps.toml" }
 
-        its(:length) { is_expected.to be > 0 }
+        its(:length) { is_expected.to be_positive }
       end
 
       context "with PEP 621 and Poetry configuration" do

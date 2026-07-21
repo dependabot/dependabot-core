@@ -1060,12 +1060,12 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       expect(described_class::RequirementsUpdater)
         .to receive(:new)
         .with(
-          requirements: dependency_requirements,
+          requirements: dependency.requirements,
           updated_source: nil,
           latest_resolvable_version: "1.6.0"
         )
         .and_call_original
-      expect(checker.updated_requirements)
+      expect(checker.updated_requirements.map(&:to_h))
         .to eq(
           [{
             file: "mix.exs",
@@ -1117,7 +1117,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         expect(described_class::RequirementsUpdater)
           .to receive(:new)
           .with(
-            requirements: dependency_requirements,
+            requirements: dependency.requirements,
             updated_source: {
               type: "git",
               url: "https://github.com/dependabot-fixtures/phoenix.git",
@@ -1127,7 +1127,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             latest_resolvable_version: "1.6.0"
           )
           .and_call_original
-        expect(checker.updated_requirements)
+        expect(checker.updated_requirements.map(&:to_h))
           .to eq(
             [{
               requirement: nil,

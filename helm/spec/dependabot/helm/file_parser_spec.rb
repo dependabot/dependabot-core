@@ -53,7 +53,7 @@ RSpec.describe Dependabot::Helm::FileParser do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("redis")
         expect(dependency.version).to eq("17.11.3")
-        expect(dependency.requirements).to eq(expected_requirements)
+        expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
       end
     end
 
@@ -85,7 +85,7 @@ RSpec.describe Dependabot::Helm::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("redis")
           expect(dependency.version).to eq("17.11.3")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
 
@@ -106,7 +106,7 @@ RSpec.describe Dependabot::Helm::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("mongodb")
           expect(dependency.version).to eq("13.9.1")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -131,7 +131,7 @@ RSpec.describe Dependabot::Helm::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("redis")
           expect(dependency.version).to eq("17.11.3-dev")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end
@@ -156,7 +156,7 @@ RSpec.describe Dependabot::Helm::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("redis")
           expect(dependency.version).to eq("105")
-          expect(dependency.requirements).to eq(expected_requirements)
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
         end
       end
     end

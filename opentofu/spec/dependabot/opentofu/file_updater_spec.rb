@@ -4,6 +4,7 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/dependency_requirement"
 require "dependabot/opentofu/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
@@ -2116,7 +2117,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
 
   describe "#update_registry_declaration" do
     let(:new_req) do
-      {
+      Dependabot::DependencyRequirement.from_hash(
         requirement: "~> 6.6.0",
         groups: [],
         file: "main.tf",
@@ -2125,11 +2126,11 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
           registry_hostname: "registry.opentofu.org",
           module_identifier: "integrations/github"
         }
-      }
+      )
     end
 
     let(:old_req) do
-      {
+      Dependabot::DependencyRequirement.from_hash(
         requirement: "~> 4.28.0",
         groups: [],
         file: "main.tf",
@@ -2138,7 +2139,7 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
           registry_hostname: "registry.opentofu.org",
           module_identifier: "integrations/github"
         }
-      }
+      )
     end
 
     let(:updated_content) do

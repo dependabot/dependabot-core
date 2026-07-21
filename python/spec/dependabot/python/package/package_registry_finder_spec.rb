@@ -319,10 +319,19 @@ RSpec.describe Dependabot::Python::Package::PackageRegistryFinder do
               requirement: "==2.4.1",
               file: "requirements.txt",
               groups: ["dependencies"],
-              source: "custom"
+              source: {
+                type: "registry",
+                url: "https://some.internal.registry.com/pypi/",
+                name: "custom"
+              }
             }],
             package_manager: "pip"
           )
+        end
+
+        before do
+          allow(dependency).to receive(:all_sources)
+            .and_return([dependency.requirements.first.source_string(:name)])
         end
 
         it "gets the right index URLs" do

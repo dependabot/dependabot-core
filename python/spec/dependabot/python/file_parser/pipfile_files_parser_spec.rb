@@ -33,7 +33,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
       its(:length) { is_expected.to eq(2) }
 
       describe "the first dependency" do
-        subject { dependencies.first }
+        subject(:dependency) { dependencies.first }
 
         let(:expected_requirements) do
           [{
@@ -47,7 +47,10 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("requests") }
         its(:version) { is_expected.to eq("2.18.0") }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
+
+        it "has the expected requirements" do
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
+        end
       end
     end
 
@@ -105,7 +108,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
         its(:length) { is_expected.to eq(2) }
 
         describe "the last dependency" do
-          subject { dependencies.last }
+          subject(:dependency) { dependencies.last }
 
           let(:expected_requirements) do
             [{
@@ -119,7 +122,10 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("pytest") }
           its(:version) { is_expected.to eq("3.4.0") }
-          its(:requirements) { is_expected.to eq(expected_requirements) }
+
+          it "has the expected requirements" do
+            expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
+          end
         end
       end
 
@@ -139,7 +145,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
           end
 
           describe "the last dependency" do
-            subject { dependencies.last }
+            subject(:dependency) { dependencies.last }
 
             let(:expected_requirements) do
               [{
@@ -153,7 +159,10 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("pytest") }
             its(:version) { is_expected.to eq("3.4.0") }
-            its(:requirements) { is_expected.to eq(expected_requirements) }
+
+            it "has the expected requirements" do
+              expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
+            end
           end
         end
       end
@@ -173,7 +182,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
         its(:length) { is_expected.to eq(1) }
 
         describe "the last dependency" do
-          subject { dependencies.first }
+          subject(:dependency) { dependencies.first }
 
           let(:expected_requirements) do
             [{
@@ -187,7 +196,10 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("pytest") }
           its(:version) { is_expected.to eq("3.2.3") }
-          its(:requirements) { is_expected.to eq(expected_requirements) }
+
+          it "has the expected requirements" do
+            expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
+          end
         end
       end
     end
@@ -206,7 +218,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
         its(:length) { is_expected.to eq(3) }
 
         describe "the first dependency" do
-          subject { dependencies.first }
+          subject(:dependency) { dependencies.first }
 
           let(:expected_requirements) do
             [{
@@ -220,7 +232,10 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("requests") }
           its(:version) { is_expected.to eq("2.18.0") }
-          its(:requirements) { is_expected.to eq(expected_requirements) }
+
+          it "has the expected requirements" do
+            expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
+          end
         end
       end
     end
@@ -237,7 +252,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
         its(:length) { is_expected.to eq(2) }
 
         describe "the first dependency" do
-          subject { dependencies.first }
+          subject(:dependency) { dependencies.first }
 
           let(:expected_requirements) do
             [{
@@ -251,7 +266,10 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("requests") }
           its(:version) { is_expected.to eq("2.18.0") }
-          its(:requirements) { is_expected.to eq(expected_requirements) }
+
+          it "has the expected requirements" do
+            expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
+          end
         end
       end
     end
@@ -268,7 +286,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
         its(:length) { is_expected.to eq(2) }
 
         describe "the first dependency" do
-          subject { dependencies.first }
+          subject(:dependency) { dependencies.first }
 
           let(:expected_requirements) do
             [{
@@ -282,7 +300,10 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("requests") }
           its(:version) { is_expected.to eq("2.18.0") }
-          its(:requirements) { is_expected.to eq(expected_requirements) }
+
+          it "has the expected requirements" do
+            expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
+          end
         end
       end
     end
@@ -318,7 +339,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
       end
 
       describe "the dependency" do
-        subject { dependencies.find { |d| d.name == "pytest" } }
+        subject(:dependency) { dependencies.find { |d| d.name == "pytest" } }
 
         let(:expected_requirements) do
           [{
@@ -332,7 +353,10 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("pytest") }
         its(:version) { is_expected.to eq("3.2.3") }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
+
+        it "has the expected requirements" do
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
+        end
       end
     end
 
@@ -345,7 +369,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
       end
 
       describe "the (non-git) dependency" do
-        subject { dependencies.find { |d| d.name == "requests" } }
+        subject(:dependency) { dependencies.find { |d| d.name == "requests" } }
 
         let(:expected_requirements) do
           [{
@@ -359,7 +383,10 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("requests") }
         its(:version) { is_expected.to eq("2.18.4") }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
+
+        it "has the expected requirements" do
+          expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
+        end
       end
     end
 
@@ -380,7 +407,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
         its(:length) { is_expected.to eq(1) }
 
         describe "the first dependency" do
-          subject { dependencies.first }
+          subject(:dependency) { dependencies.first }
 
           let(:expected_requirements) do
             [{
@@ -394,7 +421,10 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("requests") }
           its(:version) { is_expected.to eq("2.18.0") }
-          its(:requirements) { is_expected.to eq(expected_requirements) }
+
+          it "has the expected requirements" do
+            expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
+          end
         end
       end
     end
@@ -428,7 +458,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
         its(:length) { is_expected.to eq(2) }
 
         describe "the first dependency" do
-          subject { dependencies.first }
+          subject(:dependency) { dependencies.first }
 
           let(:expected_requirements) do
             [{
@@ -442,7 +472,10 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("requests") }
           its(:version) { is_expected.to be_nil }
-          its(:requirements) { is_expected.to eq(expected_requirements) }
+
+          it "has the expected requirements" do
+            expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
+          end
 
           context "with exact versions specified in the Pipfile" do
             let(:pipfile_fixture_name) { "exact_version" }
@@ -460,7 +493,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
     end
 
     context "with an empty requirement string" do
-      subject { dependencies.find { |d| d.name == "tensorflow-gpu" } }
+      subject(:dependency) { dependencies.find { |d| d.name == "tensorflow-gpu" } }
 
       let(:pipfile_fixture_name) { "empty_requirement" }
       let(:files) { [pipfile] }
@@ -479,7 +512,10 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
 
       it { is_expected.to be_a(Dependabot::Dependency) }
       its(:name) { is_expected.to eq("tensorflow-gpu") }
-      its(:requirements) { is_expected.to eq(expected_requirements) }
+
+      it "has the expected requirements" do
+        expect(dependency.requirements.map(&:to_h)).to eq(expected_requirements)
+      end
     end
   end
 end

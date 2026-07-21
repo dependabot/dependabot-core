@@ -743,7 +743,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
       end
 
       it "updates both requirements" do
-        expect(checker.updated_requirements).to contain_exactly(
+        expect(checker.updated_requirements.map(&:to_h)).to contain_exactly(
           {
             file: "constraints.txt",
             requirement: "==2.6.0",
@@ -787,7 +787,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
       end
 
       it "updates the workspace member pyproject requirement" do
-        expect(first_updated_requirements).to eq(
+        expect(first_updated_requirements.to_h).to eq(
           file: "schema/pyproject.toml",
           requirement: "~=2.19.1",
           groups: [],

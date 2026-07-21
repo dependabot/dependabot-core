@@ -30,6 +30,10 @@ RSpec.describe Dependabot::Bundler::FileParser do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
+    let(:expected_requirement_objects) do
+      expected_requirements.map { |requirement| Dependabot::DependencyRequirement.from_hash(requirement) }
+    end
+
     context "with a version specified" do
       its(:length) { is_expected.to eq(2) }
 
@@ -47,7 +51,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("business") }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:requirements) { is_expected.to eq(expected_requirement_objects) }
         its(:version) { is_expected.to eq("1.4.0") }
       end
 
@@ -70,7 +74,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("business") }
-          its(:requirements) { is_expected.to eq(expected_requirements) }
+          its(:requirements) { is_expected.to eq(expected_requirement_objects) }
           its(:version) { is_expected.to eq("1.4.0") }
         end
       end
@@ -94,7 +98,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("business") }
         its(:version) { is_expected.to eq("1.4.0") }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:requirements) { is_expected.to eq(expected_requirement_objects) }
       end
     end
 
@@ -115,7 +119,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
           }]
         end
 
-        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:requirements) { is_expected.to eq(expected_requirement_objects) }
       end
     end
 
@@ -139,7 +143,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("business") }
         its(:version) { is_expected.to eq("1.4.0") }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:requirements) { is_expected.to eq(expected_requirement_objects) }
       end
     end
 
@@ -162,7 +166,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("business") }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:requirements) { is_expected.to eq(expected_requirement_objects) }
         its(:version) { is_expected.to eq("1.4.0") }
       end
     end
@@ -190,7 +194,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
 
         it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:requirements) { is_expected.to eq(expected_requirement_objects) }
 
         its(:version) do
           is_expected.to eq("1530024bd6a68d36ac18e04836ce110e0d433c36")
@@ -215,7 +219,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
 
         it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:requirements) { is_expected.to eq(expected_requirement_objects) }
 
         its(:version) do
           is_expected.to eq("997d1a6ee76a1f254fd72ce16acbc8d347fcaee3")
@@ -242,7 +246,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
 
         it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:requirements) { is_expected.to eq(expected_requirement_objects) }
 
         its(:version) do
           is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e")
@@ -270,7 +274,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("kaminari-actionview") }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:requirements) { is_expected.to eq(expected_requirement_objects) }
       end
     end
 
@@ -379,7 +383,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("business") }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:requirements) { is_expected.to eq(expected_requirement_objects) }
       end
     end
 
@@ -415,7 +419,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
 
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("statesman") }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:requirements) { is_expected.to eq(expected_requirement_objects) }
       end
     end
 
@@ -489,7 +493,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
           expect(dependencies.map(&:name))
             .to match_array(%w(business statesman))
           expect(dependencies.first.name).to eq("business")
-          expect(dependencies.first.requirements)
+          expect(dependencies.first.requirements.map(&:to_h))
             .to contain_exactly(
               {
                 file: "Gemfile",
@@ -522,7 +526,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         it "fetches details from both gemspecs" do
           expect(dependencies.map(&:name))
             .to match_array(%w(business statesman))
-          expect(dependencies.map(&:requirements))
+          expect(dependencies.map { |dependency| dependency.requirements.map(&:to_h) })
             .to contain_exactly(
               [{
                 requirement: "~> 1.0",
@@ -573,7 +577,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("gitlab") }
           its(:version) { is_expected.to eq("4.2.0") }
-          its(:requirements) { is_expected.to eq(expected_requirements) }
+          its(:requirements) { is_expected.to eq(expected_requirement_objects) }
         end
 
         describe "a development gemspec dependency" do
@@ -591,7 +595,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("webmock") }
           its(:version) { is_expected.to eq("2.3.2") }
-          its(:requirements) { is_expected.to eq(expected_requirements) }
+          its(:requirements) { is_expected.to eq(expected_requirement_objects) }
         end
 
         context "when that needs to be sanitized" do
@@ -667,7 +671,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
           its(:version) { is_expected.to be_nil }
 
           its(:requirements) do
-            is_expected.to match_array(expected_requirements)
+            is_expected.to match_array(expected_requirement_objects)
           end
         end
       end
@@ -693,7 +697,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("rake") }
         its(:version) { is_expected.to be_nil }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:requirements) { is_expected.to eq(expected_requirement_objects) }
       end
 
       context "when that needs to be sanitized" do
@@ -723,7 +727,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         it { is_expected.to be_a(Dependabot::Dependency) }
         its(:name) { is_expected.to eq("business") }
         its(:version) { is_expected.to be_nil }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:requirements) { is_expected.to eq(expected_requirement_objects) }
       end
 
       context "with a dependency for an alternative platform" do

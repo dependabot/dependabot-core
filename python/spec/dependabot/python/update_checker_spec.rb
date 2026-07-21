@@ -2148,7 +2148,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       end
 
       it "updates both requirements" do
-        expect(checker.updated_requirements).to contain_exactly(
+        expect(checker.updated_requirements.map(&:to_h)).to contain_exactly(
           {
             file: "constraints.txt",
             requirement: "==2.6.0",
@@ -2321,7 +2321,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       end
 
       it "updates the git tag in the source" do
-        expect(updated_requirements).to eq(
+        expect(updated_requirements.map(&:to_h)).to eq(
           [{
             requirement: nil,
             file: "pyproject.toml",
@@ -2420,7 +2420,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           end
 
           it "updates the git tag to version outside cooldown" do
-            expect(updated_requirements).to eq(
+            expect(updated_requirements.map(&:to_h)).to eq(
               [{
                 requirement: nil,
                 file: "pyproject.toml",
