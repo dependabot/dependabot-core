@@ -513,11 +513,11 @@ module Dependabot
       def self.package_manager_install(name, version, env: {})
         return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
 
-        Dependabot::SharedHelpers.run_shell_command(
+        run_corepack_command(
           "corepack install #{name}@#{version} --global --cache-only",
           fingerprint: "corepack install <name>@<version> --global --cache-only",
           env: env
-        ).strip
+        )
       end
 
       # Prepare the package manager for use by using corepack
@@ -525,11 +525,11 @@ module Dependabot
       def self.package_manager_activate(name, version, env: {})
         return "Corepack does not support #{name}" unless corepack_supported_package_manager?(name)
 
-        Dependabot::SharedHelpers.run_shell_command(
+        run_corepack_command(
           "corepack prepare #{name}@#{version} --activate",
           fingerprint: "corepack prepare <name>@<version> --activate",
           env: env
-        ).strip
+        )
       end
 
       # Fetch the currently installed version of the package manager directly
@@ -574,12 +574,30 @@ module Dependabot
         output_observer: nil,
         env: nil
       )
-        full_command = T.let("corepack #{name} #{command}", String)
-        command_fingerprint = T.let("corepack #{name} #{fingerprint || command}", String)
+        run_corepack_command(
+          "corepack #{name} #{command}",
+          fingerprint: "corepack #{name} #{fingerprint || command}",
+          output_observer: output_observer,
+          env: env
+        )
+      end
 
+      # Run a corepack shell command, retrying once with signature verification
+      # disabled when a configured private registry strips `dist.signatures`
+      # from its version endpoint (a known Artifactory behaviour that otherwise
+      # aborts the run with COREPACK_SIGNATURE_METADATA_ERROR).
+      sig do
+        params(
+          full_command: String,
+          fingerprint: String,
+          output_observer: CommandHelpers::OutputObserver,
+          env: T.nilable(T::Hash[String, String])
+        ).returns(String)
+      end
+      def self.run_corepack_command(full_command, fingerprint:, output_observer: nil, env: nil)
         run_corepack_shell_command(
           full_command,
-          fingerprint: command_fingerprint,
+          fingerprint: fingerprint,
           output_observer: output_observer,
           env: env
         )
@@ -596,8 +614,8 @@ module Dependabot
           )
 
           return run_corepack_shell_command(
-            T.must(full_command),
-            fingerprint: T.must(command_fingerprint),
+            full_command,
+            fingerprint: fingerprint,
             output_observer: output_observer,
             env: retry_env
           )

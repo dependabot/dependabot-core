@@ -22,36 +22,13 @@ module Dependabot
 
       # uv.lock is guaranteed to be present when graphing runs - the
       # dependabot-api EcosystemFileDetector only routes UV jobs when it sees
-      # a uv.lock in the repo. We override prepare! to parse uv.lock directly
-      # rather than delegating to FileParser, so the graph reflects only what
-      # uv actually resolved (no requirements.txt / pyproject.toml inputs).
+      # a uv.lock in the repo. We parse uv.lock directly rather than
+      # delegating to FileParser, so the graph reflects only what uv resolved.
       sig { override.void }
       def prepare!
         raise DependabotError, "No uv.lock present; uv graphing requires a lockfile." unless uv_lock
 
-        parsed = TomlRB.parse(T.must(T.must(uv_lock).content))
-        packages = T.cast(parsed.fetch("package", []), T::Array[T.untyped])
-        manifest = parsed.fetch("manifest", {})
-
-        root_names = root_package_names(packages, manifest)
-        direct_runtime, direct_dev = direct_dependency_names(packages, root_names)
-
-        @dependencies = packages.filter_map do |pkg|
-          build_dependency(pkg, root_names, direct_runtime, direct_dev)
-        end
-        @prepared = true
-      rescue DependabotError
-        raise
-      rescue StandardError => e
-        # If uv.lock is unparseable we can't build a graph at all, but we still
-        # want the rest of the submission flow to continue (matching the prior
-        # behaviour where lockfile parse failures only marked subdependency
-        # fetching as errored).
-        errored_fetching_subdependencies!
-        @subdependency_error = e
-        Dependabot.logger.error("Failed to parse uv.lock for graphing: #{e.message}")
-        @dependencies = []
-        @prepared = true
+        prepare_from_lockfile!
       end
 
       private
@@ -68,6 +45,32 @@ module Dependabot
           package_relationships_from_lockfile(T.must(T.must(uv_lock).content)),
           T.nilable(T::Hash[String, T::Array[String]])
         )
+      end
+
+      sig { void }
+      def prepare_from_lockfile!
+        lockfile = T.must(uv_lock)
+        parsed = TomlRB.parse(lockfile.content)
+        packages = T.cast(parsed.fetch("package", []), T::Array[T.untyped])
+        manifest = parsed.fetch("manifest", {})
+
+        root_names = root_package_names(packages, manifest)
+        direct_runtime, direct_dev = direct_dependency_names(packages, root_names)
+
+        @dependencies = packages.filter_map do |pkg|
+          build_dependency(pkg, root_names, direct_runtime, direct_dev)
+        end
+        @prepared = true
+      rescue StandardError => e
+        # If uv.lock is unparseable we can't build a graph at all, but we still
+        # want the rest of the submission flow to continue (matching the prior
+        # behaviour where lockfile parse failures only marked subdependency
+        # fetching as errored).
+        errored_fetching_subdependencies!
+        @subdependency_error = e
+        Dependabot.logger.error("Failed to parse uv.lock for graphing: #{e.message}")
+        @dependencies = []
+        @prepared = true
       end
 
       sig { params(lockfile_content: String).returns(T::Hash[String, T::Array[String]]) }
@@ -269,7 +272,8 @@ module Dependabot
         return @uv_lock if defined?(@uv_lock)
 
         @uv_lock = T.let(
-          dependency_files.find { |f| f.name == "uv.lock" },
+          dependency_files.find { |f| f.name == "uv.lock" } ||
+            dependency_files.find { |f| f.name.end_with?("/uv.lock") },
           T.nilable(Dependabot::DependencyFile)
         )
       end

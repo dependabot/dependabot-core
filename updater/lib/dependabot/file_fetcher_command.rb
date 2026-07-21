@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/base_command"
@@ -100,16 +100,26 @@ module Dependabot
       directory_to_use = directory || job.source.directory
 
       job_definition = Environment.job_definition
-      job_credentials_metadata = job_definition.fetch("job", {}).fetch("credentials-metadata", [])
+      job_details = job_definition["job"]
+      job_credentials_metadata =
+        if job_details.is_a?(Hash)
+          T.cast(job_details["credentials-metadata"], Object) || []
+        else
+          []
+        end
 
       # prefer credentials directly from the root of the file (will contain secrets) but if not specified, fall back to
       # the job's credentials-metadata that has no secrets
-      credentials = job_definition.fetch("credentials", job_credentials_metadata)
+      credentials = Job::Definition.credentials_from(
+        job_definition.fetch("credentials", job_credentials_metadata)
+      )
 
+      source = job.source.clone
+      source.directory = directory_to_use
       args = {
-        source: job.source.clone.tap { |s| s.directory = directory_to_use },
+        source: source,
         credentials: credentials,
-        options: T.unsafe(job.experiments)
+        options: job.experiments
       }
       args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || already_cloned?
       args[:update_config] = job.update_config
@@ -217,7 +227,14 @@ module Dependabot
       api_client.record_ecosystem_versions(ecosystem_versions) unless ecosystem_versions.nil?
     end
 
-    sig { params(max_retries: Integer, _block: T.proc.returns(T.untyped)).returns(T.untyped) }
+    sig do
+      type_parameters(:U)
+        .params(
+          max_retries: Integer,
+          _block: T.proc.returns(T.type_parameter(:U))
+        )
+        .returns(T.type_parameter(:U))
+    end
     def with_retries(max_retries: 2, &_block)
       retries ||= 0
       begin
@@ -301,8 +318,8 @@ module Dependabot
     end
 
     sig { params(error: StandardError).void }
-    def handle_file_fetcher_error(error) # rubocop:disable Metrics/AbcSize
-      error_details = T.let(Dependabot.fetcher_error_details(error), T.nilable(T::Hash[Symbol, T.untyped]))
+    def handle_file_fetcher_error(error)
+      error_details = Dependabot.fetcher_error_details(error)
 
       if error_details.nil?
         log_error(error)
@@ -321,24 +338,21 @@ module Dependabot
             ErrorAttributes::DEPENDENCIES => job.dependencies,
             ErrorAttributes::DEPENDENCY_GROUPS => job.dependency_groups.map(&:to_h)
           }.compact,
-          T::Hash[Symbol, T.untyped]
+          Dependabot::ErrorDetails::DetailHash
         )
 
-        error_details = T.let(
-          {
-            "error-type": "file_fetcher_error",
-            "error-detail": unknown_error_details
-          },
-          T::Hash[Symbol, T.untyped]
+        error_details = Dependabot::ErrorDetails.new(
+          error_type: "file_fetcher_error",
+          error_detail: unknown_error_details
         )
       end
 
       service.record_update_job_error(
-        error_type: error_details.fetch(:"error-type"),
-        error_details: error_details[:"error-detail"]
+        error_type: error_details.error_type,
+        error_details: error_details.error_detail
       )
 
-      return unless error_details.fetch(:"error-type") == "file_fetcher_error"
+      return unless error_details.error_type == "file_fetcher_error"
 
       service.capture_exception(error: error, job: job)
     end
@@ -346,9 +360,10 @@ module Dependabot
     sig { params(error: StandardError).returns(T.any(Integer, Float)) }
     def rate_limit_error_remaining(error)
       # Time at which the current rate limit window resets in UTC epoch secs.
-      expires_at = T.unsafe(error).response_headers["X-RateLimit-Reset"].to_i
+      headers = T.cast(T.cast(error, Octokit::Error).response_headers, T::Hash[String, Object])
+      expires_at = headers["X-RateLimit-Reset"].to_s.to_i
       remaining = Time.at(expires_at) - Time.now
-      remaining.positive? ? remaining : 0
+      [remaining, 0].max
     end
 
     sig { params(error: StandardError).void }
@@ -357,20 +372,20 @@ module Dependabot
       error.backtrace&.each { |line| Dependabot.logger.error line }
     end
 
-    sig { params(error_details: T::Hash[Symbol, T.untyped]).void }
+    sig { params(error_details: Dependabot::ErrorDetails).void }
     def record_error(error_details)
       service.record_update_job_error(
-        error_type: error_details.fetch(:"error-type"),
-        error_details: error_details[:"error-detail"]
+        error_type: error_details.error_type,
+        error_details: error_details.error_detail
       )
 
       # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
       return unless Experiments.enabled?(:record_update_job_unknown_error)
-      return unless error_details.fetch(:"error-type") == "file_fetcher_error"
+      return unless error_details.error_type == "file_fetcher_error"
 
       service.record_update_job_unknown_error(
-        error_type: error_details.fetch(:"error-type"),
-        error_details: error_details[:"error-detail"]
+        error_type: error_details.error_type,
+        error_details: error_details.error_detail
       )
     end
 

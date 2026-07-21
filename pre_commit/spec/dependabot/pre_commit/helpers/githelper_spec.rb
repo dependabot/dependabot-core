@@ -46,17 +46,27 @@ RSpec.describe Dependabot::PreCommit::Helpers::Githelper do
   end
 
   describe "#git_commit_checker_for" do
-    it "preserves nil source details" do
+    it "parses source details" do
       checker = git_helper.git_commit_checker_for(source)
 
-      expect(checker.dependency_source_details).to eq(source)
+      expect(checker.dependency_source_details).to have_attributes(
+        type: "git",
+        url: "https://github.com/pre-commit/pre-commit-hooks",
+        ref: "v4.4.0",
+        branch: nil
+      )
     end
 
-    it "preserves non-string source metadata" do
+    it "ignores unknown source metadata" do
       source_with_metadata = source.merge(metadata: { comment: "# frozen: v4.4.0" })
       checker = git_helper.git_commit_checker_for(source_with_metadata)
 
-      expect(checker.dependency_source_details).to eq(source_with_metadata)
+      expect(checker.dependency_source_details).to have_attributes(
+        type: "git",
+        url: "https://github.com/pre-commit/pre-commit-hooks",
+        ref: "v4.4.0",
+        branch: nil
+      )
     end
   end
 end
