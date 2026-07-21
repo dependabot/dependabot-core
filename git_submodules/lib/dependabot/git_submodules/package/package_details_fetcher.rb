@@ -120,7 +120,7 @@ module Dependabot
 
         sig { returns(String) }
         def url
-          dependency.source_details&.fetch(:url, nil)
+          T.must(dependency.source_string("url"))
         end
 
         sig { returns(T::Hash[String, T::Array[String]]) }

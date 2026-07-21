@@ -32,7 +32,7 @@ module Dependabot
       # metadata, but in most cases this will be empty.
       sig { override.params(dependency: Dependabot::Dependency).returns(T::Array[String]) }
       def fetch_subdependencies(dependency)
-        dependency.metadata.fetch(:depends_on, [])
+        dependency.metadata_string_array(:depends_on) || []
       end
 
       # TODO: Delegate this to ecosystem-specific base classes

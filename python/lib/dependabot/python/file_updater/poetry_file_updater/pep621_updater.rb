@@ -24,7 +24,7 @@ module Dependabot
             ).returns(T.nilable(String))
           end
           def replace(content, new_r, old_r)
-            source_req = dep.metadata[:source_requirement]
+            source_req = dep.metadata_string(:source_requirement)
 
             if source_req
               replace_with_source_requirement(content, source_req, new_r, old_r)
