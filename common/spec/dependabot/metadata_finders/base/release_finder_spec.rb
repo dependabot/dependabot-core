@@ -559,6 +559,38 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
       end
     end
 
+    context "with a Go module monorepo using path-prefixed tags" do
+      let(:dependency_name) { "github.com/opentdf/platform/protocol/go" }
+      let(:dependency_version) { "0.31.0" }
+      let(:dependency_previous_version) { "0.30.0" }
+      let(:source) do
+        Dependabot::Source.new(
+          provider: "github",
+          repo: "opentdf/platform",
+          directory: "protocol/go"
+        )
+      end
+
+      let(:github_url) do
+        "https://api.github.com/repos/opentdf/platform/" \
+          "releases?per_page=100"
+      end
+
+      before do
+        stub_request(:get, github_url)
+          .to_return(
+            status: 200,
+            body: fixture("github", "go_monorepo_releases.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
+      end
+
+      it "only includes releases for the correct module" do
+        expect(releases_text).to include("remove deprecated grpc-gateway")
+        expect(releases_text).not_to include("migrate otdfctl")
+      end
+    end
+
     context "with a gitlab source" do
       let(:gitlab_url) do
         "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/tags"
