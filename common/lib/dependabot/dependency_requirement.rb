@@ -57,7 +57,8 @@ module Dependabot
     end
 
     # The version constraint string, e.g. ">= 1.0, < 2.0". Nil when the
-    # dependency is pinned by a lockfile rather than a manifest constraint.
+    # dependency is pinned by a lockfile rather than a manifest constraint,
+    # or :unfixable when no valid updated requirement can be generated.
     sig { returns(T.nilable(Requirement)) }
     def requirement
       value = T.cast(self[:requirement], T.nilable(Object))
