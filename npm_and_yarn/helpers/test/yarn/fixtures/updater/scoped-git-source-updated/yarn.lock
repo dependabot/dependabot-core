@@ -2,7 +2,7 @@
 # yarn lockfile v1
 
 
-"@scope/pkg@^1.0.0", "@scope/pkg@2.0.0":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/@scope/pkg/-/pkg-2.0.0.tgz#xyz789abc123\""
-  integrity sha512-xyz789abc123=="
+"is-positive@^3.0.0", "is-positive@3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/is-positive/-/is-positive-3.1.0.tgz#857db584a1ba5d1cb2980527fc3b6c435d37b0fd"
+  integrity sha512-+U/XpRU56FtaS3j2kYi0V5xsZCKI3bk+GcUPx8yDQWBmXGPjfLBHOUUh3Xmtr1O78+B3gchX1oGdnRPxfEUJFg==

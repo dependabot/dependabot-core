@@ -2,9 +2,6 @@
   "name": "test-project",
   "version": "1.0.0",
   "dependencies": {
-    "@scope/pkg": "^1.0.0"
-  },
-  "resolutions": {
-    "@scope/pkg": "1.0.0"
+    "is-positive": "^3.0.0"
   }
 }

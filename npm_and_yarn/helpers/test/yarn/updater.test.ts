@@ -115,20 +115,19 @@ describe("updater", () => {
     }
   });
 
-  it("correctly updates scoped package with multiple lockfile entries", async () => {
+  it("correctly updates packages with multiple lockfile entries", async () => {
     // This test verifies that replaceLockfileDeclaration correctly consolidates
-    // duplicate lockfile entries for scoped packages when updating versions.
-    // The LOCKFILE_ENTRY_REGEX must correctly identify both "@scope/pkg@^1.0.0"
-    // and "@scope/pkg@1.0.0" as entries for the same package.
+    // duplicate lockfile entries when updating versions. This ensures the regex
+    // change properly identifies all entries belonging to a dependency.
     copyDependencies("scoped-git-source", tempDir);
 
     const result = await updateDependencyFiles(tempDir, [
       {
-        name: "@scope/pkg",
-        version: "2.0.0",
+        name: "is-positive",
+        version: "3.1.0",
         requirements: [
           {
-            requirement: "^1.0.0",
+            requirement: "^3.0.0",
             file: "package.json",
             groups: ["dependencies"],
           },
@@ -137,11 +136,11 @@ describe("updater", () => {
     ]);
 
     // The updated lock should have the new version
-    expect(result["yarn.lock"]).toContain('version "2.0.0"');
+    expect(result["yarn.lock"]).toContain('version "3.1.0"');
     // Old version should be gone
-    expect(result["yarn.lock"]).not.toContain('version "1.0.0"');
+    expect(result["yarn.lock"]).not.toContain('version "3.0.0"');
     // Both entries should be consolidated under the new version requirement
-    expect(result["yarn.lock"]).toContain("@scope/pkg@^1.0.0");
-    expect(result["yarn.lock"]).toContain("@scope/pkg@2.0.0");
+    expect(result["yarn.lock"]).toContain("is-positive@^3.0.0");
+    expect(result["yarn.lock"]).toContain("is-positive@3.1.0");
   });
 });
