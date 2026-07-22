@@ -476,7 +476,7 @@ RSpec.describe Dependabot::Dependency do
           file: "config.yaml",
           requirement: nil,
           groups: [],
-          source: { type: 1 }
+          source: { type: nil }
         }],
         package_manager: "dummy"
       )
@@ -492,9 +492,33 @@ RSpec.describe Dependabot::Dependency do
       )
 
       expect { malformed_type.source_type }
-        .to raise_error(TypeError, "source type must be a string or nil")
+        .to raise_error(TypeError, "source type must be a string")
       expect { malformed_ref.new_ref }
         .to raise_error(TypeError, "source ref must be a string or nil")
+    end
+
+    it "rejects multiple string-keyed git sources" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [
+          {
+            file: "first.yaml",
+            requirement: nil,
+            groups: [],
+            source: { "type" => "git", "url" => "https://github.com/example/first", "ref" => "main" }
+          },
+          {
+            file: "second.yaml",
+            requirement: nil,
+            groups: [],
+            source: { "type" => "git", "url" => "https://github.com/example/second", "ref" => "main" }
+          }
+        ],
+        package_manager: "dummy"
+      )
+
+      expect { dependency.source_details(allowed_types: ["git"]) }
+        .to raise_error(RuntimeError, /Multiple sources!/)
     end
 
     it "rejects malformed subdependency sources" do
