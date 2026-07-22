@@ -445,7 +445,8 @@ module Dependabot
 
       git = allowed_types == ["git"]
 
-      if (git && sources.map { |s| s[:url] }.uniq.count > 1) || (!git && sources.count > 1)
+      if (git && sources.map { |source| optional_source_string(source, "url") }.uniq.count > 1) ||
+         (!git && sources.count > 1)
         raise "Multiple sources! #{sources.join(', ')}"
       end
 
@@ -597,7 +598,7 @@ module Dependabot
       raw_value = source.key?(key.to_sym) ? source[key.to_sym] : source.fetch(key)
       return raw_value if raw_value.is_a?(String)
 
-      raise TypeError, "source #{key} must be a string or nil"
+      raise TypeError, "source #{key} must be a string"
     end
   end
 end
