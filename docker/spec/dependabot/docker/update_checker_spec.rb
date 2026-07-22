@@ -1051,6 +1051,59 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             end
         end
       end
+
+      context "when the registry returns a 403 status" do
+        before do
+          tags_url = "https://registry.hub.docker.com/v2/moj/ruby/tags/list"
+          stub_request(:get, tags_url)
+            .and_return(status: 403, body: "")
+        end
+
+        it "raises a PrivateSourceAuthenticationFailure error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
+          expect { checker.latest_version }
+            .to raise_error(error_class) do |error|
+              expect(error.source).to eq("registry.hub.docker.com")
+            end
+        end
+      end
+
+      context "when listing the full tag list times out (504)" do
+        let(:tags_url) { "https://registry.hub.docker.com/v2/moj/ruby/tags/list" }
+
+        before do
+          # Registries such as Docker Hub 504 when asked for the full tag list of
+          # images with huge tag counts; the request must be retried paginated.
+          stub_request(:get, tags_url)
+            .and_return(status: 504, body: "")
+          stub_request(:get, tags_url + "?n=100")
+            .and_return(status: 200, body: registry_tags)
+        end
+
+        it "falls back to a paginated request and resolves the latest version" do
+          expect(checker.latest_version).to eq("2.4.2")
+          expect(WebMock).to have_requested(:get, tags_url + "?n=100")
+        end
+      end
+
+      context "when the tag list request keeps returning a 504" do
+        let(:tags_url) { "https://registry.hub.docker.com/v2/moj/ruby/tags/list" }
+
+        before do
+          stub_request(:get, tags_url)
+            .and_return(status: 504, body: "")
+          stub_request(:get, tags_url + "?n=100")
+            .and_return(status: 504, body: "")
+        end
+
+        it "raises a PrivateSourceBadResponse error" do
+          error_class = Dependabot::PrivateSourceBadResponse
+          expect { checker.latest_version }
+            .to raise_error(error_class) do |error|
+              expect(error.source).to eq("registry.hub.docker.com")
+            end
+        end
+      end
     end
 
     context "when the latest version is a pre-release" do
