@@ -581,7 +581,7 @@ RSpec.describe namespace::LatestVersionFinder do
       end
     end
 
-    context "when for-each-ref returns empty (lightweight tag not found)" do
+    context "when for-each-ref returns empty (tag not found in clone)" do
       it "falls back to commit date from git show" do
         commit_date = "2026-06-01 10:00:00 +0000"
 
@@ -601,7 +601,7 @@ RSpec.describe namespace::LatestVersionFinder do
         allow(Dir).to receive(:chdir).and_yield
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(/git clone --bare/, any_args).and_return("")
-        # for-each-ref returns empty
+        # for-each-ref returns empty (tag not found in clone)
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(/git for-each-ref/, hash_including(fingerprint: anything))
           .and_return("")
@@ -611,6 +611,40 @@ RSpec.describe namespace::LatestVersionFinder do
           .and_return(commit_date)
 
         expect(commit_metadata_details).to eq(commit_date)
+      end
+    end
+
+    context "when the tag is a lightweight tag with no published release" do
+      it "treats the version as still in cooldown (returns Time.now)" do
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return(source_details)
+        allow(finder).to receive_messages(
+          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                                commit_sha: "abc123" },
+          commit_ref: "abc123"
+        )
+        # No GitHub Release available — forces git fallback
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        # Lightweight tag: %(objecttype) returns "commit"
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref.*objecttype/, hash_including(fingerprint: anything))
+          .and_return("commit")
+
+        before_call = Time.now
+        result = commit_metadata_details
+        after_call = Time.now
+
+        # Result should be a recent ISO 8601 timestamp (Time.now), not an old commit date
+        expect(result).not_to be_nil
+        parsed = Time.parse(result.to_s)
+        expect(parsed).to be_between(before_call, after_call)
       end
     end
 

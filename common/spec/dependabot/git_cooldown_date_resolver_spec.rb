@@ -45,10 +45,10 @@ RSpec.describe Dependabot::GitCooldownDateResolver do
     allow(sawyer_agent).to receive(:parse_links) { |value| [value, {}] }
   end
 
-  def github_release_resource(agent, tag_name:, published_at:)
+  def github_release_resource(agent, tag_name:, published_at:, draft: false)
     Sawyer::Resource.new(
       agent,
-      { tag_name: tag_name, published_at: published_at, prerelease: false }
+      { tag_name: tag_name, published_at: published_at, draft: draft, prerelease: false }
     )
   end
 
@@ -92,13 +92,23 @@ RSpec.describe Dependabot::GitCooldownDateResolver do
   end
 
   describe "#github_release_published_at" do
-    it "returns published_at when a matching release exists" do
+    it "returns published_at when a matching non-draft release exists" do
       published_at = Time.now.utc - (3 * 24 * 60 * 60)
       mock_release = github_release_resource(sawyer_agent, tag_name: "v1.0.0", published_at: published_at)
       mock_client = instance_double(Octokit::Client, releases: [mock_release])
       allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
 
       expect(resolver.github_release_published_at("v1.0.0")).to eq(published_at)
+    end
+
+    it "returns nil when the matching release is a draft" do
+      published_at = Time.now.utc - (1 * 24 * 60 * 60)
+      mock_release = github_release_resource(sawyer_agent, tag_name: "v1.0.0",
+                                                            published_at: published_at, draft: true)
+      mock_client = instance_double(Octokit::Client, releases: [mock_release])
+      allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+      expect(resolver.github_release_published_at("v1.0.0")).to be_nil
     end
 
     it "returns nil when no release matches the tag" do
@@ -131,11 +141,114 @@ RSpec.describe Dependabot::GitCooldownDateResolver do
       expect(result).to eq(published_at)
     end
 
-    it "falls back to tag_creation_date when no release exists" do
+    context "when the only release is a draft (lightweight tag)" do
+      it "treats the version as still in cooldown (returns Time.now)" do
+        draft_release = github_release_resource(sawyer_agent, tag_name: "v1.0.0",
+                                                              published_at: nil, draft: true)
+        mock_client = instance_double(Octokit::Client, releases: [draft_release])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        # Lightweight tag: %(objecttype) returns "commit"
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref.*objecttype/, hash_including(fingerprint: anything))
+          .and_return("commit")
+
+        before_call = Time.now
+        result = resolver.resolve_candidate_date("v1.0.0", "abc123")
+        after_call = Time.now
+
+        expect(result).to be_between(before_call, after_call)
+      end
+    end
+
+    context "when there is no release and the tag is lightweight" do
+      it "treats the version as still in cooldown (returns Time.now)" do
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        # Lightweight tag: %(objecttype) returns "commit"
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref.*objecttype/, hash_including(fingerprint: anything))
+          .and_return("commit")
+
+        before_call = Time.now
+        result = resolver.resolve_candidate_date("v1.0.0", "abc123")
+        after_call = Time.now
+
+        expect(result).to be_between(before_call, after_call)
+      end
+
+      it "logs the conservative fallback" do
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref.*objecttype/, hash_including(fingerprint: anything))
+          .and_return("commit")
+
+        expect(Dependabot.logger).to receive(:info).with(/v1\.0\.0.*lightweight tag/i)
+        resolver.resolve_candidate_date("v1.0.0", "abc123")
+      end
+    end
+
+    context "when there is no release and the tag is annotated" do
+      it "uses the real tag creation date" do
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        # Annotated tag: %(objecttype) returns "tag"
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref.*objecttype/, hash_including(fingerprint: anything))
+          .and_return("tag")
+
+        tag_date = "2026-06-10 12:00:00 +0000"
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref.*creatordate/, hash_including(fingerprint: anything))
+          .and_return(tag_date)
+
+        result = resolver.resolve_candidate_date("v1.0.0", "abc123")
+        expect(result).to eq(Time.parse(tag_date))
+      end
+    end
+
+    context "when the tag is lightweight but has a published (non-draft) release" do
+      it "uses the published_at date from the release" do
+        published_at = Time.now.utc - (10 * 24 * 60 * 60)
+        mock_release = github_release_resource(sawyer_agent, tag_name: "v1.0.0", published_at: published_at)
+        mock_client = instance_double(Octokit::Client, releases: [mock_release])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        # Should NOT call any git commands (release date takes priority)
+        expect(Dependabot::SharedHelpers).not_to receive(:run_shell_command)
+
+        result = resolver.resolve_candidate_date("v1.0.0", "abc123")
+        expect(result).to eq(published_at)
+      end
+    end
+
+    context "when the source is not GitHub (non-GitHub source)" do
+      let(:source_url) { "https://gitlab.com/owner/repo" }
+
+      it "uses tag_creation_date without lightweight tag check" do
+        tag_date = "2026-06-10 12:00:00 +0000"
+
+        # For non-GitHub sources, for-each-ref is only called for creatordate
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref/, hash_including(fingerprint: anything))
+          .and_return(tag_date)
+
+        result = resolver.resolve_candidate_date("v1.0.0", "abc123")
+        expect(result).to eq(Time.parse(tag_date))
+      end
+    end
+
+    it "falls back to tag_creation_date when no release exists (annotated tag path)" do
       mock_client = instance_double(Octokit::Client, releases: [])
       allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
 
       tag_date = "2026-06-10 12:00:00 +0000"
+      # Returns tag_date for both %(objecttype) and %(creatordate:iso) calls;
+      # since tag_date != "commit", lightweight_tag? returns false and we fall
+      # through to tag_creation_date which also returns tag_date.
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
         .with(/git for-each-ref/, hash_including(fingerprint: anything))
         .and_return(tag_date)

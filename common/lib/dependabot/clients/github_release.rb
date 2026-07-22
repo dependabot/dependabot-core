@@ -16,6 +16,7 @@ module Dependabot
       const :tag_name, String
       const :body, T.nilable(String)
       const :html_url, T.nilable(String)
+      const :draft, T::Boolean
       const :prerelease, T::Boolean
       const :published_at, T.nilable(Time)
 
@@ -25,6 +26,7 @@ module Dependabot
         return unless tag_name.is_a?(String)
 
         id = T.cast(resource[:id], Object)
+        draft = T.cast(resource[:draft], Object)
         prerelease = T.cast(resource[:prerelease], Object)
 
         new(
@@ -33,6 +35,7 @@ module Dependabot
           tag_name: tag_name,
           body: string_value(resource, :body),
           html_url: string_value(resource, :html_url),
+          draft: draft == true,
           prerelease: prerelease == true,
           published_at: time_value(resource, :published_at)
         )

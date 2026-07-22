@@ -266,7 +266,10 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(/git clone --bare/, any_args).and_return("")
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(/git for-each-ref/, hash_including(fingerprint: anything))
+          .with(/git for-each-ref.*objecttype/, hash_including(fingerprint: anything))
+          .and_return("tag")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref.*creatordate/, hash_including(fingerprint: anything))
           .and_return(recent_date, old_date)
 
         result = finder.latest_release_version
@@ -340,7 +343,10 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(/git clone --bare/, any_args).and_return("")
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(/git for-each-ref/, hash_including(fingerprint: anything))
+          .with(/git for-each-ref.*objecttype/, hash_including(fingerprint: anything))
+          .and_return("tag")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref.*creatordate/, hash_including(fingerprint: anything))
           .and_return(recent_date, old_date)
 
         # Trigger cooldown evaluation
@@ -516,7 +522,10 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
           .with(/git clone --bare/, any_args).and_return("")
         # v6.0.0 is in cooldown, but v5.1.0 is not
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(/git for-each-ref/, hash_including(fingerprint: anything))
+          .with(/git for-each-ref.*objecttype/, hash_including(fingerprint: anything))
+          .and_return("tag")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref.*creatordate/, hash_including(fingerprint: anything))
           .and_return(recent_date, old_date)
 
         result = finder.latest_release_version
@@ -629,13 +638,52 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(/git clone --bare/, any_args).and_return("")
         # v6.0.0 tag was created 2 days ago (in cooldown), v5.0.0 tag 30 days ago (outside)
+        # Both are annotated tags (objecttype = "tag"), so creatordate reflects actual tag creation
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
-          .with(/git for-each-ref/, hash_including(fingerprint: anything))
+          .with(/git for-each-ref.*objecttype/, hash_including(fingerprint: anything))
+          .and_return("tag")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref.*creatordate/, hash_including(fingerprint: anything))
           .and_return(tag_creation_date, old_tag_date)
 
         result = finder.latest_release_version
         # Should skip v6.0.0 (in cooldown) and select v5.0.0 (outside cooldown)
         expect(result.to_s).to eq("5.0.0")
+      end
+
+      it "treats a lightweight tag with no published release as in cooldown" do
+        # v6.0.0 is a lightweight tag (%(objecttype) = "commit") with no GitHub Release.
+        # Its %(creatordate) would return the underlying commit date (potentially old),
+        # bypassing cooldown. With the fix, we treat it as still in cooldown.
+        latest_tag = {
+          tag: "v6.0.0",
+          version: Dependabot::PreCommit::Version.new("6.0.0"),
+          commit_sha: "latest_sha"
+        }
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tags_for_allowed_versions_matching_existing_precision)
+          .and_return([latest_tag])
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return(source_details)
+
+        # No GitHub Release — forces git clone fallback
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        # Lightweight tag detected: %(objecttype) returns "commit"
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref.*objecttype/, hash_including(fingerprint: anything))
+          .and_return("commit")
+
+        result = finder.latest_release_version
+        # Should stay on current version (4.4.0) because the lightweight tag is treated as in cooldown
+        expect(result.to_s).to eq("4.4.0")
       end
     end
 

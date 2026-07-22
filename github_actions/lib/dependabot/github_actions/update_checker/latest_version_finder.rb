@@ -291,6 +291,18 @@ module Dependabot
 
             SharedHelpers.run_shell_command("git clone --bare --no-recurse-submodules #{url} #{repo_contents_path}")
             Dir.chdir(repo_contents_path) do
+              # For GitHub sources, be conservative with lightweight tags that have
+              # no published release. Their %(creatordate) reflects the underlying
+              # commit date (not when the tag was pushed), so treat them as still
+              # in cooldown to prevent bypassing the cooldown window.
+              if tag_name && github_source? && lightweight_tag?(tag_name)
+                Dependabot.logger.info(
+                  "Tag #{tag_name} is a lightweight tag with no published GitHub Release; " \
+                  "treating version as still in cooldown to avoid bypassing cooldown window."
+                )
+                return Time.now.iso8601
+              end
+
               date = if tag_name
                        tag_date = SharedHelpers.run_shell_command(
                          "git for-each-ref --format=\"%(creatordate:iso)\" " \
