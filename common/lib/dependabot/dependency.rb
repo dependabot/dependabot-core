@@ -14,7 +14,8 @@ module Dependabot
       T.proc.params(groups: T::Array[String]).returns(T::Boolean)
     end
     RequirementInput = T.type_alias { DependencyRequirement::Input }
-    Source = T.type_alias { DependencyRequirement::ObjectHash }
+    ObjectHash = T.type_alias { DependencyRequirement::ObjectHash }
+    RequirementSource = T.type_alias { DependencyRequirement::Source }
 
     @production_checks = T.let(
       {},
@@ -147,9 +148,9 @@ module Dependabot
         previous_version: T.nilable(String),
         previous_requirements: T.nilable(T::Array[RequirementInput]),
         directory: T.nilable(String),
-        subdependency_metadata: T.nilable(T::Array[Source]),
+        subdependency_metadata: T.nilable(T::Array[ObjectHash]),
         removed: T::Boolean,
-        metadata: T.nilable(Source)
+        metadata: T.nilable(ObjectHash)
       ).void
     end
     def initialize(
@@ -297,7 +298,7 @@ module Dependabot
       requirements
         .filter_map do |requirement|
           source = requirement.source
-          optional_source_string(source, "digest") if source
+          optional_source_string(source, "digest") if source.is_a?(Hash)
         end
         .first
     end
@@ -308,7 +309,7 @@ module Dependabot
 
       previous_refs = T.must(previous_requirements).filter_map do |r|
         source = r.source
-        optional_source_string(source, "ref") if source
+        optional_source_string(source, "ref") if source.is_a?(Hash)
       end.uniq
       previous_refs.first if previous_refs.one?
     end
@@ -317,7 +318,7 @@ module Dependabot
     def new_ref
       new_refs = requirements.filter_map do |r|
         source = r.source
-        optional_source_string(source, "ref") if source
+        optional_source_string(source, "ref") if source.is_a?(Hash)
       end.uniq
       new_refs.first if new_refs.one?
     end
@@ -437,20 +438,27 @@ module Dependabot
       params(
         allowed_types: T.nilable(T::Array[String])
       )
-        .returns(T.nilable(Source))
+        .returns(T.nilable(ObjectHash))
     end
     def source_details(allowed_types: nil)
       sources = all_sources.uniq.compact
-      sources.select! { |source| allowed_types.include?(optional_source_string(source, "type").to_s) } if allowed_types
+      source_hashes = sources.map do |source|
+        raise TypeError, "source details must be a hash with string or symbol keys" unless source.is_a?(Hash)
+
+        source
+      end
+      if allowed_types
+        source_hashes.select! { |source| allowed_types.include?(optional_source_string(source, "type").to_s) }
+      end
 
       git = allowed_types == ["git"]
 
-      if (git && sources.map { |source| optional_source_string(source, "url") }.uniq.count > 1) ||
-         (!git && sources.count > 1)
-        raise "Multiple sources! #{sources.join(', ')}"
+      if (git && source_hashes.map { |source| optional_source_string(source, "url") }.uniq.count > 1) ||
+         (!git && source_hashes.count > 1)
+        raise "Multiple sources! #{source_hashes.join(', ')}"
       end
 
-      sources.first
+      source_hashes.first
     end
 
     sig { returns(T.nilable(String)) }
@@ -472,7 +480,7 @@ module Dependabot
       optional_source_string(details, key) if details
     end
 
-    sig { returns(T::Array[T.nilable(Source)]) }
+    sig { returns(T::Array[T.nilable(RequirementSource)]) }
     def all_sources
       if top_level?
         requirements.map(&:source)
@@ -564,27 +572,30 @@ module Dependabot
       end
     end
 
-    sig { params(hash: Source).returns(Metadata) }
+    sig { params(hash: ObjectHash).returns(Metadata) }
     def symbolize_keys(hash)
       hash.keys.to_h { |k| [k.to_sym, hash[k]] }
     end
 
-    sig { params(metadata: Metadata).returns(T.nilable(Source)) }
+    sig { params(metadata: Metadata).returns(T.nilable(RequirementSource)) }
     def source_from_metadata(metadata)
       raw_source = metadata[:source]
       return if raw_source.nil?
-      raise TypeError, "source must be a hash with string or symbol keys, or nil" unless raw_source.is_a?(Hash)
+      return raw_source if raw_source.is_a?(String)
+      unless raw_source.is_a?(Hash)
+        raise TypeError, "source must be a string or hash with string or symbol keys, or nil"
+      end
 
       raw_source.each_key do |raw_key|
         key = T.cast(raw_key, Object)
         next if key.is_a?(String) || key.is_a?(Symbol)
 
-        raise TypeError, "source must be a hash with string or symbol keys, or nil"
+        raise TypeError, "source must be a string or hash with string or symbol keys, or nil"
       end
       raw_source
     end
 
-    sig { params(source: Source, key: String).returns(T.nilable(String)) }
+    sig { params(source: ObjectHash, key: String).returns(T.nilable(String)) }
     def optional_source_string(source, key)
       value = source[key.to_sym] || source[key]
       return if value.nil?
@@ -593,7 +604,7 @@ module Dependabot
       raise TypeError, "source #{key} must be a string or nil"
     end
 
-    sig { params(source: Source, key: String).returns(String) }
+    sig { params(source: ObjectHash, key: String).returns(String) }
     def required_source_string(source, key)
       raw_value = source.key?(key.to_sym) ? source[key.to_sym] : source.fetch(key)
       return raw_value if raw_value.is_a?(String)
