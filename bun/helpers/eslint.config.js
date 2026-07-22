@@ -1,9 +1,8 @@
 const globals = require("globals");
-const { defineConfig } = require("eslint/config");
 const js = require("@eslint/js");
 const eslintConfigPrettier = require("eslint-config-prettier/flat");
 
-module.exports = defineConfig([
+module.exports = [
   js.configs.recommended,
   {
     languageOptions: {
@@ -14,8 +13,16 @@ module.exports = defineConfig([
       ecmaVersion: "latest",
     },
   },
+  {
+    rules: {
+      "no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", destructuredArrayIgnorePattern: "^_" },
+      ],
+    },
+  },
   eslintConfigPrettier,
   {
     ignores: ["dist/**", "build/**"],
   },
-]);
+];
