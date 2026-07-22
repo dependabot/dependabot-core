@@ -35,6 +35,7 @@ module Dependabot
 
     Group = T.type_alias { T.any(String, Symbol) }
     ObjectHash = T.type_alias { T::Hash[T.any(Symbol, String), Object] }
+    Requirement = T.type_alias { T.any(String, Symbol) }
     Input = T.type_alias { T.any(DependencyRequirement, ObjectHash) }
 
     K = type_member { { fixed: Symbol } }
@@ -57,9 +58,13 @@ module Dependabot
 
     # The version constraint string, e.g. ">= 1.0, < 2.0". Nil when the
     # dependency is pinned by a lockfile rather than a manifest constraint.
-    sig { returns(T.nilable(String)) }
+    sig { returns(T.nilable(Requirement)) }
     def requirement
-      optional_string(:requirement)
+      value = T.cast(self[:requirement], T.nilable(Object))
+      return if value.nil?
+      return value if value.is_a?(String) || value == :unfixable
+
+      raise TypeError, "requirement must be a string, :unfixable, or nil"
     end
 
     # The manifest file this requirement was declared in, e.g. "Gemfile".

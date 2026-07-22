@@ -72,12 +72,21 @@ RSpec.describe Dependabot::DependencyRequirement do
       expect(req.groups).to be_nil
     end
 
+    it "returns the unfixable requirement sentinel" do
+      req = described_class.create(requirement: :unfixable, file: "Gemfile", groups: [], source: nil)
+
+      expect(req.requirement).to eq(:unfixable)
+    end
+
     it "rejects malformed scalar fields" do
       malformed_requirement = described_class.create(requirement_hash.merge(requirement: 1))
+      malformed_requirement_symbol = described_class.create(requirement_hash.merge(requirement: :unknown))
       malformed_file = described_class.create(requirement_hash.merge(file: false))
 
       expect { malformed_requirement.requirement }
-        .to raise_error(TypeError, "requirement must be a string or nil")
+        .to raise_error(TypeError, "requirement must be a string, :unfixable, or nil")
+      expect { malformed_requirement_symbol.requirement }
+        .to raise_error(TypeError, "requirement must be a string, :unfixable, or nil")
       expect { malformed_file.file }
         .to raise_error(TypeError, "file must be a string or nil")
     end
