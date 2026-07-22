@@ -367,12 +367,12 @@ module Dependabot
         tags = fetch_oci_tags(chart_name, repo_url)
         return nil unless tags && !tags.empty?
 
+        oci_repo_ref = "#{repo_url.gsub('oci://', '').chomp('/')}/#{chart_name}"
+
         valid_tags = filter_valid_versions(tags)
         if cooldown_enabled?
           # Filter out versions that are in cooldown period
-          repo_url = repo_url.gsub("oci://", "")
-          repo_url = repo_url + "/" + chart_name
-          tags_with_release_date = fetch_tags_with_release_date_using_oci(valid_tags, repo_url)
+          tags_with_release_date = fetch_tags_with_release_date_using_oci(valid_tags, oci_repo_ref)
           valid_tags = latest_version_resolver.filter_versions_in_cooldown_period_using_oci(
             valid_tags,
             tags_with_release_date
@@ -380,9 +380,44 @@ module Dependabot
         end
         return nil if valid_tags.empty?
 
-        highest_tag = valid_tags.map { |v| version_class.new(v) }.max
-        Dependabot.logger.info("Highest valid OCI tag for #{chart_name} is #{highest_tag}")
-        highest_tag
+        select_highest_chart_tag(oci_repo_ref, valid_tags)
+      end
+
+      # Selects the highest tag that is an actual Helm chart. `oras repo tags`
+      # can return non-chart artifacts (e.g. SBOMs, signatures, or partial
+      # publishes) that pass version parsing but can't be pulled as a chart,
+      # which previously caused `helm dependency update` to fail with a 404.
+      # Tags are only skipped when their OCI manifest positively proves they are
+      # not a chart; if a manifest can't be fetched or parsed we keep the tag
+      # (fail open) so a transient registry issue never silently stops updates.
+      sig { params(oci_repo_ref: String, valid_tags: T::Array[String]).returns(T.nilable(Gem::Version)) }
+      def select_highest_chart_tag(oci_repo_ref, valid_tags)
+        sorted_tags = valid_tags.map { |v| version_class.new(v) }.sort.reverse
+        chosen = sorted_tags.find { |tag| !non_chart_oci_tag?(oci_repo_ref, tag.to_s) } || sorted_tags.first
+        Dependabot.logger.info("Highest valid OCI tag for #{oci_repo_ref} is #{chosen}")
+        chosen
+      end
+
+      # Returns true only when the tag's OCI manifest can be fetched and parsed
+      # and none of its media types identify it as a Helm chart. Helm chart
+      # manifests always reference the "helm" media types
+      # (application/vnd.cncf.helm.*), so anything without "helm" is a non-chart
+      # artifact we should not try to update to.
+      sig { params(oci_repo_ref: String, tag: String).returns(T::Boolean) }
+      def non_chart_oci_tag?(oci_repo_ref, tag)
+        # OCI tags use "_" where semver build metadata uses "+".
+        oci_tag = tag.tr("+", "_")
+        manifest = Helpers.fetch_tags_with_release_date_using_oci(oci_repo_ref, oci_tag)
+        parsed = JSON.parse(manifest)
+        media_types = [parsed.dig("config", "mediaType")]
+        media_types += Array(parsed["layers"]).map { |layer| layer["mediaType"] }
+        media_types = media_types.compact
+        return false if media_types.empty?
+
+        media_types.none? { |media_type| media_type.to_s.include?("helm") }
+      rescue Dependabot::SharedHelpers::HelperSubprocessFailed, JSON::ParserError => e
+        Dependabot.logger.info("Could not validate OCI manifest for #{oci_repo_ref}:#{oci_tag}: #{e.message}")
+        false
       end
 
       sig { params(chart_name: String, repo_url: String).returns(T.nilable(T::Array[String])) }

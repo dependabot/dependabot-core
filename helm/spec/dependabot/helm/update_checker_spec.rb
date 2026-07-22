@@ -127,6 +127,8 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
           .and_return(
             "1.0.119807+c2277fddd003556d4982b86ef4e77fc84a41ed79\n1.0.124446+3123f85bdf6d8309d3d601938564a996f5cad238"
           )
+        allow(Dependabot::Helm::Helpers).to receive(:fetch_tags_with_release_date_using_oci)
+          .and_return({ config: { mediaType: "application/vnd.cncf.helm.config.v1+json" } }.to_json)
       end
 
       let(:credentials) { [] }
@@ -159,6 +161,76 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
         it "filters out non-version tags and returns the latest valid version" do
           expect(checker.latest_version).to eq(
             Dependabot::Helm::Version.new("1.1.0")
+          )
+        end
+      end
+    end
+
+    context "when resolving OCI chart tags where the highest tag is not a pullable chart" do
+      let(:credentials) { [] }
+      let(:version) { "1.0.119807+c2277fddd003556d4982b86ef4e77fc84a41ed79" }
+      let(:dependency_name) { "frontierchart" }
+      let(:repo_url) { "oci://registry.sweet.security/helm" }
+      let(:source) { { tag: version, registry: "oci://registry.sweet.security/helm" } }
+
+      let(:chart_manifest) do
+        {
+          config: { mediaType: "application/vnd.cncf.helm.config.v1+json" },
+          layers: [{ mediaType: "application/vnd.cncf.helm.chart.content.v1.tar+gzip" }]
+        }.to_json
+      end
+      let(:non_chart_manifest) do
+        {
+          config: { mediaType: "application/vnd.oci.image.config.v1+json" },
+          layers: [{ mediaType: "application/vnd.dev.cosign.simplesigning.v1+json" }]
+        }.to_json
+      end
+
+      before do
+        allow(checker).to receive(:fetch_releases_with_helm_cli).and_return(nil)
+        allow(Dependabot::Helm::Helpers).to receive(:fetch_oci_tags)
+          .with("registry.sweet.security/helm/frontierchart")
+          .and_return(
+            "1.0.119807+c2277fddd003556d4982b86ef4e77fc84a41ed79\n" \
+            "1.0.124446+3123f85bdf6d8309d3d601938564a996f5cad238\n" \
+            "1.0.259257+999869104425869d064e81ab142da02642554db0.0"
+          )
+      end
+
+      context "when the non-chart tag's manifest can be fetched" do
+        before do
+          allow(Dependabot::Helm::Helpers).to receive(:fetch_tags_with_release_date_using_oci)
+            .with(
+              "registry.sweet.security/helm/frontierchart",
+              "1.0.259257_999869104425869d064e81ab142da02642554db0.0"
+            )
+            .and_return(non_chart_manifest)
+          allow(Dependabot::Helm::Helpers).to receive(:fetch_tags_with_release_date_using_oci)
+            .with(
+              "registry.sweet.security/helm/frontierchart",
+              "1.0.124446_3123f85bdf6d8309d3d601938564a996f5cad238"
+            )
+            .and_return(chart_manifest)
+        end
+
+        it "skips the non-chart tag and returns the highest chart version" do
+          expect(checker.latest_version).to eq(
+            Dependabot::Helm::Version.new("1.0.124446+3123f85bdf6d8309d3d601938564a996f5cad238")
+          )
+        end
+      end
+
+      context "when the OCI manifest cannot be fetched" do
+        before do
+          allow(Dependabot::Helm::Helpers).to receive(:fetch_tags_with_release_date_using_oci)
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(message: "boom", error_context: {})
+            )
+        end
+
+        it "fails open and keeps the highest tag" do
+          expect(checker.latest_version).to eq(
+            Dependabot::Helm::Version.new("1.0.259257+999869104425869d064e81ab142da02642554db0.0")
           )
         end
       end
