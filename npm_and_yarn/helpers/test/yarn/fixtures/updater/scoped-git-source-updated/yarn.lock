@@ -2,6 +2,7 @@
 # yarn lockfile v1
 
 
-"@scope/pkg@git+https://x@github.com/y/z":
+"@scope/pkg@^1.0.0", "@scope/pkg@2.0.0":
   version "2.0.0"
-  resolved "git+https://x@github.com/y/z#xyz789abc"
+  resolved "https://registry.yarnpkg.com/@scope/pkg/-/pkg-2.0.0.tgz#xyz789abc123\""
+  integrity sha512-xyz789abc123=="

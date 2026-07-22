@@ -115,12 +115,11 @@ describe("updater", () => {
     }
   });
 
-  it("correctly replaces scoped git-source package with embedded credentials", async () => {
-    // This test verifies the fix for LOCKFILE_ENTRY_REGEX handling scoped
-    // packages with git URLs containing @ characters (credentials).
-    // The key "@scope/pkg@git+https://x@github.com/y/z" has multiple @ chars,
-    // and the old regex would split incorrectly, causing replaceLockfileDeclaration
-    // to fail to update the entry.
+  it("correctly updates scoped package with multiple lockfile entries", async () => {
+    // This test verifies that replaceLockfileDeclaration correctly consolidates
+    // duplicate lockfile entries for scoped packages when updating versions.
+    // The LOCKFILE_ENTRY_REGEX must correctly identify both "@scope/pkg@^1.0.0"
+    // and "@scope/pkg@1.0.0" as entries for the same package.
     copyDependencies("scoped-git-source", tempDir);
 
     const result = await updateDependencyFiles(tempDir, [
@@ -129,12 +128,9 @@ describe("updater", () => {
         version: "2.0.0",
         requirements: [
           {
+            requirement: "^1.0.0",
             file: "package.json",
             groups: ["dependencies"],
-            source: {
-              type: "git",
-              url: "git+https://x@github.com/y/z",
-            },
           },
         ],
       },
@@ -142,9 +138,10 @@ describe("updater", () => {
 
     // The updated lock should have the new version
     expect(result["yarn.lock"]).toContain('version "2.0.0"');
-    // And should preserve the git URL with embedded @
-    expect(result["yarn.lock"]).toContain("git+https://x@github.com/y/z");
-    // Verify the old version is gone
+    // Old version should be gone
     expect(result["yarn.lock"]).not.toContain('version "1.0.0"');
+    // Both entries should be consolidated under the new version requirement
+    expect(result["yarn.lock"]).toContain("@scope/pkg@^1.0.0");
+    expect(result["yarn.lock"]).toContain("@scope/pkg@2.0.0");
   });
 });

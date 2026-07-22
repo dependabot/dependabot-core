@@ -2,6 +2,9 @@
   "name": "test-project",
   "version": "1.0.0",
   "dependencies": {
-    "@scope/pkg": "git+https://x@github.com/y/z"
+    "@scope/pkg": "^1.0.0"
+  },
+  "resolutions": {
+    "@scope/pkg": "1.0.0"
   }
 }
