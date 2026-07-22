@@ -615,7 +615,7 @@ RSpec.describe namespace::LatestVersionFinder do
     end
 
     context "when the tag is a lightweight tag with no published release" do
-      it "treats the version as still in cooldown (returns Time.now)" do
+      it "treats the version as still in cooldown (returns Time.now) and logs the decision" do
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
           .and_return(source_details)
@@ -636,6 +636,9 @@ RSpec.describe namespace::LatestVersionFinder do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(/git for-each-ref.*objecttype/, hash_including(fingerprint: anything))
           .and_return("commit")
+
+        expect(Dependabot.logger).to receive(:info)
+          .with(/v1\.0\.0.*lightweight tag.*no published GitHub Release.*cooldown/i)
 
         before_call = Time.now
         result = commit_metadata_details

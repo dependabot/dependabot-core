@@ -172,6 +172,12 @@ module Dependabot
     # blocking a dependency.
     sig { params(tag_name: String).returns(T::Boolean) }
     def lightweight_tag?(tag_name)
+      # Defensive guard: reject tag names that contain characters outside the
+      # set allowed in git ref names (RFC 3986 + git ref rules). This prevents
+      # any possibility of shell injection via a crafted tag name, consistent
+      # with how tag_creation_date handles the same parameter.
+      return false unless tag_name.match?(/\A[a-zA-Z0-9.\-_\/+@{}=]+\z/)
+
       object_type = SharedHelpers.run_shell_command(
         "git for-each-ref --format=\"%(objecttype)\" \"refs/tags/#{tag_name}\"",
         fingerprint: "git for-each-ref --format=\"%(objecttype)\" \"refs/tags/<tag_name>\""
