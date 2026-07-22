@@ -222,12 +222,173 @@ RSpec.describe Dependabot::Julia::FileParser do
         expect(documenter_dep.requirements.first[:file]).to eq("docs/Project.toml")
         expect(documenter_dep.requirements.first[:requirement]).to eq("1")
 
-        # Test should only be in test/Project.toml (but has no compat entry)
+        # Test is only in test/Project.toml and has no compat entry there.
+        # Compat-less deps in workspace member files are skipped so Dependabot
+        # doesn't synthesize new compat entries in test/docs environments.
         test_dep = dependencies.find { |d| d.name == "Test" }
-        expect(test_dep).not_to be_nil
-        expect(test_dep.requirements.length).to eq(1)
-        expect(test_dep.requirements.first[:file]).to eq("test/Project.toml")
-        expect(test_dep.requirements.first[:requirement]).to be_nil # No compat entry
+        expect(test_dep).to be_nil
+      end
+    end
+
+    context "when a workspace member depends on workspace packages" do
+      let(:main_project_file) do
+        Dependabot::DependencyFile.new(
+          name: "Project.toml",
+          content: <<~TOML
+            name = "MainPackage"
+            uuid = "11111111-1111-1111-1111-111111111111"
+            version = "1.0.0"
+
+            [workspace]
+            projects = ["test", "lib/SubPackage"]
+
+            [deps]
+            JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+
+            [compat]
+            JSON = "0.21.4"
+            julia = "1.10"
+          TOML
+        )
+      end
+
+      let(:sub_package_file) do
+        Dependabot::DependencyFile.new(
+          name: "lib/SubPackage/Project.toml",
+          content: <<~TOML
+            name = "SubPackage"
+            uuid = "22222222-2222-2222-2222-222222222222"
+            version = "0.1.0"
+
+            [deps]
+            JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+
+            [compat]
+            JSON = "0.21"
+            julia = "1.10"
+          TOML
+        )
+      end
+
+      let(:test_project_file) do
+        Dependabot::DependencyFile.new(
+          name: "test/Project.toml",
+          content: <<~TOML
+            [deps]
+            MainPackage = "11111111-1111-1111-1111-111111111111"
+            SubPackage = "22222222-2222-2222-2222-222222222222"
+            JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+
+            [compat]
+            JSON = "0.21"
+            MainPackage = "1"
+          TOML
+        )
+      end
+
+      let(:dependency_files) { [main_project_file, sub_package_file, test_project_file] }
+
+      it "does not treat workspace packages as updatable dependencies" do
+        # MainPackage and SubPackage resolve by path within the workspace,
+        # never from a registry (even with a compat entry present)
+        expect(dependencies.map(&:name)).to contain_exactly("JSON")
+      end
+
+      it "still merges registry dependency requirements from all files" do
+        json_dep = dependencies.find { |d| d.name == "JSON" }
+        expect(json_dep.requirements.map { |r| r[:file] })
+          .to contain_exactly("Project.toml", "lib/SubPackage/Project.toml", "test/Project.toml")
+      end
+    end
+
+    context "when Dependabot targets a workspace member directory" do
+      let(:member_project_file) do
+        Dependabot::DependencyFile.new(
+          name: "Project.toml",
+          directory: "/test",
+          content: <<~TOML
+            [deps]
+            MainPackage = "11111111-1111-1111-1111-111111111111"
+            JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+            Example = "7876af07-990d-54b4-ab0e-23690620f79a"
+
+            [compat]
+            JSON = "0.21"
+          TOML
+        )
+      end
+
+      let(:workspace_root_file) do
+        Dependabot::DependencyFile.new(
+          name: "../Project.toml",
+          directory: "/test",
+          content: <<~TOML
+            name = "MainPackage"
+            uuid = "11111111-1111-1111-1111-111111111111"
+            version = "1.0.0"
+
+            [workspace]
+            projects = ["test"]
+
+            [deps]
+            JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+            Example = "7876af07-990d-54b4-ab0e-23690620f79a"
+
+            [compat]
+            JSON = "0.21.4"
+            julia = "1.10"
+          TOML
+        )
+      end
+
+      let(:dependency_files) { [member_project_file, workspace_root_file] }
+
+      it "excludes the workspace root package discovered via ../Project.toml" do
+        expect(dependencies.map(&:name)).not_to include("MainPackage")
+      end
+
+      it "keeps compat-less deps of the targeted directory's own Project.toml" do
+        # The user pointed Dependabot at this directory, so adding a compat
+        # entry for Example here is intended behavior
+        example_dep = dependencies.find { |d| d.name == "Example" }
+        expect(example_dep).not_to be_nil
+        expect(example_dep.requirements.first[:file]).to eq("Project.toml")
+        expect(example_dep.requirements.first[:requirement]).to be_nil
+      end
+
+      it "does not synthesize requirements for compat-less deps of the workspace root file" do
+        # Example has no compat entry in ../Project.toml, which was only
+        # discovered via workspace membership — no requirement recorded for it
+        example_dep = dependencies.find { |d| d.name == "Example" }
+        expect(example_dep.requirements.map { |r| r[:file] }).to contain_exactly("Project.toml")
+
+        # JSON has compat entries in both files, so both are tracked
+        json_dep = dependencies.find { |d| d.name == "JSON" }
+        expect(json_dep.requirements.map { |r| r[:file] })
+          .to contain_exactly("Project.toml", "../Project.toml")
+      end
+    end
+
+    context "when the root project has a dependency without a compat entry" do
+      let(:dependency_files) { [root_without_compat] }
+      let(:root_without_compat) do
+        Dependabot::DependencyFile.new(
+          name: "Project.toml",
+          content: <<~TOML
+            name = "MainPackage"
+            uuid = "11111111-1111-1111-1111-111111111111"
+            version = "1.0.0"
+
+            [deps]
+            Example = "7876af07-990d-54b4-ab0e-23690620f79a"
+          TOML
+        )
+      end
+
+      it "keeps the dependency so a compat entry can be added" do
+        example_dep = dependencies.find { |d| d.name == "Example" }
+        expect(example_dep).not_to be_nil
+        expect(example_dep.requirements.first[:requirement]).to be_nil
       end
     end
   end
