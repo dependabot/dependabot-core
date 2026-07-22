@@ -36,6 +36,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmWorkspaceUpdater do
 
     its(:content) { is_expected.to include "prettier: ^3.3.3" }
 
+    context "with an unfixable requirement" do
+      let(:dependency) do
+        create_dependency(
+          file: "pnpm-workspace.yaml",
+          name: "prettier",
+          version: "3.3.0",
+          required_version: :unfixable,
+          previous_required_version: "^3.3.0"
+        )
+      end
+
+      it "rejects the non-string replacement" do
+        expect { updated_package_json }
+          .to raise_error(TypeError, "pnpm workspace requirement must be a string")
+      end
+    end
+
     context "with a registry source" do
       let(:dependencies) do
         [
