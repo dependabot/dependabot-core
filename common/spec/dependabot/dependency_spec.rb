@@ -469,6 +469,21 @@ RSpec.describe Dependabot::Dependency do
       expect(dependency.new_ref).to eq("main")
     end
 
+    it "preserves string source names" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [{
+          file: "pyproject.toml",
+          requirement: ">= 1.0",
+          groups: [],
+          source: "internal"
+        }],
+        package_manager: "dummy"
+      )
+
+      expect(dependency.all_sources).to eq(["internal"])
+    end
+
     it "rejects malformed source fields" do
       malformed_type = described_class.new(
         name: "dep",
@@ -530,7 +545,7 @@ RSpec.describe Dependabot::Dependency do
       )
 
       expect { dependency.all_sources }
-        .to raise_error(TypeError, "source must be a hash with string or symbol keys, or nil")
+        .to raise_error(TypeError, "source must be a string or hash with string or symbol keys, or nil")
     end
   end
 
