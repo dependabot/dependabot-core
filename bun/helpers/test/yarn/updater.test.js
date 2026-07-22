@@ -114,4 +114,37 @@ describe("updater", () => {
       expect(error.message).toEqual("package.json: Name contains illegal characters")
     }
   });
+
+  it("correctly replaces scoped git-source package with embedded credentials", async () => {
+    // This test verifies the fix for LOCKFILE_ENTRY_REGEX handling scoped
+    // packages with git URLs containing @ characters (credentials).
+    // The key "@scope/pkg@git+https://x@github.com/y/z" has multiple @ chars,
+    // and the old regex would split incorrectly, causing replaceLockfileDeclaration
+    // to fail to update the entry.
+    copyDependencies("scoped-git-source", tempDir);
+
+    const result = await updateDependencyFiles(tempDir, [
+      {
+        name: "@scope/pkg",
+        version: "2.0.0",
+        requirements: [
+          {
+            file: "package.json",
+            groups: ["dependencies"],
+            source: {
+              type: "git",
+              url: "git+https://x@github.com/y/z",
+            },
+          },
+        ],
+      },
+    ]);
+
+    // The updated lock should have the new version
+    expect(result["yarn.lock"]).toContain('version "2.0.0"');
+    // And should preserve the git URL with embedded @
+    expect(result["yarn.lock"]).toContain("git+https://x@github.com/y/z");
+    // Verify the old version is gone
+    expect(result["yarn.lock"]).not.toContain('version "1.0.0"');
+  });
 });
