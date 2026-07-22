@@ -80,6 +80,14 @@ module Dependabot
       # so we cap the attempts to avoid rate limiting or excessive latency.
       MAX_PLATFORM_VALIDATION_ATTEMPTS = T.let(5, Integer)
 
+      # Page size used when listing tags from a registry. Without an explicit page
+      # size, registries such as Docker Hub try to return every tag in a single
+      # response, which times out (HTTP 504) for images with very large tag counts
+      # (e.g. hexpm/elixir has ~1M tags). Requesting a bounded page keeps each
+      # request fast; the client then follows the registry's pagination links to
+      # collect the remaining tags.
+      TAGS_PAGE_SIZE = T.let(100, Integer)
+
       DockerSource = T.type_alias do
         T::Hash[Symbol, T.nilable(String)]
       end
@@ -491,6 +499,7 @@ module Dependabot
         )
       rescue *transient_docker_errors,
              DockerRegistry2::RegistryAuthenticationException,
+             DockerRegistry2::RegistryAuthorizationException,
              RestClient::Forbidden,
              RestClient::TooManyRequests => e
         Dependabot.logger.warn(
@@ -700,20 +709,11 @@ module Dependabot
       sig { returns(T::Array[Dependabot::Docker::Tag]) }
       def tags_from_registry
         @tags_from_registry ||= T.let(
-          begin
-            client = docker_registry_client
-
-            client.tags(docker_repo_name, auto_paginate: true).fetch("tags").map { |name| Tag.new(name) }
-          rescue *transient_docker_errors
-            attempt ||= 1
-            attempt += 1
-            raise if attempt > 3
-
-            retry
-          end,
+          fetch_tags_from_registry,
           T.nilable(T::Array[Dependabot::Docker::Tag])
         )
       rescue DockerRegistry2::RegistryAuthenticationException,
+             DockerRegistry2::RegistryAuthorizationException,
              RestClient::Forbidden
         raise PrivateSourceAuthenticationFailure, registry_hostname
       rescue RestClient::Exceptions::OpenTimeout,
@@ -724,12 +724,52 @@ module Dependabot
       rescue RestClient::ServerBrokeConnection,
              RestClient::TooManyRequests
         raise PrivateSourceBadResponse, registry_hostname
+      rescue DockerRegistry2::RegistryHTTPException => e
+        # The registry returned an HTTP error status (e.g. a 504 when Docker Hub
+        # can't enumerate an image's tags). Surface a generic RegistryError with
+        # the status rather than a private-source error, since the registry may
+        # well be public (e.g. Docker Hub).
+        raise RegistryError.new(registry_http_status(e), e.message)
       rescue JSON::ParserError => e
         if e.message.include?("unexpected token")
           raise DependencyFileNotResolvable, "Error while accessing docker image at #{registry_hostname}"
         end
 
         raise
+      end
+
+      # Registries such as Docker Hub time out (HTTP 504) when asked to return the
+      # full tag list for images with very large tag counts (e.g. hexpm/elixir has
+      # ~1M tags). Request the list without a page size first — a single efficient
+      # call for the common case — and fall back to a paginated request when the
+      # registry can't return everything at once.
+      sig { params(page_size: T.nilable(Integer)).returns(T::Array[Dependabot::Docker::Tag]) }
+      def fetch_tags_from_registry(page_size: nil)
+        client = docker_registry_client
+        response =
+          if page_size
+            client.tags(docker_repo_name, page_size, "", false, auto_paginate: true)
+          else
+            client.tags(docker_repo_name, auto_paginate: true)
+          end
+        response.fetch("tags").map { |name| Tag.new(name) }
+      rescue *transient_docker_errors
+        attempt ||= 1
+        attempt += 1
+        raise if attempt > 3
+
+        retry
+      rescue DockerRegistry2::RegistryHTTPException
+        raise if page_size
+
+        fetch_tags_from_registry(page_size: TAGS_PAGE_SIZE)
+      end
+
+      # Extracts the numeric HTTP status from a RegistryHTTPException, whose
+      # message has the form "Registry request failed with status <code>".
+      sig { params(error: StandardError).returns(Integer) }
+      def registry_http_status(error)
+        error.message[/status (\d+)/, 1].to_i
       end
 
       sig { returns(T.nilable(String)) }
@@ -758,6 +798,7 @@ module Dependabot
 
         retry
       rescue DockerRegistry2::RegistryAuthenticationException,
+             DockerRegistry2::RegistryAuthorizationException,
              RestClient::Forbidden
         raise PrivateSourceAuthenticationFailure, registry_hostname
       rescue RestClient::ServerBrokeConnection,
@@ -1120,6 +1161,7 @@ module Dependabot
         config_created_timestamps[tag_name] = created
         created
       rescue *transient_docker_errors, DockerRegistry2::RegistryAuthenticationException,
+             DockerRegistry2::RegistryAuthorizationException,
              RestClient::Forbidden, JSON::ParserError => e
         Dependabot.logger.info(
           "Failed to fetch config created timestamp for #{docker_repo_name}:#{tag_name}: #{e.message}"
@@ -1417,6 +1459,7 @@ module Dependabot
         platform_digests_cache[tag_name] = digests
         digests
       rescue *transient_docker_errors, DockerRegistry2::RegistryAuthenticationException,
+             DockerRegistry2::RegistryAuthorizationException,
              RestClient::Forbidden, RestClient::TooManyRequests, JSON::ParserError => e
         Dependabot.logger.info(
           "Failed to fetch platform digests for #{docker_repo_name}:#{tag_name}: #{e.message}"
@@ -1460,6 +1503,7 @@ module Dependabot
         manifest_platforms_cache[tag_name] = platforms
         platforms
       rescue *transient_docker_errors, DockerRegistry2::RegistryAuthenticationException,
+             DockerRegistry2::RegistryAuthorizationException,
              RestClient::Forbidden, JSON::ParserError => e
         Dependabot.logger.info(
           "Failed to fetch manifest platforms for #{docker_repo_name}:#{tag_name}: #{e.message}"
@@ -1524,6 +1568,7 @@ module Dependabot
         platform_timestamps_cache[tag_name] = timestamps
         timestamps
       rescue *transient_docker_errors, DockerRegistry2::RegistryAuthenticationException,
+             DockerRegistry2::RegistryAuthorizationException,
              RestClient::Forbidden, JSON::ParserError => e
         Dependabot.logger.info(
           "Failed to fetch platform timestamps for #{docker_repo_name}:#{tag_name}: #{e.message}"
