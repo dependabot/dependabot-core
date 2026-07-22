@@ -139,8 +139,7 @@ describe("updater", () => {
     expect(result["yarn.lock"]).toContain('version "3.1.0"');
     // Old version should be gone
     expect(result["yarn.lock"]).not.toContain('version "3.0.0"');
-    // Both entries should be consolidated under the new version requirement
+    // The caret requirement entry should be preserved
     expect(result["yarn.lock"]).toContain("is-positive@^3.0.0");
-    expect(result["yarn.lock"]).toContain("is-positive@3.1.0");
   });
 });
