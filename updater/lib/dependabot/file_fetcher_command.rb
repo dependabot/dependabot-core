@@ -186,7 +186,15 @@ module Dependabot
 
         begin
           files = ff.files
-        rescue Dependabot::DependencyFileNotFound
+        rescue Dependabot::DependencyFileNotFound => e
+          # The empty-files case is intentionally non-fatal for multi-directory and
+          # update_graph jobs (see `dependency_files_for_multi_directories` below),
+          # but we must surface *why* a directory was skipped so silent failures —
+          # particularly during `dependabot graph` runs — are diagnosable from logs.
+          Dependabot.logger.warn(
+            "Skipping directory '#{dir}': file fetcher raised " \
+            "#{e.class} (#{e.file_path || dir})"
+          )
           next
         rescue Dependabot::PathDependenciesNotReachable => e
           # For graph jobs, an unreachable path dependency in one directory must not
