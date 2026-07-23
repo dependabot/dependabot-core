@@ -171,6 +171,12 @@ PATH
       dependabot-common (= 0.388.0)
 
 PATH
+  remote: ../powershell
+  specs:
+    dependabot-powershell (0.388.0)
+      dependabot-common (= 0.388.0)
+
+PATH
   remote: ../pre_commit
   specs:
     dependabot-pre_commit (0.388.0)
@@ -630,6 +636,7 @@ DEPENDENCIES
   dependabot-npm_and_yarn!
   dependabot-nuget!
   dependabot-opentofu!
+  dependabot-powershell!
   dependabot-pre_commit!
   dependabot-pub!
   dependabot-python!
@@ -723,6 +730,7 @@ CHECKSUMS
   dependabot-npm_and_yarn (0.388.0)
   dependabot-nuget (0.388.0)
   dependabot-opentofu (0.388.0)
+  dependabot-powershell (0.388.0)
   dependabot-pre_commit (0.388.0)
   dependabot-pub (0.388.0)
   dependabot-python (0.388.0)
