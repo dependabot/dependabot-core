@@ -267,24 +267,32 @@ module Dependabot
       def load_cloned_file_if_present(filename)
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         repo_path = File.join(clone_repo_contents, path)
-        raise Dependabot::DependencyFileNotFound, path unless File.exist?(repo_path)
+
+        if File.lstat(repo_path).symlink?
+          symlink_target = File.readlink(repo_path)
+          raise Dependabot::DependencyFileNotFound, path unless safe_symlink_target?(path, symlink_target)
+
+          return DependencyFile.new(
+            name: Pathname.new(filename).cleanpath.to_path,
+            directory: directory,
+            type: "symlink",
+            content: nil,
+            symlink_target: symlink_target,
+            support_file: in_submodule?(path)
+          )
+        end
 
         content = decode_binary_string(Base64.encode64(File.read(repo_path)))
-        type = if File.symlink?(repo_path)
-                 symlink_target = File.readlink(repo_path)
-                 "symlink"
-               else
-                 "file"
-               end
 
         DependencyFile.new(
           name: Pathname.new(filename).cleanpath.to_path,
           directory: directory,
-          type: type,
+          type: "file",
           content: content,
-          symlink_target: symlink_target,
           support_file: in_submodule?(path)
         )
+      rescue Errno::ENOENT, Errno::ENOTDIR
+        raise Dependabot::DependencyFileNotFound, path
       end
 
       sig do
@@ -321,6 +329,17 @@ module Dependabot
       sig { params(path: String).returns(T.nilable(String)) }
       def symlinked_subpath(path)
         subpaths(path).find { |subpath| @linked_paths.key?(subpath) }
+      end
+
+      sig { params(path: String, symlink_target: String).returns(T::Boolean) }
+      def safe_symlink_target?(path, symlink_target)
+        return false if symlink_target.empty?
+        return false if Pathname.new(symlink_target).absolute?
+
+        relative_path = path.delete_prefix("/")
+        resolved_target = Pathname.new(File.join(File.dirname(relative_path), symlink_target)).cleanpath.to_path
+
+        resolved_target != ".." && !resolved_target.start_with?("../")
       end
 
       sig { params(path: String).returns(T::Boolean) }
