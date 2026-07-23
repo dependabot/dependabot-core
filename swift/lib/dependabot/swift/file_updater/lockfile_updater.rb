@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/file_updaters/base"
@@ -36,7 +36,7 @@ module Dependabot
             File.write(manifest.name, manifest.content)
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              try_lockfile_update(dependency.metadata[:identity])
+              try_lockfile_update(T.must(dependency.metadata_string(:identity)))
 
               File.read("Package.resolved")
             end

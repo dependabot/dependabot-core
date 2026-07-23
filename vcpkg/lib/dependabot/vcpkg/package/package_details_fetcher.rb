@@ -164,7 +164,7 @@ module Dependabot
           Dependabot::Package::PackageRelease.new(
             version: Dependabot::Vcpkg::Version.new(tag_info.fetch(:tag)),
             tag: tag_info.fetch(:tag),
-            url: dependency.source_details&.dig(:url),
+            url: dependency.source_string("url"),
             released_at: extract_release_date_from_tag(tag_info.fetch(:tag)),
             details: {
               "commit_sha" => tag_info.fetch(:commit_sha),

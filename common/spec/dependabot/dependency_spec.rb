@@ -119,6 +119,20 @@ RSpec.describe Dependabot::Dependency do
     let(:groups) { [] }
     let(:package_manager) { "dummy" }
 
+    context "with symbol and string groups" do
+      let(:groups) { [:runtime, "default"] }
+      let(:package_manager) { "typed_groups" }
+
+      before do
+        described_class.register_production_check(
+          package_manager,
+          ->(received_groups) { received_groups == %w(runtime default) }
+        )
+      end
+
+      it { is_expected.to be(true) }
+    end
+
     context "when dealing with a requirement that isn't top-level" do
       let(:dependency_args) do
         { name: "dep", requirements: [], package_manager: package_manager }
@@ -390,6 +404,148 @@ RSpec.describe Dependabot::Dependency do
       )
 
       expect(dependency.all_versions).to eq(["1.0.0", "2.0.0"])
+    end
+
+    it "rejects malformed all_versions metadata" do
+      malformed_container = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        metadata: { all_versions: "1.0.0" }
+      )
+      malformed_entry = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        metadata: { all_versions: ["1.0.0"] }
+      )
+
+      expect { malformed_container.all_versions }
+        .to raise_error(TypeError, "all_versions metadata must be an array")
+      expect { malformed_entry.all_versions }
+        .to raise_error(TypeError, "all_versions metadata must be an array of dependencies")
+    end
+  end
+
+  describe "#informational_only?" do
+    it "returns boolean metadata" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        metadata: { information_only: false }
+      )
+
+      expect(dependency.informational_only?).to be(false)
+    end
+
+    it "rejects malformed metadata" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        metadata: { information_only: "yes" }
+      )
+
+      expect { dependency.informational_only? }
+        .to raise_error(TypeError, "information_only metadata must be a boolean or nil")
+    end
+  end
+
+  describe "source details" do
+    it "returns typed source fields" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [{
+          file: "config.yaml",
+          requirement: nil,
+          groups: [],
+          source: { type: "git", ref: "main" }
+        }],
+        package_manager: "dummy"
+      )
+
+      expect(dependency.source_type).to eq("git")
+      expect(dependency.new_ref).to eq("main")
+    end
+
+    it "preserves string source names" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [{
+          file: "pyproject.toml",
+          requirement: ">= 1.0",
+          groups: [],
+          source: "internal"
+        }],
+        package_manager: "dummy"
+      )
+
+      expect(dependency.all_sources).to eq(["internal"])
+    end
+
+    it "rejects malformed source fields" do
+      malformed_type = described_class.new(
+        name: "dep",
+        requirements: [{
+          file: "config.yaml",
+          requirement: nil,
+          groups: [],
+          source: { type: nil }
+        }],
+        package_manager: "dummy"
+      )
+      malformed_ref = described_class.new(
+        name: "dep",
+        requirements: [{
+          file: "config.yaml",
+          requirement: nil,
+          groups: [],
+          source: { type: "git", ref: 1 }
+        }],
+        package_manager: "dummy"
+      )
+
+      expect { malformed_type.source_type }
+        .to raise_error(TypeError, "source type must be a string")
+      expect { malformed_ref.new_ref }
+        .to raise_error(TypeError, "source ref must be a string or nil")
+    end
+
+    it "rejects multiple string-keyed git sources" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [
+          {
+            file: "first.yaml",
+            requirement: nil,
+            groups: [],
+            source: { "type" => "git", "url" => "https://github.com/example/first", "ref" => "main" }
+          },
+          {
+            file: "second.yaml",
+            requirement: nil,
+            groups: [],
+            source: { "type" => "git", "url" => "https://github.com/example/second", "ref" => "main" }
+          }
+        ],
+        package_manager: "dummy"
+      )
+
+      expect { dependency.source_details(allowed_types: ["git"]) }
+        .to raise_error(RuntimeError, /Multiple sources!/)
+    end
+
+    it "rejects malformed subdependency sources" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        subdependency_metadata: [{ source: [] }]
+      )
+
+      expect { dependency.all_sources }
+        .to raise_error(TypeError, "source must be a string or hash with string or symbol keys, or nil")
     end
   end
 

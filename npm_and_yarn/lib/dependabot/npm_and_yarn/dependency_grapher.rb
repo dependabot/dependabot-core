@@ -38,7 +38,7 @@ module Dependabot
         prepare! unless prepared
 
         @dependencies.each_with_object({}) do |dep, resolved|
-          all_versions = dep.metadata[:all_versions] || [dep]
+          all_versions = dep.metadata_dependencies(:all_versions) || [dep]
 
           all_versions.each do |version_dep|
             purl = build_purl(version_dep)
