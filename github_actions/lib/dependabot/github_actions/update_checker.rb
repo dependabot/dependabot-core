@@ -170,7 +170,12 @@ module Dependabot
       sig { params(source_checker: Dependabot::GitCommitChecker).returns(T.nilable(String)) }
       def latest_commit_sha(source_checker)
         latest_tag = T.must(latest_version_finder).latest_version_tag
-        return unless latest_tag
+        unless latest_tag
+          latest = latest_version
+          return latest if latest.is_a?(String)
+
+          return nil
+        end
 
         if source_checker.local_tag_for_pinned_sha
           new_tag = T.must(latest_version_finder).latest_version_tag_respecting_cooldown

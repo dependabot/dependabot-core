@@ -756,8 +756,10 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     end
 
     context "when no latest version tag is available" do
-      it "returns nil instead of falling back to branch head" do
-        expect(checker.send(:latest_commit_sha, source_checker)).to be_nil
+      let(:latest_version) { "branch-head-sha" }
+
+      it "falls back to the latest commit on the containing branch" do
+        expect(checker.send(:latest_commit_sha, source_checker)).to eq("branch-head-sha")
       end
     end
 
@@ -803,6 +805,55 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
 
         it { is_expected.to eq(expected_requirements) }
+      end
+    end
+
+    context "when a dependency is pinned to a commit without any version tag" do
+      let(:reference) { "506f1e5c67f7d47b690882cd3edf808863e7139f" }
+      let(:source_checker) do
+        instance_double(
+          Dependabot::GitCommitChecker,
+          pinned_ref_looks_like_version?: false,
+          pinned_ref_looks_like_commit_sha?: true,
+          local_tag_for_pinned_sha: nil
+        )
+      end
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          source: {
+            type: "git",
+            url: "https://github.com/actions/setup-node",
+            ref: "branch-head-sha",
+            branch: nil
+          },
+          metadata: { declaration_string: "#{dependency_name}@master" }
+        }]
+      end
+      let(:latest_version_finder) do
+        instance_double(
+          Dependabot::GithubActions::UpdateChecker::LatestVersionFinder,
+          latest_version_tag: nil,
+          lowest_security_fix_release: nil
+        )
+      end
+
+      before do
+        allow(checker).to receive_messages(
+          git_commit_checker: instance_double(Dependabot::GitCommitChecker, git_dependency?: true),
+          git_helper: instance_double(
+            Dependabot::GithubActions::Helpers::Githelper,
+            git_commit_checker_for: source_checker
+          ),
+          latest_version: "branch-head-sha",
+          latest_version_finder: latest_version_finder
+        )
+      end
+
+      it "updates the pin to the latest commit on the containing branch" do
+        expect(updated_requirements).to eq(expected_requirements)
       end
     end
 
