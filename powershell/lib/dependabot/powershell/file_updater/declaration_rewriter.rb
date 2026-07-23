@@ -82,20 +82,33 @@ module Dependabot
           previous_requirements = requirements_for_file(dependency.previous_requirements)
           current_requirements = requirements_for_file(dependency.requirements)
 
-          edits = []
-          current_requirements.each_with_index do |current, index|
+          changes = requirement_changes(previous_requirements, current_requirements)
+          return [] if changes.empty?
+
+          occurrences.filter_map { |occurrence| edit_for_matching_occurrence(occurrence, changes, content) }
+        end
+
+        # Pairs each previous requirement with its updated counterpart (both
+        # arrays come from `RequirementsUpdater#updated_requirements`, which
+        # maps 1:1 over its input, so index-based pairing between them is
+        # safe), keeping only the pairs whose requirement string changed.
+        sig do
+          params(
+            previous_requirements: T::Array[Dependabot::DependencyRequirement],
+            current_requirements: T::Array[Dependabot::DependencyRequirement]
+          ).returns(T::Array[[Dependabot::DependencyRequirement, String]])
+        end
+        def requirement_changes(previous_requirements, current_requirements)
+          current_requirements.each_with_index.filter_map do |current, index|
             previous = previous_requirements[index]
-            occurrence = occurrences[index]
-            next unless previous && occurrence
+            next unless previous
             next if current.requirement == previous.requirement
 
             new_requirement = current.requirement
             next unless new_requirement.is_a?(String)
 
-            edit = edit_for_occurrence(occurrence, new_requirement, content)
-            edits << edit if edit
+            [previous, new_requirement]
           end
-          edits
         end
 
         sig do
@@ -110,21 +123,33 @@ module Dependabot
         sig do
           params(
             occurrence: DeclarationLocator::Occurrence,
-            new_requirement: String,
+            changes: T::Array[[Dependabot::DependencyRequirement, String]],
             content: String
           ).returns(T.nilable(Edit))
         end
-        def edit_for_occurrence(occurrence, new_requirement, content)
+        def edit_for_matching_occurrence(occurrence, changes, content)
           return nil unless occurrence.style == :hashtable
 
           field = VERSION_FIELDS[occurrence.version_key]
           return nil unless field
 
-          new_value = extract_version(new_requirement, occurrence.version_key)
-          return nil unless new_value
-
           value_span = value_span_for(content, occurrence, field)
           return nil unless value_span
+
+          current_value = content[value_span[0]...value_span[1]]
+
+          # Duplicate identical declarations collapse into a single
+          # requirement change upstream (see DependencySet#combined_dependency),
+          # so more than one occurrence can legitimately match the same
+          # change here - each still gets its own edit, keyed by whatever
+          # version is actually on disk for it rather than by position.
+          match = changes.find do |previous, _|
+            extract_version(previous.requirement, occurrence.version_key) == current_value
+          end
+          return nil unless match
+
+          new_value = extract_version(match[1], occurrence.version_key)
+          return nil unless new_value
 
           [value_span[0], value_span[1], new_value]
         end

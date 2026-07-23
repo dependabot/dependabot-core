@@ -33,6 +33,11 @@ module Dependabot
         sig { params(file: Dependabot::DependencyFile).void }
         def initialize(file:)
           @file = file
+          # Block comments (`<# ... #>`) are blanked out - not removed - so
+          # every absolute offset below still lines up with `@file.content`,
+          # but text like `#Requires -Modules` or `RequiredModules = @(`
+          # written inside a comment can no longer match as a declaration.
+          @content = T.let(blank_block_comments(T.must(file.content)), String)
         end
 
         sig { returns(T::Array[Occurrence]) }
@@ -49,11 +54,19 @@ module Dependabot
 
         private
 
+        # Replaces each `<# ... #>` block comment with equal-length
+        # whitespace (newlines preserved), so every absolute offset used
+        # elsewhere in this class still lines up with the original file
+        # content, but comment text can no longer match REQUIRES_MODULES_LINE
+        # or REQUIRED_MODULES_KEY.
+        sig { params(content: String).returns(String) }
+        def blank_block_comments(content)
+          content.gsub(/<#.*?#>/m) { |match| match.gsub(/[^\n]/, " ") }
+        end
+
         sig { returns(T::Array[Occurrence]) }
         def locate_requires_directives
-          content = T.must(@file.content)
-
-          content.to_enum(:scan, REQUIRES_MODULES_LINE).flat_map do
+          @content.to_enum(:scan, REQUIRES_MODULES_LINE).flat_map do
             match = T.must(Regexp.last_match)
             modules_text = T.must(match[:modules])
             entries(modules_text, T.must(match.begin(:modules)), declaration_type: :requires_directive)
@@ -62,15 +75,14 @@ module Dependabot
 
         sig { returns(T::Array[Occurrence]) }
         def locate_required_modules
-          content = T.must(@file.content)
-          match = REQUIRED_MODULES_KEY.match(content)
+          match = REQUIRED_MODULES_KEY.match(@content)
           return [] unless match
 
-          body_range = balanced_paren_range(content, match.end(0) - 1)
+          body_range = balanced_paren_range(@content, match.end(0) - 1)
           return [] unless body_range
 
           body_start, body_end = body_range
-          entries(content[body_start...body_end].to_s, body_start, declaration_type: :required_modules)
+          entries(@content[body_start...body_end].to_s, body_start, declaration_type: :required_modules)
         end
 
         # Given content and the index of an opening `(`, returns the

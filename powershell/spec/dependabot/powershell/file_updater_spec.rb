@@ -429,4 +429,87 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
       expect(lines[1]).to eq("#Requires -Modules @{ModuleName = 'Az.Storage'; RequiredVersion = '9.0.0'}")
     end
   end
+
+  describe "updating duplicate identical declarations of the same module" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Duplicate.ps1",
+          content: fixture("ps1", "duplicate_requires_script.ps1")
+        )
+      ]
+    end
+
+    # DependencySet dedupes two identical `#Requires` declarations of the
+    # same module into a single requirement, even though the locator still
+    # finds two occurrences in the file - both must still get rewritten.
+    let(:dependencies) do
+      [
+        build_dependency(
+          name: "Az.Storage",
+          requirements: [
+            hashtable_requirement(
+              "= 2.0.0",
+              file: "Duplicate.ps1",
+              version_key: "RequiredVersion",
+              declaration_type: :requires_directive
+            )
+          ],
+          previous_requirements: [
+            hashtable_requirement(
+              "= 1.0.0",
+              file: "Duplicate.ps1",
+              version_key: "RequiredVersion",
+              declaration_type: :requires_directive
+            )
+          ]
+        )
+      ]
+    end
+
+    it "rewrites every occurrence, not just the first" do
+      content = updater.updated_dependency_files.first.content
+      lines = content.each_line.map(&:chomp).reject(&:empty?)
+
+      expect(lines).to eq(
+        [
+          "#Requires -Modules @{ModuleName = 'Az.Storage'; RequiredVersion = '2.0.0'}",
+          "#Requires -Modules @{ModuleName = 'Az.Storage'; RequiredVersion = '2.0.0'}"
+        ]
+      )
+      expect(content).not_to include("1.0.0")
+    end
+  end
+
+  describe "ignoring declaration-like text inside a block comment" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "WithComment.psd1",
+          content: fixture("psd1", "block_comment_manifest.psd1")
+        )
+      ]
+    end
+
+    let(:dependencies) do
+      [
+        build_dependency(
+          name: "Az.Real",
+          requirements: [
+            hashtable_requirement(">= 2.0.0", file: "WithComment.psd1", version_key: "ModuleVersion")
+          ],
+          previous_requirements: [
+            hashtable_requirement(">= 1.0.0", file: "WithComment.psd1", version_key: "ModuleVersion")
+          ]
+        )
+      ]
+    end
+
+    it "rewrites the real declaration, not the one described in the block comment" do
+      content = updater.updated_dependency_files.first.content
+
+      expect(content).to include("@{ModuleName = 'Az.Real'; ModuleVersion = '2.0.0'}")
+      expect(content).to include("RequiredModules = @('FakeModule')")
+    end
+  end
 end
