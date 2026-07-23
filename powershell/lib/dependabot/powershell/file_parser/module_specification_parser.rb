@@ -24,6 +24,16 @@ module Dependabot
           %r{\A(\.{1,2}[\\/]|[\\/]|[A-Za-z]:[\\/]|~[\\/])|\.(psd1|psm1|ps1)\z}i,
           Regexp
         )
+        CANONICAL_FIELDS = T.let(
+          {
+            "modulename" => "ModuleName",
+            "guid" => "GUID",
+            "moduleversion" => "ModuleVersion",
+            "maximumversion" => "MaximumVersion",
+            "requiredversion" => "RequiredVersion"
+          }.freeze,
+          T::Hash[String, String]
+        )
 
         # Splits a comma-separated list of entries at the top level, ignoring
         # commas that appear inside quoted strings or nested `@{...}` /
@@ -106,6 +116,8 @@ module Dependabot
 
         sig { params(entry: String, declaration_type: Symbol).returns(T.nilable(ModuleDeclaration)) }
         def self.parse_hashtable(entry, declaration_type:)
+          return nil unless entry.end_with?("}")
+
           fields = hashtable_fields(entry)
           name = fields["ModuleName"]
           return nil if name.nil? || name.empty? || path_based?(name)
@@ -144,7 +156,8 @@ module Dependabot
             key, value = pair.split("=", 2)
             next unless key && value
 
-            fields[key.strip] = unquote(value.strip)
+            canonical_key = CANONICAL_FIELDS.fetch(key.strip.downcase, key.strip)
+            fields[canonical_key] = unquote(value.strip)
           end
         end
 

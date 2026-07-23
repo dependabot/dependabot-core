@@ -123,6 +123,78 @@ RSpec.describe Dependabot::Powershell::FileParser do
         expect(parser.parse).to eq([])
       end
     end
+
+    context "when hashtable keys use mixed casing and mixed quote styles" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "MixedKeys.psd1",
+          content: <<~Powershell
+            @{
+              RequiredModules = @(
+                @{ modulename = "Az.Mixed"; requiredversion = "1.2.3" },
+                @{ ModuleName = 'Az.Range'; moduleversion = "1.0.0"; maximumversion = '2.0.0' }
+              )
+            }
+          Powershell
+        )
+      end
+
+      it "parses case-insensitive keys and keeps constraint metadata aligned" do
+        mixed = parser.parse.find { |dep| dep.name == "Az.Mixed" }
+        range = parser.parse.find { |dep| dep.name == "Az.Range" }
+
+        expect(mixed.requirements.first.fetch(:requirement)).to eq("= 1.2.3")
+        expect(mixed.requirements.first.fetch(:metadata).fetch(:version_key)).to eq("RequiredVersion")
+
+        expect(range.requirements.first.fetch(:requirement)).to eq(">= 1.0.0, <= 2.0.0")
+        expect(range.requirements.first.fetch(:metadata).fetch(:version_key)).to eq("ModuleVersion+MaximumVersion")
+      end
+    end
+
+    context "when RequiredModules contains a malformed hashtable entry" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "Malformed.psd1",
+          content: <<~Powershell
+            @{
+              RequiredModules = @(
+                @{ ModuleName = 'Az.Broken'; RequiredVersion = '1.0.0' } trailing,
+                'Az.Valid'
+              )
+            }
+          Powershell
+        )
+      end
+
+      it "ignores malformed entries and keeps valid ones" do
+        expect(parser.parse.map(&:name)).to contain_exactly("Az.Valid")
+      end
+    end
+
+    context "when RequiredModules has many entries" do
+      let(:manifest_file) do
+        modules = (1..75).map { |index| "'Module#{index}'" }.join(",\n        ")
+
+        Dependabot::DependencyFile.new(
+          name: "ManyModules.psd1",
+          content: <<~Powershell
+            @{
+              RequiredModules = @(
+                #{modules}
+              )
+            }
+          Powershell
+        )
+      end
+
+      it "parses every entry, including tail entries" do
+        names = parser.parse.map(&:name)
+
+        expect(names.size).to eq(75)
+        expect(names.first).to eq("Module1")
+        expect(names.last).to eq("Module75")
+      end
+    end
   end
 
   describe "parsing a .ps1 script" do
