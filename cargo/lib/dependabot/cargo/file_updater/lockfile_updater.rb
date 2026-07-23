@@ -35,8 +35,7 @@ module Dependabot
           @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
           @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
           @credentials = T.let(credentials, T::Array[Dependabot::Credential])
-          @custom_specifications = T.let({}, T::Hash[String, String])
-          @current_dependency = T.let(nil, T.nilable(Dependabot::Dependency))
+          @custom_specification = T.let(nil, T.nilable(String))
           @git_ssh_requirements_to_swap = T.let(nil, T.nilable(T::Hash[String, String]))
           @manifest_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
           @path_dependency_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
@@ -50,11 +49,31 @@ module Dependabot
           base_directory = T.must(dependency_files.first).directory
           SharedHelpers.in_a_temporary_directory(base_directory) do
             write_temporary_dependency_files
-            run_updates
+
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              # Shell out to Cargo, which handles everything for us, and does
+              # so without doing an install (so it's fast).
+              run_cargo_command("cargo update -p #{dependency_spec}", fingerprint: "cargo update -p <dependency_spec>")
+            end
 
             updated_lockfile = File.read("Cargo.lock")
             updated_lockfile = post_process_lockfile(updated_lockfile)
-            validate_updates(updated_lockfile)
+
+            next updated_lockfile if updated_lockfile.include?(desired_lockfile_content)
+
+            # If exact version match fails, accept any update
+            if dependency_updated?(updated_lockfile, dependency)
+              actual_version = extract_actual_version(updated_lockfile, dependency.name)
+              if actual_version && actual_version != dependency.version
+                Dependabot.logger.info(
+                  "Cargo selected version #{actual_version} instead of #{dependency.version} for #{dependency.name} " \
+                  "due to dependency constraints"
+                )
+              end
+              next updated_lockfile
+            end
+
+            raise "Failed to update #{dependency.name}!"
           end
         rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
           retry if better_specification_needed?(e)
@@ -72,66 +91,10 @@ module Dependabot
         sig { returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
+        # Currently, there will only be a single updated dependency
         sig { returns(Dependabot::Dependency) }
         def dependency
-          @current_dependency || T.must(dependencies.first)
-        end
-
-        sig { void }
-        def run_updates
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            # Shell out to Cargo, which handles everything for us, and does
-            # so without doing an install (so it's fast).
-            dependencies.each do |dependency_to_update|
-              @current_dependency = dependency_to_update
-              next if previous_line_already_replaced?
-
-              run_cargo_command(
-                "cargo update -p #{dependency_spec}",
-                fingerprint: "cargo update -p <dependency_spec>"
-              )
-            end
-          end
-        end
-
-        # An earlier command in this run may already have resolved this
-        # dependency's line, in which case its package ID no longer exists and
-        # `cargo update -p` would fail hard. Skip the command and let
-        # validate_updates check the outcome.
-        sig { returns(T::Boolean) }
-        def previous_line_already_replaced?
-          previous_version = dependency.previous_version
-          return false unless previous_version
-          return false if previous_version == dependency.version || git_dependency?
-
-          previous_package_replaced?(File.read("Cargo.lock"), dependency)
-        end
-
-        sig { params(updated_lockfile: String).returns(String) }
-        def validate_updates(updated_lockfile)
-          dependencies.each do |updated_dependency|
-            @current_dependency = updated_dependency
-            validate_dependency_update(updated_lockfile)
-          end
-
-          updated_lockfile
-        end
-
-        sig { params(updated_lockfile: String).void }
-        def validate_dependency_update(updated_lockfile)
-          raise "Failed to update #{dependency.name}!" unless previous_package_replaced?(updated_lockfile, dependency)
-
-          return if desired_version_present?(updated_lockfile)
-
-          raise "Failed to update #{dependency.name}!" unless dependency_updated?(updated_lockfile, dependency)
-
-          actual_version = extract_actual_version(updated_lockfile, dependency)
-          return unless actual_version && actual_version != dependency.version
-
-          Dependabot.logger.info(
-            "Cargo selected version #{actual_version} instead of #{dependency.version} " \
-            "for #{dependency.name} due to dependency constraints"
-          )
+          T.must(dependencies.first)
         end
 
         sig { params(error: StandardError).returns(T.noreturn) }
@@ -181,7 +144,7 @@ module Dependabot
         # rubocop:disable Metrics/AbcSize
         sig { params(error: StandardError).returns(T::Boolean) }
         def better_specification_needed?(error)
-          return false if custom_specification
+          return false if @custom_specification
           return false unless error.message.match?(/specification .* is ambigu/)
 
           spec_options = error.message.gsub(/.*following:\n/m, "")
@@ -194,7 +157,7 @@ module Dependabot
                 end
 
           if ver && spec_options.one? { |s| s.end_with?(ver) }
-            @custom_specifications[dependency_identity] = T.must(spec_options.find { |s| s.end_with?(ver) })
+            @custom_specification = spec_options.find { |s| s.end_with?(ver) }
             return true
           elsif ver && spec_options.count { |s| s.end_with?(ver) } > 1
             spec_options.select! { |s| s.end_with?(ver) }
@@ -205,7 +168,7 @@ module Dependabot
             spec_options.select! { |s| s.include?(T.must(git_source_url)) }
           end
 
-          @custom_specifications[dependency_identity] = T.must(spec_options.first)
+          @custom_specification = spec_options.first
           true
         end
         # rubocop:enable Metrics/AbcSize
@@ -214,7 +177,7 @@ module Dependabot
 
         sig { returns(String) }
         def dependency_spec
-          return T.must(custom_specification) if custom_specification
+          return @custom_specification if @custom_specification
 
           spec = dependency.name
 
@@ -225,21 +188,6 @@ module Dependabot
           end
 
           spec
-        end
-
-        sig { returns(T.nilable(String)) }
-        def custom_specification
-          @custom_specifications[dependency_identity]
-        end
-
-        sig { returns(String) }
-        def dependency_identity
-          [
-            dependency.name,
-            dependency.previous_version,
-            dependency.version,
-            dependency.metadata[:cargo_package_source]
-          ].join("\0")
         end
 
         sig { returns(T.nilable(String)) }
@@ -263,20 +211,6 @@ module Dependabot
           return T.must(dependency.version) if git_dependency?
 
           %(name = "#{dependency.name}"\nversion = "#{dependency.version}")
-        end
-
-        # The desired name/version pair may also appear under another source
-        # (e.g. a git fork at the released version), so scope the check to the
-        # locked package's source identity for numeric versions. Git
-        # dependencies keep the SHA substring check.
-        sig { params(updated_lockfile: String).returns(T::Boolean) }
-        def desired_version_present?(updated_lockfile)
-          version = T.must(dependency.version)
-          if git_dependency? || !version_class.correct?(version)
-            return updated_lockfile.include?(desired_lockfile_content)
-          end
-
-          package_version_count(updated_lockfile, dependency, version).positive?
         end
 
         sig { params(command: String, fingerprint: String).void }
@@ -644,93 +578,43 @@ module Dependabot
         def dependency_updated?(lockfile_content, dependency)
           return false unless dependency.previous_version
 
-          target_line_versions(lockfile_content, dependency).any? do |version|
-            dependency.version_class.new(version) > dependency.version_class.new(T.must(dependency.previous_version))
-          end
-        end
-
-        sig do
-          params(lockfile_content: String, dependency: Dependabot::Dependency)
-            .returns(T.nilable(String))
-        end
-        def extract_actual_version(lockfile_content, dependency)
-          target_line_versions(lockfile_content, dependency).max_by do |version|
-            dependency.version_class.new(version)
-          end
-        end
-
-        sig do
-          params(lockfile_content: String, dependency: Dependabot::Dependency)
-            .returns(T::Array[String])
-        end
-        def target_line_versions(lockfile_content, dependency)
-          target_version = dependency.version
-          return [] unless target_version && dependency.version_class.correct?(target_version)
-
-          requirements = [dependency.previous_version, target_version].compact.uniq.filter_map do |version|
-            dependency.requirement_class.new(version) if dependency.version_class.correct?(version)
-          end
-          dependency_lockfile_entries(lockfile_content, dependency).filter_map do |entry|
-            version = entry[/^version = "([^"]+)"$/, 1]
-            next unless version && dependency.version_class.correct?(version)
-
-            parsed_version = dependency.version_class.new(version)
-            next unless requirements.any? { |requirement| requirement.satisfied_by?(parsed_version) }
-
-            version
-          end
-        end
-
-        sig do
-          params(lockfile_content: String, dependency: Dependabot::Dependency)
-            .returns(T::Array[String])
-        end
-        def dependency_lockfile_entries(lockfile_content, dependency)
+          # For multiple versions case, we need to check the specific entry
+          # that corresponds to our dependency (the one used by our package)
           entries = T.let([], T::Array[String])
           lockfile_content.scan(LOCKFILE_ENTRY_REGEX) do
             entries << Regexp.last_match.to_s
           end
-          entries.select! { |entry| entry.match?(/^name = "#{Regexp.escape(dependency.name)}"$/) }
+          entries.select! { |entry| entry.include?("name = \"#{dependency.name}\"") }
 
-          source = dependency.metadata[:cargo_package_source]
-          if source
-            entries.select! { |entry| entry.include?(%(source = "#{source}")) }
-          else
-            # Dependencies on this path are always registry-sourced (git
-            # dependencies take the SHA path), so without an exact source
-            # identity scope to registry entries: a same-version copy from a
-            # git source must not satisfy the validation checks.
-            entries.select! { |entry| entry.match?(/^source = "registry\+/) }
+          # Check if any entry has a version newer than the previous version
+          entries.any? do |entry|
+            version_match = entry.match(/version = "([^"]+)"/)
+            next false unless version_match
+
+            new_version = version_match[1]
+            # Only consider it updated if it's newer than the previous version
+            # and either matches our expected version or is at least newer than previous
+            dependency.version_class.new(new_version) > dependency.version_class.new(dependency.previous_version)
           end
-          entries
         end
 
-        sig do
-          params(updated_lockfile: String, dependency: Dependabot::Dependency)
-            .returns(T::Boolean)
-        end
-        def previous_package_replaced?(updated_lockfile, dependency)
-          previous_version = dependency.previous_version
-          return true unless previous_version
-          return true if previous_version == dependency.version || git_dependency?
-
-          # The same name and version can legitimately remain from another
-          # source (e.g. a git fork pinned at the released version), so require
-          # the entry count to decrease rather than reach zero.
-          original_count = package_version_count(T.must(lockfile.content), dependency, previous_version)
-          return true if original_count.zero?
-
-          package_version_count(updated_lockfile, dependency, previous_version) < original_count
-        end
-
-        sig do
-          params(lockfile_content: String, dependency: Dependabot::Dependency, version: String)
-            .returns(Integer)
-        end
-        def package_version_count(lockfile_content, dependency, version)
-          dependency_lockfile_entries(lockfile_content, dependency).count do |entry|
-            entry.match?(/^version = "#{Regexp.escape(version)}"$/)
+        sig { params(lockfile_content: String, dependency_name: String).returns(T.nilable(String)) }
+        def extract_actual_version(lockfile_content, dependency_name)
+          entries = T.let([], T::Array[String])
+          lockfile_content.scan(LOCKFILE_ENTRY_REGEX) do
+            entries << Regexp.last_match.to_s
           end
+          entries.select! { |entry| entry.include?("name = \"#{dependency_name}\"") }
+
+          # Get the highest version from matching entries
+          versions = entries.filter_map do |entry|
+            version_match = entry.match(/version = "([^"]+)"/)
+            version_match&.captures&.first
+          end
+
+          return nil if versions.empty?
+
+          versions.max_by { |v| version_class.new(v) }
         end
       end
       # rubocop:enable Metrics/ClassLength
