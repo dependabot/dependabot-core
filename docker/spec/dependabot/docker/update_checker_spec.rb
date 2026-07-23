@@ -1116,13 +1116,15 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
 
       context "when a manifest digest request returns a 504" do
+        let(:source) { { tag: version, digest: "old_digest" } }
+
         before do
           stub_request(:head, "https://registry.hub.docker.com/v2/moj/ruby/manifests/2.4.2")
             .and_return(status: 504, body: "")
         end
 
         it "raises a RegistryError with the HTTP status" do
-          expect { checker.send(:fetch_digest_of, "2.4.2") }
+          expect { checker.updated_requirements }
             .to raise_error(Dependabot::RegistryError) do |error|
               expect(error.status).to eq(504)
             end
