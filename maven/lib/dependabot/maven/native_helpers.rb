@@ -27,6 +27,8 @@ module Dependabot
         params(file_name: String).void
       end
       def self.run_mvn_dependency_tree_plugin(file_name)
+        raise DependabotError, "Could not resolve maven-dependency-plugin version" unless DEPENDENCY_PLUGIN_VERSION
+
         proxy_url = URI.parse(ENV.fetch("HTTPS_PROXY"))
         stdout, _, status = Open3.capture3(
           { "PROXY_HOST" => proxy_url.host },
@@ -66,10 +68,11 @@ module Dependabot
           wrapper_plugin_version: String,
           env: T::Hash[String, String],
           distribution_type: String,
-          extra_args: T::Array[String]
+          extra_args: T::Array[String],
+          cwd: T.nilable(String)
         ).void
       end
-      def self.run_mvnw_wrapper(version:, wrapper_plugin_version:, env:, distribution_type:, extra_args: [])
+      def self.run_mvnw_wrapper(version:, wrapper_plugin_version:, env:, distribution_type:, extra_args: [], cwd: nil)
         # Use the fully-qualified plugin goal so the exact plugin version is
         # invoked regardless of the project's plugin group configuration.
         plugin_goal = "org.apache.maven.plugins:maven-wrapper-plugin:" \
@@ -83,7 +86,8 @@ module Dependabot
         ] + extra_args
 
         cmd = Shellwords.join(["mvn"] + standard_args)
-        SharedHelpers.run_shell_command(cmd, env: env)
+        run_cwd = cwd && cwd != "." ? cwd : nil
+        SharedHelpers.run_shell_command(cmd, env: env, cwd: run_cwd)
       end
     end
   end

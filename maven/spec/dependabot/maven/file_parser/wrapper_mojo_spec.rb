@@ -143,12 +143,29 @@ RSpec.describe Dependabot::Maven::FileParser::WrapperMojo do
       let(:script_content) { fixture("wrapper_files", "mvnw-3.3.0") }
       let(:mvnw_file) { make_properties_file("mvnw", script_content) }
 
-      it "defaults distributionType to bin" do
-        expect(props.distribution_type).to eq("bin")
+      it "defaults distributionType to the plugin default (only-script) when no wrapperUrl is present" do
+        expect(props.distribution_type).to eq("only-script")
       end
 
       it "reads wrapper_version from the script file" do
         expect(props.wrapper_version).to eq("3.3.0")
+      end
+    end
+
+    context "with missing distributionType but a legacy wrapperUrl (JAR-based setup)" do
+      subject(:props) { described_class.load_properties(content, script_files: [mvnw_file]) }
+
+      let(:content) do
+        "distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/" \
+          "3.9.6/apache-maven-3.9.6-bin.zip\n" \
+          "wrapperUrl=https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/" \
+          "maven-wrapper/3.2.0/maven-wrapper-3.2.0.jar\n"
+      end
+      let(:script_content) { fixture("wrapper_files", "mvnw-3.3.0") }
+      let(:mvnw_file) { make_properties_file("mvnw", script_content) }
+
+      it "defaults distributionType to bin for legacy wrapperUrl setups" do
+        expect(props.distribution_type).to eq("bin")
       end
     end
 

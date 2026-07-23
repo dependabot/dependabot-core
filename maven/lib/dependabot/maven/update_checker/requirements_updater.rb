@@ -57,10 +57,11 @@ module Dependabot
           requirements.map do |req|
             # Wrapper property requirements (distributionUrl, wrapperVersion,
             # wrapperUrl) live in maven-wrapper.properties, not in a pom.xml.
-            # They must not go through POM XML update logic
-            # instead, only the version inside the requirement is updated.
+            # They must not go through POM XML update logic; instead we bump the
+            # requirement and keep the version metadata / artifact URL the
+            # FileUpdater reads in sync with it.
             if req.dig(:source, :type) == Distributions::DISTRIBUTION_DEPENDENCY_TYPE
-              next req.merge(requirement: T.must(latest_version).to_s)
+              next bump_distribution_requirement(req)
             end
 
             next req if req.fetch(:requirement).nil?
@@ -80,6 +81,53 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :requirements
+
+        # Bumps a wrapper (maven-wrapper.properties) requirement. As well as the requirement
+        # string, it updates the fields the FileUpdater actually reads so a real update regenerates
+        # the *new* release rather than the old one:
+        #   - distributionUrl  -> metadata[:distribution_version] and the versioned source url
+        #   - wrapperVersion   -> metadata[:wrapper_version]
+        # The wrapperUrl tag-along requirement (present only on the distribution dependency) is left
+        # otherwise untouched, since bumping the distribution does not change the wrapper JAR.
+        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+        def bump_distribution_requirement(req)
+          new_version = T.must(latest_version).to_s
+          old_version = req[:requirement]
+          updated = req.merge(requirement: new_version)
+
+          case req.dig(:source, :property)
+          when "distributionUrl"
+            updated = merge_metadata_version(updated, :distribution_version, new_version)
+            updated = merge_source_url(updated, old_version, new_version)
+          when "wrapperVersion"
+            updated = merge_metadata_version(updated, :wrapper_version, new_version)
+          end
+
+          updated
+        end
+
+        sig do
+          params(req: T::Hash[Symbol, T.untyped], key: Symbol, new_version: String)
+            .returns(T::Hash[Symbol, T.untyped])
+        end
+        def merge_metadata_version(req, key, new_version)
+          metadata = req[:metadata]
+          return req unless metadata.is_a?(Hash)
+
+          req.merge(metadata: metadata.merge(key => new_version))
+        end
+
+        sig do
+          params(req: T::Hash[Symbol, T.untyped], old_version: T.nilable(String), new_version: String)
+            .returns(T::Hash[Symbol, T.untyped])
+        end
+        def merge_source_url(req, old_version, new_version)
+          source = req[:source]
+          url = source.is_a?(Hash) ? source[:url] : nil
+          return req unless url && old_version && !old_version.empty?
+
+          req.merge(source: source.merge(url: url.sub(old_version, new_version)))
+        end
 
         sig { returns(T.nilable(Version)) }
         attr_reader :latest_version

@@ -37,13 +37,20 @@ module Dependabot
           params(
             dependency_files: T::Array[DependencyFile],
             dependency: Dependency,
-            credentials: T::Array[Dependabot::Credential]
+            credentials: T::Array[Dependabot::Credential],
+            distribution_version: T.nilable(String),
+            wrapper_version: T.nilable(String)
           ).void
         end
-        def initialize(dependency_files:, dependency:, credentials:)
+        def initialize(dependency_files:, dependency:, credentials:, distribution_version: nil, wrapper_version: nil)
           @dependency_files = dependency_files
           @dependency       = dependency
           @credentials      = credentials
+          # Optional resolved versions. When a grouped update bumps both the distribution and the
+          # wrapper plugin, neither dependency alone carries both new versions, so the caller resolves
+          # them and passes them in. When nil we fall back to reading them from the dependency.
+          @distribution_version_override = distribution_version
+          @wrapper_version_override      = wrapper_version
         end
 
         # Entry point. Updates the wrapper properties file in-place, then
@@ -55,13 +62,18 @@ module Dependabot
           return [] unless Distributions.distribution_requirements?(dependency.requirements)
           return [] unless wrapper_properties_file
 
+          # Capture the user's original properties before we mutate the on-disk copy, so we can
+          # tell which checksums they were tracking and restore exactly those afterwards.
+          original_properties = wrapper_properties_file&.content
+
           SharedHelpers.in_a_temporary_directory(project_root(buildfile)) do
             write_dependency_files
 
             # Drop both SHA-256 checksum properties before invoking the native command.
             # If they remain, Maven verifies the old checksum against the new version and fails.
-            # The checksums cannot be passed in during generation because the wrapper does not support it.
-            # As a workaround, we recompute and re-add them once the generation completes
+            # We recompute and restore them afterwards: the plugin can accept -DdistributionSha256Sum /
+            # -DwrapperSha256Sum, but it does not derive the value for us, and Maven Central only
+            # publishes SHA-512, so we must download the artifact and compute the SHA-256 ourselves.
             strip_checksum_properties
 
             distribution_type = distribution_type_from_requirements
@@ -72,7 +84,7 @@ module Dependabot
             # But the wrapper only supports SHA-256 validation
             # We need compute the SHA-256 digest directly from the artifact
             # and write it into the regenerated properties file.
-            update_checksum_properties
+            restore_checksum_properties(original_properties)
 
             collect_updated_files(distribution_type)
           end
@@ -88,51 +100,49 @@ module Dependabot
         # new artifact without Maven aborting on a stale checksum mismatch.
         sig { void }
         def strip_checksum_properties
-          return unless File.exist?(WRAPPER_PROPERTIES_RELATIVE)
+          return unless File.exist?(properties_path)
 
-          content = File.read(WRAPPER_PROPERTIES_RELATIVE)
-          stripped = content.lines.reject { |l| l.match?(/\A(?:distribution|wrapper)Sha256Sum\s*=/) }.join
-          File.write(WRAPPER_PROPERTIES_RELATIVE, stripped)
+          content = File.read(properties_path)
+          stripped = content.lines.reject { |l| l.match?(/\A\s*(?:distribution|wrapper)Sha256Sum\s*[=:]/) }.join
+          File.write(properties_path, stripped)
         end
 
-        # Computes a fresh digest from the updated artifact
-        # This is needed because Maven Central only publishes SHA-512 checksums,
-        # while the wrapper only supports validations for the SHA-256
+        # Recomputes the SHA-256 checksums the user was already tracking and writes them onto the
+        # regenerated properties file. This is needed because Maven Central only publishes SHA-512
+        # checksums, while the wrapper only validates SHA-256, so the native command cannot produce
+        # them for us.
         #
-        # Raises if an expected artifact cannot be found in the cache, because
-        # a stale or missing checksum would silently weaken integrity checking.
-        sig { returns(T.nilable(Integer)) }
-        def update_checksum_properties
-          dist_req = dependency.requirements.find { |r| r[:source][:property] == "distributionUrl" }
-          wrapper_req = dependency.requirements.find { |r| r[:source][:property] == "wrapperUrl" }
+        # The URLs are read back from the *regenerated* properties file (not the dependency
+        # requirements), so this works no matter which coordinate was bumped: a wrapper-plugin bump
+        # still restores the distribution checksum, and a distribution bump still restores the wrapper
+        # checksum. We only restore checksums the user's original file actually contained, so we never
+        # add integrity properties the project did not opt into.
+        sig { params(original_properties: T.nilable(String)).void }
+        def restore_checksum_properties(original_properties)
+          return unless File.exist?(properties_path)
+          return if original_properties.nil?
 
-          dist_checksum = dist_req&.dig(:metadata, :distribution_sha256_sum)
-          wrapper_checksum = wrapper_req&.dig(:metadata, :wrapper_sha256_sum)
+          had_dist_checksum = property_present?(original_properties, "distributionSha256Sum")
+          had_wrapper_checksum = property_present?(original_properties, "wrapperSha256Sum")
 
-          Dependabot.logger.debug "updating checksum properties " \
-                                  "dist=#{!dist_checksum.nil?} wrap=#{!wrapper_checksum.nil?}"
-          return unless dist_checksum || wrapper_checksum
-          return unless File.exist?(WRAPPER_PROPERTIES_RELATIVE)
+          Dependabot.logger.debug "restoring checksum properties " \
+                                  "dist=#{had_dist_checksum} wrap=#{had_wrapper_checksum}"
+          return unless had_dist_checksum || had_wrapper_checksum
 
-          content = File.read(WRAPPER_PROPERTIES_RELATIVE)
+          content = File.read(properties_path)
 
-          if dist_checksum
-            dist_url = dist_req.dig(:source, :url)
-            content = set_checksum_from_url(
-              content,
-              "distributionSha256Sum",
-              T.cast(dist_url, String)
-            )
+          if had_dist_checksum && (dist_url = FileParser::WrapperMojo.get_property_value(content, "distributionUrl"))
+            content = set_checksum_from_url(content, "distributionSha256Sum", dist_url)
           end
-          if wrapper_checksum
-            wrapper_url = wrapper_req.dig(:source, :url)
-            content = set_checksum_from_url(
-              content,
-              "wrapperSha256Sum",
-              T.cast(wrapper_url, String)
-            )
+          if had_wrapper_checksum && (wrapper_url = FileParser::WrapperMojo.get_property_value(content, "wrapperUrl"))
+            content = set_checksum_from_url(content, "wrapperSha256Sum", wrapper_url)
           end
-          File.write(WRAPPER_PROPERTIES_RELATIVE, content)
+          File.write(properties_path, content)
+        end
+
+        sig { params(content: String, key: String).returns(T::Boolean) }
+        def property_present?(content, key)
+          !FileParser::WrapperMojo.get_property_value(content, key).nil?
         end
 
         sig { params(content: String, property_name: String, url: String).returns(String) }
@@ -151,7 +161,9 @@ module Dependabot
           end
 
           Dependabot.logger.info "Downloading Maven distribution: #{url} to calculate the sha256 checksum"
-          response = Dependabot::RegistryClient.get(url: url, headers: auth_headers_for_url(url))
+          # Registry auth is injected by Dependabot's proxy (which matches on host + path prefix),
+          # so we deliberately send no auth headers here — core never receives usable credentials.
+          response = Dependabot::RegistryClient.get(url: url)
           raise_on_auth_failure(url, response)
 
           raise "Failed to download #{url}: HTTP #{response.status}" unless response.status == 200
@@ -175,31 +187,16 @@ module Dependabot
           raise Dependabot::PrivateSourceAuthenticationFailure, repository_url
         end
 
-        sig { params(url: String).returns(T::Hash[String, String]) }
-        def auth_headers_for_url(url)
-          Dependabot.logger.debug "Building auth headers for: #{url}"
-
-          cred = maven_registry_credential(url)
-          unless cred
-            Dependabot.logger.debug "No matching credential found for #{url}, using no auth"
-            return {}
-          end
-
-          username = cred["username"]
-          password = cred["password"]
-          unless username
-            Dependabot.logger.debug "Credential for #{url} has no username, using no auth"
-            return {}
-          end
-
-          Dependabot.logger.debug "Using Basic auth for #{url} (username: #{username})"
-          { "Authorization" => "Basic #{Base64.strict_encode64("#{username}:#{password}")}" }
-        end
-
         sig { params(content: String, key: String, value: String).returns(String) }
         def set_checksum_property(content, key, value)
-          Dependabot.logger.debug "Appending #{key}"
-          "#{content.rstrip}\n#{key}=#{value}\n"
+          pattern = /^[ \t]*#{Regexp.escape(key)}[ \t]*[=:].*$/
+          if content.match?(pattern)
+            Dependabot.logger.debug "Replacing #{key}"
+            content.sub(pattern, "#{key}=#{value}")
+          else
+            Dependabot.logger.debug "Appending #{key}"
+            "#{content.rstrip}\n#{key}=#{value}\n"
+          end
         end
 
         sig { params(distribution_type: String).void }
@@ -212,12 +209,15 @@ module Dependabot
             wrapper_plugin_version: wrapper_version,
             env: build_env,
             distribution_type: distribution_type,
-            extra_args: extra_args
+            extra_args: extra_args,
+            cwd: wrapper_dir
           )
         end
 
         sig { returns(String) }
         def maven_wrapper_version_from_requirements
+          return T.must(@wrapper_version_override) if @wrapper_version_override
+
           wrapper_version = dependency.requirements
                                       .find { |r| r.dig(:metadata, :wrapper_version) }
                                       &.dig(:metadata, :wrapper_version)
@@ -228,6 +228,8 @@ module Dependabot
 
         sig { returns(String) }
         def distribution_version_from_requirements
+          return T.must(@distribution_version_override) if @distribution_version_override
+
           distribution_version = dependency.requirements
                                            .find { |r| r.dig(:metadata, :distribution_version) }
                                            &.dig(:metadata, :distribution_version)
@@ -252,12 +254,17 @@ module Dependabot
           include_debug = dependency.requirements
                                     .find { |r| r.dig(:metadata, :include_debug_script) }
                                     &.dig(:metadata, :include_debug_script)
-          args << "-DincludeDebugScript=true" if include_debug
+          # The plugin exposes this via the `includeDebug` user property (the field is named
+          # includeDebugScript internally). Passing -DincludeDebugScript is silently ignored, which
+          # would drop the user's mvnwDebug scripts on every update.
+          # https://maven.apache.org/tools/wrapper/maven-wrapper-plugin/wrapper-mojo.html
+          args << "-DincludeDebug=true" if include_debug
           args
         end
 
-        # Builds the environment hash passed to the native wrapper command,
-        # including proxy, registry URL, and credentials.
+        # Builds the environment hash passed to the native wrapper command.
+        # Sets the proxy host and, for a private/mirror registry, MVNW_REPOURL. Registry auth is
+        # injected by Dependabot's proxy, so no username/password is set here (core never receives them).
         sig { returns(T::Hash[String, String]) }
         def build_env
           env = T.let({}, T::Hash[String, String])
@@ -269,13 +276,10 @@ module Dependabot
 
           registry_base, cred = resolve_registry_base_and_credential
           env.merge!(build_registry_env(registry_base, cred))
-          env.merge!(build_credential_env(cred))
 
           if Dependabot.logger.debug?
             env["MVNW_VERBOSE"] = "true"
-            safe_env = env.except("MVNW_PASSWORD")
-            safe_env["MVNW_PASSWORD"] = "[REDACTED]" if env.key?("MVNW_PASSWORD")
-            Dependabot.logger.debug "build_env result: #{safe_env}"
+            Dependabot.logger.debug "build_env result: #{env}"
           end
 
           env
@@ -306,21 +310,11 @@ module Dependabot
         def build_registry_env(registry_base, cred)
           if registry_base
             { "MVNW_REPOURL" => registry_base }
-          elsif cred&.fetch("replaces_base", false)
+          elsif cred&.replaces_base?
             { "MVNW_REPOURL" => cred.fetch("url").chomp("/") }
           else
             {}
           end
-        end
-
-        sig { params(cred: T.nilable(Dependabot::Credential)).returns(T::Hash[String, String]) }
-        def build_credential_env(cred)
-          return {} unless cred
-
-          env = T.let({}, T::Hash[String, String])
-          env["MVNW_USERNAME"] = T.must(cred["username"]) if cred["username"]
-          env["MVNW_PASSWORD"] = T.must(cred["password"]) if cred["password"]
-          env
         end
 
         sig { params(registry_base: T.nilable(String)).returns(T.nilable(Dependabot::Credential)) }
@@ -335,12 +329,49 @@ module Dependabot
             return url_matches.max_by { |c| c.fetch("url", "").length } if url_matches.any?
           end
 
-          maven_creds.find { |c| c.fetch("replaces_base", false) }
+          maven_creds.find(&:replaces_base?)
         end
 
         sig { params(buildfile: DependencyFile).returns(String) }
         def project_root(buildfile)
-          File.dirname(buildfile.path)
+          # Always materialise the repo relative to its root; per-wrapper working directories are
+          # handled via `wrapper_dir` (the mvn command runs there and files are read/written there).
+          buildfile.directory
+        end
+
+        # Directory that contains this wrapper (the folder holding `.mvn/wrapper`), relative to the
+        # repo root. "." for a root wrapper, e.g. "submodule" for a module wrapper. Derived from the
+        # properties file so multi-module repos update the correct wrapper in place.
+        sig { returns(String) }
+        def wrapper_dir
+          @wrapper_dir ||= T.let(
+            begin
+              name = wrapper_properties_file&.name.to_s
+              dir = name.sub(%r{/?#{Regexp.escape(WRAPPER_PROPERTIES_RELATIVE)}\z}, "")
+              dir.empty? ? "." : dir
+            end,
+            T.nilable(String)
+          )
+        end
+
+        sig { params(path: String).returns(String) }
+        def in_wrapper_dir(path)
+          wrapper_dir == "." ? path : File.join(wrapper_dir, path)
+        end
+
+        sig { returns(String) }
+        def properties_path
+          in_wrapper_dir(WRAPPER_PROPERTIES_RELATIVE)
+        end
+
+        sig { returns(String) }
+        def jar_path
+          in_wrapper_dir(JAR_RELATIVE)
+        end
+
+        sig { returns(String) }
+        def downloader_path
+          in_wrapper_dir(DOWNLOADER_RELATIVE)
         end
 
         # Assembles all updated files: properties, scripts, and the type-specific artifact.
@@ -352,11 +383,11 @@ module Dependabot
         # Returns a DependencyFile for the updated maven-wrapper.properties, or [] if absent.
         sig { returns(T::Array[DependencyFile]) }
         def collect_properties_file
-          return [] unless File.exist?(WRAPPER_PROPERTIES_RELATIVE)
+          return [] unless File.exist?(properties_path)
 
           [DependencyFile.new(
-            name: WRAPPER_PROPERTIES_RELATIVE,
-            content: File.read(WRAPPER_PROPERTIES_RELATIVE),
+            name: properties_path,
+            content: File.read(properties_path),
             directory: wrapper_properties_file&.directory || "/"
           )]
         end
@@ -366,11 +397,12 @@ module Dependabot
         sig { returns(T::Array[DependencyFile]) }
         def collect_script_files
           ALL_SCRIPTS.filter_map do |script|
-            next unless File.exist?(script)
+            script_file = in_wrapper_dir(script)
+            next unless File.exist?(script_file)
 
             file = DependencyFile.new(
-              name: script,
-              content: File.read(script),
+              name: script_file,
+              content: File.read(script_file),
               directory: wrapper_properties_file&.directory || "/"
             )
             file.mode = DependencyFile::Mode::EXECUTABLE if UNIX_SCRIPTS.include?(script)
@@ -384,20 +416,20 @@ module Dependabot
         def collect_artifact_file(dist_type)
           case dist_type
           when "bin", "script"
-            return [] unless File.exist?(JAR_RELATIVE)
+            return [] unless File.exist?(jar_path)
 
             [DependencyFile.new(
-              name: JAR_RELATIVE,
-              content: Base64.encode64(File.binread(JAR_RELATIVE)),
+              name: jar_path,
+              content: Base64.encode64(File.binread(jar_path)),
               content_encoding: DependencyFile::ContentEncoding::BASE64,
               directory: wrapper_properties_file&.directory || "/"
             )]
           when "source"
-            return [] unless File.exist?(DOWNLOADER_RELATIVE)
+            return [] unless File.exist?(downloader_path)
 
             [DependencyFile.new(
-              name: DOWNLOADER_RELATIVE,
-              content: File.read(DOWNLOADER_RELATIVE),
+              name: downloader_path,
+              content: File.read(downloader_path),
               directory: wrapper_properties_file&.directory || "/"
             )]
           else
@@ -405,11 +437,18 @@ module Dependabot
           end
         end
 
-        # Memoized lookup of the maven-wrapper.properties DependencyFile.
+        # Memoized lookup of the maven-wrapper.properties DependencyFile for THIS wrapper. Prefers the
+        # file referenced by the dependency's requirements so multi-module repos pick the right one.
         sig { returns(T.nilable(DependencyFile)) }
         def wrapper_properties_file
           @wrapper_properties_file ||= T.let(
-            @dependency_files.find { |f| f.name.end_with?("maven-wrapper.properties") },
+            begin
+              req_file = dependency.requirements
+                                   .find { |r| r.dig(:source, :type) == Distributions::DISTRIBUTION_DEPENDENCY_TYPE }
+                                   &.fetch(:file, nil)
+              @dependency_files.find { |f| f.name == req_file } ||
+                @dependency_files.find { |f| f.name.end_with?("maven-wrapper.properties") }
+            end,
             T.nilable(Dependabot::DependencyFile)
           )
         end

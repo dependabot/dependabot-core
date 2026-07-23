@@ -36,21 +36,68 @@ module Dependabot
       def collect_wrapper_updates
         return [] unless Dependabot::Experiments.enabled?(:maven_wrapper_updater)
 
-        buildfile = dependency_files.find { |f| f.name == "pom.xml" }
-        return [] unless buildfile
-
         updated = T.let([], T::Array[Dependabot::DependencyFile])
-        dependencies.each do |dependency|
-          next unless Distributions.distribution_requirements?(dependency.requirements)
+        # Group the distribution-type dependencies by the wrapper they belong to (its properties
+        # file). Each wrapper is regenerated exactly once, so a grouped distribution + wrapper-plugin
+        # update produces a single coherent set of files instead of duplicates, and module wrappers
+        # are updated in place rather than at the repo root.
+        wrapper_dependency_groups.each do |properties_name, group|
+          buildfile = build_file_for_wrapper(properties_name)
+          next unless buildfile
 
+          representative = group.find { |d| d.name == Distributions::MAVEN_DISTRIBUTION_PACKAGE } || T.must(group.first)
+          dist_version = resolve_group_version(group, Distributions::MAVEN_DISTRIBUTION_PACKAGE, :distribution_version)
+          wrap_version = resolve_group_version(group, Distributions::MAVEN_WRAPPER_PACKAGE, :wrapper_version)
           wu = WrapperUpdater.new(
             dependency_files: dependency_files,
-            dependency: dependency,
-            credentials: credentials
+            dependency: representative,
+            credentials: credentials,
+            distribution_version: dist_version,
+            wrapper_version: wrap_version
           )
           updated += wu.update_files(buildfile)
         end
         updated
+      end
+
+      # Groups the distribution-type dependencies by their wrapper properties file path.
+      sig { returns(T::Hash[T.nilable(String), T::Array[Dependabot::Dependency]]) }
+      def wrapper_dependency_groups
+        dependencies.select { |d| Distributions.distribution_requirements?(d.requirements) }
+                    .group_by do |dep|
+          dep.requirements
+             .find { |r| r.dig(:source, :type) == Distributions::DISTRIBUTION_DEPENDENCY_TYPE }
+             &.fetch(:file, nil)
+        end
+      end
+
+      # Finds the pom.xml that owns a wrapper, so the native command runs in the wrapper's directory.
+      sig { params(properties_name: T.nilable(String)).returns(T.nilable(Dependabot::DependencyFile)) }
+      def build_file_for_wrapper(properties_name)
+        dir = File.dirname(properties_name.to_s).sub(%r{/?\.mvn/wrapper\z}, "")
+        pom_name = dir.empty? ? "pom.xml" : File.join(dir, "pom.xml")
+        dependency_files.find { |f| f.name == pom_name } ||
+          dependency_files.find { |f| f.name == "pom.xml" }
+      end
+
+      # Resolves the effective version for a group, preferring the dependency that actually owns the
+      # coordinate (so a grouped update uses each dependency's own new version) and falling back to the
+      # unchanged value carried on any group member.
+      sig do
+        params(group: T::Array[Dependabot::Dependency], package: String, metadata_key: Symbol)
+          .returns(T.nilable(String))
+      end
+      def resolve_group_version(group, package, metadata_key)
+        owner = group.find { |d| d.name == package }
+        version_from_metadata(owner, metadata_key) ||
+          group.filter_map { |d| version_from_metadata(d, metadata_key) }.first
+      end
+
+      sig { params(dep: T.nilable(Dependabot::Dependency), key: Symbol).returns(T.nilable(String)) }
+      def version_from_metadata(dep, key)
+        return nil unless dep
+
+        dep.requirements.find { |r| r.dig(:metadata, key) }&.dig(:metadata, key)
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

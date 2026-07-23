@@ -1428,4 +1428,93 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       end
     end
   end
+
+  # Wrapper updates are grouped per wrapper so a grouped distribution + wrapper-plugin bump
+  # regenerates each wrapper exactly once (no duplicate/conflicting files), and a module wrapper is
+  # regenerated against its own pom rather than the repo root.
+  describe "#updated_dependency_files with the maven wrapper experiment" do
+    let(:wrapper_updater_class) { Dependabot::Maven::FileUpdater::WrapperUpdater }
+    let(:marker_file) do
+      Dependabot::DependencyFile.new(name: ".mvn/wrapper/maven-wrapper.properties", content: "updated", directory: "/")
+    end
+    let(:wrapper_double) { instance_double(wrapper_updater_class, update_files: [marker_file]) }
+
+    let(:properties_name) { ".mvn/wrapper/maven-wrapper.properties" }
+    let(:properties_file) { Dependabot::DependencyFile.new(name: properties_name, content: "distributionUrl=x\n") }
+    let(:dependency_files) { [pom, properties_file] }
+
+    let(:distribution_dep) do
+      Dependabot::Dependency.new(
+        name: "org.apache.maven:apache-maven",
+        version: "3.9.11",
+        previous_version: "3.9.9",
+        requirements: [{
+          requirement: "3.9.11",
+          file: properties_name,
+          source: { type: "maven-distribution", property: "distributionUrl", url: "https://example/3.9.11.zip" },
+          groups: [],
+          metadata: { distribution_version: "3.9.11", wrapper_version: "3.3.5" }
+        }],
+        package_manager: "maven"
+      )
+    end
+    let(:wrapper_dep) do
+      Dependabot::Dependency.new(
+        name: "org.apache.maven.wrapper:maven-wrapper",
+        version: "3.3.5",
+        previous_version: "3.3.4",
+        requirements: [{
+          requirement: "3.3.5",
+          file: properties_name,
+          source: { type: "maven-distribution", property: "wrapperVersion" },
+          groups: [],
+          metadata: { distribution_version: "3.9.11", wrapper_version: "3.3.5" }
+        }],
+        package_manager: "maven"
+      )
+    end
+    let(:dependencies) { [distribution_dep, wrapper_dep] }
+
+    before do
+      Dependabot::Experiments.register(:maven_wrapper_updater, true)
+      allow(wrapper_updater_class).to receive(:new).and_return(wrapper_double)
+    end
+
+    it "regenerates the shared wrapper exactly once for a grouped update" do
+      updater.updated_dependency_files
+      expect(wrapper_updater_class).to have_received(:new).once
+    end
+
+    it "does not emit the same wrapper file twice" do
+      names = updater.updated_dependency_files.map(&:name)
+      expect(names.count(properties_name)).to eq(1)
+    end
+
+    it "passes both resolved target versions to the single generator" do
+      captured = nil
+      allow(wrapper_updater_class).to receive(:new) do |**kwargs|
+        captured = kwargs
+        wrapper_double
+      end
+      updater.updated_dependency_files
+      expect(captured).to include(distribution_version: "3.9.11", wrapper_version: "3.3.5")
+    end
+
+    context "when the wrapper lives in a module (non-root)" do
+      let(:properties_name) { "module/.mvn/wrapper/maven-wrapper.properties" }
+      let(:module_pom) { Dependabot::DependencyFile.new(name: "module/pom.xml", content: "<project></project>") }
+      let(:dependency_files) { [pom, module_pom, properties_file] }
+      let(:dependencies) { [distribution_dep] }
+
+      it "selects the module pom as the build file" do
+        captured = nil
+        allow(wrapper_double).to receive(:update_files) do |bf|
+          captured = bf
+          [marker_file]
+        end
+        updater.updated_dependency_files
+        expect(captured.name).to eq("module/pom.xml")
+      end
+    end
+  end
 end

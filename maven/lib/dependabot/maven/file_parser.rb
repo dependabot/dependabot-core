@@ -97,7 +97,8 @@ module Dependabot
 
         if Dependabot::Experiments.enabled?(:maven_wrapper_updater)
           wrapper_properties_files.each do |properties_file|
-            dir = File.dirname(properties_file.name).sub(%r{/\.mvn/wrapper$}, "")
+            dir = File.dirname(properties_file.name).sub(%r{/?\.mvn/wrapper$}, "")
+            dir = "." if dir.empty?
             scripts = wrapper_script_files_for(dir)
             FileParser::WrapperMojo.resolve_dependencies(properties_file, script_files: scripts).each do |dep|
               dependency_set << dep

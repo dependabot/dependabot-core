@@ -76,7 +76,9 @@ module Dependabot
           files << f if f
         end
 
-        dist_type = FileParser::WrapperMojo.resolve_distribution_type(T.must(properties.content))
+        content = T.must(properties.content)
+        wrapper_url = FileParser::WrapperMojo.get_property_value(content, "wrapperUrl")
+        dist_type = FileParser::WrapperMojo.resolve_distribution_type(content, wrapper_url)
         files + fetch_wrapper_artifact_files(dir, dist_type)
       rescue Dependabot::DependencyFileNotFound
         []

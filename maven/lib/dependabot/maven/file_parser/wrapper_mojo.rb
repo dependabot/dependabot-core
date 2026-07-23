@@ -225,9 +225,17 @@ module Dependabot
           )
         end
 
-        sig { params(content: String).returns(String) }
-        def self.resolve_distribution_type(content)
-          get_property_value(content, "distributionType") || "bin"
+        # Resolves the distribution type, matching the maven-wrapper-plugin's own precedence:
+        # an explicit distributionType wins; otherwise the plugin defaults to "only-script" (since
+        # 3.2.0). Legacy pre-3.3.0 files omit distributionType but carry a wrapperUrl pointing at the
+        # maven-wrapper JAR, which means a JAR-based ("bin") setup, so we keep that for them.
+        # https://maven.apache.org/tools/wrapper/maven-wrapper-plugin/wrapper-mojo.html
+        sig { params(content: String, wrapper_url: T.nilable(String)).returns(String) }
+        def self.resolve_distribution_type(content, wrapper_url)
+          explicit = get_property_value(content, "distributionType")
+          return explicit if explicit
+
+          wrapper_url ? "bin" : "only-script"
         end
 
         sig { params(script_files: T::Array[DependencyFile]).returns(T::Boolean) }
@@ -243,7 +251,7 @@ module Dependabot
           distribution_sha256_sum = get_property_value(content, "distributionSha256Sum")
           wrapper_url = get_property_value(content, "wrapperUrl")
           wrapper_sha256_sum = get_property_value(content, "wrapperSha256Sum")
-          distribution_type = resolve_distribution_type(content)
+          distribution_type = resolve_distribution_type(content, wrapper_url)
           wrapper_version = resolve_wrapper_version(content, wrapper_url, script_files)
 
           WrapperProperties.new(
@@ -274,9 +282,9 @@ module Dependabot
           # 2. Escape the key for Regex safety
           escaped_key = Regexp.escape(target_key)
 
-          # 3. Define the pattern:
-          # Start of line -> Key -> optional space -> delimiter (= or :) -> value
-          pattern = /^\s*#{escaped_key}\s*[=:]\s*(.*)$/
+          # Start of line -> Key -> optional space -> delimiter (= or :) -> value.
+          # Bounded to spaces/tabs (not \s) so the per-line match can't backtrack polynomially.
+          pattern = /^[ \t]*#{escaped_key}[ \t]*[=:][ \t]*(.*)$/
 
           normalized_content.lines.each do |line|
             next if line.start_with?("#", "!") # Skip Java comments
