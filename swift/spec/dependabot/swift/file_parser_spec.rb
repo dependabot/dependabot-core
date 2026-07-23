@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/swift/file_parser"
+require "dependabot/swift/file_parser/manifest_parser"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::Swift::FileParser do
@@ -478,6 +479,51 @@ RSpec.describe Dependabot::Swift::FileParser do
     end
 
     it_behaves_like "parse"
+  end
+
+  describe "ManifestParser with a revision (commit SHA) pinned dependency" do
+    let(:sha) { "f2ce7e2373106b1b562dc965e1eee2324f9e72e3" }
+    let(:url) { "https://github.com/Quick/Quick" }
+    let(:manifest_content) do
+      <<~SWIFT
+        // swift-tools-version:5.8.0
+        import PackageDescription
+        let package = Package(
+            name: "MyPackage",
+            dependencies: [
+                .package(url: "#{url}", .revision("#{sha}"))
+            ]
+        )
+      SWIFT
+    end
+    let(:manifest_file) do
+      Dependabot::DependencyFile.new(name: "Package.swift", content: manifest_content)
+    end
+    let(:manifest_parser) do
+      Dependabot::Swift::FileParser::ManifestParser.new(
+        manifest_file,
+        source: { type: "git", url: url, ref: sha, branch: nil }
+      )
+    end
+    let(:requirements) { manifest_parser.requirements }
+
+    it "returns one requirement" do
+      expect(requirements.length).to eq(1)
+    end
+
+    it "sets requirement to nil" do
+      expect(requirements.first[:requirement]).to be_nil
+    end
+
+    it "sets the source ref to the commit SHA" do
+      expect(requirements.first[:source][:ref]).to eq(sha)
+    end
+
+    it "stores the revision declaration in metadata" do
+      req_string = requirements.first[:metadata][:requirement_string]
+      expect(req_string).to include(".revision(")
+      expect(req_string).to include(sha)
+    end
   end
 
   describe "#ecosystem" do
