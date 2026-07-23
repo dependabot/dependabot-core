@@ -19,7 +19,7 @@ require "dependabot/cargo/package_manager"
 # - https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
 module Dependabot
   module Cargo
-    class FileParser < Dependabot::FileParsers::Base # rubocop:disable Metrics/ClassLength
+    class FileParser < Dependabot::FileParsers::Base
       require "dependabot/file_parsers/base/dependency_set"
 
       DEPENDENCY_TYPES =
@@ -34,7 +34,6 @@ module Dependabot
         dependency_set += lockfile_dependencies if lockfile
 
         dependencies = dependency_set.dependencies
-        add_lockfile_package_metadata(dependencies) if lockfile
 
         # TODO: Handle patched dependencies
         dependencies.reject! { |d| patched_dependencies.include?(d.name) }
@@ -209,6 +208,8 @@ module Dependabot
         T.cast(lockfile_content.fetch("package", []), T::Array[T::Hash[String, T.anything]]).each do |package_details|
           next unless T.cast(package_details["source"], T.nilable(String))
 
+          # TODO: This isn't quite right, as it will only give us one
+          # version of each dependency (when in fact there are many)
           dependency_set << Dependency.new(
             name: T.cast(package_details["name"], String),
             version: version_from_lockfile_details(package_details),
@@ -218,29 +219,6 @@ module Dependabot
         end
 
         dependency_set
-      end
-
-      sig { params(dependencies: T::Array[Dependabot::Dependency]).void }
-      def add_lockfile_package_metadata(dependencies)
-        packages_by_name = lockfile_packages(parsed_file(T.must(lockfile)))
-                           .select { |package| package_field(package, "source") }
-                           .group_by { |package| T.must(package_field(package, "name")) }
-
-        dependencies.each do |dependency|
-          packages = packages_by_name.fetch(dependency.name, [])
-          next if dependency.top_level?
-          next unless packages.length > 1
-
-          dependency.metadata[:all_versions] = packages.map do |package|
-            Dependency.new(
-              name: dependency.name,
-              version: version_from_lockfile_details(package),
-              package_manager: "cargo",
-              requirements: [],
-              metadata: { cargo_package_source: T.must(package_field(package, "source")) }
-            )
-          end
-        end
       end
 
       sig { returns(T::Array[String]) }
