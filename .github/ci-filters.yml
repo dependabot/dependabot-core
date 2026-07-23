@@ -86,6 +86,9 @@ npm_and_yarn:
 nuget:
   - *shared
   - 'nuget/**'
+powershell:
+  - *shared
+  - 'powershell/**'
 pre_commit:
   - *shared
   - 'pre_commit/**'

@@ -48,6 +48,7 @@ Sentry.init do |config|
     nix|
     npm_and_yarn|
     nuget|
+    powershell|
     pre_commit|
     pub|
     python|

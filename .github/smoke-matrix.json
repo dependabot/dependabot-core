@@ -120,6 +120,11 @@
     "ecosystem": "pre-commit"
   },
   {
+    "core": "powershell",
+    "test": "powershell",
+    "ecosystem": "powershell"
+  },
+  {
     "core": "pub",
     "test": "pub",
     "ecosystem": "pub"
