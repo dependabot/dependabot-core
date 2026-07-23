@@ -213,6 +213,62 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
         expect(updater.updated_dependency_files).to eq([])
       end
     end
+
+    context "when hashtable keys are non-canonical case and values are double-quoted" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "MixedQuotes.psd1",
+            content: <<~Powershell
+              @{
+                RequiredModules = @(
+                  @{ modulename = "Az.Mixed"; requiredversion = "1.0.0" },
+                  @{ ModuleName = "Az.Range"; moduleversion = "1.0.0"; maximumversion = "2.0.0" }
+                )
+              }
+            Powershell
+          )
+        ]
+      end
+
+      let(:dependencies) do
+        [
+          build_dependency(
+            name: "Az.Mixed",
+            requirements: [
+              hashtable_requirement("= 2.5.0", file: "MixedQuotes.psd1", version_key: "RequiredVersion")
+            ],
+            previous_requirements: [
+              hashtable_requirement("= 1.0.0", file: "MixedQuotes.psd1", version_key: "RequiredVersion")
+            ]
+          ),
+          build_dependency(
+            name: "Az.Range",
+            requirements: [
+              hashtable_requirement(
+                ">= 1.0.0, <= 3.0.0",
+                file: "MixedQuotes.psd1",
+                version_key: "ModuleVersion+MaximumVersion"
+              )
+            ],
+            previous_requirements: [
+              hashtable_requirement(
+                ">= 1.0.0, <= 2.0.0",
+                file: "MixedQuotes.psd1",
+                version_key: "ModuleVersion+MaximumVersion"
+              )
+            ]
+          )
+        ]
+      end
+
+      it "rewrites values case-insensitively while preserving key and quote style" do
+        content = updater.updated_dependency_files.first.content
+
+        expect(content).to include('@{ modulename = "Az.Mixed"; requiredversion = "2.5.0" }')
+        expect(content).to include('@{ ModuleName = "Az.Range"; moduleversion = "1.0.0"; maximumversion = "3.0.0" }')
+      end
+    end
   end
 
   describe "updating a .ps1 script's #Requires directives" do

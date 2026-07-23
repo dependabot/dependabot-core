@@ -162,7 +162,7 @@ module Dependabot
           raw = content[occurrence.start_index...occurrence.end_index]
           return nil unless raw
 
-          pattern = /#{Regexp.escape(field)}\s*=\s*(?<quote>['"])(?<value>[^'"]*)\k<quote>/
+          pattern = /#{Regexp.escape(field)}\s*=\s*(?<quote>['"])(?<value>[^'"]*)\k<quote>/i
           match = pattern.match(raw)
           return nil unless match
 
