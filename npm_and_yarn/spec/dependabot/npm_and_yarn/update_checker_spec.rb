@@ -2159,9 +2159,17 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           .to eq(
             "dependency_name" => "@dependabot-fixtures/npm-transitive-dependency",
             "explanation" =>
-              "A patched version exists for " \
-              "@dependabot-fixtures/npm-transitive-dependency, but the " \
-              "available update path still resolves it to 1.0.0",
+              "@dependabot-fixtures/npm-transitive-dependency is a transitive " \
+              "dependency and no update path was found that resolves it to a " \
+              "non-vulnerable version. A fixed version of " \
+              "@dependabot-fixtures/npm-transitive-dependency is published, but " \
+              "the parent package(s) that depend on it in the lockfile require " \
+              "a vulnerable version, and Dependabot could not update those " \
+              "parent package(s) to a release that allows the fixed version " \
+              "without " \
+              "introducing a conflict. To resolve this, update the parent dependency that requires " \
+              "@dependabot-fixtures/npm-transitive-dependency, or add an override/resolution pinning " \
+              "@dependabot-fixtures/npm-transitive-dependency to a non-vulnerable version.",
             "fix_available" => false,
             "fix_updates" => [],
             "top_level_ancestors" => []
