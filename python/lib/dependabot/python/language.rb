@@ -16,8 +16,8 @@ module Dependabot
       # e.g. ARG PY_3_13=3.13.x
       # Note: uv ecosystem aliases this class, so updates here apply to both ecosystems.
       PRE_INSTALLED_PYTHON_VERSIONS_RAW = %w(
-        3.14.5
-        3.13.13
+        3.14.6
+        3.13.14
         3.12.13
         3.11.15
         3.10.20
