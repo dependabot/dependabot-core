@@ -85,6 +85,7 @@ module Dependabot
           "nuget" => "nuget",
           "opentofu" => "opentofu",
           "pip" => "pip",
+          "powershell" => "powershell",
           "pre-commit" => "pre_commit",
           "pub" => "pub",
           "rust-toolchain" => "rust_toolchain",
