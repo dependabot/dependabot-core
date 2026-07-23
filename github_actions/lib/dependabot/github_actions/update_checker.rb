@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/errors"
 require "dependabot/github_actions/constants"
+require "dependabot/github_actions/containing_branch_finder"
 require "dependabot/github_actions/requirement"
 require "dependabot/github_actions/version"
 require "dependabot/update_checkers"
@@ -17,14 +18,6 @@ module Dependabot
       extend T::Sig
 
       require_relative "update_checker/latest_version_finder"
-
-      # git error output emitted when the pinned SHA cannot be found in the cloned
-      # repository (e.g. the commit was force-pushed away, garbage-collected, or
-      # belongs to a fork). In these cases there is no containing branch to resolve.
-      COMMIT_NOT_FOUND_REGEX = T.let(
-        /no such commit|malformed object name|bad object|not a valid object name/i,
-        Regexp
-      )
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
@@ -138,7 +131,9 @@ module Dependabot
                 SharedHelpers.run_shell_command("git clone --no-recurse-submodules #{url} #{repo_contents_path}")
 
                 Dir.chdir(repo_contents_path) do
-                  ref_branch = find_container_branch(T.must(git_commit_checker.dependency_source_details&.ref))
+                  ref_branch = ContainingBranchFinder.find(
+                    T.must(git_commit_checker.dependency_source_details&.ref)
+                  )
                   git_commit_checker.head_commit_for_local_branch(ref_branch) if ref_branch
                 end
               end
@@ -205,32 +200,6 @@ module Dependabot
           consider_version_branches_pinned: false,
           dependency_source_details: nil
         )
-      end
-
-      sig { params(sha: String).returns(T.nilable(String)) }
-      def find_container_branch(sha)
-        branches_including_ref = SharedHelpers.run_shell_command(
-          "git branch --remotes --contains #{sha}",
-          fingerprint: "git branch --remotes --contains <sha>"
-        ).split("\n").map { |branch| branch.strip.gsub("origin/", "") }
-        return if branches_including_ref.empty?
-
-        current_branch = branches_including_ref.find { |branch| branch.start_with?("HEAD -> ") }
-
-        if current_branch
-          current_branch.delete_prefix("HEAD -> ")
-        elsif branches_including_ref.size > 1
-          # If there are multiple non default branches including the pinned SHA, then it's unclear how we should proceed
-          raise "Multiple ambiguous branches (#{branches_including_ref.join(', ')}) include #{sha}!"
-        else
-          branches_including_ref.first
-        end
-      rescue SharedHelpers::HelperSubprocessFailed => e
-        # A missing commit is expected for some pins and must not fail the whole
-        # update job; any other subprocess failure (e.g. out of disk) should surface.
-        raise unless e.message.match?(COMMIT_NOT_FOUND_REGEX)
-
-        nil
       end
     end
   end

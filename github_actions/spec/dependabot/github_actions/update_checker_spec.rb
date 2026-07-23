@@ -848,6 +848,37 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
+    context "when the fallback containing-branch lookup fails unexpectedly" do
+      let(:reference) { "0123456789abcdef0123456789abcdef01234567" }
+      let(:unexpected_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "fatal: not a git repository\n",
+          error_context: {}
+        )
+      end
+
+      before do
+        allow(Dir).to receive(:chdir).and_yield
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(%r{git clone --no-recurse-submodules https://github\.com/actions/setup-node},
+                any_args)
+          .and_return("")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("git branch --remotes --contains #{reference}",
+                any_args)
+          .and_invoke(
+            proc { "" },
+            proc { raise unexpected_error }
+          )
+      end
+
+      it "re-raises the error" do
+        expect { updated_requirements }.to raise_error(unexpected_error)
+      end
+    end
+
     context "when a git commit SHA pointing to the tip of a branch not named like a version" do
       let(:tip_of_master) { "d963e800e3592dd31d6c76252092562d0bc7a3ba" }
       let(:reference) { tip_of_master }
