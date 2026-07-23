@@ -9,30 +9,28 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       extend T::Sig
 
+      require_relative "file_updater/declaration_locator"
+      require_relative "file_updater/declaration_rewriter"
+
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
-        updated_files = []
+        dependency_files.filter_map do |file|
+          next unless file_changed?(file)
 
-        # TODO: Implement file update logic
-        # For each file that needs updating:
-        # 1. Get the original file content
-        # 2. Update it with new dependency versions
-        # 3. Add to updated_files array
-        # Example:
-        # manifest = dependency_files.find { |f| f.name == "manifest.json" }
-        # updated_files << updated_file(file: manifest, content: new_content)
+          new_content = DeclarationRewriter.new(file: file, dependencies: dependencies).updated_content
+          next if new_content == file.content
 
-        updated_files
+          updated_file(file: file, content: new_content)
+        end
       end
 
       private
 
       sig { override.void }
       def check_required_files
-        # TODO: Verify that all required files are present
-        # Example:
-        # return if get_original_file("manifest.json")
-        # raise "No manifest.json file found!"
+        return if dependency_files.any?
+
+        raise "No PowerShell script or module manifest files found!"
       end
     end
   end
