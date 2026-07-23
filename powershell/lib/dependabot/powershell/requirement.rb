@@ -1,10 +1,6 @@
 # typed: strict
 # frozen_string_literal: true
 
-# NOTE: This file was scaffolded automatically but is OPTIONAL.
-# If your ecosystem uses standard Gem::Requirement logic,
-# you can safely delete this file and remove the require from lib/dependabot/powershell.rb
-
 require "dependabot/requirement"
 require "dependabot/utils"
 
@@ -13,21 +9,23 @@ module Dependabot
     class Requirement < Dependabot::Requirement
       extend T::Sig
 
-      # Add custom requirement parsing logic if needed
-      # If standard Gem::Requirement is sufficient, delete this file
-
-      # This abstract method must be implemented
+      # A single PowerShell module specification maps to a single
+      # requirement, which may itself carry multiple AND'd constraints
+      # (e.g. ">= 1.0.0, <= 2.0.0" for a ModuleVersion/MaximumVersion range).
+      # `nil` means the module was declared with no version constraint.
       sig do
         override
-        .params(requirement_string: T.nilable(String))
-        .returns(T::Array[Dependabot::Requirement])
+          .params(requirement_string: T.nilable(String))
+          .returns(T::Array[Dependabot::Requirement])
       end
       def self.requirements_array(requirement_string)
-        # TODO: Implement requirement parsing logic
-        # Example: Parse requirement_string and return array of requirements
-        # For now, use the default implementation
-        super
+        return [new] if requirement_string.nil?
+
+        [new(requirement_string)]
       end
     end
   end
 end
+
+Dependabot::Utils
+  .register_requirement_class("powershell", Dependabot::Powershell::Requirement)
