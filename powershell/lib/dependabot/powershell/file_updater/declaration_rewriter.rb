@@ -1,0 +1,185 @@
+# typed: strict
+# frozen_string_literal: true
+
+require "sorbet-runtime"
+require "dependabot/dependency_requirement"
+require "dependabot/powershell/file_updater"
+require "dependabot/powershell/file_updater/declaration_locator"
+
+module Dependabot
+  module Powershell
+    class FileUpdater < Dependabot::FileUpdaters::Base
+      # Rewrites the version-bearing key(s) of module declarations in a
+      # single dependency file so its content reflects each dependency's
+      # updated requirement, while leaving everything else - GUID, unrelated
+      # keys, quote style, whitespace, bare string declarations with no
+      # version constraint - exactly as originally written.
+      class DeclarationRewriter
+        extend T::Sig
+
+        # Maps a requirement's `version_key` (set by the stage-3 parser) to
+        # the hashtable field whose value must be rewritten. A
+        # ModuleVersion+MaximumVersion range only ever has its upper bound
+        # raised (see UpdateChecker::RequirementsUpdater#bump_range_maximum),
+        # so both the bare MaximumVersion case and the combined range case
+        # target the same field.
+        VERSION_FIELDS = T.let(
+          {
+            "RequiredVersion" => "RequiredVersion",
+            "ModuleVersion" => "ModuleVersion",
+            "MaximumVersion" => "MaximumVersion",
+            "ModuleVersion+MaximumVersion" => "MaximumVersion"
+          }.freeze,
+          T::Hash[String, String]
+        )
+
+        # A single content replacement: replace content[start_index...end_index]
+        # with replacement_text.
+        Edit = T.type_alias { [Integer, Integer, String] }
+
+        sig { params(file: Dependabot::DependencyFile, dependencies: T::Array[Dependabot::Dependency]).void }
+        def initialize(file:, dependencies:)
+          @file = file
+          @dependencies = dependencies
+        end
+
+        sig { returns(String) }
+        def updated_content
+          content = T.must(@file.content)
+          edits = collect_edits(content)
+          return content if edits.empty?
+
+          apply_edits(content, edits)
+        end
+
+        private
+
+        sig { returns(Dependabot::DependencyFile) }
+        attr_reader :file
+
+        sig { returns(T::Array[Dependabot::Dependency]) }
+        attr_reader :dependencies
+
+        sig { params(content: String).returns(T::Array[Edit]) }
+        def collect_edits(content)
+          occurrences_by_name = DeclarationLocator.new(file: file).locate.group_by { |occ| occ.name.downcase }
+          return [] if occurrences_by_name.empty?
+
+          dependencies.flat_map { |dependency| edits_for_dependency(dependency, occurrences_by_name, content) }
+        end
+
+        sig do
+          params(
+            dependency: Dependabot::Dependency,
+            occurrences_by_name: T::Hash[String, T::Array[DeclarationLocator::Occurrence]],
+            content: String
+          ).returns(T::Array[Edit])
+        end
+        def edits_for_dependency(dependency, occurrences_by_name, content)
+          occurrences = occurrences_by_name[dependency.name.downcase]
+          return [] unless occurrences
+
+          previous_requirements = requirements_for_file(dependency.previous_requirements)
+          current_requirements = requirements_for_file(dependency.requirements)
+
+          edits = []
+          current_requirements.each_with_index do |current, index|
+            previous = previous_requirements[index]
+            occurrence = occurrences[index]
+            next unless previous && occurrence
+            next if current.requirement == previous.requirement
+
+            new_requirement = current.requirement
+            next unless new_requirement.is_a?(String)
+
+            edit = edit_for_occurrence(occurrence, new_requirement, content)
+            edits << edit if edit
+          end
+          edits
+        end
+
+        sig do
+          params(
+            requirements: T.nilable(T::Array[Dependabot::DependencyRequirement])
+          ).returns(T::Array[Dependabot::DependencyRequirement])
+        end
+        def requirements_for_file(requirements)
+          (requirements || []).select { |requirement| requirement.file == file.name }
+        end
+
+        sig do
+          params(
+            occurrence: DeclarationLocator::Occurrence,
+            new_requirement: String,
+            content: String
+          ).returns(T.nilable(Edit))
+        end
+        def edit_for_occurrence(occurrence, new_requirement, content)
+          return nil unless occurrence.style == :hashtable
+
+          field = VERSION_FIELDS[occurrence.version_key]
+          return nil unless field
+
+          new_value = extract_version(new_requirement, occurrence.version_key)
+          return nil unless new_value
+
+          value_span = value_span_for(content, occurrence, field)
+          return nil unless value_span
+
+          [value_span[0], value_span[1], new_value]
+        end
+
+        # Extracts the version literal that `version_key` binds to from a
+        # requirement string built by UpdateChecker::RequirementsUpdater
+        # (e.g. "= X", ">= X", "<= X", or ">= X, <= Y").
+        sig { params(requirement_string: String, version_key: T.nilable(String)).returns(T.nilable(String)) }
+        def extract_version(requirement_string, version_key)
+          case version_key
+          when "RequiredVersion"
+            requirement_string.delete_prefix("=").strip
+          when "ModuleVersion"
+            requirement_string.delete_prefix(">=").strip
+          when "MaximumVersion"
+            requirement_string.delete_prefix("<=").strip
+          when "ModuleVersion+MaximumVersion"
+            constraint = requirement_string.split(",").map(&:strip).find { |c| c.start_with?("<=") }
+            constraint&.delete_prefix("<=")&.strip
+          end
+        end
+
+        # Finds the quoted value of `field` within the occurrence's raw
+        # hashtable text and returns its absolute [start, end) offsets
+        # within `content`, so only that value - not the key, quote
+        # characters, GUID, or any other field - gets replaced.
+        sig do
+          params(
+            content: String,
+            occurrence: DeclarationLocator::Occurrence,
+            field: String
+          ).returns(T.nilable([Integer, Integer]))
+        end
+        def value_span_for(content, occurrence, field)
+          raw = content[occurrence.start_index...occurrence.end_index]
+          return nil unless raw
+
+          pattern = /#{Regexp.escape(field)}\s*=\s*(?<quote>['"])(?<value>[^'"]*)\k<quote>/
+          match = pattern.match(raw)
+          return nil unless match
+
+          value_start = occurrence.start_index + T.must(match.begin(:value))
+          value_end = occurrence.start_index + T.must(match.end(:value))
+          [value_start, value_end]
+        end
+
+        sig { params(content: String, edits: T::Array[Edit]).returns(String) }
+        def apply_edits(content, edits)
+          result = content.dup
+          edits.sort_by { |edit| -edit[0] }.each do |start_index, end_index, replacement|
+            result[start_index...end_index] = replacement
+          end
+          result
+        end
+      end
+    end
+  end
+end
