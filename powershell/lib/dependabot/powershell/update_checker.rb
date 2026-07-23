@@ -1,6 +1,8 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 
@@ -9,45 +11,76 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
+      require_relative "update_checker/latest_version_finder"
+      require_relative "update_checker/requirements_updater"
+
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
-        # TODO: Implement logic to find the latest version
-        # This should check the package registry/repository for updates
-        nil
+        latest_version_finder.latest_version
       end
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_resolvable_version
-        # TODO: Implement logic to find the latest resolvable version
-        # This might be the same as latest_version for simple ecosystems
+        # The PowerShell Gallery has no dependency-resolution step of its
+        # own (module manifests don't pin transitive dependency versions in
+        # a way that requires a native resolver), so the latest version is
+        # always resolvable.
         latest_version
       end
 
-      sig { override.returns(T.nilable(String)) }
+      sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_resolvable_version_with_no_unlock
-        # TODO: Implement logic for version resolution without unlocking
-        dependency.version
+        latest_version_finder.latest_version_with_no_unlock
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T.nilable(Gem::Version)) }
+      def lowest_security_fix_version
+        latest_version_finder.lowest_security_fix_version
+      end
+
+      sig { override.returns(T.nilable(Gem::Version)) }
+      def lowest_resolvable_security_fix_version
+        lowest_security_fix_version
+      end
+
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        # TODO: Implement logic to update requirements
-        # Return updated requirement hashes
-        dependency.requirements
+        wrap_requirements(
+          RequirementsUpdater.new(
+            requirements: dependency.requirements,
+            latest_resolvable_version: latest_resolvable_version
+          ).updated_requirements
+        )
       end
 
       private
 
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
-        # TODO: Implement resolvability check
+        # Full unlock (updating other dependencies to help this one update)
+        # isn't supported for PowerShell modules.
         false
       end
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def updated_dependencies_after_full_unlock
-        # TODO: Return updated dependencies if full unlock is needed
-        []
+        raise NotImplementedError
+      end
+
+      sig { returns(LatestVersionFinder) }
+      def latest_version_finder
+        @latest_version_finder ||= T.let(
+          LatestVersionFinder.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            security_advisories: security_advisories,
+            cooldown_options: update_cooldown,
+            raise_on_ignored: raise_on_ignored
+          ),
+          T.nilable(LatestVersionFinder)
+        )
       end
     end
   end
