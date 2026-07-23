@@ -3,6 +3,7 @@
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/bazel/version"
 
 module Dependabot
   module Bazel
@@ -48,10 +49,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(T::Hash[Symbol, T.anything])) }
       def ecosystem_versions
-        bazel_version = "unknown"
-
         bazelversion_file = fetch_file_if_present(".bazelversion")
-        bazel_version = T.must(bazelversion_file.content).strip if bazelversion_file
+        bazel_version = Dependabot::Bazel::Version.version_from_file(bazelversion_file) || "unknown"
 
         { package_managers: { "bazel" => bazel_version } }
       end
