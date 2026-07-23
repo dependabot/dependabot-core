@@ -45,6 +45,41 @@ module Dependabot
             )
         end
 
+        protected
+
+        sig do
+          override.params(releases: T::Array[Dependabot::Package::PackageRelease])
+                  .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def filter_by_cooldown(releases)
+          return releases unless cooldown_enabled?
+          return releases unless cooldown_options
+
+          filtered = releases.reject { |release| in_cooldown_period?(release) }
+
+          if releases.count > filtered.count
+            Dependabot.logger.info("Filtered out #{releases.count - filtered.count} versions due to cooldown")
+          end
+
+          if filtered.empty? && !releases.empty? && dependency.version
+            Dependabot.logger.info(
+              "All versions filtered by cooldown for #{dependency.name}, " \
+              "falling back to current version #{dependency.version}"
+            )
+
+            return [
+              Dependabot::Package::PackageRelease.new(
+                version: GitSubmodules::Version.new("0.0.0-0.0"),
+                tag: dependency.version
+              )
+            ]
+          end
+
+          filtered
+        end
+
+        private
+
         sig do
           params(releases: T::Array[Dependabot::Package::PackageRelease])
             .returns(T::Array[Dependabot::Package::PackageRelease])
