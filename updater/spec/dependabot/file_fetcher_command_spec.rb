@@ -76,7 +76,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
           expect(api_client)
             .to receive(:record_update_job_error)
             .with(
-              error_details: { "file-path": "/foo", message: "/foo not found" },
+              error_details: { "file-path": nil, message: "No files found in /foo" },
               error_type: "dependency_file_not_found"
             )
           expect(api_client).to receive(:mark_job_as_processed)
@@ -115,7 +115,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
           expect(api_client)
             .to receive(:record_update_job_error)
             .with(
-              error_details: { "file-path": "/foo", message: "/foo not found" },
+              error_details: { "file-path": nil, message: "No files found in /foo" },
               error_type: "dependency_file_not_found"
             )
 
@@ -141,7 +141,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
           expect(api_client)
             .to receive(:record_update_job_error)
             .with(
-              error_details: { "file-path": "/foo", message: "/foo not found" },
+              error_details: { "file-path": nil, message: "No files found in /foo" },
               error_type: "dependency_file_not_found"
             )
 
@@ -615,6 +615,161 @@ RSpec.describe Dependabot::FileFetcherCommand do
           expect(Dependabot.logger).to have_received(:info).with(/Connectivity check starting/)
           expect(Dependabot.logger).to have_received(:error).with(/Connectivity check failed/)
         end
+      end
+    end
+  end
+
+  describe "#normalize_single_directory" do
+    let(:command) { described_class.new }
+
+    before do
+      allow(Dependabot::Environment).to receive_messages(
+        job_definition: job_definition,
+        repo_contents_path: nil
+      )
+    end
+
+    context "when directories has a single entry and directory is nil" do
+      let(:job_definition) do
+        {
+          "job" => {
+            "package_manager" => "dummy",
+            "allowed_updates" => [],
+            "dependencies" => nil,
+            "ignore_conditions" => [],
+            "security_advisories" => [],
+            "security_updates_only" => true,
+            "update_subdependencies" => false,
+            "updating_a_pull_request" => false,
+            "existing_pull_requests" => [],
+            "requirements_update_strategy" => nil,
+            "lockfile_only" => false,
+            "source" => {
+              "provider" => "github",
+              "repo" => "test/test-repo",
+              "directory" => nil,
+              "directories" => ["/tests"],
+              "branch" => nil,
+              "hostname" => "github.com",
+              "api-endpoint" => "https://api.github.com/"
+            }
+          }
+        }
+      end
+
+      it "normalizes to use directory (singular)" do
+        command.send(:normalize_single_directory)
+
+        expect(command.job.source.directory).to eq("/tests")
+        expect(command.job.source.directories).to be_nil
+      end
+    end
+
+    context "when directories has multiple entries" do
+      let(:job_definition) do
+        {
+          "job" => {
+            "package_manager" => "dummy",
+            "allowed_updates" => [],
+            "dependencies" => nil,
+            "ignore_conditions" => [],
+            "security_advisories" => [],
+            "security_updates_only" => false,
+            "update_subdependencies" => false,
+            "updating_a_pull_request" => false,
+            "existing_pull_requests" => [],
+            "requirements_update_strategy" => nil,
+            "lockfile_only" => false,
+            "source" => {
+              "provider" => "github",
+              "repo" => "test/test-repo",
+              "directory" => nil,
+              "directories" => ["/", "/tests"],
+              "branch" => nil,
+              "hostname" => "github.com",
+              "api-endpoint" => "https://api.github.com/"
+            }
+          }
+        }
+      end
+
+      it "does not normalize" do
+        command.send(:normalize_single_directory)
+
+        expect(command.job.source.directory).to be_nil
+        expect(command.job.source.directories).to eq(["/", "/tests"])
+      end
+    end
+
+    context "when directory is already set" do
+      let(:job_definition) do
+        {
+          "job" => {
+            "package_manager" => "dummy",
+            "allowed_updates" => [],
+            "dependencies" => nil,
+            "ignore_conditions" => [],
+            "security_advisories" => [],
+            "security_updates_only" => false,
+            "update_subdependencies" => false,
+            "updating_a_pull_request" => false,
+            "existing_pull_requests" => [],
+            "requirements_update_strategy" => nil,
+            "lockfile_only" => false,
+            "source" => {
+              "provider" => "github",
+              "repo" => "test/test-repo",
+              "directory" => "/tests",
+              "branch" => nil,
+              "hostname" => "github.com",
+              "api-endpoint" => "https://api.github.com/"
+            }
+          }
+        }
+      end
+
+      it "does not modify the source" do
+        command.send(:normalize_single_directory)
+
+        expect(command.job.source.directory).to eq("/tests")
+        expect(command.job.source.directories).to be_nil
+      end
+    end
+
+    context "when it is a graph job with a single directory" do
+      let(:job_definition) do
+        {
+          "job" => {
+            "command" => "graph",
+            "package_manager" => "dummy",
+            "allowed_updates" => [],
+            "dependencies" => nil,
+            "ignore_conditions" => [],
+            "security_advisories" => [],
+            "security_updates_only" => false,
+            "update_subdependencies" => false,
+            "updating_a_pull_request" => false,
+            "existing_pull_requests" => [],
+            "requirements_update_strategy" => nil,
+            "lockfile_only" => false,
+            "source" => {
+              "provider" => "github",
+              "repo" => "test/test-repo",
+              "directory" => nil,
+              "directories" => ["/tests"],
+              "branch" => nil,
+              "hostname" => "github.com",
+              "api-endpoint" => "https://api.github.com/"
+            }
+          }
+        }
+      end
+
+      it "does not normalize because graph jobs need lenient error handling" do
+        command.send(:normalize_single_directory)
+
+        expect(command.job.source.directory).to be_nil
+        expect(command.job.source.directories).to eq(["/tests"])
       end
     end
   end

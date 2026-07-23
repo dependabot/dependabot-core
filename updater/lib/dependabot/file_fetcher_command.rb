@@ -30,6 +30,7 @@ module Dependabot
 
         begin
           connectivity_check if ENV["ENABLE_CONNECTIVITY_CHECK"] == "1"
+          normalize_single_directory
           validate_target_branch
           dependabot_ref_namespace_available?
           clone_repo_contents
@@ -54,6 +55,7 @@ module Dependabot
           else
             Dependabot.logger.error("Error during file fetching; aborting: #{e.message}")
           end
+          close_pull_request_if_dependency_removed(e)
           handle_file_fetcher_error(e)
           service.mark_job_as_processed(@base_commit_sha)
           return nil
@@ -85,6 +87,32 @@ module Dependabot
     end
 
     private
+
+    # When only a single directory is specified via `directories:` (plural), normalize it to use
+    # `directory:` (singular) so the simpler, proven single-directory code path is used.
+    # This matches the normalization already done in update operations (UpdateAllVersions,
+    # RefreshVersionUpdatePullRequest) and fixes security update jobs that fail with
+    # dependency_file_not_found when the automatic pipeline uses directories for a single manifest.
+    # Graph jobs are excluded because the multi-directory path provides lenient error handling
+    # needed for dependency detection (missing files are non-fatal for graph jobs).
+    sig { void }
+    def normalize_single_directory
+      return unless job.source.directory.nil? && job.source.directories&.one?
+      return if job.update_graph?
+
+      job.source.directory = T.must(job.source.directories).first
+      job.source.directories = nil
+    end
+
+    # When a DependencyFileNotFound error occurs during an update/recreate command,
+    # close the existing pull request since the dependency manifest was likely removed.
+    sig { params(error: StandardError).void }
+    def close_pull_request_if_dependency_removed(error)
+      return unless error.is_a?(Dependabot::DependencyFileNotFound)
+      return unless job.command == "update" || job.command == "recreate"
+
+      service.close_pull_request(job.dependencies || [], :dependency_removed)
+    end
 
     # Records non-fatal, per-directory fetch errors encountered while listing a
     # multi-directory graph job (e.g. an unresolvable path dependency). These are
