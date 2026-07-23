@@ -467,6 +467,46 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         end
       end
 
+      context "when the previous version line is retained by another dependent" do
+        let(:manifest_fixture_name) { "retained_previous_version" }
+        let(:lockfile_fixture_name) { "retained_previous_version" }
+        let(:dependency_name) { "windows-sys" }
+        let(:dependency_version) { "0.59.0" }
+        let(:dependency_previous_version) { "0.52.0" }
+        let(:requirements) do
+          [{ file: "Cargo.toml", requirement: "=0.59.0", groups: ["dependencies"], source: nil }]
+        end
+        let(:previous_requirements) do
+          [{ file: "Cargo.toml", requirement: "=0.52.0", groups: ["dependencies"], source: nil }]
+        end
+
+        it "accepts the update when Cargo keeps the old line for other dependents" do
+          expect(updated_lockfile_content).to include(%(name = "windows-sys"\nversion = "0.59.0"))
+          expect(updated_lockfile_content).to include(%(name = "windows-sys"\nversion = "0.52.0"))
+        end
+      end
+
+      context "when the dependency comes from a sparse registry" do
+        let(:manifest_fixture_name) { "sparse_registry_dependency" }
+        let(:lockfile_fixture_name) { "sparse_registry_dependency" }
+        let(:dependency_name) { "internal-api" }
+        let(:dependency_version) { "1.4.1" }
+        let(:dependency_previous_version) { "1.4.0" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        before do
+          allow(updater).to receive(:run_cargo_command) do
+            content = File.read("Cargo.lock")
+            File.write("Cargo.lock", content.sub(%(version = "1.4.0"), %(version = "1.4.1")))
+          end
+        end
+
+        it "validates the update against the sparse registry entry" do
+          expect(updated_lockfile_content).to include(%(name = "internal-api"\nversion = "1.4.1"))
+        end
+      end
+
       context "with an old format lockfile" do
         let(:manifest_fixture_name) { "old_lockfile" }
         let(:lockfile_fixture_name) { "old_lockfile" }
@@ -510,6 +550,26 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         it "updates the dependency version in the lockfile" do
           expect(updated_lockfile_content)
             .to include("utf8-ranges#be9b8dfcaf449453cbf83ac85260ee80323f4f77")
+        end
+
+        context "when the tracked reference resolves to a different commit" do
+          before do
+            allow(updater).to receive(:run_cargo_command) do
+              content = File.read("Cargo.lock")
+              File.write(
+                "Cargo.lock",
+                content.gsub(
+                  "83141b376b93484341c68fbca3ca110ae5cd2708",
+                  "0123456789abcdef0123456789abcdef01234567"
+                )
+              )
+            end
+          end
+
+          it "accepts the commit Cargo resolved" do
+            expect(updated_lockfile_content)
+              .to include("utf8-ranges#0123456789abcdef0123456789abcdef01234567")
+          end
         end
 
         context "with an ssh URl" do

@@ -95,16 +95,18 @@ module Dependabot
         end
 
         # An earlier command in this run may already have resolved this
-        # dependency's line, in which case its package ID no longer exists and
-        # `cargo update -p` would fail hard. Skip the command and let
+        # dependency's line, in which case `cargo update -p name:version`
+        # would match no package and fail hard. Skip the command when the
+        # working lockfile has no entry left at the previous version and let
         # validate_updates check the outcome.
         sig { returns(T::Boolean) }
         def previous_line_already_replaced?
           previous_version = dependency.previous_version
           return false unless previous_version
           return false if previous_version == dependency.version || git_dependency?
+          return false unless version_class.correct?(previous_version)
 
-          previous_package_replaced?(File.read("Cargo.lock"), dependency)
+          package_version_count(File.read("Cargo.lock"), dependency, previous_version).zero?
         end
 
         sig { params(updated_lockfile: String).returns(String) }
@@ -119,9 +121,8 @@ module Dependabot
 
         sig { params(updated_lockfile: String).void }
         def validate_dependency_update(updated_lockfile)
-          raise "Failed to update #{dependency.name}!" unless previous_package_replaced?(updated_lockfile, dependency)
-
           return if desired_version_present?(updated_lockfile)
+          return if git_line_resolved_differently?(updated_lockfile)
 
           raise "Failed to update #{dependency.name}!" unless dependency_updated?(updated_lockfile, dependency)
 
@@ -696,31 +697,48 @@ module Dependabot
           if source
             entries.select! { |entry| entry.include?(%(source = "#{source}")) }
           else
-            # Dependencies on this path are always registry-sourced (git
-            # dependencies take the SHA path), so without an exact source
-            # identity scope to registry entries: a same-version copy from a
-            # git source must not satisfy the validation checks.
-            entries.select! { |entry| entry.match?(/^source = "registry\+/) }
+            # Without an exact source identity, exclude git-sourced copies so
+            # a same-version git fork can't satisfy the checks. Registry
+            # entries of any protocol (registry+, sparse+) stay visible.
+            entries.reject! { |entry| entry.match?(/^source = "git\+/) }
           end
           entries
         end
 
-        sig do
-          params(updated_lockfile: String, dependency: Dependabot::Dependency)
-            .returns(T::Boolean)
+        # A git dependency can legitimately resolve to a different commit than
+        # the checker expected (e.g. the tracked branch advanced between the
+        # check and this update). Accept the update when the dependency's git
+        # line moved off the previous commit, mirroring the version tolerance
+        # for registry dependencies.
+        sig { params(updated_lockfile: String).returns(T::Boolean) }
+        def git_line_resolved_differently?(updated_lockfile)
+          return false unless git_dependency?
+
+          previous_sha = dependency.previous_version
+          return false unless previous_sha
+
+          shas = git_source_shas(updated_lockfile)
+          return false if shas.empty? || shas.include?(previous_sha)
+
+          Dependabot.logger.info(
+            "Cargo resolved #{dependency.name} to #{shas.join(', ')} " \
+            "instead of #{dependency.version} for the tracked git reference"
+          )
+          true
         end
-        def previous_package_replaced?(updated_lockfile, dependency)
-          previous_version = dependency.previous_version
-          return true unless previous_version
-          return true if previous_version == dependency.version || git_dependency?
 
-          # The same name and version can legitimately remain from another
-          # source (e.g. a git fork pinned at the released version), so require
-          # the entry count to decrease rather than reach zero.
-          original_count = package_version_count(T.must(lockfile.content), dependency, previous_version)
-          return true if original_count.zero?
+        sig { params(lockfile_content: String).returns(T::Array[String]) }
+        def git_source_shas(lockfile_content)
+          entries = T.let([], T::Array[String])
+          lockfile_content.scan(LOCKFILE_ENTRY_REGEX) do
+            entries << Regexp.last_match.to_s
+          end
+          entries.select! { |entry| entry.match?(/^name = "#{Regexp.escape(dependency.name)}"$/) }
 
-          package_version_count(updated_lockfile, dependency, previous_version) < original_count
+          url = git_source_url
+          entries.select! { |entry| entry.include?(url) } if url
+
+          entries.filter_map { |entry| entry[/^source = "git\+[^"]*#([0-9a-f]+)"$/, 1] }
         end
 
         sig do
