@@ -445,8 +445,6 @@ module Dependabot
         # There are no group rules defined, so this dependency can be included in the group.
         return true unless update_types
 
-        return cargo_semver_rules_allow_grouping?(group, dependency, checker) if job.package_manager == "cargo"
-
         version_class = Dependabot::Utils.version_class_for_package_manager(job.package_manager)
         unless version_class.correct?(dependency.version.to_s) && version_class.correct?(checker.latest_version)
           return false
@@ -454,6 +452,9 @@ module Dependabot
 
         version = version_class.new(dependency.version.to_s)
         latest_version = version_class.new(checker.latest_version)
+
+        # For Cargo, use the package manager's specific semantic versioning rules
+        return cargo_update_type_allowed?(group, version, latest_version) if job.package_manager == "cargo"
 
         # Not every version class implements .major, .minor, .patch so we calculate it here from the segments
         latest = semver_segments(latest_version)
@@ -469,60 +470,6 @@ module Dependabot
         false
       end
       # rubocop:enable Metrics/AbcSize
-
-      sig do
-        params(
-          group: Dependabot::DependencyGroup,
-          dependency: Dependabot::Dependency,
-          checker: Dependabot::UpdateCheckers::Base
-        ).returns(T::Boolean)
-      end
-      def cargo_semver_rules_allow_grouping?(group, dependency, checker)
-        case dependency.metadata[:all_versions]
-        when Array
-          return cargo_locked_line_updates_allowed?(group, dependency, checker)
-        end
-
-        version_class = Dependabot::Utils.version_class_for_package_manager("cargo")
-        latest_version = checker.latest_version
-        return false unless version_class.correct?(dependency.version.to_s) && version_class.correct?(latest_version)
-
-        cargo_update_type_allowed?(
-          group,
-          version_class.new(dependency.version.to_s),
-          version_class.new(latest_version)
-        )
-      end
-
-      sig do
-        params(
-          group: Dependabot::DependencyGroup,
-          dependency: Dependabot::Dependency,
-          checker: Dependabot::UpdateCheckers::Base
-        ).returns(T::Boolean)
-      end
-      def cargo_locked_line_updates_allowed?(group, dependency, checker)
-        requirements = requirements_to_unlock(checker)
-        return false if requirements == :update_not_possible
-
-        updates = checker.updated_dependencies(requirements_to_unlock: requirements)
-                         .select { |updated| updated.name.casecmp?(dependency.name) }
-        return false if updates.empty?
-
-        version_class = Dependabot::Utils.version_class_for_package_manager("cargo")
-        updates.all? do |updated|
-          previous_version = updated.previous_version
-          version = updated.version
-          next false unless previous_version && version
-          next false unless version_class.correct?(previous_version) && version_class.correct?(version)
-
-          cargo_update_type_allowed?(
-            group,
-            version_class.new(previous_version),
-            version_class.new(version)
-          )
-        end
-      end
 
       sig { params(version: Gem::Version).returns(T::Hash[Symbol, Integer]) }
       def semver_segments(version)
