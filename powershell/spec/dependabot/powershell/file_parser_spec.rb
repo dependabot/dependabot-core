@@ -195,6 +195,56 @@ RSpec.describe Dependabot::Powershell::FileParser do
         expect(names.last).to eq("Module75")
       end
     end
+
+    context "when RequiredModules is a single bare string" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "SingleString.psd1",
+          content: fixture("psd1", "single_string_manifest.psd1")
+        )
+      end
+
+      it "parses the lone module name" do
+        names = parser.parse.map(&:name)
+        expect(names).to contain_exactly("Pester")
+      end
+    end
+
+    context "when RequiredModules is a single hashtable" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "SingleHashtable.psd1",
+          content: fixture("psd1", "single_hashtable_manifest.psd1")
+        )
+      end
+
+      it "parses the lone hashtable spec" do
+        dependency = parser.parse.find { |dep| dep.name == "Az" }
+
+        expect(dependency).not_to be_nil
+        expect(dependency.requirements.first.fetch(:requirement)).to eq(">= 1.0.0")
+        expect(dependency.requirements.first.fetch(:metadata).fetch(:version_key)).to eq("ModuleVersion")
+      end
+    end
+
+    context "when RequiredModules entries have trailing comments" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "Commented.psd1",
+          content: fixture("psd1", "commented_manifest.psd1")
+        )
+      end
+
+      it "strips the comments and parses both entries" do
+        names = parser.parse.map(&:name)
+        expect(names).to contain_exactly("Az.Accounts", "Az.Storage")
+      end
+
+      it "still resolves the hashtable's version constraint" do
+        dependency = parser.parse.find { |dep| dep.name == "Az.Storage" }
+        expect(dependency.requirements.first.fetch(:requirement)).to eq(">= 1.0.0")
+      end
+    end
   end
 
   describe "parsing a .ps1 script" do
