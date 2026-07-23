@@ -428,8 +428,8 @@ module Dependabot
           return unless yarnrc_yml_file_content
           return @parsed_yarnrc_yml if @parsed_yarnrc_yml
 
-          @parsed_yarnrc_yml = YAML.safe_load(yarnrc_yml_file_content)
-          @parsed_yarnrc_yml
+          parsed = YAML.safe_load(yarnrc_yml_file_content)
+          @parsed_yarnrc_yml = parsed.is_a?(Hash) ? parsed : nil
         end
 
         sig { params(url: String).returns(String) }

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -35,15 +35,17 @@ module Dependabot
 
       sig { params(dep: Dependabot::Dependency).returns(T.nilable(T.class_of(Dependabot::Version))) }
       def version_class_for(dep)
-        return nil unless dep.respond_to?(:package_manager)
-
         Dependabot::Utils.version_class_for_package_manager(dep.package_manager)
       end
 
-      sig { params(version_class: T.untyped, prev_str: String, curr_str: String).returns(T.nilable(String)) }
+      sig do
+        params(
+          version_class: T.class_of(Dependabot::Version),
+          prev_str: String,
+          curr_str: String
+        ).returns(T.nilable(String))
+      end
       def update_type_from_class(version_class, prev_str, curr_str)
-        return unless version_class.respond_to?(:update_type)
-
         result = version_class.update_type(prev_str, curr_str)
         if result.nil?
           Dependabot.logger.info(
@@ -54,11 +56,10 @@ module Dependabot
       end
 
       sig do
-        params(version_class: T.untyped, prev_str: String, curr_str: String)
+        params(version_class: T.class_of(Dependabot::Version), prev_str: String, curr_str: String)
           .returns(T.nilable([Dependabot::Version, Dependabot::Version]))
       end
       def build_versions(version_class, prev_str, curr_str)
-        return nil unless version_class.respond_to?(:correct?)
         return nil unless version_class.correct?(prev_str) && version_class.correct?(curr_str)
 
         [version_class.new(prev_str), version_class.new(curr_str)]
@@ -85,12 +86,12 @@ module Dependabot
         nil
       end
 
-      sig { params(version: T.untyped).returns(T.nilable(SemverParts)) }
+      sig { params(version: Gem::Version).returns(T.nilable(SemverParts)) }
       def semver_parts(version)
         # Normalize the version string by stripping any 'v' prefix
         normalized_version = version.to_s.delete_prefix("v")
 
-        if version.respond_to?(:semver_parts)
+        if version.is_a?(Dependabot::Version)
           parts = version.semver_parts
           return SemverParts.new(major: parts[0], minor: parts[1], patch: parts[2]) if parts
         end
@@ -117,8 +118,8 @@ module Dependabot
       # by comparing its previous and current versions. Returns nil if it cannot be determined.
       sig { params(dep: Dependabot::Dependency).returns(T.nilable(String)) }
       def update_type_for_dependency(dep)
-        prev_str = dep.respond_to?(:previous_version) ? dep.previous_version&.to_s : nil
-        curr_str = dep.respond_to?(:version) ? dep.version&.to_s : nil
+        prev_str = dep.previous_version&.to_s
+        curr_str = dep.version&.to_s
         return nil unless prev_str && curr_str
 
         version_class = version_class_for(dep)

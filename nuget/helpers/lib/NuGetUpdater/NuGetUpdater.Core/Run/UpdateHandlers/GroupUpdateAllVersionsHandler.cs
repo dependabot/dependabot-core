@@ -17,6 +17,11 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
 
     public bool CanHandle(Job job)
     {
+        if (job.MultiEcosystemUpdate)
+        {
+            return true;
+        }
+
         if (job.UpdatingAPullRequest)
         {
             return false;

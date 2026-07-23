@@ -169,6 +169,26 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       )
       described_class.package_manager_install("npm", "7.0.0")
     end
+
+    it "retries once with COREPACK_INTEGRITY_KEYS when corepack signature verification fails" do
+      env = { "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm" }
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack install npm@11.9.0 --global --cache-only",
+        fingerprint: "corepack install <name>@<version> --global --cache-only",
+        env: env
+      ).ordered.and_raise(
+        StandardError.new("Internal Error: No compatible signature found in package metadata")
+      )
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack install npm@11.9.0 --global --cache-only",
+        fingerprint: "corepack install <name>@<version> --global --cache-only",
+        env: env.merge("COREPACK_INTEGRITY_KEYS" => "")
+      ).ordered.and_return("")
+
+      described_class.package_manager_install("npm", "11.9.0", env: env)
+    end
   end
 
   describe "::package_manager_activate" do
@@ -180,6 +200,30 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         env: {}
       )
       described_class.package_manager_activate("npm", "7.0.0")
+    end
+
+    it "retries once with COREPACK_INTEGRITY_KEYS when corepack signature verification fails" do
+      env = { "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm" }
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack prepare npm@11.9.0 --activate",
+        fingerprint: "corepack prepare <name>@<version> --activate",
+        env: env
+      ).ordered.and_raise(
+        StandardError.new(
+          "Preparing npm@11.9.0 for immediate activation...\n" \
+          "Internal Error: No compatible signature found in package metadata"
+        )
+      )
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack prepare npm@11.9.0 --activate",
+        fingerprint: "corepack prepare <name>@<version> --activate",
+        env: env.merge("COREPACK_INTEGRITY_KEYS" => "")
+      ).ordered.and_return("Preparing npm@11.9.0 for immediate activation...")
+
+      expect(described_class.package_manager_activate("npm", "11.9.0", env: env))
+        .to eq("Preparing npm@11.9.0 for immediate activation...")
     end
   end
 
@@ -211,6 +255,64 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(described_class).to receive(:package_manager_run_command).with("npm", "install")
 
       described_class.package_manager_run_command("npm", "install")
+    end
+
+    it "retries once with COREPACK_INTEGRITY_KEYS when corepack signature verification fails" do
+      env = {
+        "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm",
+        "npm_config_registry" => "https://packages.example.com/artifactory/api/npm/npm",
+        "registry" => "https://packages.example.com/artifactory/api/npm/npm"
+      }
+
+      first_error = StandardError.new(
+        "Preparing npm@11.9.0 for immediate activation...\n" \
+        "Internal Error: No compatible signature found in package metadata"
+      )
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: env
+      ).ordered.and_raise(first_error)
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: env.merge("COREPACK_INTEGRITY_KEYS" => "")
+      ).ordered.and_return("11.9.0\n")
+
+      expect(described_class.package_manager_run_command("npm", "-v", env: env)).to eq("11.9.0")
+    end
+
+    it "does not retry for signature errors when no private registry env is configured" do
+      error = StandardError.new("Internal Error: No compatible signature found in package metadata")
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: nil
+      ).once.and_raise(error)
+
+      expect do
+        described_class.package_manager_run_command("npm", "-v")
+      end.to raise_error(StandardError, /No compatible signature found in package metadata/)
+    end
+
+    it "does not retry for signature errors when the configured registry is npmjs" do
+      env = {
+        "COREPACK_NPM_REGISTRY" => "https://registry.npmjs.org/"
+      }
+      error = StandardError.new("Internal Error: No compatible signature found in package metadata")
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: env
+      ).once.and_raise(error)
+
+      expect do
+        described_class.package_manager_run_command("npm", "-v", env: env)
+      end.to raise_error(StandardError, /No compatible signature found in package metadata/)
     end
   end
 
@@ -298,6 +400,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         # Log expectations
         expect(Dependabot.logger).to receive(:info).with("Installing \"npm@8.0.0\"")
+        allow(Dependabot.logger).to receive(:error)
         expect(Dependabot.logger).to receive(:error).with(
           "Error activating npm@8.0.0: Unexpected error"
         )
@@ -345,6 +448,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         # Log expectations
         expect(Dependabot.logger).to receive(:info).with("Installing \"npm@8.0.0\"")
+        allow(Dependabot.logger).to receive(:error)
         expect(Dependabot.logger).to receive(:error).with("Error activating npm@8.0.0: Corepack failed")
         expect(Dependabot.logger).to receive(:info).with(
           "Falling back to activate the currently installed version of npm."
@@ -368,68 +472,43 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         }
       end
 
-      it "passes private registry env vars to fallback activation" do
+      it "retries activation with COREPACK_INTEGRITY_KEYS disabled instead of falling back" do
+        retry_env = private_registry_env.merge("COREPACK_INTEGRITY_KEYS" => "")
+
         # First call: corepack prepare npm@10.0.0 --activate WITH private registry env
-        # Fails with signature error (Artifactory strips signatures)
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        # Fails with signature error (Artifactory strips signatures from its version endpoint)
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack prepare npm@10.0.0 --activate",
           fingerprint: "corepack prepare <name>@<version> --activate",
           env: private_registry_env
-        ).and_raise(
+        ).ordered.and_raise(
           StandardError,
           "Preparing npm@10.0.0 for immediate activation...\n" \
           "Internal Error: No compatible signature found in package metadata"
         )
 
-        # Fallback: npm -v returns the container's installed version
+        # Retry: same command with signature verification disabled succeeds
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@10.0.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: retry_env
+        ).ordered.and_return("Preparing npm@10.0.0 for immediate activation...")
+
+        # package_manager_version after successful activation
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack npm -v",
+          fingerprint: "corepack npm -v",
+          env: private_registry_env
+        ).and_return("10.0.0")
+
+        # It must not fall back to the locally installed npm version
+        expect(Dependabot::SharedHelpers).not_to receive(:run_shell_command).with(
           "npm -v",
           fingerprint: "npm -v"
-        ).and_return("11.9.0")
-
-        # Fallback must use the same private registry env vars
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack prepare npm@11.9.0 --activate",
-          fingerprint: "corepack prepare <name>@<version> --activate",
-          env: private_registry_env
-        ).and_return("Preparing npm@11.9.0 for immediate activation...")
-
-        # package_manager_version after fallback
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack npm -v",
-          fingerprint: "corepack npm -v",
-          env: private_registry_env
-        ).and_return("11.9.0")
-
-        # Log expectations
-        expect(Dependabot.logger).to receive(:info).with("Installing \"npm@10.0.0\"")
-        expect(Dependabot.logger).to receive(:error).with(
-          a_string_matching(/Error activating npm@10.0.0:.*No compatible signature found/m)
         )
-        expect(Dependabot.logger).to receive(:info).with(
-          "Falling back to activate the currently installed version of npm."
-        )
-        expect(Dependabot.logger).to receive(:info).with(
-          "Activating currently installed version of npm: 11.9.0"
-        )
-        expect(Dependabot.logger).to receive(:info).with("Fetching version for package manager: npm")
-        expect(Dependabot.logger).to receive(:info).with("Installed version of npm: 11.9.0")
 
         result = described_class.install("npm", "10.0.0", env: private_registry_env)
-        expect(result).to eq("11.9.0")
-
-        # Verify the fallback call received the private registry env
-        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
-          "corepack prepare npm@11.9.0 --activate",
-          fingerprint: "corepack prepare <name>@<version> --activate",
-          env: private_registry_env
-        )
-
-        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
-          "corepack npm -v",
-          fingerprint: "corepack npm -v",
-          env: private_registry_env
-        )
+        expect(result).to eq("10.0.0")
       end
 
       it "passes private registry env vars to fallback on unexpected output" do

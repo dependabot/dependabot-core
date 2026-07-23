@@ -92,10 +92,11 @@ module Dependabot
       sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
       def custom_registries
         @custom_registries ||= begin
-          registries = options.dig(:registries, :julia) || []
+          registries_config = T.cast(options[:registries], T.nilable(T::Hash[Symbol, T.anything]))
+          registries = T.cast(registries_config&.dig(:julia), T.nilable(T::Array[T::Hash[Symbol, T.anything]])) || []
           # Convert string keys to symbols if needed
           registries.map do |registry|
-            registry.is_a?(Hash) ? registry.transform_keys(&:to_sym) : registry
+            registry.transform_keys(&:to_sym)
           end
         end
       end
@@ -104,33 +105,128 @@ module Dependabot
       def project_file_dependencies
         dependencies_map = T.let({}, T::Hash[String, Dependabot::Dependency])
 
-        # Parse all project files in the workspace
-        all_project_files.each do |proj_file|
-          parse_single_project_file(proj_file, dependencies_map)
+        parsed_projects = all_project_files.filter_map do |proj_file|
+          result = parse_project_file(proj_file)
+          [proj_file, result] if result
         end
+
+        # Packages that are themselves workspace projects (the root package or
+        # a sibling member) resolve by path within the workspace, never from a
+        # registry, so they must not be treated as updatable dependencies.
+        workspace_package_uuids = parsed_projects.filter_map do |_, result|
+          T.cast(result["uuid"], T.nilable(String))
+        end
+
+        parsed_projects.each do |proj_file, result|
+          parsed_deps = T.cast(result["dependencies"] || [], T::Array[T.untyped])
+          merge_dependencies_from_list(
+            parsed_deps,
+            ["deps"],
+            proj_file.name,
+            dependencies_map,
+            workspace_package_uuids
+          )
+
+          parsed_weak_deps = T.cast(result["weak_dependencies"] || [], T::Array[T.untyped])
+          merge_dependencies_from_list(
+            parsed_weak_deps,
+            ["weakdeps"],
+            proj_file.name,
+            dependencies_map,
+            workspace_package_uuids
+          )
+        end
+
+        apply_manifest_versions(dependencies_map)
 
         dependencies_map.values
       end
 
-      sig { params(proj_file: Dependabot::DependencyFile, dependencies_map: T::Hash[String, Dependabot::Dependency]).void }
-      def parse_single_project_file(proj_file, dependencies_map)
+      # Resolve the installed version of each dependency from the manifest
+      # (Julia's lockfile), matching by UUID.
+      sig { params(dependencies_map: T::Hash[String, Dependabot::Dependency]).void }
+      def apply_manifest_versions(dependencies_map)
+        versions = manifest_versions_by_uuid
+        return if versions.empty?
+
+        dependencies_map.transform_values! do |dep|
+          uuid = T.cast(dep.metadata[:julia_uuid], T.nilable(String))
+          version = uuid && versions[uuid]
+          next dep unless version
+
+          Dependabot::Dependency.new(
+            name: dep.name,
+            version: version,
+            requirements: dep.requirements,
+            package_manager: "julia",
+            metadata: dep.metadata
+          )
+        end
+      end
+
+      sig { returns(T::Hash[String, String]) }
+      def manifest_versions_by_uuid
+        manifest = manifest_file
+        return {} unless manifest
+
+        result = parse_manifest_content(T.must(manifest.content))
+
+        if result["error"]
+          Dependabot.logger.warn("Failed to parse Julia manifest: #{result['error']}")
+          return {}
+        end
+
+        deps = T.cast(result["dependencies"] || [], T::Array[T.untyped])
+        deps.each_with_object({}) do |dep_info, map|
+          dep_hash = T.cast(dep_info, T::Hash[String, T.untyped])
+          uuid = T.cast(dep_hash["uuid"], T.nilable(String))
+          version = T.cast(dep_hash["version"], T.nilable(String)).to_s
+          next if uuid.nil? || version.empty?
+
+          map[uuid] = version
+        end
+      end
+
+      sig { params(content: String).returns(T::Hash[String, T.untyped]) }
+      def parse_manifest_content(content)
+        result = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+        Dir.mktmpdir("julia_manifest") do |temp_dir|
+          # Written under a fixed name: version-suffixed manifests
+          # (Manifest-v1.11.toml) would otherwise be skipped by Pkg when the
+          # helper's Julia version doesn't match.
+          manifest_path = File.join(temp_dir, "Manifest.toml")
+          File.write(manifest_path, content)
+          result = registry_client.parse_manifest(manifest_path)
+        end
+        T.must(result)
+      end
+
+      sig { returns(T.nilable(Dependabot::DependencyFile)) }
+      def manifest_file
+        dependency_files.find do |f|
+          File.basename(f.name).match?(/^(Julia)?Manifest(?:-v[\d.]+)?\.toml$/i)
+        end
+      end
+
+      sig { params(proj_file: Dependabot::DependencyFile).returns(T.nilable(T::Hash[String, T.untyped])) }
+      def parse_project_file(proj_file)
         temp_dir = Dir.mktmpdir("julia_project")
-        project_path = File.join(temp_dir, proj_file.name)
+        # File names like "../Project.toml" (a workspace root fetched from a
+        # member directory) must not escape the temp dir; fall back to the
+        # basename since each project file gets its own directory anyway.
+        project_path = File.expand_path(File.join(temp_dir, proj_file.name))
+        unless project_path.start_with?("#{File.expand_path(temp_dir)}#{File::SEPARATOR}")
+          project_path = File.join(temp_dir, File.basename(proj_file.name))
+        end
         FileUtils.mkdir_p(File.dirname(project_path))
         File.write(project_path, proj_file.content)
 
         begin
           result = registry_client.parse_project(project_path: project_path)
 
-          return if result["error"]
+          return nil if result["error"]
 
-          # Process dependencies
-          parsed_deps = T.cast(result["dependencies"] || [], T::Array[T.untyped])
-          merge_dependencies_from_list(parsed_deps, ["deps"], proj_file.name, dependencies_map)
-
-          # Process weak dependencies
-          parsed_weak_deps = T.cast(result["weak_dependencies"] || [], T::Array[T.untyped])
-          merge_dependencies_from_list(parsed_weak_deps, ["weakdeps"], proj_file.name, dependencies_map)
+          result
         ensure
           FileUtils.rm_rf(temp_dir)
         end
@@ -141,10 +237,11 @@ module Dependabot
           dep_list: T::Array[T.untyped],
           groups: T::Array[String],
           file_name: String,
-          dependencies_map: T::Hash[String, Dependabot::Dependency]
+          dependencies_map: T::Hash[String, Dependabot::Dependency],
+          workspace_package_uuids: T::Array[String]
         ).void
       end
-      def merge_dependencies_from_list(dep_list, groups, file_name, dependencies_map)
+      def merge_dependencies_from_list(dep_list, groups, file_name, dependencies_map, workspace_package_uuids)
         dep_list.each do |dep_info|
           dep_hash = T.cast(dep_info, T::Hash[String, T.untyped])
           name = T.cast(dep_hash["name"], String)
@@ -152,6 +249,8 @@ module Dependabot
 
           uuid = T.cast(dep_hash["uuid"], T.nilable(String))
           requirement_string = T.cast(dep_hash["requirement"], T.nilable(String))
+
+          next if skip_dependency?(uuid, requirement_string, file_name, workspace_package_uuids)
 
           new_requirement = {
             requirement: requirement_string,
@@ -163,6 +262,8 @@ module Dependabot
           if dependencies_map.key?(name)
             # Merge requirements from additional project files
             existing_dep = T.must(dependencies_map[name])
+            next if uuid_conflict?(existing_dep, uuid, file_name)
+
             existing_requirements = existing_dep.requirements + [new_requirement]
             dependencies_map[name] = Dependabot::Dependency.new(
               name: name,
@@ -184,9 +285,56 @@ module Dependabot
         end
       end
 
+      # UUID is a package's identity in Julia: two same-named entries with
+      # different UUIDs are different packages, and merging them would run
+      # updates against the wrong UUID.
+      sig do
+        params(
+          existing_dep: Dependabot::Dependency,
+          uuid: T.nilable(String),
+          file_name: String
+        ).returns(T::Boolean)
+      end
+      def uuid_conflict?(existing_dep, uuid, file_name)
+        existing_uuid = T.cast(existing_dep.metadata[:julia_uuid], T.nilable(String))
+        return false unless uuid && existing_uuid && uuid != existing_uuid
+
+        Dependabot.logger.warn(
+          "Skipping #{existing_dep.name} in #{file_name}: UUID #{uuid} conflicts with #{existing_uuid} " \
+          "from another project file"
+        )
+        true
+      end
+
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def all_project_files
         dependency_files.select { |f| f.name.match?(/Project\.toml$/i) }
+      end
+
+      sig do
+        params(
+          uuid: T.nilable(String),
+          requirement_string: T.nilable(String),
+          file_name: String,
+          workspace_package_uuids: T::Array[String]
+        ).returns(T::Boolean)
+      end
+      def skip_dependency?(uuid, requirement_string, file_name, workspace_package_uuids)
+        return true if uuid && workspace_package_uuids.include?(uuid)
+
+        # A dep with no compat entry in a workspace member file (test/,
+        # docs/, ...) must not get one synthesized: Julia convention
+        # (CompatHelper) only adds compat bounds to the package's own
+        # Project.toml. Existing member compat entries are still updated.
+        requirement_string.nil? && workspace_member_file?(file_name)
+      end
+
+      # Anything outside the target directory ("test/Project.toml", or
+      # "../Project.toml" when Dependabot targets a member directory) was
+      # discovered via workspace membership rather than requested directly.
+      sig { params(file_name: String).returns(T::Boolean) }
+      def workspace_member_file?(file_name)
+        file_name.include?("/")
       end
 
       sig { returns(T.nilable(Dependabot::DependencyFile)) }

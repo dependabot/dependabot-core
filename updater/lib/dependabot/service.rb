@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sentry-ruby"
@@ -10,6 +10,7 @@ require "dependabot/errors"
 require "dependabot/opentelemetry"
 require "dependabot/experiments"
 require "dependabot/workflow_summary"
+require "github_api/dependency_submission"
 
 # This class provides an output adapter for the Dependabot Service which manages
 # communication with the private API as well as consolidated error handling.
@@ -20,13 +21,34 @@ require "dependabot/workflow_summary"
 module Dependabot
   class Service
     extend T::Sig
-    extend Forwardable
 
-    sig { returns(T::Array[T.untyped]) }
+    ErrorDetails = T.type_alias { Dependabot::ErrorDetails::Detail }
+    PullRequestResult = T.type_alias { [String, T.any(String, Symbol)] }
+    LegacyErrorResult = T.type_alias { [String, T.nilable(Dependabot::Dependency)] }
+    EnhancedErrorResult = T.type_alias do
+      [String, T.nilable(ErrorDetails), T.nilable(Dependabot::Dependency)]
+    end
+    ErrorResult = T.type_alias { T.any(LegacyErrorResult, EnhancedErrorResult) }
+
+    class ErrorRecord < T::ImmutableStruct
+      extend T::Sig
+
+      const :error_type, String
+      const :error_details, T.nilable(ErrorDetails)
+      const :dependency, T.nilable(Dependabot::Dependency)
+
+      sig { params(enhanced: T::Boolean).returns(ErrorResult) }
+      def to_result(enhanced:)
+        if enhanced
+          [error_type, error_details, dependency]
+        else
+          [error_type, dependency]
+        end
+      end
+    end
+
+    sig { returns(T::Array[PullRequestResult]) }
     attr_reader :pull_requests
-
-    sig { returns(T::Array[T::Array[T.untyped]]) }
-    attr_reader :errors
 
     sig { returns(Dependabot::WorkflowSummary) }
     attr_reader :workflow_summary
@@ -34,19 +56,47 @@ module Dependabot
     sig { params(client: Dependabot::ApiClient).void }
     def initialize(client:)
       @client = client
-      @pull_requests = T.let([], T::Array[T.untyped])
-      @errors = T.let([], T::Array[T.untyped])
-      @threads = T.let([], T::Array[T.untyped])
+      @pull_requests = T.let([], T::Array[PullRequestResult])
+      @error_records = T.let([], T::Array[ErrorRecord])
+      @threads = T.let([], T::Array[Thread])
       @workflow_summary = T.let(Dependabot::WorkflowSummary.new, Dependabot::WorkflowSummary)
     end
 
-    def_delegators :client,
-                   :mark_job_as_processed,
-                   :record_ecosystem_versions,
-                   :increment_metric,
-                   :record_ecosystem_meta,
-                   :record_cooldown_meta,
-                   :fetch_blocked_versions
+    sig { returns(T::Array[ErrorResult]) }
+    def errors
+      enhanced = Dependabot::Experiments.enabled?(:enable_enhanced_error_details_for_updater)
+      @error_records.map { |record| record.to_result(enhanced: enhanced) }
+    end
+
+    sig { params(base_commit_sha: T.nilable(String)).void }
+    def mark_job_as_processed(base_commit_sha)
+      client.mark_job_as_processed(base_commit_sha)
+    end
+
+    sig { params(ecosystem_versions: T::Hash[Symbol, Object]).void }
+    def record_ecosystem_versions(ecosystem_versions)
+      client.record_ecosystem_versions(ecosystem_versions)
+    end
+
+    sig { params(metric: String, tags: T::Hash[Symbol, Object]).void }
+    def increment_metric(metric, tags:)
+      client.increment_metric(metric, tags: tags)
+    end
+
+    sig { params(ecosystem: T.nilable(Dependabot::Ecosystem)).void }
+    def record_ecosystem_meta(ecosystem)
+      client.record_ecosystem_meta(ecosystem)
+    end
+
+    sig { params(job: T.nilable(Dependabot::Job)).void }
+    def record_cooldown_meta(job)
+      client.record_cooldown_meta(job)
+    end
+
+    sig { params(package_manager: String).returns(T::Array[T::Hash[String, Object]]) }
+    def fetch_blocked_versions(package_manager)
+      client.fetch_blocked_versions(package_manager)
+    end
 
     sig { void }
     def wait_for_calls_to_finish
@@ -83,16 +133,16 @@ module Dependabot
     sig do
       params(
         error_type: T.any(String, Symbol),
-        error_details: T.nilable(T::Hash[T.untyped, T.untyped]),
+        error_details: T.nilable(ErrorDetails),
         dependency: T.nilable(Dependabot::Dependency)
       ).void
     end
     def record_update_job_error(error_type:, error_details:, dependency: nil)
-      errors << if Dependabot::Experiments.enabled?(:enable_enhanced_error_details_for_updater)
-                  [error_type.to_s, error_details, dependency]
-                else
-                  [error_type.to_s, dependency]
-                end
+      @error_records << ErrorRecord.new(
+        error_type: error_type.to_s,
+        error_details: error_details,
+        dependency: dependency
+      )
       client.record_update_job_error(error_type: error_type, error_details: error_details)
     end
 
@@ -111,7 +161,7 @@ module Dependabot
       )
     end
 
-    sig { params(error_type: T.any(String, Symbol), error_details: T.nilable(T::Hash[T.untyped, T.untyped])).void }
+    sig { params(error_type: T.any(String, Symbol), error_details: T.nilable(ErrorDetails)).void }
     def record_update_job_unknown_error(error_type:, error_details:)
       client.record_update_job_unknown_error(error_type: error_type, error_details: error_details)
     end
@@ -157,10 +207,10 @@ module Dependabot
     sig do
       params(
         error: StandardError,
-        job: T.untyped,
+        job: T.nilable(Dependabot::Job),
         dependency: T.nilable(Dependabot::Dependency),
         dependency_group: T.nilable(Dependabot::DependencyGroup),
-        tags: T::Hash[String, T.untyped]
+        tags: T::Hash[String, Object]
       ).void
     end
     def capture_exception(error:, job: nil, dependency: nil, dependency_group: nil, tags: {})
@@ -190,7 +240,7 @@ module Dependabot
 
     sig { returns(T::Boolean) }
     def failure?
-      errors.any?
+      @error_records.any?
     end
 
     # Example output:
@@ -221,7 +271,7 @@ module Dependabot
     sig { returns(Dependabot::ApiClient) }
     attr_reader :client
 
-    sig { params(job: T.untyped).returns(T.nilable(T::Array[T::Hash[String, T.untyped]])) }
+    sig { params(job: T.nilable(Dependabot::Job)).returns(T.nilable(T::Array[T::Hash[String, Object]])) }
     def job_dependency_groups(job)
       job&.dependency_groups&.map(&:to_h)
     end
@@ -255,8 +305,8 @@ module Dependabot
     sig { returns(T.nilable(Terminal::Table)) }
     def job_errors_summary
       if Dependabot::Experiments.enabled?(:enable_enhanced_error_details_for_updater)
-        job_errors = errors.filter_map do |error_type, error_details, dependency|
-          [error_type, JSON.pretty_generate(error_details)] if dependency.nil?
+        job_errors = @error_records.filter_map do |record|
+          [record.error_type, JSON.pretty_generate(record.error_details)] if record.dependency.nil?
         end
         return if job_errors.none?
 
@@ -266,8 +316,8 @@ module Dependabot
           t.rows = job_errors
         end
       else
-        job_error_types = errors.filter_map do |error_type, dependency|
-          [error_type] if dependency.nil?
+        job_error_types = @error_records.filter_map do |record|
+          [record.error_type] if record.dependency.nil?
         end
         return if job_error_types.none?
 
@@ -290,8 +340,9 @@ module Dependabot
     sig { returns(T.nilable(Terminal::Table)) }
     def dependency_error_summary
       if Dependabot::Experiments.enabled?(:enable_enhanced_error_details_for_updater)
-        dependency_errors = errors.filter_map do |error_type, error_details, dependency|
-          [dependency.name, error_type, JSON.pretty_generate(error_details)] unless dependency.nil?
+        dependency_errors = @error_records.filter_map do |record|
+          dependency = record.dependency
+          [dependency.name, record.error_type, JSON.pretty_generate(record.error_details)] if dependency
         end
         return if dependency_errors.none?
 
@@ -301,8 +352,9 @@ module Dependabot
           t.rows = dependency_errors
         end
       else
-        dependency_errors = errors.filter_map do |error_type, dependency|
-          [dependency.name, error_type] unless dependency.nil?
+        dependency_errors = @error_records.filter_map do |record|
+          dependency = record.dependency
+          [dependency.name, record.error_type] if dependency
         end
         return if dependency_errors.none?
 

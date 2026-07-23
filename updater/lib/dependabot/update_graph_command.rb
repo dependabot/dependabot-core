@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "json"
@@ -30,7 +30,8 @@ module Dependabot
           service: service,
           job: job,
           base_commit_sha: @fetched_files.base_commit_sha,
-          dependency_files: @fetched_files.dependency_files
+          dependency_files: @fetched_files.dependency_files,
+          directory_fetch_errors: @fetched_files.directory_fetch_errors
         ).run
       rescue StandardError => e
         handle_error(e)
@@ -70,7 +71,7 @@ module Dependabot
       error_details ||=
         # Check if the error is a known "run halting" state we should handle
         if (error_type = Updater::ErrorHandler::RUN_HALTING_ERRORS[error.class])
-          { "error-type": error_type }
+          Dependabot::ErrorDetails.new(error_type: error_type)
         else
           # If it isn't, then log all the details and let the application error
           # tracker know about it
@@ -92,23 +93,26 @@ module Dependabot
           service.capture_exception(error: error, job: job)
 
           # Set an unknown error type as update_files_error to be added to the job
-          {
-            "error-type": ERROR_TYPE_LABEL,
-            "error-detail": unknown_error_details
-          }
+          Dependabot::ErrorDetails.new(
+            error_type: ERROR_TYPE_LABEL,
+            error_detail: unknown_error_details
+          )
         end
 
+      error_type = error_details.error_type
+      error_detail = error_details.error_detail
+
       service.record_update_job_error(
-        error_type: error_details.fetch(:"error-type"),
-        error_details: error_details[:"error-detail"]
+        error_type: error_type,
+        error_details: error_detail
       )
       # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
       return unless Experiments.enabled?(:record_update_job_unknown_error)
-      return unless error_details.fetch(:"error-type") == ERROR_TYPE_LABEL
+      return unless error_type == ERROR_TYPE_LABEL
 
       service.record_update_job_unknown_error(
-        error_type: error_details.fetch(:"error-type"),
-        error_details: error_details[:"error-detail"]
+        error_type: error_type,
+        error_details: error_detail
       )
     end
   end

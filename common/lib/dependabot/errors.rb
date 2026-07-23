@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/error_details"
 require "dependabot/utils"
 
 # rubocop:disable Metrics/ModuleLength
@@ -23,7 +24,7 @@ module Dependabot
 
   # rubocop:disable Metrics/MethodLength
   # rubocop:disable Metrics/CyclomaticComplexity
-  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+  sig { params(error: StandardError).returns(T.nilable(Dependabot::ErrorDetails)) }
   def self.fetcher_error_details(error)
     case error
     when Dependabot::ToolVersionNotSupported
@@ -138,11 +139,12 @@ module Dependabot
           "rate-limit-reset": T.cast(error, Octokit::Error).response_headers["X-RateLimit-Reset"]
         }
       }
-    end
+    end => details
+    Dependabot::ErrorDetails.from_hash(details) if details
   end
   # rubocop:enable Metrics/CyclomaticComplexity
 
-  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+  sig { params(error: StandardError).returns(T.nilable(Dependabot::ErrorDetails)) }
   def self.parser_error_details(error)
     case error
     when Dependabot::ToolFeatureNotSupported
@@ -220,13 +222,14 @@ module Dependabot
       # and responsibility for fixing it is on them, not us. As a result we
       # quietly log these as errors
       { "error-type": "server_error" }
-    end
+    end => details
+    Dependabot::ErrorDetails.from_hash(details) if details
   end
 
   # rubocop:disable Lint/RedundantCopDisableDirective
   # rubocop:disable Metrics/CyclomaticComplexity
   # rubocop:disable Metrics/AbcSize
-  sig { params(error: StandardError).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+  sig { params(error: StandardError).returns(T.nilable(Dependabot::ErrorDetails)) }
   def self.updater_error_details(error)
     case error
     when Dependabot::ToolFeatureNotSupported
@@ -400,7 +403,8 @@ module Dependabot
           "rate-limit-reset": T.cast(error, Octokit::Error).response_headers["X-RateLimit-Reset"]
         }
       }
-    end
+    end => details
+    Dependabot::ErrorDetails.from_hash(details) if details
   end
 
   # rubocop:enable Metrics/MethodLength
@@ -416,7 +420,7 @@ module Dependabot
 
     interface!
 
-    sig { abstract.returns(T::Hash[Symbol, T.untyped]) }
+    sig { abstract.returns(T::Hash[Symbol, T.anything]) }
     def sentry_context; end
   end
 
@@ -484,7 +488,7 @@ module Dependabot
       super(message || error_type)
     end
 
-    sig { params(hash: T.nilable(T::Hash[Symbol, T.untyped])).returns(T::Hash[Symbol, T.untyped]) }
+    sig { params(hash: T.nilable(T::Hash[Symbol, T.anything])).returns(T::Hash[Symbol, T.anything]) }
     def detail(hash = nil)
       {
         "error-type": error_type,

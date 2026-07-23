@@ -146,7 +146,7 @@ module Dependabot
         return if go_env&.content&.include?("GOPROXY")
         return if goproxy_credentials.any?
 
-        goprivate = options.fetch(:goprivate, "*")
+        goprivate = T.cast(options.fetch(:goprivate, "*"), T.nilable(String))
         ENV["GOPRIVATE"] = goprivate if goprivate
       end
 
@@ -160,7 +160,7 @@ module Dependabot
         return if go_env_includes_any?(%w(GONOPROXY GOPRIVATE GOPROXY))
         return if goproxy_credentials.any?
 
-        gonoproxy = options.fetch(:gonoproxy, nil)
+        gonoproxy = T.cast(options.fetch(:gonoproxy, nil), T.nilable(String))
         ENV["GONOPROXY"] = gonoproxy if gonoproxy
       end
 
@@ -171,7 +171,7 @@ module Dependabot
       def set_gonosumdb_variable
         return if go_env_includes_any?(%w(GONOSUMDB GOPRIVATE))
 
-        gonosumdb = options.fetch(:gonosumdb, nil)
+        gonosumdb = T.cast(options.fetch(:gonosumdb, nil), T.nilable(String))
         ENV["GONOSUMDB"] = gonosumdb if gonosumdb
       end
 

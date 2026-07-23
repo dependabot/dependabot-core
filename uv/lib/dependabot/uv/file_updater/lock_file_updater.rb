@@ -370,14 +370,49 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         def lock_index_options
-          filtered_credentials = credentials
-                                 .select { |cred| cred["type"] == "python_index" }
-                                 .reject do |cred|
-                                   cred.replaces_base? ? defined_in_pyproject?(cred) : explicit_index?(cred)
-                                 end
-
+          filtered_credentials = filtered_python_index_credentials
           options = T.let([], T::Array[String])
           used_credential_urls = T.let([], T::Array[String])
+          default_index_used = T.let(false, T::Boolean)
+
+          default_index_used = add_lockfile_registry_options(
+            filtered_credentials: filtered_credentials,
+            options: options,
+            used_credential_urls: used_credential_urls,
+            default_index_used: default_index_used
+          )
+
+          add_fallback_index_options(
+            filtered_credentials: filtered_credentials,
+            options: options,
+            used_credential_urls: used_credential_urls,
+            default_index_used: default_index_used
+          )
+
+          options.uniq
+        end
+
+        sig { returns(T::Array[Dependabot::Credential]) }
+        def filtered_python_index_credentials
+          credentials
+            .select { |cred| cred["type"] == "python_index" }
+            .reject { |cred| skip_lock_index_credential?(cred) }
+        end
+
+        sig { params(credential: Dependabot::Credential).returns(T::Boolean) }
+        def skip_lock_index_credential?(credential)
+          credential.replaces_base? ? defined_in_pyproject?(credential) : explicit_index?(credential)
+        end
+
+        sig do
+          params(
+            filtered_credentials: T::Array[Dependabot::Credential],
+            options: T::Array[String],
+            used_credential_urls: T::Array[String],
+            default_index_used: T::Boolean
+          ).returns(T::Boolean)
+        end
+        def add_lockfile_registry_options(filtered_credentials:, options:, used_credential_urls:, default_index_used:)
           credential_matcher = LockIndexCredentialMatcher.new(credentials: filtered_credentials)
 
           uv_lock_registry_urls.each do |registry_url|
@@ -385,23 +420,59 @@ module Dependabot
             next unless credential
 
             used_credential_urls << credential["index-url"].to_s
-            options << option_for_credential_url(credential, authed_registry_url(credential, registry_url))
+            default_index_used = add_lock_index_option(
+              credential: credential,
+              url: authed_registry_url(credential, registry_url),
+              options: options,
+              default_index_used: default_index_used
+            )
           end
 
+          default_index_used
+        end
+
+        sig do
+          params(
+            filtered_credentials: T::Array[Dependabot::Credential],
+            options: T::Array[String],
+            used_credential_urls: T::Array[String],
+            default_index_used: T::Boolean
+          ).returns(T::Boolean)
+        end
+        def add_fallback_index_options(filtered_credentials:, options:, used_credential_urls:, default_index_used:)
           # Fall back to credential URLs for indices not represented in uv.lock.
           filtered_credentials.each do |credential|
             next if used_credential_urls.include?(credential["index-url"].to_s)
 
-            authed_url = AuthedUrlBuilder.authed_url(credential: credential)
-            options << option_for_credential_url(credential, authed_url)
+            default_index_used = add_lock_index_option(
+              credential: credential,
+              url: AuthedUrlBuilder.authed_url(credential: credential),
+              options: options,
+              default_index_used: default_index_used
+            )
           end
 
-          options.uniq
+          default_index_used
         end
 
-        sig { params(credential: Dependabot::Credential, url: String).returns(String) }
-        def option_for_credential_url(credential, url)
-          if credential.replaces_base?
+        sig do
+          params(
+            credential: Dependabot::Credential,
+            url: String,
+            options: T::Array[String],
+            default_index_used: T::Boolean
+          ).returns(T::Boolean)
+        end
+        def add_lock_index_option(credential:, url:, options:, default_index_used:)
+          options << option_for_credential_url(credential, url, default_index_used: default_index_used)
+          default_index_used || credential.replaces_base?
+        end
+
+        sig do
+          params(credential: Dependabot::Credential, url: String, default_index_used: T::Boolean).returns(String)
+        end
+        def option_for_credential_url(credential, url, default_index_used:)
+          if credential.replaces_base? && !default_index_used
             "--default-index #{url}"
           else
             "--index #{url}"

@@ -8,6 +8,7 @@ require "time"
 
 require "dependabot/errors"
 require "dependabot/git_tag_with_detail"
+require "dependabot/github_actions/containing_branch_finder"
 require "dependabot/github_actions/helpers"
 require "dependabot/github_actions/requirement"
 require "dependabot/github_actions/update_checker"
@@ -215,7 +216,7 @@ module Dependabot
               if head_commit_for_ref_sha
                 head_commit_for_ref_sha
               else
-                url = git_commit_checker.dependency_source_details&.fetch(:url)
+                url = git_commit_checker.dependency_source_details&.url
                 source = T.must(Source.from_url(url))
 
                 SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
@@ -224,7 +225,9 @@ module Dependabot
                   SharedHelpers.run_shell_command("git clone --no-recurse-submodules #{url} #{repo_contents_path}")
 
                   Dir.chdir(repo_contents_path) do
-                    ref_branch = find_container_branch(git_commit_checker.dependency_source_details&.fetch(:ref))
+                    ref_branch = ContainingBranchFinder.find(
+                      T.must(git_commit_checker.dependency_source_details&.ref)
+                    )
                     git_commit_checker.head_commit_for_local_branch(ref_branch) if ref_branch
                   end
                 end
@@ -232,27 +235,6 @@ module Dependabot
             end,
             T.nilable(String)
           )
-        end
-
-        sig { params(sha: String).returns(T.nilable(String)) }
-        def find_container_branch(sha)
-          branches_including_ref = SharedHelpers.run_shell_command(
-            "git branch --remotes --contains #{sha}",
-            fingerprint: "git branch --remotes --contains <sha>"
-          ).split("\n").map { |branch| branch.strip.gsub("origin/", "") }
-          return if branches_including_ref.empty?
-
-          current_branch = branches_including_ref.find { |branch| branch.start_with?("HEAD -> ") }
-
-          if current_branch
-            current_branch.delete_prefix("HEAD -> ")
-          elsif branches_including_ref.size > 1
-            # If there are multiple non default branches including the pinned SHA,
-            # then it's unclear how we should proceed
-            raise "Multiple ambiguous branches (#{branches_including_ref.join(', ')}) include #{sha}!"
-          else
-            branches_including_ref.first
-          end
         end
 
         sig do
