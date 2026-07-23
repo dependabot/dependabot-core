@@ -11,7 +11,6 @@ require "dependabot/dependency"
 require "dependabot/update_checkers/base"
 require "dependabot/experiments"
 require "dependabot/service"
-require "dependabot/cargo/version"
 
 RSpec.describe Dependabot::Updater::GroupUpdateCreation do
   # Create a test class that includes the module to test it
@@ -728,7 +727,26 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       )
     end
 
+    # The updater CI image only carries one ecosystem gem, so dependabot-cargo
+    # cannot be loaded here. Resolve the version class generically and supply
+    # a minimal Cargo::Version.update_type with cargo's pre-1.0 rule (a 0.x
+    # minor bump is a major update) so the classification stays meaningful.
+    let(:cargo_version_stub) do
+      Class.new do
+        def self.update_type(from_version, to_version)
+          from = Gem::Version.new(from_version.to_s).segments
+          to = Gem::Version.new(to_version.to_s).segments
+          return "major" if from[0] != to[0] || (from[0].to_i.zero? && from[1] != to[1])
+          return "minor" if from[1] != to[1]
+
+          "patch"
+        end
+      end
+    end
+
     before do
+      stub_const("Dependabot::Cargo::Version", cargo_version_stub)
+      allow(Dependabot::Utils).to receive(:version_class_for_package_manager).and_return(Dependabot::Version)
       allow(job).to receive(:package_manager).and_return("cargo")
       allow(test_instance).to receive_messages(
         update_checker_for: checker,
