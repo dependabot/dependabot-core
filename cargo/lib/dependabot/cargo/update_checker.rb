@@ -22,13 +22,9 @@ module Dependabot
       def up_to_date?
         return super unless multiple_locked_versions?
 
-        results, ignored_count = locked_version_results(true) do |checker|
-          checker.up_to_date? || checker.latest_resolvable_version&.to_s == checker.dependency.version
-        end
-        current = results.all?
-        raise Dependabot::AllVersionsIgnored if ignored_count.positive? && current
+        raise Dependabot::AllVersionsIgnored if only_ignored_updates_remaining?
 
-        current
+        all_lines_current?
       end
 
       sig { override.params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Boolean) }
@@ -63,6 +59,8 @@ module Dependabot
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
         return if path_dependency?
+
+        raise Dependabot::AllVersionsIgnored if multiple_locked_versions? && only_ignored_updates_remaining?
 
         @latest_version = T.let(
           if git_dependency?
@@ -99,6 +97,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(Gem::Version)) }
       def lowest_security_fix_version
+        raise Dependabot::AllVersionsIgnored if multiple_locked_versions? && only_ignored_updates_remaining?
+
         latest_version_finder.lowest_security_fix_version
       end
 
@@ -432,6 +432,36 @@ module Dependabot
           end,
           T.nilable(T::Array[Dependabot::Cargo::UpdateChecker])
         )
+      end
+
+      # The operations layer only rescues AllVersionsIgnored around its
+      # preflight probes (latest_version, and lowest_security_fix_version for
+      # security jobs); anywhere else the error halts the whole update run.
+      # These helpers let those probes raise when ignored lines leave nothing
+      # actionable, so a mixed ignored/at-ceiling dependency surfaces as a
+      # clean ignored skip, and the aggregate overrides below can never be
+      # the first place the error appears.
+      sig { returns(T::Boolean) }
+      def only_ignored_updates_remaining?
+        evaluate_locked_line_currency
+        T.must(@only_ignored_updates_remaining)
+      end
+
+      sig { returns(T::Boolean) }
+      def all_lines_current?
+        evaluate_locked_line_currency
+        T.must(@all_lines_current)
+      end
+
+      sig { void }
+      def evaluate_locked_line_currency
+        return if defined?(@all_lines_current)
+
+        results, ignored_count = locked_version_results(true) do |checker|
+          checker.up_to_date? || checker.latest_resolvable_version&.to_s == checker.dependency.version
+        end
+        @all_lines_current = T.let(results.all?, T.nilable(T::Boolean))
+        @only_ignored_updates_remaining = T.let(ignored_count.positive? && results.all?, T.nilable(T::Boolean))
       end
 
       # Evaluates the block for every locked-line checker, substituting

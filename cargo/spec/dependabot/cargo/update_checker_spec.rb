@@ -732,6 +732,11 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
         it "re-raises instead of reporting the dependency as current" do
           expect { checker.up_to_date? }.to raise_error(Dependabot::AllVersionsIgnored)
         end
+
+        it "raises from the preflight probes the updater guards" do
+          expect { checker.latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { checker.lowest_security_fix_version }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
       end
 
       context "when all updates for every locked line are ignored" do
