@@ -21,7 +21,12 @@ module Dependabot
       def self.requirements_array(requirement_string)
         return [new] if requirement_string.nil?
 
-        [new(requirement_string)]
+        # Gem::Requirement (our superclass) can't parse a single string
+        # containing multiple comma-separated constraints (e.g.
+        # ">= 1.0.0, <= 2.0.0") - each constraint must be passed as its own
+        # array element.
+        constraints = requirement_string.split(",").map(&:strip)
+        [new(*constraints)]
       end
     end
   end
