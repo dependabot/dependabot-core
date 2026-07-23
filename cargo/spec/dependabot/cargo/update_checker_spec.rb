@@ -767,6 +767,25 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           expect(updated_dependencies.map { |candidate| [candidate.previous_version, candidate.version] })
             .to eq([["0.4.2", "0.4.3"]])
         end
+
+        context "when the advisory matches every locked line" do
+          let(:security_advisories) do
+            [
+              Dependabot::SecurityAdvisory.new(
+                dependency_name: "getrandom",
+                package_manager: "cargo",
+                vulnerable_versions: [">= 0.2.0, < 0.2.17", ">= 0.4.0, < 0.4.3"]
+              )
+            ]
+          end
+
+          it "returns an update for every vulnerable locked line" do
+            updated_dependencies = checker.updated_dependencies(requirements_to_unlock: :own)
+
+            expect(updated_dependencies.map { |candidate| [candidate.previous_version, candidate.version] })
+              .to eq([["0.2.16", "0.2.17"], ["0.4.2", "0.4.3"]])
+          end
+        end
       end
     end
   end

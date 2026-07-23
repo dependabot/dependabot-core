@@ -11,6 +11,7 @@ require "dependabot/dependency"
 require "dependabot/update_checkers/base"
 require "dependabot/experiments"
 require "dependabot/service"
+require "dependabot/cargo/version"
 
 RSpec.describe Dependabot::Updater::GroupUpdateCreation do
   # Create a test class that includes the module to test it
@@ -682,6 +683,71 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         result = test_instance.compile_updates_for(dependency, dependency_files, group)
         expect(result).to eq([])
       end
+    end
+  end
+
+  describe "#compile_updates_for with multiple locked Cargo versions" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "getrandom",
+        version: "0.2.17",
+        requirements: [],
+        package_manager: "cargo",
+        metadata: { all_versions: locked_versions }
+      )
+    end
+    let(:dependencies) { [dependency] }
+    let(:locked_versions) do
+      ["0.2.17", "0.4.2"].map do |version|
+        Dependabot::Dependency.new(
+          name: "getrandom",
+          version: version,
+          requirements: [],
+          package_manager: "cargo",
+          metadata: { cargo_package_source: "registry+https://github.com/rust-lang/crates.io-index" }
+        )
+      end
+    end
+    let(:updated_dependency) do
+      Dependabot::Dependency.new(
+        name: "getrandom",
+        version: "0.4.3",
+        previous_version: "0.4.2",
+        requirements: [],
+        previous_requirements: [],
+        package_manager: "cargo"
+      )
+    end
+    let(:group) do
+      Dependabot::DependencyGroup.new(
+        name: "patch-updates",
+        rules: {
+          "patterns" => ["getrandom"],
+          "update-types" => ["patch"]
+        }
+      )
+    end
+
+    before do
+      allow(job).to receive(:package_manager).and_return("cargo")
+      allow(test_instance).to receive_messages(
+        update_checker_for: checker,
+        raise_on_ignored?: false,
+        log_checking_for_update: nil,
+        all_versions_ignored?: false,
+        log_up_to_date: nil,
+        requirements_to_unlock: :own,
+        log_requirements_for_update: nil
+      )
+      allow(checker).to receive_messages(
+        up_to_date?: false,
+        updated_dependencies: [updated_dependency]
+      )
+    end
+
+    it "classifies the actionable locked line instead of the collapsed dependency" do
+      expect(test_instance.compile_updates_for(dependency, dependency_files, group))
+        .to eq([updated_dependency])
     end
   end
 
