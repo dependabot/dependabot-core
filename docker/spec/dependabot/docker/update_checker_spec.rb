@@ -1070,6 +1070,13 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "when listing the full tag list times out (504)" do
         let(:tags_url) { "https://registry.hub.docker.com/v2/moj/ruby/tags/list" }
+        let(:next_page_url) { tags_url + "?last=2.4.1&n=100" }
+        let(:first_page_tags) do
+          JSON.generate("name" => dependency_name, "tags" => ["2.4.1"])
+        end
+        let(:second_page_tags) do
+          JSON.generate("name" => dependency_name, "tags" => ["2.4.2"])
+        end
 
         before do
           # Registries such as Docker Hub 504 when asked for the full tag list of
@@ -1077,12 +1084,19 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           stub_request(:get, tags_url)
             .and_return(status: 504, body: "")
           stub_request(:get, tags_url + "?n=100")
-            .and_return(status: 200, body: registry_tags)
+            .and_return(
+              status: 200,
+              body: first_page_tags,
+              headers: { "Link" => "<#{next_page_url}>; rel=\"next\"" }
+            )
+          stub_request(:get, next_page_url)
+            .and_return(status: 200, body: second_page_tags)
         end
 
         it "falls back to a paginated request and resolves the latest version" do
           expect(checker.latest_version).to eq("2.4.2")
           expect(WebMock).to have_requested(:get, tags_url + "?n=100")
+          expect(WebMock).to have_requested(:get, next_page_url)
         end
       end
 
@@ -1100,6 +1114,42 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           expect { checker.latest_version }
             .to raise_error(Dependabot::RegistryError) do |error|
               expect(error.status).to eq(504)
+            end
+        end
+      end
+
+      context "when the registry exception exposes an HTTP status" do
+        let(:registry_error) do
+          DockerRegistry2::RegistryHTTPException.new("Registry request failed").tap do |error|
+            error.define_singleton_method(:status) { 503 }
+          end
+        end
+
+        before do
+          allow(checker).to receive(:fetch_tags_from_registry).and_raise(registry_error)
+        end
+
+        it "uses the structured status" do
+          expect { checker.latest_version }
+            .to raise_error(Dependabot::RegistryError) do |error|
+              expect(error.status).to eq(503)
+            end
+        end
+      end
+
+      context "when the registry exception has no recognizable HTTP status" do
+        let(:registry_error) do
+          DockerRegistry2::RegistryHTTPException.new("Registry request failed")
+        end
+
+        before do
+          allow(checker).to receive(:fetch_tags_from_registry).and_raise(registry_error)
+        end
+
+        it "re-raises the original exception" do
+          expect { checker.latest_version }
+            .to raise_error(DockerRegistry2::RegistryHTTPException) do |error|
+              expect(error).to equal(registry_error)
             end
         end
       end

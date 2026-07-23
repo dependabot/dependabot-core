@@ -765,11 +765,18 @@ module Dependabot
         fetch_tags_from_registry(page_size: TAGS_PAGE_SIZE)
       end
 
-      # Extracts the numeric HTTP status from a RegistryHTTPException, whose
-      # message has the form "Registry request failed with status <code>".
-      sig { params(error: StandardError).returns(Integer) }
+      # docker_registry2 1.19.0 only exposes the status in the exception message.
+      sig { params(error: DockerRegistry2::RegistryHTTPException).returns(Integer) }
       def registry_http_status(error)
-        error.message[/status (\d+)/, 1].to_i
+        if error.respond_to?(:status)
+          status = error.method(:status).call
+          return status if status.is_a?(Integer)
+        end
+
+        status = error.message[/status (\d+)/, 1]
+        return status.to_i if status
+
+        raise error
       end
 
       sig { returns(T.nilable(String)) }
