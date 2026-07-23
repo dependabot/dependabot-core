@@ -519,21 +519,27 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     context "when the docker registry times out" do
       before do
         stub_request(:get, repo_url + "tags/list")
-          .to_raise(RestClient::Exceptions::OpenTimeout).then
+          .to_timeout.then
           .to_return(status: 200, body: registry_tags)
       end
 
-      it { is_expected.to eq("17.10") }
+      it "retries the registry request" do
+        expect(latest_version).to eq("17.10")
+        expect(WebMock).to have_requested(:get, repo_url + "tags/list").twice
+      end
 
-      context "when it returns a bad response (TooManyRequests) error" do
+      context "when it returns a 429 status" do
         before do
           stub_request(:get, repo_url + "tags/list")
-            .to_raise(RestClient::TooManyRequests)
+            .to_return(status: 429, body: "")
         end
 
-        it "raises" do
+        it "raises a RegistryError without attempting pagination" do
           expect { checker.latest_version }
-            .to raise_error(Dependabot::PrivateSourceBadResponse)
+            .to raise_error(Dependabot::RegistryError) do |error|
+              expect(error.status).to eq(429)
+            end
+          expect(WebMock).to have_requested(:get, repo_url + "tags/list").once
         end
 
         context "when using a private registry" do
@@ -554,9 +560,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           let(:repo_url) { "https://registry-host.io:5000/v2/ubuntu/" }
           let(:tags_fixture_name) { "ubuntu_no_latest.json" }
 
-          it "raises" do
+          it "raises a RegistryError" do
             expect { checker.latest_version }
-              .to raise_error(Dependabot::PrivateSourceBadResponse)
+              .to raise_error(Dependabot::RegistryError) do |error|
+                expect(error.status).to eq(429)
+              end
           end
         end
       end
@@ -564,12 +572,13 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       context "when the time out occurs every time" do
         before do
           stub_request(:get, repo_url + "tags/list")
-            .to_raise(RestClient::Exceptions::OpenTimeout)
+            .to_timeout
         end
 
-        it "raises" do
+        it "retries before raising the registry client error" do
           expect { checker.latest_version }
-            .to raise_error(RestClient::Exceptions::OpenTimeout)
+            .to raise_error(DockerRegistry2::RegistryUnknownException)
+          expect(WebMock).to have_requested(:get, repo_url + "tags/list").times(3)
         end
 
         context "when using a private registry" do
@@ -618,18 +627,6 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         it "raises" do
           expect { checker.latest_version }
             .to raise_error(Dependabot::DependencyFileNotResolvable)
-        end
-      end
-
-      context "when TooManyRequests request error" do
-        before do
-          stub_request(:get, repo_url + "tags/list")
-            .to_raise(RestClient::TooManyRequests)
-        end
-
-        it "raises" do
-          expect { checker.latest_version }
-            .to raise_error(Dependabot::PrivateSourceBadResponse)
         end
       end
     end
@@ -1112,6 +1109,20 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
         it "raises a RegistryError with the HTTP status" do
           expect { checker.latest_version }
+            .to raise_error(Dependabot::RegistryError) do |error|
+              expect(error.status).to eq(504)
+            end
+        end
+      end
+
+      context "when a manifest digest request returns a 504" do
+        before do
+          stub_request(:head, "https://registry.hub.docker.com/v2/moj/ruby/manifests/2.4.2")
+            .and_return(status: 504, body: "")
+        end
+
+        it "raises a RegistryError with the HTTP status" do
+          expect { checker.send(:fetch_digest_of, "2.4.2") }
             .to raise_error(Dependabot::RegistryError) do |error|
               expect(error.status).to eq(504)
             end

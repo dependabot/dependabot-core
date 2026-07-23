@@ -717,7 +717,8 @@ module Dependabot
              RestClient::Forbidden
         raise PrivateSourceAuthenticationFailure, registry_hostname
       rescue RestClient::Exceptions::OpenTimeout,
-             RestClient::Exceptions::ReadTimeout
+             RestClient::Exceptions::ReadTimeout,
+             DockerRegistry2::RegistryUnknownException
         raise if using_dockerhub?
 
         raise PrivateSourceTimedOut, T.must(registry_hostname)
@@ -729,7 +730,7 @@ module Dependabot
         # can't enumerate an image's tags). Surface a generic RegistryError with
         # the status rather than a private-source error, since the registry may
         # well be public (e.g. Docker Hub).
-        raise RegistryError.new(registry_http_status(e), e.message)
+        raise_registry_error(e)
       rescue JSON::ParserError => e
         if e.message.include?("unexpected token")
           raise DependencyFileNotResolvable, "Error while accessing docker image at #{registry_hostname}"
@@ -759,8 +760,8 @@ module Dependabot
         raise if attempt > 3
 
         retry
-      rescue DockerRegistry2::RegistryHTTPException
-        raise if page_size
+      rescue DockerRegistry2::RegistryHTTPException => e
+        raise if page_size || registry_http_status(e) == 429
 
         fetch_tags_from_registry(page_size: TAGS_PAGE_SIZE)
       end
@@ -777,6 +778,11 @@ module Dependabot
         return status.to_i if status
 
         raise error
+      end
+
+      sig { params(error: DockerRegistry2::RegistryHTTPException).returns(T.noreturn) }
+      def raise_registry_error(error)
+        raise RegistryError.new(registry_http_status(error), error.message)
       end
 
       sig { returns(T.nilable(String)) }
@@ -804,6 +810,8 @@ module Dependabot
         raise PrivateSourceBadResponse, registry_hostname if attempt > 3
 
         retry
+      rescue DockerRegistry2::RegistryHTTPException => e
+        raise_registry_error(e)
       rescue DockerRegistry2::RegistryAuthenticationException,
              DockerRegistry2::RegistryAuthorizationException,
              RestClient::Forbidden
@@ -825,6 +833,7 @@ module Dependabot
           RestClient::ServiceUnavailable,
           RestClient::InternalServerError,
           RestClient::BadGateway,
+          DockerRegistry2::RegistryUnknownException,
           DockerRegistry2::NotFound
         ]
       end
