@@ -454,6 +454,28 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       end
     end
 
+    context "with multiple locked versions of a transitive dependency" do
+      let(:manifest_fixture_name) { "multiple_locked_versions" }
+      let(:lockfile_fixture_name) { "multiple_locked_versions" }
+      let(:dependency_name) { "getrandom" }
+      let(:dependency_version) { "0.4.2" }
+      let(:requirements) { [] }
+
+      it "returns the version of the exact package Cargo updated" do
+        expect(latest_resolvable_version).to be >= Gem::Version.new("0.4.3")
+        expect(latest_resolvable_version).to be < Gem::Version.new("0.5.0")
+      end
+
+      context "when resolving the older locked line" do
+        let(:dependency_version) { "0.2.17" }
+
+        it "does not report the newer line as its update" do
+          expect(latest_resolvable_version).to be >= Gem::Version.new("0.2.17")
+          expect(latest_resolvable_version).to be < Gem::Version.new("0.3.0")
+        end
+      end
+    end
+
     context "when there's a virtual workspace" do
       let(:manifest_fixture_name) { "virtual_workspace_root" }
       let(:lockfile_fixture_name) { "virtual_workspace" }
