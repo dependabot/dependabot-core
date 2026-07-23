@@ -88,7 +88,7 @@ RSpec.describe Dependabot::Powershell::UpdateChecker::LatestVersionFinder do
       let(:dependency_version) { "5.5.0-beta1" }
 
       it "includes prereleases in the candidate set" do
-        expect(finder.latest_version.to_s).to eq("5.5.0.pre.beta1")
+        expect(finder.latest_version.to_s).to eq("5.5.0-beta1")
       end
     end
 

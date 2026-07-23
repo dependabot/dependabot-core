@@ -71,9 +71,8 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
         package_details = fetcher.fetch
 
         expect(package_details).to be_a(Dependabot::Package::PackageDetails)
-        # Gem::Version normalises "5.5.0-beta1" to "5.5.0.pre.beta1" internally.
         expect(package_details.releases.map { |r| r.version.to_s }).to contain_exactly(
-          "5.4.0", "5.3.3", "5.5.0.pre.beta1"
+          "5.4.0", "5.3.3", "5.5.0-beta1"
         )
       end
 
