@@ -171,9 +171,7 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def workflow_files
-        # The file fetcher only fetches workflow files, so no need to
-        # filter here
-        dependency_files
+        dependency_files.reject { |file| file.name == LOCKFILE_PATH }
       end
 
       sig { override.void }

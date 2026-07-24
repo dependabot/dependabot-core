@@ -32,5 +32,11 @@ RSpec.describe Dependabot::GithubActions::Lockfile::VersionGate do
       expect { described_class.assert_supported!("v2.0.0") }
         .to raise_error(Dependabot::GithubActions::Lockfile::UnsupportedLockfileVersion, /v2.0.0/)
     end
+
+    it "maps unsupported versions to a user-facing updater error" do
+      described_class.assert_supported!("v2.0.0")
+    rescue Dependabot::GithubActions::Lockfile::UnsupportedLockfileVersion => e
+      expect(Dependabot.updater_error_details(e).error_type).to eq("dependency_file_not_parseable")
+    end
   end
 end

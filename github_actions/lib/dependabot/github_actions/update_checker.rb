@@ -25,7 +25,9 @@ module Dependabot
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
         @latest_version ||= T.let(
-          T.must(latest_version_finder).latest_release_version,
+          latest_versions.max_by do |version|
+            version_class.correct?(version.to_s) ? version_class.new(version.to_s) : version_class.new("0")
+          end,
           T.nilable(T.any(String, Gem::Version))
         )
       end
@@ -80,6 +82,18 @@ module Dependabot
       end
 
       private
+
+      sig { returns(T::Array[T.any(String, Dependabot::Version)]) }
+      def latest_versions
+        releases = [T.must(latest_version_finder).latest_release_version]
+        dependency.requirements.each do |req|
+          next unless onboarded_requirement?(req)
+
+          source = T.cast(req.source, GitSource)
+          releases << latest_version_finder_for(source).latest_release_version
+        end
+        releases.compact
+      end
 
       # A requirement is "onboarded" when the repo carries an `actions.lock` that is
       # authoritative for the requirement's workflow. Only onboarded requirements get

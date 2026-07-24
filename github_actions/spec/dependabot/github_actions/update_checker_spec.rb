@@ -1287,6 +1287,20 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           expect(ref_for(updated_requirements, ".github/workflows/major.yml")).to eq("v3")
           expect(ref_for(updated_requirements, ".github/workflows/patch.yml")).to eq("v3.5.2")
         end
+
+        context "when the combined major ref is already current" do
+          let(:dependency_version) { "3" }
+
+          before do
+            dependency.requirements[0][:source][:ref] = "v3"
+            dependency.requirements[1][:source][:ref] = "v3.4.0"
+          end
+
+          it "still updates the patch-pinned workflow" do
+            expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+            expect(ref_for(updated_requirements, ".github/workflows/patch.yml")).to eq("v3.5.2")
+          end
+        end
       end
     end
 

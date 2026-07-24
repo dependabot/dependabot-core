@@ -89,6 +89,12 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
       expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
         .to raise_error(Dependabot::GithubActions::Lockfile::UnresolvableDependency, %r{actions/checkout@v5})
     end
+
+    it "maps resolver failures to a user-facing updater error" do
+      engine.relock(workflow_files: [workflow], lockfile: lockfile)
+    rescue Dependabot::GithubActions::Lockfile::UnresolvableDependency => e
+      expect(Dependabot.updater_error_details(e).error_type).to eq("dependency_file_not_resolvable")
+    end
   end
 
   describe "#relock with an unknown error finding (exit 1)" do

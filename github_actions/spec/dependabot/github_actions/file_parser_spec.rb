@@ -52,6 +52,18 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
     its(:length) { is_expected.to eq(2) }
 
+    context "with an actions lockfile" do
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: Dependabot::GithubActions::LOCKFILE_PATH,
+          content: "not workflow yaml"
+        )
+      end
+      let(:files) { [workflow_files, lockfile] }
+
+      its(:length) { is_expected.to eq(2) }
+    end
+
     describe "the first dependency" do
       subject(:dependency) { dependencies.first }
 
