@@ -56,6 +56,11 @@ module Dependabot
         )
       end
 
+      sig { override.returns(T::Boolean) }
+      def up_to_date?
+        super && !onboarded_requirements_changed?
+      end
+
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         updated_reqs = dependency.requirements.map do |req|
@@ -86,6 +91,11 @@ module Dependabot
         return true if super
         return false unless requirements_to_unlock == :own
 
+        onboarded_requirements_changed?
+      end
+
+      sig { returns(T::Boolean) }
+      def onboarded_requirements_changed?
         dependency.requirements.zip(updated_requirements).any? do |current, updated|
           onboarded_requirement?(current) && current != updated
         end
