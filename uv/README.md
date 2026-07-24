@@ -10,7 +10,7 @@ Updating the list of known versions might be tricky, here are the steps:
 
 1. Update the `pyenv` version in the [`Dockerfile`](https://github.com/dependabot/dependabot-core/blob/main/uv/Dockerfile), you may use a commit hash if a new `pyenv` version is not released yet.
 2. Update the `pyenv global` version in the `Dockerfile`. We always use the latest (and greatest) Python version.
-3. Update the list of known Python versions in [`language_version_manager.rb`](https://github.com/dependabot/dependabot-core/blob/main/uv/lib/dependabot/uv/language_version_manager.rb).
+3. Follow the steps to update the [supported Python versions for Python](https://github.com/dependabot/dependabot-core/blob/main/python/README.md).
 4. Fix any broken tests.
 
 [Example PR](https://github.com/dependabot/dependabot-core/pull/13321) that does all these things
