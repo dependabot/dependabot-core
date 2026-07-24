@@ -85,6 +85,7 @@ jobs:
           - { name: nix, ecosystem: nix }
           - { name: npm_and_yarn, ecosystem: npm }
           - { name: nuget, ecosystem: nuget }
+          - { name: powershell, ecosystem: powershell }
           - { name: pre_commit, ecosystem: pre-commit }
           - { name: pub, ecosystem: pub }
           - { name: python, ecosystem: pip }

@@ -48,6 +48,7 @@ Sentry.init do |config|
     nix|
     npm_and_yarn|
     nuget|
+    powershell|
     pre_commit|
     pub|
     python|
@@ -94,6 +95,7 @@ require "dependabot/maven"
 require "dependabot/nix"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
+require "dependabot/powershell"
 require "dependabot/pre_commit"
 require "dependabot/pub"
 require "dependabot/python"

@@ -40,6 +40,7 @@
 --ignore=swift/spec/
 --ignore=terraform/spec/
 --ignore=opentofu/spec/
+--ignore=powershell/spec/
 --ignore=updater/spec/
 --ignore=uv/spec/
 --ignore=vcpkg/spec/
