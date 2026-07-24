@@ -187,13 +187,64 @@ module Dependabot
           raw = content[occurrence.start_index...occurrence.end_index]
           return nil unless raw
 
+          # Blank out `# ...` line comments (preserving length and quoted
+          # strings) before matching, so a commented-out field - e.g.
+          # `# RequiredVersion = '1.0.0'` sitting before the active
+          # field - can't be matched instead of the real one. Offsets stay
+          # aligned with `raw` (and therefore `content`) since comment text
+          # is replaced character-for-character.
+          scannable = blank_line_comments(raw)
+
           pattern = /#{Regexp.escape(field)}\s*=\s*(?<quote>['"])(?<value>[^'"]*)\k<quote>/i
-          match = pattern.match(raw)
+          match = pattern.match(scannable)
           return nil unless match
 
           value_start = occurrence.start_index + T.must(match.begin(:value))
           value_end = occurrence.start_index + T.must(match.end(:value))
           [value_start, value_end]
+        end
+
+        # Replaces `# ...` line comments in `text` with equal-length spaces
+        # (newlines preserved), respecting quoted strings (which may
+        # themselves contain a `#`), so the returned string is the same
+        # length as `text` - keeping offsets found within it valid against
+        # `text` - but comment text can no longer match a field pattern.
+        sig { params(text: String).returns(String) }
+        def blank_line_comments(text)
+          result = +""
+          quote = T.let(nil, T.nilable(String))
+          in_comment = T.let(false, T::Boolean)
+
+          text.each_char do |char|
+            if in_comment
+              if char == "\n"
+                in_comment = false
+                result << char
+              else
+                result << " "
+              end
+              next
+            end
+
+            if quote
+              result << char
+              quote = nil if char == quote
+              next
+            end
+
+            case char
+            when "'", "\""
+              quote = char
+              result << char
+            when "#"
+              in_comment = true
+              result << " "
+            else
+              result << char
+            end
+          end
+
+          result
         end
 
         sig { params(content: String, edits: T::Array[Edit]).returns(String) }

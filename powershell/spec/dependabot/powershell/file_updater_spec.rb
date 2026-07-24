@@ -512,4 +512,73 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
       expect(content).to include("RequiredModules = @('FakeModule')")
     end
   end
+
+  describe "updating a single-hashtable RequiredModules declaration" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "SingleHashtable.psd1",
+          content: fixture("psd1", "single_hashtable_manifest.psd1")
+        )
+      ]
+    end
+
+    let(:dependencies) do
+      [
+        build_dependency(
+          name: "Az",
+          version: "2.5.0",
+          previous_version: "1.0.0",
+          requirements: [
+            hashtable_requirement(">= 2.5.0", file: "SingleHashtable.psd1", version_key: "ModuleVersion")
+          ],
+          previous_requirements: [
+            hashtable_requirement(">= 1.0.0", file: "SingleHashtable.psd1", version_key: "ModuleVersion")
+          ]
+        )
+      ]
+    end
+
+    it "locates and rewrites the version inside the un-parenthesized RequiredModules hashtable" do
+      content = updater.updated_dependency_files.first.content
+
+      expect(content).to include("RequiredModules = @{ ModuleName = 'Az'; ModuleVersion = '2.5.0' }")
+      # The manifest's own top-level ModuleVersion field is untouched.
+      expect(content).to include("ModuleVersion = '1.0.0'")
+    end
+  end
+
+  describe "rewriting a hashtable with a commented-out field preceding the active one" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "CommentedField.psd1",
+          content: fixture("psd1", "commented_field_before_active_manifest.psd1")
+        )
+      ]
+    end
+
+    let(:dependencies) do
+      [
+        build_dependency(
+          name: "Az.Sql",
+          version: "2.0.0",
+          previous_version: "1.0.0",
+          requirements: [
+            hashtable_requirement("= 2.0.0", file: "CommentedField.psd1", version_key: "RequiredVersion")
+          ],
+          previous_requirements: [
+            hashtable_requirement("= 1.0.0", file: "CommentedField.psd1", version_key: "RequiredVersion")
+          ]
+        )
+      ]
+    end
+
+    it "rewrites the active RequiredVersion field, not the commented-out one" do
+      content = updater.updated_dependency_files.first.content
+
+      expect(content).to include("# RequiredVersion = '1.0.0'")
+      expect(content).to include("RequiredVersion = '2.0.0'")
+    end
+  end
 end

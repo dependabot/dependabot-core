@@ -28,7 +28,8 @@ module Dependabot
         end
 
         REQUIRES_MODULES_LINE = /^\s*#Requires\s+-Modules\s+(?<modules>.+)$/i
-        REQUIRED_MODULES_KEY = /RequiredModules\s*=\s*@\(/i
+        REQUIRED_MODULES_ARRAY_KEY = /RequiredModules\s*=\s*@\(/i
+        REQUIRED_MODULES_HASHTABLE_KEY = /RequiredModules\s*=\s*@\{/i
 
         sig { params(file: Dependabot::DependencyFile).void }
         def initialize(file:)
@@ -75,14 +76,42 @@ module Dependabot
 
         sig { returns(T::Array[Occurrence]) }
         def locate_required_modules
-          match = REQUIRED_MODULES_KEY.match(@content)
-          return [] unless match
+          array_match = REQUIRED_MODULES_ARRAY_KEY.match(@content)
+          return locate_required_modules_array(array_match) if array_match
 
+          hashtable_match = REQUIRED_MODULES_HASHTABLE_KEY.match(@content)
+          return [] unless hashtable_match
+
+          locate_required_modules_hashtable(hashtable_match)
+        end
+
+        # Handles `RequiredModules = @( ... )`: each top-level entry inside
+        # the array (bare string or `@{...}` hashtable) becomes its own
+        # Occurrence.
+        sig { params(match: MatchData).returns(T::Array[Occurrence]) }
+        def locate_required_modules_array(match)
           body_range = balanced_paren_range(@content, match.end(0) - 1)
           return [] unless body_range
 
           body_start, body_end = body_range
           entries(@content[body_start...body_end].to_s, body_start, declaration_type: :required_modules)
+        end
+
+        # Handles `RequiredModules = @{ ... }`: a single hashtable declared
+        # directly (no enclosing array), as supported by Psd1ManifestParser.
+        # The whole `@{...}` literal - including its `@` prefix and braces -
+        # is treated as a single entry so its offsets can be used to locate
+        # and rewrite its version field later.
+        sig { params(match: MatchData).returns(T::Array[Occurrence]) }
+        def locate_required_modules_hashtable(match)
+          open_brace_index = match.end(0) - 1
+          body_range = balanced_paren_range(@content, open_brace_index)
+          return [] unless body_range
+
+          _, body_end = body_range
+          entry_start = open_brace_index - 1 # index of the '@' prefix
+          entry_end = body_end + 1 # one past the closing '}'
+          entries(@content[entry_start...entry_end].to_s, entry_start, declaration_type: :required_modules)
         end
 
         # Given content and the index of an opening `(`, returns the
