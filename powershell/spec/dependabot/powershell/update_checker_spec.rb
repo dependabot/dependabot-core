@@ -139,9 +139,9 @@ RSpec.describe Dependabot::Powershell::UpdateChecker do
       end
       let(:dependency_requirement) { ">= 5.0.0" }
 
-      it "leaves the minimum constraint unchanged, since it already permits the latest version" do
+      it "bumps the minimum constraint to track the latest version" do
         updated = checker.updated_requirements.first
-        expect(updated.requirement).to eq(">= 5.0.0")
+        expect(updated.requirement).to eq(">= 5.4.0")
       end
     end
 

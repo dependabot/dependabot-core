@@ -77,8 +77,17 @@ module Dependabot
         end
         def updated_requirement(requirement)
           requirement_string = requirement.requirement
-          return requirement if requirement_string.nil? || requirement_string == :unfixable
-          return requirement if satisfied_by_latest_version?(requirement_string)
+          return requirement unless requirement_string.is_a?(String)
+
+          version_key = requirement.metadata&.fetch(:version_key, nil)
+
+          # A bare minimum-version constraint (ModuleVersion with no
+          # MaximumVersion) is always "satisfied" by any newer version, so
+          # the generic satisfied-by check below would leave it pinned to
+          # its original floor forever. Skip that shortcut for this style
+          # so the floor is bumped to track the latest resolvable version,
+          # same as every other declaration style.
+          return requirement if version_key != "ModuleVersion" && satisfied_by_latest_version?(requirement_string)
 
           new_requirement_string = build_new_requirement_string(requirement_string, requirement.metadata)
           return requirement if new_requirement_string.nil? || new_requirement_string == requirement_string

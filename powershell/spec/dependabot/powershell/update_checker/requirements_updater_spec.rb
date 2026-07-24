@@ -68,9 +68,9 @@ RSpec.describe Dependabot::Powershell::UpdateChecker::RequirementsUpdater do
     context "when the requirement is a ModuleVersion minimum" do
       let(:requirements) { [requirement(">= 1.0.0", version_key: "ModuleVersion")] }
 
-      it "leaves the minimum-only constraint unchanged, since it already permits the latest version" do
+      it "bumps the minimum constraint to track the latest resolvable version" do
         updated = updater.updated_requirements.first
-        expect(updated[:requirement]).to eq(">= 1.0.0")
+        expect(updated[:requirement]).to eq(">= 2.5.0")
       end
     end
 
@@ -93,12 +93,12 @@ RSpec.describe Dependabot::Powershell::UpdateChecker::RequirementsUpdater do
     end
 
     context "when the requirement already permits the latest resolvable version" do
-      let(:requirements) { [requirement(">= 1.0.0", version_key: "ModuleVersion")] }
+      let(:requirements) { [requirement("<= 5.0.0", version_key: "MaximumVersion")] }
       let(:latest_resolvable_version) { "1.2.0" }
 
       it "leaves the requirement unchanged" do
         updated = updater.updated_requirements.first
-        expect(updated[:requirement]).to eq(">= 1.0.0")
+        expect(updated[:requirement]).to eq("<= 5.0.0")
       end
     end
 
@@ -123,8 +123,8 @@ RSpec.describe Dependabot::Powershell::UpdateChecker::RequirementsUpdater do
         updated = updater.updated_requirements
         expect(updated[0][:requirement]).to eq("= 2.5.0")
         expect(updated[0][:metadata][:style]).to eq(:string)
-        # The ModuleVersion minimum already permits 2.5.0, so it's left as-is.
-        expect(updated[1][:requirement]).to eq(">= 1.0.0")
+        # ModuleVersion minimums always track the latest resolvable version.
+        expect(updated[1][:requirement]).to eq(">= 2.5.0")
         expect(updated[1][:metadata][:style]).to eq(:hashtable)
       end
     end
