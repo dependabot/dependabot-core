@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/github_actions/constants"
 require "dependabot/github_actions/containing_branch_finder"
+require "dependabot/github_actions/lockfile/reader"
 require "dependabot/github_actions/requirement"
 require "dependabot/github_actions/version"
 require "dependabot/update_checkers"
@@ -16,6 +17,8 @@ module Dependabot
   module GithubActions
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
+
+      GitSource = T.type_alias { T::Hash[Symbol, String] }
 
       require_relative "update_checker/latest_version_finder"
 
@@ -53,11 +56,16 @@ module Dependabot
         )
       end
 
+      sig { override.returns(T::Boolean) }
+      def up_to_date?
+        super && !onboarded_requirements_changed?
+      end
+
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         updated_reqs = dependency.requirements.map do |req|
-          source = req[:source]
-          updated = updated_ref(source)
+          source = T.cast(req.source, GitSource)
+          updated = updated_ref(source, onboarded: onboarded_requirement?(req))
           next req unless updated
 
           current = source[:ref]
@@ -65,8 +73,8 @@ module Dependabot
           # Maintain a short git hash only if it matches the latest
           if req[:type] == "git" &&
              git_commit_checker.ref_looks_like_commit_sha?(updated) &&
-             git_commit_checker.ref_looks_like_commit_sha?(current) &&
-             updated.start_with?(current)
+             git_commit_checker.ref_looks_like_commit_sha?(T.must(current)) &&
+             updated.start_with?(T.must(current))
             next req
           end
 
@@ -78,21 +86,99 @@ module Dependabot
 
       private
 
+      sig { params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Boolean) }
+      def numeric_version_can_update?(requirements_to_unlock:)
+        return true if super
+        return false unless requirements_to_unlock == :own
+
+        onboarded_requirements_changed?
+      end
+
+      sig { returns(T::Boolean) }
+      def onboarded_requirements_changed?
+        dependency.requirements.zip(updated_requirements).any? do |current, updated|
+          onboarded_requirement?(current) && current != updated
+        end
+      end
+
+      # A requirement is "onboarded" when the repo carries an `actions.lock` that is
+      # authoritative for the requirement's workflow. Only onboarded requirements get
+      # per-source precision selection; everything else flows through the combined
+      # finder exactly as before, so non-onboarded repos see byte-identical behavior.
+      sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
+      def onboarded_requirement?(req)
+        reader = lockfile_reader
+        return false unless reader
+
+        file = dependency_files.find { |f| f.name == req.file }
+        return false unless file
+
+        reader.onboarded?(file.path.delete_prefix("/"))
+      end
+
+      sig { returns(T.nilable(Dependabot::GithubActions::Lockfile::Reader)) }
+      def lockfile_reader
+        return @lockfile_reader if defined?(@lockfile_reader)
+
+        @lockfile_reader = T.let(
+          Dependabot::GithubActions::Lockfile::Reader.from_files(dependency_files),
+          T.nilable(Dependabot::GithubActions::Lockfile::Reader)
+        )
+      end
+
       sig { returns(T.nilable(Dependabot::GithubActions::UpdateChecker::LatestVersionFinder)) }
       def latest_version_finder
         @latest_version_finder ||=
           T.let(
-            LatestVersionFinder.new(
-              dependency: dependency,
-              credentials: credentials,
-              dependency_files: dependency_files,
-              security_advisories: security_advisories,
-              ignored_versions: ignored_versions,
-              raise_on_ignored: raise_on_ignored,
-              cooldown_options: update_cooldown
-            ),
+            build_latest_version_finder(dependency),
             T.nilable(Dependabot::GithubActions::UpdateChecker::LatestVersionFinder)
           )
+      end
+
+      # A finder scoped to a single requirement's source ref, so version selection
+      # precision-matches THAT ref (e.g. `v4.3.1` → latest 3-segment tag) instead of
+      # the combined dependency version (the lower of all refs, which flattens every
+      # requirement to the coarsest precision). Cached per ref so repeated refs share
+      # one underlying clone. Falls back to the combined finder for sources whose ref
+      # is not a version (SHA / branch), where precision has no meaning.
+      sig { params(source: T.nilable(GitSource)).returns(LatestVersionFinder) }
+      def latest_version_finder_for(source)
+        ref = source&.fetch(:ref, nil)
+        return T.must(latest_version_finder) unless ref && version_class.correct?(ref)
+
+        @latest_version_finder_for ||= T.let({}, T.nilable(T::Hash[String, LatestVersionFinder]))
+        @latest_version_finder_for[ref] ||= build_latest_version_finder(per_source_dependency(source, ref))
+      end
+
+      sig { params(dep: Dependabot::Dependency).returns(LatestVersionFinder) }
+      def build_latest_version_finder(dep)
+        LatestVersionFinder.new(
+          dependency: dep,
+          credentials: credentials,
+          dependency_files: dependency_files,
+          security_advisories: security_advisories,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: raise_on_ignored,
+          cooldown_options: update_cooldown
+        )
+      end
+
+      # A synthetic single-requirement dependency whose version mirrors the precision
+      # of `source[:ref]`. The downstream precision machinery keys entirely off
+      # `dependency.version`, so this is what makes per-source precision selection work
+      # without touching the shared combined dependency reported up to the rest of the
+      # update.
+      sig do
+        params(source: GitSource, ref: String)
+          .returns(Dependabot::Dependency)
+      end
+      def per_source_dependency(source, ref)
+        Dependabot::Dependency.new(
+          name: dependency.name,
+          version: version_class.new(ref).to_s,
+          requirements: [{ requirement: nil, groups: [], source: source, file: nil, metadata: {} }],
+          package_manager: dependency.package_manager
+        )
       end
 
       sig { returns(T::Array[Dependabot::SecurityAdvisory]) }
@@ -143,12 +229,17 @@ module Dependabot
         )
       end
 
-      sig { params(source: T.nilable(T::Hash[Symbol, String])).returns(T.nilable(String)) }
-      def updated_ref(source)
+      sig do
+        params(source: T.nilable(GitSource), onboarded: T::Boolean)
+          .returns(T.nilable(String))
+      end
+      def updated_ref(source, onboarded: false)
         # TODO: Support Docker sources
         return unless git_commit_checker.git_dependency?
 
-        if vulnerable? && (new_tag = T.must(latest_version_finder).lowest_security_fix_release)
+        finder = onboarded ? latest_version_finder_for(source) : T.must(latest_version_finder)
+
+        if vulnerable? && (new_tag = finder.lowest_security_fix_release)
           return new_tag.fetch(:tag)
         end
 
@@ -156,13 +247,13 @@ module Dependabot
 
         # Return the git tag if updating a pinned version
         if source_git_commit_checker.pinned_ref_looks_like_version? &&
-           (new_tag = T.must(latest_version_finder).latest_version_tag_respecting_cooldown)
+           (new_tag = finder.latest_version_tag_respecting_cooldown)
           return new_tag.fetch(:tag)
         end
 
         # Return the pinned git commit if one is available
         if source_git_commit_checker.pinned_ref_looks_like_commit_sha? &&
-           (new_commit_sha = latest_commit_sha(source_git_commit_checker))
+           (new_commit_sha = latest_commit_sha(source_git_commit_checker, finder))
           return new_commit_sha
         end
 
@@ -170,17 +261,20 @@ module Dependabot
         nil
       end
 
-      sig { params(source_checker: Dependabot::GitCommitChecker).returns(T.nilable(String)) }
-      def latest_commit_sha(source_checker)
-        latest_tag = T.must(latest_version_finder).latest_version_tag
+      sig do
+        params(source_checker: Dependabot::GitCommitChecker, finder: LatestVersionFinder)
+          .returns(T.nilable(String))
+      end
+      def latest_commit_sha(source_checker, finder)
+        latest_tag = finder.latest_version_tag
         return unless latest_tag
 
         if source_checker.local_tag_for_pinned_sha
-          new_tag = T.must(latest_version_finder).latest_version_tag_respecting_cooldown
+          new_tag = finder.latest_version_tag_respecting_cooldown
           new_tag&.fetch(:commit_sha)
         else
           # Keep SHA rewrites aligned with the checker decision (including cooldown filtering).
-          latest = latest_version
+          latest = finder.latest_release_version
           latest.is_a?(String) ? latest : latest_commit_for_pinned_ref
         end
       end
