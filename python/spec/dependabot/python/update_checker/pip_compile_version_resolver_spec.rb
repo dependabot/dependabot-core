@@ -61,6 +61,12 @@ RSpec.describe namespace::PipCompileVersionResolver do
     }]
   end
 
+  describe "#resolvable?" do
+    it "returns false when the version is nil" do
+      expect(resolver.resolvable?(version: nil)).to be(false)
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) do
       resolver.latest_resolvable_version(requirement: updated_requirement)

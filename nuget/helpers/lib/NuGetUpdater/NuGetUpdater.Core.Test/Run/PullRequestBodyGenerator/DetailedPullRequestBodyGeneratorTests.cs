@@ -171,6 +171,89 @@ public class DetailedPullRequestBodyGeneratorTests
     }
 
     [Fact]
+    public async Task GeneratePrBody_GitHub_PackageScopedReleases()
+    {
+        await TestAsync(
+            updateOperationsPerformed: [
+                new DirectUpdate() { DependencyName = "This.Package", OldVersion = NuGetVersion.Parse("1.1.2"), NewVersion = NuGetVersion.Parse("3.1.1"), UpdatedFiles = [] },
+            ],
+            updatedDependencies: [
+                new ReportedDependency()
+                {
+                    Name = "This.Package",
+                    PreviousVersion = "1.1.2",
+                    Version = "3.1.1",
+                    Requirements = [
+                        new ReportedRequirement()
+                        {
+                            File = "",
+                            Requirement = "3.1.1",
+                            Source = new()
+                            {
+                                SourceUrl = "https://github.com/Some.Owner/Some.Repo",
+                            },
+                        }
+                    ],
+                }
+            ],
+            httpResponses: [
+                ("https://api.github.com/repos/Some.Owner/Some.Repo/releases?per_page=100", """
+                    [
+                      {
+                        "name": "This.Package v3.1.1",
+                        "tag_name": "This.Package-v3.1.1",
+                        "body": "* this package point 3"
+                      },
+                      {
+                        "name": "Another.Package v2.1.1",
+                        "tag_name": "Another.Package-v2.1.1",
+                        "body": "* another package point"
+                      },
+                      {
+                        "name": "v2.5.0",
+                        "tag_name": "v2.5.0",
+                        "body": "* repo point"
+                      },
+                      {
+                        "name": "This.Package v2.0.0",
+                        "tag_name": "This.Package-v2.0.0",
+                        "body": "* this package point 2"
+                      },
+                      {
+                        "name": "v1.1.2",
+                        "tag_name": "v1.1.2",
+                        "body": "* old repo point"
+                      }
+                    ]
+                    """)
+            ],
+            expectedBody: """
+                Updated [This.Package](https://github.com/Some.Owner/Some.Repo) from 1.1.2 to 3.1.1.
+
+                <details>
+                <summary>Release notes</summary>
+
+                _Sourced from [This.Package's releases](https://github.com/Some.Owner/Some.Repo/releases)._
+
+                ## 3.1.1
+
+                * this package point 3
+
+                ## 2.5.0
+
+                * repo point
+
+                ## 2.0.0
+
+                * this package point 2
+
+                Commits viewable in [compare view](https://github.com/Some.Owner/Some.Repo/compare/v1.1.2...This.Package-v3.1.1).
+                </details>
+                """
+        );
+    }
+
+    [Fact]
     public async Task GeneratePrBody_GitHub_EmptyApiResponses()
     {
         await TestAsync(
@@ -323,6 +406,99 @@ public class DetailedPullRequestBodyGeneratorTests
                 ## 1.0.1
 
                 Commits viewable in [compare view](https://gitlab.com/Some.Owner/Some.Dependency/-/compare/1.0.0...2.0.0).
+                </details>
+                """
+        );
+    }
+
+    [Fact]
+    public async Task GeneratePrBody_GitLab_PackageScopedReleases()
+    {
+        await TestAsync(
+            updateOperationsPerformed: [
+                new DirectUpdate() { DependencyName = "This.Package", OldVersion = NuGetVersion.Parse("1.1.2"), NewVersion = NuGetVersion.Parse("3.1.1"), UpdatedFiles = [] },
+            ],
+            updatedDependencies: [
+                new ReportedDependency()
+                {
+                    Name = "This.Package",
+                    PreviousVersion = "1.1.2",
+                    Version = "3.1.1",
+                    Requirements = [
+                        new ReportedRequirement()
+                        {
+                            File = "",
+                            Requirement = "3.1.1",
+                            Source = new()
+                            {
+                                SourceUrl = "https://gitlab.com/Some.Owner/Some.Repo",
+                            },
+                        }
+                    ],
+                }
+            ],
+            httpResponses: [
+                ("https://gitlab.com/api/v4/projects/Some.Owner%2FSome.Repo/repository/tags", """
+                    [
+                      {
+                        "name": "This.Package v3.1.1",
+                        "release": {
+                          "tag_name": "This.Package-v3.1.1",
+                          "description": "* this package point 3"
+                        }
+                      },
+                      {
+                        "name": "Another.Package v2.1.1",
+                        "release": {
+                          "tag_name": "Another.Package-v2.1.1",
+                          "description": "* another package point"
+                        }
+                      },
+                      {
+                        "name": "v2.5.0",
+                        "release": {
+                          "tag_name": "v2.5.0",
+                          "description": "* repo point"
+                        }
+                      },
+                      {
+                        "name": "This.Package v2.0.0",
+                        "release": {
+                          "tag_name": "This.Package-v2.0.0",
+                          "description": "* this package point 2"
+                        }
+                      },
+                      {
+                        "name": "v1.1.2",
+                        "release": {
+                          "tag_name": "v1.1.2",
+                          "description": "* old repo point"
+                        }
+                      }
+                    ]
+                    """)
+            ],
+            expectedBody: """
+                Updated [This.Package](https://gitlab.com/Some.Owner/Some.Repo) from 1.1.2 to 3.1.1.
+
+                <details>
+                <summary>Release notes</summary>
+
+                _Sourced from [This.Package's releases](https://gitlab.com/Some.Owner/Some.Repo/-/releases)._
+
+                ## 3.1.1
+
+                * this package point 3
+
+                ## 2.5.0
+
+                * repo point
+
+                ## 2.0.0
+
+                * this package point 2
+
+                Commits viewable in [compare view](https://gitlab.com/Some.Owner/Some.Repo/-/compare/v1.1.2...This.Package-v3.1.1).
                 </details>
                 """
         );

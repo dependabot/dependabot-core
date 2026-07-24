@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/errors"
 require "dependabot/github_actions/constants"
+require "dependabot/github_actions/containing_branch_finder"
 require "dependabot/github_actions/lockfile/reader"
 require "dependabot/github_actions/requirement"
 require "dependabot/github_actions/version"
@@ -53,9 +54,9 @@ module Dependabot
         )
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        dependency.requirements.map do |req|
+        updated_reqs = dependency.requirements.map do |req|
           source = req[:source]
           updated = updated_ref(source, onboarded: onboarded_requirement?(req))
           next req unless updated
@@ -73,6 +74,7 @@ module Dependabot
           new_source = source.merge(ref: updated)
           req.merge(source: new_source)
         end
+        wrap_requirements(updated_reqs)
       end
 
       private
@@ -81,7 +83,7 @@ module Dependabot
       # authoritative for the requirement's workflow. Only onboarded requirements get
       # per-source precision selection; everything else flows through the combined
       # finder exactly as before, so non-onboarded repos see byte-identical behavior.
-      sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
+      sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
       def onboarded_requirement?(req)
         reader = lockfile_reader
         return false unless reader
@@ -117,7 +119,7 @@ module Dependabot
       # requirement to the coarsest precision). Cached per ref so repeated refs share
       # one underlying clone. Falls back to the combined finder for sources whose ref
       # is not a version (SHA / branch), where precision has no meaning.
-      sig { params(source: T.nilable(T::Hash[Symbol, T.untyped])).returns(LatestVersionFinder) }
+      sig { params(source: T.nilable(Dependabot::DependencyRequirement::ObjectHash)).returns(LatestVersionFinder) }
       def latest_version_finder_for(source)
         ref = source&.fetch(:ref, nil)
         return T.must(latest_version_finder) unless ref && version_class.correct?(ref)
@@ -145,7 +147,7 @@ module Dependabot
       # without touching the shared combined dependency reported up to the rest of the
       # update.
       sig do
-        params(source: T::Hash[Symbol, T.untyped], ref: String)
+        params(source: Dependabot::DependencyRequirement::ObjectHash, ref: String)
           .returns(Dependabot::Dependency)
       end
       def per_source_dependency(source, ref)
@@ -184,7 +186,7 @@ module Dependabot
             if head_commit_for_ref_sha
               head_commit_for_ref_sha
             else
-              url = git_commit_checker.dependency_source_details&.fetch(:url)
+              url = git_commit_checker.dependency_source_details&.url
               source = T.must(Source.from_url(url))
 
               SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
@@ -193,7 +195,9 @@ module Dependabot
                 SharedHelpers.run_shell_command("git clone --no-recurse-submodules #{url} #{repo_contents_path}")
 
                 Dir.chdir(repo_contents_path) do
-                  ref_branch = find_container_branch(git_commit_checker.dependency_source_details&.fetch(:ref))
+                  ref_branch = ContainingBranchFinder.find(
+                    T.must(git_commit_checker.dependency_source_details&.ref)
+                  )
                   git_commit_checker.head_commit_for_local_branch(ref_branch) if ref_branch
                 end
               end
@@ -204,7 +208,7 @@ module Dependabot
       end
 
       sig do
-        params(source: T.nilable(T::Hash[Symbol, T.untyped]), onboarded: T::Boolean)
+        params(source: T.nilable(Dependabot::DependencyRequirement::ObjectHash), onboarded: T::Boolean)
           .returns(T.nilable(String))
       end
       def updated_ref(source, onboarded: false)
@@ -268,26 +272,6 @@ module Dependabot
           consider_version_branches_pinned: false,
           dependency_source_details: nil
         )
-      end
-
-      sig { params(sha: String).returns(T.nilable(String)) }
-      def find_container_branch(sha)
-        branches_including_ref = SharedHelpers.run_shell_command(
-          "git branch --remotes --contains #{sha}",
-          fingerprint: "git branch --remotes --contains <sha>"
-        ).split("\n").map { |branch| branch.strip.gsub("origin/", "") }
-        return if branches_including_ref.empty?
-
-        current_branch = branches_including_ref.find { |branch| branch.start_with?("HEAD -> ") }
-
-        if current_branch
-          current_branch.delete_prefix("HEAD -> ")
-        elsif branches_including_ref.size > 1
-          # If there are multiple non default branches including the pinned SHA, then it's unclear how we should proceed
-          raise "Multiple ambiguous branches (#{branches_including_ref.join(', ')}) include #{sha}!"
-        else
-          branches_including_ref.first
-        end
       end
     end
   end

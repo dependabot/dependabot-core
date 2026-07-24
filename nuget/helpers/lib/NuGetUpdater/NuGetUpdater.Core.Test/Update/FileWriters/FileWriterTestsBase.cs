@@ -16,14 +16,15 @@ public abstract class FileWriterTestsBase
         ImmutableArray<string> initialProjectDependencyStrings,
         ImmutableArray<string> requiredDependencyStrings,
         (string path, string contents)[] expectedFiles,
-        PackageManagementKind packageManagementKind = PackageManagementKind.Default
+        PackageManagementKind packageManagementKind = PackageManagementKind.Default,
+        string? packageManagementSpecialFileRelativePath = null
     )
     {
         using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(files);
         var repoContentsPath = new DirectoryInfo(tempDir.DirectoryPath);
         var initialProjectDependencies = initialProjectDependencyStrings.Select(s => new Dependency(s.Split('/')[0], s.Split('/')[1], DependencyType.Unknown)).ToImmutableArray();
         var requiredDependencies = requiredDependencyStrings.Select(s => new Dependency(s.Split('/')[0], s.Split('/')[1], DependencyType.Unknown)).ToImmutableArray();
-        var success = await FileWriter.UpdatePackageVersionsAsync(repoContentsPath, [.. files.Select(f => f.path)], initialProjectDependencies, requiredDependencies, packageManagementKind);
+        var success = await FileWriter.UpdatePackageVersionsAsync(repoContentsPath, [.. files.Select(f => f.path)], initialProjectDependencies, requiredDependencies, packageManagementKind, packageManagementSpecialFileRelativePath);
         Assert.True(success, "Expected UpdatePackageVersionsAsync to succeed.");
 
         var expectedFileNames = expectedFiles.Select(f => f.path).ToHashSet();
@@ -39,14 +40,15 @@ public abstract class FileWriterTestsBase
         (string path, string contents)[] files,
         ImmutableArray<string> initialProjectDependencyStrings,
         ImmutableArray<string> requiredDependencyStrings,
-        PackageManagementKind packageManagementKind = PackageManagementKind.Default
+        PackageManagementKind packageManagementKind = PackageManagementKind.Default,
+        string? packageManagementSpecialFileRelativePath = null
     )
     {
         using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(files);
         var repoContentsPath = new DirectoryInfo(tempDir.DirectoryPath);
         var initialProjectDependencies = initialProjectDependencyStrings.Select(s => new Dependency(s.Split('/')[0], s.Split('/')[1], DependencyType.Unknown)).ToImmutableArray();
         var requiredDependencies = requiredDependencyStrings.Select(s => new Dependency(s.Split('/')[0], s.Split('/')[1], DependencyType.Unknown)).ToImmutableArray();
-        var success = await FileWriter.UpdatePackageVersionsAsync(repoContentsPath, [.. files.Select(f => f.path)], initialProjectDependencies, requiredDependencies, packageManagementKind);
+        var success = await FileWriter.UpdatePackageVersionsAsync(repoContentsPath, [.. files.Select(f => f.path)], initialProjectDependencies, requiredDependencies, packageManagementKind, packageManagementSpecialFileRelativePath);
         Assert.False(success);
 
         var expectedFileNames = files.Select(f => f.path).ToHashSet();

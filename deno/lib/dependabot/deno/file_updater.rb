@@ -19,7 +19,7 @@ module Dependabot
         updated_files = []
 
         dependency_files.each do |file|
-          next unless MANIFEST_FILENAMES.include?(file.name)
+          next unless MANIFEST_FILENAMES.include?(File.basename(file.name))
 
           new_content = update_manifest_content(file)
           next if new_content == file.content
@@ -41,7 +41,7 @@ module Dependabot
 
       sig { override.void }
       def check_required_files
-        return if dependency_files.any? { |f| MANIFEST_FILENAMES.include?(f.name) }
+        return if dependency_files.any? { |f| MANIFEST_FILENAMES.include?(File.basename(f.name)) }
 
         raise "No deno.json or deno.jsonc found!"
       end

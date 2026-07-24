@@ -203,4 +203,30 @@ RSpec.describe Dependabot::Bazel::Version do
       end
     end
   end
+
+  describe ".correct?" do
+    it "accepts standard versions" do
+      expect(described_class.correct?("1.2.3")).to be true
+    end
+
+    it "accepts v-prefixed versions" do
+      expect(described_class.correct?("v1.2.3")).to be true
+    end
+
+    it "accepts .bcr.N suffixed versions" do
+      expect(described_class.correct?("1.2.3.bcr.1")).to be true
+    end
+
+    it "accepts v-prefixed prerelease versions" do
+      expect(described_class.correct?("v1.2.3-rc1")).to be true
+    end
+
+    it "rejects malformed strings" do
+      expect(described_class.correct?("not_valid!!!")).to be false
+    end
+
+    it "rejects nil" do
+      expect(described_class.correct?(nil)).to be false
+    end
+  end
 end

@@ -16,9 +16,12 @@ RSpec.describe Dependabot::UpdateGraphCommand do
       mark_job_as_processed: nil,
       record_update_job_error: nil,
       record_update_job_unknown_error: nil,
+      record_update_job_warning: nil,
+      record_workflow_result: nil,
       update_dependency_list: nil,
       increment_metric: nil,
-      wait_for_calls_to_finish: nil
+      wait_for_calls_to_finish: nil,
+      write_workflow_summary: nil
     )
   end
   let(:job_definition) do
@@ -60,6 +63,45 @@ RSpec.describe Dependabot::UpdateGraphCommand do
         expect(args[:dependency_submission].job_id).to eql(job_id)
         expect(args[:dependency_submission].package_manager).to eql("bundler")
       end
+
+      perform_job
+    end
+  end
+
+  describe "#perform_job when a directory has a non-fatal fetch error" do
+    subject(:perform_job) { job.perform_job }
+
+    let(:fetched_files) do
+      Dependabot::FetchedFiles.new(
+        dependency_files: [],
+        base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848",
+        directory_fetch_errors: {
+          "/" => Dependabot::PathDependenciesNotReachable.new(["./local-gem"])
+        }
+      )
+    end
+
+    before do
+      allow(Dependabot::FileParsers).to receive(:for_package_manager)
+      allow(Dependabot::DependencyGraphers).to receive(:for_package_manager)
+    end
+
+    it "hands the fetch error to the processor and submits a skipped snapshot for the affected directory" do
+      expect(service).to receive(:create_dependency_submission) do |args|
+        submission = args[:dependency_submission]
+
+        expect(submission).to be_a(GithubApi::DependencySubmission)
+        expect(submission.job_id).to eql(job_id)
+        expect(submission.status).to eq(GithubApi::DependencySubmission::SnapshotStatus::SKIPPED)
+        expect(submission.reason).to eq(
+          GithubApi::DependencySubmission::SKIPPED_REASON_PATH_DEPENDENCIES_NOT_REACHABLE
+        )
+        expect(submission.resolved_dependencies).to be_empty
+      end
+
+      # The affected directory is reported without ever parsing or graphing its files.
+      expect(Dependabot::FileParsers).not_to receive(:for_package_manager)
+      expect(Dependabot::DependencyGraphers).not_to receive(:for_package_manager)
 
       perform_job
     end

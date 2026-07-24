@@ -41,7 +41,7 @@ module Dependabot
 
           if job.security_updates_only?
             return true if T.must(job.dependencies).count > 1
-            return true if job.dependency_groups.any? { |group| group["applies-to"] == "security-updates" }
+            return true if job.dependency_groups.any? { |group| group.applies_to == "security-updates" }
 
             return false
           end
@@ -136,9 +136,9 @@ module Dependabot
               # are not also in the PR of the group being checked, preventing erroneous PR closures
               group_pr_deps = dependency_snapshot.dependencies_in_existing_pr_for_group(group)
               group_pr_deps.each do |dep|
-                dep_dir = dep["directory"] || "/"
+                dep_dir = dep.directory || "/"
                 existing_pr_dependencies[dep_dir] ||= Set.new
-                existing_pr_dependencies[dep_dir].add(dep["dependency-name"])
+                existing_pr_dependencies[dep_dir].add(dep.name)
               end
             end
 

@@ -1,9 +1,11 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "time"
 
 require "dependabot/credential"
+require "dependabot/clients/github_release"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/metadata_finders/base"
@@ -12,39 +14,61 @@ require "dependabot/utils"
 module Dependabot
   module MetadataFinders
     class Base
-      class GitLabRelease
+      class GitLabRelease < T::ImmutableStruct
         extend T::Sig
 
-        sig { returns(String) }
-        attr_reader :name
-
-        sig { returns(String) }
-        attr_reader :tag_name
-
-        sig { returns(String) }
-        attr_reader :body
-
-        sig { returns(String) }
-        attr_reader :html_url
+        const :name, String
+        const :tag_name, String
+        const :body, T.nilable(String)
+        const :html_url, String
+        const :authored_at, Time
 
         sig do
           params(
-            name: String,
-            tag_name: String,
-            body: String,
-            html_url: String
-          ).void
+            tag: Gitlab::ObjectifiedHash,
+            source_url: String
+          ).returns(T.nilable(GitLabRelease))
         end
-        def initialize(name:, tag_name:, body:, html_url:)
-          @name = name
-          @tag_name = tag_name
-          @body = body
-          @html_url = html_url
+        def self.from_tag(tag, source_url:)
+          name = T.cast(tag["name"], Object)
+          release = T.cast(tag["release"], Object)
+          commit = T.cast(tag["commit"], Object)
+          return unless name.is_a?(String)
+          return unless release.is_a?(Gitlab::ObjectifiedHash)
+          return unless commit.is_a?(Gitlab::ObjectifiedHash)
+
+          tag_name = T.cast(release["tag_name"], Object)
+          return unless tag_name.is_a?(String)
+
+          authored_at = time_value(T.cast(commit["authored_date"], Object))
+          return unless authored_at
+
+          description = T.cast(release["description"], Object)
+          new(
+            name: name,
+            tag_name: tag_name,
+            body: description.is_a?(String) ? description : nil,
+            html_url: "#{source_url}/tags/#{name}",
+            authored_at: authored_at
+          )
         end
+
+        sig { params(value: Object).returns(T.nilable(Time)) }
+        def self.time_value(value)
+          return value if value.is_a?(Time)
+          return unless value.is_a?(String)
+
+          Time.parse(value)
+        rescue ArgumentError
+          nil
+        end
+        private_class_method :time_value
       end
 
       class ReleaseFinder
         extend T::Sig
+
+        ReleaseType = T.type_alias { T.any(Dependabot::Clients::GithubRelease, GitLabRelease) }
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
@@ -98,14 +122,13 @@ module Dependabot
 
         private
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[ReleaseType]) }
         def all_dep_releases
           releases = all_releases
           dep_prefix = dependency.name.downcase
 
           releases_with_dependency_name =
             releases
-            .reject { |r| r.tag_name.nil? }
             .select { |r| r.tag_name.start_with?(dep_prefix) }
 
           return releases unless releases_with_dependency_name.any?
@@ -113,12 +136,12 @@ module Dependabot
           releases_with_dependency_name
         end
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[ReleaseType]) }
         def all_releases
-          @all_releases ||= T.let(fetch_dependency_releases, T.nilable(T::Array[T.untyped]))
+          @all_releases ||= T.let(fetch_dependency_releases, T.nilable(T::Array[ReleaseType]))
         end
 
-        sig { returns(T.nilable(T::Array[T.untyped])) }
+        sig { returns(T.nilable(T::Array[ReleaseType])) }
         def relevant_releases
           releases = releases_since_previous_version
 
@@ -139,7 +162,7 @@ module Dependabot
           end
         end
 
-        sig { returns(T.nilable(T::Array[T.untyped])) }
+        sig { returns(T.nilable(T::Array[ReleaseType])) }
         def releases_since_previous_version
           return [updated_release].compact unless previous_version
 
@@ -158,21 +181,21 @@ module Dependabot
           end
         end
 
-        sig { params(releases: T::Array[T.untyped]).returns(T.nilable(T::Array[T.untyped])) }
+        sig { params(releases: T::Array[ReleaseType]).returns(T.nilable(T::Array[ReleaseType])) }
         def filter_releases_using_previous_release(releases)
           return releases if releases.index(previous_release).nil?
 
           releases.first(T.must(releases.index(previous_release)))
         end
 
-        sig { params(releases: T::Array[T.untyped]).returns(T.nilable(T::Array[T.untyped])) }
+        sig { params(releases: T::Array[ReleaseType]).returns(T.nilable(T::Array[ReleaseType])) }
         def filter_releases_using_updated_release(releases)
           return releases if releases.index(updated_release).nil?
 
           releases[releases.index(updated_release)..-1]
         end
 
-        sig { params(releases: T::Array[T.untyped], conservative: T::Boolean).returns(T::Array[T.untyped]) }
+        sig { params(releases: T::Array[ReleaseType], conservative: T::Boolean).returns(T::Array[ReleaseType]) }
         def filter_releases_using_previous_version(releases, conservative:)
           releases.reject do |release|
             cleaned_tag = release.tag_name.gsub(/^[^0-9]*/, "")
@@ -193,7 +216,7 @@ module Dependabot
           end
         end
 
-        sig { params(releases: T::Array[T.untyped], conservative: T::Boolean).returns(T::Array[T.untyped]) }
+        sig { params(releases: T::Array[ReleaseType], conservative: T::Boolean).returns(T::Array[ReleaseType]) }
         def filter_releases_using_updated_version(releases, conservative:)
           updated_version = version_class.new(new_version)
 
@@ -216,17 +239,17 @@ module Dependabot
           end
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T.nilable(ReleaseType)) }
         def updated_release
           release_for_version(new_version)
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T.nilable(ReleaseType)) }
         def previous_release
           release_for_version(previous_version)
         end
 
-        sig { params(version: T.nilable(String)).returns(T.untyped) }
+        sig { params(version: T.nilable(String)).returns(T.nilable(ReleaseType)) }
         def release_for_version(version)
           return nil unless version
 
@@ -236,22 +259,23 @@ module Dependabot
             all_dep_releases.find { |r| release_regex.match?(r.name.to_s) }
         end
 
-        sig { params(release: T.untyped).returns(String) }
+        sig { params(release: ReleaseType).returns(String) }
         def serialize_release(release)
-          rel = release
-          title = "## #{rel.name.to_s == '' ? rel.tag_name : rel.name}\n"
-          body = if rel.body.to_s.gsub(/\n*\z/m, "") == ""
+          name = release.name
+          title = "## #{name.to_s == '' ? release.tag_name : name}\n"
+          body = if release.body.to_s.gsub(/\n*\z/m, "") == ""
                    "No release notes provided."
                  else
-                   rel.body.gsub(/\n*\z/m, "")
+                   T.must(release.body).gsub(/\n*\z/m, "")
                  end
 
-          release_body_includes_title?(rel) ? body : title + body
+          release_body_includes_title?(release) ? body : title + body
         end
 
-        sig { params(release: T.untyped).returns(T::Boolean) }
+        sig { params(release: ReleaseType).returns(T::Boolean) }
         def release_body_includes_title?(release)
-          title = release.name.to_s == "" ? release.tag_name : release.name
+          name = release.name
+          title = name.nil? || name.empty? ? release.tag_name : name
           release.body.to_s.match?(/\A\s*\#*\s*#{Regexp.quote(title)}/m)
         end
 
@@ -265,7 +289,7 @@ module Dependabot
           dependency.version_class
         end
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[ReleaseType]) }
         def fetch_dependency_releases
           return [] unless source
 
@@ -279,45 +303,45 @@ module Dependabot
           end
         end
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[Dependabot::Clients::GithubRelease]) }
         def fetch_github_releases
-          releases = T.unsafe(github_client).releases(T.must(source).repo, per_page: 100)
-
-          # Remove any releases without a tag name. These are draft releases and
-          # aren't yet associated with a tag, so shouldn't be used.
-          releases = releases.reject { |r| r.tag_name.nil? }
+          releases = parsed_github_releases
 
           clean_release_names =
-            releases.map { |r| r.tag_name.gsub(/^[^0-9\.]*/, "") }
+            releases.map { |release| release.tag_name.gsub(/^[^0-9\.]*/, "") }
 
           if clean_release_names.all? { |nm| version_class.correct?(nm) }
-            releases.sort_by do |r|
-              version_class.new(r.tag_name.gsub(/^[^0-9\.]*/, ""))
+            releases.sort_by do |release|
+              version_class.new(release.tag_name.gsub(/^[^0-9\.]*/, ""))
             end.reverse
           else
-            releases.sort_by(&:id).reverse
+            releases.sort_by { |release| release.id || 0 }.reverse
           end
         rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons
           []
         end
 
-        sig { returns(T::Array[T.untyped]) }
-        def fetch_gitlab_releases
-          releases =
-            T.unsafe(gitlab_client)
-             .tags(T.must(source).repo)
-             .select(&:release)
-             .sort_by { |r| r.commit.authored_date }
-             .reverse
-
-          releases.map do |tag|
-            GitLabRelease.new(
-              name: tag.name,
-              tag_name: tag.release.tag_name,
-              body: tag.release.description,
-              html_url: "#{T.must(source).url}/tags/#{tag.name}"
-            )
+        sig { returns(T::Array[Dependabot::Clients::GithubRelease]) }
+        def parsed_github_releases
+          resources = T.let(
+            github_client.releases(T.must(source).repo, per_page: 100),
+            T.nilable(T::Array[Sawyer::Resource])
+          )
+          releases = (resources || []).filter_map do |release|
+            Dependabot::Clients::GithubRelease.from_resource(release)
           end
+          releases
+        end
+
+        sig { returns(T::Array[GitLabRelease]) }
+        def fetch_gitlab_releases
+          tags = gitlab_client.tags(T.must(source).repo)
+          releases = tags.filter_map do |tag|
+            next unless tag.is_a?(Gitlab::ObjectifiedHash)
+
+            GitLabRelease.from_tag(tag, source_url: T.must(source).url)
+          end
+          releases.sort_by(&:authored_at).reverse
         rescue Gitlab::Error::NotFound
           []
         end
@@ -357,18 +381,30 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def previous_ref
-          previous_refs = T.must(dependency.previous_requirements).filter_map do |r|
-            r.dig(:source, "ref") || r.dig(:source, :ref)
+          previous_refs = T.must(dependency.previous_requirements).filter_map do |requirement|
+            requirement_ref(requirement)
           end.uniq
           previous_refs.first if previous_refs.one?
         end
 
         sig { returns(T.nilable(String)) }
         def new_ref
-          new_refs = dependency.requirements.filter_map do |r|
-            r.dig(:source, "ref") || r.dig(:source, :ref)
+          new_refs = dependency.requirements.filter_map do |requirement|
+            requirement_ref(requirement)
           end.uniq
           new_refs.first if new_refs.one?
+        end
+
+        sig { params(requirement: Dependabot::DependencyRequirement).returns(T.nilable(String)) }
+        def requirement_ref(requirement)
+          source = requirement.source
+          return unless source
+
+          symbol_ref = source[:ref]
+          return symbol_ref if symbol_ref.is_a?(String)
+
+          string_ref = source["ref"]
+          string_ref if string_ref.is_a?(String)
         end
 
         sig { returns(T::Boolean) }

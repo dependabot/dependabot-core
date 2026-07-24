@@ -51,7 +51,7 @@ module Dependabot
       )
         @latest_version = T.let(nil, T.nilable(T.any(String, Gem::Version)))
         @latest_resolvable_version = T.let(nil, T.nilable(T.any(String, Dependabot::Version)))
-        @updated_requirements = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
+        @updated_requirements = T.let(nil, T.nilable(T::Array[Dependabot::DependencyRequirement]))
         @vulnerability_audit = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
         @vulnerable_versions = T.let(nil, T.nilable(T::Array[T.any(String, Gem::Version)]))
 
@@ -162,7 +162,7 @@ module Dependabot
         T.unsafe(version_resolver.latest_resolvable_previous_version(updated_version))
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         resolvable_version =
           if preferred_resolvable_version.is_a?(version_class)
@@ -483,7 +483,8 @@ module Dependabot
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
             latest_allowable_version: latest_version,
-            repo_contents_path: repo_contents_path
+            repo_contents_path: repo_contents_path,
+            security_advisories: security_advisories
           )
       end
 
@@ -502,7 +503,7 @@ module Dependabot
         # If there was a semver requirement provided or the dependency was
         # pinned to a version, look for the latest tag
         if semver_req || git_commit_checker.pinned_ref_looks_like_version?
-          latest_tag = git_commit_checker.local_tag_for_latest_version
+          latest_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
           return {
             sha: latest_tag&.fetch(:commit_sha),
             version: latest_tag&.fetch(:tag)&.gsub(/^[^\d]*/, "")
@@ -525,8 +526,8 @@ module Dependabot
 
         # Update the git tag if updating a pinned version
         if git_commit_checker.pinned_ref_looks_like_version? &&
-           !git_commit_checker.local_tag_for_latest_version.nil?
-          new_tag = git_commit_checker.local_tag_for_latest_version
+           !git_commit_checker.local_tag_for_latest_version(update_cooldown).nil?
+          new_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
           return dependency_source_details&.merge(ref: new_tag&.fetch(:tag))
         end
 
@@ -582,6 +583,12 @@ module Dependabot
       # per-package filtering.
       sig { void }
       def apply_npmrc_min_release_age
+        # Security fixes must not be blocked by a release-age gate the user
+        # configured for regular updates. npm install/update is invoked with
+        # --min-release-age=0 for security updates, so the cooldown floor would
+        # only filter out the security fix version at selection time.
+        return if security_update?
+
         npmrc_days = npmrc_min_release_age_days
         return unless npmrc_days&.positive?
 

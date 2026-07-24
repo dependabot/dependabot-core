@@ -24,12 +24,34 @@ module Dependabot
       T.cast(super, Dependabot::Version)
     end
 
+    sig do
+      overridable
+        .params(_from_version: String, _to_version: String)
+        .returns(T.nilable(String))
+    end
+    def self.update_type(_from_version, _to_version)
+      nil
+    end
+
     # Opt-in to Rubygems 4 behavior
     sig { override.overridable.params(version: VersionParameter).returns(T::Boolean) }
     def self.correct?(version)
       return false if version.nil?
 
       version.to_s.match?(ANCHORED_VERSION_PATTERN)
+    end
+
+    # RubyGems 4 eagerly computes a numeric sort key in Gem::Version#initialize and
+    # skips it for prereleases. Dependabot's subclasses override #prerelease? with
+    # ecosystem-specific semantics, so a version with alphabetic segments (e.g.
+    # "1.0.0.RELEASE" or "2.0.0.post1") can report prerelease? == false and reach
+    # RubyGems' radix comparison, which raises when a segment is a String. Returning
+    # nil for those versions falls back to the segment-by-segment comparison.
+    sig { override.overridable.returns(T.nilable(Integer)) }
+    def compute_sort_key
+      return if canonical_segments.any?(String)
+
+      super
     end
 
     sig { overridable.returns(String) }

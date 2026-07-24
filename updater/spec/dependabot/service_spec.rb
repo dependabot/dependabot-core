@@ -215,7 +215,7 @@ RSpec.describe Dependabot::Service do
   describe "Instance methods delegated to @client" do
     {
       mark_job_as_processed: %w(mock_sha),
-      record_ecosystem_versions: %w(mock_ecosystem_versions)
+      record_ecosystem_versions: [{ bundler: "2.6.0" }]
     }.each do |method, arguments|
       before { allow(mock_client).to receive(method) }
 
@@ -769,6 +769,45 @@ RSpec.describe Dependabot::Service do
         expect(service.summary)
           .to include("dependabot-fortran")
       end
+    end
+  end
+
+  describe "#record_workflow_result" do
+    context "when workflow_job_summary experiment is enabled" do
+      before do
+        Dependabot::Experiments.register(:workflow_job_summary, true)
+      end
+
+      it "delegates to the workflow_summary instance" do
+        service.record_workflow_result(directory: "/app", status: "ok", details: "5 dependencies")
+
+        markdown = service.workflow_summary.build_markdown(command: "graph", package_manager: "bundler")
+        expect(markdown).to include("| `/app` | ✅ Ok | 5 dependencies |")
+      end
+    end
+
+    context "when workflow_job_summary experiment is disabled" do
+      before do
+        Dependabot::Experiments.register(:workflow_job_summary, false)
+      end
+
+      it "does not record results" do
+        service.record_workflow_result(directory: "/app", status: "ok", details: "5 dependencies")
+
+        markdown = service.workflow_summary.build_markdown(command: "graph", package_manager: "bundler")
+        expect(markdown).not_to include("/app")
+      end
+    end
+  end
+
+  describe "#write_workflow_summary" do
+    before do
+      allow(Dependabot::Environment).to receive(:github_actions?).and_return(false)
+    end
+
+    it "delegates to workflow_summary#write with command and package_manager" do
+      expect(service.workflow_summary).to receive(:write).with(command: "graph", package_manager: "bundler")
+      service.write_workflow_summary(command: "graph", package_manager: "bundler")
     end
   end
 end
