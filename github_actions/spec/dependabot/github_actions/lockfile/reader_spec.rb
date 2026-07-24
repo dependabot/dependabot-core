@@ -19,6 +19,20 @@ RSpec.describe Dependabot::GithubActions::Lockfile::Reader do
       expect(described_class.from_files([lockfile])).to be_a(described_class)
     end
 
+    it "returns a reader when the job directory makes the lockfile name relative" do
+      relative_lockfile = Dependabot::DependencyFile.new(
+        name: "actions.lock",
+        directory: ".github/workflows",
+        content: lock_body
+      )
+      expect(described_class.from_files([relative_lockfile])).to be_a(described_class)
+    end
+
+    it "ignores actions.lock outside the workflow directory" do
+      unrelated = Dependabot::DependencyFile.new(name: "actions.lock", directory: "action", content: lock_body)
+      expect(described_class.from_files([unrelated])).to be_nil
+    end
+
     it "returns nil when there is no lockfile" do
       other = Dependabot::DependencyFile.new(name: ".github/workflows/ci.yml", content: "on: push")
       expect(described_class.from_files([other])).to be_nil
@@ -86,6 +100,16 @@ RSpec.describe Dependabot::GithubActions::Lockfile::Reader do
 
     it "raises when the lockfile is not a mapping" do
       expect { described_class.new("- just\n- a\n- list").version }
+        .to raise_error(Dependabot::DependencyFileNotParseable)
+    end
+
+    it "raises DependencyFileNotParseable for disallowed classes" do
+      expect { described_class.new("version: 2026-07-24").version }
+        .to raise_error(Dependabot::DependencyFileNotParseable)
+    end
+
+    it "raises DependencyFileNotParseable for aliases" do
+      expect { described_class.new("version: &version v0.0.2\nother: *version").version }
         .to raise_error(Dependabot::DependencyFileNotParseable)
     end
   end

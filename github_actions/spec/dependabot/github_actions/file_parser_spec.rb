@@ -55,7 +55,8 @@ RSpec.describe Dependabot::GithubActions::FileParser do
     context "with an actions lockfile" do
       let(:lockfile) do
         Dependabot::DependencyFile.new(
-          name: Dependabot::GithubActions::LOCKFILE_PATH,
+          name: Dependabot::GithubActions::LOCKFILE_NAME,
+          directory: Dependabot::GithubActions::WORKFLOW_DIRECTORY,
           content: "not workflow yaml"
         )
       end

@@ -171,7 +171,7 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def workflow_files
-        dependency_files.reject { |file| file.name == LOCKFILE_PATH }
+        dependency_files.reject { |file| file.path.delete_prefix("/") == LOCKFILE_PATH }
       end
 
       sig { override.void }

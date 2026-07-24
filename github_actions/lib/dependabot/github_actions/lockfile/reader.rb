@@ -38,7 +38,7 @@ module Dependabot
         # repo has no lockfile (whole repo is on the legacy path).
         sig { params(files: T::Array[Dependabot::DependencyFile]).returns(T.nilable(Reader)) }
         def self.from_files(files)
-          file = files.find { |f| f.name == LOCKFILE_NAME || f.name == LOCKFILE_PATH }
+          file = files.find { |f| f.path.delete_prefix("/") == LOCKFILE_PATH }
           return nil unless file
 
           content = file.content
@@ -115,7 +115,7 @@ module Dependabot
           raise parse_error("lockfile is not a mapping") unless parsed.is_a?(Hash)
 
           parsed
-        rescue Psych::SyntaxError => e
+        rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias => e
           raise parse_error(e.message)
         end
 
