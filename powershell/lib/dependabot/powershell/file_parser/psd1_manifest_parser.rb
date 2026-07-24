@@ -84,7 +84,7 @@ module Dependabot
         def strip_line_comments(text)
           result = +""
           quote = T.let(nil, T.nilable(String))
-          in_comment = false
+          in_comment = T.let(false, T::Boolean)
 
           text.each_char do |char|
             if in_comment
