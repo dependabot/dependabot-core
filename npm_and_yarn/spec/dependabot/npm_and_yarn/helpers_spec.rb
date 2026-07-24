@@ -284,6 +284,26 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       expect(described_class.package_manager_run_command("npm", "-v", env: env)).to eq("11.9.0")
     end
 
+    it "fails closed without retrying when merged COREPACK_INTEGRITY_KEYS are present" do
+      merged_keys = JSON.generate("npm" => [{ "keyid" => "SHA256:merged", "key" => "abc" }])
+      env = {
+        "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm",
+        "COREPACK_INTEGRITY_KEYS" => merged_keys
+      }
+      error = StandardError.new("Internal Error: No compatible signature found in package metadata")
+
+      # Only one attempt: with merged keys already set we never disable verification.
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: env
+      ).once.and_raise(error)
+
+      expect do
+        described_class.package_manager_run_command("npm", "-v", env: env)
+      end.to raise_error(StandardError, /No compatible signature found in package metadata/)
+    end
+
     it "does not retry for signature errors when no private registry env is configured" do
       error = StandardError.new("Internal Error: No compatible signature found in package metadata")
 
@@ -743,11 +763,22 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         .with(:enable_private_registry_for_corepack).and_return(true)
       allow(Dependabot::Experiments).to receive(:enabled?)
         .with(:enable_corepack_for_npm_and_yarn).and_return(true)
+      # Building env for a replaces-base registry fetches Corepack signing keys.
+      # Stub the endpoints so these examples stay hermetic and don't hit the network.
+      stub_request(:get, %r{/-/npm/v1/keys\z})
+        .to_return(
+          status: 200,
+          body: JSON.generate("keys" => [{ "keyid" => "SHA256:test", "key" => "test-key" }])
+        )
+      # Ensure a fresh integrity-keys cache so the stubs are exercised each example.
+      Dependabot::NpmAndYarn::RegistryHelper.instance_variable_set(:@integrity_keys_cache, {})
     end
 
     after do
       described_class.dependency_files = []
       described_class.credentials = []
+      # Clear fake keys so they don't leak into later randomized specs.
+      Dependabot::NpmAndYarn::RegistryHelper.instance_variable_set(:@integrity_keys_cache, {})
     end
 
     describe ".build_corepack_env_variables" do

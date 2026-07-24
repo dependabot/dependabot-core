@@ -686,6 +686,10 @@ module Dependabot
         return false if default_npm_registry?(registry)
         return false unless error.message.include?(COREPACK_SIGNATURE_METADATA_ERROR)
 
+        # Only retry (disabling verification) when no integrity keys are configured.
+        # For a replaces-base registry we proactively set merged npm + registry keys,
+        # so a remaining signature failure is a genuine integrity problem: fail closed
+        # rather than silently disabling verification.
         !env.key?(RegistryHelper::COREPACK_INTEGRITY_KEYS_ENV)
       end
 
