@@ -12,7 +12,11 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openjdk-21-jdk-headless \
     ca-certificates-java \
+    && chgrp dependabot /etc/ssl/certs/java /etc/ssl/certs/java/cacerts \
+    && chmod g+w /etc/ssl/certs/java /etc/ssl/certs/java/cacerts \
     && rm -rf /var/lib/apt/lists/*
+
+COPY --chmod=755 updater/bin/java-truststore-entrypoint.sh /usr/local/bin/java-truststore-entrypoint.sh
 
 USER dependabot
 
@@ -24,3 +28,6 @@ ENV PATH=$GRADLE_HOME/bin:$PATH
 COPY --from=gradle $GRADLE_HOME $GRADLE_HOME
 COPY --chown=dependabot:dependabot --parents gradle maven common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+
+USER root
+ENTRYPOINT ["/usr/local/bin/java-truststore-entrypoint.sh"]
