@@ -39,6 +39,12 @@ RSpec.describe Dependabot::DependencyRequirement do
       expect(copy).to eq(original)
       expect(copy).not_to equal(original)
     end
+
+    it "preserves unknown keys and values" do
+      requirement = described_class.create(requirement_hash.merge(custom: { count: 1 }))
+
+      expect(requirement[:custom]).to eq(count: 1)
+    end
   end
 
   describe "typed readers" do
@@ -64,6 +70,56 @@ RSpec.describe Dependabot::DependencyRequirement do
       req = described_class.create(requirement: ">= 1.0", file: "Gemfile", groups: nil, source: nil)
 
       expect(req.groups).to be_nil
+    end
+
+    it "returns the unfixable requirement sentinel" do
+      req = described_class.create(requirement: :unfixable, file: "Gemfile", groups: [], source: nil)
+
+      expect(req.requirement).to eq(:unfixable)
+    end
+
+    it "rejects malformed scalar fields" do
+      malformed_requirement = described_class.create(requirement_hash.merge(requirement: 1))
+      malformed_requirement_symbol = described_class.create(requirement_hash.merge(requirement: :unknown))
+      malformed_file = described_class.create(requirement_hash.merge(file: false))
+
+      expect { malformed_requirement.requirement }
+        .to raise_error(TypeError, "requirement must be a string, :unfixable, or nil")
+      expect { malformed_requirement_symbol.requirement }
+        .to raise_error(TypeError, "requirement must be a string, :unfixable, or nil")
+      expect { malformed_file.file }
+        .to raise_error(TypeError, "file must be a string or nil")
+    end
+
+    it "rejects malformed groups" do
+      malformed_container = described_class.create(requirement_hash.merge(groups: "default"))
+      malformed_entry = described_class.create(requirement_hash.merge(groups: [:default, 1]))
+
+      expect { malformed_container.groups }
+        .to raise_error(TypeError, "groups must be an array of strings or symbols, or nil")
+      expect { malformed_entry.groups }
+        .to raise_error(TypeError, "groups must be an array of strings or symbols, or nil")
+    end
+
+    it "rejects malformed source and metadata hashes" do
+      malformed_source = described_class.create(requirement_hash.merge(source: []))
+      malformed_source_key = described_class.create(requirement_hash.merge(source: { 1 => "rubygems" }))
+      malformed_metadata = described_class.create(requirement_hash.merge(metadata: "rails.version"))
+
+      expect { malformed_source.source }
+        .to raise_error(TypeError, "source must be a hash with string or symbol keys, or nil")
+      expect { malformed_source_key.source }
+        .to raise_error(TypeError, "source must be a hash with string or symbol keys, or nil")
+      expect { malformed_metadata.metadata }
+        .to raise_error(TypeError, "metadata must be a hash with string or symbol keys, or nil")
+    end
+
+    it "returns the mutable source and metadata hashes" do
+      requirement.source[:mirror] = "https://example.com"
+      requirement.metadata[:property_name] = "rack.version"
+
+      expect(requirement.dig(:source, :mirror)).to eq("https://example.com")
+      expect(requirement.dig(:metadata, :property_name)).to eq("rack.version")
     end
   end
 

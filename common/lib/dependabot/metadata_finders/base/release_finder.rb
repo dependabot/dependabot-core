@@ -400,10 +400,10 @@ module Dependabot
           source = requirement.source
           return unless source
 
-          symbol_ref = T.cast(source[:ref], Object)
+          symbol_ref = source[:ref]
           return symbol_ref if symbol_ref.is_a?(String)
 
-          string_ref = T.cast(source["ref"], Object)
+          string_ref = source["ref"]
           string_ref if string_ref.is_a?(String)
         end
 
