@@ -690,57 +690,53 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
       end
     end
 
-    # CliEngine is the only engine; these examples stub the Engine.build boundary so
-    # the wiring stays hermetic. When an actions.lock onboards a changed workflow, the
+    # Stub the CLI boundary so the wiring stays hermetic. When an actions.lock
+    # onboards a changed workflow, the
     # engine is fed the *rewritten* workflow content and its re-pinned lock is emitted
     # as an additional file; the workflow YAML still comes from the regex path. The
     # canned relock result mirrors what the binary writes (asserted in cli_engine_spec).
     describe "relock through the lockfile engine" do
       let(:relocked_lock_content) do
         <<~LOCK
-          version: v0.0.1
+          version: v0.0.2
           workflows:
             ".github/workflows/workflow.yml":
-              - "actions/setup-node@v1.1.0:sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686"
+              - "actions/setup-node@v1.1.0"
           dependencies:
-            "actions/setup-node@v1.1.0:sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686":
-              branch: master
+            "actions/setup-node@v1.1.0":
+              ref: v1.1.0
               commit: sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686
               owner_id: 44036562
               repo_id: 167274481
-              tag: v1.1.0
         LOCK
       end
       let(:lockfile) do
         Dependabot::DependencyFile.new(
           name: ".github/workflows/actions.lock",
           content: <<~LOCK
-            version: v0.0.1
+            version: v0.0.2
             workflows:
               ".github/workflows/workflow.yml":
-                - "actions/setup-node@master:sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686"
+                - "actions/setup-node@master"
             dependencies:
-              "actions/setup-node@master:sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686":
-                branch: master
+              "actions/setup-node@master":
+                ref: master
                 commit: sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686
                 owner_id: 44036562
                 repo_id: 167274481
-                tag: master
           LOCK
         )
       end
       let(:files) { [workflow_file, lockfile] }
       let(:fake_engine) do
         instance_double(
-          Dependabot::GithubActions::Lockfile::Engine,
-          relock: Dependabot::GithubActions::Lockfile::RelockResult.new(
-            lockfile_content: relocked_lock_content
-          )
+          Dependabot::GithubActions::Lockfile::CliEngine,
+          relock: relocked_lock_content
         )
       end
 
       before do
-        allow(Dependabot::GithubActions::Lockfile::Engine).to receive(:build).and_return(fake_engine)
+        allow(Dependabot::GithubActions::Lockfile::CliEngine).to receive(:new).and_return(fake_engine)
       end
 
       it "emits the re-pinned lockfile alongside the rewritten workflow" do
@@ -752,10 +748,8 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
 
       it "re-pins the lock to the bumped ref read back from the workflow" do
         lock = updated_files.find { |f| f.name == ".github/workflows/actions.lock" }
-        expect(lock.content).to include(
-          "actions/setup-node@v1.1.0:sha1-5273d0df9c603edc4284ac8402cf650b4f1f6686"
-        )
-        expect(lock.content).not_to include("actions/setup-node@master:")
+        expect(lock.content).to include("actions/setup-node@v1.1.0")
+        expect(lock.content).not_to include("actions/setup-node@master")
       end
 
       it "still rewrites the workflow YAML via the regex path, not the engine" do
@@ -763,28 +757,91 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         expect(workflow.content).to include("actions/setup-node@v1.1.0")
       end
 
+      it "targets only the changed workflow" do
+        updated_files
+
+        expect(fake_engine).to have_received(:relock).with(
+          workflow_files: anything,
+          lockfile: lockfile,
+          workflow_paths: [".github/workflows/workflow.yml"]
+        )
+      end
+
+      context "when an onboarded dependency entry is malformed" do
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: ".github/workflows/actions.lock",
+            content: super().content.sub("    owner_id: 44036562\n", "")
+          )
+        end
+
+        it "raises instead of silently relocking" do
+          expect { updated_files }
+            .to raise_error(Dependabot::DependencyFileNotParseable, /missing required field.*owner_id/)
+        end
+      end
+
+      context "when the onboarded lockfile version is unsupported" do
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: ".github/workflows/actions.lock",
+            content: super().content.sub("version: v0.0.2", "version: v9.0.0")
+          )
+        end
+
+        it "raises UnsupportedLockfileVersion" do
+          expect { updated_files }
+            .to raise_error(Dependabot::GithubActions::Lockfile::UnsupportedLockfileVersion)
+        end
+      end
+
       context "when the lock does not onboard the changed workflow" do
         let(:lockfile) do
           Dependabot::DependencyFile.new(
             name: ".github/workflows/actions.lock",
             content: <<~LOCK
-              version: v0.0.1
+              version: v0.0.2
               workflows:
                 ".github/workflows/other.yml":
-                  - "actions/checkout@v4:sha1-34e1c0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0"
+                  - "actions/checkout@v4"
               dependencies:
-                "actions/checkout@v4:sha1-34e1c0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0":
-                  branch: main
+                "actions/checkout@v4":
+                  ref: v4
                   commit: sha1-34e1c0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0
                   owner_id: 44036562
                   repo_id: 197814280
-                  tag: v4
             LOCK
           )
         end
 
         it "stays on the regex-only path and never emits the lock" do
           expect(updated_files.map(&:name)).to eq([".github/workflows/workflow.yml"])
+        end
+
+        context "when the untouched lock entry is malformed" do
+          let(:lockfile) do
+            Dependabot::DependencyFile.new(
+              name: ".github/workflows/actions.lock",
+              content: super().content.sub("    owner_id: 44036562\n", "")
+            )
+          end
+
+          it "stays on the regex-only path" do
+            expect(updated_files.map(&:name)).to eq([".github/workflows/workflow.yml"])
+          end
+        end
+
+        context "when the untouched lockfile version is unsupported" do
+          let(:lockfile) do
+            Dependabot::DependencyFile.new(
+              name: ".github/workflows/actions.lock",
+              content: super().content.sub("version: v0.0.2", "version: v9.0.0")
+            )
+          end
+
+          it "stays on the regex-only path" do
+            expect(updated_files.map(&:name)).to eq([".github/workflows/workflow.yml"])
+          end
         end
       end
     end

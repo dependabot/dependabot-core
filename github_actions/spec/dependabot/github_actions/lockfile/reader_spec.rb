@@ -33,18 +33,11 @@ RSpec.describe Dependabot::GithubActions::Lockfile::Reader do
   describe "#version" do
     subject { described_class.new(lock_body).version }
 
-    it { is_expected.to eq("v0.0.1") }
+    it { is_expected.to eq("v0.0.2") }
   end
 
-  describe "#onboarded_paths / #onboarded?" do
+  describe "#onboarded?" do
     subject(:reader) { described_class.new(lock_body) }
-
-    it "lists the workflows the lock is authoritative for" do
-      expect(reader.onboarded_paths).to contain_exactly(
-        ".github/workflows/workflow.yml",
-        ".github/workflows/unmanaged.yml"
-      )
-    end
 
     it "reports onboarded for a listed workflow" do
       expect(reader.onboarded?(".github/workflows/workflow.yml")).to be(true)
@@ -87,40 +80,13 @@ RSpec.describe Dependabot::GithubActions::Lockfile::Reader do
 
   describe "invalid YAML" do
     it "raises DependencyFileNotParseable" do
-      expect { described_class.new("\tnot: [valid").onboarded_paths }
+      expect { described_class.new("\tnot: [valid").version }
         .to raise_error(Dependabot::DependencyFileNotParseable)
     end
 
     it "raises when the lockfile is not a mapping" do
       expect { described_class.new("- just\n- a\n- list").version }
         .to raise_error(Dependabot::DependencyFileNotParseable)
-    end
-  end
-
-  describe "pin algorithm-prefix validation" do
-    it "raises DependencyFileNotParseable on a bare-hex pin (no algo prefix)" do
-      bare = <<~LOCK
-        version: v0.0.1
-        workflows:
-          ".github/workflows/ci.yml":
-            - "actions/checkout@v4:34e1c0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0"
-      LOCK
-      expect { described_class.new(bare) }
-        .to raise_error(Dependabot::DependencyFileNotParseable, /missing a hash-algorithm prefix/)
-    end
-
-    it "accepts a sha256-prefixed pin (forward-compat)" do
-      sha256 = <<~LOCK
-        version: v0.0.1
-        workflows:
-          ".github/workflows/ci.yml":
-            - "actions/checkout@v4:sha256-abc123"
-      LOCK
-      expect { described_class.new(sha256) }.not_to raise_error
-    end
-
-    it "accepts the sha1-prefixed fixture" do
-      expect { described_class.new(lock_body) }.not_to raise_error
     end
   end
 
@@ -131,40 +97,71 @@ RSpec.describe Dependabot::GithubActions::Lockfile::Reader do
 
     it "is a no-op when there is no dependencies section" do
       only_workflows = <<~LOCK
-        version: v0.0.1
+        version: v0.0.2
         workflows:
           ".github/workflows/ci.yml":
-            - "actions/checkout@v4:sha1-34e1c0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0"
+            - "actions/checkout@v4"
       LOCK
       expect { described_class.new(only_workflows).validate_dependency_entries! }.not_to raise_error
     end
 
-    %w(branch commit owner_id repo_id).each do |field|
+    %w(ref commit owner_id repo_id).each do |field|
       it "raises DependencyFileNotParseable when an entry is missing #{field}" do
         entry = {
-          "branch" => "main",
+          "ref" => "v4",
           "commit" => "sha1-34e1c0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0",
           "owner_id" => 1,
           "repo_id" => 2
         }
         entry.delete(field)
         lock = {
-          "version" => "v0.0.1",
+          "version" => "v0.0.2",
           "workflows" => {
-            ".github/workflows/ci.yml" => ["actions/checkout@v4:sha1-34e1c0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0"]
+            ".github/workflows/ci.yml" => ["actions/checkout@v4"]
           },
-          "dependencies" => { "actions/checkout@v4:sha1-34e1c0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0" => entry }
+          "dependencies" => { "actions/checkout@v4" => entry }
         }
         expect { described_class.new(YAML.dump(lock)).validate_dependency_entries! }
           .to raise_error(Dependabot::DependencyFileNotParseable, /missing required field.*#{field}/)
       end
     end
 
+    it "raises when a dependency commit lacks an algorithm prefix" do
+      lock = {
+        "version" => "v0.0.2",
+        "dependencies" => {
+          "actions/checkout@v4" => {
+            "ref" => "v4",
+            "commit" => "34e1c0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0",
+            "owner_id" => 1,
+            "repo_id" => 2
+          }
+        }
+      }
+      expect { described_class.new(YAML.dump(lock)).validate_dependency_entries! }
+        .to raise_error(Dependabot::DependencyFileNotParseable, /without a hash-algorithm prefix/)
+    end
+
+    it "accepts a sha256-prefixed dependency commit" do
+      lock = {
+        "version" => "v0.0.2",
+        "dependencies" => {
+          "actions/checkout@v4" => {
+            "ref" => "v4",
+            "commit" => "sha256-abc123",
+            "owner_id" => 1,
+            "repo_id" => 2
+          }
+        }
+      }
+      expect { described_class.new(YAML.dump(lock)).validate_dependency_entries! }.not_to raise_error
+    end
+
     it "raises when a dependency entry is not a mapping" do
       lock = <<~LOCK
-        version: v0.0.1
+        version: v0.0.2
         dependencies:
-          "actions/checkout@v4:sha1-34e1c0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0": "not a mapping"
+          "actions/checkout@v4": "not a mapping"
       LOCK
       expect { described_class.new(lock).validate_dependency_entries! }
         .to raise_error(Dependabot::DependencyFileNotParseable, /is not a mapping/)

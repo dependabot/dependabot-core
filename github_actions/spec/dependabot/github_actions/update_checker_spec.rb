@@ -1154,20 +1154,20 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           Dependabot::DependencyFile.new(
             name: ".github/workflows/actions.lock",
             content: <<~LOCK
-              version: v0.0.1
+              version: v0.0.2
               workflows:
                 ".github/workflows/major.yml":
-                  - "actions/checkout@v2:sha1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                  - "actions/checkout@v2"
                 ".github/workflows/patch.yml":
-                  - "actions/checkout@v2.3.1:sha1-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                  - "actions/checkout@v2.3.1"
               dependencies:
-                "actions/checkout@v2:sha1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa":
-                  branch: main
+                "actions/checkout@v2":
+                  ref: v2
                   commit: sha1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
                   owner_id: 44036562
                   repo_id: 197814280
-                "actions/checkout@v2.3.1:sha1-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb":
-                  branch: main
+                "actions/checkout@v2.3.1":
+                  ref: v2.3.1
                   commit: sha1-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
                   owner_id: 44036562
                   repo_id: 197814280

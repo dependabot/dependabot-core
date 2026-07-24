@@ -9,7 +9,7 @@ require "dependabot/command_helpers"
 require "dependabot/github_actions/lockfile"
 
 # These specs lock the exit-code contract validated live against the real
-# gh-actions-pin binary (v0.0.5): the CLI uses a non-zero exit purely to signal
+# gh-actions-lock binary: the CLI uses a non-zero exit purely to signal
 # `valid:false` (findings exist) while still writing the full structured result
 # to stdout. CliEngine#run must therefore parse stdout regardless of exit status,
 # and the findings — not the exit code — drive control flow. We stub the
@@ -25,7 +25,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
   end
 
   let(:lockfile) do
-    Dependabot::DependencyFile.new(name: ".github/workflows/actions.lock", content: "version: v0.0.1\n")
+    Dependabot::DependencyFile.new(name: ".github/workflows/actions.lock", content: "version: v0.0.2\n")
   end
 
   # Fake ProcessStatus exposing just the exitstatus CliEngine#invoke reads.
@@ -60,7 +60,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
     before do
       allow(Dependabot::CommandHelpers)
         .to receive(:capture3_with_timeout)
-        .and_return(["", "No such file or directory - gh-actions-pin", nil])
+        .and_return(["", "No such file or directory - gh-actions-lock", nil])
     end
 
     it "raises EngineError reporting the binary failed to start, not unparseable JSON" do
@@ -75,7 +75,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
   describe "#relock surfacing a structured blocking finding (exit 1)" do
     let(:body) do
       {
-        "cli_version" => "v0.0.5", "lockfile_version" => "v0.0.1", "valid" => false,
+        "cli_version" => "v0.0.5", "lockfile_version" => "v0.0.2", "valid" => false,
         "findings" => [
           { "category" => "impostor-commit", "severity" => "error",
             "dependency" => "actions/checkout@v5", "detail" => "locked SHA not reachable from any branch" }
@@ -112,12 +112,6 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
       expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
         .not_to raise_error
     end
-
-    it "records the skipped workflow on the result for observability" do
-      result = engine.relock(workflow_files: [workflow], lockfile: lockfile)
-      expect(result.skipped_workflows.map(&:workflow)).to eq([".github/workflows/b.yml"])
-      expect(result.skipped_workflows.first.reason).to eq("onboarding-required")
-    end
   end
 
   describe "#relock when the engine reports a lock-PINNED action as un-onboarded (lock unreadable)" do
@@ -130,10 +124,10 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
       Dependabot::DependencyFile.new(
         name: ".github/workflows/actions.lock",
         content: <<~LOCK
-          version: v0.0.1
+          version: v0.0.2
           workflows:
             ".github/workflows/ci.yml":
-              - "actions/checkout@v4:sha1-34e1c0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0"
+              - "actions/checkout@v4"
         LOCK
       )
     end
@@ -171,10 +165,10 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
       Dependabot::DependencyFile.new(
         name: ".github/workflows/actions.lock",
         content: <<~LOCK
-          version: v0.0.1
+          version: v0.0.2
           workflows:
             ".github/workflows/ci.yml":
-              - "actions/checkout@v4:sha1-34e1c0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0"
+              - "actions/checkout@v4"
         LOCK
       )
     end
@@ -197,16 +191,10 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
       expect { engine.relock(workflow_files: [workflow], lockfile: tracked_lockfile) }
         .not_to raise_error
     end
-
-    it "records the refused action as a skipped workflow for observability" do
-      result = engine.relock(workflow_files: [workflow], lockfile: tracked_lockfile)
-      expect(result.skipped_workflows.map(&:workflow)).to eq([".github/workflows/ci.yml"])
-      expect(result.skipped_workflows.first.reason).to eq("onboarding-required")
-    end
   end
 
   describe "#relock on a corrupt/unreadable lockfile (exit 2, empty stdout)" do
-    # New CLI contract (gh-actions-pin >= corrupt-lockfile handling): a lockfile
+    # Current CLI contract: a lockfile
     # that exists but cannot be parsed — malformed YAML, or a dependencies entry
     # missing a required key — is no longer silently swallowed to empty on the
     # headless `update` path. It fails loud: exit 2, empty stdout, file untouched.
@@ -259,7 +247,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
     # lock. (Before the exit-code gate, raise_on_findings wrongly raised here.)
     let(:body) do
       {
-        "cli_version" => "v0.0.5", "lockfile_version" => "v0.0.1", "valid" => false,
+        "cli_version" => "v0.0.5", "lockfile_version" => "v0.0.2", "valid" => false,
         "findings" => [
           { "workflow" => ".github/workflows/ci.yml", "category" => "ref-changed",
             "severity" => "error", "confidence" => "high",
@@ -278,8 +266,22 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
 
     it "returns the re-pinned lock content read back from disk" do
       result = engine.relock(workflow_files: [workflow], lockfile: lockfile)
-      expect(result.lockfile_content).to eq(lockfile.content)
-      expect(result.skipped_workflows).to be_empty
+      expect(result).to eq(lockfile.content)
+    end
+
+    it "uses the root fix interface" do
+      engine.relock(workflow_files: [workflow], lockfile: lockfile)
+
+      expect(Dependabot::CommandHelpers).to have_received(:capture3_with_timeout).with(
+        include(
+          described_class.binary_path,
+          "--no-onboard",
+          "--no-narrow",
+          "--no-interactive",
+          "--json=findings",
+          ".github/workflows/ci.yml"
+        )
+      )
     end
   end
 
@@ -296,7 +298,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
     # lockfile-forgery survive. The run must skip b.yml and return the re-pinned lock.
     let(:body) do
       {
-        "cli_version" => "v0.0.5", "lockfile_version" => "v0.0.1", "valid" => false,
+        "cli_version" => "v0.0.5", "lockfile_version" => "v0.0.2", "valid" => false,
         "workflows" => [{ "path" => ".github/workflows/ci.yml" }],
         "findings" => [
           { "workflow" => ".github/workflows/ci.yml", "category" => "ref-changed",
@@ -319,18 +321,15 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
         .not_to raise_error
     end
 
-    it "records only the genuinely refused onboarding as a skip and returns the lock" do
-      result = engine.relock(workflow_files: [workflow], lockfile: lockfile)
-      expect(result.skipped_workflows.map(&:workflow)).to eq([".github/workflows/b.yml"])
-      expect(result.skipped_workflows.first.reason).to eq("onboarding-required")
-      expect(result.lockfile_content).to eq(lockfile.content)
+    it "returns the lock despite the refused onboarding" do
+      expect(engine.relock(workflow_files: [workflow], lockfile: lockfile)).to eq(lockfile.content)
     end
   end
 
   describe "#relock returns the pruned lock the CLI wrote to disk (stale-pin GC)" do
     # The engine is the sole reader of the lock the CLI rewrites: whatever the
     # binary saves to `.github/workflows/actions.lock` is what relock returns.
-    # gh-actions-pin (tip d5fac8a) prunes a stale pin on a ref bump — after
+    # gh-actions-lock prunes a stale pin on a ref bump — after
     # softprops/action-gh-release@v1 -> @v2 the lock lists ONLY @v2, with the
     # orphaned @v1 ref and its `dependencies:` entry GC'd. This was proven
     # credentialed end-to-end through this exact path; here we stub the subprocess
@@ -348,13 +347,13 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
       Dependabot::DependencyFile.new(
         name: ".github/workflows/actions.lock",
         content: <<~LOCK
-          version: 'v0.0.1'
+          version: 'v0.0.2'
           workflows:
               '.github/workflows/release.yml':
-                  - 'softprops/action-gh-release@v1:sha1-de2c0eb89ae2a093876385947365aca7b0e5f844'
+                  - 'softprops/action-gh-release@v1'
           dependencies:
-              'softprops/action-gh-release@v1:sha1-de2c0eb89ae2a093876385947365aca7b0e5f844':
-                  tag: 'v1'
+              'softprops/action-gh-release@v1':
+                  ref: 'v1'
                   commit: 'sha1-de2c0eb89ae2a093876385947365aca7b0e5f844'
                   owner_id: 2242
                   repo_id: 204253808
@@ -364,13 +363,13 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
 
     let(:pruned_lock) do
       <<~LOCK
-        version: 'v0.0.1'
+        version: 'v0.0.2'
         workflows:
             '.github/workflows/release.yml':
-                - 'softprops/action-gh-release@v2:sha1-3bb12739c298aeb8a4eeaf626c5b8d85266b0e65'
+                - 'softprops/action-gh-release@v2'
         dependencies:
-            'softprops/action-gh-release@v2:sha1-3bb12739c298aeb8a4eeaf626c5b8d85266b0e65':
-                tag: 'v2'
+            'softprops/action-gh-release@v2':
+                ref: 'v2'
                 commit: 'sha1-3bb12739c298aeb8a4eeaf626c5b8d85266b0e65'
                 owner_id: 2242
                 repo_id: 204253808
@@ -382,7 +381,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
     # the bump itself.) Neither survives auto-fix, so relock must not raise.
     let(:body) do
       {
-        "cli_version" => "v0.0.5", "lockfile_version" => "v0.0.1", "valid" => false,
+        "cli_version" => "v0.0.5", "lockfile_version" => "v0.0.2", "valid" => false,
         "findings" => [
           { "workflow" => ".github/workflows/release.yml", "category" => "ref-changed",
             "severity" => "error", "dependency" => "softprops/action-gh-release@v2",
@@ -406,11 +405,10 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
     it "returns only the v2 pin — the stale v1 ref and its SHA are gone" do
       result = engine.relock(workflow_files: [bumped_workflow], lockfile: stale_lock)
 
-      expect(result.lockfile_content).to eq(pruned_lock)
-      expect(result.lockfile_content).not_to include("@v1")
-      expect(result.lockfile_content).not_to include("de2c0eb89ae2a093876385947365aca7b0e5f844")
-      expect(result.lockfile_content).to include("@v2")
-      expect(result.skipped_workflows).to be_empty
+      expect(result).to eq(pruned_lock)
+      expect(result).not_to include("@v1")
+      expect(result).not_to include("de2c0eb89ae2a093876385947365aca7b0e5f844")
+      expect(result).to include("@v2")
     end
 
     it "does not raise — pruned `stale` and `ref-changed` are pre-fix diagnoses at exit 0" do

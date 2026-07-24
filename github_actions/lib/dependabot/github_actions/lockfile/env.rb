@@ -9,7 +9,7 @@ require "dependabot/github_actions/constants"
 module Dependabot
   module GithubActions
     module Lockfile
-      # Builds the subprocess environment for the gh-actions-pin engine. Two runtimes:
+      # Builds the subprocess environment for the gh-actions-lock engine. Two runtimes:
       # hosted Dependabot is tokenless behind a MITM proxy that overwrites the auth
       # header, so we pass a non-empty placeholder (go-gh refuses an empty token);
       # proxyless (local dry-run, some GHES) holds the real token in `credentials`.

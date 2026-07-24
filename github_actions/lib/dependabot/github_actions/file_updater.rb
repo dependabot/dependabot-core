@@ -16,17 +16,10 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
-        # Deduplicate by file name so an engine-rewritten workflow supersedes the
-        # regex-rewritten one rather than producing two entries for the same path.
-        by_name = T.let({}, T::Hash[String, Dependabot::DependencyFile])
-
-        changed_workflow_files.each do |file|
-          by_name[file.name] = updated_file(file: file, content: updated_workflow_file_content(file))
+        updated_files = changed_workflow_files.map do |file|
+          updated_file(file: file, content: updated_workflow_file_content(file))
         end
-
-        relocked_files.each { |file| by_name[file.name] = file }
-
-        updated_files = by_name.values
+        updated_files.concat(relocked_files)
         updated_files.reject! { |f| dependency_files.include?(f) }
         raise "No files changed!" if updated_files.none?
 
@@ -58,7 +51,7 @@ module Dependabot
       end
 
       # When the repo has an `actions.lock` authoritative for one or more changed
-      # workflows, regenerate it through the gh-actions-pin engine. Lock keys and
+      # workflows, regenerate it through the gh-actions-lock engine. Lock keys and
       # onboarding comparisons are repo-relative paths, independent of the Dependabot
       # `directory`. Workflows absent from the lock (and lockless repos) never reach
       # here, preserving today's regex-only behavior.
@@ -76,15 +69,15 @@ module Dependabot
         Lockfile::VersionGate.assert_supported!(reader.version)
         reader.validate_dependency_entries!
 
-        # Feed the engine the full onboarded closure with Dependabot's chosen refs
-        # written in; `check` re-pins the lock to match. The lock is the engine's sole
-        # output; Dependabot owns the workflow YAML (the regex path).
-        result = Lockfile::Engine.build(credentials).relock(
+        # Materialize the full onboarded closure so the lock remains intact, but fix
+        # only changed workflows so unrelated refs are not touched.
+        content = Lockfile::CliEngine.new(credentials).relock(
           workflow_files: rewritten_onboarded_workflow_files(reader),
-          lockfile: lock
+          lockfile: lock,
+          workflow_paths: changed_onboarded.map { |file| repo_relative_path(file) }
         )
 
-        [updated_file(file: lock, content: result.lockfile_content)]
+        [updated_file(file: lock, content: content)]
       end
 
       # The onboarded closure as the engine should see it: every workflow the lock
