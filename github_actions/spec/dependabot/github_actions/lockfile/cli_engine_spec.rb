@@ -91,6 +91,23 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
     end
   end
 
+  describe "#relock with an unknown error finding (exit 1)" do
+    let(:body) do
+      {
+        "findings" => [
+          { "category" => "new-unhandled-error", "severity" => "error" }
+        ]
+      }
+    end
+
+    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 1) }
+
+    it "fails closed" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .to raise_error(Dependabot::GithubActions::Lockfile::EngineError, /new-unhandled-error/)
+    end
+  end
+
   describe "#relock with only an onboarding-required finding (exit 1)" do
     # The real binary's mixed default (no-onboard) response: three arrays populate
     # concurrently regardless of the --json selector.
@@ -190,6 +207,28 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
     it "does not raise — a new unpinned action in a tracked workflow is a skip, not a corrupt lock" do
       expect { engine.relock(workflow_files: [workflow], lockfile: tracked_lockfile) }
         .not_to raise_error
+    end
+  end
+
+  describe "#relock with multiple new actions in one workflow" do
+    let(:body) do
+      {
+        "findings" => [
+          { "workflow" => ".github/workflows/ci.yml", "category" => "onboarding-required",
+            "severity" => "error", "dependency" => "actions/setup-node@v4" },
+          { "workflow" => ".github/workflows/ci.yml", "category" => "onboarding-required",
+            "severity" => "error", "dependency" => "actions/cache@v4" }
+        ]
+      }
+    end
+
+    before { stub_subprocess(stdout: JSON.generate(body), exitstatus: 1) }
+
+    it "counts the skipped workflow once" do
+      allow(Dependabot.logger).to receive(:info)
+      engine.relock(workflow_files: [workflow], lockfile: lockfile)
+
+      expect(Dependabot.logger).to have_received(:info).with(/skipped 1 un-onboarded workflow/)
     end
   end
 

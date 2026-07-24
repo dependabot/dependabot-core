@@ -45,15 +45,14 @@ RSpec.describe Dependabot::GithubActions::Lockfile::Env do
       end
     end
 
-    context "with a GHES credential" do
+    context "with a non-GitHub git credential" do
       let(:credentials) do
-        [cred({ "type" => "git_source", "host" => "ghe.example.com", "password" => "ghes-token" })]
+        [cred({ "type" => "git_source", "host" => "gitlab.com", "password" => "gitlab-token" })]
       end
 
-      it "sets GH_HOST and GH_ENTERPRISE_TOKEN" do
+      it "does not redirect gh to another provider" do
         env = described_class.build(credentials)
-        expect(env["GH_HOST"]).to eq("ghe.example.com")
-        expect(env["GH_ENTERPRISE_TOKEN"]).to eq("ghes-token")
+        expect(env).to eq("GH_TOKEN" => "x-access-token")
       end
     end
   end

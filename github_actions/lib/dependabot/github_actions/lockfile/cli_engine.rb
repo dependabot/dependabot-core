@@ -24,6 +24,7 @@ module Dependabot
         extend T::Sig
 
         JsonObject = T.type_alias { T::Hash[String, Object] }
+        FIXED_FINDING_CATEGORIES = T.let(%w(onboarding-required ref-changed stale).freeze, T::Array[String])
         UNRESOLVABLE_CATEGORIES = T.let(%w(impostor-commit lockfile-forgery).freeze, T::Array[String])
 
         sig { params(credentials: T::Array[Dependabot::Credential]).void }
@@ -130,12 +131,18 @@ module Dependabot
         def raise_on_findings(json)
           T.cast(Array(json["findings"]), T::Array[JsonObject]).each do |finding|
             next unless finding["severity"].nil? || finding["severity"] == "error"
-            next unless UNRESOLVABLE_CATEGORIES.include?(finding["category"])
 
-            raise UnresolvableDependency.new(
-              (finding["dependency"] || "unknown").to_s,
-              (finding["detail"] || finding["category"] || "unknown").to_s
-            )
+            category = finding["category"].to_s
+            next if FIXED_FINDING_CATEGORIES.include?(category)
+
+            if UNRESOLVABLE_CATEGORIES.include?(category)
+              raise UnresolvableDependency.new(
+                (finding["dependency"] || "unknown").to_s,
+                (finding["detail"] || category).to_s
+              )
+            end
+
+            raise EngineError, "gh-actions-lock left an unhandled #{category.inspect} finding"
           end
         end
 
@@ -157,7 +164,7 @@ module Dependabot
 
           raise_lockfile_unrecognized(contradictory) if contradictory.any?
 
-          strays.map { |finding| workflow_for(finding) }
+          strays.map { |finding| workflow_for(finding) }.uniq
         end
 
         # True when an onboarding-required finding contradicts a lock we can read.

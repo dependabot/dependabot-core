@@ -309,6 +309,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
         .to match_array(
           %w(action.yaml)
         )
+      expect(a_request(:get, url + "action/subdir/actions.lock?ref=sha")).not_to have_been_made
     end
   end
 end

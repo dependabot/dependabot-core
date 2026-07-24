@@ -73,13 +73,13 @@ module Dependabot
 
       private
 
-      # Fetches `.github/workflows/actions.lock` when present. Path is relative to the
-      # configured directory: under .github/workflows at repo root, or a sibling when
-      # the directory is already a workflows folder.
+      # Fetches the canonical `.github/workflows/actions.lock` when the update covers
+      # repository workflows. Composite-action directories cannot own a lockfile.
       sig { returns(T.nilable(DependencyFile)) }
       def actions_lockfile
-        path = directory == "/" ? LOCKFILE_PATH : LOCKFILE_NAME
-        fetch_file_if_present(path)
+        return fetch_file_if_present(LOCKFILE_PATH) if directory == "/"
+
+        fetch_file_if_present(LOCKFILE_NAME) if directory.delete_prefix("/") == WORKFLOW_DIRECTORY
       end
 
       sig { returns(T::Array[DependencyFile]) }

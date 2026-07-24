@@ -9,11 +9,9 @@ require "dependabot/github_actions/constants"
 module Dependabot
   module GithubActions
     module Lockfile
-      # Builds the subprocess environment for the gh-actions-lock engine. Two runtimes:
-      # hosted Dependabot is tokenless behind a MITM proxy that overwrites the auth
-      # header, so we pass a non-empty placeholder (go-gh refuses an empty token);
-      # proxyless (local dry-run, some GHES) holds the real token in `credentials`.
-      # Either way we never log the token. Proxy/CA transport vars are inherited.
+      # Builds the subprocess environment for the gh-actions-lock engine. Hosted
+      # Dependabot is tokenless behind a MITM proxy that overwrites the auth header,
+      # while proxyless local runs hold the real github.com token in `credentials`.
       module Env
         extend T::Sig
 
@@ -31,12 +29,6 @@ module Dependabot
           github_credential = github_dot_com_credential(credentials)
           env["GH_TOKEN"] = github_credential&.fetch("password", nil) || DUMMY_TOKEN
 
-          ghes = ghes_credential(credentials)
-          if ghes
-            env["GH_HOST"] = T.must(ghes["host"])
-            env["GH_ENTERPRISE_TOKEN"] = T.must(ghes["password"])
-          end
-
           env
         end
 
@@ -52,16 +44,6 @@ module Dependabot
           end
 
           candidates.find { |c| !c["password"]&.start_with?("v1.") } || candidates.first
-        end
-
-        sig do
-          params(credentials: T::Array[Dependabot::Credential])
-            .returns(T.nilable(Dependabot::Credential))
-        end
-        def self.ghes_credential(credentials)
-          credentials.find do |c|
-            c["type"] == "git_source" && c["host"] != GITHUB_COM && c["host"] && c["password"]
-          end
         end
       end
     end
