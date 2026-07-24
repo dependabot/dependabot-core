@@ -427,6 +427,9 @@ module Dependabot
 
     sig { params(commit_sha: T.nilable(String)).returns(T::Array[Dependabot::GitRef]) }
     def local_tags_matching_sha(commit_sha)
+      # Sort by prefix length (ascending) so that more specific tags (e.g., "resolve-gh-token-v2.1.0")
+      # are preferred over generic repo-wide tags (e.g., "v1.0.3") in monorepos with multiple tag families.
+      # Secondary sort by version ensures the most recent version is selected among same-prefix tags.
       local_tags.select { |t| t.commit_sha == commit_sha && version_tag?(t.name) }
                 .sort_by { |t| [t.name.gsub(VERSION_REGEX, "").length, version_from_tag(t)] }
     end
