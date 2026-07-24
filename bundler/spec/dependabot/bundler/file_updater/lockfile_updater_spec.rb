@@ -60,7 +60,36 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
         .and_return(generated_lockfile)
     end
 
-    context "when original lockfile uses Bundler 4.0.10 (in the [4.0.0, 4.0.11) strip range)" do
+    context "when original lockfile uses Bundler 2.7.2 with no bundler checksum" do
+      let(:project_name) { "checksums_bundler_2_7_2" }
+      let(:generated_lockfile) do
+        <<~LOCKFILE
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              business (1.5.0)
+
+          PLATFORMS
+            ruby
+
+          DEPENDENCIES
+            business (~> 1.5)
+
+          CHECKSUMS
+            business (1.5.0) sha256=123
+            bundler (2.7.2) sha256=runner272
+
+          BUNDLED WITH
+             2.7.2
+        LOCKFILE
+      end
+
+      it "strips the runner-injected bundler checksum regardless of version" do
+        expect(updated_lockfile_content).not_to include("bundler (2.7.2)")
+      end
+    end
+
+    context "when original lockfile uses Bundler 4.0.10 with no bundler checksum" do
       let(:project_name) { "checksums_bundler_4_0_10" }
 
       it "removes newly added bundler checksums" do
@@ -72,11 +101,49 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
       end
     end
 
-    context "when original lockfile uses Bundler 4.0.11 (at the strip-range upper bound)" do
+    context "when original lockfile uses Bundler 4.0.11 with no bundler checksum" do
       let(:project_name) { "checksums_bundler_4_0_11" }
 
-      it "keeps bundler checksums" do
-        expect(updated_lockfile_content).to include("bundler (4.0.11)")
+      it "strips the runner-injected bundler checksum, preserving the original's absence" do
+        expect(updated_lockfile_content).not_to include("bundler (4.0.11)")
+      end
+    end
+
+    context "when original lockfile uses Bundler 4.0.15 (>= 4.0.11) with no bundler checksum" do
+      # Regression for the default-gem install case (ruby/rubygems#9512,
+      # dependabot-core#15215): the runner's bundler adds an entry for its own
+      # version (4.0.17) that need not match BUNDLED WITH (4.0.15). Dependabot
+      # must not persist it, or the lockfile churns on the next local install.
+      let(:project_name) { "checksums_bundler_4_0_15" }
+      let(:generated_lockfile) do
+        <<~LOCKFILE
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              business (1.5.0)
+
+          PLATFORMS
+            ruby
+
+          DEPENDENCIES
+            business (~> 1.5)
+
+          CHECKSUMS
+            business (1.5.0) sha256=123
+            bundler (4.0.17) sha256=runner17
+
+          BUNDLED WITH
+             4.0.15
+        LOCKFILE
+      end
+
+      it "strips the runner-injected bundler checksum" do
+        expect(updated_lockfile_content).not_to include("bundler (4.0.17)")
+        expect(updated_lockfile_content).not_to match(/^  bundler \(/)
+      end
+
+      it "preserves the CHECKSUMS header and other entries" do
+        expect(updated_lockfile_content).to match(/^CHECKSUMS\n  business \(1\.5\.0\)/)
       end
     end
 
@@ -142,6 +209,37 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "when the project pins bundler but the original CHECKSUMS section omits it" do
+      let(:project_name) { "checksums_bundler_dep_pinned_no_checksum" }
+      let(:generated_lockfile) do
+        <<~LOCKFILE
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              business (1.5.0)
+
+          PLATFORMS
+            ruby
+
+          DEPENDENCIES
+            bundler (~> 4.0)
+            business (~> 1.5)
+
+          CHECKSUMS
+            business (1.5.0) sha256=123
+            bundler (4.0.17) sha256=runner17
+
+          BUNDLED WITH
+             4.0.17
+        LOCKFILE
+      end
+
+      it "strips the checksum without touching the DEPENDENCIES entry" do
+        expect(updated_lockfile_content).to include("  bundler (~> 4.0)\n")
+        expect(updated_lockfile_content).not_to include("bundler (4.0.17) sha256=runner17")
+      end
+    end
+
     context "when the generated lockfile has no CHECKSUMS section" do
       let(:project_name) { "checksums_bundler_4_0_12" }
       let(:generated_lockfile) do
@@ -168,6 +266,36 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "when the generated CHECKSUMS section contains only the bundler entry" do
+      let(:project_name) { "checksums_bundler_4_0_15" }
+      let(:generated_lockfile) do
+        <<~LOCKFILE
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              business (1.5.0)
+
+          PLATFORMS
+            ruby
+
+          DEPENDENCIES
+            business (~> 1.5)
+
+          CHECKSUMS
+            bundler (4.0.17) sha256=runner17
+
+          BUNDLED WITH
+             4.0.17
+        LOCKFILE
+      end
+
+      it "preserves a parseable empty CHECKSUMS section after stripping" do
+        expect(updated_lockfile_content).to include("CHECKSUMS\n\nBUNDLED WITH")
+        expect(updated_lockfile_content).not_to include("bundler (4.0.17)")
+        expect { ::Bundler::LockfileParser.new(updated_lockfile_content) }.not_to raise_error
+      end
+    end
+
     context "when the generated lockfile has CHECKSUMS but no bundler entry" do
       let(:project_name) { "checksums_bundler_4_0_12" }
       let(:generated_lockfile) do
@@ -191,13 +319,16 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
         LOCKFILE
       end
 
-      it "does not inject the original bundler checksum" do
+      it "does not re-add the original bundler checksum" do
+        original_lockfile = files.find { |file| file.name == "Gemfile.lock" }
+
+        expect(original_lockfile&.content).to include("bundler (4.0.12) sha256=old12")
         expect(updated_lockfile_content).not_to include("bundler (4.0.12)")
         expect(updated_lockfile_content).not_to include("bundler (4.0.13)")
       end
     end
 
-    context "when original lockfile uses Bundler 4.0.12 (outside the strip range — control)" do
+    context "when original lockfile already pins a bundler checksum (control)" do
       let(:project_name) { "checksums_bundler_4_0_12" }
 
       it "preserves the CHECKSUMS header" do
