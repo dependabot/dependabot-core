@@ -47,7 +47,13 @@ module Dependabot
 
       sig { params(name: String).returns(T::Boolean) }
       def self.manifest_file?(name)
-        File.extname(name).casecmp(MANIFEST_EXTENSION).zero?
+        # `String#casecmp` is typed as returning a nilable Integer (nil for
+        # encoding-incompatible strings), so `.zero?` on its result fails
+        # Sorbet even though both operands here are always ASCII extension
+        # literals. Compare directly instead.
+        # rubocop:disable Performance/Casecmp
+        File.extname(name).downcase == MANIFEST_EXTENSION.downcase
+        # rubocop:enable Performance/Casecmp
       end
 
       sig { params(name: String).returns(T::Boolean) }
