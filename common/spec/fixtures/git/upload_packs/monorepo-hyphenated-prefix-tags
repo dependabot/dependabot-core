@@ -1,0 +1,11 @@
+001e# service=git-upload-pack
+0000
+014b371c4bd81e6db3f0d9f03fdd3b510580b3f0e0c2 HEAD multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since deepen-not deepen-relative no-progress include-tag multi_ack_detailed allow-tip-sha1-in-want allow-reachable-sha1-in-want no-done symref=HEAD:refs/heads/main filter object-format=sha1 agent=git/github-test
+003d371c4bd81e6db3f0d9f03fdd3b510580b3f0e0c2 refs/heads/main
+004bae04af897f79a65c232823bd96070ed1d7897213 refs/tags/resolve-gh-token-v2
+004fae04af897f79a65c232823bd96070ed1d7897213 refs/tags/resolve-gh-token-v2.1.0
+004f371c4bd81e6db3f0d9f03fdd3b510580b3f0e0c2 refs/tags/resolve-gh-token-v2.1.1
+004c55e9c392bee14d03cc0ca8bf875fd0bf37602bd1 refs/tags/usage-metrics-v1.0.4
+003eae04af897f79a65c232823bd96070ed1d7897213 refs/tags/v1.0.3
+003e55e9c392bee14d03cc0ca8bf875fd0bf37602bd1 refs/tags/v1.0.4
+0000

@@ -168,6 +168,41 @@ RSpec.describe namespace::LatestVersionFinder do
         expect(latest_release_version).to eq(Gem::Version.new("3.5.2"))
       end
     end
+
+    context "when SHA-pinned in a monorepo with hyphenated-prefix tags and repo-wide tags" do
+      let(:upload_pack_fixture) { "monorepo-hyphenated-prefix-tags" }
+      let(:dependency_name) { "example/monorepo-actions" }
+      let(:reference) { "ae04af897f79a65c232823bd96070ed1d7897213" }
+      let(:service_pack_url) do
+        "https://github.com/example/monorepo-actions.git/info/refs?service=git-upload-pack"
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "example/monorepo-actions/resolve-gh-token",
+          version: nil,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/example/monorepo-actions",
+              ref: "ae04af897f79a65c232823bd96070ed1d7897213",
+              branch: nil
+            },
+            metadata: {
+              declaration_string:
+                "example/monorepo-actions/resolve-gh-token@ae04af897f79a65c232823bd96070ed1d7897213"
+            }
+          }],
+          package_manager: "github_actions"
+        )
+      end
+
+      it "finds the latest version from the correct tag family" do
+        expect(latest_release_version).to eq(Gem::Version.new("2.1.1"))
+      end
+    end
   end
 
   describe "#lowest_security_fix_release" do
