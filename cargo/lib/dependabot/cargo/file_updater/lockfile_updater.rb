@@ -273,9 +273,13 @@ module Dependabot
         sig { params(updated_lockfile: String).returns(T::Boolean) }
         def desired_version_present?(updated_lockfile)
           version = T.must(dependency.version)
-          if git_dependency? || !version_class.correct?(version)
-            return updated_lockfile.include?(desired_lockfile_content)
+          if git_dependency?
+            # Scope to the dependency's own git identity: another ref of the
+            # same repository already at the expected commit must not satisfy
+            # the check for the targeted line.
+            return git_source_shas(updated_lockfile).any? { |sha| sha.start_with?(version) }
           end
+          return updated_lockfile.include?(desired_lockfile_content) unless version_class.correct?(version)
 
           package_version_count(updated_lockfile, dependency, version).positive?
         end
