@@ -1481,7 +1481,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
             it { is_expected.to be_a(Dependabot::Dependency) }
             its(:name) { is_expected.to eq("lodash") }
-            its(:version) { is_expected.to eq("1.2.0") }
+            its(:version) { is_expected.to eq("1.3.1") }
 
             its(:requirements) do
               is_expected.to contain_exactly(
@@ -1613,7 +1613,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
 
           it { is_expected.to be_a(Dependabot::Dependency) }
           its(:name) { is_expected.to eq("lodash") }
-          its(:version) { is_expected.to eq("1.2.0") }
+          its(:version) { is_expected.to eq("1.3.1") }
 
           its(:requirements) do
             is_expected.to contain_exactly(

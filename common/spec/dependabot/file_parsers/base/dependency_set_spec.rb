@@ -278,6 +278,34 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
       )
     end
 
+    let(:foo_v1_top_level) do
+      Dependabot::Dependency.new(
+        name: "foo",
+        version: "1.0",
+        requirements: [{
+          requirement: "1.0",
+          file: "Dummyfile",
+          groups: nil,
+          source: nil
+        }],
+        package_manager: "dummy"
+      )
+    end
+
+    let(:foo_v1_1_top_level) do
+      Dependabot::Dependency.new(
+        name: "foo",
+        version: "1.1",
+        requirements: [{
+          requirement: "1.1",
+          file: "Dummyfile",
+          groups: nil,
+          source: nil
+        }],
+        package_manager: "dummy"
+      )
+    end
+
     let(:foo_sha) do
       Dependabot::Dependency.new(
         name: "foo",
@@ -295,6 +323,13 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
         }],
         package_manager: "dummy"
       )
+    end
+
+    it "prefers the higher version when merging duplicate top-level dependencies" do
+      dependency_set = described_class.new << foo_v1_top_level << foo_v1_1_top_level
+
+      expect(dependency_set.dependency_for_name("foo")&.version).to eq("1.1")
+      expect(dependency_set.dependency_for_name("foo")&.top_level?).to be(true)
     end
 
     it "merges each into a single combined dependency" do
