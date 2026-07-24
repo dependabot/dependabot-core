@@ -406,6 +406,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
         updated_npm_lock_content
       end
+
+      it "records command traces for the initial update and the audit-fix fallback" do
+        allow(Dependabot::NpmAndYarn::NativeHelpers)
+          .to receive_messages(run_npm8_subdependency_update_command: "", run_npm_audit_fix_command: "")
+
+        updated_npm_lock_content
+
+        traces = updater.command_traces
+        expect(traces.length).to be >= 2
+        expect(traces.map(&:package_manager).uniq).to eq(["npm"])
+        expect(traces.map(&:success)).to all(be(true))
+        expect(traces.last.command).to include("audit")
+        expect(traces.last.content_changed_after).to be(false)
+      end
     end
   end
 

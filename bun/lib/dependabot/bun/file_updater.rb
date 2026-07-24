@@ -22,6 +22,9 @@ module Dependabot
         extend T::Sig
         include Dependabot::HasSentryContext
 
+        sig { returns(T::Hash[Symbol, T.anything]) }
+        attr_reader :error_context
+
         sig { params(message: String, error_context: T::Hash[Symbol, T.anything]).void }
         def initialize(message:, error_context:)
           super(message)

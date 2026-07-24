@@ -8,12 +8,18 @@ require "dependabot/file_updaters/artifact_updater"
 require "dependabot/errors"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
+require "dependabot/shared_helpers/command_trace"
 require "sorbet-runtime"
 
 module Dependabot
   module NpmAndYarn
     class FileUpdater < Dependabot::FileUpdaters::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
+
+      # Convenience alias so existing references to `CommandTrace` inside
+      # `Dependabot::NpmAndYarn::FileUpdater` and its nested lockfile
+      # updaters keep resolving after the class moved to `common/`.
+      CommandTrace = Dependabot::SharedHelpers::CommandTrace
 
       require_relative "file_updater/package_json_updater"
       require_relative "file_updater/npm_lockfile_updater"
@@ -24,6 +30,9 @@ module Dependabot
       class NoChangeError < StandardError
         extend T::Sig
         include Dependabot::HasSentryContext
+
+        sig { returns(T::Hash[Symbol, T.anything]) }
+        attr_reader :error_context
 
         sig { params(message: String, error_context: T::Hash[Symbol, T.anything]).void }
         def initialize(message:, error_context:)
@@ -213,12 +222,53 @@ module Dependabot
 
       sig { params(updated_files: T::Array[DependencyFile]).returns(T::Hash[Symbol, T.anything]) }
       def error_context(updated_files:)
+        traces = aggregated_command_traces
+        fallback_attempted, fallback_succeeded = compute_fallback_state(traces)
+
         {
           dependencies: dependencies.map(&:to_h),
           updated_files: updated_files.map(&:name),
           dependency_files: dependency_files.map(&:name),
-          package_manager: detected_package_manager
+          package_manager: detected_package_manager,
+          reason: updated_files.none? ? "no_files_updated" : "files_unchanged",
+          commands_succeeded: traces.empty? ? nil : traces.all?(&:success),
+          fallback_attempted: fallback_attempted,
+          fallback_succeeded: fallback_succeeded,
+          command_traces: traces.map(&:to_h)
         }
+      end
+
+      sig do
+        params(traces: T::Array[CommandTrace])
+          .returns([T::Boolean, T.nilable(T::Boolean)])
+      end
+      def compute_fallback_state(traces)
+        fallback_traces = traces.select { |t| fallback_trace?(t) }
+        attempted = fallback_traces.any?
+        succeeded =
+          (fallback_traces.any? { |t| t.content_changed_after == true } if attempted)
+        [attempted, succeeded]
+      end
+
+      # Detect whether a trace represents a fallback invocation (audit-fix
+      # or pnpm deep update). Match against the stable `fingerprint` (or
+      # `command` when no fingerprint is set) rather than the raw command
+      # so that user-controlled dependency names cannot false-positive
+      # this check.
+      sig { params(trace: CommandTrace).returns(T::Boolean) }
+      def fallback_trace?(trace)
+        key = trace.fingerprint || trace.command
+        key.include?("audit") || key.include?("--depth Infinity")
+      end
+
+      sig { returns(T::Array[CommandTrace]) }
+      def aggregated_command_traces
+        traces = T.let([], T::Array[CommandTrace])
+        npm_traces = @npm_lockfile_updaters&.values&.flat_map(&:command_traces) || []
+        traces.concat(npm_traces)
+        traces.concat(@yarn_lockfile_updater.command_traces) if @yarn_lockfile_updater
+        traces.concat(@pnpm_lockfile_updater.command_traces) if @pnpm_lockfile_updater
+        traces
       end
 
       sig { returns(String) }
