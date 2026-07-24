@@ -106,20 +106,138 @@ module Dependabot
           versions = TomlRB.parse(lockfile_content).fetch("package")
                            .select { |p| p["name"] == dependency.name }
 
-          updated_version =
-            if dependency.top_level?
-              versions.max_by { |p| version_class.new(p.fetch("version")) }
-            else
-              versions.min_by { |p| version_class.new(p.fetch("version")) }
-            end
+          updated_version = updated_package(versions)
 
           return unless updated_version
 
           if git_dependency?
-            updated_version.fetch("source").split("#").last
+            T.cast(updated_version.fetch("source"), String).split("#").last
           else
-            updated_version.fetch("version")
+            T.cast(updated_version.fetch("version"), String)
           end
+        end
+
+        sig do
+          params(
+            packages: T::Array[T::Hash[String, T.anything]]
+          ).returns(T.nilable(T::Hash[String, T.anything]))
+        end
+        def updated_package(packages)
+          if dependency.top_level?
+            packages.max_by do |package|
+              version_class.new(T.cast(package.fetch("version"), String))
+            end
+          else
+            updated_package_for_locked_identity(packages) ||
+              packages.min_by do |package|
+                version_class.new(T.cast(package.fetch("version"), String))
+              end
+          end
+        end
+
+        sig do
+          params(
+            updated_packages: T::Array[T::Hash[String, T.anything]]
+          ).returns(T.nilable(T::Hash[String, T.anything]))
+        end
+        def updated_package_for_locked_identity(updated_packages)
+          target = original_target_package
+          return unless target
+
+          source = T.cast(target["source"], T.nilable(String))
+          candidates = updated_package_candidates(updated_packages, target)
+
+          # Cargo can split a unified line across a version boundary, adding a
+          # new package while retaining the old one for dependents that still
+          # need it. A newly introduced identity is the update; the retained
+          # line only answers when nothing new appeared.
+          fresh = candidates.reject { |package| package_identity(package) == package_identity(target) }
+          return fresh.max_by { |package| version_class.new(T.cast(package.fetch("version"), String)) } if fresh.any?
+
+          candidates.find { |package| version_from_package(package) == dependency.version } ||
+            compatible_packages(updated_packages, source).max_by do |package|
+              version_class.new(T.cast(package.fetch("version"), String))
+            end
+        end
+
+        sig { returns(T.nilable(T::Hash[String, T.anything])) }
+        def original_target_package
+          return unless dependency.version
+
+          targets = original_packages_for_dependency.select do |package|
+            version_from_package(package) == dependency.version
+          end
+
+          package_source = T.cast(dependency.metadata[:cargo_package_source], T.nilable(String))
+          if package_source
+            targets.select! do |package|
+              T.cast(package["source"], T.nilable(String)) == package_source
+            end
+          end
+          targets.first if targets.one?
+        end
+
+        sig do
+          params(
+            updated_packages: T::Array[T::Hash[String, T.anything]],
+            target: T::Hash[String, T.anything]
+          ).returns(T::Array[T::Hash[String, T.anything]])
+        end
+        def updated_package_candidates(updated_packages, target)
+          target_source = T.cast(target["source"], T.nilable(String))
+          other_identities = original_packages_for_dependency
+                             .map { |package| package_identity(package) }
+          target_index = other_identities.index(package_identity(target))
+          other_identities.delete_at(target_index) if target_index
+
+          updated_packages
+            .select { |package| T.cast(package["source"], T.nilable(String)) == target_source }
+            .reject { |package| other_identities.include?(package_identity(package)) }
+        end
+
+        sig { returns(T::Array[T::Hash[String, T.anything]]) }
+        def original_packages_for_dependency
+          original_lockfile_packages.select do |package|
+            T.cast(package["name"], T.nilable(String)) == dependency.name
+          end
+        end
+
+        sig { returns(T::Array[T::Hash[String, T.anything]]) }
+        def original_lockfile_packages
+          original_lockfile = original_dependency_files.find { |file| file.name == "Cargo.lock" }
+          return [] unless original_lockfile
+
+          T.cast(
+            TomlRB.parse(T.must(original_lockfile.content)).fetch("package", []),
+            T::Array[T::Hash[String, T.anything]]
+          )
+        end
+
+        sig do
+          params(
+            packages: T::Array[T::Hash[String, T.anything]],
+            source: T.nilable(String)
+          ).returns(T::Array[T::Hash[String, T.anything]])
+        end
+        def compatible_packages(packages, source)
+          requirement = Requirement.new(T.must(dependency.version))
+          packages.select do |package|
+            T.cast(package["source"], T.nilable(String)) == source &&
+              requirement.satisfied_by?(version_class.new(T.cast(package.fetch("version"), String)))
+          end
+        end
+
+        sig { params(package: T::Hash[String, T.anything]).returns(T::Array[T.anything]) }
+        def package_identity(package)
+          [package["name"], package["version"], package["source"]]
+        end
+
+        sig { params(package: T::Hash[String, T.anything]).returns(String) }
+        def version_from_package(package)
+          source = T.cast(package["source"], T.nilable(String))
+          return T.must(source.split("#").last) if source&.start_with?("git+")
+
+          T.cast(package.fetch("version"), String)
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -491,8 +609,8 @@ module Dependabot
           TomlRB.parse(T.must(lockfile).content)
                 .fetch("package", [])
                 .select { |p| p["name"] == dependency.name }
-                .find { |p| p["source"].end_with?(dependency.version) }
-                .fetch("version")
+                .find { |p| p["source"]&.end_with?(dependency.version) }
+                &.fetch("version")
         end
 
         sig { returns(T.nilable(String)) }
