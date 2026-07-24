@@ -29,9 +29,7 @@ module Dependabot
         # No `/m`: it would let the greedy `.*` in `entries` match newlines and
         # swallow the trailing `BUNDLED WITH` section. `^` is line-anchored anyway.
         CHECKSUMS_SECTION = /(^CHECKSUMS\n)(?<entries>(?:^  .*\n)+)/
-        BUNDLED_WITH_VERSION_REGEX = /BUNDLED WITH\s+(?<version>\d+\.\d+\.\d+)/m
         BUNDLER_CHECKSUM_ENTRY_REGEX = /^  bundler \([^)]+\).*\n?$/
-        MIN_BUNDLER_CHECKSUM_VERSION = Gem::Version.new("4.0.11")
 
         sig do
           params(
@@ -250,14 +248,17 @@ module Dependabot
           lockfile_content = T.must(lockfile).content
           return false unless lockfile_content&.include?("CHECKSUMS\n")
 
+          # Strip a bundler self-checksum only when the original CHECKSUMS
+          # section did not contain one. If the original pins one,
+          # restore_bundler_checksum separately swaps a generated entry back to
+          # the original when present. Dependabot must not introduce a missing
+          # entry: the runner's regular-gem install can calculate a checksum that
+          # a default-gem install cannot (ruby/rubygems#9512), and its runtime
+          # bundler version need not match BUNDLED WITH because Dependabot does
+          # not manage that version. This can add unrelated or mismatched
+          # metadata and cause lockfile churn.
           checksums_section = lockfile_content.match(CHECKSUMS_SECTION)
-          return false if checksums_section && T.must(checksums_section[:entries]).match?(BUNDLER_CHECKSUM_ENTRY_REGEX)
-
-          bundled_with = lockfile_content.match(BUNDLED_WITH_VERSION_REGEX)&.[](:version)
-          return false unless bundled_with
-
-          bundled_with_version = Gem::Version.new(bundled_with)
-          bundled_with_version >= Gem::Version.new("4.0.0") && bundled_with_version < MIN_BUNDLER_CHECKSUM_VERSION
+          !(checksums_section && T.must(checksums_section[:entries]).match?(BUNDLER_CHECKSUM_ENTRY_REGEX))
         end
 
         sig { params(lockfile_body: String).returns(String) }
