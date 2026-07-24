@@ -317,7 +317,10 @@ module Dependabot
           else
             releases.sort_by { |release| release.id || 0 }.reverse
           end
-        rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons
+        rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons => e
+          Dependabot.logger.info(
+            "Unable to fetch releases for #{T.must(source).repo}: #{e.message}"
+          )
           []
         end
 

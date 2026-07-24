@@ -302,7 +302,10 @@ module Dependabot
               html_url: commit.html_url
             }
           end
-        rescue Octokit::NotFound
+        rescue Octokit::NotFound => e
+          Dependabot.logger.info(
+            "Unable to fetch commits for #{T.must(source).repo}: #{e.message}"
+          )
           []
         end
 

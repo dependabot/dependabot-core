@@ -522,6 +522,14 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             before { stub_request(:get, github_url).to_return(status: 404) }
 
             it { is_expected.to be_nil }
+
+            it "logs a message about the failed fetch" do
+              allow(Dependabot.logger).to receive(:info)
+              finder.releases_text
+              expect(Dependabot.logger).to have_received(:info).with(
+                /Unable to fetch releases for gocardless\/business/
+              )
+            end
           end
 
           context "when authentication succeeds" do

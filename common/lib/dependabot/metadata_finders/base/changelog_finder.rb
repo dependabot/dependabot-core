@@ -177,7 +177,10 @@ module Dependabot
           filename = T.must(T.must(suggested_changelog_url).split("/").last)
           @changelog_from_suggested_url =
             tmp_files.find { |f| f.name == filename }
-        rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons
+        rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons => e
+          Dependabot.logger.info(
+            "Unable to fetch changelog from suggested URL for #{T.must(suggested_source).repo}: #{e.message}"
+          )
           @changelog_from_suggested_url = nil
         end
 
@@ -352,25 +355,27 @@ module Dependabot
         sig { params(ref: T.nilable(String)).returns(T::Array[T.untyped]) }
         def fetch_github_file_list(ref)
           files = []
+          repo = T.must(source).repo
 
           if T.must(source).directory
             opts = { path: T.must(source).directory, ref: ref }.compact
-            tmp_files = github_client.contents(T.must(source).repo, opts)
+            tmp_files = github_client.contents(repo, opts)
             files += tmp_files if tmp_files.is_a?(Array)
           end
 
           opts = { ref: ref }.compact
-          files += github_client.contents(T.must(source).repo, opts)
+          files += github_client.contents(repo, opts)
 
           files.uniq.each do |f|
             next unless f.type == "dir" && f.name.match?(/docs?/o)
 
             opts = { path: f.path, ref: ref }.compact
-            files += github_client.contents(T.must(source).repo, opts)
+            files += github_client.contents(repo, opts)
           end
 
           files
-        rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons
+        rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons => e
+          Dependabot.logger.info("Unable to fetch file list for #{repo}: #{e.message}")
           []
         end
         sig { returns(T.untyped) }

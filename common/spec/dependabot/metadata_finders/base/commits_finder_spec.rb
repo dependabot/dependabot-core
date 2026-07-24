@@ -969,6 +969,14 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           end
 
           it { is_expected.to eq([]) }
+
+          it "logs a message about the failed fetch" do
+            allow(Dependabot.logger).to receive(:info)
+            builder.commits
+            expect(Dependabot.logger).to have_received(:info).with(
+              /Unable to fetch commits for gocardless\/business/
+            )
+          end
         end
 
         context "when dealing with a monorepo" do
