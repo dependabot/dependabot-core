@@ -128,14 +128,14 @@ RSpec.describe Dependabot::Powershell::FileParser do
       let(:manifest_file) do
         Dependabot::DependencyFile.new(
           name: "MixedKeys.psd1",
-          content: <<~Powershell
+          content: <<~POWERSHELL
             @{
               RequiredModules = @(
                 @{ modulename = "Az.Mixed"; requiredversion = "1.2.3" },
                 @{ ModuleName = 'Az.Range'; moduleversion = "1.0.0"; maximumversion = '2.0.0' }
               )
             }
-          Powershell
+          POWERSHELL
         )
       end
 
@@ -155,14 +155,14 @@ RSpec.describe Dependabot::Powershell::FileParser do
       let(:manifest_file) do
         Dependabot::DependencyFile.new(
           name: "Malformed.psd1",
-          content: <<~Powershell
+          content: <<~POWERSHELL
             @{
               RequiredModules = @(
                 @{ ModuleName = 'Az.Broken'; RequiredVersion = '1.0.0' } trailing,
                 'Az.Valid'
               )
             }
-          Powershell
+          POWERSHELL
         )
       end
 
@@ -177,13 +177,13 @@ RSpec.describe Dependabot::Powershell::FileParser do
 
         Dependabot::DependencyFile.new(
           name: "ManyModules.psd1",
-          content: <<~Powershell
+          content: <<~POWERSHELL
             @{
               RequiredModules = @(
                 #{modules}
               )
             }
-          Powershell
+          POWERSHELL
         )
       end
 

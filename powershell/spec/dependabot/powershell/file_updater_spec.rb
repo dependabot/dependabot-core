@@ -219,14 +219,14 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
         [
           Dependabot::DependencyFile.new(
             name: "MixedQuotes.psd1",
-            content: <<~Powershell
+            content: <<~POWERSHELL
               @{
                 RequiredModules = @(
                   @{ modulename = "Az.Mixed"; requiredversion = "1.0.0" },
                   @{ ModuleName = "Az.Range"; moduleversion = "1.0.0"; maximumversion = "2.0.0" }
                 )
               }
-            Powershell
+            POWERSHELL
           )
         ]
       end
