@@ -130,7 +130,10 @@ module Dependabot
         def edit_for_matching_occurrence(occurrence, changes, content)
           return nil unless occurrence.style == :hashtable
 
-          field = VERSION_FIELDS[occurrence.version_key]
+          version_key = occurrence.version_key
+          return nil unless version_key
+
+          field = VERSION_FIELDS[version_key]
           return nil unless field
 
           value_span = value_span_for(content, occurrence, field)
@@ -144,11 +147,14 @@ module Dependabot
           # change here - each still gets its own edit, keyed by whatever
           # version is actually on disk for it rather than by position.
           match = changes.find do |previous, _|
-            extract_version(previous.requirement, occurrence.version_key) == current_value
+            previous_requirement = previous.requirement
+            next false unless previous_requirement.is_a?(String)
+
+            extract_version(previous_requirement, version_key) == current_value
           end
           return nil unless match
 
-          new_value = extract_version(match[1], occurrence.version_key)
+          new_value = extract_version(match[1], version_key)
           return nil unless new_value
 
           [value_span[0], value_span[1], new_value]
@@ -199,8 +205,8 @@ module Dependabot
           match = pattern.match(scannable)
           return nil unless match
 
-          value_start = occurrence.start_index + T.must(match.begin(:value))
-          value_end = occurrence.start_index + T.must(match.end(:value))
+          value_start = occurrence.start_index + match.begin(:value)
+          value_end = occurrence.start_index + match.end(:value)
           [value_start, value_end]
         end
 

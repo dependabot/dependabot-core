@@ -70,7 +70,7 @@ module Dependabot
           @content.to_enum(:scan, REQUIRES_MODULES_LINE).flat_map do
             match = T.must(Regexp.last_match)
             modules_text = T.must(match[:modules])
-            entries(modules_text, T.must(match.begin(:modules)), declaration_type: :requires_directive)
+            entries(modules_text, match.begin(:modules), declaration_type: :requires_directive)
           end
         end
 
