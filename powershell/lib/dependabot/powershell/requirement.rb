@@ -26,7 +26,7 @@ module Dependabot
         # ">= 1.0.0, <= 2.0.0") - each constraint must be passed as its own
         # array element.
         constraints = requirement_string.split(",").map(&:strip)
-        [new(*constraints)]
+        [new(constraints)]
       end
     end
   end
