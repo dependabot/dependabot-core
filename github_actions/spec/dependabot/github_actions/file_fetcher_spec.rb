@@ -88,6 +88,31 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
         expect(file_fetcher_instance.files.map(&:name))
           .to match_array(%w(sherlock-workflow.yaml integration-workflow.yml))
       end
+
+      context "when an actions.lock is present" do
+        before do
+          stub_request(:get, url + ".github/workflows?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "contents_githubaction_repo_workflows_with_lock.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + ".github/workflows/actions.lock?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "contents_githubaction_lockfile.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches the lockfile relative to the configured directory" do
+          lockfile = file_fetcher_instance.files.find { |file| file.name == "actions.lock" }
+
+          expect(lockfile&.path).to eq("/.github/workflows/actions.lock")
+        end
+      end
     end
 
     context "when an actions.lock is present" do

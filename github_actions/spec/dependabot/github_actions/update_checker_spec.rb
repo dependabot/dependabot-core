@@ -1299,6 +1299,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           it "still updates the patch-pinned workflow" do
             expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
             expect(ref_for(updated_requirements, ".github/workflows/patch.yml")).to eq("v3.5.2")
+            expect(checker.updated_dependencies(requirements_to_unlock: :own).first.version).to eq("3")
           end
         end
       end
