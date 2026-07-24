@@ -24,7 +24,11 @@ module Dependabot
 
         sig { returns(T::Array[ModuleDeclaration]) }
         def parse
-          content = T.must(@file.content)
+          # Block comments (`<# ... #>`) are blanked out - not removed - so
+          # a `#Requires -Modules` line written inside a comment can no
+          # longer match, mirroring what DeclarationLocator does for the
+          # file updater's raw scan.
+          content = blank_block_comments(T.must(@file.content))
 
           content.each_line.flat_map do |line|
             match = REQUIRES_MODULES_LINE.match(line)
@@ -34,6 +38,13 @@ module Dependabot
               .split_entries(T.must(match[:modules]))
               .filter_map { |entry| ModuleSpecificationParser.parse(entry, declaration_type: :requires_directive) }
           end
+        end
+
+        private
+
+        sig { params(content: String).returns(String) }
+        def blank_block_comments(content)
+          content.gsub(/<#.*?#>/m) { |match| match.gsub(/[^\n]/, " ") }
         end
       end
     end

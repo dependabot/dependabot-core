@@ -305,6 +305,21 @@ RSpec.describe Dependabot::Powershell::FileParser do
         expect(parser.parse).to eq([])
       end
     end
+
+    context "when a #Requires -Modules line appears inside a block comment" do
+      let(:script_file) do
+        Dependabot::DependencyFile.new(
+          name: "BlockComment.ps1",
+          content: fixture("ps1", "block_comment_requires_script.ps1")
+        )
+      end
+
+      it "ignores the directive described in the comment and only parses the real one" do
+        names = parser.parse.map(&:name)
+
+        expect(names).to contain_exactly("Az.Real")
+      end
+    end
   end
 
   describe "parsing a .psm1 script module" do
