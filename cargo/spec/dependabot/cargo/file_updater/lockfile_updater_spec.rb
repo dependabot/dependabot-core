@@ -505,6 +505,18 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         it "validates the update against the sparse registry entry" do
           expect(updated_lockfile_content).to include(%(name = "internal-api"\nversion = "1.4.1"))
         end
+
+        context "when a same-name source-less package carries the desired version" do
+          let(:lockfile_fixture_name) { "sparse_registry_workspace_shadow" }
+
+          before do
+            allow(updater).to receive(:run_cargo_command)
+          end
+
+          it "does not accept the workspace package as the update" do
+            expect { updated_lockfile_content }.to raise_error("Failed to update internal-api!")
+          end
+        end
       end
 
       context "with an old format lockfile" do
@@ -569,6 +581,56 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           it "accepts the commit Cargo resolved" do
             expect(updated_lockfile_content)
               .to include("utf8-ranges#0123456789abcdef0123456789abcdef01234567")
+          end
+        end
+
+        context "when the previous version is an abbreviated SHA and nothing moved" do
+          let(:dependency_previous_version) { "83141b3" }
+
+          before do
+            allow(updater).to receive(:run_cargo_command)
+          end
+
+          it "still rejects the unchanged git line" do
+            expect { updated_lockfile_content }.to raise_error("Failed to update utf8-ranges!")
+          end
+        end
+
+        context "when the same repository is locked at multiple refs" do
+          let(:manifest_fixture_name) { "git_dependency_multiple_refs" }
+          let(:lockfile_fixture_name) { "git_dependency_multiple_refs" }
+          let(:previous_requirements) do
+            [{
+              file: "Cargo.toml",
+              requirement: nil,
+              groups: ["dependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/BurntSushi/utf8-ranges",
+                branch: "main",
+                ref: nil
+              }
+            }]
+          end
+
+          before do
+            allow(updater).to receive(:run_cargo_command) do
+              content = File.read("Cargo.lock")
+              File.write(
+                "Cargo.lock",
+                content.sub(
+                  "?branch=main#83141b376b93484341c68fbca3ca110ae5cd2708",
+                  "?branch=main#0123456789abcdef0123456789abcdef01234567"
+                )
+              )
+            end
+          end
+
+          it "accepts drift on the targeted ref while the other ref keeps the old commit" do
+            expect(updated_lockfile_content)
+              .to include("?branch=main#0123456789abcdef0123456789abcdef01234567")
+            expect(updated_lockfile_content)
+              .to include("?branch=stable#83141b376b93484341c68fbca3ca110ae5cd2708")
           end
         end
 

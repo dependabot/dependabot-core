@@ -697,10 +697,11 @@ module Dependabot
           if source
             entries.select! { |entry| entry.include?(%(source = "#{source}")) }
           else
-            # Without an exact source identity, exclude git-sourced copies so
-            # a same-version git fork can't satisfy the checks. Registry
-            # entries of any protocol (registry+, sparse+) stay visible.
-            entries.reject! { |entry| entry.match?(/^source = "git\+/) }
+            # Without an exact source identity, restrict to registry-style
+            # entries: git-sourced copies and source-less workspace or path
+            # packages must not satisfy the checks. Registry entries of any
+            # protocol (registry+, sparse+) stay visible.
+            entries.select! { |entry| entry.match?(/^source = "(?!git\+)/) }
           end
           entries
         end
@@ -718,7 +719,9 @@ module Dependabot
           return false unless previous_sha
 
           shas = git_source_shas(updated_lockfile)
-          return false if shas.empty? || shas.include?(previous_sha)
+          # SHA comparisons use prefix semantics, matching the update
+          # checkers: previous_version may be an abbreviated commit.
+          return false if shas.empty? || shas.any? { |sha| sha.start_with?(previous_sha) }
 
           Dependabot.logger.info(
             "Cargo resolved #{dependency.name} to #{shas.join(', ')} " \
@@ -734,11 +737,45 @@ module Dependabot
             entries << Regexp.last_match.to_s
           end
           entries.select! { |entry| entry.match?(/^name = "#{Regexp.escape(dependency.name)}"$/) }
+          entries.select! { |entry| entry.match?(/^source = "git\+/) }
 
+          scope_entries_to_git_identity(entries)
+            .filter_map { |entry| entry[/^source = "git\+[^"]*#([0-9a-f]+)"$/, 1] }
+        end
+
+        # The same repository can be locked at several refs at once, so scope
+        # to the dependency's exact git identity (URL plus branch/tag/rev)
+        # where possible. Cargo serializes the ref into the source string.
+        # Fall back to URL-wide scoping rather than failing on serialization
+        # differences.
+        sig { params(entries: T::Array[String]).returns(T::Array[String]) }
+        def scope_entries_to_git_identity(entries)
           url = git_source_url
-          entries.select! { |entry| entry.include?(url) } if url
+          return entries unless url
 
-          entries.filter_map { |entry| entry[/^source = "git\+[^"]*#([0-9a-f]+)"$/, 1] }
+          url_scoped = entries.select { |entry| entry.include?(url) }
+          return entries if url_scoped.empty?
+
+          ref_scoped = url_scoped.select { |entry| entry.match?(git_ref_pattern(url)) }
+          ref_scoped.empty? ? url_scoped : ref_scoped
+        end
+
+        sig { params(url: String).returns(Regexp) }
+        def git_ref_pattern(url)
+          branch = git_source_detail(:branch)
+          return /\?branch=#{Regexp.escape(branch)}#/ if branch
+
+          ref = git_source_detail(:ref)
+          return /\?(?:tag|rev)=#{Regexp.escape(ref)}#/ if ref
+
+          /#{Regexp.escape(url)}#/
+        end
+
+        sig { params(key: Symbol).returns(T.nilable(String)) }
+        def git_source_detail(key)
+          dependency.previous_requirements
+                    &.find { |r| r.dig(:source, :type) == "git" }
+                    &.dig(:source, key)
         end
 
         sig do
