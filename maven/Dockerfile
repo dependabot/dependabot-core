@@ -29,5 +29,4 @@ COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 # symlink so script/dependabot just works
 RUN mkdir -p ~/.m2 && ln -s ~/maven/settings.xml ~/.m2/settings.xml
 
-USER root
 ENTRYPOINT ["/usr/local/bin/java-truststore-entrypoint.sh"]

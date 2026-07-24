@@ -29,5 +29,4 @@ COPY --from=gradle $GRADLE_HOME $GRADLE_HOME
 COPY --chown=dependabot:dependabot --parents gradle maven common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
-USER root
 ENTRYPOINT ["/usr/local/bin/java-truststore-entrypoint.sh"]

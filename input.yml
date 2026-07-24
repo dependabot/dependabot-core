@@ -1,0 +1,239 @@
+---
+job:
+  command: version
+  allowed-updates:
+  - dependency-type: direct
+    update-type: all
+  commit-message-options:
+    prefix:
+    prefix-development:
+    include-scope:
+  credentials-metadata:
+  - type: maven_repository
+    url: https://maven.google.com
+  - type: maven_repository
+    url: https://plugins.gradle.org/m2
+  - type: maven_repository
+    url: https://repo.maven.apache.org/maven2
+  - type: git_source
+    host: github.com
+  debug:
+  dependencies:
+  dependency-groups:
+  - name: kotlin
+    rules:
+      patterns:
+      - org.jetbrains.kotlin*
+      - org.jetbrains.kotlinx*
+  - name: compose
+    rules:
+      patterns:
+      - androidx.compose*
+      - androidx.activity:activity-compose
+  - name: firebase
+    rules:
+      patterns:
+      - com.google.firebase*
+      - com.google.gms*
+  - name: media3
+    rules:
+      patterns:
+      - androidx.media3*
+  - name: koin
+    rules:
+      patterns:
+      - io.insert-koin*
+  - name: coil
+    rules:
+      patterns:
+      - io.coil-kt.coil3*
+  - name: retrofit-okhttp
+    rules:
+      patterns:
+      - com.squareup.retrofit2*
+      - com.squareup.okhttp3*
+  - name: detekt
+    rules:
+      patterns:
+      - io.gitlab.arturbosch.detekt*
+  - name: mockk
+    rules:
+      patterns:
+      - io.mockk*
+  - name: junit
+    rules:
+      patterns:
+      - org.junit*
+      - junit:junit
+  - name: dokka
+    rules:
+      patterns:
+      - org.jetbrains.dokka*
+  - name: androidx-lifecycle
+    rules:
+      patterns:
+      - androidx.lifecycle*
+  - name: androidx-navigation
+    rules:
+      patterns:
+      - androidx.navigation*
+  - name: android-build-tools
+    rules:
+      patterns:
+      - com.android.tools.build*
+      - com.android.settings*
+      - com.android.application*
+      - com.android.library*
+      - com.android.lint*
+  dependency-group-to-refresh:
+  existing-pull-requests:
+  - pr-number: 8
+    dependencies:
+    - dependency-name: androidx.annotation:annotation
+      dependency-version: 1.10.0
+      directory: "/"
+  - pr-number: 9
+    dependencies:
+    - dependency-name: io.github.takahirom.roborazzi
+      dependency-version: 1.70.0
+      directory: "/"
+    - dependency-name: io.github.takahirom.roborazzi:roborazzi
+      dependency-version: 1.70.0
+      directory: "/"
+    - dependency-name: io.github.takahirom.roborazzi:roborazzi-compose
+      dependency-version: 1.70.0
+      directory: "/"
+  existing-group-pull-requests:
+  - dependency-group-name: compose
+    dependencies:
+    - dependency-name: androidx.compose:compose-bom
+      dependency-version: 2026.06.01
+      directory: "/"
+    pr-number: 2
+  - dependency-group-name: firebase
+    dependencies:
+    - dependency-name: com.google.firebase:firebase-bom
+      dependency-version: 34.16.0
+      directory: "/"
+    pr-number: 3
+  - dependency-group-name: coil
+    dependencies:
+    - dependency-name: io.coil-kt.coil3:coil-bom
+      dependency-version: 3.5.0
+      directory: "/"
+    pr-number: 5
+  - dependency-group-name: junit
+    dependencies:
+    - dependency-name: org.junit:junit-bom
+      dependency-version: 6.1.2
+      directory: "/"
+    pr-number: 6
+  - dependency-group-name: kotlin
+    dependencies:
+    - dependency-name: org.jetbrains.kotlin.android
+      dependency-version: 2.4.10
+      directory: "/"
+    - dependency-name: org.jetbrains.kotlin.android
+      dependency-version: 2.4.10
+      directory: "/"
+    - dependency-name: org.jetbrains.kotlin.jvm
+      dependency-version: 2.4.10
+      directory: "/"
+    - dependency-name: org.jetbrains.kotlin.jvm
+      dependency-version: 2.4.10
+      directory: "/"
+    - dependency-name: org.jetbrains.kotlin.plugin.compose
+      dependency-version: 2.4.10
+      directory: "/"
+    - dependency-name: org.jetbrains.kotlin.plugin.compose
+      dependency-version: 2.4.10
+      directory: "/"
+    - dependency-name: org.jetbrains.kotlin.plugin.serialization
+      dependency-version: 2.4.10
+      directory: "/"
+    - dependency-name: org.jetbrains.kotlin.plugin.serialization
+      dependency-version: 2.4.10
+      directory: "/"
+    - dependency-name: org.jetbrains.kotlin:kotlin-gradle-plugin
+      dependency-version: 2.4.10
+      directory: "/"
+    pr-number: 1
+  - dependency-group-name: koin
+    dependencies:
+    - dependency-name: io.insert-koin.compiler.plugin
+      dependency-version: 1.0.2
+      directory: "/"
+    - dependency-name: io.insert-koin.compiler.plugin
+      dependency-version: 1.0.2
+      directory: "/"
+    - dependency-name: io.insert-koin:koin-compiler-plugin
+      dependency-version: 1.0.2
+      directory: "/"
+    pr-number: 4
+  - dependency-group-name: android-build-tools
+    dependencies:
+    - dependency-name: com.android.application
+      dependency-version: 9.3.0
+      directory: "/"
+    - dependency-name: com.android.application
+      dependency-version: 9.3.0
+      directory: "/"
+    - dependency-name: com.android.library
+      dependency-version: 9.3.0
+      directory: "/"
+    - dependency-name: com.android.library
+      dependency-version: 9.3.0
+      directory: "/"
+    - dependency-name: com.android.lint
+      dependency-version: 9.3.0
+      directory: "/"
+    - dependency-name: com.android.lint
+      dependency-version: 9.3.0
+      directory: "/"
+    - dependency-name: com.android.settings
+      dependency-version: 9.3.0
+      directory: "/"
+    - dependency-name: com.android.tools.build:gradle
+      dependency-version: 9.3.0
+      directory: "/"
+    pr-number: 7
+  experiments:
+    record-ecosystem-versions: true
+    record-update-job-unknown-error: true
+    proxy-cached: true
+    enable-corepack-for-npm-and-yarn: true
+    enable-private-registry-for-corepack: true
+    allow-refresh-for-existing-pr-dependencies: true
+    allow-refresh-group-with-all-dependencies: true
+    azure-registry-backup: true
+    enable-enhanced-error-details-for-updater: true
+    gradle-lockfile-updater: true
+    enable-exclude-paths-subdirectory-manifest-files: true
+    blocked-versions: true
+    workflow-job-summary: true
+    async-retry: true
+    enable-npmrc-credential-generation: true
+    enable-cooldown-default-days: true
+  ignore-conditions: []
+  lockfile-only: false
+  max-updater-run-time: 2700
+  package-manager: gradle
+  requirements-update-strategy:
+  reject-external-code: false
+  security-advisories: []
+  security-updates-only: false
+  source:
+    provider: github
+    repo: thavaahariharangit/cxone-mobile-sdk-android
+    branch: develop
+    directory: "/."
+    api-endpoint: https://api.github.com/
+    hostname: github.com
+    commit: bd2b70690eeba2a4631e6d228389d8e058cb4f18
+  updating-a-pull-request: false
+  update-subdependencies: false
+  vendor-dependencies: false
+  enable-beta-ecosystems: false
+  repo-private: true
+  multi-ecosystem-update: false
+  exclude-paths:

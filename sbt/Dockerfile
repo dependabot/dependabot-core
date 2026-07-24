@@ -31,5 +31,4 @@ RUN bash /opt/sbt/helpers/build
 COPY --chown=dependabot:dependabot --parents sbt maven common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
-USER root
 ENTRYPOINT ["/usr/local/bin/java-truststore-entrypoint.sh"]
