@@ -147,13 +147,17 @@ module Dependabot
           source = T.cast(target["source"], T.nilable(String))
           candidates = updated_package_candidates(updated_packages, target)
 
-          unchanged = candidates.find { |package| version_from_package(package) == dependency.version }
-          return unchanged if unchanged
-          return candidates.first if candidates.one?
+          # Cargo can split a unified line across a version boundary, adding a
+          # new package while retaining the old one for dependents that still
+          # need it. A newly introduced identity is the update; the retained
+          # line only answers when nothing new appeared.
+          fresh = candidates.reject { |package| package_identity(package) == package_identity(target) }
+          return fresh.max_by { |package| version_class.new(T.cast(package.fetch("version"), String)) } if fresh.any?
 
-          compatible_packages(updated_packages, source).max_by do |package|
-            version_class.new(T.cast(package.fetch("version"), String))
-          end
+          candidates.find { |package| version_from_package(package) == dependency.version } ||
+            compatible_packages(updated_packages, source).max_by do |package|
+              version_class.new(T.cast(package.fetch("version"), String))
+            end
         end
 
         sig { returns(T.nilable(T::Hash[String, T.anything])) }
@@ -605,8 +609,8 @@ module Dependabot
           TomlRB.parse(T.must(lockfile).content)
                 .fetch("package", [])
                 .select { |p| p["name"] == dependency.name }
-                .find { |p| p["source"].end_with?(dependency.version) }
-                .fetch("version")
+                .find { |p| p["source"]&.end_with?(dependency.version) }
+                &.fetch("version")
         end
 
         sig { returns(T.nilable(String)) }

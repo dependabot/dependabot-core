@@ -584,6 +584,18 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           end
         end
 
+        context "when the lockfile only has the crate from another repository" do
+          let(:lockfile_fixture_name) { "git_dependency_foreign_repo" }
+
+          before do
+            allow(updater).to receive(:run_cargo_command)
+          end
+
+          it "does not accept the same-name crate from a different repository" do
+            expect { updated_lockfile_content }.to raise_error("Failed to update utf8-ranges!")
+          end
+        end
+
         context "when the previous version is an abbreviated SHA and nothing moved" do
           let(:dependency_previous_version) { "83141b3" }
 
@@ -648,6 +660,122 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
             end
 
             it "does not accept the other ref's commit for the targeted line" do
+              expect { updated_lockfile_content }.to raise_error("Failed to update utf8-ranges!")
+            end
+          end
+
+          context "when the dependency tracks the default branch but entries stay ref-qualified" do
+            let(:requirements) { previous_requirements }
+            let(:previous_requirements) do
+              [{
+                file: "Cargo.toml",
+                requirement: nil,
+                groups: ["dependencies"],
+                source: {
+                  type: "git",
+                  url: "https://github.com/BurntSushi/utf8-ranges",
+                  branch: nil,
+                  ref: nil
+                }
+              }]
+            end
+
+            before do
+              allow(updater).to receive(:run_cargo_command) do
+                content = File.read("Cargo.lock")
+                File.write(
+                  "Cargo.lock",
+                  content.sub(
+                    "?branch=main#83141b376b93484341c68fbca3ca110ae5cd2708",
+                    "?branch=main#be9b8dfcaf449453cbf83ac85260ee80323f4f77"
+                  )
+                )
+              end
+            end
+
+            it "rejects the commit still serialized under the old branch" do
+              expect { updated_lockfile_content }.to raise_error("Failed to update utf8-ranges!")
+            end
+          end
+
+          context "when a prefix-related repository carries the expected commit" do
+            let(:lockfile_fixture_name) { "git_dependency_prefix_fork" }
+
+            before do
+              allow(updater).to receive(:run_cargo_command)
+            end
+
+            it "does not accept the crate from the prefix-related repository" do
+              expect { updated_lockfile_content }.to raise_error("Failed to update utf8-ranges!")
+            end
+          end
+        end
+
+        context "when the update changes the tracked tag" do
+          let(:manifest_fixture_name) { "git_dependency_tag_change" }
+          let(:lockfile_fixture_name) { "git_dependency_tag_change" }
+          let(:requirements) do
+            [{
+              file: "Cargo.toml",
+              requirement: nil,
+              groups: ["dependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/BurntSushi/utf8-ranges",
+                branch: nil,
+                ref: "v2"
+              }
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "Cargo.toml",
+              requirement: nil,
+              groups: ["dependencies"],
+              source: {
+                type: "git",
+                url: "https://github.com/BurntSushi/utf8-ranges",
+                branch: nil,
+                ref: "v1"
+              }
+            }]
+          end
+
+          context "when the new tag's line drifts while another ref keeps the old commit" do
+            before do
+              allow(updater).to receive(:run_cargo_command) do
+                content = File.read("Cargo.lock")
+                File.write(
+                  "Cargo.lock",
+                  content.sub(
+                    "?tag=v1#83141b376b93484341c68fbca3ca110ae5cd2708",
+                    "?tag=v2#0123456789abcdef0123456789abcdef01234567"
+                  )
+                )
+              end
+            end
+
+            it "accepts the commit resolved for the new tag" do
+              expect(updated_lockfile_content)
+                .to include("?tag=v2#0123456789abcdef0123456789abcdef01234567")
+            end
+          end
+
+          context "when the new tag never appears and another ref carries the expected commit" do
+            before do
+              allow(updater).to receive(:run_cargo_command) do
+                content = File.read("Cargo.lock")
+                File.write(
+                  "Cargo.lock",
+                  content.sub(
+                    "?branch=main#83141b376b93484341c68fbca3ca110ae5cd2708",
+                    "?branch=main#be9b8dfcaf449453cbf83ac85260ee80323f4f77"
+                  )
+                )
+              end
+            end
+
+            it "fails validation instead of accepting the other ref" do
               expect { updated_lockfile_content }.to raise_error("Failed to update utf8-ranges!")
             end
           end

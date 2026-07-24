@@ -248,7 +248,7 @@ module Dependabot
           TomlRB.parse(lockfile.content)
                 .fetch("package", [])
                 .select { |p| p["name"] == dependency.name }
-                .find { |p| p["source"].end_with?(dependency.previous_version) }
+                .find { |p| p["source"]&.end_with?(dependency.previous_version) }
                 &.fetch("version")
         end
 
@@ -747,39 +747,41 @@ module Dependabot
             .filter_map { |entry| entry[/^source = "git\+[^"]*#([0-9a-f]+)"$/, 1] }
         end
 
-        # The same repository can be locked at several refs at once, so scope
-        # to the dependency's exact git identity (URL plus branch/tag/rev)
-        # where possible. Cargo serializes the ref into the source string.
-        # Fall back to URL-wide scoping rather than failing on serialization
-        # differences.
+        # Fail closed: the current identity serializes deterministically into
+        # the lockfile source string, so entries that don't match it are other
+        # identities, never fallbacks. An empty result means the expected
+        # identity is absent and validation must fail.
         sig { params(entries: T::Array[String]).returns(T::Array[String]) }
         def scope_entries_to_git_identity(entries)
-          url = git_source_url
+          url = git_source_detail(:url)
           return entries unless url
 
-          url_scoped = entries.select { |entry| entry.include?(url) }
-          return entries if url_scoped.empty?
-
-          ref_scoped = url_scoped.select { |entry| entry.match?(git_ref_pattern(url)) }
-          ref_scoped.empty? ? url_scoped : ref_scoped
+          entries.select { |entry| entry.match?(git_identity_pattern(url)) }
         end
 
+        # Anchors the URL and ref together at the start of the source value so
+        # a prefix-related repository URL cannot satisfy the match.
         sig { params(url: String).returns(Regexp) }
-        def git_ref_pattern(url)
+        def git_identity_pattern(url)
+          base = "^source = \"git\\+#{Regexp.escape(url)}"
           branch = git_source_detail(:branch)
-          return /\?branch=#{Regexp.escape(branch)}#/ if branch
+          return /#{base}\?branch=#{Regexp.escape(branch)}#/ if branch
 
           ref = git_source_detail(:ref)
-          return /\?(?:tag|rev)=#{Regexp.escape(ref)}#/ if ref
+          return /#{base}\?(?:tag|rev)=#{Regexp.escape(ref)}#/ if ref
 
-          /#{Regexp.escape(url)}#/
+          /#{base}#/
         end
 
+        # The updated lockfile is serialized with the dependency's current git
+        # identity (a ref change updates the source string), so prefer the
+        # current requirement's git source as a whole and use the previous one
+        # only when no current git source exists.
         sig { params(key: Symbol).returns(T.nilable(String)) }
         def git_source_detail(key)
-          dependency.previous_requirements
-                    &.find { |r| r.dig(:source, :type) == "git" }
-                    &.dig(:source, key)
+          source = dependency.requirements.find { |r| r.dig(:source, :type) == "git" }&.dig(:source) ||
+                   dependency.previous_requirements&.find { |r| r.dig(:source, :type) == "git" }&.dig(:source)
+          source&.dig(key)
         end
 
         sig do

@@ -3,6 +3,10 @@
 version = 4
 
 [[package]]
+name = "utf8-ranges"
+version = "0.0.0"
+
+[[package]]
 name = "git-multi-ref"
 version = "0.1.0"
 dependencies = [
