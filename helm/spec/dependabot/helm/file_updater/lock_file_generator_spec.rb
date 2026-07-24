@@ -191,5 +191,42 @@ RSpec.describe Dependabot::Helm::FileUpdater::LockFileGenerator do
         expect(Dependabot::SharedHelpers).to have_received(:with_git_configured).with(credentials: credentials)
       end
     end
+
+    context "when helm fails to download a chart dependency" do
+      let(:download_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "could not download oci://registry.sweet.security/helm/frontierchart: " \
+                   "registry.sweet.security/helm/frontierchart:1.0.259257_abc.0: not found",
+          error_context: {}
+        )
+      end
+
+      before do
+        allow(Dependabot::Helm::Helpers).to receive(:update_lock).and_raise(download_error)
+      end
+
+      it "raises a DependencyFileNotResolvable error instead of an unknown error" do
+        expect { generator.updated_chart_lock(chart_lock, updated_chart_yaml_content) }
+          .to raise_error(Dependabot::DependencyFileNotResolvable, /could not download/)
+      end
+    end
+
+    context "when helm fails for an unrelated reason" do
+      let(:other_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "Error: context deadline exceeded",
+          error_context: {}
+        )
+      end
+
+      before do
+        allow(Dependabot::Helm::Helpers).to receive(:update_lock).and_raise(other_error)
+      end
+
+      it "re-raises the original error" do
+        expect { generator.updated_chart_lock(chart_lock, updated_chart_yaml_content) }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+      end
+    end
   end
 end
