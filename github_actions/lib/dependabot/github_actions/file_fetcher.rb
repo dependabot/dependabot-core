@@ -77,6 +77,7 @@ module Dependabot
       # repository workflows. Composite-action directories cannot own a lockfile.
       sig { returns(T.nilable(DependencyFile)) }
       def actions_lockfile
+        return unless source.hostname == GITHUB_COM
         return fetch_file_if_present(LOCKFILE_PATH) if directory == "/"
 
         fetch_file_if_present(LOCKFILE_NAME) if directory.delete_prefix("/") == WORKFLOW_DIRECTORY

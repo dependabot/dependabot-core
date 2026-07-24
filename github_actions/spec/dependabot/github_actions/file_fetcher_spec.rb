@@ -145,6 +145,35 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
                .github/workflows/actions.lock)
           )
       end
+
+      context "with a non-github.com source" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "ghes.other.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }]
+        end
+        let(:source) do
+          Dependabot::Source.new(
+            provider: "github",
+            repo: "gocardless/bump",
+            directory: directory,
+            hostname: "ghes.other.com",
+            api_endpoint: github_url
+          )
+        end
+
+        it "keeps the existing workflow-only behavior" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(
+              %w(.github/workflows/sherlock-workflow.yaml
+                 .github/workflows/integration-workflow.yml)
+            )
+          expect(a_request(:get, url + ".github/workflows/actions.lock?ref=sha")).not_to have_been_made
+        end
+      end
     end
 
     context "when it has an invalid encoding" do
