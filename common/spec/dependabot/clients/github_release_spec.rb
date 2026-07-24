@@ -24,6 +24,7 @@ RSpec.describe Dependabot::Clients::GithubRelease do
           tag_name: "v1.2.3",
           body: "Release notes",
           html_url: "https://github.com/dependabot/dependabot-core/releases/tag/v1.2.3",
+          draft: false,
           prerelease: true,
           published_at: published_at
         }
@@ -36,9 +37,18 @@ RSpec.describe Dependabot::Clients::GithubRelease do
           tag_name: "v1.2.3",
           body: "Release notes",
           html_url: "https://github.com/dependabot/dependabot-core/releases/tag/v1.2.3",
+          draft: false,
           prerelease: true,
           published_at: published_at
         )
+      end
+    end
+
+    context "with a draft release" do
+      let(:data) { { tag_name: "v1.2.3", draft: true, prerelease: false } }
+
+      it "parses draft as true" do
+        expect(release&.draft).to be(true)
       end
     end
 
@@ -64,6 +74,7 @@ RSpec.describe Dependabot::Clients::GithubRelease do
           name: 1,
           body: [],
           html_url: {},
+          draft: "true",
           prerelease: "true",
           published_at: "not a timestamp"
         }
@@ -76,6 +87,7 @@ RSpec.describe Dependabot::Clients::GithubRelease do
           tag_name: "v1.2.3",
           body: nil,
           html_url: nil,
+          draft: false,
           prerelease: false,
           published_at: nil
         )

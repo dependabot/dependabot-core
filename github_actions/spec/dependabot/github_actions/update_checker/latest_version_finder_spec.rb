@@ -54,6 +54,7 @@ RSpec.describe namespace::LatestVersionFinder do
   let(:raise_on_ignored) { false }
   let(:ignored_versions) { [] }
   let(:security_advisories) { [] }
+  let(:cooldown_options) { nil }
   let(:finder) do
     described_class.new(
       dependency: dependency,
@@ -62,7 +63,7 @@ RSpec.describe namespace::LatestVersionFinder do
       security_advisories: security_advisories,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
-      cooldown_options: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+      cooldown_options: cooldown_options
     )
   end
 
@@ -129,6 +130,74 @@ RSpec.describe namespace::LatestVersionFinder do
       let(:reference) { "v2" }
 
       it { is_expected.to eq(Dependabot::GithubActions::Version.new("3")) }
+    end
+
+    context "when the latest version is a lightweight tag with no published release" do
+      let(:reference) { "v1" }
+      let(:dependency_version) { "1.0.0" }
+      let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90) }
+      let(:current_version) { Dependabot::GithubActions::Version.new("1.0.0") }
+      let(:latest_version) { Dependabot::GithubActions::Version.new("2.0.0") }
+      let(:old_commit_sha) { "a" * 40 }
+      let(:package_details_fetcher) do
+        instance_double(
+          Dependabot::GithubActions::Package::PackageDetailsFetcher,
+          release_list_for_git_dependency: latest_version,
+          allowed_version_tags_with_release_dates: [{
+            tag: "v2",
+            version: latest_version,
+            commit_sha: old_commit_sha,
+            tag_sha: old_commit_sha,
+            release_date: "2020-01-01"
+          }]
+        )
+      end
+
+      before do
+        allow(finder).to receive_messages(
+          package_details_fetcher: package_details_fetcher,
+          cooldown_source_url: "https://github.com/owner/repo"
+        )
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+      end
+
+      it "keeps the current version in cooldown instead of trusting the old commit date" do
+        expect(latest_release_version).to eq(current_version)
+      end
+    end
+
+    context "when an annotated candidate has no fetched release date" do
+      let(:reference) { "v1" }
+      let(:dependency_version) { "1.0.0" }
+      let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90) }
+      let(:latest_version) { Dependabot::GithubActions::Version.new("2.0.0") }
+      let(:package_details_fetcher) do
+        instance_double(
+          Dependabot::GithubActions::Package::PackageDetailsFetcher,
+          release_list_for_git_dependency: latest_version,
+          allowed_version_tags_with_release_dates: [{
+            tag: "v2",
+            version: latest_version,
+            commit_sha: "a" * 40,
+            tag_sha: "b" * 40,
+            release_date: nil
+          }]
+        )
+      end
+
+      before do
+        allow(finder).to receive_messages(
+          package_details_fetcher: package_details_fetcher,
+          cooldown_source_url: "https://github.com/owner/repo"
+        )
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+      end
+
+      it "keeps the candidate eligible instead of resolving Git data outside the clone" do
+        expect(latest_release_version).to eq(latest_version)
+      end
     end
 
     context "when a git commit SHA pointing to the tip of a branch not named like a version" do
@@ -550,6 +619,9 @@ RSpec.describe namespace::LatestVersionFinder do
             "content-type" => "application/x-git-upload-pack-advertisement"
           }
         )
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with(/git check-ref-format/, hash_including(fingerprint: anything))
+        .and_return("")
     end
 
     context "when tag is an annotated tag" do
@@ -581,7 +653,7 @@ RSpec.describe namespace::LatestVersionFinder do
       end
     end
 
-    context "when for-each-ref returns empty (lightweight tag not found)" do
+    context "when for-each-ref returns empty (tag not found in clone)" do
       it "falls back to commit date from git show" do
         commit_date = "2026-06-01 10:00:00 +0000"
 
@@ -601,7 +673,7 @@ RSpec.describe namespace::LatestVersionFinder do
         allow(Dir).to receive(:chdir).and_yield
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(/git clone --bare/, any_args).and_return("")
-        # for-each-ref returns empty
+        # for-each-ref returns empty (tag not found in clone)
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .with(/git for-each-ref/, hash_including(fingerprint: anything))
           .and_return("")
@@ -611,6 +683,43 @@ RSpec.describe namespace::LatestVersionFinder do
           .and_return(commit_date)
 
         expect(commit_metadata_details).to eq(commit_date)
+      end
+    end
+
+    context "when the tag is a lightweight tag with no published release" do
+      it "treats the version as still in cooldown (returns Time.now) and logs the decision" do
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return(source_details)
+        allow(finder).to receive_messages(
+          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                                commit_sha: "abc123" },
+          commit_ref: "abc123"
+        )
+        # No GitHub Release available — forces git fallback
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        # Lightweight tag: %(objecttype) returns "commit"
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref.*objecttype/, hash_including(fingerprint: anything))
+          .and_return("commit")
+
+        expect(Dependabot.logger).to receive(:info)
+          .with(/v1\.0\.0.*lightweight tag.*no published GitHub Release.*cooldown/i)
+
+        before_call = Time.now
+        result = commit_metadata_details
+        after_call = Time.now
+
+        # Result should be a recent ISO 8601 timestamp (Time.now), not an old commit date
+        expect(result).not_to be_nil
+        parsed = Time.parse(result.to_s)
+        expect(parsed).to be_between(before_call - 1, after_call + 1)
       end
     end
 
