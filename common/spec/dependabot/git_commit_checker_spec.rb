@@ -1875,6 +1875,25 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         it { is_expected.to eq("v2.3.4") }
       end
+
+      context "when in a monorepo with hyphenated-prefix tags and repo-wide tags on the same SHA" do
+        let(:repo_url) { "https://github.com/example/monorepo-actions.git" }
+        let(:upload_pack_fixture) { "monorepo-hyphenated-prefix-tags" }
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/example/monorepo-actions",
+            branch: "main",
+            ref: source_commit
+          }
+        end
+
+        let(:source_commit) { "ae04af897f79a65c232823bd96070ed1d7897213" }
+
+        it "finds the most specific (longest prefix) tag for the SHA" do
+          is_expected.to eq("resolve-gh-token-v2.1.0")
+        end
+      end
     end
   end
 

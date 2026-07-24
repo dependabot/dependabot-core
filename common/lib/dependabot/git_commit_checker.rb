@@ -427,8 +427,8 @@ module Dependabot
 
     sig { params(commit_sha: T.nilable(String)).returns(T::Array[Dependabot::GitRef]) }
     def local_tags_matching_sha(commit_sha)
-      local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
-                .sort_by { |t| version_class.new(t.name) }
+      local_tags.select { |t| t.commit_sha == commit_sha && version_tag?(t.name) }
+                .sort_by { |t| [t.name.gsub(VERSION_REGEX, "").length, version_from_tag(t)] }
     end
 
     sig { params(version: T.any(String, Gem::Version)).returns(T::Boolean) }
