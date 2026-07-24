@@ -205,47 +205,18 @@ module Dependabot
             return nil
           end
 
-          # For version tag proposals, fetch all allowed versions with release dates (single clone)
-          # This reuses a single GitCommitChecker instance within package_details_fetcher
-          allowed_versions_with_dates = T.must(package_details_fetcher).allowed_version_tags_with_release_dates
-          tags_in_cooldown = Set.new(select_version_tags_in_cooldown_period(allowed_versions_with_dates))
-          return release if tags_in_cooldown.empty?
-
-          # Walk through all allowed version tags in descending order (newest first)
-          # and return the first one NOT in cooldown
-          allowed_versions_with_dates.each do |tag_info|
-            tag_name = tag_info.fetch(:tag)
-            next if tags_in_cooldown.include?(tag_name)
-
-            # Found a version not in cooldown, return it
-            version = tag_info.fetch(:version)
-            Dependabot.logger.info("Found acceptable version outside cooldown: #{version}")
-            return version
+          # For version-tag proposals, delegate to the shared GitCommitChecker
+          # cooldown, which resolves tag release dates (GitHub Release date then
+          # tag creation date) and returns the newest tag outside its cooldown
+          # window — or nil when every candidate tag is still cooling down.
+          selected_tag = @git_helper.git_commit_checker.local_tag_for_latest_version(cooldown_options)
+          if selected_tag
+            Dependabot.logger.info("Found acceptable version outside cooldown: #{selected_tag.fetch(:version)}")
+            return selected_tag.fetch(:version)
           end
 
-          # All versions are in cooldown, return nil to fallback to current version
           Dependabot.logger.info("All versions are in cooldown period, returning current version")
           nil
-        end
-
-        sig do
-          params(
-            tags_with_dates: T.nilable(
-              T.any(T::Array[Dependabot::GitTagWithDetail], T::Array[T::Hash[Symbol, T.untyped]])
-            )
-          ).returns(T::Array[String])
-        end
-        def select_version_tags_in_cooldown_period(tags_with_dates = nil)
-          tags_to_check = tags_with_dates || T.must(package_details_fetcher).fetch_tag_and_release_date
-          # Handle both GitTagWithDetail objects and hashes with release_date
-          in_cooldown = tags_to_check.select do |tag|
-            release_date = tag.is_a?(Hash) ? tag.fetch(:release_date, nil) : tag.release_date
-            check_if_version_in_cooldown_period?(release_date)
-          end
-          in_cooldown.map { |tag| tag.is_a?(Hash) ? tag.fetch(:tag) : tag.tag }
-        rescue StandardError => e
-          Dependabot.logger.error("Error checking if version is in cooldown (using empty filter): #{e.message}")
-          []
         end
 
         # Returns the release date for the latest version tag.
