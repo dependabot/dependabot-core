@@ -18,6 +18,8 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
+      GitSource = T.type_alias { T::Hash[Symbol, String] }
+
       require_relative "update_checker/latest_version_finder"
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
@@ -57,7 +59,7 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         updated_reqs = dependency.requirements.map do |req|
-          source = req[:source]
+          source = T.cast(req.source, GitSource)
           updated = updated_ref(source, onboarded: onboarded_requirement?(req))
           next req unless updated
 
@@ -88,7 +90,7 @@ module Dependabot
         reader = lockfile_reader
         return false unless reader
 
-        file = dependency_files.find { |f| f.name == req[:file] }
+        file = dependency_files.find { |f| f.name == req.file }
         return false unless file
 
         reader.onboarded?(file.path.delete_prefix("/"))
@@ -119,7 +121,7 @@ module Dependabot
       # requirement to the coarsest precision). Cached per ref so repeated refs share
       # one underlying clone. Falls back to the combined finder for sources whose ref
       # is not a version (SHA / branch), where precision has no meaning.
-      sig { params(source: T.nilable(Dependabot::DependencyRequirement::ObjectHash)).returns(LatestVersionFinder) }
+      sig { params(source: T.nilable(GitSource)).returns(LatestVersionFinder) }
       def latest_version_finder_for(source)
         ref = source&.fetch(:ref, nil)
         return T.must(latest_version_finder) unless ref && version_class.correct?(ref)
@@ -147,7 +149,7 @@ module Dependabot
       # without touching the shared combined dependency reported up to the rest of the
       # update.
       sig do
-        params(source: Dependabot::DependencyRequirement::ObjectHash, ref: String)
+        params(source: GitSource, ref: String)
           .returns(Dependabot::Dependency)
       end
       def per_source_dependency(source, ref)
@@ -208,7 +210,7 @@ module Dependabot
       end
 
       sig do
-        params(source: T.nilable(Dependabot::DependencyRequirement::ObjectHash), onboarded: T::Boolean)
+        params(source: T.nilable(GitSource), onboarded: T::Boolean)
           .returns(T.nilable(String))
       end
       def updated_ref(source, onboarded: false)
