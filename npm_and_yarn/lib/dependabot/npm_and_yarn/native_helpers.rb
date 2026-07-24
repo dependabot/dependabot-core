@@ -21,8 +21,10 @@ module Dependabot
         File.join(__dir__, "../../../helpers")
       end
 
-      sig { params(dependency_names: T::Array[String], security_updates_only: T::Boolean).returns(String) }
-      def self.run_npm8_subdependency_update_command(dependency_names, security_updates_only: false)
+      sig do
+        params(dependency_names: T::Array[String], min_release_age_arg: T.nilable(String)).returns(String)
+      end
+      def self.run_npm8_subdependency_update_command(dependency_names, min_release_age_arg: nil)
         # NOTE: npm options
         # - `--force` ignores checks for platform (os, cpu) and engines
         # - `--ignore-scripts` disables prepare and prepack scripts which are run
@@ -34,9 +36,10 @@ module Dependabot
           "--ignore-scripts",
           "--package-lock-only"
         ]
-        # Override any min-release-age set in .npmrc: security fixes must not be
-        # blocked by a release-age gate the user configured for regular updates.
-        command_args << "--min-release-age=0" if security_updates_only
+        # Apply the effective release-age gate: `=0` bypasses any `.npmrc` gate for
+        # security fixes, a positive value enforces the dependabot.yml cooldown
+        # floor on transitive updates. nil leaves npm's own resolution untouched.
+        command_args << min_release_age_arg if min_release_age_arg
         command = command_args.join(" ")
 
         fingerprint_args = [
@@ -46,26 +49,34 @@ module Dependabot
           "--ignore-scripts",
           "--package-lock-only"
         ]
-        fingerprint_args << "--min-release-age=0" if security_updates_only
+        fingerprint_args << fingerprint_min_release_age_arg(min_release_age_arg) if min_release_age_arg
         fingerprint = fingerprint_args.join(" ")
 
         Helpers.run_npm_command(command, fingerprint: fingerprint)
       end
 
-      sig { params(security_updates_only: T::Boolean).returns(String) }
-      def self.run_npm_audit_fix_command(security_updates_only: false)
+      sig { params(min_release_age_arg: T.nilable(String)).returns(String) }
+      def self.run_npm_audit_fix_command(min_release_age_arg: nil)
         # Fallback for transitive dependencies in workspace repos where
         # `npm update` is a no-op because the package isn't in package.json.
         # `npm audit fix` updates all fixable vulnerabilities in the lockfile.
         # `--force` ignores checks for platform (os, cpu) and engines,
         # matching the flags used by run_npm8_subdependency_update_command.
         command = "audit fix --force --package-lock-only --ignore-scripts"
-        # Override any min-release-age set in .npmrc: security fixes must not be
-        # blocked by a release-age gate the user configured for regular updates.
-        command += " --min-release-age=0" if security_updates_only
-        fingerprint = command
+        # Apply the effective release-age gate (see run_npm8_subdependency_update_command).
+        command += " #{min_release_age_arg}" if min_release_age_arg
+        fingerprint = "audit fix --force --package-lock-only --ignore-scripts"
+        fingerprint += " #{fingerprint_min_release_age_arg(min_release_age_arg)}" if min_release_age_arg
 
         Helpers.run_npm_command(command, fingerprint: fingerprint)
+      end
+
+      # Masks the varying cooldown day count out of the telemetry fingerprint while
+      # keeping the security `=0` bypass distinguishable (mirrors the npm lockfile
+      # updater's `fingerprint_min_release_age_arg`).
+      sig { params(arg: String).returns(String) }
+      def self.fingerprint_min_release_age_arg(arg)
+        arg == "--min-release-age=0" ? arg : "--min-release-age=<days>"
       end
 
       sig { returns(String) }
@@ -78,27 +89,36 @@ module Dependabot
         )
       end
 
-      sig { params(dependency_name: String, recursive: T::Boolean).returns(String) }
-      def self.run_pnpm_deep_update_command(dependency_name, recursive: false)
+      sig { params(dependency_name: String, recursive: T::Boolean).returns([String, String]) }
+      def self.pnpm_deep_update_command(dependency_name, recursive: false)
         # `pnpm update --depth Infinity <dep>` traverses the full dependency
         # graph, allowing transitive dependencies to be updated in the lockfile
         # without modifying any package.json (unlike `pnpm audit --fix`).
         # `-r --include-workspace-root` is required for workspace repos so the
         # update is applied across all packages.
         flags = recursive ? "-r --include-workspace-root " : ""
-        Helpers.run_pnpm_command(
-          "#{flags}update #{dependency_name} --depth Infinity --lockfile-only",
-          fingerprint: "#{flags}update <dependency_name> --depth Infinity --lockfile-only"
-        )
+        cmd = "#{flags}update #{dependency_name} --depth Infinity --lockfile-only"
+        fingerprint = "#{flags}update <dependency_name> --depth Infinity --lockfile-only"
+        [cmd, fingerprint]
       end
 
-      sig { returns(String) }
-      def self.run_yarn_audit_fix_command
+      sig { params(dependency_name: String, recursive: T::Boolean).returns(String) }
+      def self.run_pnpm_deep_update_command(dependency_name, recursive: false)
+        cmd, fingerprint = pnpm_deep_update_command(dependency_name, recursive: recursive)
+        Helpers.run_pnpm_command(cmd, fingerprint: fingerprint)
+      end
+
+      sig { params(env: T.nilable(T::Hash[String, String])).returns(String) }
+      def self.run_yarn_audit_fix_command(env: nil)
         # Fallback for transitive dependencies where `yarn up -R` is a no-op.
-        # `yarn npm audit --fix` updates vulnerable deps in the lockfile.
+        # `yarn npm audit --fix` updates vulnerable deps in the lockfile. The
+        # release-age gate env is threaded through so this lockfile-resolving
+        # command honours the same cooldown (and security `=0` bypass) as the
+        # primary add/dedupe/remove commands.
         Helpers.run_yarn_command(
           "npm audit --fix --mode update-lockfile",
-          fingerprint: "npm audit --fix --mode update-lockfile"
+          fingerprint: "npm audit --fix --mode update-lockfile",
+          env: env
         )
       end
     end

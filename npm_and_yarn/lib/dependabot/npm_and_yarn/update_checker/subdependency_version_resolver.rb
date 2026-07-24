@@ -330,13 +330,15 @@ module Dependabot
 
               NativeHelpers.run_npm8_subdependency_update_command(
                 [dependency.name],
-                security_updates_only: security_updates_only?
+                min_release_age_arg: security_updates_only? ? "--min-release-age=0" : nil
               )
 
               updated_content = File.read(lockfile_name)
               if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
                 begin
-                  NativeHelpers.run_npm_audit_fix_command(security_updates_only: security_updates_only?)
+                  NativeHelpers.run_npm_audit_fix_command(
+                    min_release_age_arg: security_updates_only? ? "--min-release-age=0" : nil
+                  )
                   dependency.metadata[:audit_fix_used] = true
                 rescue SharedHelpers::HelperSubprocessFailed
                   Dependabot.logger.info("npm audit fix failed or partially fixed — continuing with any changes made")

@@ -4,6 +4,7 @@
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/package/registry_finder"
 require "dependabot/npm_and_yarn/registry_parser"
+require "dependabot/npm_and_yarn/version"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -22,7 +23,8 @@ module Dependabot
             dependency_files: T::Array[Dependabot::DependencyFile],
             repo_contents_path: T.nilable(String),
             credentials: T::Array[Dependabot::Credential],
-            security_updates_only: T::Boolean
+            security_updates_only: T::Boolean,
+            release_age_days: T.nilable(Integer)
           ).void
         end
         def initialize(
@@ -30,13 +32,15 @@ module Dependabot
           dependency_files:,
           repo_contents_path:,
           credentials:,
-          security_updates_only: false
+          security_updates_only: false,
+          release_age_days: nil
         )
           @dependencies = dependencies
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
           @security_updates_only = T.let(security_updates_only, T::Boolean)
+          @release_age_days = T.let(release_age_days, T.nilable(Integer))
           @error_handler = T.let(
             PnpmErrorHandler.new(
               dependencies: dependencies,
@@ -92,6 +96,18 @@ module Dependabot
 
         IRRESOLVABLE_PACKAGE = "ERR_PNPM_NO_MATCHING_VERSION"
         INVALID_REQUIREMENT = "ERR_PNPM_SPEC_NOT_SUPPORTED_BY_ANY_RESOLVER"
+
+        # pnpm introduced the `minimumReleaseAge` release-age gate in 10.16 and the
+        # `minimumReleaseAgeStrict` toggle in 11.0; older versions ignore them.
+        PNPM_MINIMUM_RELEASE_AGE_VERSION = "10.16"
+        PNPM_MINIMUM_RELEASE_AGE_STRICT_VERSION = "11.0"
+        # pnpm 10.x ignores minimumReleaseAge when shared-workspace-lockfile is
+        # disabled (pnpm/pnpm#10008); the fix ships in pnpm 11.
+        PNPM_WORKSPACE_RELEASE_AGE_FIX_VERSION = "11.0"
+        # pnpm 11 stopped reading non-registry settings (e.g. minimum-release-age)
+        # from .npmrc, so a .npmrc release-age gate is only effective on pnpm 10.x.
+        PNPM_NPMRC_RELEASE_AGE_DROPPED_VERSION = "11.0"
+
         UNREACHABLE_GIT = %r{Command failed with exit code 128: git ls-remote (?<url>.*github\.com/[^/]+/[^ ]+)}
         UNREACHABLE_GIT_V8 = %r{ERR_PNPM_FETCH_404[ [^:print]]+GET (?<url>https://codeload\.github\.com/[^/]+/[^/]+)/}
         FORBIDDEN_PACKAGE = /ERR_PNPM_FETCH_403[ [^:print]]+GET (?<dependency_url>.*): Forbidden - 403/
@@ -207,35 +223,266 @@ module Dependabot
 
           cmd = "update #{dependency_updates}  --lockfile-only --no-save -r"
           fingerprint = "update <dependency_updates>  --lockfile-only --no-save -r"
-          if security_updates_only?
-            # Override any minimumReleaseAge set in pnpm-workspace.yaml: security fixes must not be
-            # blocked by a release-age gate the user configured for regular updates.
-            cmd += " --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false"
-            fingerprint += " --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false"
-          end
-          Helpers.run_pnpm_command(cmd, fingerprint: fingerprint)
+          run_pnpm_command_with_release_age_gate(cmd, fingerprint)
         end
 
         sig { returns(T.nilable(String)) }
         def run_pnpm_install
-          cmd = "install --lockfile-only"
-          if security_updates_only?
-            # Override any minimumReleaseAge set in pnpm-workspace.yaml: security fixes must not be
-            # blocked by a release-age gate the user configured for regular updates.
-            cmd += " --config.minimumReleaseAge=0 --config.minimumReleaseAgeStrict=false"
+          # `install --lockfile-only` has no dynamic content, so it needs no
+          # fingerprint of its own. Passing nil lets the release-age gate handle
+          # fingerprinting only when it appends the (dynamic) minimumReleaseAge.
+          run_pnpm_command_with_release_age_gate("install --lockfile-only")
+        end
+
+        # pnpm's `minimumReleaseAge` needs the registry `time` field, which is
+        # absent from the abbreviated metadata pnpm uses for some packages during
+        # `pnpm update`, raising ERR_PNPM_MISSING_TIME. When that happens for a
+        # cooldown-derived gate we retry without it so the update still succeeds,
+        # rather than failing the whole job. Security bypass (`=0`) never triggers
+        # this because it disables the age lookup entirely.
+        sig { params(cmd: String, fingerprint: T.nilable(String)).returns(T.nilable(String)) }
+        def run_pnpm_command_with_release_age_gate(cmd, fingerprint = nil)
+          gate = release_age_gate_config
+          return execute_pnpm_command(cmd, fingerprint) unless gate
+
+          gate_fingerprint = security_updates_only? ? gate : fingerprint_minimum_release_age_config
+          gated_fingerprint = "#{fingerprint || cmd} #{gate_fingerprint}"
+          begin
+            execute_pnpm_command("#{cmd} #{gate}", gated_fingerprint)
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            raise if security_updates_only? || !e.message.include?("ERR_PNPM_MISSING_TIME")
+
+            Dependabot.logger.warn(
+              "pnpm could not apply the cooldown release-age gate because the registry metadata " \
+              "is missing the \"time\" field (ERR_PNPM_MISSING_TIME); retrying without the " \
+              "transitive cooldown gate so the update is not blocked."
+            )
+            execute_pnpm_command(cmd, fingerprint)
           end
-          Helpers.run_pnpm_command(cmd)
+        end
+
+        sig { params(cmd: String, fingerprint: T.nilable(String)).returns(T.nilable(String)) }
+        def execute_pnpm_command(cmd, fingerprint)
+          if fingerprint
+            Helpers.run_pnpm_command(cmd, fingerprint: fingerprint)
+          else
+            Helpers.run_pnpm_command(cmd)
+          end
+        end
+
+        # Returns the pnpm `--config.minimumReleaseAge` arguments to apply, or nil.
+        # Security updates disable the gate (`=0`); regular updates apply the
+        # dependabot.yml cooldown floor (in minutes). `minimumReleaseAge` was added
+        # in pnpm 10.16, so older pnpm silently ignores it — rather than give a
+        # false guarantee we skip the gate (and warn) when the running pnpm is too
+        # old to enforce it.
+        sig { returns(T.nilable(String)) }
+        def release_age_gate_config
+          minutes = effective_release_age_minutes
+          return nil if minutes.nil?
+
+          # Security updates pass minimumReleaseAge=0 unconditionally: older pnpm
+          # ignores it, and a transient version-probe failure must not leave a native
+          # gate active and block the fix.
+          return minimum_release_age_gate_args(minutes) if security_updates_only?
+
+          unless pnpm_supports_minimum_release_age?
+            Dependabot.logger.warn(
+              "pnpm #{pnpm_version || '(unknown version)'} does not support minimumReleaseAge " \
+              "(added in pnpm 10.16); the release-age cooldown cannot be enforced for transitive " \
+              "dependencies on this pnpm version."
+            )
+            return nil
+          end
+
+          minimum_release_age_gate_args(minutes)
+        end
+
+        # The pnpm `minimumReleaseAge` value (in minutes) to enforce for this
+        # update, independent of the pnpm version: 0 to bypass the gate for
+        # security fixes (which must not be blocked by a release-age gate the user
+        # configured for regular updates), the dependabot.yml cooldown floor for
+        # regular updates, or nil when no gate applies.
+        #
+        # When the repo also sets an explicit `minimumReleaseAge` in
+        # pnpm-workspace.yaml (or `.npmrc`), the longest release-age wins: the
+        # cooldown floor is only injected when it exceeds the user's configured
+        # value, otherwise the user's (equal or longer) gate is left untouched so
+        # neither policy is silently weakened (dependabot/dependabot-core#13165).
+        sig { returns(T.nilable(Integer)) }
+        def effective_release_age_minutes
+          return 0 if security_updates_only?
+
+          cooldown_minutes = @release_age_days && (@release_age_days * Helpers::MINUTES_PER_DAY)
+          Helpers.higher_release_age_gate(cooldown_minutes, pnpm_configured_minimum_release_age)
+        end
+
+        # Builds the pnpm `--config.minimumReleaseAge` args for `minutes`, adding
+        # the strict toggle only when appropriate (see `disable_strict_release_age?`).
+        sig { params(minutes: Integer).returns(String) }
+        def minimum_release_age_gate_args(minutes)
+          args = "--config.minimumReleaseAge=#{minutes}"
+          args += " --config.minimumReleaseAgeStrict=false" if disable_strict_release_age?
+          args
+        end
+
+        # pnpm defaults `minimumReleaseAgeStrict` to *on* when `minimumReleaseAge`
+        # is set via the CLI, which fails resolution when no version satisfies the
+        # window (and would gate the exact direct version Dependabot pins). We
+        # disable strict so pnpm falls back to the newest version instead of
+        # erroring — but only on pnpm >= 11.0, where the toggle exists, and only
+        # when the repo has not itself opted into strict enforcement, which we must
+        # not silently weaken.
+        sig { returns(T::Boolean) }
+        def disable_strict_release_age?
+          pnpm_supports_minimum_release_age_strict? && !pnpm_strict_release_age_configured?
+        end
+
+        sig { returns(String) }
+        def fingerprint_minimum_release_age_config
+          args = "--config.minimumReleaseAge=<minutes>"
+          args += " --config.minimumReleaseAgeStrict=false" if disable_strict_release_age?
+          args
+        end
+
+        # The concrete pnpm version that will run, memoized (including a nil result)
+        # so the version subprocess runs at most once per update.
+        sig { returns(T.nilable(Dependabot::Version)) }
+        def pnpm_version
+          return @pnpm_version if defined?(@pnpm_version)
+
+          @pnpm_version = T.let(Helpers.pnpm_version, T.nilable(Dependabot::Version))
+        end
+
+        sig { returns(T::Boolean) }
+        def pnpm_supports_minimum_release_age?
+          version = pnpm_version
+          return false if version.nil? || version < Version.new(PNPM_MINIMUM_RELEASE_AGE_VERSION)
+
+          if pnpm_shared_workspace_lockfile_disabled? &&
+             version < Version.new(PNPM_WORKSPACE_RELEASE_AGE_FIX_VERSION)
+            Dependabot.logger.warn(
+              "pnpm #{version} ignores minimumReleaseAge when shared-workspace-lockfile is disabled " \
+              "(pnpm/pnpm#10008); the release-age cooldown cannot be enforced. Upgrade to pnpm 11+."
+            )
+            return false
+          end
+
+          true
+        end
+
+        sig { returns(T::Boolean) }
+        def pnpm_supports_minimum_release_age_strict?
+          version = pnpm_version
+          !version.nil? && version >= Version.new(PNPM_MINIMUM_RELEASE_AGE_STRICT_VERSION)
+        end
+
+        # True when the repo explicitly enables pnpm's `minimumReleaseAgeStrict`, in
+        # pnpm-workspace.yaml (`minimumReleaseAgeStrict: true`) or `.npmrc`
+        # (`minimum-release-age-strict=true`). The last occurrence wins, matching
+        # how pnpm/INI resolve a repeated key.
+        sig { returns(T::Boolean) }
+        def pnpm_strict_release_age_configured?
+          dependency_files.any? do |file|
+            case File.basename(file.name)
+            when "pnpm-workspace.yaml"
+              strict_release_age_enabled?(file.content.to_s, "minimumReleaseAgeStrict", ":")
+            when ".npmrc"
+              strict_release_age_enabled?(file.content.to_s, "minimum-release-age-strict", "=")
+            else
+              false
+            end
+          end
+        end
+
+        # pnpm 10.x ignores `minimumReleaseAge` when `shared-workspace-lockfile` is
+        # disabled (pnpm/pnpm#10008), so the cooldown cannot be enforced there.
+        sig { returns(T::Boolean) }
+        def pnpm_shared_workspace_lockfile_disabled?
+          dependency_files.any? do |file|
+            case File.basename(file.name)
+            when "pnpm-workspace.yaml"
+              yaml_boolean_setting(file.content.to_s, "shared-workspace-lockfile", ":") == false
+            when ".npmrc"
+              yaml_boolean_setting(file.content.to_s, "shared-workspace-lockfile", "=") == false
+            else
+              false
+            end
+          end
+        end
+
+        sig { params(content: String, key: String, separator: String).returns(T::Boolean) }
+        def strict_release_age_enabled?(content, key, separator)
+          yaml_boolean_setting(content, key, separator) == true
+        end
+
+        # Reads a YAML/INI boolean `key`, returning true/false, or nil when absent or
+        # non-boolean. Handles optionally quoted keys/values (`"key": True`), boolean
+        # casing, and trailing comments so a valid native setting is never misread.
+        # The last occurrence wins, matching how pnpm/INI resolve a repeated key.
+        sig { params(content: String, key: String, separator: String).returns(T.nilable(T::Boolean)) }
+        def yaml_boolean_setting(content, key, separator)
+          quoted_key = /["']?#{Regexp.escape(key)}["']?/
+          presence = /^\s*#{quoted_key}\s*#{Regexp.escape(separator)}/
+          last_line = content.lines.reverse_each.find { |line| line.match?(presence) }
+          return unless last_line
+
+          # npmrc/INI treats both `#` and `;` as comment delimiters; YAML uses `#`.
+          comment_chars = separator == "=" ? "#;" : "#"
+          match = last_line.match(
+            /^\s*#{quoted_key}\s*#{Regexp.escape(separator)}\s*["']?(\w+)["']?\s*(?:[#{comment_chars}].*)?$/
+          )
+          return unless match
+
+          case T.must(match[1]).downcase
+          when "true" then true
+          when "false" then false
+          end
+        end
+
+        # The largest `minimumReleaseAge` (in minutes) the repo configures for pnpm,
+        # read from pnpm-workspace.yaml (`minimumReleaseAge:`) or `.npmrc`
+        # (`minimum-release-age=`), or nil when unset. A value we cannot parse as a
+        # bare integer is reported as Float::INFINITY so an explicit-but-non-numeric
+        # user gate is never overridden by the cooldown floor.
+        sig { returns(T.nilable(T.any(Integer, Float))) }
+        def pnpm_configured_minimum_release_age
+          settings = [
+            Helpers::ReleaseAgeGateSetting.new(
+              filename: "pnpm-workspace.yaml", key: "minimumReleaseAge", separator: ":"
+            )
+          ]
+          # pnpm 11+ ignores non-registry settings in .npmrc, so a .npmrc
+          # `minimum-release-age` is only an effective user gate on pnpm 10.x.
+          # Counting it on pnpm 11 would wrongly suppress the cooldown CLI override
+          # while pnpm resolves with no age gate.
+          if pnpm_reads_npmrc_release_age?
+            settings << Helpers::ReleaseAgeGateSetting.new(
+              filename: ".npmrc", key: "minimum-release-age", separator: "="
+            )
+          end
+
+          Helpers.max_configured_release_age(dependency_files, settings)
+        end
+
+        sig { returns(T::Boolean) }
+        def pnpm_reads_npmrc_release_age?
+          version = pnpm_version
+          !version.nil? && version < Version.new(PNPM_NPMRC_RELEASE_AGE_DROPPED_VERSION)
         end
 
         # Tries `pnpm update --depth Infinity <dep>` for each dependency as a
         # first-tier fallback when the regular update is a no-op (typically
         # transitive deps not listed in any package.json). Unlike `audit --fix`
-        # this does not write `overrides` to package.json.
+        # this does not write `overrides` to package.json. Routed through the
+        # release-age gate (with the missing-time retry) so this fallback cannot
+        # pull a just-published transitive release past the cooldown.
         sig { void }
         def run_pnpm_deep_update_fallback
           recursive = workspace_files.any?
           dependencies.each do |dep|
-            NativeHelpers.run_pnpm_deep_update_command(dep.name, recursive: recursive)
+            cmd, fingerprint = NativeHelpers.pnpm_deep_update_command(dep.name, recursive: recursive)
+            run_pnpm_command_with_release_age_gate(cmd, fingerprint)
             dep.metadata[:deep_update_used] = true
           end
         rescue SharedHelpers::HelperSubprocessFailed
@@ -255,7 +502,7 @@ module Dependabot
           package_json_snapshots = Dir.glob("**/package.json").to_h { |f| [f, File.read(f)] }
 
           begin
-            NativeHelpers.run_pnpm_audit_fix_command
+            run_pnpm_command_with_release_age_gate("audit --fix", "audit --fix")
             run_pnpm_install
 
             manifest_changed = package_json_snapshots.any? { |f, c| File.read(f) != c }

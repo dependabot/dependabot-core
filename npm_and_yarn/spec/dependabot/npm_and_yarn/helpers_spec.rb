@@ -1065,7 +1065,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       it "logs version and support decision, returns true" do
         allow(described_class).to receive(:run_single_yarn_command).with("--version").and_return("4.10.0")
         expect(Dependabot.logger).to receive(:info)
-          .with(a_string_including("Yarn 4.10.0").and(including("bypass the release-age gate for security updates")))
+          .with(a_string_including("Yarn 4.10.0").and(including("supports npmMinimalAgeGate")))
         expect(described_class.yarn_berry_supports_minimal_age_gate?).to be(true)
       end
     end
@@ -1087,6 +1087,146 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         expect(Dependabot.logger).to receive(:warn).with(a_string_including("command failed"))
         expect(described_class.yarn_berry_supports_minimal_age_gate?).to be(false)
       end
+
+      it "warns that a configured gate may still block security updates" do
+        allow(described_class).to receive(:run_single_yarn_command)
+          .with("--version")
+          .and_raise(StandardError, "command failed")
+        expect(Dependabot.logger).to receive(:warn)
+          .with(a_string_including("may still block security updates"))
+        described_class.yarn_berry_supports_minimal_age_gate?
+      end
+    end
+  end
+
+  describe "::higher_release_age_gate" do
+    it "returns the cooldown when no user gate is configured" do
+      expect(described_class.higher_release_age_gate(7, nil)).to eq(7)
+    end
+
+    it "returns nil when the cooldown is nil" do
+      expect(described_class.higher_release_age_gate(nil, 10)).to be_nil
+    end
+
+    it "returns nil when the cooldown is zero" do
+      expect(described_class.higher_release_age_gate(0, nil)).to be_nil
+    end
+
+    it "returns nil when the cooldown is negative" do
+      expect(described_class.higher_release_age_gate(-5, nil)).to be_nil
+    end
+
+    it "overrides with the cooldown when it exceeds the user gate" do
+      expect(described_class.higher_release_age_gate(14, 7)).to eq(14)
+    end
+
+    it "leaves the user gate untouched when it is equal or longer" do
+      expect(described_class.higher_release_age_gate(7, 7)).to be_nil
+      expect(described_class.higher_release_age_gate(7, 30)).to be_nil
+    end
+
+    it "never overrides a non-numeric (Float::INFINITY) user gate" do
+      expect(described_class.higher_release_age_gate(10_000, Float::INFINITY)).to be_nil
+    end
+  end
+
+  describe "::max_configured_release_age" do
+    def file(name, content)
+      Dependabot::DependencyFile.new(name: name, content: content)
+    end
+
+    let(:npmrc_setting) do
+      described_class::ReleaseAgeGateSetting.new(filename: ".npmrc", key: "min-release-age", separator: "=")
+    end
+    let(:pnpm_settings) do
+      [
+        described_class::ReleaseAgeGateSetting.new(
+          filename: "pnpm-workspace.yaml", key: "minimumReleaseAge", separator: ":"
+        ),
+        described_class::ReleaseAgeGateSetting.new(
+          filename: ".npmrc", key: "minimum-release-age", separator: "="
+        )
+      ]
+    end
+
+    it "returns nil when no file matches a setting" do
+      files = [file("package.json", "{}")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to be_nil
+    end
+
+    it "returns nil when the matching file does not set the key" do
+      files = [file(".npmrc", "registry=https://example.com\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to be_nil
+    end
+
+    it "parses a bare integer value" do
+      files = [file(".npmrc", "min-release-age=30\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(30)
+    end
+
+    it "returns Float::INFINITY for a present-but-non-numeric value" do
+      files = [file(".npmrc", "min-release-age=7d\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(Float::INFINITY)
+    end
+
+    it "returns the largest value across multiple matching files" do
+      files = [
+        file("pnpm-workspace.yaml", "minimumReleaseAge: 60\n"),
+        file(".npmrc", "minimum-release-age=120\n")
+      ]
+      expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(120)
+    end
+
+    it "matches the key/separator per setting (YAML colon vs npmrc equals)" do
+      files = [file("pnpm-workspace.yaml", "minimumReleaseAge: 45\n")]
+      expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(45)
+    end
+
+    it "uses the last occurrence within a file (npmrc/INI last-key-wins)" do
+      files = [file(".npmrc", "min-release-age=30\nmin-release-age=3\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(3)
+    end
+
+    it "resolves the effective value from the last occurrence, even when non-numeric" do
+      files = [file(".npmrc", "min-release-age=30\nmin-release-age=soon\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(Float::INFINITY)
+    end
+
+    it "parses a YAML value with a trailing inline comment" do
+      files = [file("pnpm-workspace.yaml", "minimumReleaseAge: 4320 # 3 days\n")]
+      expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(4320)
+    end
+
+    it "parses an npmrc value with a trailing inline comment" do
+      files = [file(".npmrc", "min-release-age=30 # about a month\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(30)
+    end
+
+    it "parses an optionally quoted YAML key and value" do
+      files = [file("pnpm-workspace.yaml", "\"minimumReleaseAge\": \"20160\"\n")]
+      expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(20_160)
+    end
+
+    it "parses an npmrc value with a trailing semicolon comment" do
+      files = [file(".npmrc", "min-release-age=3 ; temporary\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(3)
+    end
+  end
+
+  describe "::npm_supports_min_release_age?" do
+    it "is true for npm 11.10.0 and newer" do
+      allow(described_class).to receive(:npm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.16.0"))
+      expect(described_class.npm_supports_min_release_age?).to be(true)
+    end
+
+    it "is false for npm older than 11.10.0" do
+      allow(described_class).to receive(:npm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.9.0"))
+      expect(described_class.npm_supports_min_release_age?).to be(false)
+    end
+
+    it "is false when the npm version cannot be determined" do
+      allow(described_class).to receive(:npm_version).and_return(nil)
+      expect(described_class.npm_supports_min_release_age?).to be(false)
     end
   end
 end

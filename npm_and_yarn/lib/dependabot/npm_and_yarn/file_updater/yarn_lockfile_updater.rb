@@ -31,7 +31,8 @@ module Dependabot
             dependency_files: T::Array[Dependabot::DependencyFile],
             repo_contents_path: T.nilable(String),
             credentials: T::Array[Dependabot::Credential],
-            security_updates_only: T::Boolean
+            security_updates_only: T::Boolean,
+            release_age_days: T.nilable(Integer)
           )
             .void
         end
@@ -40,13 +41,15 @@ module Dependabot
           dependency_files:,
           repo_contents_path:,
           credentials:,
-          security_updates_only: false
+          security_updates_only: false,
+          release_age_days: nil
         )
           @dependencies = dependencies
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
           @security_updates_only = T.let(security_updates_only, T::Boolean)
+          @release_age_days = T.let(release_age_days, T.nilable(Integer))
           @error_handler = T.let(
             YarnErrorHandler.new(
               dependencies: dependencies,
@@ -345,22 +348,28 @@ module Dependabot
           ]
 
           original_content = File.read(yarn_lock.name)
-          Helpers.run_yarn_commands(*commands)
+          Helpers.run_yarn_commands(*commands, env: yarn_time_gate_env)
 
           updated_content = File.read(yarn_lock.name)
           if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
-            begin
-              NativeHelpers.run_yarn_audit_fix_command
-              dep.metadata[:audit_fix_used] = true
-            rescue SharedHelpers::HelperSubprocessFailed
-              Dependabot.logger.info(
-                "yarn npm audit --fix failed or partially fixed — continuing with any changes made"
-              )
-            end
+            run_yarn_audit_fix_fallback(dep)
             updated_content = File.read(yarn_lock.name)
           end
 
           { yarn_lock.name => updated_content }
+        end
+
+        # Fallback for transitive deps where add/dedupe/remove is a no-op. Threads
+        # the release-age gate env so the audit-fix resolve honours the same cooldown
+        # (and security `=0` bypass) as the primary commands.
+        sig { params(dep: Dependabot::Dependency).void }
+        def run_yarn_audit_fix_fallback(dep)
+          NativeHelpers.run_yarn_audit_fix_command(env: yarn_time_gate_env)
+          dep.metadata[:audit_fix_used] = true
+        rescue SharedHelpers::HelperSubprocessFailed
+          Dependabot.logger.info(
+            "yarn npm audit --fix failed or partially fixed — continuing with any changes made"
+          )
         end
 
         sig { returns(T::Boolean) }
@@ -368,17 +377,63 @@ module Dependabot
           @security_updates_only
         end
 
-        # Returns an env hash that disables Yarn Berry's npmMinimalAgeGate for security updates.
-        # npmMinimalAgeGate was introduced in Yarn 4.10.0. Setting the corresponding
-        # YARN_NPM_MINIMAL_AGE_GATE env var on older Yarn Berry releases (or Yarn classic) raises
-        # "Unrecognized or legacy configuration settings found: npmMinimalAgeGate" and aborts the
-        # install, so we gate on a version check.
+        # Returns an env hash that sets Yarn Berry's YARN_NPM_MINIMAL_AGE_GATE.
+        # Security updates set it to 0 so a release-age gate never blocks a fix
+        # (this intentionally overrides any `.yarnrc.yml` gate). Regular updates set
+        # it to the dependabot.yml cooldown floor (in minutes) so yarn holds
+        # transitive dependencies back to versions at least that old. For regular
+        # updates an explicit `npmMinimalAgeGate` in .yarnrc.yml takes precedence,
+        # so it is left untouched when present.
+        #
+        # npmMinimalAgeGate was introduced in Yarn 4.10.0. Setting the env var on
+        # older Yarn Berry releases (or Yarn classic) raises "Unrecognized or legacy
+        # configuration settings found: npmMinimalAgeGate" and aborts the install,
+        # so we gate on a version check.
+        #
+        # Memoized (including a nil result): the value is deterministic for the
+        # updater's lifetime and this is invoked from several yarn command sites,
+        # so we avoid running `yarn --version` (and emitting duplicate log lines)
+        # more than once per update.
         sig { returns(T.nilable(T::Hash[String, String])) }
         def yarn_time_gate_env
-          return nil unless security_updates_only?
-          return nil unless Helpers.yarn_berry_supports_minimal_age_gate?
+          return @yarn_time_gate_env if defined?(@yarn_time_gate_env)
 
-          { "YARN_NPM_MINIMAL_AGE_GATE" => "0" }
+          gate_value = yarn_minimal_age_gate_value
+          env = if gate_value && Helpers.yarn_berry_supports_minimal_age_gate?
+                  { "YARN_NPM_MINIMAL_AGE_GATE" => gate_value }
+                end
+          @yarn_time_gate_env = T.let(env, T.nilable(T::Hash[String, String]))
+        end
+
+        # Returns the YARN_NPM_MINIMAL_AGE_GATE value (in minutes) for a regular
+        # update, or nil when none applies. Security updates pass "0" so a
+        # release-age gate never blocks a fix (this intentionally overrides any
+        # `.yarnrc.yml` gate).
+        #
+        # When the repo also sets an explicit `npmMinimalAgeGate` in `.yarnrc.yml`,
+        # the longest release-age wins: the cooldown floor is only injected via the
+        # env var when it exceeds the user's configured value, otherwise the user's
+        # (equal or longer) gate is left untouched so neither policy is silently
+        # weakened.
+        sig { returns(T.nilable(String)) }
+        def yarn_minimal_age_gate_value
+          return "0" if security_updates_only?
+
+          cooldown_minutes = @release_age_days && (@release_age_days * Helpers::MINUTES_PER_DAY)
+          effective = Helpers.higher_release_age_gate(cooldown_minutes, yarnrc_minimal_age_gate)
+          effective&.to_s
+        end
+
+        # The `npmMinimalAgeGate` (in minutes) configured across the repo's
+        # `.yarnrc.yml` files, or nil when unset. A value we cannot parse as a bare
+        # integer is reported as Float::INFINITY so an explicit-but-non-numeric user
+        # gate is never overridden by the cooldown floor.
+        sig { returns(T.nilable(T.any(Integer, Float))) }
+        def yarnrc_minimal_age_gate
+          Helpers.max_configured_release_age(
+            dependency_files,
+            [Helpers::ReleaseAgeGateSetting.new(filename: ".yarnrc.yml", key: "npmMinimalAgeGate", separator: ":")]
+          )
         end
 
         sig { returns(String) }

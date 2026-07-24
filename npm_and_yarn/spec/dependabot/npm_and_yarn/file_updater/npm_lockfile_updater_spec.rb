@@ -1398,6 +1398,93 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           updater.send(:run_npm_install_lockfile_only, install_args)
         end
       end
+
+      context "when the running npm does not support --min-release-age" do
+        let(:updater) do
+          described_class.new(
+            lockfile: package_lock,
+            dependency_files: files,
+            dependencies: dependencies,
+            credentials: credentials,
+            security_updates_only: true
+          )
+        end
+
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:npm_supports_min_release_age?).and_return(false)
+        end
+
+        it "omits --min-release-age entirely (the flag would be rejected)" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
+            expect(command).not_to include("--min-release-age")
+            expect(command).to include("--package-lock-only")
+            ""
+          end
+
+          updater.send(:run_npm_install_lockfile_only, install_args)
+        end
+      end
+
+      context "when update_cooldown sets a release-age floor (regular update)" do
+        let(:updater) do
+          described_class.new(
+            lockfile: package_lock,
+            dependency_files: files,
+            dependencies: dependencies,
+            credentials: credentials,
+            release_age_days: 7
+          )
+        end
+
+        it "passes --min-release-age with the cooldown day count" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
+            expect(command).to include("--min-release-age=7")
+            expect(command).to include("--package-lock-only")
+            ""
+          end
+
+          updater.send(:run_npm_install_lockfile_only, install_args)
+        end
+
+        # Regression coverage for the cooldown-vs-min-release-age conflict
+        # (dependabot/dependabot-core#13165): the longest release-age wins.
+        context "when the .npmrc already sets min-release-age" do
+          context "when the user's gate is longer than the cooldown" do
+            let(:files) do
+              project_dependency_files("npm8/simple") +
+                [Dependabot::DependencyFile.new(name: ".npmrc", content: "min-release-age=30")]
+            end
+
+            it "leaves the explicit .npmrc value untouched" do
+              expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
+                # User's 30 days is longer than the 7 day cooldown, so no CLI override is injected.
+                expect(command).not_to include("--min-release-age")
+                ""
+              end
+
+              updater.send(:run_npm_install_lockfile_only, install_args)
+            end
+          end
+
+          context "when the cooldown is longer than the user's gate" do
+            let(:files) do
+              project_dependency_files("npm8/simple") +
+                [Dependabot::DependencyFile.new(name: ".npmrc", content: "min-release-age=3")]
+            end
+
+            it "overrides with the longer cooldown value" do
+              expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |command, _options|
+                # Cooldown 7 days is longer than the user's 3 days, so it wins.
+                expect(command).to include("--min-release-age=7")
+                ""
+              end
+
+              updater.send(:run_npm_install_lockfile_only, install_args)
+            end
+          end
+        end
+      end
     end
 
     describe "#run_npm8_subdependency_updater" do
@@ -1424,22 +1511,42 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
           )
         end
 
-        it "passes --min-release-age=0 to override the .npmrc setting" do
+        it "passes --min-release-age=0 to override any .npmrc gate" do
           updated_npm_lock_content
 
           expect(Dependabot::NpmAndYarn::NativeHelpers)
             .to have_received(:run_npm8_subdependency_update_command)
-            .with(["acorn"], security_updates_only: true)
+            .with(["acorn"], min_release_age_arg: "--min-release-age=0")
         end
       end
 
       context "when security_updates_only is false (default)" do
-        it "does not request the .npmrc override" do
+        it "does not request a release-age gate" do
           updated_npm_lock_content
 
           expect(Dependabot::NpmAndYarn::NativeHelpers)
             .to have_received(:run_npm8_subdependency_update_command)
-            .with(["acorn"], security_updates_only: false)
+            .with(["acorn"], min_release_age_arg: nil)
+        end
+      end
+
+      context "when update_cooldown sets a release-age floor (regular update)" do
+        let(:updater) do
+          described_class.new(
+            lockfile: package_lock,
+            dependency_files: files,
+            dependencies: dependencies,
+            credentials: credentials,
+            release_age_days: 7
+          )
+        end
+
+        it "passes the cooldown floor so transitive updates are held back too" do
+          updated_npm_lock_content
+
+          expect(Dependabot::NpmAndYarn::NativeHelpers)
+            .to have_received(:run_npm8_subdependency_update_command)
+            .with(["acorn"], min_release_age_arg: "--min-release-age=7")
         end
       end
     end
