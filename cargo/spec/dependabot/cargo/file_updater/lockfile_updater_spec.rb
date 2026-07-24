@@ -632,6 +632,25 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
             expect(updated_lockfile_content)
               .to include("?branch=stable#83141b376b93484341c68fbca3ca110ae5cd2708")
           end
+
+          context "when another ref already carries the expected commit" do
+            before do
+              allow(updater).to receive(:run_cargo_command) do
+                content = File.read("Cargo.lock")
+                File.write(
+                  "Cargo.lock",
+                  content.sub(
+                    "?branch=stable#83141b376b93484341c68fbca3ca110ae5cd2708",
+                    "?branch=stable#be9b8dfcaf449453cbf83ac85260ee80323f4f77"
+                  )
+                )
+              end
+            end
+
+            it "does not accept the other ref's commit for the targeted line" do
+              expect { updated_lockfile_content }.to raise_error("Failed to update utf8-ranges!")
+            end
+          end
         end
 
         context "with an ssh URl" do
