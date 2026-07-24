@@ -48,7 +48,7 @@ module Dependabot
         wrap_requirements(
           RequirementsUpdater.new(
             requirements: dependency.requirements,
-            latest_resolvable_version: latest_resolvable_version
+            latest_resolvable_version: preferred_resolvable_version
           ).updated_requirements
         )
       end
