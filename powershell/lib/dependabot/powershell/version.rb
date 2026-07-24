@@ -27,6 +27,30 @@ module Dependabot
         @version_string
       end
 
+      # PowerShell's own module-loading rules treat RequiredVersion as an
+      # exact string match rather than Gem::Version's numeric equality
+      # (which pads missing segments with zero, e.g. treating "0.12" and
+      # "0.12.0" as equal). Comparing the original version strings instead
+      # keeps `Requirement#satisfied_by?` from reporting an installed
+      # "0.12.0" as satisfying a declared `RequiredVersion = '0.12'` (or
+      # vice versa) when PowerShell itself would not consider them equal.
+      sig { params(other: Object).returns(T::Boolean) }
+      def ==(other)
+        return false unless other.is_a?(Gem::Version)
+
+        to_s == other.to_s
+      end
+
+      sig { params(other: Object).returns(T::Boolean) }
+      def eql?(other)
+        self == other
+      end
+
+      sig { override.returns(Integer) }
+      def hash
+        to_s.hash
+      end
+
       sig { override.returns(String) }
       def inspect # :nodoc:
         "#<#{self.class} #{@version_string}>"
