@@ -519,21 +519,27 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     context "when the docker registry times out" do
       before do
         stub_request(:get, repo_url + "tags/list")
-          .to_raise(RestClient::Exceptions::OpenTimeout).then
+          .to_timeout.then
           .to_return(status: 200, body: registry_tags)
       end
 
-      it { is_expected.to eq("17.10") }
+      it "retries the registry request" do
+        expect(latest_version).to eq("17.10")
+        expect(WebMock).to have_requested(:get, repo_url + "tags/list").twice
+      end
 
-      context "when it returns a bad response (TooManyRequests) error" do
+      context "when it returns a 429 status" do
         before do
           stub_request(:get, repo_url + "tags/list")
-            .to_raise(RestClient::TooManyRequests)
+            .to_return(status: 429, body: "")
         end
 
-        it "raises" do
+        it "raises a RegistryError without attempting pagination" do
           expect { checker.latest_version }
-            .to raise_error(Dependabot::PrivateSourceBadResponse)
+            .to raise_error(Dependabot::RegistryError) do |error|
+              expect(error.status).to eq(429)
+            end
+          expect(WebMock).to have_requested(:get, repo_url + "tags/list").once
         end
 
         context "when using a private registry" do
@@ -554,9 +560,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           let(:repo_url) { "https://registry-host.io:5000/v2/ubuntu/" }
           let(:tags_fixture_name) { "ubuntu_no_latest.json" }
 
-          it "raises" do
+          it "raises a RegistryError" do
             expect { checker.latest_version }
-              .to raise_error(Dependabot::PrivateSourceBadResponse)
+              .to raise_error(Dependabot::RegistryError) do |error|
+                expect(error.status).to eq(429)
+              end
           end
         end
       end
@@ -564,12 +572,13 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       context "when the time out occurs every time" do
         before do
           stub_request(:get, repo_url + "tags/list")
-            .to_raise(RestClient::Exceptions::OpenTimeout)
+            .to_timeout
         end
 
-        it "raises" do
+        it "retries before raising the registry client error" do
           expect { checker.latest_version }
-            .to raise_error(RestClient::Exceptions::OpenTimeout)
+            .to raise_error(DockerRegistry2::RegistryUnknownException)
+          expect(WebMock).to have_requested(:get, repo_url + "tags/list").times(3)
         end
 
         context "when using a private registry" do
@@ -618,18 +627,6 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         it "raises" do
           expect { checker.latest_version }
             .to raise_error(Dependabot::DependencyFileNotResolvable)
-        end
-      end
-
-      context "when TooManyRequests request error" do
-        before do
-          stub_request(:get, repo_url + "tags/list")
-            .to_raise(RestClient::TooManyRequests)
-        end
-
-        it "raises" do
-          expect { checker.latest_version }
-            .to raise_error(Dependabot::PrivateSourceBadResponse)
         end
       end
     end
@@ -1048,6 +1045,124 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           expect { checker.latest_version }
             .to raise_error(error_class) do |error|
               expect(error.source).to eq("registry.hub.docker.com")
+            end
+        end
+      end
+
+      context "when the registry returns a 403 status" do
+        before do
+          tags_url = "https://registry.hub.docker.com/v2/moj/ruby/tags/list"
+          stub_request(:get, tags_url)
+            .and_return(status: 403, body: "")
+        end
+
+        it "raises a PrivateSourceAuthenticationFailure error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
+          expect { checker.latest_version }
+            .to raise_error(error_class) do |error|
+              expect(error.source).to eq("registry.hub.docker.com")
+            end
+        end
+      end
+
+      context "when listing the full tag list times out (504)" do
+        let(:tags_url) { "https://registry.hub.docker.com/v2/moj/ruby/tags/list" }
+        let(:next_page_url) { tags_url + "?last=2.4.1&n=100" }
+        let(:first_page_tags) do
+          JSON.generate("name" => dependency_name, "tags" => ["2.4.1"])
+        end
+        let(:second_page_tags) do
+          JSON.generate("name" => dependency_name, "tags" => ["2.4.2"])
+        end
+
+        before do
+          # Registries such as Docker Hub 504 when asked for the full tag list of
+          # images with huge tag counts; the request must be retried paginated.
+          stub_request(:get, tags_url)
+            .and_return(status: 504, body: "")
+          stub_request(:get, tags_url + "?n=100")
+            .and_return(
+              status: 200,
+              body: first_page_tags,
+              headers: { "Link" => "<#{next_page_url}>; rel=\"next\"" }
+            )
+          stub_request(:get, next_page_url)
+            .and_return(status: 200, body: second_page_tags)
+        end
+
+        it "falls back to a paginated request and resolves the latest version" do
+          expect(checker.latest_version).to eq("2.4.2")
+          expect(WebMock).to have_requested(:get, tags_url + "?n=100")
+          expect(WebMock).to have_requested(:get, next_page_url)
+        end
+      end
+
+      context "when the tag list request keeps returning a 504" do
+        let(:tags_url) { "https://registry.hub.docker.com/v2/moj/ruby/tags/list" }
+
+        before do
+          stub_request(:get, tags_url)
+            .and_return(status: 504, body: "")
+          stub_request(:get, tags_url + "?n=100")
+            .and_return(status: 504, body: "")
+        end
+
+        it "raises a RegistryError with the HTTP status" do
+          expect { checker.latest_version }
+            .to raise_error(Dependabot::RegistryError) do |error|
+              expect(error.status).to eq(504)
+            end
+        end
+      end
+
+      context "when a manifest digest request returns a 504" do
+        let(:source) { { tag: version, digest: "old_digest" } }
+
+        before do
+          stub_request(:head, "https://registry.hub.docker.com/v2/moj/ruby/manifests/2.4.2")
+            .and_return(status: 504, body: "")
+        end
+
+        it "raises a RegistryError with the HTTP status" do
+          expect { checker.updated_requirements }
+            .to raise_error(Dependabot::RegistryError) do |error|
+              expect(error.status).to eq(504)
+            end
+        end
+      end
+
+      context "when the registry exception exposes an HTTP status" do
+        let(:registry_error) do
+          DockerRegistry2::RegistryHTTPException.new("Registry request failed").tap do |error|
+            error.define_singleton_method(:status) { 503 }
+          end
+        end
+
+        before do
+          allow(checker).to receive(:fetch_tags_from_registry).and_raise(registry_error)
+        end
+
+        it "uses the structured status" do
+          expect { checker.latest_version }
+            .to raise_error(Dependabot::RegistryError) do |error|
+              expect(error.status).to eq(503)
+            end
+        end
+      end
+
+      context "when the registry exception has no recognizable HTTP status" do
+        let(:registry_error) do
+          DockerRegistry2::RegistryHTTPException.new("Registry request failed")
+        end
+
+        before do
+          allow(checker).to receive(:fetch_tags_from_registry).and_raise(registry_error)
+        end
+
+        it "re-raises the original exception" do
+          expect { checker.latest_version }
+            .to raise_error(DockerRegistry2::RegistryHTTPException) do |error|
+              expect(error).to equal(registry_error)
             end
         end
       end
