@@ -123,6 +123,7 @@ module Dependabot
             raise EngineError,
                   "gh-actions-lock failed to start (#{self.class.binary_path}): #{stderr.to_s.strip}"
           end
+          raise EngineError, "gh-actions-lock terminated by signal #{process.termsig}" if process.termsig
 
           [stdout || "", stderr || "", process.exitstatus]
         end

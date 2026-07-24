@@ -28,15 +28,15 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
     Dependabot::DependencyFile.new(name: ".github/workflows/actions.lock", content: "version: v0.0.2\n")
   end
 
-  # Fake ProcessStatus exposing just the exitstatus CliEngine#invoke reads.
-  def process_double(exitstatus)
-    instance_double(Process::Status, exitstatus: exitstatus, success?: exitstatus.zero?)
+  # Fake ProcessStatus exposing just the process state CliEngine#invoke reads.
+  def process_double(exitstatus, termsig: nil)
+    instance_double(Process::Status, exitstatus: exitstatus, termsig: termsig, success?: exitstatus.zero?)
   end
 
-  def stub_subprocess(stdout:, exitstatus:, stderr: "Scanning 1 workflow\nResolving actions\n")
+  def stub_subprocess(stdout:, exitstatus:, stderr: "Scanning 1 workflow\nResolving actions\n", termsig: nil)
     allow(Dependabot::CommandHelpers)
       .to receive(:capture3_with_timeout)
-      .and_return([stdout, stderr, process_double(exitstatus)])
+      .and_return([stdout, stderr, process_double(exitstatus, termsig: termsig)])
   end
 
   # The run/invoke exit-code contract, exercised through the sole public entrypoint
@@ -69,6 +69,15 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
           Dependabot::GithubActions::Lockfile::EngineError,
           /failed to start.*No such file or directory/m
         )
+    end
+  end
+
+  describe "#relock when the binary is terminated by a signal" do
+    before { stub_subprocess(stdout: '{"findings":[]}', exitstatus: 0, termsig: 9) }
+
+    it "raises EngineError before accepting the output" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .to raise_error(Dependabot::GithubActions::Lockfile::EngineError, /terminated by signal 9/)
     end
   end
 
