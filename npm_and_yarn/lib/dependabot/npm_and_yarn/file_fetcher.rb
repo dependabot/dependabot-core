@@ -242,7 +242,8 @@ module Dependabot
 
         Dependabot::DependencyFile.new(
           name: ".npmrc",
-          content: content
+          content: content,
+          directory: directory
         )
       end
 
