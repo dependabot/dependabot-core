@@ -56,29 +56,22 @@ module Dependabot
     # from bypassing cooldown when no published release exists, because
     # %(creatordate) for a lightweight tag returns the underlying commit date
     # rather than when the tag was actually created.
-    sig { params(tag_name: String, commit_sha: String).returns(Time) }
-    def resolve_candidate_date(tag_name, commit_sha)
-      releases = cached_github_releases
-
-      unless releases.empty?
-        release = releases.find { |r| r.tag_name == tag_name && !r.draft }
-        if release
-          published_at = release.published_at
-          return published_at if published_at
-        end
-      end
-
-      # For GitHub sources: be conservative for lightweight tags with no
-      # trustworthy release date. A lightweight tag's %(creatordate) is the
-      # commit date (potentially much older than when the tag was pushed),
-      # which would incorrectly bypass cooldown for freshly-tagged versions.
-      if github_source? && lightweight_tag?(tag_name)
-        Dependabot.logger.info(
-          "Tag #{tag_name} is a lightweight tag with no published GitHub Release; " \
-          "treating version as still in cooldown to avoid bypassing cooldown window."
-        )
-        return Time.now
-      end
+    sig do
+      params(
+        tag_name: String,
+        commit_sha: String,
+        tag_sha: T.nilable(String),
+        fallback_date: T.nilable(String)
+      ).returns(Time)
+    end
+    def resolve_candidate_date(tag_name, commit_sha, tag_sha: nil, fallback_date: nil)
+      resolved_date = resolve_candidate_date_from_details(
+        tag_name,
+        commit_sha,
+        tag_sha: tag_sha,
+        fallback_date: fallback_date
+      )
+      return resolved_date if resolved_date
 
       tag_creation_date(tag_name, commit_sha)
     end
@@ -102,8 +95,9 @@ module Dependabot
     # Priority: tag creation date from for-each-ref > commit date fallback.
     sig { params(tag_name: String, commit_sha: String).returns(Time) }
     def tag_creation_date(tag_name, commit_sha)
+      tag_ref = validated_tag_ref(tag_name)
       tag_date_str = SharedHelpers.run_shell_command(
-        "git for-each-ref --format=\"%(creatordate:iso)\" \"refs/tags/#{tag_name}\"",
+        "git for-each-ref --format=\"%(creatordate:iso)\" #{tag_ref}",
         fingerprint: "git for-each-ref --format=\"%(creatordate:iso)\" \"refs/tags/<tag_name>\""
       ).strip
 
@@ -150,6 +144,33 @@ module Dependabot
 
     private
 
+    sig do
+      params(
+        tag_name: String,
+        commit_sha: String,
+        tag_sha: T.nilable(String),
+        fallback_date: T.nilable(String)
+      ).returns(T.nilable(Time))
+    end
+    def resolve_candidate_date_from_details(tag_name, commit_sha, tag_sha:, fallback_date:)
+      releases = cached_github_releases
+      unless releases.empty?
+        release = releases.find { |r| r.tag_name == tag_name && !r.draft }
+        published_at = release&.published_at
+        return published_at if published_at
+      end
+
+      if github_source? && lightweight_tag?(tag_name, commit_sha: commit_sha, tag_sha: tag_sha)
+        Dependabot.logger.info(
+          "Tag #{tag_name} is a lightweight tag with no published GitHub Release; " \
+          "treating version as still in cooldown to avoid bypassing cooldown window."
+        )
+        return Time.now
+      end
+
+      Time.parse(fallback_date) if fallback_date
+    end
+
     # Returns true if the dependency source is hosted on GitHub.
     sig { returns(T::Boolean) }
     def github_source?
@@ -170,16 +191,19 @@ module Dependabot
     # Returns false on error or when the tag is not found, so that we fail open
     # (allow the existing tag_creation_date fallback) rather than permanently
     # blocking a dependency.
-    sig { params(tag_name: String).returns(T::Boolean) }
-    def lightweight_tag?(tag_name)
-      # Defensive guard: reject tag names that contain characters outside the
-      # set allowed in git ref names (RFC 3986 + git ref rules). This prevents
-      # any possibility of shell injection via a crafted tag name, consistent
-      # with how tag_creation_date handles the same parameter.
-      return false unless tag_name.match?(/\A[a-zA-Z0-9.\-_\/+@{}=]+\z/)
+    sig do
+      params(
+        tag_name: String,
+        commit_sha: T.nilable(String),
+        tag_sha: T.nilable(String)
+      ).returns(T::Boolean)
+    end
+    def lightweight_tag?(tag_name, commit_sha: nil, tag_sha: nil)
+      return tag_sha == commit_sha if tag_sha && commit_sha
 
+      tag_ref = validated_tag_ref(tag_name)
       object_type = SharedHelpers.run_shell_command(
-        "git for-each-ref --format=\"%(objecttype)\" \"refs/tags/#{tag_name}\"",
+        "git for-each-ref --format=\"%(objecttype)\" #{tag_ref}",
         fingerprint: "git for-each-ref --format=\"%(objecttype)\" \"refs/tags/<tag_name>\""
       ).strip
 
@@ -190,6 +214,16 @@ module Dependabot
     rescue StandardError => e
       Dependabot.logger.debug("Unable to determine tag type for #{tag_name}: #{e.message}")
       false
+    end
+
+    sig { params(tag_name: String).returns(String) }
+    def validated_tag_ref(tag_name)
+      tag_ref = "refs/tags/#{tag_name}"
+      SharedHelpers.run_shell_command(
+        "git check-ref-format #{tag_ref}",
+        fingerprint: "git check-ref-format refs/tags/<tag_name>"
+      )
+      tag_ref
     end
   end
 end

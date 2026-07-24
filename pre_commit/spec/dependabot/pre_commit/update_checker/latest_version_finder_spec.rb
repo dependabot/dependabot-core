@@ -66,6 +66,10 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker::LatestVersionFinder do
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
       )
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      .with(/git check-ref-format/, hash_including(fingerprint: anything))
+      .and_return("")
   end
 
   describe "#latest_release_version" do

@@ -43,6 +43,9 @@ RSpec.describe Dependabot::GitCooldownDateResolver do
 
   before do
     allow(sawyer_agent).to receive(:parse_links) { |value| [value, {}] }
+    allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+      .with(/git check-ref-format/, hash_including(fingerprint: anything))
+      .and_return("")
   end
 
   def github_release_resource(agent, tag_name:, published_at:, draft: false)
@@ -89,6 +92,36 @@ RSpec.describe Dependabot::GitCooldownDateResolver do
       result = resolver.tag_creation_date("v1.0.0", "abc123")
       expect(result).to eq(Time.parse(commit_date))
     end
+
+    it "validates Git tag names containing punctuation" do
+      tag_date = "2026-06-10 12:00:00 +0000"
+      tag_ref = "refs/tags/release!100%"
+
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with(
+          "git check-ref-format #{tag_ref}",
+          fingerprint: "git check-ref-format refs/tags/<tag_name>"
+        )
+        .and_return("")
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with(
+          "git for-each-ref --format=\"%(creatordate:iso)\" #{tag_ref}",
+          fingerprint: "git for-each-ref --format=\"%(creatordate:iso)\" \"refs/tags/<tag_name>\""
+        )
+        .and_return(tag_date)
+
+      expect(resolver.tag_creation_date("release!100%", "abc123")).to eq(Time.parse(tag_date))
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with(
+          "git check-ref-format #{tag_ref}",
+          fingerprint: "git check-ref-format refs/tags/<tag_name>"
+        )
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with(
+          "git for-each-ref --format=\"%(creatordate:iso)\" #{tag_ref}",
+          fingerprint: "git for-each-ref --format=\"%(creatordate:iso)\" \"refs/tags/<tag_name>\""
+        )
+    end
   end
 
   describe "#github_release_published_at" do
@@ -103,8 +136,12 @@ RSpec.describe Dependabot::GitCooldownDateResolver do
 
     it "returns nil when the matching release is a draft" do
       published_at = Time.now.utc - (1 * 24 * 60 * 60)
-      mock_release = github_release_resource(sawyer_agent, tag_name: "v1.0.0",
-                                                            published_at: published_at, draft: true)
+      mock_release = github_release_resource(
+        sawyer_agent,
+        tag_name: "v1.0.0",
+        published_at: published_at,
+        draft: true
+      )
       mock_client = instance_double(Octokit::Client, releases: [mock_release])
       allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
 
@@ -143,8 +180,12 @@ RSpec.describe Dependabot::GitCooldownDateResolver do
 
     context "when the only release is a draft (lightweight tag)" do
       it "treats the version as still in cooldown (returns Time.now)" do
-        draft_release = github_release_resource(sawyer_agent, tag_name: "v1.0.0",
-                                                              published_at: nil, draft: true)
+        draft_release = github_release_resource(
+          sawyer_agent,
+          tag_name: "v1.0.0",
+          published_at: nil,
+          draft: true
+        )
         mock_client = instance_double(Octokit::Client, releases: [draft_release])
         allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
 

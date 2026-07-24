@@ -207,7 +207,9 @@ module Dependabot
 
           # For version tag proposals, fetch all allowed versions with release dates (single clone)
           # This reuses a single GitCommitChecker instance within package_details_fetcher
-          allowed_versions_with_dates = T.must(package_details_fetcher).allowed_version_tags_with_release_dates
+          allowed_versions_with_dates = T.must(package_details_fetcher)
+                                         .allowed_version_tags_with_release_dates
+                                         .map { |tag_info| with_resolved_release_date(tag_info) }
           tags_in_cooldown = Set.new(select_version_tags_in_cooldown_period(allowed_versions_with_dates))
           return release if tags_in_cooldown.empty?
 
@@ -300,13 +302,13 @@ module Dependabot
                   "Tag #{tag_name} is a lightweight tag with no published GitHub Release; " \
                   "treating version as still in cooldown to avoid bypassing cooldown window."
                 )
-                return Time.now.iso8601
+                return Time.now.iso8601(6)
               end
 
               date = if tag_name
+                       tag_ref = validated_tag_ref(tag_name)
                        tag_date = SharedHelpers.run_shell_command(
-                         "git for-each-ref --format=\"%(creatordate:iso)\" " \
-                         "\"refs/tags/#{tag_name}\"",
+                         "git for-each-ref --format=\"%(creatordate:iso)\" #{tag_ref}",
                          fingerprint: "git for-each-ref --format=\"%(creatordate:iso)\" \"refs/tags/<tag_name>\""
                        ).strip
                        tag_date.empty? ? nil : tag_date
@@ -322,6 +324,22 @@ module Dependabot
               date
             end
           end
+        end
+
+        sig do
+          params(tag_info: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped])
+        end
+        def with_resolved_release_date(tag_info)
+          tag_name = normalize_tag_name(tag_info.fetch(:tag))
+          release_date = resolve_candidate_date_from_details(
+            tag_name,
+            tag_info.fetch(:commit_sha),
+            tag_sha: tag_info.fetch(:tag_sha, nil),
+            fallback_date: tag_info.fetch(:release_date, nil)
+          )
+          return tag_info unless release_date
+
+          tag_info.merge(release_date: release_date.iso8601(6))
         end
 
         sig { params(release_date: T.nilable(String)).returns(T::Boolean) }
