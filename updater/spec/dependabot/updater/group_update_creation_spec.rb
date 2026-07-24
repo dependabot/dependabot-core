@@ -60,6 +60,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       security_advisories_for: security_advisories,
       updating_a_pull_request?: false,
       blocked_versions_for?: false,
+      security_updates_only?: false,
       source: source
     )
   end
@@ -948,6 +949,72 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           .with(:allow_refresh_group_with_all_dependencies)
           .and_return(true)
         allow(job).to receive(:dependency_group_to_refresh).and_return("test-group")
+      end
+
+      it "does not skip the dependency" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(false)
+      end
+    end
+  end
+
+  describe "#skip_dependency? with PR command ignores for security updates" do
+    let(:source_directory) { "/" }
+    let(:group) do
+      instance_double(
+        Dependabot::DependencyGroup,
+        name: "test-group",
+        dependencies: group_dependencies,
+        group_by_dependency_name?: false
+      )
+    end
+
+    before do
+      allow(Dependabot::Experiments).to receive(:enabled?)
+        .with(:allow_refresh_group_with_all_dependencies)
+        .and_return(false)
+    end
+
+    context "when dependency is ignored by PR command and job is security-only" do
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: "/")
+      end
+
+      before do
+        allow(job).to receive(:security_updates_only?).and_return(true)
+        allow(job).to receive(:dependency_ignored_by_pr_command?).with(dependency).and_return(true)
+      end
+
+      it "skips the dependency" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(true)
+      end
+    end
+
+    context "when dependency is ignored by PR command but job is not security-only" do
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: "/")
+      end
+
+      before do
+        allow(job).to receive(:security_updates_only?).and_return(false)
+        allow(job).to receive(:dependency_ignored_by_pr_command?).with(dependency).and_return(true)
+      end
+
+      it "does not skip the dependency (handled by existing ignore logic)" do
+        result = test_instance.send(:skip_dependency?, dependency, group)
+        expect(result).to be(false)
+      end
+    end
+
+    context "when dependency is not ignored by PR command and job is security-only" do
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: "/")
+      end
+
+      before do
+        allow(job).to receive(:security_updates_only?).and_return(true)
+        allow(job).to receive(:dependency_ignored_by_pr_command?).with(dependency).and_return(false)
       end
 
       it "does not skip the dependency" do

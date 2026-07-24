@@ -49,6 +49,14 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
       it "ignores all versions" do
         expect(ignored_versions).to eq([">= 0"])
       end
+
+      context "with security_updates_only" do
+        let(:security_updates_only) { true }
+
+        it "still ignores all versions (completely ignored dependency)" do
+          expect(ignored_versions).to eq([">= 0"])
+        end
+      end
     end
 
     context "with versions" do

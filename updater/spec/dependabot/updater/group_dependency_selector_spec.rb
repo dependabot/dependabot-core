@@ -64,6 +64,8 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
     allow(Dependabot).to receive(:logger).and_return(
       instance_double(Logger, info: nil, warn: nil, error: nil, debug: nil)
     )
+    allow(job).to receive(:security_updates_only?).and_return(false)
+    allow(job).to receive(:dependency_ignored_by_pr_command?).and_return(false)
   end
 
   describe "#initialize" do
