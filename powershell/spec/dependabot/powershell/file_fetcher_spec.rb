@@ -134,6 +134,18 @@ RSpec.describe Dependabot::Powershell::FileFetcher do
       end
     end
 
+    context "when a .ps1 script only has #Requires -Modules inside a block comment" do
+      let(:repo_contents_json) do
+        JSON.dump([{ "name" => "Documented.ps1", "type" => "file" }])
+      end
+
+      before { stub_content("Documented.ps1", fixture("ps1", "commented_out_requires_script.ps1")) }
+
+      it "raises DependencyFileNotFound, since there's no active directive" do
+        expect { files }.to raise_error(Dependabot::DependencyFileNotFound)
+      end
+    end
+
     context "when a .psm1 script with #Requires -Modules exists" do
       let(:repo_contents_json) do
         JSON.dump([{ "name" => "MyScriptModule.psm1", "type" => "file" }])

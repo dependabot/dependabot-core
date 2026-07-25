@@ -29,7 +29,8 @@ module Dependabot
         unless allow_beta_ecosystems?
           raise Dependabot::DependencyFileNotFound.new(
             nil,
-            "Powershell support is currently in beta. Set ALLOW_BETA_ECOSYSTEMS=true to enable it."
+            "Powershell support is currently in beta. Pass `--enable-beta-ecosystems` (dry-run) or " \
+            "otherwise enable the `enable_beta_ecosystems` experiment to use it."
           )
         end
 
@@ -89,7 +90,16 @@ module Dependabot
         content = file.content
         return false unless content
 
-        content.match?(REQUIRES_MODULES_LINE)
+        blank_block_comments(content).match?(REQUIRES_MODULES_LINE)
+      end
+
+      # Blanks out `<# ... #>` block comments (replacing their content with
+      # equal-length whitespace) so a documented `#Requires -Modules`
+      # example written inside a comment isn't mistaken for an active
+      # directive, mirroring RequiresDirectiveParser/DeclarationLocator.
+      sig { params(content: String).returns(String) }
+      def blank_block_comments(content)
+        content.gsub(/<#.*?#>/m) { |match| match.gsub(/[^\n]/, " ") }
       end
     end
   end
