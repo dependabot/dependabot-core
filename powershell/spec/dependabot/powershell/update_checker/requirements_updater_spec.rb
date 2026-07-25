@@ -74,6 +74,17 @@ RSpec.describe Dependabot::Powershell::UpdateChecker::RequirementsUpdater do
       end
     end
 
+    context "when a ModuleVersion minimum is unsatisfied because the latest resolvable version is " \
+            "below the declared floor" do
+      let(:requirements) { [requirement(">= 2.0.0", version_key: "ModuleVersion")] }
+      let(:latest_resolvable_version) { "1.5.0" }
+
+      it "leaves the floor unchanged instead of opening a requirement downgrade" do
+        updated = updater.updated_requirements.first
+        expect(updated[:requirement]).to eq(">= 2.0.0")
+      end
+    end
+
     context "when the requirement is a MaximumVersion cap" do
       let(:requirements) { [requirement("<= 1.0.0", version_key: "MaximumVersion")] }
 

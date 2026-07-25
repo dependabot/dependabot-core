@@ -116,12 +116,32 @@ module Dependabot
           when "RequiredVersion"
             "= #{latest_version}"
           when "ModuleVersion"
-            ">= #{latest_version}"
+            bump_minimum(requirement_string)
           when "MaximumVersion"
             "<= #{latest_version}"
           when "ModuleVersion+MaximumVersion"
             bump_range_maximum(requirement_string)
           end
+        end
+
+        # Raises a bare minimum-version ("ModuleVersion") constraint to the
+        # latest resolvable version, but only when that target is actually
+        # greater than the declared floor. Because a minimum-only dependency
+        # has no `dependency.version`, the latest-version finder does not
+        # filter out releases below the declared floor - so if the declared
+        # release is unlisted (e.g. the floor is `>= 2.0.0` but the Gallery's
+        # latest listed release is `1.5.0`), blindly interpolating the
+        # target here would open a requirement *downgrade*. Leave the floor
+        # untouched in that case instead.
+        sig { params(requirement_string: String).returns(T.nilable(String)) }
+        def bump_minimum(requirement_string)
+          current_minimum = requirement_string.delete_prefix(">=").strip
+          return nil unless Version.correct?(current_minimum)
+
+          target_version = latest_version
+          return nil unless target_version && target_version > Version.new(current_minimum)
+
+          ">= #{target_version}"
         end
 
         # Raises the upper bound of a "ModuleVersion+MaximumVersion" range to
