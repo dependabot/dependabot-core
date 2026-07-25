@@ -201,7 +201,11 @@ module Dependabot
           # is replaced character-for-character.
           scannable = blank_line_comments(raw)
 
-          pattern = /#{Regexp.escape(field)}\s*=\s*(?<quote>['"])(?<value>[^'"]*)\k<quote>/i
+          # The field name may itself be quoted (e.g. `'ModuleVersion' =
+          # '1.0.0'`), just like ModuleSpecificationParser accepts when
+          # parsing the same hashtable - so an optional, not-necessarily
+          # matching quote character is allowed on either side of it.
+          pattern = /['"]?#{Regexp.escape(field)}['"]?\s*=\s*(?<quote>['"])(?<value>[^'"]*)\k<quote>/i
           match = pattern.match(scannable)
           return nil unless match
 
