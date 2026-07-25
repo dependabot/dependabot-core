@@ -44,6 +44,13 @@ module Dependabot
 
       REQUIRES_DIRECTIVE = /\A#Requires\s+-Modules\b/i
 
+      # Matches an active-looking `#Requires -Modules` line found *inside* a
+      # quoted string's text (as opposed to `REQUIRES_DIRECTIVE`, which
+      # anchors on the `#` itself and is only used once already known to be
+      # outside any string). Allows leading whitespace, since a real
+      # directive line can be indented.
+      EMBEDDED_REQUIRES_DIRECTIVE_LINE = /\A\s*#Requires\s+-Modules\b/i
+
       sig { params(content: String).returns(String) }
       def self.mask(content)
         line_starts = build_line_starts(content)
@@ -241,6 +248,15 @@ module Dependabot
       # respecting PowerShell's escaping rules: a doubled quote (`''`/`""`)
       # is a literal quote in either style, and a backtick additionally
       # escapes the following character in a double-quoted string.
+      #
+      # PowerShell allows quoted strings to span multiple lines, so an
+      # interior line that looks exactly like an active `#Requires
+      # -Modules` directive is blanked instead of copied through verbatim -
+      # otherwise a downstream line-by-line directive scan (which runs
+      # against `.mask`'s output) can't tell it apart from a real
+      # directive. Left untouched if the string's own closing `quote_char`
+      # also appears on that line, deferring to the normal per-character
+      # scan below to close the string at the right place.
       sig { params(content: String, result: String, index: Integer, quote_char: String).returns(Integer) }
       def self.copy_quoted(content, result, index, quote_char)
         length = content.length
@@ -268,6 +284,13 @@ module Dependabot
             break
           end
 
+          if char == "\n"
+            result << char
+            i += 1
+            i = mask_embedded_directive_line(content, result, i, quote_char)
+            next
+          end
+
           result << char
           i += 1
         end
@@ -276,11 +299,36 @@ module Dependabot
       end
       private_class_method :copy_quoted
 
+      # Called with `index` at the first character of a new line while
+      # still inside a quoted string (from `.copy_quoted`). If that line
+      # matches `EMBEDDED_REQUIRES_DIRECTIVE_LINE` and doesn't also contain
+      # the string's own closing `quote_char`, blanks it (writing spaces to
+      # `result` instead of copying it) and returns the index of its
+      # trailing newline (or the content's end); otherwise leaves `result`
+      # untouched and returns `index` unchanged so the caller's normal
+      # per-character scan handles it.
+      sig do
+        params(content: String, result: String, index: Integer, quote_char: String).returns(Integer)
+      end
+      def self.mask_embedded_directive_line(content, result, index, quote_char)
+        newline_index = content.index("\n", index)
+        line_end = newline_index || content.length
+        line = T.must(content[index...line_end])
+
+        return index unless line.match?(EMBEDDED_REQUIRES_DIRECTIVE_LINE) && !line.include?(quote_char)
+
+        result << (" " * line.length)
+        line_end
+      end
+      private_class_method :mask_embedded_directive_line
+
       # Blanks the interior of a single/double-quoted string (keeping its
-      # delimiters), used by `.mask_quoted_strings`. Unlike `.copy_quoted`,
-      # backtick escapes aren't treated specially - the result is only used
-      # for locating keywords outside of strings, so it just needs to keep
-      # the same length and correctly find the real closing quote.
+      # delimiters), used by `.mask_quoted_strings`. Mirrors
+      # `.copy_quoted`'s escaping rules (doubled quotes, and backtick
+      # escapes in double-quoted strings) so it finds the same real closing
+      # delimiter - a value like `Description = "Example `" RequiredModules
+      # = @('Fake')"` must not have its escaped quote mistaken for the
+      # string's end, which would leave the fake assignment unmasked.
       sig { params(content: String, result: String, index: Integer, quote_char: String).returns(Integer) }
       def self.blank_quoted(content, result, index, quote_char)
         length = content.length
@@ -289,6 +337,12 @@ module Dependabot
 
         while i < length
           char = T.must(content[i])
+
+          if quote_char == "\"" && char == "`" && i + 1 < length
+            result << "  "
+            i += 2
+            next
+          end
 
           if char == quote_char && content[i + 1] == quote_char
             result << "  "

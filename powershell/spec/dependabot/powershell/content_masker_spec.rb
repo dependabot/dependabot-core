@@ -115,6 +115,22 @@ RSpec.describe Dependabot::Powershell::ContentMasker do
       expect(masked).to include("after")
     end
 
+    it "blanks a #Requires -Modules line that only appears as an interior line of a " \
+       "multi-line double-quoted string" do
+      content = <<~POWERSHELL
+        #Requires -Modules Az.Real
+        $description = "some text
+        #Requires -Modules @{ModuleName='Fake'; RequiredVersion='1.0.0'}
+        more text"
+        Write-Host $description
+      POWERSHELL
+      masked = described_class.mask(content)
+
+      expect(masked).not_to include("Fake")
+      expect(masked).to include("#Requires -Modules Az.Real")
+      expect(masked).to include("Write-Host $description")
+    end
+
     it "runs in roughly linear time on adversarial unterminated block-comment openers" do
       content = ("<#" * 20_000) + "\n"
 
@@ -157,6 +173,15 @@ RSpec.describe Dependabot::Powershell::ContentMasker do
 
     it "handles a doubled single-quote escape without terminating the string early" do
       content = "'It''s RequiredModules = @(Fake)'\nafter"
+      masked = described_class.mask_quoted_strings(content)
+
+      expect(masked.length).to eq(content.length)
+      expect(masked).not_to include("RequiredModules")
+      expect(masked).to include("after")
+    end
+
+    it "handles a backtick-escaped quote inside a double-quoted string without terminating early" do
+      content = "Description = \"Example `\" RequiredModules = @('Fake')\"\nafter"
       masked = described_class.mask_quoted_strings(content)
 
       expect(masked.length).to eq(content.length)
