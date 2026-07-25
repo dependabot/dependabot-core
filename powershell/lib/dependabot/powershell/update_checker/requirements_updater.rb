@@ -125,14 +125,26 @@ module Dependabot
 
         # Raises the upper bound of a "ModuleVersion+MaximumVersion" range to
         # the latest resolvable version while leaving the declared lower
-        # bound (ModuleVersion) untouched.
+        # bound (ModuleVersion) untouched. Only does so when the latest
+        # version actually exceeds the current upper bound - if the range is
+        # merely unsatisfied because the latest version falls below the
+        # declared lower bound, raising the upper bound to it as well would
+        # produce an impossible range (e.g. `>= 2.0.0, <= 1.9.0`), so the
+        # range is left unchanged in that case instead.
         sig { params(requirement_string: String).returns(T.nilable(String)) }
         def bump_range_maximum(requirement_string)
           constraints = requirement_string.split(",").map(&:strip)
           minimum_constraint = constraints.find { |constraint| constraint.start_with?(">=") }
-          return nil unless minimum_constraint
+          maximum_constraint = constraints.find { |constraint| constraint.start_with?("<=") }
+          return nil unless minimum_constraint && maximum_constraint
 
-          "#{minimum_constraint}, <= #{latest_version}"
+          current_maximum = maximum_constraint.delete_prefix("<=").strip
+          return nil unless Version.correct?(current_maximum)
+
+          target_version = latest_version
+          return nil unless target_version && target_version > Version.new(current_maximum)
+
+          "#{minimum_constraint}, <= #{target_version}"
         end
       end
     end
