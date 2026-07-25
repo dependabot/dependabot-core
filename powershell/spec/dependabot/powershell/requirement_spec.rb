@@ -3,6 +3,7 @@
 
 require "spec_helper"
 require "dependabot/powershell/requirement"
+require "dependabot/powershell/version"
 
 RSpec.describe Dependabot::Powershell::Requirement do
   describe ".requirements_array" do
@@ -46,6 +47,21 @@ RSpec.describe Dependabot::Powershell::Requirement do
         expect(reqs.first.satisfied_by?(Gem::Version.new("1.5.0"))).to be(true)
         expect(reqs.first.satisfied_by?(Gem::Version.new("0.9.0"))).to be(false)
         expect(reqs.first.satisfied_by?(Gem::Version.new("2.5.0"))).to be(false)
+      end
+    end
+
+    context "when pinning an exact prerelease version" do
+      # Gem::Requirement's default .parse stores plain Gem::Version operands,
+      # which normalize prereleases (Gem::Version.new("5.5.0-beta1").to_s ==
+      # "5.5.0.pre.beta1"). Powershell::Requirement overrides .parse to build
+      # Powershell::Version operands instead, so the comparison goes through
+      # Powershell::Version#== (which preserves the original string) and an
+      # exact `= 5.5.0-beta1` pin actually matches the release it names.
+      it "matches the exact prerelease version it names" do
+        reqs = described_class.requirements_array("= 5.5.0-beta1")
+
+        expect(reqs.first.satisfied_by?(Dependabot::Powershell::Version.new("5.5.0-beta1"))).to be(true)
+        expect(reqs.first.satisfied_by?(Dependabot::Powershell::Version.new("5.5.0-beta2"))).to be(false)
       end
     end
   end
