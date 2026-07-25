@@ -472,6 +472,26 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
         expect(observed_commands.last).not_to include("-Dorg.gradle.jvmargs")
       end
 
+      context "when gradle.properties already sets org.gradle.jvmargs" do
+        let(:gradle_properties) do
+          Dependabot::DependencyFile.new(
+            name: "gradle.properties",
+            directory: "/",
+            content: "GROUP=com.example\norg.gradle.jvmargs=--add-opens java.base/java.lang=ALL-UNNAMED\n"
+          )
+        end
+
+        it "preserves the existing jvmargs alongside the required overrides" do
+          lockfile_updater.update_lockfiles(root_buildfile)
+
+          jvmargs_line = observed_properties.last.lines.find { |line| line.start_with?("org.gradle.jvmargs=") }
+
+          expect(jvmargs_line).to include("--add-opens java.base/java.lang=ALL-UNNAMED")
+          expect(jvmargs_line).to include("-Xmx1024m -Dfile.encoding=UTF-8")
+          expect(observed_properties.last.scan(/^org\.gradle\.jvmargs=/).size).to eq(1)
+        end
+      end
+
       it "disables configuration cache for lockfile updates" do
         observed_commands = []
 
@@ -730,30 +750,33 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
     end
 
     context "when a full repo checkout path is available" do
+      subject(:lockfile_updater) do
+        described_class.new(dependency_files: dependency_files, repo_contents_path: repo_dir)
+      end
+
       let(:dependency_files) { [root_settings, root_buildfile, root_lockfile] }
+      let(:repo_dir) { Dir.mktmpdir("dependabot-gradle-repo") }
 
-      around do |example|
-        Dir.mktmpdir("dependabot-gradle-repo") do |repo_dir|
-          plugin_source_path = File.join(
-            repo_dir,
-            "build-logic/convention/src/main/kotlin/com/nice/cxonechat/AndroidLibraryConventionsPlugin.kt"
-          )
-          FileUtils.mkdir_p(File.dirname(plugin_source_path))
-          File.write(plugin_source_path, "package com.nice.cxonechat\n")
+      before do
+        plugin_source_path = File.join(
+          repo_dir,
+          "build-logic/convention/src/main/kotlin/com/nice/cxonechat/AndroidLibraryConventionsPlugin.kt"
+        )
+        FileUtils.mkdir_p(File.dirname(plugin_source_path))
+        File.write(plugin_source_path, "package com.nice.cxonechat\n")
 
-          previous = ENV.fetch("DEPENDABOT_REPO_CONTENTS_PATH", nil)
-          ENV["DEPENDABOT_REPO_CONTENTS_PATH"] = repo_dir
+        git_marker_path = File.join(repo_dir, ".git", "marker")
+        FileUtils.mkdir_p(File.dirname(git_marker_path))
+        File.write(git_marker_path, "should not be copied\n")
+      end
 
-          begin
-            example.run
-          ensure
-            ENV["DEPENDABOT_REPO_CONTENTS_PATH"] = previous
-          end
-        end
+      after do
+        FileUtils.rm_rf(repo_dir)
       end
 
       it "copies repository files into the temporary execution directory" do
         observed_plugin_files = []
+        observed_git_dirs = []
 
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
           observed_plugin_files << File.exist?(
@@ -762,12 +785,14 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
               "build-logic/convention/src/main/kotlin/com/nice/cxonechat/AndroidLibraryConventionsPlugin.kt"
             )
           )
+          observed_git_dirs << File.exist?(File.join(cwd, ".git"))
           File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
         end
 
         lockfile_updater.update_lockfiles(root_buildfile)
 
         expect(observed_plugin_files.last).to be(true)
+        expect(observed_git_dirs.last).to be(false)
       end
     end
   end

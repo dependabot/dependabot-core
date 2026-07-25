@@ -35,6 +35,9 @@ module Dependabot
       SUPPORTED_VERSION_CATALOG_FILE_PATH =
         T.let(%w(/gradle/libs.versions.toml).freeze, T::Array[String])
 
+      PLUGIN_SOURCE_SET_DIRS =
+        T.let(%w(src/main/java src/main/kotlin src/main/groovy src/main/resources).freeze, T::Array[String])
+
       sig do
         override
           .params(
@@ -67,10 +70,7 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        fetched_files = all_buildfiles_in_build(
-          ".",
-          fetch_plugin_sources: fetch_plugin_sources_for_lockfiles?
-        )
+        fetched_files = all_buildfiles_in_build(".")
 
         # Filter excluded files from final collection
         filtered_files = fetched_files.reject do |file|
@@ -82,8 +82,8 @@ module Dependabot
 
       private
 
-      sig { params(root_dir: String, fetch_plugin_sources: T::Boolean).returns(T::Array[DependencyFile]) }
-      def all_buildfiles_in_build(root_dir, fetch_plugin_sources: false)
+      sig { params(root_dir: String).returns(T::Array[DependencyFile]) }
+      def all_buildfiles_in_build(root_dir)
         files = [buildfile(root_dir), settings_file(root_dir), version_catalog_file(root_dir), lockfile(root_dir),
                  properties_file(root_dir)]
                 .compact
@@ -91,12 +91,10 @@ module Dependabot
         files += subproject_buildfiles(root_dir)
         files += subproject_lockfiles(root_dir)
         files += dependency_script_plugins(root_dir)
-        if fetch_plugin_sources_for_lockfiles? && fetch_plugin_sources
-          files += included_build_plugin_source_files(root_dir, files)
-        end
+        files += convention_plugin_source_files(files) if fetch_plugin_sources_for_lockfiles?
 
         files + included_builds(root_dir)
-                .flat_map { |dir| all_buildfiles_in_build(dir, fetch_plugin_sources: true) }
+                .flat_map { |dir| all_buildfiles_in_build(dir) }
       end
 
       sig { returns(T::Boolean) }
@@ -104,14 +102,22 @@ module Dependabot
         Dependabot::Experiments.enabled?(:gradle_lockfile_updater)
       end
 
-      sig { params(root_dir: String, files: T::Array[DependencyFile]).returns(T::Array[DependencyFile]) }
-      def included_build_plugin_source_files(root_dir, files)
-        project_dirs = [clean_join([root_dir])] + buildfile_dirs(files)
-        project_dirs.uniq.flat_map do |project_dir|
-          %w(src/main/java src/main/kotlin src/main/groovy src/main/resources).flat_map do |relative_dir|
+      # Only fetch source trees for *nested* project directories (e.g. "build-logic/convention"
+      # or "included/convention"), never for a build's own top-level directory. This targets the
+      # common convention-plugin module pattern without recursively scanning every ordinary
+      # top-level application module (e.g. "app") or a build's own root sources.
+      sig { params(files: T::Array[DependencyFile]).returns(T::Array[DependencyFile]) }
+      def convention_plugin_source_files(files)
+        nested_plugin_project_dirs(files).flat_map do |project_dir|
+          PLUGIN_SOURCE_SET_DIRS.flat_map do |relative_dir|
             fetch_tree_support_files(clean_join([project_dir, relative_dir]))
           end
         end
+      end
+
+      sig { params(files: T::Array[DependencyFile]).returns(T::Array[String]) }
+      def nested_plugin_project_dirs(files)
+        buildfile_dirs(files).select { |dir| dir.include?("/") }
       end
 
       sig { params(files: T::Array[DependencyFile]).returns(T::Array[String]) }

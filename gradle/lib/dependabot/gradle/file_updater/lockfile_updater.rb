@@ -22,9 +22,15 @@ module Dependabot
           String
         )
 
-        sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
-        def initialize(dependency_files:)
+        sig do
+          params(
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            repo_contents_path: T.nilable(String)
+          ).void
+        end
+        def initialize(dependency_files:, repo_contents_path: nil)
           @dependency_files = dependency_files
+          @repo_contents_path = repo_contents_path
         end
 
         sig { params(build_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
@@ -182,7 +188,7 @@ module Dependabot
 
         sig { params(temp_dir: T.any(Pathname, String)).void }
         def populate_temp_directory(temp_dir)
-          copy_repo_contents_to_temp_dir(temp_dir)
+          copy_repo_contents_to_temp_dir(temp_dir, @repo_contents_path)
 
           @dependency_files.each do |file|
             # Handle "/" directory as root - File.join treats "/" as absolute path and ignores prior components
@@ -193,9 +199,8 @@ module Dependabot
           end
         end
 
-        sig { params(temp_dir: T.any(Pathname, String)).void }
-        def copy_repo_contents_to_temp_dir(temp_dir)
-          repo_contents_path = ENV.fetch("DEPENDABOT_REPO_CONTENTS_PATH", nil)
+        sig { params(temp_dir: T.any(Pathname, String), repo_contents_path: T.nilable(String)).void }
+        def copy_repo_contents_to_temp_dir(temp_dir, repo_contents_path)
           return if repo_contents_path.nil? || repo_contents_path.strip.empty?
 
           source_dir = Pathname.new(repo_contents_path).expand_path
@@ -203,13 +208,18 @@ module Dependabot
 
           # Use the full checkout when available to ensure Gradle can compile
           # convention plugin implementations from non-manifest source trees.
-          FileUtils.cp_r(File.join(source_dir.to_s, "."), temp_dir)
+          # Skip .git so we don't waste disk/time duplicating the whole history.
+          Dir.each_child(source_dir.to_s) do |entry|
+            next if entry == ".git"
+
+            FileUtils.cp_r(File.join(source_dir.to_s, entry), File.join(temp_dir.to_s, entry))
+          end
         rescue StandardError => e
           Dependabot.logger.warn("Failed to copy full repo contents for lockfile update: #{e.message}")
         end
 
-        sig { params(file_name: String, jvmargs: String).void }
-        def write_properties_file(file_name, jvmargs:) # rubocop:disable Metrics/PerceivedComplexity
+        sig { params(file_name: String, jvmargs: String, base_content: String).void }
+        def write_properties_file(file_name, jvmargs:, base_content:) # rubocop:disable Metrics/PerceivedComplexity
           http_proxy = ENV.fetch("HTTP_PROXY", nil)
           https_proxy = ENV.fetch("HTTPS_PROXY", nil)
           http_split = http_proxy&.split(":")
@@ -219,10 +229,16 @@ module Dependabot
           http_proxy_port = http_split&.fetch(2) || "1080"
           https_proxy_port = https_split&.fetch(2) || "1080"
 
-          existing_content = File.exist?(file_name) ? File.read(file_name) : ""
+          existing_jvmargs = base_content[/^org\.gradle\.jvmargs=(.*)$/, 1]
+          # Preserve any existing jvmargs (e.g. --add-opens flags) by merging rather than
+          # replacing them outright; the raw line is dropped from existing_content below
+          # since combined_jvmargs already includes its value.
+          has_existing_jvmargs = existing_jvmargs && !existing_jvmargs.strip.empty?
+          combined_jvmargs = has_existing_jvmargs ? "#{existing_jvmargs.strip} #{jvmargs}" : jvmargs
+          existing_content = base_content.gsub(/^org\.gradle\.jvmargs=.*$\n?/, "")
 
           proxy_properties = "
-org.gradle.jvmargs=#{jvmargs}
+org.gradle.jvmargs=#{combined_jvmargs}
 org.gradle.java.installations.auto-download=false
 org.gradle.java.installations.paths=#{GRADLE_TOOLCHAIN_PATHS}
 systemProp.http.proxyHost=#{http_proxy_host}
@@ -236,18 +252,20 @@ systemProp.https.proxyPort=#{https_proxy_port}"
 
         sig { params(command: String, cwd: String, properties_file_path: String).void }
         def run_lockfile_update_with_retry(command:, cwd:, properties_file_path:)
-          [GRADLE_JVMARGS_OVERRIDE, GRADLE_JVMARGS_RETRY].each_with_index do |jvmargs, index|
-            write_properties_file(properties_file_path, jvmargs: jvmargs)
+          base_content = File.exist?(properties_file_path) ? File.read(properties_file_path) : ""
+
+          write_properties_file(properties_file_path, jvmargs: GRADLE_JVMARGS_OVERRIDE, base_content: base_content)
+          begin
             SharedHelpers.run_shell_command(command, cwd: cwd)
-            return
           rescue SharedHelpers::HelperSubprocessFailed => e
-            should_retry = daemon_disappeared?(e) && index.zero?
-            raise e unless should_retry
+            raise e unless daemon_disappeared?(e)
 
             Dependabot.logger.warn(
-              "Gradle daemon disappeared during lockfile update with '#{jvmargs}'. " \
+              "Gradle daemon disappeared during lockfile update with '#{GRADLE_JVMARGS_OVERRIDE}'. " \
               "Retrying once with '#{GRADLE_JVMARGS_RETRY}'."
             )
+            write_properties_file(properties_file_path, jvmargs: GRADLE_JVMARGS_RETRY, base_content: base_content)
+            SharedHelpers.run_shell_command(command, cwd: cwd)
           end
         end
 

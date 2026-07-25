@@ -123,16 +123,25 @@ module Dependabot
       end
       def update_lockfiles_for_buildfiles(files, buildfiles_processed)
         lockfile_roots_processed = T.let(Set.new, T::Set[String])
+        # Support files (e.g. fetched convention plugin sources) are excluded from
+        # `buildfiles`/`files`, but Gradle still needs them on disk to compile
+        # plugins referenced by included/buildSrc builds, so pass them through too.
+        support_files = dependency_files.select(&:support_file?)
 
         buildfiles_processed.each_value do |buildfile|
-          lockfile_updater = LockfileUpdater.new(dependency_files: files)
+          lockfile_updater = LockfileUpdater.new(
+            dependency_files: files + support_files,
+            repo_contents_path: repo_contents_path
+          )
           root_dir = lockfile_updater.determine_root_dir(build_file: buildfile)
           next if lockfile_roots_processed.include?(root_dir)
 
           lockfile_roots_processed.add(root_dir)
 
           updated_files = lockfile_updater.update_lockfiles(buildfile)
-          replace_updated_files(files, updated_files)
+          # Support files are only needed to populate Gradle's working directory;
+          # they must never be reintroduced into the buildfiles-only result set.
+          replace_updated_files(files, updated_files.reject(&:support_file?))
         end
       end
       sig do
