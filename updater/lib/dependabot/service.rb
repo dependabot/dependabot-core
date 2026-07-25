@@ -22,7 +22,7 @@ module Dependabot
   class Service
     extend T::Sig
 
-    ErrorDetails = T.type_alias { T::Hash[T.any(String, Symbol), T.anything] }
+    ErrorDetails = T.type_alias { Dependabot::ErrorDetails::Detail }
     PullRequestResult = T.type_alias { [String, T.any(String, Symbol)] }
     LegacyErrorResult = T.type_alias { [String, T.nilable(Dependabot::Dependency)] }
     EnhancedErrorResult = T.type_alias do

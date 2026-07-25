@@ -801,6 +801,9 @@ module Dependabot
           vulnerabilities_fixed: vulnerabilities_fixed[dependency.name],
           github_redirection_service: github_redirection_service
         ).to_s
+      rescue StandardError => e
+        suppress_error("metadata cascades for #{dependency.name}", e)
+        ""
       end
 
       sig { returns(String) }

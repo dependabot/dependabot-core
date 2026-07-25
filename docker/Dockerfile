@@ -1,6 +1,6 @@
 # syntax=docker.io/docker/dockerfile:1.20
 # From https://github.com/sigstore/cosign/releases
-FROM ghcr.io/sigstore/cosign/cosign:v3.1.1 AS cosign
+FROM ghcr.io/sigstore/cosign/cosign:v3.1.2 AS cosign
 # From https://github.com/regclient/regclient/releases
 FROM ghcr.io/regclient/regctl:v0.11.5 AS regctl
 
