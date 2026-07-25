@@ -25,6 +25,11 @@ module Dependabot
       MAX_DEPTH = T.let(3, Integer)
       MAX_CANDIDATES = T.let(200, Integer)
 
+      # Listing a directory costs a request too, so a repository with thousands of
+      # shallow directories would burn the rate limit before the file budget ever
+      # came into play.
+      MAX_DIRECTORIES = T.let(100, Integer)
+
       # Directories that hold vendored or generated YAML, never pipelines.
       IGNORED_DIRECTORIES = T.let(
         %w(
@@ -96,34 +101,57 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def candidate_paths
-        paths = yaml_paths_in(".", depth: 1)
+        @candidates = T.let([], T.nilable(T::Array[String]))
+        @directories_visited = T.let(0, T.nilable(Integer))
 
-        if paths.length > MAX_CANDIDATES
+        collect_yaml_paths(".", depth: 1)
+
+        if budget_spent?
           Dependabot.logger.info(
-            "Found #{paths.length} YAML files in #{directory}, only inspecting the first #{MAX_CANDIDATES}"
+            "Stopped looking for Azure Pipelines files in #{directory} after " \
+            "#{directories_visited} directories and #{candidates.length} candidates"
           )
         end
 
-        paths.first(MAX_CANDIDATES)
+        candidates
       end
 
-      sig { params(dir: String, depth: Integer).returns(T::Array[String]) }
-      def yaml_paths_in(dir, depth:)
+      sig { params(dir: String, depth: Integer).void }
+      def collect_yaml_paths(dir, depth:)
+        return if budget_spent?
+
+        @directories_visited = directories_visited + 1
         contents = repo_contents(dir: dir, raise_errors: false)
 
-        files = contents
-                .select { |entry| entry.type == "file" && entry.name.match?(YAML_PATTERN) }
-                .map { |entry| cleaned_path(dir, entry.name) }
+        contents.each do |entry|
+          next unless entry.type == "file" && entry.name.match?(YAML_PATTERN)
 
-        return files if depth >= MAX_DEPTH
-
-        subdirectories = contents.select do |entry|
-          entry.type == "dir" && !IGNORED_DIRECTORIES.include?(entry.name.downcase)
+          candidates << cleaned_path(dir, entry.name)
         end
 
-        files + subdirectories.flat_map do |entry|
-          yaml_paths_in(cleaned_path(dir, entry.name), depth: depth + 1)
+        return if depth >= MAX_DEPTH
+
+        contents.each do |entry|
+          break if budget_spent?
+          next unless entry.type == "dir" && !IGNORED_DIRECTORIES.include?(entry.name.downcase)
+
+          collect_yaml_paths(cleaned_path(dir, entry.name), depth: depth + 1)
         end
+      end
+
+      sig { returns(T::Boolean) }
+      def budget_spent?
+        directories_visited >= MAX_DIRECTORIES || candidates.length >= MAX_CANDIDATES
+      end
+
+      sig { returns(T::Array[String]) }
+      def candidates
+        @candidates ||= T.let([], T.nilable(T::Array[String]))
+      end
+
+      sig { returns(Integer) }
+      def directories_visited
+        @directories_visited ||= T.let(0, T.nilable(Integer))
       end
 
       sig { params(dir: String, name: String).returns(String) }

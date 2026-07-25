@@ -1,3 +1,7 @@
+variables:
+  # A variable that happens to be called task is not a step.
+  task: Fake@8
+
 parameters:
   - name: extraSteps
     type: stepList
@@ -12,6 +16,9 @@ extends:
       - task: GoTool@0.3.1
       # Quoted forms are equivalent to bare ones.
       - task: "Npm@1"
+        inputs:
+          # Neither is a task input of the same name.
+          task: Fake@7
       - task: 'CopyFiles@2'
       # Resolved at runtime, so there is nothing to update.
       - task: ${{ parameters.taskName }}@1

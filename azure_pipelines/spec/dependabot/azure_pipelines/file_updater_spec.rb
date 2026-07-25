@@ -165,6 +165,118 @@ RSpec.describe Dependabot::AzurePipelines::FileUpdater do
       end
     end
 
+    context "with CRLF line endings" do
+      let(:pipeline_content) { "steps:\r\n  - task: Maven@3\r\n" }
+
+      it "updates the file and leaves the line endings alone" do
+        expect(updater.updated_dependency_files.first.content)
+          .to eq("steps:\r\n  - task: Maven@4\r\n")
+      end
+    end
+
+    context "with a flow-style step list" do
+      let(:pipeline_content) { "steps: [{ task: Maven@3 }]\n" }
+
+      it "updates it" do
+        expect(updater.updated_dependency_files.first.content).to eq("steps: [{ task: Maven@4 }]\n")
+      end
+    end
+
+    context "with a variable or task input called task" do
+      let(:pipeline_content) do
+        <<~YAML
+          variables:
+            task: Maven@3
+          steps:
+            - task: Maven@3
+              inputs:
+                task: Maven@3
+        YAML
+      end
+
+      # Only the step is a step. Rewriting the other two would change values the
+      # pipeline author never pinned.
+      it "only rewrites the step" do
+        expect(updater.updated_dependency_files.first.content).to eq(
+          <<~YAML
+            variables:
+              task: Maven@3
+            steps:
+              - task: Maven@4
+                inputs:
+                  task: Maven@3
+          YAML
+        )
+      end
+    end
+
+    context "when one file pins the same task at two versions" do
+      let(:pipeline_content) { "steps:\n  - task: Maven@2\n  - task: Maven@3\n" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Maven",
+          version: "4",
+          previous_version: "2",
+          package_manager: "azure_pipelines",
+          requirements: [
+            { requirement: "4", file: "azure-pipelines.yml", source: nil, groups: [] },
+            { requirement: "4", file: "azure-pipelines.yml", source: nil, groups: [] }
+          ],
+          previous_requirements: [
+            { requirement: "2", file: "azure-pipelines.yml", source: nil, groups: [] },
+            { requirement: "3", file: "azure-pipelines.yml", source: nil, groups: [] }
+          ]
+        )
+      end
+
+      it "updates both, rather than the first and a claim to have done the rest" do
+        expect(updater.updated_dependency_files.first.content)
+          .to eq("steps:\n  - task: Maven@4\n  - task: Maven@4\n")
+      end
+    end
+
+    context "when two files pin the same task at different precision" do
+      let(:dependency_files) do
+        [
+          pipeline_file,
+          Dependabot::DependencyFile.new(name: "ci/build.yml", content: "steps:\n  - task: Maven@3.250.0\n")
+        ]
+      end
+      let(:pipeline_content) { "steps:\n  - task: Maven@3\n" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Maven",
+          version: "4.276.0",
+          previous_version: "3",
+          package_manager: "azure_pipelines",
+          requirements: [
+            { requirement: "4", file: "azure-pipelines.yml", source: nil, groups: [] },
+            { requirement: "4.276.0", file: "ci/build.yml", source: nil, groups: [] }
+          ],
+          previous_requirements: [
+            { requirement: "3", file: "azure-pipelines.yml", source: nil, groups: [] },
+            { requirement: "3.250.0", file: "ci/build.yml", source: nil, groups: [] }
+          ]
+        )
+      end
+
+      it "keeps each file at the precision it was written with" do
+        contents = updater.updated_dependency_files.to_h { |file| [file.name, file.content] }
+
+        expect(contents["azure-pipelines.yml"]).to eq("steps:\n  - task: Maven@4\n")
+        expect(contents["ci/build.yml"]).to eq("steps:\n  - task: Maven@4.276.0\n")
+      end
+    end
+
+    context "when a shorter requirement prefixes a longer version" do
+      let(:pipeline_content) { "steps:\n  - task: Maven@3\n  - task: Maven@3.250.0\n" }
+
+      it "does not rewrite the full pin when updating the major pin" do
+        expect(updater.updated_dependency_files.first.content)
+          .to eq("steps:\n  - task: Maven@4\n  - task: Maven@3.250.0\n")
+      end
+    end
+
     context "when the reference cannot be found in the file it was parsed from" do
       let(:pipeline_content) { "steps:\n  - script: echo nothing to see here\n" }
 

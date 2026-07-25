@@ -95,4 +95,4 @@
     - '(sbt)'
 
 "L: azure:pipelines":
-    - '(azure_pipelines)'
+    - '(azure[-_]pipelines)'

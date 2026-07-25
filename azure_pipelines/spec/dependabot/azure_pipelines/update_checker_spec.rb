@@ -155,6 +155,26 @@ RSpec.describe Dependabot::AzurePipelines::UpdateChecker do
       )
     end
 
+    context "when two files pin the same task at different precision" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Maven",
+          version: "3",
+          package_manager: "azure_pipelines",
+          requirements: [
+            { requirement: "3", file: "azure-pipelines.yml", source: nil, groups: [] },
+            { requirement: "3.250.0", file: "ci/build.yml", source: nil, groups: [] }
+          ]
+        )
+      end
+
+      # Merging the two must not quietly turn the major-only pin into a full one.
+      it "renders each requirement at the precision it was written with" do
+        expect(checker.updated_requirements.map { |req| [req[:file], req[:requirement]] })
+          .to eq([["azure-pipelines.yml", "4"], ["ci/build.yml", "4.276.0"]])
+      end
+    end
+
     context "when nothing is on offer" do
       let(:dependency) { build_dependency("SonarQubePrepare", "7") }
 

@@ -129,6 +129,26 @@ RSpec.describe Dependabot::AzurePipelines::FileFetcher do
       end
     end
 
+    context "with more directories than the search budget allows" do
+      before do
+        stub_const("#{described_class}::MAX_DIRECTORIES", 2)
+        stub_directory("", (1..5).map { |i| entry("dir#{i}", type: "dir") })
+        (1..5).each do |i|
+          stub_directory("dir#{i}", [entry("build.yml", path: "dir#{i}/build.yml")])
+          stub_file("dir#{i}/build.yml", ["projects", "nested", ".azure-pipelines", "build.yml"])
+        end
+      end
+
+      # Listing a directory costs a request, so the budget has to stop the walk
+      # rather than only capping how many files get downloaded afterwards.
+      it "stops listing directories once the budget is spent" do
+        file_fetcher.files
+
+        expect(WebMock).to have_requested(:get, "#{contents_url}dir1?ref=sha").once
+        expect(WebMock).not_to have_requested(:get, "#{contents_url}dir3?ref=sha")
+      end
+    end
+
     context "when beta ecosystems are not enabled" do
       before do
         Dependabot::Experiments.reset!

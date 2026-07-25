@@ -159,6 +159,39 @@ RSpec.describe Dependabot::AzurePipelines::Package::PackageDetailsFetcher do
       end
     end
 
+    context "when the release lookup fails for any other reason" do
+      before do
+        stub_request(:get, "#{api_url}/releases/latest").to_return(status: 429, body: "")
+      end
+
+      # Falling back to the default branch here would resolve versions Azure DevOps
+      # has not rolled out, which is the opposite of what the release pin is for.
+      it "raises rather than quietly resolving from the default branch" do
+        expect { fetcher.fetch }.to raise_error(Dependabot::DependabotError, /429/)
+      end
+    end
+
+    context "when two files pin the same task at different precision" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Maven",
+          version: "3",
+          package_manager: "azure_pipelines",
+          requirements: [
+            { requirement: "3", file: "azure-pipelines.yml", source: nil, groups: [] },
+            { requirement: "3.250.0", file: "ci/build.yml", source: nil, groups: [] }
+          ]
+        )
+      end
+
+      # Resolving at the coarsest pin would leave the update checker nothing to
+      # render the full pin from.
+      it "resolves at the finest precision anyone asked for" do
+        expect(fetcher.fetch.releases.map { |release| release.version.to_s })
+          .to contain_exactly("2.200.0", "3.250.1", "4.276.0")
+      end
+    end
+
     context "when the tasks listing cannot be read" do
       before do
         stub_request(:get, "#{api_url}/git/trees/v276:Tasks").to_return(status: 500, body: "")

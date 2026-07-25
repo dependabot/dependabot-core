@@ -65,7 +65,10 @@ RSpec.describe Dependabot::AzurePipelines::FileParser do
         expect(names.none? { |name| name.include?("$") }).to be(true)
       end
 
-      it "ignores task-like text that is not a task reference" do
+      # `Fake` appears three times in the fixture: as a variable named `task`, as a
+      # task input named `task`, and inside a script string. A step is always a list
+      # entry, so none of them is one.
+      it "only treats list entries as steps" do
         expect(parser.parse.map(&:name)).not_to include("Fake")
       end
     end

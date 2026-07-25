@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "time"
 
 require "dependabot/credential"
+require "dependabot/errors"
 require "dependabot/dependency"
 require "dependabot/logger"
 require "dependabot/package/package_details"
@@ -131,12 +132,20 @@ module Dependabot
         # How precisely the pipeline pins this task. Candidates are compared and
         # rendered at the same precision, so a pipeline pinned to `Maven@4` is only
         # offered a new major and never a same-major no-op.
+        #
+        # Files can disagree about precision, and merging them leaves one dependency
+        # carrying all of it. Resolving at the finest precision anyone asked for lets
+        # each requirement be rendered back at its own.
         sig { returns(Integer) }
         def precision
           @precision ||= T.let(
             begin
-              current = dependency.version
-              current && Version.correct?(current) ? Version.new(current).precision : 1
+              pinned = dependency.requirements.map { |requirement| requirement[:requirement] }
+              pinned << dependency.version
+
+              pinned.filter_map do |pin|
+                Version.new(pin).precision if pin.is_a?(String) && Version.correct?(pin)
+              end.max || 1
             end,
             T.nilable(Integer)
           )
@@ -209,7 +218,20 @@ module Dependabot
 
         sig { returns(String) }
         def fetch_latest_ref
-          parsed = fetch_json("#{TASKS_API_URL}/releases/latest")
+          response = get("#{TASKS_API_URL}/releases/latest")
+
+          # Having published no release at all is the one case where the default branch
+          # is the right answer. Treating a rate limit or a server error the same way
+          # would quietly resolve versions Azure DevOps has not rolled out yet, which is
+          # the whole reason for pinning to a release in the first place.
+          return DEFAULT_REF if response.status == 404
+
+          unless response.status == 200
+            raise Dependabot::DependabotError,
+                  "Got #{response.status} looking up the latest #{TASKS_REPO} release"
+          end
+
+          parsed = parse(response.body)
           tag = parsed.is_a?(Hash) ? parsed["tag_name"] : nil
 
           tag.is_a?(String) && !tag.empty? ? tag : DEFAULT_REF

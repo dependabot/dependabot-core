@@ -68,15 +68,19 @@ module Dependabot
       # appear inside deployment strategies (`runOnce`, `rolling`, `canary` and their
       # lifecycle hooks), `extends` blocks and `stepList` parameter defaults. Walking
       # the whole tree covers all of those without having to model the schema.
-      sig { params(node: T.anything).returns(T::Array[String]) }
-      def task_references(node)
+      #
+      # A step is always an entry in a list, so only mappings reached through a
+      # sequence count. That keeps a variable or a task input that happens to be
+      # called `task` from being mistaken for a step.
+      sig { params(node: T.anything, in_sequence: T::Boolean).returns(T::Array[String]) }
+      def task_references(node, in_sequence: false)
         case node
         when Hash
           task = node["task"]
-          references = task.is_a?(String) ? [task] : []
+          references = in_sequence && task.is_a?(String) ? [task] : []
           references + node.each_value.flat_map { |value| task_references(value) }
         when Array
-          node.flat_map { |value| task_references(value) }
+          node.flat_map { |value| task_references(value, in_sequence: true) }
         else
           []
         end

@@ -6,6 +6,8 @@ require "sorbet-runtime"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 
+require "dependabot/azure_pipelines/version"
+
 module Dependabot
   module AzurePipelines
     class UpdateChecker < Dependabot::UpdateCheckers::Base
@@ -32,10 +34,10 @@ module Dependabot
       def updated_requirements
         updated = dependency.requirements.map do |requirement|
           {
-            file: requirement[:file],
-            requirement: latest_version&.to_s || requirement[:requirement],
-            groups: requirement[:groups],
-            source: requirement[:source]
+            file: requirement.file,
+            requirement: updated_requirement(requirement.requirement),
+            groups: requirement.groups,
+            source: requirement.source
           }
         end
 
@@ -43,6 +45,21 @@ module Dependabot
       end
 
       private
+
+      # Two files can pin the same task at different precision, and merging them into
+      # one dependency must not quietly rewrite `Maven@4` as `Maven@4.276.0`. Each
+      # requirement is rendered at the precision it was written with.
+      sig do
+        params(current: T.nilable(Dependabot::DependencyRequirement::Requirement))
+          .returns(T.nilable(Dependabot::DependencyRequirement::Requirement))
+      end
+      def updated_requirement(current)
+        latest = latest_version
+        return current unless latest
+        return latest.to_s unless current.is_a?(String) && Version.correct?(current)
+
+        Version.new(latest.to_s).truncate(Version.new(current).precision).to_s
+      end
 
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
