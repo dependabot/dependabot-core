@@ -770,7 +770,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
 
         git_marker_path = File.join(repo_dir, ".git", "marker")
         FileUtils.mkdir_p(File.dirname(git_marker_path))
-        File.write(git_marker_path, "should not be copied\n")
+        File.write(git_marker_path, "present via symlink\n")
       end
 
       after do
@@ -779,7 +779,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
 
       it "copies repository files into the temporary execution directory" do
         observed_plugin_files = []
-        observed_git_dirs = []
+        observed_git_symlinks = []
 
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
           observed_plugin_files << File.exist?(
@@ -788,14 +788,17 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
               "build-logic/convention/src/main/kotlin/com/nice/cxonechat/AndroidLibraryConventionsPlugin.kt"
             )
           )
-          observed_git_dirs << File.exist?(File.join(cwd, ".git"))
+          # `.git` is symlinked (not copied) so that convention plugins which shell out to
+          # `git` (e.g. for version derivation) keep working without duplicating the history.
+          observed_git_symlinks << File.symlink?(File.join(cwd, ".git"))
           File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
         end
 
         lockfile_updater.update_lockfiles(root_buildfile)
 
         expect(observed_plugin_files.last).to be(true)
-        expect(observed_git_dirs.last).to be(false)
+        expect(observed_git_symlinks.last).to be(true)
+        expect(File.exist?(File.join(repo_dir, ".git", "marker"))).to be(true)
       end
     end
   end

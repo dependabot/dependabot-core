@@ -208,12 +208,19 @@ module Dependabot
 
           # Use the full checkout when available to ensure Gradle can compile
           # convention plugin implementations from non-manifest source trees.
-          # Skip .git so we don't waste disk/time duplicating the whole history.
           Dir.each_child(source_dir.to_s) do |entry|
             entry = T.let(entry, String)
-            next if entry == ".git"
+            source_entry = File.join(source_dir.to_s, entry)
+            dest_entry = File.join(temp_dir.to_s, entry)
 
-            FileUtils.cp_r(File.join(source_dir.to_s, entry), File.join(temp_dir.to_s, entry))
+            if entry == ".git"
+              # Some convention plugins shell out to `git` (e.g. for version derivation) and
+              # fail without a working repository. Symlink instead of copying to avoid the
+              # disk/time cost of duplicating the whole history for every lockfile update.
+              File.symlink(source_entry, dest_entry)
+            else
+              FileUtils.cp_r(source_entry, dest_entry)
+            end
           end
         rescue StandardError => e
           Dependabot.logger.warn("Failed to copy full repo contents for lockfile update: #{e.message}")
