@@ -59,6 +59,7 @@ unless Etc.getpwuid(Process.uid).name == "dependabot" || ENV["ALLOW_DRY_RUN_STAN
   exit 1
 end
 
+$LOAD_PATH << "./azure_pipelines/lib"
 $LOAD_PATH << "./bazel/lib"
 $LOAD_PATH << "./bun/lib"
 $LOAD_PATH << "./bundler/lib"
@@ -119,6 +120,7 @@ require "dependabot/pull_request_creator"
 require "dependabot/config/file_fetcher"
 require "dependabot/simple_instrumentor"
 
+require "dependabot/azure_pipelines"
 require "dependabot/bazel"
 require "dependabot/bun"
 require "dependabot/bundler"
@@ -371,6 +373,7 @@ end
 
 # Validate package manager
 valid_package_managers = %w(
+  azure_pipelines
   bazel
   bun
   bundler

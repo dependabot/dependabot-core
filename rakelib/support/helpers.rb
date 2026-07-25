@@ -21,6 +21,7 @@ class RakeHelpers
   GEMSPECS = T.let(
     %w(
       common/dependabot-common.gemspec
+      azure_pipelines/dependabot-azure_pipelines.gemspec
       bazel/dependabot-bazel.gemspec
       bun/dependabot-bun.gemspec
       bundler/dependabot-bundler.gemspec

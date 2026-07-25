@@ -19,6 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - { path: azure_pipelines, name: azure_pipelines, ecosystem: azure-pipelines }
           - { path: bazel, name: bazel, ecosystem: bazel }
           - { path: bin, name: dry_run, ecosystem: common }
           - { path: bun, name: bun, ecosystem: bun }

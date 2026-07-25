@@ -4,6 +4,9 @@ common: &common
   - Dockerfile.updater-core
   - 'common/**'
   - 'updater/**'
+azure_pipelines:
+  - *common
+  - 'azure_pipelines/**'
 bazel:
   - *common
   - 'bazel/**'

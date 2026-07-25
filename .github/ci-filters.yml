@@ -13,6 +13,9 @@ dry_run:
   - *shared
   - 'bin/dry-run.rb'
   - 'bin/spec/**'
+azure_pipelines:
+  - *shared
+  - 'azure_pipelines/**'
 bazel:
   - *shared
   - 'bazel/**'

@@ -1,0 +1,14 @@
+trigger:
+  - main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - task: UseDotNet@2
+    inputs:
+      version: 8.x
+  - script: dotnet build
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFiles: "**/TEST-*.xml"

@@ -1,6 +1,7 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "dependabot/azure_pipelines"
 require "dependabot/bazel"
 require "dependabot/bun"
 require "dependabot/bundler"

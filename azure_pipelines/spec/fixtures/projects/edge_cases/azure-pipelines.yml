@@ -1,0 +1,22 @@
+parameters:
+  - name: extraSteps
+    type: stepList
+    default:
+      - task: CmdLine@2
+
+extends:
+  template: templates/build.yml
+  parameters:
+    steps:
+      # Pinned to a full version rather than just the major.
+      - task: GoTool@0.3.1
+      # Quoted forms are equivalent to bare ones.
+      - task: "Npm@1"
+      - task: 'CopyFiles@2'
+      # Resolved at runtime, so there is nothing to update.
+      - task: ${{ parameters.taskName }}@1
+      - task: Bash@$(bashVersion)
+      # Referenced by GUID rather than name.
+      - task: 31c75bbb-bcdf-4706-8d7c-4da6a1959bc2@0
+      # Not a task reference at all.
+      - script: 'echo "task: Fake@9"'

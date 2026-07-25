@@ -1,0 +1,28 @@
+stages:
+  - stage: Build
+    jobs:
+      - job: Compile
+        steps:
+          - task: Maven@3
+            inputs:
+              mavenPomFile: pom.xml
+      - job: Package
+        steps:
+          - task: Gradle@2
+
+  - stage: Deploy
+    jobs:
+      - deployment: Production
+        environment: prod
+        strategy:
+          runOnce:
+            preDeploy:
+              steps:
+                - task: Docker@1
+            deploy:
+              steps:
+                - task: AzureWebApp@1
+            on:
+              failure:
+                steps:
+                  - task: PublishBuildArtifacts@1
