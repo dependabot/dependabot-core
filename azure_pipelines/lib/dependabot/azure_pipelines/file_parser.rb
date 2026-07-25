@@ -11,6 +11,9 @@ require "dependabot/file_parsers/base"
 
 require "dependabot/azure_pipelines/constants"
 require "dependabot/azure_pipelines/package_manager"
+# DependencySet compares versions when it merges two occurrences of the same task,
+# which needs the version class registered.
+require "dependabot/azure_pipelines/version"
 
 module Dependabot
   module AzurePipelines
