@@ -16,6 +16,9 @@ function ensure_compatible_docker_api_version() {
 
 function set_tag() {
     case $ECOSYSTEM in
+      azure_pipelines)
+        TAG=azure-pipelines
+        ;;
       docker_compose)
         TAG=docker-compose
         ;;
