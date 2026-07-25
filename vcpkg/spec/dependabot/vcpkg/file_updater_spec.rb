@@ -807,4 +807,209 @@ RSpec.describe Dependabot::Vcpkg::FileUpdater do
       expect(updated_content["dependencies"]).to eq(["fmt"])
     end
   end
+
+  describe "security remediations" do
+    subject(:updated_content) { JSON.parse(updated_dependency_files.first.content) }
+
+    let(:updated_dependency_files) do
+      described_class.new(
+        dependencies: dependencies, dependency_files: dependency_files, credentials: []
+      ).updated_dependency_files
+    end
+
+    let(:baseline_sha) { "fe1cde61e971d53c9687cf9a46308f8f55da19fa" }
+    let(:vcpkg_json_content) do
+      <<~JSON
+        {
+          "builtin-baseline": "old-commit-sha",
+          "dependencies": [
+            "zlib",
+            { "name": "curl", "version>=": "8.0.0" }
+          ]
+        }
+      JSON
+    end
+
+    def port_dependency(name:, version:, previous_version:, requirement:, previous_requirement:, remediation:)
+      Dependabot::Dependency.new(
+        name: name,
+        version: version,
+        previous_version: previous_version,
+        package_manager: "vcpkg",
+        requirements: [{
+          requirement: requirement,
+          groups: [],
+          source: nil,
+          file: "vcpkg.json",
+          metadata: {
+            security_remediation: remediation,
+            security_version: version,
+            baseline_commit_sha: baseline_sha,
+            baseline_tag: "2024.01.12"
+          }
+        }],
+        previous_requirements: [{
+          requirement: previous_requirement,
+          groups: [],
+          source: nil,
+          file: "vcpkg.json"
+        }]
+      )
+    end
+
+    context "with a baseline remediation" do
+      let(:dependencies) do
+        [port_dependency(
+          name: "zlib",
+          version: "1.3.1",
+          previous_version: "1.2.11",
+          requirement: nil,
+          previous_requirement: nil,
+          remediation: :baseline
+        )]
+      end
+
+      it "moves the baseline" do
+        expect(updated_content["builtin-baseline"]).to eq(baseline_sha)
+      end
+
+      it "leaves the port entry alone" do
+        expect(updated_content["dependencies"].first).to eq("zlib")
+      end
+
+      it "adds no overrides" do
+        expect(updated_content).not_to have_key("overrides")
+      end
+    end
+
+    context "with a version constraint remediation" do
+      let(:dependencies) do
+        [port_dependency(
+          name: "curl",
+          version: "8.21.0#1",
+          previous_version: "8.0.0",
+          requirement: ">=8.21.0#1",
+          previous_requirement: ">=8.0.0",
+          remediation: :version_constraint
+        )]
+      end
+
+      it "raises the declared constraint" do
+        expect(updated_content["dependencies"].last).to eq("name" => "curl", "version>=" => "8.21.0#1")
+      end
+
+      it "moves the baseline as well" do
+        expect(updated_content["builtin-baseline"]).to eq(baseline_sha)
+      end
+    end
+
+    context "when the port is declared as a bare string" do
+      let(:dependencies) do
+        [port_dependency(
+          name: "zlib",
+          version: "1.3.1",
+          previous_version: "1.2.11",
+          requirement: ">=1.3.1",
+          previous_requirement: nil,
+          remediation: :version_constraint
+        )]
+      end
+
+      it "promotes it to an object so it can carry the constraint" do
+        expect(updated_content["dependencies"].first).to eq("name" => "zlib", "version>=" => "1.3.1")
+      end
+    end
+
+    context "with an override remediation" do
+      let(:dependencies) do
+        [port_dependency(
+          name: "zlib",
+          version: "1.3.1",
+          previous_version: "1.2.11",
+          requirement: nil,
+          previous_requirement: nil,
+          remediation: :override
+        )]
+      end
+
+      it "pins the port" do
+        expect(updated_content["overrides"]).to eq([{ "name" => "zlib", "version" => "1.3.1" }])
+      end
+
+      it "leaves the declared dependency alone" do
+        expect(updated_content["dependencies"].first).to eq("zlib")
+      end
+
+      context "with a port version" do
+        let(:dependencies) do
+          [port_dependency(
+            name: "zlib",
+            version: "1.3.1#2",
+            previous_version: "1.2.11",
+            requirement: nil,
+            previous_requirement: nil,
+            remediation: :override
+          )]
+        end
+
+        it "splits the port version into its own key" do
+          expect(updated_content["overrides"])
+            .to eq([{ "name" => "zlib", "version" => "1.3.1", "port-version" => 2 }])
+        end
+      end
+
+      context "when the port is already pinned" do
+        let(:vcpkg_json_content) do
+          <<~JSON
+            {
+              "builtin-baseline": "old-commit-sha",
+              "dependencies": ["zlib"],
+              "overrides": [{ "name": "zlib", "version": "1.2.11" }]
+            }
+          JSON
+        end
+
+        it "replaces the existing pin rather than adding a second" do
+          expect(updated_content["overrides"]).to eq([{ "name" => "zlib", "version" => "1.3.1" }])
+        end
+      end
+    end
+
+    context "when the baseline lives in vcpkg-configuration.json" do
+      let(:dependency_files) { [vcpkg_json, vcpkg_configuration_json] }
+      let(:vcpkg_json_content) do
+        <<~JSON
+          {
+            "dependencies": ["zlib"]
+          }
+        JSON
+      end
+      let(:vcpkg_configuration_json) do
+        Dependabot::DependencyFile.new(
+          name: "vcpkg-configuration.json",
+          content: <<~JSON
+            {
+              "default-registry": { "kind": "builtin", "baseline": "old-commit-sha" }
+            }
+          JSON
+        )
+      end
+      let(:dependencies) do
+        [port_dependency(
+          name: "zlib",
+          version: "1.3.1",
+          previous_version: "1.2.11",
+          requirement: nil,
+          previous_requirement: nil,
+          remediation: :baseline
+        )]
+      end
+
+      it "rewrites the configuration even though no requirement points at it" do
+        configuration = updated_dependency_files.find { |file| file.name == "vcpkg-configuration.json" }
+
+        expect(JSON.parse(configuration.content).dig("default-registry", "baseline")).to eq(baseline_sha)
+      end
+    end
+  end
 end

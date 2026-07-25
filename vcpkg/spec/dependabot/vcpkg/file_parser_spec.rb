@@ -111,7 +111,7 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
 
           zlib_dep = dependencies.find { |d| d.name == "zlib" }
           expect(zlib_dep).not_to be_nil
-          expect(zlib_dep.version).to eq("1.2.11")
+          expect(zlib_dep.version).to eq("1.2.11#3")
           expect(zlib_dep.requirements.first[:requirement]).to eq(">=1.2.11#3")
         end
 
@@ -119,6 +119,105 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
           expect(Dependabot.logger)
             .to receive(:warn).with("Skipping vcpkg dependency 'curl' without version>= constraint")
           dependencies
+        end
+      end
+
+      context "when the registry baseline resolves the declared ports" do
+        let(:versions_database) { instance_double(Dependabot::Vcpkg::Package::VersionsDatabase) }
+        let(:vcpkg_json_content) do
+          <<~JSON
+            {
+              "builtin-baseline": "fe1cde61e971d53c9687cf9a46308f8f55da19fa",
+              "dependencies": [
+                "curl",
+                { "name": "fmt" },
+                { "name": "openssl", "version>=": "3.1" },
+                { "name": "zlib", "version>=": "1.4.0" },
+                "unknown-port"
+              ]
+            }
+          JSON
+        end
+
+        before do
+          allow(Dependabot::Vcpkg::Package::VersionsDatabase).to receive(:new).and_return(versions_database)
+          allow(versions_database).to receive(:baseline_version_for) do |port:, ref:|
+            next nil unless ref == "fe1cde61e971d53c9687cf9a46308f8f55da19fa"
+
+            {
+              "curl" => Dependabot::Vcpkg::Version.new("8.14.1"),
+              "fmt" => Dependabot::Vcpkg::Version.new("11.0.2#1"),
+              "openssl" => Dependabot::Vcpkg::Version.new("3.5.0"),
+              "zlib" => Dependabot::Vcpkg::Version.new("1.3.1")
+            }[port]
+          end
+        end
+
+        it "reads the baseline the manifest pins" do
+          dependencies
+
+          expect(versions_database)
+            .to have_received(:baseline_version_for)
+            .with(port: "curl", ref: "fe1cde61e971d53c9687cf9a46308f8f55da19fa")
+        end
+
+        it "gives bare string dependencies the version the baseline selects" do
+          expect(dependencies.find { |dep| dep.name == "curl" }).to have_attributes(
+            version: "8.14.1",
+            requirements: [{ requirement: nil, groups: [], source: nil, file: "vcpkg.json" }]
+          )
+        end
+
+        it "gives unconstrained object dependencies the version the baseline selects" do
+          expect(dependencies.find { |dep| dep.name == "fmt" }.version).to eq("11.0.2#1")
+        end
+
+        it "prefers the baseline when it outranks the declared constraint" do
+          expect(dependencies.find { |dep| dep.name == "openssl" }).to have_attributes(
+            version: "3.5.0",
+            requirements: [{ requirement: ">=3.1", groups: [], source: nil, file: "vcpkg.json" }]
+          )
+        end
+
+        it "prefers the declared constraint when it outranks the baseline" do
+          expect(dependencies.find { |dep| dep.name == "zlib" }.version).to eq("1.4.0")
+        end
+
+        it "skips ports the baseline does not know about" do
+          expect(dependencies.map(&:name)).not_to include("unknown-port")
+        end
+
+        context "when the baseline version uses an incomparable scheme" do
+          before do
+            allow(versions_database).to receive(:baseline_version_for)
+              .and_return(Dependabot::Vcpkg::Version.new("1.2.11-legacy"))
+          end
+
+          it "keeps the declared constraint rather than guessing across schemes" do
+            expect(dependencies.find { |dep| dep.name == "zlib" }.version).to eq("1.4.0")
+          end
+        end
+      end
+
+      context "when the manifest has no builtin-baseline" do
+        let(:versions_database) { instance_double(Dependabot::Vcpkg::Package::VersionsDatabase) }
+        let(:vcpkg_json_content) do
+          <<~JSON
+            {
+              "dependencies": ["curl"]
+            }
+          JSON
+        end
+
+        before do
+          allow(Dependabot::Vcpkg::Package::VersionsDatabase).to receive(:new).and_return(versions_database)
+          allow(versions_database).to receive(:baseline_version_for)
+        end
+
+        it "does not consult the versions database" do
+          dependencies
+
+          expect(versions_database).not_to have_received(:baseline_version_for)
         end
       end
 
