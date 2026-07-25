@@ -171,6 +171,48 @@ RSpec.describe Dependabot::Powershell::FileParser do
       end
     end
 
+    context "when a hashtable entry has quoted keys" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "QuotedKeys.psd1",
+          content: <<~POWERSHELL
+            @{
+              RequiredModules = @(
+                @{ 'ModuleName' = 'Az.Quoted'; "ModuleVersion" = '1.0.0' }
+              )
+            }
+          POWERSHELL
+        )
+      end
+
+      it "unquotes the keys before canonicalizing them" do
+        dependency = parser.parse.find { |dep| dep.name == "Az.Quoted" }
+
+        expect(dependency).not_to be_nil
+        expect(dependency.requirements.first.fetch(:requirement)).to eq(">= 1.0.0")
+      end
+    end
+
+    context "when a hashtable entry has a malformed version field" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "BadVersion.psd1",
+          content: <<~POWERSHELL
+            @{
+              RequiredModules = @(
+                @{ ModuleName = 'Az.BadVersion'; ModuleVersion = 'not-a-version' },
+                'Az.Valid'
+              )
+            }
+          POWERSHELL
+        )
+      end
+
+      it "excludes the entry instead of propagating the malformed version" do
+        expect(parser.parse.map(&:name)).to contain_exactly("Az.Valid")
+      end
+    end
+
     context "when RequiredModules has many entries" do
       let(:manifest_file) do
         modules = (1..75).map { |index| "'Module#{index}'" }.join(",\n        ")

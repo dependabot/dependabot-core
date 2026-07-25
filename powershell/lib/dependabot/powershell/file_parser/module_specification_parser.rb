@@ -3,6 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/powershell/file_parser"
+require "dependabot/powershell/version"
 
 module Dependabot
   module Powershell
@@ -130,6 +131,12 @@ module Dependabot
           # a minimum/maximum range in the same module specification.
           return nil if required_version && (module_version || maximum_version)
 
+          # Reject the whole declaration if any supplied version field isn't
+          # a well-formed version string; a malformed version would otherwise
+          # break downstream comparisons (update checking, requirement
+          # building, etc.).
+          return nil unless valid_versions?(module_version, maximum_version, required_version)
+
           requirement, version = build_requirement(module_version, maximum_version, required_version)
 
           ModuleDeclaration.new(
@@ -156,7 +163,8 @@ module Dependabot
             key, value = pair.split("=", 2)
             next unless key && value
 
-            canonical_key = CANONICAL_FIELDS.fetch(key.strip.downcase, key.strip)
+            unquoted_key = unquote(key.strip)
+            canonical_key = CANONICAL_FIELDS.fetch(unquoted_key.downcase, unquoted_key)
             fields[canonical_key] = unquote(value.strip)
           end
         end
@@ -207,6 +215,30 @@ module Dependabot
         sig { params(name: String).returns(T::Boolean) }
         def self.path_based?(name)
           !!(name =~ PATH_INDICATORS)
+        end
+
+        # Returns true when `version` is nil (field not supplied) or is a
+        # well-formed version string per Powershell::Version's semver-based
+        # validation.
+        sig { params(version: T.nilable(String)).returns(T::Boolean) }
+        def self.valid_version?(version)
+          return true if version.nil? || version.empty?
+
+          Version.correct?(version)
+        end
+
+        # Returns true only if every supplied (non-nil) version field is
+        # well-formed. Extracted from parse_hashtable to keep its perceived
+        # complexity down.
+        sig do
+          params(
+            module_version: T.nilable(String),
+            maximum_version: T.nilable(String),
+            required_version: T.nilable(String)
+          ).returns(T::Boolean)
+        end
+        def self.valid_versions?(module_version, maximum_version, required_version)
+          valid_version?(module_version) && valid_version?(maximum_version) && valid_version?(required_version)
         end
       end
     end
