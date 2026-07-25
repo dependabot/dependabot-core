@@ -187,7 +187,7 @@ RSpec.describe Dependabot::Vcpkg::Package::VersionsDatabase do
     before do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
         .with(
-          "git log --format=tformat:%H%x09%cI --patch --unified=0 -- versions/z-/zlib.json",
+          "git log --format=tformat:%H%x09%cI --patch --unified=0 origin/master -- versions/z-/zlib.json",
           cwd: "/opt/vcpkg"
         )
         .and_return(git_log)

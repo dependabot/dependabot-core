@@ -104,30 +104,36 @@ module Dependabot
           return nil if security_advisories.none?
 
           baseline = safe_baseline
-          return build_fix(version: baseline.last, kind: :baseline, tag: baseline.first) if
-            baseline && baseline_alone_resolves?(baseline.last)
-
-          constraint_version = comparable_fix_version
-          if constraint_version
-            return build_fix(version: constraint_version, kind: :version_constraint, tag: baseline&.first)
+          if baseline && baseline_alone_resolves?(baseline.last)
+            return build_baseline_fix(version: baseline.last, tag: baseline.first)
           end
+
+          # The later levers deliberately leave the baseline alone. A safe floor that does not
+          # resolve the port on its own is one vcpkg cannot compare against the declared
+          # constraint, so moving it as well would only produce a manifest vcpkg rejects.
+          constraint_version = comparable_fix_version
+          return build_fix(version: constraint_version, kind: :version_constraint) if constraint_version
 
           override_version = next_safe_published_version
           return nil unless override_version
 
-          build_fix(version: override_version, kind: :override, tag: baseline&.first)
+          build_fix(version: override_version, kind: :override)
         end
 
-        sig do
-          params(version: Dependabot::Vcpkg::Version, kind: Symbol, tag: T.nilable(String)).returns(Fix)
+        sig { params(version: Dependabot::Vcpkg::Version, kind: Symbol).returns(Fix) }
+        def build_fix(version:, kind:)
+          Fix.new(version: version, kind: kind, baseline_tag: nil, baseline_commit_sha: nil)
         end
-        def build_fix(version:, kind:, tag:)
-          Fix.new(
-            version: version,
-            kind: kind,
-            baseline_tag: tag,
-            baseline_commit_sha: tag && versions_database.commit_sha_for(tag)
-          )
+
+        # A baseline remediation is only worth reporting if the commit it names can be resolved,
+        # otherwise the file updater has nothing to write and the run produces an empty pull
+        # request.
+        sig { params(version: Dependabot::Vcpkg::Version, tag: String).returns(T.nilable(Fix)) }
+        def build_baseline_fix(version:, tag:)
+          commit_sha = versions_database.commit_sha_for(tag)
+          return nil unless commit_sha
+
+          Fix.new(version: version, kind: :baseline, baseline_tag: tag, baseline_commit_sha: commit_sha)
         end
 
         # The oldest release tag at or after the manifest's baseline whose version floor for this
@@ -158,9 +164,13 @@ module Dependabot
 
         sig { params(tag: String).returns(T.nilable(Dependabot::Vcpkg::Version)) }
         def safe_baseline_version_for(tag)
+          current = T.must(current_version)
           version = versions_database.baseline_version_for(port: dependency.name, ref: tag)
           return nil unless version
-          return nil unless version > T.must(current_version)
+          # `#<=>` invents an order for incomparable schemes, so ask vcpkg's question first rather
+          # than deciding "is this an upgrade" from lexical text ordering.
+          return nil unless version.comparable_with?(current)
+          return nil unless version > current
           return nil unless safe?(version)
 
           version
@@ -203,13 +213,20 @@ module Dependabot
         # takes the earliest safe version published after the current one.
         sig { returns(T.nilable(Dependabot::Vcpkg::Version)) }
         def next_safe_published_version
+          current = T.must(current_version)
           published = versions_database.versions_for(dependency.name).map(&:version)
-          current_index = published.index { |version| version.eql?(current_version) }
+          current_index = published.index { |version| version.eql?(current) }
           # Without knowing where the current version sits, "published after it" is meaningless and
           # picking anything risks pinning the port to an older version than it already uses.
           return nil unless current_index
 
-          T.must(published[0...current_index]).reverse.find { |version| safe?(version) }
+          T.must(published[0...current_index]).reverse.find do |version|
+            # Publishing order is not version order: a backport can appear after a newer release.
+            # Where vcpkg can compare the two, refuse to pin the port backwards.
+            next false if version.comparable_with?(current) && version <= current
+
+            safe?(version)
+          end
         end
 
         sig { params(version: Dependabot::Vcpkg::Version).returns(T::Boolean) }

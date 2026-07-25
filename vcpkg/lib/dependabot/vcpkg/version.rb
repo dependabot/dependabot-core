@@ -62,6 +62,7 @@ module Dependabot
       sig { override.params(version: VersionParameter).void }
       def initialize(version)
         @version_string = T.let(version.to_s.strip, String)
+        raise ArgumentError, "Malformed version number string #{version}" unless self.class.correct?(@version_string)
 
         text, port_version = self.class.split_port_version(@version_string)
         @text = T.let(text, String)
@@ -136,7 +137,8 @@ module Dependabot
       end
 
       # Mirrors `compare_version_texts` in vcpkg-tool: dot versions compare with dot versions,
-      # dates with dates, and arbitrary strings only with an identical string.
+      # dates with dates, and arbitrary strings only with an identical string. A string-scheme
+      # version is never comparable with a typed one, even when the text matches.
       sig do
         params(
           left: Vcpkg::Version,
@@ -149,7 +151,8 @@ module Dependabot
         left_class = comparison_class_for_scheme(left_scheme) || left.comparison_class
         right_class = comparison_class_for_scheme(right_scheme) || right.comparison_class
 
-        return left.text == right.text if left_class == :string || right_class == :string
+        return left.text == right.text if left_class == :string && right_class == :string
+        return false if left_class == :string || right_class == :string
 
         left_class == right_class
       end

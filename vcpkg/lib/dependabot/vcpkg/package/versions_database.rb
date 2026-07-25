@@ -183,6 +183,9 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         def read_release_tags
+          # A release published since the image was built only appears once the registry is
+          # fetched, and a security fix may well be carried by it.
+          fetch_registry
           output = run_git("tag", "--list")
           return [] unless output
 
@@ -201,10 +204,13 @@ module Dependabot
         sig { params(port: String).returns(T::Hash[String, Time]) }
         def read_release_dates(port)
           # `run_shell_command` splits the command on whitespace, so the format cannot contain a
-          # literal space.
-          output = run_git(
-            "log", "--format=tformat:%H%x09%cI", "--patch", "--unified=0", "--", port_versions_path(port)
-          )
+          # literal space. The walk has to start from the same ref the versions themselves are read
+          # from, or an entry published since the image was built gets no date and skips cooldown.
+          log_arguments = [
+            "log", "--format=tformat:%H%x09%cI", "--patch", "--unified=0",
+            registry_ref, "--", port_versions_path(port)
+          ]
+          output = run_git(*log_arguments)
           return {} unless output
 
           current_date = T.let(nil, T.nilable(Time))

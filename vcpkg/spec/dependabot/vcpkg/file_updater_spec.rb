@@ -952,9 +952,8 @@ RSpec.describe Dependabot::Vcpkg::FileUpdater do
           )]
         end
 
-        it "splits the port version into its own key" do
-          expect(updated_content["overrides"])
-            .to eq([{ "name" => "zlib", "version" => "1.3.1", "port-version" => 2 }])
+        it "keeps the port version in the version string, as vcpkg now prefers" do
+          expect(updated_content["overrides"]).to eq([{ "name" => "zlib", "version" => "1.3.1#2" }])
         end
       end
 

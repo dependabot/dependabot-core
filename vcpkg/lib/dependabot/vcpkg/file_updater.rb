@@ -145,12 +145,13 @@ module Dependabot
       end
 
       # vcpkg cannot compare versions across schemes, so when no safe version shares the current
-      # one's scheme, the only way to move the port is to pin it outright.
+      # one's scheme, the only way to move the port is to pin it outright. `version` is the
+      # scheme-agnostic key, and the port version belongs in it as a `#N` suffix: the separate
+      # `port-version` key and the scheme-specific keys are both deprecated.
+      # See https://learn.microsoft.com/vcpkg/reference/vcpkg-json#overrides
       sig { params(content: T::Hash[String, T.untyped], dependency: Dependabot::Dependency).void }
       def apply_override(content, dependency)
-        version = Dependabot::Vcpkg::Version.new(T.must(dependency.version))
-        entry = { "name" => dependency.name, "version" => version.text }
-        entry["port-version"] = version.port_version unless version.port_version.zero?
+        entry = { "name" => dependency.name, "version" => dependency.version }
 
         overrides = content[VCPKG_OVERRIDES_KEY]
         unless overrides.is_a?(Array)

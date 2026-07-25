@@ -91,6 +91,14 @@ RSpec.describe Dependabot::Vcpkg::Version do
     end
   end
 
+  describe ".new" do
+    it "rejects input that .correct? rejects, so the two cannot disagree" do
+      ["master", "", "1.2.3#", "fe1cde61e971d53c9687cf9a46308f8f55da19fa"].each do |string|
+        expect { described_class.new(string) }.to raise_error(ArgumentError)
+      end
+    end
+  end
+
   describe "#comparison_class" do
     subject { described_class.new(version_string).comparison_class }
 
@@ -202,7 +210,7 @@ RSpec.describe Dependabot::Vcpkg::Version do
       %w(1.2.0 1.2.0#1) => -1,
       %w(1.2.0#1 1.2.0#2) => -1,
       %w(1.2.0#2 1.2.0#10) => -1,
-      %w(watermelon#0 watermelon#1) => -1,
+      %w(1_2_alpha#0 1_2_alpha#1) => -1,
       %w(1.2.3 1.2.3) => 0
     }.each do |(left, right), expected|
       it "orders #{left} against #{right}" do
@@ -232,8 +240,8 @@ RSpec.describe Dependabot::Vcpkg::Version do
       %w(1.2.3 1.3.0) => true,
       %w(1.0.0-alpha 2.0.0) => true,
       %w(2021-01-01 2021-02-01) => true,
-      %w(apple apple) => true,
-      %w(apple orange) => false,
+      %w(cares-1_15_0 cares-1_15_0) => true,
+      %w(cares-1_15_0 cares-1_16_0) => false,
       %w(1.2.3 2021-01-01) => false,
       %w(1.1.1n 1.1.1w) => false,
       %w(1.2.3 1.0.2h) => false
@@ -241,6 +249,38 @@ RSpec.describe Dependabot::Vcpkg::Version do
       it "reports #{left} and #{right} as #{expected ? 'comparable' : 'incomparable'}" do
         expect(described_class.new(left).comparable_with?(described_class.new(right))).to be(expected)
       end
+    end
+  end
+
+  describe ".comparable?" do
+    it "rejects a version-string value even when the text matches a typed one" do
+      left = described_class.new("1.2.11")
+      right = described_class.new("1.2.11")
+
+      expect(described_class.comparable?(left, "version-string", right, "version")).to be(false)
+    end
+
+    it "treats version and version-semver as comparable, as vcpkg does" do
+      left = described_class.new("1.2.3")
+      right = described_class.new("1.3.0")
+
+      expect(described_class.comparable?(left, "version", right, "version-semver")).to be(true)
+    end
+
+    it "compares two version-string values only when the text is identical" do
+      left = described_class.new("cares-1_15_0")
+      same = described_class.new("cares-1_15_0")
+      other = described_class.new("cares-1_16_0")
+
+      expect(described_class.comparable?(left, "version-string", same, "version-string")).to be(true)
+      expect(described_class.comparable?(left, "version-string", other, "version-string")).to be(false)
+    end
+
+    it "falls back to the inferred class when a scheme is not known" do
+      left = described_class.new("1.2.3")
+      right = described_class.new("2021-01-01")
+
+      expect(described_class.comparable?(left, nil, right, nil)).to be(false)
     end
   end
 
@@ -256,9 +296,10 @@ RSpec.describe Dependabot::Vcpkg::Version do
     end
 
     it "keeps distinct string scheme versions distinct when deduplicating" do
-      versions = %w(apple orange banana apple).map { |string| described_class.new(string) }
+      versions = %w(cares-1_15_0 cares-1_16_0 1.0.2h cares-1_15_0)
+                 .map { |string| described_class.new(string) }
 
-      expect(versions.uniq.map(&:to_s)).to contain_exactly("apple", "orange", "banana")
+      expect(versions.uniq.map(&:to_s)).to contain_exactly("cares-1_15_0", "cares-1_16_0", "1.0.2h")
     end
   end
 
