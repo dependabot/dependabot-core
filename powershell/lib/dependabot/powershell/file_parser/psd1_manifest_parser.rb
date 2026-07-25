@@ -36,7 +36,7 @@ module Dependabot
         # bare/quoted module name (`'Pester'`).
         sig { returns(T::Array[String]) }
         def required_modules_entries
-          content = T.must(@file.content)
+          content = blank_block_comments(T.must(@file.content))
           match = REQUIRED_MODULES_KEY.match(content)
           return [] unless match
 
@@ -52,6 +52,17 @@ module Dependabot
           else
             []
           end
+        end
+
+        # Blanks out `<# ... #>` block comments (replacing their content
+        # with equal-length whitespace, newlines preserved) so a
+        # `RequiredModules = ...` assignment written only inside a
+        # documentation comment can no longer match, mirroring how
+        # RequiresDirectiveParser and DeclarationLocator handle block
+        # comments.
+        sig { params(content: String).returns(String) }
+        def blank_block_comments(content)
+          content.gsub(/<#.*?#>/m) { |match| match.gsub(/[^\n]/, " ") }
         end
 
         sig { params(content: String, value_start: Integer).returns(T::Array[String]) }

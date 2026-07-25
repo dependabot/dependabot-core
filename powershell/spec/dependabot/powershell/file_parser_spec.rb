@@ -245,6 +245,21 @@ RSpec.describe Dependabot::Powershell::FileParser do
         expect(dependency.requirements.first.fetch(:requirement)).to eq(">= 1.0.0")
       end
     end
+
+    context "when a RequiredModules example appears inside a block comment" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "BlockComment.psd1",
+          content: fixture("psd1", "block_comment_manifest.psd1")
+        )
+      end
+
+      it "ignores the commented-out example and parses the active assignment" do
+        names = parser.parse.map(&:name)
+        expect(names).to contain_exactly("Az.Real")
+        expect(names).not_to include("FakeModule")
+      end
+    end
   end
 
   describe "parsing a .ps1 script" do
