@@ -132,6 +132,19 @@ module Dependabot
         raise NotImplementedError, "#{self.class} must implement #latest_version"
       end
 
+      # The current version of the dependency, resolved to a comparable
+      # Dependabot::Version where possible. Ecosystems that pin to a git SHA
+      # (e.g. pre-commit) may override this to resolve the SHA to a semver via
+      # a version comment or tag.
+      sig { overridable.returns(T.nilable(Dependabot::Version)) }
+      def current_version
+        @current_version ||=
+          T.let(
+            dependency.numeric_version,
+            T.nilable(Dependabot::Version)
+          )
+      end
+
       sig { overridable.returns(T.nilable(T.any(String, Gem::Version))) }
       def preferred_resolvable_version
         # If this dependency is vulnerable, prefer trying to update to the
@@ -387,16 +400,6 @@ module Dependabot
         return T.must(version_from_requirements) >= version_class.new(latest_version.to_s) if can_compare_requirements?
 
         changed_requirements.none?
-      end
-
-      # TODO: Should this return Dependabot::Version?
-      sig { returns(T.nilable(Dependabot::Version)) }
-      def current_version
-        @current_version ||=
-          T.let(
-            dependency.numeric_version,
-            T.nilable(Dependabot::Version)
-          )
       end
 
       sig { returns(T::Boolean) }

@@ -622,7 +622,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     end
 
     let(:checker) do
-      instance_double(Dependabot::UpdateCheckers::Base, latest_version: latest_version)
+      instance_double(Dependabot::UpdateCheckers::Base, latest_version: latest_version, current_version: nil)
     end
 
     before do

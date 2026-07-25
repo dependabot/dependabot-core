@@ -776,6 +776,83 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
   end
 
+  describe "#semver_rules_allow_grouping?" do
+    let(:group) do
+      instance_double(
+        Dependabot::DependencyGroup,
+        name: "test-group",
+        rules: { "update-types" => %w(minor patch) }
+      )
+    end
+
+    before do
+      allow(job).to receive(:package_manager).and_return("bundler")
+      allow(Dependabot::Utils).to receive(:version_class_for_package_manager)
+        .with("bundler").and_return(Dependabot::Version)
+    end
+
+    context "when the dependency version is a comparable semver" do
+      let(:dependency) do
+        instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0")
+      end
+      let(:checker) do
+        instance_double(
+          Dependabot::UpdateCheckers::Base,
+          current_version: Gem::Version.new("0.1.0"),
+          latest_version: "1.1.0"
+        )
+      end
+
+      it "compares against dependency.version" do
+        expect(
+          test_instance.send(:semver_rules_allow_grouping?, group, dependency, checker)
+        ).to be(true)
+      end
+    end
+
+    context "when the dependency version is a git SHA (e.g. pre-commit)" do
+      let(:dependency) do
+        instance_double(
+          Dependabot::Dependency,
+          name: "https://github.com/psf/black",
+          version: "c6755bb741b6481d6b3d3bb563c83fa060db96c9"
+        )
+      end
+
+      context "when the checker resolves a current version from a version comment" do
+        let(:checker) do
+          instance_double(
+            Dependabot::UpdateCheckers::Base,
+            current_version: Gem::Version.new("26.3.1"),
+            latest_version: "26.5.1"
+          )
+        end
+
+        it "falls back to checker.current_version for the comparison" do
+          expect(
+            test_instance.send(:semver_rules_allow_grouping?, group, dependency, checker)
+          ).to be(true)
+        end
+      end
+
+      context "when the checker cannot resolve a current version" do
+        let(:checker) do
+          instance_double(
+            Dependabot::UpdateCheckers::Base,
+            current_version: nil,
+            latest_version: "26.5.1"
+          )
+        end
+
+        it "returns false" do
+          expect(
+            test_instance.send(:semver_rules_allow_grouping?, group, dependency, checker)
+          ).to be(false)
+        end
+      end
+    end
+  end
+
   describe "#create_change_for" do
     let(:no_change_error_class) { Class.new(StandardError) }
     let(:lead_dependency) do
