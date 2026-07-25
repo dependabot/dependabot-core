@@ -68,7 +68,19 @@ module Dependabot
 
             while url && pages < MAX_PAGES
               response = Dependabot::RegistryClient.get(url: url)
-              break unless response.status == 200
+
+              # A registry failure partway through pagination means the feed
+              # is incomplete - selecting a "latest" version from whatever
+              # pages happened to succeed could pick an outdated version, so
+              # the whole fetch is treated as failed rather than returning a
+              # partial release list.
+              unless response.status == 200
+                Dependabot.logger.error(
+                  "PowerShell Gallery returned HTTP #{response.status} while paging package info for " \
+                  "#{dependency.name}; discarding partial results"
+                )
+                return []
+              end
 
               document = Nokogiri::XML(response.body)
               document.remove_namespaces!
@@ -91,7 +103,7 @@ module Dependabot
             releases
           rescue StandardError => e
             Dependabot.logger.error("Error while fetching package info for powershell packages: #{e.message}")
-            releases
+            []
           end
         end
 

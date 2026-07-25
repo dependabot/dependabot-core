@@ -180,6 +180,26 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
       end
     end
 
+    context "when a later page of a paginated feed fails" do
+      before do
+        page1 = feed_xml(
+          entries: [entry_xml(version: "5.4.0")],
+          next_link: "#{find_packages_by_id_url}&$skip=1"
+        )
+
+        stub_request(:get, find_packages_by_id_url)
+          .to_return(status: 200, body: page1)
+        stub_request(:get, "#{find_packages_by_id_url}&$skip=1")
+          .to_return(status: 500, body: "")
+      end
+
+      it "discards the first page's releases instead of returning an incomplete set" do
+        package_details = fetcher.fetch
+
+        expect(package_details.releases).to eq([])
+      end
+    end
+
     context "when the registry raises an error" do
       before do
         stub_request(:get, find_packages_by_id_url).to_raise(Excon::Error::Timeout)
