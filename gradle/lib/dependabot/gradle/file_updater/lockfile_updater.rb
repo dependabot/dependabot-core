@@ -210,6 +210,7 @@ module Dependabot
           # convention plugin implementations from non-manifest source trees.
           # Skip .git so we don't waste disk/time duplicating the whole history.
           Dir.each_child(source_dir.to_s) do |entry|
+            entry = T.let(entry, String)
             next if entry == ".git"
 
             FileUtils.cp_r(File.join(source_dir.to_s, entry), File.join(temp_dir.to_s, entry))
