@@ -1,0 +1,2 @@
+steps:
+  - task: Maven@3

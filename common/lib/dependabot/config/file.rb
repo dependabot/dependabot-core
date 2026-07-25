@@ -60,6 +60,7 @@ module Dependabot
 
       PACKAGE_MANAGER_LOOKUP = T.let(
         {
+          "azure-pipelines" => "azure_pipelines",
           "bazel" => "bazel",
           "bun" => "bun",
           "bundler" => "bundler",

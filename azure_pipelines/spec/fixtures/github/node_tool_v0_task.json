@@ -1,0 +1,7 @@
+{
+  "id": "31C75BBB-BCDF-4706-8D7C-4DA6A1959BC2",
+  "name": "NodeTool",
+  "friendlyName": "Node.js tool installer",
+  "deprecated": true,
+  "version": { "Major": 0, "Minor": 274, "Patch": 0 }
+}

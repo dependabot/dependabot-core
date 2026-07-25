@@ -2,6 +2,7 @@
 
 source "https://rubygems.org"
 
+gem "dependabot-azure_pipelines", path: "azure_pipelines"
 gem "dependabot-bazel", path: "bazel"
 gem "dependabot-bun", path: "bun"
 gem "dependabot-bundler", path: "bundler"

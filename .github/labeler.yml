@@ -103,3 +103,7 @@
 "L: cpp:vcpkg":
 - changed-files:
   - any-glob-to-any-file: vcpkg/**
+
+"L: azure:pipelines":
+- changed-files:
+  - any-glob-to-any-file: azure_pipelines/**

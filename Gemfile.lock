@@ -1,4 +1,10 @@
 PATH
+  remote: azure_pipelines
+  specs:
+    dependabot-azure_pipelines (0.388.0)
+      dependabot-common (= 0.388.0)
+
+PATH
   remote: bazel
   specs:
     dependabot-bazel (0.388.0)
@@ -483,6 +489,7 @@ PLATFORMS
 
 DEPENDENCIES
   debug (~> 1.9)
+  dependabot-azure_pipelines!
   dependabot-bazel!
   dependabot-bun!
   dependabot-bundler!
@@ -554,6 +561,7 @@ CHECKSUMS
   csv (3.3.5) sha256=6e5134ac3383ef728b7f02725d9872934f523cb40b961479f69cf3afa6c8e73f
   date (3.5.1) sha256=750d06384d7b9c15d562c76291407d89e368dda4d4fff957eb94962d325a0dc0
   debug (1.11.1) sha256=2e0b0ac6119f2207a6f8ac7d4a73ca8eb4e440f64da0a3136c30343146e952b6
+  dependabot-azure_pipelines (0.388.0)
   dependabot-bazel (0.388.0)
   dependabot-bun (0.388.0)
   dependabot-bundler (0.388.0)

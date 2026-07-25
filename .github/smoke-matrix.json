@@ -1,5 +1,10 @@
 [
   {
+    "core": "azure_pipelines",
+    "test": "azure-pipelines",
+    "ecosystem": "azure-pipelines"
+  },
+  {
     "core": "bazel",
     "test": "bazel",
     "ecosystem": "bazel"

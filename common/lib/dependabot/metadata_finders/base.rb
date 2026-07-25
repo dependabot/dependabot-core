@@ -15,7 +15,12 @@ module Dependabot
       require "dependabot/metadata_finders/base/release_finder"
       require "dependabot/metadata_finders/base/commits_finder"
 
-      PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES = T.let(%w(bun npm_and_yarn pub).freeze, T::Array[String])
+      # Ecosystems whose dependencies record the subdirectory they live in, so links
+      # can point at that directory rather than the repository root.
+      PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES = T.let(
+        %w(azure_pipelines bun npm_and_yarn pub).freeze,
+        T::Array[String]
+      )
 
       sig { returns(Dependabot::Dependency) }
       attr_reader :dependency
