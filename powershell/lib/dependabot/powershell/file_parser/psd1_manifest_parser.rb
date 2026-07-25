@@ -15,7 +15,10 @@ module Dependabot
       class Psd1ManifestParser
         extend T::Sig
 
-        REQUIRED_MODULES_KEY = /(?<![A-Za-z0-9_])RequiredModules\s*=\s*/i
+        # `RequiredModules` may also be written as a quoted hashtable key
+        # (`'RequiredModules' = @(...)`), so an optional matching quote
+        # around it is recognized too.
+        REQUIRED_MODULES_KEY = /(?<![A-Za-z0-9_])(?:(['"])RequiredModules\1|RequiredModules)\s*=\s*/i
 
         sig { params(file: Dependabot::DependencyFile).void }
         def initialize(file:)

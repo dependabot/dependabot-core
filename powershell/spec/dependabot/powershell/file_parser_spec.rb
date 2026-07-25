@@ -333,6 +333,20 @@ RSpec.describe Dependabot::Powershell::FileParser do
         expect(names).not_to include("Fake")
       end
     end
+
+    context "when RequiredModules is written as a quoted hashtable key" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "QuotedKey.psd1",
+          content: fixture("psd1", "quoted_required_modules_key.psd1")
+        )
+      end
+
+      it "still parses the assignment" do
+        names = parser.parse.map(&:name)
+        expect(names).to contain_exactly("Az.Real")
+      end
+    end
   end
 
   describe "parsing a .ps1 script" do

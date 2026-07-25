@@ -29,8 +29,11 @@ module Dependabot
         end
 
         REQUIRES_MODULES_LINE = /^\s*#Requires\s+-Modules\s+(?<modules>.+)$/i
-        REQUIRED_MODULES_ARRAY_KEY = /(?<![A-Za-z0-9_])RequiredModules\s*=\s*@\(/i
-        REQUIRED_MODULES_HASHTABLE_KEY = /(?<![A-Za-z0-9_])RequiredModules\s*=\s*@\{/i
+        # `RequiredModules` may also be written as a quoted hashtable key
+        # (`'RequiredModules' = @(...)`), so an optional matching quote
+        # around it is recognized too - mirroring Psd1ManifestParser.
+        REQUIRED_MODULES_ARRAY_KEY = /(?<![A-Za-z0-9_])(?:(['"])RequiredModules\1|RequiredModules)\s*=\s*@\(/i
+        REQUIRED_MODULES_HASHTABLE_KEY = /(?<![A-Za-z0-9_])(?:(['"])RequiredModules\1|RequiredModules)\s*=\s*@\{/i
 
         sig { params(file: Dependabot::DependencyFile).void }
         def initialize(file:)

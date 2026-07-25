@@ -188,5 +188,20 @@ RSpec.describe Dependabot::Powershell::ContentMasker do
       expect(masked).not_to include("RequiredModules")
       expect(masked).to include("after")
     end
+
+    it "preserves a quoted string used as a hashtable key (followed by =)" do
+      content = "'RequiredModules' = @('Az.Real')"
+      masked = described_class.mask_quoted_strings(content)
+
+      expect(masked).to include("'RequiredModules'")
+    end
+
+    it "still blanks a quoted string that merely contains the word RequiredModules " \
+       "and isn't followed by =" do
+      content = "Description = 'RequiredModules is required'"
+      masked = described_class.mask_quoted_strings(content)
+
+      expect(masked).not_to include("RequiredModules")
+    end
   end
 end

@@ -583,6 +583,38 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
     end
   end
 
+  describe "updating a RequiredModules declaration written as a quoted hashtable key" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "QuotedKey.psd1",
+          content: fixture("psd1", "quoted_required_modules_key.psd1")
+        )
+      ]
+    end
+
+    let(:dependencies) do
+      [
+        build_dependency(
+          name: "Az.Real",
+          requirements: [
+            hashtable_requirement(">= 2.0.0", file: "QuotedKey.psd1", version_key: "ModuleVersion")
+          ],
+          previous_requirements: [
+            hashtable_requirement(">= 1.0.0", file: "QuotedKey.psd1", version_key: "ModuleVersion")
+          ]
+        )
+      ]
+    end
+
+    it "still locates and rewrites the declaration" do
+      content = updater.updated_dependency_files.first.content
+
+      expect(content).to include("'RequiredModules' = @(")
+      expect(content).to include("@{ModuleName = 'Az.Real'; ModuleVersion = '2.0.0'}")
+    end
+  end
+
   describe "ignoring declaration-like text inside a here-string" do
     let(:dependency_files) do
       [

@@ -72,6 +72,12 @@ module Dependabot
       # as a `Description` field that mentions `RequiredModules = @(...)`
       # as a documentation example.
       #
+      # A quoted string immediately followed by `=` (e.g. `'RequiredModules'
+      # = @(...)`) is a quoted hashtable *key*, not a value, and PowerShell
+      # module manifests may legally write `RequiredModules` that way - so
+      # its content is left untouched instead of being blanked, letting
+      # callers match it the same as the bare (unquoted) key form.
+      #
       # The result is for locating a match's *position* only: because
       # quoted values are blanked, it must never be used to read out the
       # actual entries/values a match locates - re-slice the original
@@ -87,7 +93,11 @@ module Dependabot
           char = T.must(content[index])
 
           index = if char == "'" || char == "\""
-                    blank_quoted(content, result, index, char)
+                    if quoted_hashtable_key?(content, index, char)
+                      copy_quoted(content, result, index, char)
+                    else
+                      blank_quoted(content, result, index, char)
+                    end
                   else
                     result << char
                     index + 1
@@ -96,6 +106,56 @@ module Dependabot
 
         result
       end
+
+      # True when the quoted string starting at `index` is immediately
+      # followed (ignoring intervening spaces/tabs) by a bare `=` - i.e. it
+      # is being used as a quoted hashtable key (`'RequiredModules' =
+      # @(...)`) rather than a value, so `.mask_quoted_strings` should
+      # leave it untouched.
+      sig { params(content: String, index: Integer, quote_char: String).returns(T::Boolean) }
+      def self.quoted_hashtable_key?(content, index, quote_char)
+        length = content.length
+        i = quoted_string_end(content, index, quote_char)
+
+        i += 1 while i < length && (content[i] == " " || content[i] == "\t")
+        content[i] == "=" && content[i + 1] != "="
+      end
+      private_class_method :quoted_hashtable_key?
+
+      # Returns the index just past the closing delimiter of the
+      # single/double-quoted string starting at `index`, respecting
+      # PowerShell's doubled-quote escape and (for double-quoted strings)
+      # backtick escapes. Used by `.quoted_hashtable_key?` to peek at
+      # what follows a quoted string without copying/blanking it.
+      sig { params(content: String, index: Integer, quote_char: String).returns(Integer) }
+      def self.quoted_string_end(content, index, quote_char)
+        length = content.length
+        i = index + 1
+
+        while i < length
+          char = T.must(content[i])
+
+          if quote_char == "\"" && char == "`" && i + 1 < length
+            i += 2
+            next
+          end
+
+          if char == quote_char && content[i + 1] == quote_char
+            i += 2
+            next
+          end
+
+          if char == quote_char
+            i += 1
+            break
+          end
+
+          i += 1
+        end
+
+        i
+      end
+      private_class_method :quoted_string_end
 
       # Dispatches on the character(s) at `index`: opens/masks a block
       # comment, here-string, or line comment; copies a quoted string
