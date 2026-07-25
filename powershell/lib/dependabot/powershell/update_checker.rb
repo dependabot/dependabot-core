@@ -72,7 +72,9 @@ module Dependabot
         latest = version_class.new(latest_version.to_s)
 
         dependency.requirements.all? do |r|
-          requirement_class.requirements_array(r.fetch(:requirement))
+          requirement_string = T.cast(r.fetch(:requirement), T.nilable(String))
+
+          requirement_class.requirements_array(requirement_string)
                            .all? { |requirement| requirement.satisfied_by?(latest) }
         end
       end
