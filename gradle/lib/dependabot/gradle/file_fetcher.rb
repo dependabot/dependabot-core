@@ -91,7 +91,7 @@ module Dependabot
         files += subproject_buildfiles(root_dir)
         files += subproject_lockfiles(root_dir)
         files += dependency_script_plugins(root_dir)
-        files += convention_plugin_source_files(files) if fetch_plugin_sources_for_lockfiles?
+        files += convention_plugin_source_files(files, root_dir) if fetch_plugin_sources_for_lockfiles?
 
         files + included_builds(root_dir)
                 .flat_map { |dir| all_buildfiles_in_build(dir) }
@@ -103,21 +103,33 @@ module Dependabot
       end
 
       # Only fetch source trees for *nested* project directories (e.g. "build-logic/convention"
-      # or "included/convention"), never for a build's own top-level directory. This targets the
-      # common convention-plugin module pattern without recursively scanning every ordinary
-      # top-level application module (e.g. "app") or a build's own root sources.
-      sig { params(files: T::Array[DependencyFile]).returns(T::Array[DependencyFile]) }
-      def convention_plugin_source_files(files)
-        nested_plugin_project_dirs(files).flat_map do |project_dir|
+      # or "included/convention"), plus the root of a non-top-level build (e.g. "build-logic" or
+      # "buildSrc" itself), never the top-level repo root ("app" style modules of the outermost
+      # build). This targets the common convention-plugin module pattern - whether declared at an
+      # included/buildSrc build's own root or nested within it - without recursively scanning
+      # every ordinary top-level application module of the outermost build.
+      sig { params(files: T::Array[DependencyFile], root_dir: String).returns(T::Array[DependencyFile]) }
+      def convention_plugin_source_files(files, root_dir)
+        nested_plugin_project_dirs(files, root_dir).flat_map do |project_dir|
           PLUGIN_SOURCE_SET_DIRS.flat_map do |relative_dir|
             fetch_tree_support_files(clean_join([project_dir, relative_dir]))
           end
         end
       end
 
-      sig { params(files: T::Array[DependencyFile]).returns(T::Array[String]) }
-      def nested_plugin_project_dirs(files)
-        buildfile_dirs(files).select { |dir| dir.include?("/") }
+      sig { params(files: T::Array[DependencyFile], root_dir: String).returns(T::Array[String]) }
+      def nested_plugin_project_dirs(files, root_dir)
+        buildfile_dirs(files).select { |dir| plugin_source_eligible_dir?(dir, root_dir) }
+      end
+
+      # A directory is eligible for convention-plugin source scanning if it's nested below the
+      # outermost repo root (contains a "/"), or if it's the own root of a build that is itself
+      # nested (i.e. root_dir isn't the outermost "."), such as an included build or buildSrc.
+      sig { params(dir: String, root_dir: String).returns(T::Boolean) }
+      def plugin_source_eligible_dir?(dir, root_dir)
+        return true if root_dir != "." && dir == root_dir
+
+        dir.include?("/")
       end
 
       sig { params(files: T::Array[DependencyFile]).returns(T::Array[String]) }
