@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/dependency_requirement"
 require "dependabot/powershell/requirement"
+require "dependabot/powershell/update_checker"
 require "dependabot/powershell/version"
 
 module Dependabot
