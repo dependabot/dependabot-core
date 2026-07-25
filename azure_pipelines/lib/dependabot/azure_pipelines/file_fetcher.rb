@@ -30,17 +30,20 @@ module Dependabot
       # came into play.
       MAX_DIRECTORIES = T.let(100, Integer)
 
-      # Directories that hold vendored or generated YAML, never pipelines.
+      # Directories that hold vendored or generated YAML, never checked-in pipelines.
       IGNORED_DIRECTORIES = T.let(
         %w(
-          .git .github .gitlab .idea .vs .vscode
+          .git .idea .vs .vscode
           bin bower_components coverage dist node_modules obj out target vendor
         ).freeze,
         T::Array[String]
       )
 
-      # Top-level keys that only a pipeline or a pipeline template declares.
-      PIPELINE_KEYS = T.let(%w(steps jobs stages extends).freeze, T::Array[String])
+      # Top-level keys that a pipeline or a pipeline template declares as a list of
+      # mappings. Requiring the shape as well as the key is what separates a pipeline
+      # from the other CI formats that share its vocabulary: GitHub Actions declares
+      # `jobs` as a mapping, and GitLab CI declares `stages` as a list of strings.
+      PIPELINE_SEQUENCE_KEYS = T.let(%w(steps jobs stages).freeze, T::Array[String])
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
@@ -91,8 +94,12 @@ module Dependabot
 
         parsed = YAML.safe_load(content, aliases: true, permitted_classes: [Date, Time])
         return false unless parsed.is_a?(Hash)
+        return true if parsed["extends"].is_a?(Hash)
 
-        PIPELINE_KEYS.any? { |key| parsed.key?(key) }
+        PIPELINE_SEQUENCE_KEYS.any? do |key|
+          value = parsed[key]
+          value.is_a?(Array) && value.any?(Hash)
+        end
       rescue Psych::Exception
         # Azure Pipelines templates can contain constructs that are not valid YAML on
         # their own. They cannot be parsed for dependencies either, so skip them.

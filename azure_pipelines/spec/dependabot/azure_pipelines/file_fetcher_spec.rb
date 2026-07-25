@@ -129,6 +129,41 @@ RSpec.describe Dependabot::AzurePipelines::FileFetcher do
       end
     end
 
+    context "with a pipeline under .github" do
+      before do
+        stub_directory("", [entry(".github", type: "dir")])
+        stub_directory(
+          ".github",
+          [
+            entry("azure-pipelines.yml", path: ".github/azure-pipelines.yml"),
+            entry("workflows", type: "dir", path: ".github/workflows")
+          ]
+        )
+        stub_directory(".github/workflows", [entry("ci.yml", path: ".github/workflows/ci.yml")])
+        stub_file(".github/azure-pipelines.yml", ["projects", "simple", "azure-pipelines.yml"])
+        stub_file(".github/workflows/ci.yml", ["projects", "lookalikes", "workflow.yml"])
+      end
+
+      # A pipeline definition can point at any path, so .github is not off limits.
+      it "finds it without picking up the GitHub Actions workflow beside it" do
+        expect(file_fetcher.files.map(&:name)).to eq([".github/azure-pipelines.yml"])
+      end
+    end
+
+    context "with YAML from another CI system that shares the vocabulary" do
+      before do
+        stub_directory("", [entry("workflow.yml"), entry("gitlab-ci.yml")])
+        stub_file("workflow.yml", ["projects", "lookalikes", "workflow.yml"])
+        stub_file("gitlab-ci.yml", ["projects", "lookalikes", "gitlab-ci.yml"])
+      end
+
+      # GitHub Actions declares `jobs` as a mapping and GitLab CI declares `stages`
+      # as a list of strings. Neither is a pipeline.
+      it "does not mistake them for pipelines" do
+        expect { file_fetcher.files }.to raise_error(Dependabot::DependencyFileNotFound)
+      end
+    end
+
     context "with more directories than the search budget allows" do
       before do
         stub_const("#{described_class}::MAX_DIRECTORIES", 2)
