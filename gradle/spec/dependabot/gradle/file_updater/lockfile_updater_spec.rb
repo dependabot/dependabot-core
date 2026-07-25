@@ -455,7 +455,10 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
         expect(observed_properties.last).to include("org.gradle.jvmargs=-Xmx1024m -Dfile.encoding=UTF-8")
         expect(observed_properties.last).to include("org.gradle.java.installations.auto-download=false")
         expect(observed_properties.last)
-          .to include("org.gradle.java.installations.paths=/usr/lib/jvm/java-17-openjdk-amd64,/usr/lib/jvm/java-21-openjdk-amd64")
+          .to include(
+            "org.gradle.java.installations.paths=/usr/lib/jvm/java-17-openjdk-amd64," \
+            "/usr/lib/jvm/java-21-openjdk-amd64"
+          )
         expect(observed_properties.last).to include("systemProp.http.proxyHost=")
       end
 
