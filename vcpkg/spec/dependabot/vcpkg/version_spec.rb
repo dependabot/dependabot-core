@@ -50,6 +50,22 @@ RSpec.describe Dependabot::Vcpkg::Version do
       end
     end
 
+    # A registry baseline's previous version is a ref, and `MetadataFinders` uses `correct?` to
+    # tell a version from a ref. Accepting one made `ReleaseFinder` discard every release.
+    context "with a git ref name" do
+      %w(master main HEAD develop).each do |ref|
+        it "rejects #{ref}" do
+          expect(described_class.correct?(ref)).to be(false)
+        end
+      end
+    end
+
+    context "with a version-string value that contains no digits" do
+      let(:version_string) { "orange" }
+
+      it { is_expected.to be(false) }
+    end
+
     context "with a digits-only value that could be a SHA prefix" do
       let(:version_string) { "1234567" }
 

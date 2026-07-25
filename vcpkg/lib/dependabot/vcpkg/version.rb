@@ -44,6 +44,13 @@ module Dependabot
       ANCHORED_DATE_PATTERN = /\A#{DATE_PATTERN}\z/
       ANCHORED_DOT_PATTERN = /\A#{DOT_PATTERN}\z/
 
+      # A vcpkg version always contains a digit. Requiring one keeps git refs out: a registry
+      # baseline's previous version is a ref such as `master`, and `MetadataFinders`, `Labeler` and
+      # `UpdateCheckers::Base` all use `correct?` to tell a version from a ref. Treating `master` as
+      # a `version-string` made `ReleaseFinder` compare release tags against it and discard them,
+      # dropping the release notes from baseline pull requests.
+      DIGIT_PATTERN = /[0-9]/
+
       # A handful of ancient ports use a bare commit SHA as a `version-string`, but so does every
       # vcpkg registry baseline. Treating those as versions would stop `UpdateCheckers::Base` from
       # recognizing a baseline as a git SHA, so this rejects them. Digit-only strings still count,
@@ -90,6 +97,7 @@ module Dependabot
 
         string = version.to_s.strip
         return false if string.empty?
+        return false unless DIGIT_PATTERN.match?(string)
         return false if GIT_SHA_PATTERN.match?(string)
 
         ANCHORED_VERSION_PATTERN.match?(string)
