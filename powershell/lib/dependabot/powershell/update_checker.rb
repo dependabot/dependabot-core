@@ -55,6 +55,28 @@ module Dependabot
 
       private
 
+      # The base implementation compares `latest_version` against only the
+      # lower bound extracted from the dependency's requirements (see
+      # `version_from_requirements`), which incorrectly reports "not up to
+      # date" for a versionless bounded range like ">= 1.0.0, <= 5.0.0" as
+      # soon as `latest_version` exceeds the lower bound - even though that
+      # version is well within the declared range and RequirementsUpdater
+      # correctly leaves the requirement unchanged. Overriding here to check
+      # whether `latest_version` actually satisfies every declared
+      # requirement keeps `up_to_date?`/`can_update?` consistent with what
+      # RequirementsUpdater decides.
+      sig { override.returns(T::Boolean) }
+      def requirements_up_to_date?
+        return false unless latest_version
+
+        latest = version_class.new(latest_version.to_s)
+
+        dependency.requirements.all? do |r|
+          requirement_class.requirements_array(r.fetch(:requirement))
+                           .all? { |requirement| requirement.satisfied_by?(latest) }
+        end
+      end
+
       sig { override.returns(T::Boolean) }
       def latest_version_resolvable_with_full_unlock?
         # Full unlock (updating other dependencies to help this one update)

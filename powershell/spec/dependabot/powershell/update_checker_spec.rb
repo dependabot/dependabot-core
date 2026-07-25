@@ -175,5 +175,30 @@ RSpec.describe Dependabot::Powershell::UpdateChecker do
     context "when a newer version is available" do
       it { expect(checker.up_to_date?).to be(false) }
     end
+
+    context "when the dependency has no version and a bounded range requirement" do
+      # No lockfile/installed version is known (`dependency.version` is nil),
+      # so `up_to_date?` falls through to `requirements_up_to_date?`. The
+      # base implementation would compare the latest version only against
+      # the lower bound (">= 1.0.0") and incorrectly report this as not up
+      # to date once the latest version (5.4.0) exceeds it - even though
+      # 5.4.0 is well within the declared range and RequirementsUpdater
+      # correctly leaves the requirement untouched.
+      let(:dependency_version) { nil }
+      let(:dependency_requirement) { ">= 1.0.0, <= 6.0.0" }
+
+      it "is up to date, since the latest version satisfies the declared range" do
+        expect(checker.up_to_date?).to be(true)
+      end
+    end
+
+    context "when the dependency has no version and the latest version exceeds the declared range" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirement) { ">= 1.0.0, <= 5.3.3" }
+
+      it "is not up to date" do
+        expect(checker.up_to_date?).to be(false)
+      end
+    end
   end
 end
