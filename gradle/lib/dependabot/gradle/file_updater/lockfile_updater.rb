@@ -15,6 +15,12 @@ module Dependabot
         extend T::Sig
 
         INIT_SCRIPT_TASK_NAME = T.let("dependabotResolveAll", String)
+        GRADLE_JVMARGS_OVERRIDE = T.let("-Xmx1024m -Dfile.encoding=UTF-8", String)
+        GRADLE_JVMARGS_RETRY = T.let("-Xmx1536m -Dfile.encoding=UTF-8", String)
+        GRADLE_TOOLCHAIN_PATHS = T.let(
+          "/usr/lib/jvm/java-17-openjdk-amd64,/usr/lib/jvm/java-21-openjdk-amd64",
+          String
+        )
 
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
         def initialize(dependency_files:)
@@ -36,7 +42,7 @@ module Dependabot
             cwd = File.join(temp_dir, root_dir == "/" ? "" : root_dir.delete_prefix("/"))
             FileUtils.mkdir_p(cwd)
 
-            write_properties_file(File.join(cwd, "gradle.properties"))
+            properties_file_path = File.join(cwd, "gradle.properties")
 
             init_script_path = File.join(cwd, "dependabot-locking.init.gradle")
             write_init_script(init_script_path)
@@ -46,10 +52,15 @@ module Dependabot
               "--init-script", init_script_path,
               INIT_SCRIPT_TASK_NAME,
               "--write-locks",
-              "--no-daemon"
+              "--no-daemon",
+              "--no-configuration-cache"
             ]
             command = Shellwords.join(command_parts)
-            SharedHelpers.run_shell_command(command, cwd: cwd)
+            run_lockfile_update_with_retry(
+              command: command,
+              cwd: cwd,
+              properties_file_path: properties_file_path
+            )
 
             update_lockfiles_content(temp_dir, lockfiles, updated_files)
           rescue SharedHelpers::HelperSubprocessFailed => e
@@ -171,6 +182,8 @@ module Dependabot
 
         sig { params(temp_dir: T.any(Pathname, String)).void }
         def populate_temp_directory(temp_dir)
+          copy_repo_contents_to_temp_dir(temp_dir)
+
           @dependency_files.each do |file|
             # Handle "/" directory as root - File.join treats "/" as absolute path and ignores prior components
             relative_dir = file.directory == "/" ? "" : file.directory
@@ -180,8 +193,23 @@ module Dependabot
           end
         end
 
-        sig { params(file_name: String).void }
-        def write_properties_file(file_name) # rubocop:disable Metrics/PerceivedComplexity
+        sig { params(temp_dir: T.any(Pathname, String)).void }
+        def copy_repo_contents_to_temp_dir(temp_dir)
+          repo_contents_path = ENV.fetch("DEPENDABOT_REPO_CONTENTS_PATH", nil)
+          return if repo_contents_path.nil? || repo_contents_path.strip.empty?
+
+          source_dir = Pathname.new(repo_contents_path).expand_path
+          return unless source_dir.directory?
+
+          # Use the full checkout when available to ensure Gradle can compile
+          # convention plugin implementations from non-manifest source trees.
+          FileUtils.cp_r(File.join(source_dir.to_s, "."), temp_dir)
+        rescue StandardError => e
+          Dependabot.logger.warn("Failed to copy full repo contents for lockfile update: #{e.message}")
+        end
+
+        sig { params(file_name: String, jvmargs: String).void }
+        def write_properties_file(file_name, jvmargs:) # rubocop:disable Metrics/PerceivedComplexity
           http_proxy = ENV.fetch("HTTP_PROXY", nil)
           https_proxy = ENV.fetch("HTTPS_PROXY", nil)
           http_split = http_proxy&.split(":")
@@ -194,6 +222,9 @@ module Dependabot
           existing_content = File.exist?(file_name) ? File.read(file_name) : ""
 
           proxy_properties = "
+org.gradle.jvmargs=#{jvmargs}
+org.gradle.java.installations.auto-download=false
+org.gradle.java.installations.paths=#{GRADLE_TOOLCHAIN_PATHS}
 systemProp.http.proxyHost=#{http_proxy_host}
 systemProp.http.proxyPort=#{http_proxy_port}
 systemProp.https.proxyHost=#{https_proxy_host}
@@ -203,16 +234,41 @@ systemProp.https.proxyPort=#{https_proxy_port}"
           File.write(file_name, existing_content + separator + proxy_properties)
         end
 
+        sig { params(command: String, cwd: String, properties_file_path: String).void }
+        def run_lockfile_update_with_retry(command:, cwd:, properties_file_path:)
+          [GRADLE_JVMARGS_OVERRIDE, GRADLE_JVMARGS_RETRY].each_with_index do |jvmargs, index|
+            write_properties_file(properties_file_path, jvmargs: jvmargs)
+            SharedHelpers.run_shell_command(command, cwd: cwd)
+            return
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            should_retry = daemon_disappeared?(e) && index.zero?
+            raise e unless should_retry
+
+            Dependabot.logger.warn(
+              "Gradle daemon disappeared during lockfile update with '#{jvmargs}'. " \
+              "Retrying once with '#{GRADLE_JVMARGS_RETRY}'."
+            )
+          end
+        end
+
+        sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
+        def daemon_disappeared?(error)
+          message = error.message.downcase
+          message.include?("daemon disappeared") || message.include?("build daemon disappeared unexpectedly")
+        end
+
         sig { params(file_name: String).void }
         def write_init_script(file_name)
           # Resolve all resolvable configurations across all loaded projects so
           # Gradle rewrites every relevant lockfile in one invocation.
           script_content = <<~GRADLE
             allprojects {
+              def resolvableConfigurations = configurations.findAll { it.canBeResolved }
+
               if (tasks.findByName("#{INIT_SCRIPT_TASK_NAME}") == null) {
                 tasks.register("#{INIT_SCRIPT_TASK_NAME}") {
                   doLast {
-                    configurations.findAll { it.canBeResolved }.each { it.resolve() }
+                    resolvableConfigurations.each { it.resolve() }
                   }
                 }
               }

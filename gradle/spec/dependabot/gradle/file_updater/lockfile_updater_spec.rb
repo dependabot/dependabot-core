@@ -376,6 +376,37 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
         expect(result.find { |f| f.name == "app/gradle.lockfile" }.content).to eq("# app lockfile\n")
         expect(Dependabot.logger).to have_received(:error).with(include("Failed to update lockfiles"))
       end
+
+      it "retries once with larger jvmargs when daemon disappears" do
+        observed_properties = []
+        allow(Dependabot.logger).to receive(:warn)
+
+        call_count = 0
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+          properties_path = File.join(cwd, "gradle.properties")
+          observed_properties << File.read(properties_path)
+
+          call_count += 1
+          if call_count == 1
+            raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "Gradle build daemon disappeared unexpectedly",
+              error_context: { command: "gradle" }
+            )
+          end
+
+          File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+          FileUtils.mkdir_p(File.join(cwd, "app"))
+          File.write(File.join(cwd, "app/gradle.lockfile"), "# updated app lockfile\n")
+        end
+
+        result = lockfile_updater.update_lockfiles(app_buildfile)
+
+        expect(result.find { |f| f.name == "gradle.lockfile" }.content).to eq("# updated root lockfile\n")
+        expect(result.find { |f| f.name == "app/gradle.lockfile" }.content).to eq("# updated app lockfile\n")
+        expect(observed_properties.first).to include("org.gradle.jvmargs=-Xmx1024m -Dfile.encoding=UTF-8")
+        expect(observed_properties.last).to include("org.gradle.jvmargs=-Xmx1536m -Dfile.encoding=UTF-8")
+        expect(Dependabot.logger).to have_received(:warn).with(include("Retrying once"))
+      end
     end
 
     context "when there are no lockfiles in scope" do
@@ -421,7 +452,53 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
 
         expect(observed_properties.last).to include("GROUP=com.example")
         expect(observed_properties.last).to include("VERSION=1.0.0")
+        expect(observed_properties.last).to include("org.gradle.jvmargs=-Xmx1024m -Dfile.encoding=UTF-8")
+        expect(observed_properties.last).to include("org.gradle.java.installations.auto-download=false")
+        expect(observed_properties.last)
+          .to include("org.gradle.java.installations.paths=/usr/lib/jvm/java-17-openjdk-amd64,/usr/lib/jvm/java-21-openjdk-amd64")
         expect(observed_properties.last).to include("systemProp.http.proxyHost=")
+      end
+
+      it "does not pass org.gradle.jvmargs via command-line" do
+        observed_commands = []
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
+          observed_commands << command
+          File.write(File.join(cwd, "gradle.lockfile"), "# updated lockfile\n")
+        end
+
+        lockfile_updater.update_lockfiles(root_buildfile)
+
+        expect(observed_commands.last).not_to include("-Dorg.gradle.jvmargs")
+      end
+
+      it "disables configuration cache for lockfile updates" do
+        observed_commands = []
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
+          observed_commands << command
+          File.write(File.join(cwd, "gradle.lockfile"), "# updated lockfile\n")
+        end
+
+        lockfile_updater.update_lockfiles(root_buildfile)
+
+        expect(observed_commands.last).to include("--no-configuration-cache")
+      end
+
+      it "generates an init script that resolves project configurations" do
+        observed_init_script = nil
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+          init_script_path = File.join(cwd, "dependabot-locking.init.gradle")
+          observed_init_script = File.read(init_script_path)
+          File.write(File.join(cwd, "gradle.lockfile"), "# updated lockfile\n")
+        end
+
+        lockfile_updater.update_lockfiles(root_buildfile)
+
+        expect(observed_init_script).to include("def resolvableConfigurations = configurations.findAll")
+        expect(observed_init_script).to include("resolvableConfigurations.each")
+        expect(observed_init_script).not_to include("project.configurations")
       end
     end
 
@@ -649,6 +726,48 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
 
           expect(observed_commands.last).to start_with("gradle ")
         end
+      end
+    end
+
+    context "when a full repo checkout path is available" do
+      let(:dependency_files) { [root_settings, root_buildfile, root_lockfile] }
+
+      around do |example|
+        Dir.mktmpdir("dependabot-gradle-repo") do |repo_dir|
+          plugin_source_path = File.join(
+            repo_dir,
+            "build-logic/convention/src/main/kotlin/com/nice/cxonechat/AndroidLibraryConventionsPlugin.kt"
+          )
+          FileUtils.mkdir_p(File.dirname(plugin_source_path))
+          File.write(plugin_source_path, "package com.nice.cxonechat\n")
+
+          previous = ENV.fetch("DEPENDABOT_REPO_CONTENTS_PATH", nil)
+          ENV["DEPENDABOT_REPO_CONTENTS_PATH"] = repo_dir
+
+          begin
+            example.run
+          ensure
+            ENV["DEPENDABOT_REPO_CONTENTS_PATH"] = previous
+          end
+        end
+      end
+
+      it "copies repository files into the temporary execution directory" do
+        observed_plugin_files = []
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+          observed_plugin_files << File.exist?(
+            File.join(
+              cwd,
+              "build-logic/convention/src/main/kotlin/com/nice/cxonechat/AndroidLibraryConventionsPlugin.kt"
+            )
+          )
+          File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+        end
+
+        lockfile_updater.update_lockfiles(root_buildfile)
+
+        expect(observed_plugin_files.last).to be(true)
       end
     end
   end

@@ -67,7 +67,10 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def fetch_files
-        fetched_files = all_buildfiles_in_build(".")
+        fetched_files = all_buildfiles_in_build(
+          ".",
+          fetch_plugin_sources: fetch_plugin_sources_for_lockfiles?
+        )
 
         # Filter excluded files from final collection
         filtered_files = fetched_files.reject do |file|
@@ -79,8 +82,8 @@ module Dependabot
 
       private
 
-      sig { params(root_dir: String).returns(T::Array[DependencyFile]) }
-      def all_buildfiles_in_build(root_dir)
+      sig { params(root_dir: String, fetch_plugin_sources: T::Boolean).returns(T::Array[DependencyFile]) }
+      def all_buildfiles_in_build(root_dir, fetch_plugin_sources: false)
         files = [buildfile(root_dir), settings_file(root_dir), version_catalog_file(root_dir), lockfile(root_dir),
                  properties_file(root_dir)]
                 .compact
@@ -88,8 +91,54 @@ module Dependabot
         files += subproject_buildfiles(root_dir)
         files += subproject_lockfiles(root_dir)
         files += dependency_script_plugins(root_dir)
+        if fetch_plugin_sources_for_lockfiles? && fetch_plugin_sources
+          files += included_build_plugin_source_files(root_dir, files)
+        end
+
         files + included_builds(root_dir)
-                .flat_map { |dir| all_buildfiles_in_build(dir) }
+                .flat_map { |dir| all_buildfiles_in_build(dir, fetch_plugin_sources: true) }
+      end
+
+      sig { returns(T::Boolean) }
+      def fetch_plugin_sources_for_lockfiles?
+        Dependabot::Experiments.enabled?(:gradle_lockfile_updater)
+      end
+
+      sig { params(root_dir: String, files: T::Array[DependencyFile]).returns(T::Array[DependencyFile]) }
+      def included_build_plugin_source_files(root_dir, files)
+        project_dirs = [clean_join([root_dir])] + buildfile_dirs(files)
+        project_dirs.uniq.flat_map do |project_dir|
+          %w(src/main/java src/main/kotlin src/main/groovy src/main/resources).flat_map do |relative_dir|
+            fetch_tree_support_files(clean_join([project_dir, relative_dir]))
+          end
+        end
+      end
+
+      sig { params(files: T::Array[DependencyFile]).returns(T::Array[String]) }
+      def buildfile_dirs(files)
+        files.filter_map do |file|
+          next unless SUPPORTED_BUILD_FILE_NAMES.include?(File.basename(file.name))
+
+          clean_join([File.dirname(file.name)])
+        end
+      end
+
+      sig { params(dir: String).returns(T::Array[DependencyFile]) }
+      def fetch_tree_support_files(dir)
+        entries = repo_contents(dir: dir, raise_errors: false)
+        return [] if entries.empty?
+
+        entries.flat_map do |entry|
+          entry_path = clean_join([dir, entry.name])
+          if entry.type == "dir"
+            fetch_tree_support_files(entry_path)
+          else
+            file = fetch_support_file(entry_path)
+            file ? [file] : []
+          end
+        end
+      rescue Dependabot::DependencyFileNotFound
+        []
       end
 
       sig { params(root_dir: String).returns(T::Array[String]) }
