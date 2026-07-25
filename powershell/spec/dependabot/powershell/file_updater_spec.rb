@@ -269,6 +269,43 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
         expect(content).to include('@{ ModuleName = "Az.Range"; moduleversion = "1.0.0"; maximumversion = "3.0.0" }')
       end
     end
+
+    context "when hashtable field names are themselves quoted" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "QuotedKeys.psd1",
+            content: <<~POWERSHELL
+              @{
+                RequiredModules = @(
+                  @{ 'ModuleName' = 'Az.Quoted'; 'RequiredVersion' = '1.0.0' }
+                )
+              }
+            POWERSHELL
+          )
+        ]
+      end
+
+      let(:dependencies) do
+        [
+          build_dependency(
+            name: "Az.Quoted",
+            requirements: [
+              hashtable_requirement("= 2.5.0", file: "QuotedKeys.psd1", version_key: "RequiredVersion")
+            ],
+            previous_requirements: [
+              hashtable_requirement("= 1.0.0", file: "QuotedKeys.psd1", version_key: "RequiredVersion")
+            ]
+          )
+        ]
+      end
+
+      it "rewrites the value even though its field name is quoted" do
+        content = updater.updated_dependency_files.first.content
+
+        expect(content).to include("@{ 'ModuleName' = 'Az.Quoted'; 'RequiredVersion' = '2.5.0' }")
+      end
+    end
   end
 
   describe "updating a .ps1 script's #Requires directives" do
@@ -510,6 +547,48 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
 
       expect(content).to include("@{ModuleName = 'Az.Real'; ModuleVersion = '2.0.0'}")
       expect(content).to include("RequiredModules = @('FakeModule')")
+    end
+  end
+
+  describe "ignoring declaration-like text inside a here-string" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "WithHereString.ps1",
+          content: fixture("ps1", "here_string_requires_script.ps1")
+        )
+      ]
+    end
+
+    let(:dependencies) do
+      [
+        build_dependency(
+          name: "Az.Real",
+          requirements: [
+            hashtable_requirement(
+              ">= 2.0.0",
+              file: "WithHereString.ps1",
+              version_key: "ModuleVersion",
+              declaration_type: :requires_directive
+            )
+          ],
+          previous_requirements: [
+            hashtable_requirement(
+              ">= 1.0.0",
+              file: "WithHereString.ps1",
+              version_key: "ModuleVersion",
+              declaration_type: :requires_directive
+            )
+          ]
+        )
+      ]
+    end
+
+    it "rewrites the real directive, not the one described in the here-string" do
+      content = updater.updated_dependency_files.first.content
+
+      expect(content).to include("#Requires -Modules @{ModuleName = 'Az.Real'; ModuleVersion = '2.0.0'}")
+      expect(content).to include("#Requires -Modules FakeModule.FromHereString")
     end
   end
 

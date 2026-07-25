@@ -3,6 +3,7 @@
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/powershell/content_masker"
 
 module Dependabot
   module Powershell
@@ -90,16 +91,7 @@ module Dependabot
         content = file.content
         return false unless content
 
-        blank_block_comments(content).match?(REQUIRES_MODULES_LINE)
-      end
-
-      # Blanks out `<# ... #>` block comments (replacing their content with
-      # equal-length whitespace) so a documented `#Requires -Modules`
-      # example written inside a comment isn't mistaken for an active
-      # directive, mirroring RequiresDirectiveParser/DeclarationLocator.
-      sig { params(content: String).returns(String) }
-      def blank_block_comments(content)
-        content.gsub(/<#.*?#>/m) { |match| match.gsub(/[^\n]/, " ") }
+        ContentMasker.mask(content).match?(REQUIRES_MODULES_LINE)
       end
     end
   end

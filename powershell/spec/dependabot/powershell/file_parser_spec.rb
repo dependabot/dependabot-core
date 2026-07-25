@@ -302,6 +302,21 @@ RSpec.describe Dependabot::Powershell::FileParser do
         expect(names).not_to include("FakeModule")
       end
     end
+
+    context "when a commented-out RequiredModules line precedes the active assignment" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "LineComment.psd1",
+          content: fixture("psd1", "line_comment_before_required_modules.psd1")
+        )
+      end
+
+      it "ignores the commented-out line and parses the active assignment" do
+        names = parser.parse.map(&:name)
+        expect(names).to contain_exactly("Az.Real")
+        expect(names).not_to include("OldModule")
+      end
+    end
   end
 
   describe "parsing a .ps1 script" do
@@ -372,6 +387,21 @@ RSpec.describe Dependabot::Powershell::FileParser do
       end
 
       it "ignores the directive described in the comment and only parses the real one" do
+        names = parser.parse.map(&:name)
+
+        expect(names).to contain_exactly("Az.Real")
+      end
+    end
+
+    context "when a #Requires -Modules line appears inside a here-string" do
+      let(:script_file) do
+        Dependabot::DependencyFile.new(
+          name: "HereString.ps1",
+          content: fixture("ps1", "here_string_requires_script.ps1")
+        )
+      end
+
+      it "ignores the directive described in the here-string and only parses the real one" do
         names = parser.parse.map(&:name)
 
         expect(names).to contain_exactly("Az.Real")

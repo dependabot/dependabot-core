@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 require "dependabot/powershell/file_updater"
 require "dependabot/powershell/file_parser/module_specification_parser"
+require "dependabot/powershell/content_masker"
 
 module Dependabot
   module Powershell
@@ -34,11 +35,13 @@ module Dependabot
         sig { params(file: Dependabot::DependencyFile).void }
         def initialize(file:)
           @file = file
-          # Block comments (`<# ... #>`) are blanked out - not removed - so
-          # every absolute offset below still lines up with `@file.content`,
-          # but text like `#Requires -Modules` or `RequiredModules = @(`
-          # written inside a comment can no longer match as a declaration.
-          @content = T.let(blank_block_comments(T.must(file.content)), String)
+          # Block/line comments and here-strings are blanked out - not
+          # removed - so every absolute offset below still lines up with
+          # `@file.content`, but text like `#Requires -Modules` or
+          # `RequiredModules = @(` written inside one of them can no longer
+          # match as a declaration. An active `#Requires -Modules` directive
+          # is left untouched by ContentMasker.
+          @content = T.let(ContentMasker.mask(T.must(file.content)), String)
         end
 
         sig { returns(T::Array[Occurrence]) }
@@ -54,16 +57,6 @@ module Dependabot
         end
 
         private
-
-        # Replaces each `<# ... #>` block comment with equal-length
-        # whitespace (newlines preserved), so every absolute offset used
-        # elsewhere in this class still lines up with the original file
-        # content, but comment text can no longer match REQUIRES_MODULES_LINE
-        # or REQUIRED_MODULES_KEY.
-        sig { params(content: String).returns(String) }
-        def blank_block_comments(content)
-          content.gsub(/<#.*?#>/m) { |match| match.gsub(/[^\n]/, " ") }
-        end
 
         sig { returns(T::Array[Occurrence]) }
         def locate_requires_directives
