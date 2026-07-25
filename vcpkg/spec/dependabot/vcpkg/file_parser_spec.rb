@@ -49,8 +49,8 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
           JSON
         end
 
-        it "returns a single dependency for the vcpkg baseline" do
-          expect(dependencies.length).to eq(1)
+        it "returns only the baseline when no registry checkout can resolve the ports" do
+          expect(dependencies.map(&:name)).to eq(["github.com/microsoft/vcpkg"])
         end
 
         describe "the parsed dependency" do
@@ -99,23 +99,19 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
         end
 
         it "returns the baseline dependency and dependencies with version constraints" do
-          expect(dependencies.length).to eq(3)
-
-          baseline_dep = dependencies.find { |d| d.name == "github.com/microsoft/vcpkg" }
-          expect(baseline_dep).not_to be_nil
+          expect(dependencies.map(&:name))
+            .to contain_exactly("github.com/microsoft/vcpkg", "openssl", "zlib")
 
           openssl_dep = dependencies.find { |d| d.name == "openssl" }
-          expect(openssl_dep).not_to be_nil
           expect(openssl_dep.version).to eq("3.1")
           expect(openssl_dep.requirements.first[:requirement]).to eq(">=3.1")
 
           zlib_dep = dependencies.find { |d| d.name == "zlib" }
-          expect(zlib_dep).not_to be_nil
           expect(zlib_dep.version).to eq("1.2.11#3")
           expect(zlib_dep.requirements.first[:requirement]).to eq(">=1.2.11#3")
         end
 
-        it "logs warnings for dependencies without version constraints" do
+        it "logs a warning for a bare port no registry checkout can resolve" do
           expect(Dependabot.logger)
             .to receive(:warn).with("Skipping vcpkg dependency 'curl' without version>= constraint")
           dependencies
