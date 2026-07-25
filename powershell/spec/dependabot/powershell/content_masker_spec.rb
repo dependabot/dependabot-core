@@ -125,4 +125,43 @@ RSpec.describe Dependabot::Powershell::ContentMasker do
       expect(elapsed).to be < 2
     end
   end
+
+  describe ".mask_quoted_strings" do
+    it "preserves length and blanks a quoted string's interior while keeping its delimiters" do
+      content = "Description = 'See RequiredModules = @(Fake) for details'\nafter"
+      masked = described_class.mask_quoted_strings(content)
+
+      expect(masked.length).to eq(content.length)
+      expect(masked).not_to include("RequiredModules")
+      expect(masked).to include("Description = '")
+      expect(masked).to include("after")
+    end
+
+    it "blanks a double-quoted string's interior too" do
+      content = "Description = \"RequiredModules = @('Fake')\""
+      masked = described_class.mask_quoted_strings(content)
+
+      expect(masked).not_to include("RequiredModules")
+      expect(masked).to include("Description = \"")
+    end
+
+    it "leaves text outside of quoted strings untouched" do
+      content = "RequiredModules = @('Az.Real')"
+      masked = described_class.mask_quoted_strings(content)
+
+      expect(masked).to start_with("RequiredModules = @('")
+      expect(masked).to end_with("')")
+      expect(masked.length).to eq(content.length)
+      expect(masked).not_to include("Az.Real")
+    end
+
+    it "handles a doubled single-quote escape without terminating the string early" do
+      content = "'It''s RequiredModules = @(Fake)'\nafter"
+      masked = described_class.mask_quoted_strings(content)
+
+      expect(masked.length).to eq(content.length)
+      expect(masked).not_to include("RequiredModules")
+      expect(masked).to include("after")
+    end
+  end
 end

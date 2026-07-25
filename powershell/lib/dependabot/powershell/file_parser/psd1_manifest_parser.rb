@@ -15,7 +15,7 @@ module Dependabot
       class Psd1ManifestParser
         extend T::Sig
 
-        REQUIRED_MODULES_KEY = /RequiredModules\s*=\s*/i
+        REQUIRED_MODULES_KEY = /(?<![A-Za-z0-9_])RequiredModules\s*=\s*/i
 
         sig { params(file: Dependabot::DependencyFile).void }
         def initialize(file:)
@@ -38,7 +38,13 @@ module Dependabot
         sig { returns(T::Array[String]) }
         def required_modules_entries
           content = ContentMasker.mask(T.must(@file.content))
-          match = REQUIRED_MODULES_KEY.match(content)
+
+          # Search for the key in a further-masked copy with quoted string
+          # interiors blanked too, so e.g. a `Description = 'See
+          # RequiredModules = @(Fake) for details'` value can't be mistaken
+          # for the real assignment. `match.end(0)` is still a valid offset
+          # into `content` since masking never changes the string's length.
+          match = REQUIRED_MODULES_KEY.match(ContentMasker.mask_quoted_strings(content))
           return [] unless match
 
           value_start = match.end(0)

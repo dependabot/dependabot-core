@@ -31,6 +31,14 @@ module Dependabot
     # character/substring access (no regex backtracking), so it runs in
     # linear time even on adversarial input such as many repetitions of an
     # unterminated `<#`.
+    #
+    # `.mask_quoted_strings` provides a second, narrower pass on top of
+    # `.mask`'s output: it additionally blanks the interior of quoted
+    # strings so a caller locating a bare hashtable key (e.g.
+    # `RequiredModules =`) can't match one that only appears inside a
+    # string value (e.g. a `Description` field mentioning it as an
+    # example). Its output must only be used to find a match's position -
+    # actual entries/values must still be read from `.mask`'s output.
     class ContentMasker
       extend T::Sig
 
@@ -44,6 +52,40 @@ module Dependabot
         index = 0
 
         index = advance(content, result, index, line_starts) while index < length
+
+        result
+      end
+
+      # Given content already processed by `.mask` (so comments and
+      # here-strings are already blanked), additionally blanks the
+      # *interior* of every quoted string - preserving its opening/closing
+      # delimiters, newlines, and overall length - so a caller searching
+      # for a bare keyword (e.g. the `RequiredModules =` hashtable key)
+      # can't match text that merely appears inside a string value, such
+      # as a `Description` field that mentions `RequiredModules = @(...)`
+      # as a documentation example.
+      #
+      # The result is for locating a match's *position* only: because
+      # quoted values are blanked, it must never be used to read out the
+      # actual entries/values a match locates - re-slice the original
+      # (comment-masked but quote-intact) content at the returned offsets
+      # instead.
+      sig { params(content: String).returns(String) }
+      def self.mask_quoted_strings(content)
+        length = content.length
+        result = +""
+        index = 0
+
+        while index < length
+          char = T.must(content[index])
+
+          index = if char == "'" || char == "\""
+                    blank_quoted(content, result, index, char)
+                  else
+                    result << char
+                    index + 1
+                  end
+        end
 
         result
       end
@@ -233,6 +275,40 @@ module Dependabot
         i
       end
       private_class_method :copy_quoted
+
+      # Blanks the interior of a single/double-quoted string (keeping its
+      # delimiters), used by `.mask_quoted_strings`. Unlike `.copy_quoted`,
+      # backtick escapes aren't treated specially - the result is only used
+      # for locating keywords outside of strings, so it just needs to keep
+      # the same length and correctly find the real closing quote.
+      sig { params(content: String, result: String, index: Integer, quote_char: String).returns(Integer) }
+      def self.blank_quoted(content, result, index, quote_char)
+        length = content.length
+        result << T.must(content[index])
+        i = index + 1
+
+        while i < length
+          char = T.must(content[i])
+
+          if char == quote_char && content[i + 1] == quote_char
+            result << "  "
+            i += 2
+            next
+          end
+
+          if char == quote_char
+            result << char
+            i += 1
+            break
+          end
+
+          result << (char == "\n" ? "\n" : " ")
+          i += 1
+        end
+
+        i
+      end
+      private_class_method :blank_quoted
     end
   end
 end

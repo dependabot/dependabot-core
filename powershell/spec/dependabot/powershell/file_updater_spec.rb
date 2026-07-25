@@ -550,6 +550,39 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
     end
   end
 
+  describe "ignoring a RequiredModules mention inside a quoted field value" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "QuotedMention.psd1",
+          content: fixture("psd1", "quoted_value_mentions_required_modules.psd1")
+        )
+      ]
+    end
+
+    let(:dependencies) do
+      [
+        build_dependency(
+          name: "Az.Real",
+          requirements: [
+            hashtable_requirement(">= 2.0.0", file: "QuotedMention.psd1", version_key: "ModuleVersion")
+          ],
+          previous_requirements: [
+            hashtable_requirement(">= 1.0.0", file: "QuotedMention.psd1", version_key: "ModuleVersion")
+          ]
+        )
+      ]
+    end
+
+    it "rewrites the real declaration, leaving the Description and NotRequiredModules mentions untouched" do
+      content = updater.updated_dependency_files.first.content
+
+      expect(content).to include("@{ModuleName = 'Az.Real'; ModuleVersion = '2.0.0'}")
+      expect(content).to include("Description   = 'See RequiredModules = @(''Fake'')")
+      expect(content).to include("NotRequiredModules = @('Fake')")
+    end
+  end
+
   describe "ignoring declaration-like text inside a here-string" do
     let(:dependency_files) do
       [

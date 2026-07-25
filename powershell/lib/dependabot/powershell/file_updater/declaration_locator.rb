@@ -29,8 +29,8 @@ module Dependabot
         end
 
         REQUIRES_MODULES_LINE = /^\s*#Requires\s+-Modules\s+(?<modules>.+)$/i
-        REQUIRED_MODULES_ARRAY_KEY = /RequiredModules\s*=\s*@\(/i
-        REQUIRED_MODULES_HASHTABLE_KEY = /RequiredModules\s*=\s*@\{/i
+        REQUIRED_MODULES_ARRAY_KEY = /(?<![A-Za-z0-9_])RequiredModules\s*=\s*@\(/i
+        REQUIRED_MODULES_HASHTABLE_KEY = /(?<![A-Za-z0-9_])RequiredModules\s*=\s*@\{/i
 
         sig { params(file: Dependabot::DependencyFile).void }
         def initialize(file:)
@@ -42,6 +42,13 @@ module Dependabot
           # match as a declaration. An active `#Requires -Modules` directive
           # is left untouched by ContentMasker.
           @content = T.let(ContentMasker.mask(T.must(file.content)), String)
+          # A further-masked copy, with quoted string interiors blanked too,
+          # used only to locate the `RequiredModules = @(`/`@{` key - so a
+          # value like `Description = 'See RequiredModules = @(Fake)'`
+          # can't be mistaken for the real assignment. Offsets found in this
+          # copy are still valid in `@content`, since masking never changes
+          # length.
+          @key_search_content = T.let(ContentMasker.mask_quoted_strings(@content), String)
         end
 
         sig { returns(T::Array[Occurrence]) }
@@ -69,10 +76,10 @@ module Dependabot
 
         sig { returns(T::Array[Occurrence]) }
         def locate_required_modules
-          array_match = REQUIRED_MODULES_ARRAY_KEY.match(@content)
+          array_match = REQUIRED_MODULES_ARRAY_KEY.match(@key_search_content)
           return locate_required_modules_array(array_match) if array_match
 
-          hashtable_match = REQUIRED_MODULES_HASHTABLE_KEY.match(@content)
+          hashtable_match = REQUIRED_MODULES_HASHTABLE_KEY.match(@key_search_content)
           return [] unless hashtable_match
 
           locate_required_modules_hashtable(hashtable_match)

@@ -317,6 +317,22 @@ RSpec.describe Dependabot::Powershell::FileParser do
         expect(names).not_to include("OldModule")
       end
     end
+
+    context "when a quoted field value mentions RequiredModules as an example" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "QuotedMention.psd1",
+          content: fixture("psd1", "quoted_value_mentions_required_modules.psd1")
+        )
+      end
+
+      it "ignores the mention inside the quoted Description value and the NotRequiredModules key, " \
+         "parsing only the active RequiredModules assignment" do
+        names = parser.parse.map(&:name)
+        expect(names).to contain_exactly("Az.Real")
+        expect(names).not_to include("Fake")
+      end
+    end
   end
 
   describe "parsing a .ps1 script" do
