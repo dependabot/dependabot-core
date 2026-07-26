@@ -235,6 +235,26 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
       end
     end
+
+    context "when pinned to an out of date commit in the default branch with cooldown enabled" do
+      let(:upload_pack_fixture) { "github-action-push-to-another-repository" }
+      let(:dependency_name) { "dependabot-fixtures/github-action-push-to-another-repository" }
+      let(:dependency_version) { nil }
+      let(:reference) { "f4b9c90516ad3bdcfdc6f4fcf8ba937d0bd40465" }
+      let(:update_cooldown) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+      end
+
+      before do
+        allow(Time).to receive(:now).and_return(Time.parse("2022-09-07 23:33:35 +0100"))
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:enable_shared_helpers_command_timeout).and_return(true)
+      end
+
+      it "does not suggest an update when the latest commit is within the cooldown window" do
+        expect(can_update).to be_falsey
+      end
+    end
   end
 
   describe "#latest_version" do
