@@ -661,6 +661,44 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
             .to raise_error("Multiple ambiguous branches (3.3-stable, production) include #{reference}!")
         end
       end
+
+      context "when the pinned SHA is missing from the cloned repository" do
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with("git branch --remotes --contains #{reference}",
+                  any_args)
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "error: no such commit #{reference}\n",
+                error_context: {}
+              )
+            )
+        end
+
+        it "does not fail the update job" do
+          expect { latest_version }.not_to raise_error
+          expect(latest_version).to be_nil
+        end
+      end
+
+      context "when the containing-branch lookup fails for an unexpected reason" do
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with("git branch --remotes --contains #{reference}",
+                  any_args)
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "fatal: not a git repository\n",
+                error_context: {}
+              )
+            )
+        end
+
+        it "re-raises the error" do
+          expect { latest_version }
+            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+        end
+      end
     end
   end
 
@@ -780,6 +818,65 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       let(:reference) { "master" }
 
       it { is_expected.to eq(dependency.requirements) }
+    end
+
+    context "when the pinned SHA is missing from the cloned repository" do
+      let(:reference) { "0123456789abcdef0123456789abcdef01234567" }
+
+      before do
+        allow(Dir).to receive(:chdir).and_yield
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(%r{git clone --no-recurse-submodules https://github\.com/actions/setup-node},
+                any_args)
+          .and_return("")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("git branch --remotes --contains #{reference}",
+                any_args)
+          .and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "error: no such commit #{reference}\n",
+              error_context: {}
+            )
+          )
+      end
+
+      it "does not fail the update job and leaves the requirement unchanged" do
+        expect { updated_requirements }.not_to raise_error
+        expect(updated_requirements.first.dig(:source, :ref)).to eq(reference)
+      end
+    end
+
+    context "when the fallback containing-branch lookup fails unexpectedly" do
+      let(:reference) { "0123456789abcdef0123456789abcdef01234567" }
+      let(:unexpected_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "fatal: not a git repository\n",
+          error_context: {}
+        )
+      end
+
+      before do
+        allow(Dir).to receive(:chdir).and_yield
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(%r{git clone --no-recurse-submodules https://github\.com/actions/setup-node},
+                any_args)
+          .and_return("")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("git branch --remotes --contains #{reference}",
+                any_args)
+          .and_invoke(
+            proc { "" },
+            proc { raise unexpected_error }
+          )
+      end
+
+      it "re-raises the error" do
+        expect { updated_requirements }.to raise_error(unexpected_error)
+      end
     end
 
     context "when a git commit SHA pointing to the tip of a branch not named like a version" do

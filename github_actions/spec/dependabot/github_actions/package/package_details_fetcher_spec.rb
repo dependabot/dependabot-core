@@ -161,6 +161,54 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
       end
     end
 
+    context "when a git commit SHA is not present in the cloned repository" do
+      let(:reference) { "0123456789abcdef0123456789abcdef01234567" }
+
+      before do
+        allow(Dir).to receive(:chdir).and_yield
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(%r{git clone --no-recurse-submodules https://github\.com/actions/setup-node},
+                any_args)
+          .and_return("")
+      end
+
+      context "when git reports that the commit is missing" do
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with("git branch --remotes --contains #{reference}",
+                  any_args)
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "error: no such commit #{reference}\n",
+                error_context: {}
+              )
+            )
+        end
+
+        it { is_expected.to be_nil }
+      end
+
+      context "when the containing-branch lookup fails for an unexpected reason" do
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with("git branch --remotes --contains #{reference}",
+                  any_args)
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "fatal: not a git repository\n",
+                error_context: {}
+              )
+            )
+        end
+
+        it "re-raises the error" do
+          expect { latest_version }
+            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+        end
+      end
+    end
+
     context "when using a dependency with multiple git refs" do
       include_context "with multiple git sources"
 
