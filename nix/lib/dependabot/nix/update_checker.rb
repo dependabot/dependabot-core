@@ -80,10 +80,10 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def tarball_channel_input?
-        source = dependency.source_details(allowed_types: ["tarball"])
-        return false unless source
+        url = dependency.source_string("url", allowed_types: ["tarball"])
+        return false unless url
 
-        Channel.channel_url?(source[:url] || source["url"])
+        Channel.channel_url?(url)
       end
 
       sig { returns(T.nilable(String)) }
@@ -127,21 +127,17 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def tarball_channel_name
-        source = dependency.source_details(allowed_types: ["tarball"])
-        return unless source
-
-        ref = source[:ref] || source["ref"]
+        ref = dependency.source_string("ref", allowed_types: ["tarball"])
         return ref if ref
 
         # Fall back to the URL's channel when the source omits a ref.
-        Channel.channel_name_from_url(source[:url] || source["url"])
+        Channel.channel_name_from_url(dependency.source_string("url", allowed_types: ["tarball"]))
       end
 
       # Preserve the flake's existing tarball suffix (xz, gz, bz2) on a bump.
       sig { returns(String) }
       def tarball_channel_extension
-        source = dependency.source_details(allowed_types: ["tarball"])
-        url = source && (source[:url] || source["url"])
+        url = dependency.source_string("url", allowed_types: ["tarball"])
         Channel.extension_from_url(url) || Channel::DEFAULT_EXTENSION
       end
 
@@ -241,7 +237,7 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def dependency_source_ref
-        dependency.source_details(allowed_types: ["git"])&.fetch(:ref, nil)
+        dependency.source_string("ref", allowed_types: ["git"])
       end
 
       sig { returns(T.nilable(VersionedBranchFinder)) }
