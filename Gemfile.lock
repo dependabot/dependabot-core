@@ -277,7 +277,7 @@ GEM
       faraday-net_http
     erb (6.0.1)
     erubi (1.13.1)
-    excon (1.4.2)
+    excon (1.5.0)
       logger
     faraday (2.14.1)
       faraday-net_http (>= 2.0, < 3.5)
@@ -593,7 +593,7 @@ CHECKSUMS
   docker_registry2 (1.19.0) sha256=e50fbe316422b33740c5c2c49b68d938314c2cf4367a381fa3277eb1c79b8623
   erb (6.0.1) sha256=28ecdd99c5472aebd5674d6061e3c6b0a45c049578b071e5a52c2a7f13c197e5
   erubi (1.13.1) sha256=a082103b0885dbc5ecf1172fede897f9ebdb745a4b97a5e8dc63953db1ee4ad9
-  excon (1.4.2) sha256=32d8d8eda619717d9b8043b4675e096fb5c2139b080e2ad3b267f88c545aaa35
+  excon (1.5.0) sha256=c503ad1d0123bc8ab2a062ff3789dc891ec368cb9e13765ab88a9c58c8bb6d50
   faraday (2.14.1) sha256=a43cceedc1e39d188f4d2cdd360a8aaa6a11da0c407052e426ba8d3fb42ef61c
   faraday-follow_redirects (0.5.0) sha256=5cde93c894b30943a5d2b93c2fe9284216a6b756f7af406a1e55f211d97d10ad
   faraday-net_http (3.4.2) sha256=f147758260d3526939bf57ecf911682f94926a3666502e24c69992765875906c
