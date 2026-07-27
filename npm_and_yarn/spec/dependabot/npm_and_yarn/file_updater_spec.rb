@@ -2923,6 +2923,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
+      context "when updating a dependency with a wildcard requirement" do
+        let(:files) { project_dependency_files("yarn_berry/wildcard_requirement") }
+
+        let(:dependency_name) { "left-pad" }
+        let(:version) { "1.1.3" }
+        let(:previous_version) { "1.1.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "*",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) { requirements }
+
+        it "pins the lockfile to the target version even though the requirement is unchanged" do
+          parsed_lockfile = YAML.safe_load(updated_yarn_lock.content)
+          expect(parsed_lockfile["left-pad@npm:*"]["version"]).to eq("1.1.3")
+        end
+      end
+
       context "with workspaces" do
         let(:files) { project_dependency_files("yarn_berry/workspaces") }
 

@@ -47,30 +47,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::BerryLockfileHandler do
     end
   end
 
-  describe ".version_matches?" do
+  describe ".descriptor_at_version?" do
     let(:parsed) do
       {
-        "axios@npm:^1.15.0" => { "version" => "1.15.0", "resolution" => "axios@npm:1.15.0" },
-        "@scope/pkg@npm:^2.0.0" => { "version" => "2.1.0", "resolution" => "@scope/pkg@npm:2.1.0" },
+        "left-pad@npm:^1.1.0" => { "version" => "1.1.3", "resolution" => "left-pad@npm:1.1.3" },
+        "left-pad@npm:*" => { "version" => "1.1.0", "resolution" => "left-pad@npm:1.1.0" },
         "__metadata" => { "version" => 8 }
       }
     end
 
-    it "returns true when version matches" do
-      expect(described_class.version_matches?(parsed, "axios", "1.15.0")).to be true
+    it "returns true only for the descriptor already resolved to the target" do
+      expect(described_class.descriptor_at_version?(parsed, "left-pad", "1.1.3", "^1.1.0")).to be true
     end
 
-    it "returns false when version differs" do
-      expect(described_class.version_matches?(parsed, "axios", "1.15.2")).to be false
+    it "returns false for a stale descriptor even when another is at the target" do
+      # This is the multi-workspace no-op guard: the `*` entry is still stale at
+      # 1.1.0 and must be pinned even though `^1.1.0` already resolved to 1.1.3.
+      expect(described_class.descriptor_at_version?(parsed, "left-pad", "1.1.3", "*")).to be false
     end
 
-    it "returns false for unknown dependency" do
-      expect(described_class.version_matches?(parsed, "unknown-pkg", "1.0.0")).to be false
-    end
-
-    it "handles scoped packages" do
-      expect(described_class.version_matches?(parsed, "@scope/pkg", "2.1.0")).to be true
-      expect(described_class.version_matches?(parsed, "@scope/pkg", "2.0.0")).to be false
+    it "returns false when no descriptor matches the requirement" do
+      expect(described_class.descriptor_at_version?(parsed, "left-pad", "1.1.3", "~1.1.0")).to be false
     end
 
     context "with composite keys" do
@@ -80,9 +77,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::BerryLockfileHandler do
         }
       end
 
-      it "matches composite keys" do
-        expect(described_class.version_matches?(parsed, "lodash", "1.3.1")).to be true
-        expect(described_class.version_matches?(parsed, "lodash", "1.3.0")).to be false
+      it "matches the requested requirement within a composite key" do
+        expect(described_class.descriptor_at_version?(parsed, "lodash", "1.3.1", "^1.3.1")).to be true
+        expect(described_class.descriptor_at_version?(parsed, "lodash", "1.3.0", "^1.3.1")).to be false
       end
     end
   end

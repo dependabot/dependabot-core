@@ -24,15 +24,38 @@ module Dependabot
           parsed.is_a?(Hash) ? parsed : nil
         end
 
-        # Checks if the parsed lockfile has the target version for a dependency.
-        sig { params(parsed: T::Hash[String, T.untyped], dep_name: String, version: String).returns(T::Boolean) }
-        def self.version_matches?(parsed, dep_name, version)
+        # Checks whether the lockfile entry for a specific requirement/descriptor
+        # (e.g. the `*` range in one workspace) already resolves to the target
+        # version. Unlike `version_matches?`, this is scoped to a single
+        # descriptor so a different descriptor already at the target does not mask
+        # a stale one.
+        sig do
+          params(
+            parsed: T::Hash[String, T.untyped],
+            dep_name: String,
+            version: String,
+            requirement: String
+          ).returns(T::Boolean)
+        end
+        def self.descriptor_at_version?(parsed, dep_name, version, requirement)
           parsed.any? do |key, value|
             next false unless value.is_a?(Hash)
+            next false unless value["version"] == version
 
-            key.to_s.split(", ").any? { |part| split_descriptor(part)[0] == dep_name } &&
-              value["version"] == version
+            key.to_s.split(", ").any? do |part|
+              name, desc = split_descriptor(part)
+              name == dep_name && descriptor_range(desc) == requirement
+            end
           end
+        end
+
+        # Strips the protocol prefix (e.g. "npm:") from a descriptor, returning
+        # the bare range/requirement.
+        sig { params(descriptor: T.nilable(String)).returns(T.nilable(String)) }
+        def self.descriptor_range(descriptor)
+          return nil unless descriptor
+
+          descriptor.sub(/^[a-z]+:/, "")
         end
 
         # Rewrites a lockfile descriptor key from exact version to range.
