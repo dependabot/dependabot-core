@@ -197,7 +197,7 @@ module Dependabot
 
       # missing dependency files is not fatal for update_graph jobs as they need to process deletions
       if @dependency_files_for_multi_directories&.empty? && !job.update_graph?
-        if (job.command == "update" || job.command == "recreate") && !single_glob_directory_job?
+        if job.command == "update" || job.command == "recreate"
           service.close_pull_request(job.dependencies || [], :dependency_removed)
         end
         raise Dependabot::DependencyFileNotFound, job.source.directories&.join(", ")
@@ -257,14 +257,6 @@ module Dependabot
       @dependency_files = with_retries { file_fetcher.files }
       post_ecosystem_versions(file_fetcher) if should_record_ecosystem_versions?
       @dependency_files
-    end
-
-    sig { returns(T::Boolean) }
-    def single_glob_directory_job?
-      directories = job.source.directories
-      return false unless directories&.one?
-
-      glob?(directories.fetch(0))
     end
 
     sig { returns(T::Boolean) }

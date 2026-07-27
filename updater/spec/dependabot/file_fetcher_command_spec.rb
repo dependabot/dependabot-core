@@ -732,8 +732,8 @@ RSpec.describe Dependabot::FileFetcherCommand do
         allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(Dir.mktmpdir)
       end
 
-      it "keeps the multi-directory path and does not close the pull request in rescue" do
-        expect(api_client).not_to receive(:close_pull_request)
+      it "keeps the multi-directory path and closes the pull request from the multi-directory path" do
+        expect(api_client).to receive(:close_pull_request).with([], :dependency_removed)
         expect(api_client)
           .to receive(:record_update_job_error)
           .with(
