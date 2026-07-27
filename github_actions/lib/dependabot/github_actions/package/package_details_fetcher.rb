@@ -31,7 +31,8 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential],
             ignored_versions: T::Array[String],
             raise_on_ignored: T::Boolean,
-            security_advisories: T::Array[Dependabot::SecurityAdvisory]
+            security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            git_metadata_fetcher: T.nilable(Dependabot::GitMetadataFetcher)
           ).void
         end
         def initialize(
@@ -39,13 +40,15 @@ module Dependabot
           credentials:,
           ignored_versions: [],
           raise_on_ignored: false,
-          security_advisories: []
+          security_advisories: [],
+          git_metadata_fetcher: nil
         )
           @dependency = dependency
           @credentials = credentials
           @raise_on_ignored = raise_on_ignored
           @ignored_versions = ignored_versions
           @security_advisories = security_advisories
+          @git_metadata_fetcher = git_metadata_fetcher
 
           @git_helper = T.let(git_helper, Dependabot::GithubActions::Helpers::Githelper)
         end
@@ -270,7 +273,8 @@ module Dependabot
             ignored_versions: ignored_versions,
             raise_on_ignored: raise_on_ignored,
             consider_version_branches_pinned: false,
-            dependency_source_details: nil
+            dependency_source_details: nil,
+            git_metadata_fetcher: @git_metadata_fetcher
           )
         end
       end

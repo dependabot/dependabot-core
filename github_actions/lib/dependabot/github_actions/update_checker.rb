@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/errors"
+require "dependabot/git_metadata_fetcher"
 require "dependabot/github_actions/constants"
 require "dependabot/github_actions/containing_branch_finder"
 require "dependabot/github_actions/lockfile/reader"
@@ -138,9 +139,9 @@ module Dependabot
       # A finder scoped to a single requirement's source ref, so version selection
       # precision-matches THAT ref (e.g. `v4.3.1` → latest 3-segment tag) instead of
       # the combined dependency version (the lower of all refs, which flattens every
-      # requirement to the coarsest precision). Cached per ref so repeated refs share
-      # one underlying clone. Falls back to the combined finder for sources whose ref
-      # is not a version (SHA / branch), where precision has no meaning.
+      # requirement to the coarsest precision). Finders remain scoped per ref, but share
+      # one repository metadata fetcher. Falls back to the combined finder for sources
+      # whose ref is not a version (SHA / branch), where precision has no meaning.
       sig { params(source: T.nilable(GitSource)).returns(LatestVersionFinder) }
       def latest_version_finder_for(source)
         ref = source&.fetch(:ref, nil)
@@ -159,7 +160,23 @@ module Dependabot
           security_advisories: security_advisories,
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored,
-          cooldown_options: update_cooldown
+          cooldown_options: update_cooldown,
+          git_metadata_fetcher: git_metadata_fetcher
+        )
+      end
+
+      sig { returns(Dependabot::GitMetadataFetcher) }
+      def git_metadata_fetcher
+        @git_metadata_fetcher ||= T.let(
+          Dependabot::GitMetadataFetcher.new(
+            url: T.must(
+              dependency.requirements.filter_map do |requirement|
+                T.cast(requirement.source, T.nilable(GitSource))&.fetch(:url, nil)
+              end.first
+            ),
+            credentials: credentials
+          ),
+          T.nilable(Dependabot::GitMetadataFetcher)
         )
       end
 
@@ -292,7 +309,8 @@ module Dependabot
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored,
           consider_version_branches_pinned: false,
-          dependency_source_details: nil
+          dependency_source_details: nil,
+          git_metadata_fetcher: git_metadata_fetcher
         )
       end
     end

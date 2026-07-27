@@ -243,7 +243,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
       allow(Dependabot.logger).to receive(:info)
       engine.relock(workflow_files: [workflow], lockfile: lockfile)
 
-      expect(Dependabot.logger).to have_received(:info).with(/skipped 1 un-onboarded workflow/)
+      expect(Dependabot.logger).to have_received(:info).with(/skipped onboarding in 1 workflow/)
     end
   end
 

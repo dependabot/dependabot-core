@@ -1288,6 +1288,12 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           expect(ref_for(updated_requirements, ".github/workflows/patch.yml")).to eq("v3.5.2")
         end
 
+        it "fetches repository tag metadata once across source refs" do
+          updated_requirements
+
+          expect(a_request(:get, service_pack_url)).to have_been_made.once
+        end
+
         context "when the combined major ref is already current" do
           let(:dependency_version) { "3" }
 

@@ -210,8 +210,8 @@ module Dependabot
           return if skipped.empty?
 
           Dependabot.logger.info(
-            "gh-actions-lock skipped #{skipped.size} un-onboarded workflow(s) (no-onboard is " \
-            "update's default; left untracked, not failed): #{skipped.join(', ')}"
+            "gh-actions-lock skipped onboarding in #{skipped.size} workflow(s) (no-onboard is " \
+            "update's default; skipped actions remain untracked, not failed): #{skipped.join(', ')}"
           )
         end
       end
