@@ -260,6 +260,9 @@ RSpec.describe Dependabot::FileFetcherCommand do
         allow_any_instance_of(Dependabot::Bundler::FileFetcher)
           .to receive(:commit)
           .and_return("abc123")
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher)
+          .to receive(:files)
+          .and_raise(Dependabot::BranchNotFound, "some-branch")
       end
 
       it "falls back to existing validation and continues processing" do
@@ -270,7 +273,17 @@ RSpec.describe Dependabot::FileFetcherCommand do
         expect(Dependabot.logger).to receive(:warn)
           .with(/Could not validate the existence of the 'dependabot' branch/).ordered
 
-        expect { perform_job }.not_to raise_error
+        expect(api_client).to receive(:record_update_job_error)
+          .with(
+            error_details: {
+              "branch-name": "some-branch",
+              message: "Dependabot::BranchNotFound"
+            },
+            error_type: "branch_not_found"
+          )
+        expect(api_client).to receive(:mark_job_as_processed)
+
+        expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
       end
     end
 
@@ -619,17 +632,26 @@ RSpec.describe Dependabot::FileFetcherCommand do
     end
   end
 
-  describe "#normalize_single_directory" do
+  describe "single-directory normalization" do
+    subject(:perform_job) { command.perform_job }
+
     let(:command) { described_class.new }
+    let(:single_directory_file) do
+      Dependabot::DependencyFile.new(name: "manifest.txt", content: "contents", directory: "/tests")
+    end
 
     before do
       allow(Dependabot::Environment).to receive_messages(
         job_definition: job_definition,
         repo_contents_path: nil
       )
+      allow_any_instance_of(DummyPackageManager::FileFetcher).to receive(:commit).and_return("a" * 40)
+      allow_any_instance_of(DummyPackageManager::FileFetcher)
+        .to receive(:files)
+        .and_raise(Dependabot::DependencyFileNotFound, "/tests not found")
     end
 
-    context "when directories has a single entry and directory is nil" do
+    context "when directories has a single literal entry and directory is nil" do
       let(:job_definition) do
         {
           "job" => {
@@ -657,11 +679,72 @@ RSpec.describe Dependabot::FileFetcherCommand do
         }
       end
 
-      it "normalizes to use directory (singular)" do
-        command.send(:normalize_single_directory)
+      before do
+        allow_any_instance_of(described_class).to receive(:validate_target_branch)
+        allow_any_instance_of(described_class).to receive(:dependabot_ref_namespace_available?)
+        allow_any_instance_of(described_class).to receive(:clone_repo_contents)
+        allow_any_instance_of(DummyPackageManager::FileFetcher)
+          .to receive(:files)
+          .and_return([single_directory_file])
+      end
+
+      it "routes through the single-directory fetch path" do
+        perform_job
 
         expect(command.job.source.directory).to eq("/tests")
         expect(command.job.source.directories).to be_nil
+      end
+    end
+
+    context "when directories has a single glob entry" do
+      let(:job_definition) do
+        {
+          "job" => {
+            "command" => "update",
+            "package_manager" => "dummy",
+            "allowed_updates" => [],
+            "dependencies" => [],
+            "ignore_conditions" => [],
+            "security_advisories" => [],
+            "security_updates_only" => false,
+            "update_subdependencies" => false,
+            "updating_a_pull_request" => false,
+            "existing_pull_requests" => [],
+            "requirements_update_strategy" => nil,
+            "lockfile_only" => false,
+            "source" => {
+              "provider" => "github",
+              "repo" => "test/test-repo",
+              "directory" => nil,
+              "directories" => ["**/*"],
+              "branch" => nil,
+              "hostname" => "github.com",
+              "api-endpoint" => "https://api.github.com/"
+            }
+          }
+        }
+      end
+
+      before do
+        allow_any_instance_of(described_class).to receive(:validate_target_branch)
+        allow_any_instance_of(described_class).to receive(:dependabot_ref_namespace_available?)
+        allow_any_instance_of(described_class).to receive(:clone_repo_contents)
+        allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(Dir.mktmpdir)
+      end
+
+      it "keeps the multi-directory path and does not close the pull request in rescue" do
+        expect(api_client).not_to receive(:close_pull_request)
+        expect(api_client)
+          .to receive(:record_update_job_error)
+          .with(
+            error_details: { "file-path": "/**/*", message: "/**/* not found" },
+            error_type: "dependency_file_not_found"
+          )
+        expect(api_client).to receive(:mark_job_as_processed)
+
+        expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+        expect(command.job.source.directory).to be_nil
+        expect(command.job.source.directories).to eq(["/**/*"])
       end
     end
 
@@ -693,8 +776,12 @@ RSpec.describe Dependabot::FileFetcherCommand do
         }
       end
 
+      before do
+        allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(Dir.mktmpdir)
+      end
+
       it "does not normalize" do
-        command.send(:normalize_single_directory)
+        expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
 
         expect(command.job.source.directory).to be_nil
         expect(command.job.source.directories).to eq(["/", "/tests"])
@@ -728,8 +815,14 @@ RSpec.describe Dependabot::FileFetcherCommand do
         }
       end
 
+      before do
+        allow_any_instance_of(DummyPackageManager::FileFetcher)
+          .to receive(:files)
+          .and_return([single_directory_file])
+      end
+
       it "does not modify the source" do
-        command.send(:normalize_single_directory)
+        perform_job
 
         expect(command.job.source.directory).to eq("/tests")
         expect(command.job.source.directories).to be_nil
@@ -765,8 +858,12 @@ RSpec.describe Dependabot::FileFetcherCommand do
         }
       end
 
+      before do
+        allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(Dir.mktmpdir)
+      end
+
       it "does not normalize because graph jobs need lenient error handling" do
-        command.send(:normalize_single_directory)
+        expect { perform_job }.not_to raise_error
 
         expect(command.job.source.directory).to be_nil
         expect(command.job.source.directories).to eq(["/tests"])

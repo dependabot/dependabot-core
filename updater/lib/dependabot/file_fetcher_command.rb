@@ -20,9 +20,16 @@ module Dependabot
     sig { override.returns(T.nilable(String)) }
     attr_reader :base_commit_sha
 
+    sig { returns(T::Boolean) }
+    def single_directory_normalized
+      @single_directory_normalized == true
+    end
+
     sig { override.void }
     def perform_job # rubocop:disable Metrics/AbcSize
       @base_commit_sha = T.let(nil, T.nilable(String))
+      @single_directory_normalized = T.let(nil, T.nilable(T::Boolean))
+      @single_directory_normalized = false
 
       Dependabot.logger.info("Job definition: #{File.read(Environment.job_path)}") if Environment.job_path
       ::Dependabot::OpenTelemetry.tracer.in_span("file_fetcher", kind: :internal) do |span|
@@ -100,8 +107,13 @@ module Dependabot
       return unless job.source.directory.nil? && job.source.directories&.one?
       return if job.update_graph?
 
-      job.source.directory = T.must(job.source.directories).first
+      normalized_directories = T.must(job.source.directories)
+      normalized_directory = T.must(normalized_directories.first)
+      return if glob?(normalized_directory)
+
+      job.source.directory = normalized_directory
       job.source.directories = nil
+      @single_directory_normalized = true
     end
 
     # When a DependencyFileNotFound error occurs during an update/recreate command,
@@ -110,6 +122,7 @@ module Dependabot
     def close_pull_request_if_dependency_removed(error)
       return unless error.is_a?(Dependabot::DependencyFileNotFound)
       return unless job.command == "update" || job.command == "recreate"
+      return if job.source.directories && !single_directory_normalized
 
       service.close_pull_request(job.dependencies || [], :dependency_removed)
     end
@@ -181,7 +194,7 @@ module Dependabot
 
       # missing dependency files is not fatal for update_graph jobs as they need to process deletions
       if @dependency_files_for_multi_directories&.empty? && !job.update_graph?
-        if job.command == "update" || job.command == "recreate"
+        if (job.command == "update" || job.command == "recreate") && !single_glob_directory_job?
           service.close_pull_request(job.dependencies || [], :dependency_removed)
         end
         raise Dependabot::DependencyFileNotFound, job.source.directories&.join(", ")
@@ -241,6 +254,14 @@ module Dependabot
       @dependency_files = with_retries { file_fetcher.files }
       post_ecosystem_versions(file_fetcher) if should_record_ecosystem_versions?
       @dependency_files
+    end
+
+    sig { returns(T::Boolean) }
+    def single_glob_directory_job?
+      directories = job.source.directories
+      return false unless directories&.one?
+
+      glob?(directories.fetch(0))
     end
 
     sig { returns(T::Boolean) }
