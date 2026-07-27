@@ -24,9 +24,10 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def configured_registry_from_credentials
-          # Don't use the replaces-base registry for scoped packages that have
-          # their own dedicated scoped credential configured
-          return nil if scoped_credential_exists_for_dependency?
+          # For scoped packages with a dedicated scoped credential, use the
+          # scoped registry instead of the replaces-base registry
+          scoped_registry = scoped_credential_registry_for_dependency
+          return scoped_registry if scoped_registry
 
           replaces_base_cred = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
           return unless replaces_base_cred&.fetch("registry", nil)
@@ -34,17 +35,20 @@ module Dependabot
           normalize_registry_url(replaces_base_cred["registry"])
         end
 
-        sig { returns(T::Boolean) }
-        def scoped_credential_exists_for_dependency?
+        sig { returns(T.nilable(String)) }
+        def scoped_credential_registry_for_dependency
           dep_name = dependency.name
-          return false unless dep_name.start_with?("@") && dep_name.include?("/")
+          return unless dep_name.start_with?("@") && dep_name.include?("/")
 
           scope = T.must(dep_name.split("/").first)
-          credentials.any? do |cred|
-            cred["type"] == "npm_registry" && !cred.replaces_base? && cred.scope&.any? do |s|
+          cred = credentials.find do |c|
+            c["type"] == "npm_registry" && !c.replaces_base? && c.scope&.any? do |s|
               Helpers.normalize_npm_scope(s) == scope
             end
           end
+          return unless cred
+
+          normalize_registry_url(cred["registry"])
         end
 
         sig { params(registry: T.nilable(String)).returns(T.nilable(String)) }
