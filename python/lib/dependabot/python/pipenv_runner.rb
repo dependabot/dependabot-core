@@ -175,7 +175,7 @@ module Dependabot
 
       sig { returns(String) }
       def dependency_name
-        current_dependency.metadata[:original_name] || current_dependency.name
+        current_dependency.metadata_string(:original_name) || current_dependency.name
       end
 
       sig { returns(T::Hash[String, String]) }
