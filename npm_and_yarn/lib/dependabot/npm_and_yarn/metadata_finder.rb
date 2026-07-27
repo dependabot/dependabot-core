@@ -345,9 +345,10 @@ module Dependabot
 
       sig { returns(T::Hash[String, String]) }
       def registry_auth_headers
-        return {} unless auth_token
+        token = auth_token
+        return {} unless token
 
-        { "Authorization" => "Bearer #{auth_token}" }
+        auth_header_for(token)
       end
 
       sig { returns(String) }
