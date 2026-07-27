@@ -3,6 +3,7 @@
 
 require "base64"
 require "uri"
+require "dependabot/npm_and_yarn/helpers"
 
 module Dependabot
   module NpmAndYarn
@@ -16,14 +17,34 @@ module Dependabot
         sig { abstract.returns(T::Array[Dependabot::Credential]) }
         def credentials; end
 
+        sig { abstract.returns(Dependabot::Dependency) }
+        def dependency; end
+
         private
 
         sig { returns(T.nilable(String)) }
         def configured_registry_from_credentials
+          # Don't use the replaces-base registry for scoped packages that have
+          # their own dedicated scoped credential configured
+          return nil if scoped_credential_exists_for_dependency?
+
           replaces_base_cred = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
           return unless replaces_base_cred&.fetch("registry", nil)
 
           normalize_registry_url(replaces_base_cred["registry"])
+        end
+
+        sig { returns(T::Boolean) }
+        def scoped_credential_exists_for_dependency?
+          dep_name = dependency.name
+          return false unless dep_name.start_with?("@") && dep_name.include?("/")
+
+          scope = T.must(dep_name.split("/").first)
+          credentials.any? do |cred|
+            cred["type"] == "npm_registry" && !cred.replaces_base? && cred.scope&.any? do |s|
+              Helpers.normalize_npm_scope(s) == scope
+            end
+          end
         end
 
         sig { params(registry: T.nilable(String)).returns(T.nilable(String)) }

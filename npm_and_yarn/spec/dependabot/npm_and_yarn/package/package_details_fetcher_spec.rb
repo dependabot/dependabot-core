@@ -155,6 +155,61 @@ RSpec.describe Dependabot::NpmAndYarn::Package::PackageDetailsFetcher do
       end
     end
 
+    context "when a scoped credential exists alongside replaces-base" do
+      let(:dependency_name) { "@mycompany/private-package" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.0.0",
+          requirements: [{
+            requirement: "^1.0.0",
+            file: "package.json",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "https://registry.proxy.example.com/npm",
+              "token" => "proxy_token",
+              "replaces-base" => true
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "https://npm.private.example.com/mycompany",
+              "token" => "private_token",
+              "scope" => "@mycompany"
+            }
+          )
+        ]
+      end
+
+      let(:registry_url) { "https://npm.private.example.com/mycompany/%40mycompany%2Fprivate-package" }
+
+      before do
+        stub_request(:get, registry_url)
+          .with(headers: { "Authorization" => "Bearer private_token" })
+          .to_return(
+            status: 200,
+            body: fixture("npm_responses", "react.json")
+          )
+      end
+
+      it "uses the scoped registry instead of the replaces-base registry" do
+        expect(details).not_to be_nil
+        expect(WebMock).to have_requested(:get, registry_url)
+        expect(WebMock).not_to have_requested(:get, /registry\.proxy\.example\.com/)
+      end
+    end
+
     context "when the registry raises Excon::Error::Socket" do
       context "with a private registry" do
         let(:registry_url) { "https://npm.fury.io/dependabot/react" }
