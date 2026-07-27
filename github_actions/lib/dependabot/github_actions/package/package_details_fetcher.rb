@@ -126,7 +126,10 @@ module Dependabot
               ref = git_commit_checker.local_ref_for_latest_version_matching_existing_precision
               return ref if ref && ref.fetch(:version) > current_version
 
-              git_commit_checker.local_ref_for_latest_version_lower_precision
+              lower_precision_ref = git_commit_checker.local_ref_for_latest_version_lower_precision
+              return ref if ref && lower_precision_ref&.fetch(:version) == current_version
+
+              lower_precision_ref
             end,
             T.nilable(T::Hash[Symbol, T.untyped])
           )

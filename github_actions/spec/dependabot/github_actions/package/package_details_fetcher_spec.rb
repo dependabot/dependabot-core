@@ -128,6 +128,15 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
 
       it { is_expected.to eq(Dependabot::GithubActions::Version.new("1.1.0")) }
 
+      context "when a full semver ref is already the latest version" do
+        let(:reference) { "v1.1.0" }
+        let(:dependency_version) { "1.1.0" }
+
+        it "does not broaden the ref to an equivalent lower-precision tag" do
+          expect(fetcher.latest_version_tag.fetch(:tag)).to eq("v1.1.0")
+        end
+      end
+
       context "when the latest version is being ignored" do
         let(:ignored_versions) { [">= 1.1.0"] }
 
