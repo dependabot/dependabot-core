@@ -16,6 +16,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::Env do
         env = described_class.build([])
         expect(env["GH_TOKEN"]).to eq("x-access-token")
         expect(env["GH_TOKEN"]).not_to be_empty
+        expect(env["GH_ACTIONS_LOCK_DEPENDABOT_PROXY"]).to eq("1")
       end
     end
 
@@ -28,7 +29,7 @@ RSpec.describe Dependabot::GithubActions::Lockfile::Env do
       end
 
       it "passes the real token through as GH_TOKEN" do
-        expect(described_class.build(credentials)["GH_TOKEN"]).to eq("real-token")
+        expect(described_class.build(credentials)).to eq("GH_TOKEN" => "real-token")
       end
     end
 
@@ -52,7 +53,10 @@ RSpec.describe Dependabot::GithubActions::Lockfile::Env do
 
       it "does not redirect gh to another provider" do
         env = described_class.build(credentials)
-        expect(env).to eq("GH_TOKEN" => "x-access-token")
+        expect(env).to eq(
+          "GH_TOKEN" => "x-access-token",
+          "GH_ACTIONS_LOCK_DEPENDABOT_PROXY" => "1"
+        )
       end
     end
   end

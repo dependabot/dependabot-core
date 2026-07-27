@@ -879,6 +879,18 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         )
       end
 
+      context "when relocking fails" do
+        before do
+          allow(fake_engine).to receive(:relock)
+            .and_raise(Dependabot::GithubActions::Lockfile::EngineError, "Bad credentials")
+        end
+
+        it "does not return a workflow-only update" do
+          expect { updated_files }
+            .to raise_error(Dependabot::GithubActions::Lockfile::EngineError, "Bad credentials")
+        end
+      end
+
       context "when an onboarded dependency entry is malformed" do
         let(:lockfile) do
           Dependabot::DependencyFile.new(

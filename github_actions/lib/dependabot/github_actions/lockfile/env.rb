@@ -28,6 +28,7 @@ module Dependabot
 
           github_credential = github_dot_com_credential(credentials)
           env["GH_TOKEN"] = github_credential&.fetch("password", nil) || DUMMY_TOKEN
+          env["GH_ACTIONS_LOCK_DEPENDABOT_PROXY"] = "1" unless github_credential
 
           env
         end
