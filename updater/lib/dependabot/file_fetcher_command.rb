@@ -7,12 +7,14 @@ require "dependabot/errors"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/opentelemetry"
 require "dependabot/updater"
+require "dependabot/file_fetcher_command_connectivity"
 require "octokit"
 require "sorbet-runtime"
 
 module Dependabot
   class FileFetcherCommand < BaseCommand
     extend T::Sig
+    include FileFetcherCommandConnectivity
 
     # BaseCommand does not implement this method, so we should expose
     # the instance variable for error handling to avoid raising a
@@ -21,15 +23,13 @@ module Dependabot
     attr_reader :base_commit_sha
 
     sig { returns(T::Boolean) }
-    def single_directory_normalized
+    def single_directory_normalized?
       @single_directory_normalized == true
     end
 
     sig { override.void }
     def perform_job # rubocop:disable Metrics/AbcSize
-      @base_commit_sha = T.let(nil, T.nilable(String))
-      @single_directory_normalized = T.let(nil, T.nilable(T::Boolean))
-      @single_directory_normalized = false
+      reset_job_state
 
       Dependabot.logger.info("Job definition: #{File.read(Environment.job_path)}") if Environment.job_path
       ::Dependabot::OpenTelemetry.tracer.in_span("file_fetcher", kind: :internal) do |span|
@@ -122,9 +122,16 @@ module Dependabot
     def close_pull_request_if_dependency_removed(error)
       return unless error.is_a?(Dependabot::DependencyFileNotFound)
       return unless job.command == "update" || job.command == "recreate"
-      return if job.source.directories && !single_directory_normalized
+      return if job.source.directories && !single_directory_normalized?
 
       service.close_pull_request(job.dependencies || [], :dependency_removed)
+    end
+
+    sig { void }
+    def reset_job_state
+      @base_commit_sha = T.let(nil, T.nilable(String))
+      @single_directory_normalized = T.let(nil, T.nilable(T::Boolean))
+      @single_directory_normalized = false
     end
 
     # Records non-fatal, per-directory fetch errors encountered while listing a
@@ -167,15 +174,11 @@ module Dependabot
       Dependabot::FileFetchers.for_package_manager(job.package_manager).new(**args)
     end
 
-    # The main file fetcher method that now calls the create_file_fetcher method
-    # and ensures it uses the same repo_contents_path setting as others.
     sig { returns(Dependabot::FileFetchers::Base) }
     def file_fetcher
       @file_fetcher ||= T.let(create_file_fetcher, T.nilable(Dependabot::FileFetchers::Base))
     end
 
-    # This method is responsible for creating or retrieving a file fetcher
-    # from a cache (@file_fetchers) for the given directory.
     sig { params(directory: String).returns(Dependabot::FileFetchers::Base) }
     def file_fetcher_for_directory(directory)
       @file_fetchers = T.let(@file_fetchers, T.nilable(T::Hash[String, Dependabot::FileFetchers::Base]))
@@ -295,7 +298,6 @@ module Dependabot
       end
     end
 
-    # Validates that the repository does not have a top-level branch named `dependabot`.
     sig { void }
     def dependabot_ref_namespace_available?
       dependabot_branch = "dependabot"
@@ -321,25 +323,19 @@ module Dependabot
 
       target_branch = job.source.branch
 
-      # Early validation: check if target branch exists before attempting file operations
       begin
         branch_exists = git_metadata_fetcher.ref_names.include?(target_branch)
         unless branch_exists
-          # Use the exact message the test expects
           error_message = "The branch '#{target_branch}' specified in the target-branch field " \
                           "does not exist. Please check that the branch name is correct and that " \
                           "the branch exists in the repository."
           raise Dependabot::BranchNotFound.new(target_branch, error_message)
         end
       rescue Dependabot::GitDependenciesNotReachable => e
-        # If we can't fetch git metadata, we'll let the original validation handle it
-        # during file fetching to avoid masking other errors
         Dependabot.logger.warn("Could not validate target branch early due to git metadata fetch error: #{e.message}")
       rescue Dependabot::BranchNotFound
-        # Re-raise BranchNotFound errors so they aren't caught by the generic rescue
         raise
       rescue StandardError => e
-        # For any other errors, we'll log and let the original validation handle it
         Dependabot.logger.warn("Could not validate target branch early: #{e.message}")
       end
     end
@@ -355,7 +351,6 @@ module Dependabot
     def already_cloned?
       return false unless Environment.repo_contents_path
 
-      # For testing, the source repo may already be mounted.
       @already_cloned ||= T.let(
         File.directory?(
           File.join(
@@ -435,33 +430,6 @@ module Dependabot
       service.record_update_job_unknown_error(
         error_type: error_details.error_type,
         error_details: error_details.error_detail
-      )
-    end
-
-    # Perform a debug check of connectivity to GitHub/GHES. This also ensures
-    # connectivity through the proxy is established which can take 10-15s on
-    # the first request in some customer's environments.
-    sig { void }
-    def connectivity_check
-      Dependabot.logger.info("Connectivity check starting")
-      github_connectivity_client(job).repository(job.source.repo)
-      Dependabot.logger.info("Connectivity check successful")
-    rescue StandardError => e
-      Dependabot.logger.error("Connectivity check failed: #{e.message}")
-    end
-
-    sig { params(job: Dependabot::Job).returns(Octokit::Client) }
-    def github_connectivity_client(job)
-      Octokit::Client.new(
-        {
-          api_endpoint: job.source.api_endpoint,
-          connection_options: {
-            request: {
-              open_timeout: 20,
-              timeout: 5
-            }
-          }
-        }
       )
     end
 
