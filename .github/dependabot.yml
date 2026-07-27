@@ -214,3 +214,17 @@ updates:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+version: 2
+  updates:
+    - package-ecosystem: "npm"
+      directory: "/"
+      schedule:
+        interval: "weekly"
+    - package-ecosystem: "github-actions"
+      directory: "/"
+      schedule:
+        interval: "weekly"
+    - package-ecosystem: "docker"
+      directory: "/"
+      schedule:
+        interval: "weekly"
