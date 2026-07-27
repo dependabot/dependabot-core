@@ -192,7 +192,7 @@ module Dependabot
       def per_source_dependency(source, ref)
         Dependabot::Dependency.new(
           name: dependency.name,
-          version: version_class.new(ref).to_s,
+          version: Dependabot::GithubActions::Version.remove_leading_v(ref).to_s,
           requirements: [{ requirement: nil, groups: [], source: source, file: nil, metadata: {} }],
           package_manager: dependency.package_manager
         )

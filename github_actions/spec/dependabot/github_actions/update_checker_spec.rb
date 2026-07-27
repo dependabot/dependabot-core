@@ -1194,6 +1194,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     context "when the same action is referenced at mixed precision across workflows" do
       let(:dependency_name) { "actions/checkout" }
       let(:upload_pack_fixture) { "checkout" }
+      let(:dependency_files) { [] }
       # The combined dependency version is the lower of the two refs (v2), exactly
       # as DependencySet#combined_version resolves it when the parser merges the two
       # `uses:` occurrences into one dependency.
@@ -1235,6 +1236,15 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       def ref_for(reqs, file)
         reqs.find { |r| r[:file] == file }[:source][:ref]
+      end
+
+      it "preserves trailing zeroes when scoping a finder to a source ref" do
+        source = T.cast(dependency.requirements.first.source, described_class::GitSource)
+        source = source.merge(ref: "v3.0.0")
+
+        scoped_dependency = checker.send(:per_source_dependency, source, "v3.0.0")
+
+        expect(scoped_dependency.version).to eq("3.0.0")
       end
 
       context "without a lockfile (legacy regex path)" do
