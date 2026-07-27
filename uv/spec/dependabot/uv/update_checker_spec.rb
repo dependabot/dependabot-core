@@ -685,9 +685,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
               .to_raise(Excon::Error::Timeout.new("connection timeout"))
           end
 
-          it "treats the project as a library based on metadata" do
-            expect(checker.send(:library?)).to be true
-          end
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
 
         context "when the PyPI request raises Excon::Error::Socket" do
@@ -696,9 +694,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
               .to_raise(Excon::Error::Socket.new(SocketError.new("getaddrinfo failed")))
           end
 
-          it "treats the project as a library based on metadata" do
-            expect(checker.send(:library?)).to be true
-          end
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
 
         context "when the PyPI request raises URI::InvalidURIError" do
@@ -707,9 +703,7 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
               .to_raise(URI::InvalidURIError.new("bad URI"))
           end
 
-          it "treats the project as a library based on metadata" do
-            expect(checker.send(:library?)).to be true
-          end
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
       end
 
