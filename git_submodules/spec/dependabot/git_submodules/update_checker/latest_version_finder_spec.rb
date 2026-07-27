@@ -137,6 +137,28 @@ RSpec.describe Dependabot::GitSubmodules::UpdateChecker::LatestVersionFinder do
     end
   end
 
+  describe "#latest_tag when all versions are filtered by cooldown" do
+    subject { checker.latest_tag }
+
+    let(:releases) do
+      [
+        Dependabot::Package::PackageRelease.new(
+          version: Dependabot::GitSubmodules::Version.new("1.0.0"),
+          released_at: Time.now,
+          tag: "abc123"
+        )
+      ]
+    end
+
+    let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 365) }
+
+    before do
+      allow(checker).to receive(:version_list).and_return(releases)
+    end
+
+    it { is_expected.to eq(dependency.version) }
+  end
+
   describe "#latest_tag with ignored_versions" do
     subject { checker.latest_tag }
 
