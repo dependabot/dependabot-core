@@ -345,7 +345,7 @@ module Dependabot
 
         sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
         def current_version
-          return dependency.source_details(allowed_types: ["git"])&.fetch(:ref) if release_type_sha?
+          return dependency.source_string("ref", allowed_types: ["git"]) if release_type_sha?
 
           T.let(dependency.numeric_version, T.nilable(Dependabot::Version))
         end

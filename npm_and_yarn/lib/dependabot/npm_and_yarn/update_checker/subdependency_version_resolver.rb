@@ -147,7 +147,7 @@ module Dependabot
           return unless Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
           return unless current_version
 
-          all_versions = parsed_dep.metadata[:all_versions]
+          all_versions = parsed_dep.metadata_dependencies(:all_versions)
           return unless all_versions&.any?
 
           best_candidate_version(all_versions, current_version)
