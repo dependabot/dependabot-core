@@ -36,6 +36,7 @@ module Dependabot
     Group = T.type_alias { T.any(String, Symbol) }
     ObjectHash = T.type_alias { T::Hash[T.any(Symbol, String), Object] }
     Requirement = T.type_alias { T.any(String, Symbol) }
+    Source = T.type_alias { T.any(String, ObjectHash) }
     Input = T.type_alias { T.any(DependencyRequirement, ObjectHash) }
 
     K = type_member { { fixed: Symbol } }
@@ -98,9 +99,13 @@ module Dependabot
     # { type: "git", url: "https://github.com/..." }. Keys may be symbols
     # or strings depending on whether the requirement was built by a file
     # parser or deserialised from a job definition.
-    sig { returns(T.nilable(ObjectHash)) }
+    sig { returns(T.nilable(Source)) }
     def source
-      optional_object_hash(:source)
+      value = T.cast(self[:source], T.nilable(Object))
+      return if value.nil?
+      return value if value.is_a?(String)
+
+      object_hash(value, :source)
     end
 
     # Optional ecosystem-specific metadata about the requirement, e.g.
@@ -125,15 +130,29 @@ module Dependabot
     def optional_object_hash(key)
       value = T.cast(self[key], T.nilable(Object))
       return if value.nil?
-      raise TypeError, "#{key} must be a hash with string or symbol keys, or nil" unless value.is_a?(Hash)
+
+      object_hash(value, key)
+    end
+
+    sig { params(value: Object, key: Symbol).returns(ObjectHash) }
+    def object_hash(value, key)
+      message = object_hash_message(key)
+      raise TypeError, "#{key} must be #{message}" unless value.is_a?(Hash)
 
       value.each_key do |raw_nested_key|
         nested_key = T.cast(raw_nested_key, Object)
         next if nested_key.is_a?(String) || nested_key.is_a?(Symbol)
 
-        raise TypeError, "#{key} must be a hash with string or symbol keys, or nil"
+        raise TypeError, "#{key} must be #{message}"
       end
       value
+    end
+
+    sig { params(key: Symbol).returns(String) }
+    def object_hash_message(key)
+      return "a string or hash with string or symbol keys, or nil" if key == :source
+
+      "a hash with string or symbol keys, or nil"
     end
   end
 end
