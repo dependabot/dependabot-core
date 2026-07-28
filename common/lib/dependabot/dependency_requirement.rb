@@ -115,6 +115,44 @@ module Dependabot
       optional_object_hash(:metadata)
     end
 
+    # The source as a hash, or nil when the requirement has no source or
+    # names a registry as a bare string (e.g. Python's "internal" index).
+    sig { returns(T.nilable(ObjectHash)) }
+    def source_hash
+      value = source
+      return if value.nil? || value.is_a?(String)
+
+      value
+    end
+
+    # Reads a known source field such as "type", "ref", "url", or "digest".
+    # Accepts either key style because file parsers emit symbols while
+    # deserialised job definitions emit strings. Returns nil when the source
+    # is absent or a bare registry name.
+    sig { params(key: String).returns(T.nilable(String)) }
+    def source_string(key)
+      details = source_hash
+      return if details.nil?
+
+      value = details[key.to_sym] || details[key]
+      return if value.nil?
+      return value if value.is_a?(String)
+
+      raise TypeError, "source #{key} must be a string or nil"
+    end
+
+    # The requirement as a plain string. Nil when the requirement is absent,
+    # and a TypeError for the `:unfixable` sentinel, which callers that build
+    # manifest content cannot render.
+    sig { returns(T.nilable(String)) }
+    def requirement_string
+      value = requirement
+      return if value.nil?
+      return value if value.is_a?(String)
+
+      raise TypeError, "requirement must be a string or nil"
+    end
+
     private
 
     sig { params(key: Symbol).returns(T.nilable(String)) }

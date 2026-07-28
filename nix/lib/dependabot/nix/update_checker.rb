@@ -91,7 +91,7 @@ module Dependabot
         latest_channel&.fetch(:commit_sha) || channel_version_finder.current_channel_revision
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements_for_channel
         result = latest_channel
         return dependency.requirements unless result
@@ -100,7 +100,9 @@ module Dependabot
           source = req[:source]
           next req unless source
 
-          req.merge(source: source.merge(ref: result[:channel], url: result[:url]))
+          Dependabot::DependencyRequirement.create(
+            req.merge(source: source.merge(ref: result[:channel], url: result[:url]))
+          )
         end
       end
 
@@ -143,7 +145,7 @@ module Dependabot
 
       # --- Tag-pinned ref support ---
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements_for_tag
         new_tag = latest_version_tag
         return dependency.requirements unless new_tag
@@ -152,7 +154,7 @@ module Dependabot
           source = req[:source]
           next req unless source
 
-          req.merge(source: source.merge(ref: new_tag[:tag], branch: nil))
+          Dependabot::DependencyRequirement.create(req.merge(source: source.merge(ref: new_tag[:tag], branch: nil)))
         end
       end
 
@@ -172,7 +174,7 @@ module Dependabot
 
       # --- Versioned branch support ---
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements_for_versioned_branch
         result = latest_versioned_branch
         return dependency.requirements unless result
@@ -181,7 +183,7 @@ module Dependabot
           source = req[:source]
           next req unless source
 
-          req.merge(source: source.merge(ref: result[:branch], branch: nil))
+          Dependabot::DependencyRequirement.create(req.merge(source: source.merge(ref: result[:branch], branch: nil)))
         end
       end
 

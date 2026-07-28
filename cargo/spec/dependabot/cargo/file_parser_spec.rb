@@ -764,6 +764,18 @@ RSpec.describe Dependabot::Cargo::FileParser do
           end
         end
 
+        context "with multiple locked versions of a transitive dependency" do
+          let(:manifest_fixture_name) { "multiple_locked_versions" }
+          let(:lockfile_fixture_name) { "multiple_locked_versions" }
+
+          it "retains every locked package identity" do
+            getrandom = dependencies.find { |dependency| dependency.name == "getrandom" }
+
+            expect(getrandom.version).to eq("0.2.17")
+            expect(getrandom.metadata.fetch(:all_versions).map(&:version)).to eq(["0.2.17", "0.4.2"])
+          end
+        end
+
         context "with a git dependency" do
           let(:manifest_fixture_name) { "git_dependency_with_tag" }
           let(:lockfile_fixture_name) { "git_dependency_with_tag" }
