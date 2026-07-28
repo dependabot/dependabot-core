@@ -66,6 +66,12 @@ RSpec.describe Dependabot::DependencyRequirement do
       expect(minimal.metadata).to be_nil
     end
 
+    it "returns string source names" do
+      req = described_class.create(requirement: ">= 1.0", file: "pyproject.toml", groups: [], source: "internal")
+
+      expect(req.source).to eq("internal")
+    end
+
     it "returns nil groups without raising when the entry has groups: nil" do
       req = described_class.create(requirement: ">= 1.0", file: "Gemfile", groups: nil, source: nil)
 
@@ -107,9 +113,9 @@ RSpec.describe Dependabot::DependencyRequirement do
       malformed_metadata = described_class.create(requirement_hash.merge(metadata: "rails.version"))
 
       expect { malformed_source.source }
-        .to raise_error(TypeError, "source must be a hash with string or symbol keys, or nil")
+        .to raise_error(TypeError, "source must be a string or hash with string or symbol keys, or nil")
       expect { malformed_source_key.source }
-        .to raise_error(TypeError, "source must be a hash with string or symbol keys, or nil")
+        .to raise_error(TypeError, "source must be a string or hash with string or symbol keys, or nil")
       expect { malformed_metadata.metadata }
         .to raise_error(TypeError, "metadata must be a hash with string or symbol keys, or nil")
     end
