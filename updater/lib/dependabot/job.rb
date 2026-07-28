@@ -701,14 +701,10 @@ module Dependabot
     end
 
     # The fallback applied when a cooldown block is present but `default-days`
-    # is not explicitly set. Behind the `enable_cooldown_default_days`
-    # experiment this defaults to DEFAULT_COOLDOWN_DAYS, otherwise it remains 0
-    # (no cooldown) to preserve the previous behaviour.
+    # is not explicitly set. Defaults to DEFAULT_COOLDOWN_DAYS.
     sig { returns(Integer) }
     def default_cooldown_days
-      return DEFAULT_COOLDOWN_DAYS if experiments[:enable_cooldown_default_days]
-
-      0
+      DEFAULT_COOLDOWN_DAYS
     end
 
     # Provides a Dependabot::Config::UpdateConfig objected hydrated with
