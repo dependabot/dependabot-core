@@ -24,7 +24,7 @@ module Dependabot
             LOCKFILE_PATH,
             "Unsupported actions.lock version #{found.inspect}; " \
             "this version of Dependabot supports #{supported.inspect}. " \
-            "Upgrade the gh-actions-lock engine or regenerate the lockfile."
+            "Upgrade Dependabot or regenerate the lockfile with a compatible gh-actions-lock version."
           )
         end
       end
