@@ -233,7 +233,36 @@ Use these as models when implementing:
 | **npm/yarn/pnpm** | `npm_and_yarn/lib/dependabot/npm_and_yarn/dependency_grapher.rb` |
 | **Python** (pip/pip-compile requirements layers) | `python/lib/dependabot/python/dependency_grapher/requirements_layers.rb` |
 
+## Gotchas
+
+Concrete pitfalls that don't follow from general Ruby/Sorbet knowledge — read these before
+writing code, not after debugging a failure:
+
+- **Never mutate a shared `DependencyFile` to mark it as a support file.** When building a
+  `ManifestGroup`'s `files:` list, a sibling file pulled in only for cross-referencing must be
+  copied with `support_file: true`, not have its existing `DependencyFile` instance mutated —
+  other groups may still need that same file with its original attributes. See
+  `as_support_file` in `python/lib/dependabot/python/dependency_grapher/requirements_layers.rb`.
+- **`scoped_grapher` (used by `manifest_group_snapshots` for multi-group directories) calls
+  `file_parser.class.new(dependency_files:, source:, repo_contents_path:, credentials:,
+  reject_external_code:, options:)`.** If the ecosystem's `FileParser` constructor doesn't accept
+  every one of those keyword arguments, layering will raise at runtime instead of failing a type
+  check — confirm the parser's signature matches before assuming `manifest_groups` will work.
+- **When one grapher must support several package managers** (Python's pip / pip-compile /
+  Pipenv / Poetry all share one `DependencyGrapher`), route behavior off a single detector method
+  (Python's `python_package_manager`) rather than re-deriving "which package manager is this"
+  independently in every method — it's easy for two of those checks to quietly drift out of sync.
+- **An ephemeral lockfile must never become `relevant_dependency_file`.** If you inject a
+  generated lockfile into `dependency_files` for parsing, keep a separate "was this file
+  committed?" check (e.g. Python's `committed_poetry_lock` returning `nil` once
+  `@ephemeral_lockfile_generated` is set) so attribution still points at the real manifest.
+- **`purl_name_for` is not just `dependency.name`.** Some ecosystems need to strip syntax that
+  isn't part of the package identity before building a PURL — e.g. Python strips `[extras]` via
+  `NameNormaliser.normalise`. Check whether your ecosystem's dependency names can carry anything
+  beyond the bare package name before assuming the default implementation is correct.
+
 ## Example Prompts
+
 
 ### Adding a grapher to a new ecosystem
 
