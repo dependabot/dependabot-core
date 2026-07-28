@@ -1,6 +1,14 @@
 ---
 name: create-dependency-grapher
-description: Interactive DependencyGrapher creator skill that walks through the normal development process to add this component to an existing Dependabot ecosystem gem. It will ask you which ecosystem you need to add a grapher to, whether or not this ecosystem requires ephemeral lockfile generation, and iterates through a series of development steps using Go, Python and npm as reference implementations.
+description: >-
+  Use when adding dependency-graph (GitHub Dependency Submission API) support to a Dependabot
+  ecosystem gem that doesn't have a DependencyGrapher yet, or when extending an existing one —
+  "add a DependencyGrapher to X", "add dependency graph support for X", "implement subdependency
+  fetching for the X grapher", "does X need ephemeral lockfile generation", "does X need manifest
+  grouping / layering". Walks through implementing the grapher class, tests, subdependency
+  fetching, manifest grouping (layering) for ecosystems with multiple independent manifests per
+  directory, and ephemeral lockfile generation, using Go, Python, and npm/yarn/pnpm as reference
+  implementations.
 ---
 
 # Create Dependency Grapher
@@ -13,21 +21,33 @@ A DependencyGrapher converts parsed dependencies into a standardized graph struc
 
 This skill guides you through implementing a new grapher step-by-step, asking questions to determine the right approach for your ecosystem.
 
+## Boundaries
+
+**Will:**
+- Ask the ecosystem-specific questions needed to scope the work (PURL type, ephemeral lockfiles, manifest layering) before writing code.
+- Guide an iterative build — basic grapher → tests → subdependency fetching → (optionally) manifest grouping → (optionally) ephemeral lockfile generation — with a code review checkpoint after each stage.
+- Always run the ecosystem's test suite, lint, and Sorbet type-check before handing back for review (see "Code Review Tasks").
+
+**Will Not:**
+- Alter the ecosystem's `FileParser`. Changing the parser risks introducing bugs or added latency for Dependabot's core update functionality — if the grapher needs information the parser doesn't return, retrieve it in the grapher itself, even if that means re-parsing a file.
+- Skip a code review checkpoint between iterations, even if asked to "just finish it" — each checkpoint is a natural point to test against real projects before building further on top.
+- Implement manifest grouping or ephemeral lockfile generation for an ecosystem that doesn't need them.
+
 ## When to Use
 
 Use this skill when you need to:
 
 - Add dependency graph support to an ecosystem that doesn't have it yet
 - Understand the DependencyGrapher pattern before implementing one
-- Determine whether an ecosystem needs ephemeral lockfile generation
+- Determine whether an ecosystem needs ephemeral lockfile generation or manifest layering
 
 ## Detailed Instructions
 
-### Step 1: Determine the target ecosystem
+### Determine the target ecosystem
 
 Ask the user which ecosystem gem needs a DependencyGrapher? (e.g., `bundler`, `cargo`, `composer`, `hex`)
 
-### Step 2: Investigate the FileParser to learn about the ecosystem
+### Investigate the FileParser to learn about the ecosystem
 
 The file parser will exist at: `{ecosystem}/lib/dependabot/{ecosystem}/file_parser.rb`
 
@@ -44,9 +64,9 @@ From the files determine the following:
   - Examples:
     - Python's `base-requirements.txt` + `test-requirements.txt`
     - GitHub Actions' `.github/workflows/` directory with several independent workflow files
-  - This is the "layering" case covered in Step 8.
+  - This is the "layering" case covered in the Implement Manifest Grouping step below.
 
-### Step 3: Gather requirements
+### Gather requirements
 
 #### PURLs for the ecosystem
 
@@ -62,13 +82,13 @@ If the ecosystem uses lockfiles and we parse projects that have only the manifes
 
 #### Layered / multi-manifest directories
 
-Based on the answer from Step 2, ask the user:
+Based on the answer from the Investigate the FileParser step, ask the user:
 
 - Can this ecosystem have more than one independent manifest checked into the same directory, where each one should be attributed its own snapshot?
 
-If yes, note that basic functionality (Step 3-4) should still only address the common single-manifest case; layering support is added later in Step 8, once the basic grapher is working.
+If yes, note that basic functionality (Create the Grapher Class / Create a test for the Grapher Class) should still only address the common single-manifest case; layering support is added later in the Implement Manifest Grouping step, once the basic grapher is working.
 
-### Step 4: Create the Grapher Class
+### Create the Grapher Class
 
 For this step, only basic functionality should be addressed, we should ignore subdependency fetching and ephemeral lockfiles.
 
@@ -85,12 +105,12 @@ The class must:
 4. Optionally override:
    - `purl_name_for(dependency)` — If the dependency name needs normalisation for PURLs
    - `purl_version_for(dependency)` — If the ecosystem uses version prefixes
-5. Register the grapher at the bottom of the file:
+5. Register the grapher at the bottom of the file, and require it from the ecosystem's main entry point (or confirm it's autoloaded), so it's actually wired up:
    ```ruby
    Dependabot::DependencyGraphers.register("{ecosystem_key}", Dependabot::{Module}::DependencyGrapher)
    ```
 
-### Step 5: Create a test for the Grapher Class
+### Create a test for the Grapher Class
 
 Create the spec at: `{ecosystem}/spec/dependabot/{ecosystem}/dependency_grapher_spec.rb`
 
@@ -106,7 +126,7 @@ Tests should cover:
    - Native commands fail
    - Lockfile is malformed
 
-### Step 6: Code review
+### Code review
 
 Ask the user to review your work and tell you when to continue with the next step.
 
@@ -116,7 +136,7 @@ You should suggest some best practice to the user at this point:
 
 When they ask you to continue read the implementation and tests to see what improvements they have made.
 
-### Step 7: Implement subdependency fetching
+### Implement subdependency fetching
 
 1. Write a test for the desired subdependency fetching behaviour for this ecosystem
 2. Confirm that the test fails since `fetch_subdependencies(dependency)` is hard-coded to return an empty array for now.
@@ -129,78 +149,44 @@ When they ask you to continue read the implementation and tests to see what impr
 5. Assess the need for test coverage for failure modes reading data in `fetch_subdependencies(dependency)`:
   - We should always log these errors and make sure error flags are set on the grapher so the job runner knows the data is degraded
 
-### Step 8: Code review
+### Code review
 
 Ask the user to review your work.
 
 If neither manifest grouping (layering) nor ephemeral lockfile generation is required, we are now finished - otherwise we need to proceed to the next step(s).
 
-### Step 9: Implement manifest grouping (layering)
+### Implement manifest grouping (layering)
 
-Skip this step if the ecosystem cannot have multiple independent manifests in the same directory (see Step 3).
+Only relevant if the Gather Requirements step determined the ecosystem can have multiple
+independent manifests in the same directory. If not, skip straight to ephemeral lockfile
+generation (or finish, if that isn't needed either).
 
-1. Write a test asserting that a directory containing multiple independent manifests produces one snapshot per manifest, each attributed to the correct primary file and containing only that manifest's dependencies.
-2. Confirm that the test fails since `manifest_groups` is not yet overridden and defaults to a single group for the whole directory.
-3. Override `manifest_groups` (returns `T::Array[Dependabot::DependencyGraphers::ManifestGroup]`) to:
-  - Identify the set of files that act as an independent manifest's "primary" (the file dependencies should be attributed to; prefer a lockfile-like file over a bare manifest where both exist for the same layer).
-  - For each primary, gather every other file the parser needs to resolve it in isolation (paired lockfile/manifest, referenced/included files, shared constraints, etc.), marking siblings pulled in only for cross-referencing as support files (`support_file: true`) so they never win attribution.
-  - Return one `Dependabot::DependencyGraphers::ManifestGroup.new(primary:, files:)` per independent manifest.
-  - Fall back to `super` when only one group is found, so the common single-manifest case is unaffected (see `python/lib/dependabot/python/dependency_grapher.rb`'s `manifest_groups` for this pattern).
-4. Verify the test now passes. `manifest_group_snapshots` (inherited from `Base`) will resolve each group independently via a scoped grapher and propagate any subdependency-fetching errors.
-5. Add test coverage for edge cases:
-  - A directory with only one manifest still resolves via the base single-group path
-  - Cross-referenced/shared support files are included in every group that needs them but don't themselves win attribution
-  - Any files that don't belong to a recognised manifest are excluded
+Read [`references/manifest-layering.md`](references/manifest-layering.md) and follow its
+procedure: it covers writing the failing test first, overriding `manifest_groups` with the
+fall-back-to-`super` pattern, and the edge cases to add coverage for.
 
-See `python/lib/dependabot/python/dependency_grapher/requirements_layers.rb` for a full reference implementation, and the "Directories with multiple independent manifests" section of `common/lib/dependabot/dependency_graphers/README.md` for the underlying `ManifestGroup`/`manifest_groups` API.
-
-### Step 10: Code review
+### Code review
 
 Ask the user to review your work.
 
 If ephemeral lockfile generation is not required, we are now finished - otherwise we need to proceed to the next step.
 
-### Step 11: Prepare for Ephemeral Lockfile Generation
+### Prepare for Ephemeral Lockfile Generation
 
 If ephemeral lockfile generation is required, ask the user to tell you when they are ready to start and suggest they
 open a PR with the work so far to test it.
 
 When they ask you to continue read the implementation and tests to see what improvements they have made.
 
-### Step 12: Implement Ephemeral Lockfile Generation
+### Implement Ephemeral Lockfile Generation
 
-1. Write a test for the desired behaviour when a project has no lockfile checked in:
-  - We should still get transitive dependencies only present in the lockfile
-  - We should still get subdepednencies
-2. Confirm that this test fails since we only parse the manifest file for now.
-3. Create a nested class to generate a lockfile:
-  `{ecosystem}/lib/dependabot/{ecosystem}/dependency_grapher/lockfile_generator.rb`
+Read [`references/ephemeral-lockfiles.md`](references/ephemeral-lockfiles.md) and follow its
+procedure: it covers writing the failing test first, the `LockfileGenerator` class shape, the
+`prepare!` override pattern, and the failure-mode test coverage to add.
 
-  This class should:
-    1. Accept `dependency_files:` and `credentials:` (and any ecosystem-specific params)
-    2. Implement a `generate` method that returns a `Dependabot::DependencyFile`
-    3. Run the ecosystem's native lock command in a temporary directory
-    4. Return a `DependencyFile` object with the generated lockfile content
+### Code review
 
-  In the main grapher, override `prepare!` to:
-    1. Detect when a lockfile is missing
-    2. Call the generator
-    3. Inject the ephemeral lockfile into `dependency_files`
-    4. Set `@ephemeral_lockfile_generated = true`
-    5. Call `super` to proceed with normal parsing
-    6. Rescue errors and call `errored_fetching_subdependencies!`
-
-4. Verify that the test we added for the `DependencyGrapher` now passes.
-5. Add a test file for the lockfile generator:
-  `{ecosystem}/spec/dependabot/{ecosystem}/dependency_grapher/lockfile_generator_spec.rb`
-6. Add test coverage for failure modes around ephemeral lockfile generation:
-  - Generation failure doesn't crash the grapher
-  - Generated lockfile is not reported as `relevant_dependency_file`
-
-
-### Step 13: Code review
-
-As the user to verify your work, we are now finished.
+Ask the user to verify your work, we are now finished.
 
 ## Code Review Tasks
 
@@ -224,28 +210,17 @@ bin/lint -a {created or changed files}
 bundle exec srb tc -a
 ```
 
-### Step 5: Wire Up Registration
-
-Ensure the grapher is loaded by the ecosystem. Add a require to the ecosystem's main entry point or ensure it's autoloaded:
-
-```ruby
-require "dependabot/{ecosystem}/dependency_grapher"
-```
-
-### Step 6: Verify
-
-Run the ecosystem's test suite to confirm:
-
-```bash
-# From within the ecosystem's Docker container
-cd {ecosystem} && bundle exec rspec spec/dependabot/{ecosystem}/dependency_grapher_spec.rb
-```
-
 ## References
 
 Documentation for `DependencyGrapher` implementation is available in this repository at:
 
-`common/lib/dependabot/dependency_graphers/README.md`
+`common/lib/dependabot/dependency_graphers/README.md` — read this first if you need a refresher
+on the `resolved_dependencies` / `manifest_groups` API before starting.
+
+`references/manifest-layering.md` and `references/ephemeral-lockfiles.md` in this skill's own
+directory hold the detailed, step-by-step procedures for those two optional features — read the
+relevant one only when the Gather Requirements step determines it's needed (see the Detailed
+Instructions above for exactly when to load each).
 
 ## Reference Implementations
 
@@ -256,22 +231,7 @@ Use these as models when implementing:
 | **Go** | `go_modules/lib/dependabot/go_modules/dependency_grapher.rb` |
 | **Python** | `python/lib/dependabot/python/dependency_grapher.rb` |
 | **npm/yarn/pnpm** | `npm_and_yarn/lib/dependabot/npm_and_yarn/dependency_grapher.rb` |
-
-For layering (manifest grouping), see:
-
-| Ecosystem | Key File |
-|-----------|----------|
 | **Python** (pip/pip-compile requirements layers) | `python/lib/dependabot/python/dependency_grapher/requirements_layers.rb` |
-
-See the `references/` directory for annotated code from these implementations.
-
-### Architectural Requirements
-
-When implementing a dependency grapher, we should never alter the file parser layer.
-
-This risks introducing bugs or increasingly latency for Dependabot's update functionality.
-
-If we need information the file parser does not return, it should always be retrieved in the grapher even if it means re-parsing the file.
 
 ## Example Prompts
 
@@ -308,4 +268,4 @@ we need manifest grouping (layering) similar to Python's requirements layers.
 - **Scoped/namespaced packages**: If your ecosystem has scoped names (like npm's `@scope/pkg`), ensure `purl_name_for` handles URL-encoding correctly.
 - **Multiple versions of same package**: If your ecosystem allows multiple versions of a single dependency, `fetch_subdependencies` **must** return PURLs (not just names) to be unambiguous.
 - **PURL spec compliance**: Always check [PURL-TYPES.rst](https://github.com/package-url/purl-spec/blob/main/PURL-TYPES.rst) for your ecosystem's conventions.
-- **Multiple independent manifests per directory**: Ecosystems that allow several independent manifests in one directory (e.g. Python's layered requirements, or a future GitHub Actions grapher covering multiple workflow files under `.github/workflows/`) need `manifest_groups` overridden so each manifest gets its own snapshot instead of being merged into one. See Step 9.
+- **Multiple independent manifests per directory**: Ecosystems that allow several independent manifests in one directory (e.g. Python's layered requirements, or a future GitHub Actions grapher covering multiple workflow files under `.github/workflows/`) need `manifest_groups` overridden so each manifest gets its own snapshot instead of being merged into one — see [`references/manifest-layering.md`](references/manifest-layering.md).
