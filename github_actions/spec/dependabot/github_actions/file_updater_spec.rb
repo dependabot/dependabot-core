@@ -891,6 +891,28 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         end
       end
 
+      context "when updating a root composite action with an invalid workflow lockfile" do
+        let(:workflow_file) do
+          Dependabot::DependencyFile.new(name: "action.yml", content: workflow_file_body)
+        end
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: ".github/workflows/actions.lock",
+            content: "version: ["
+          )
+        end
+
+        before do
+          dependency.requirements.first[:file] = "action.yml"
+          T.must(dependency.previous_requirements).first[:file] = "action.yml"
+        end
+
+        it "keeps the legacy workflow-only update path" do
+          expect(updated_files.map(&:name)).to eq(["action.yml"])
+          expect(fake_engine).not_to have_received(:relock)
+        end
+      end
+
       context "when an onboarded dependency entry is malformed" do
         let(:lockfile) do
           Dependabot::DependencyFile.new(

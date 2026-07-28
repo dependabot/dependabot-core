@@ -820,6 +820,24 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       it { is_expected.to eq(dependency.requirements) }
     end
 
+    context "when a root composite action is fetched with an invalid workflow lockfile" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(name: "action.yml", content: ""),
+          Dependabot::DependencyFile.new(name: ".github/workflows/actions.lock", content: "version: [")
+        ]
+      end
+      let(:reference) { "v1.0.1" }
+
+      before do
+        dependency.requirements.first[:file] = "action.yml"
+      end
+
+      it "updates without parsing the unrelated lockfile" do
+        expect(updated_requirements.first.dig(:source, :ref)).to eq("v1.1.0")
+      end
+    end
+
     context "when the pinned SHA is missing from the cloned repository" do
       let(:reference) { "0123456789abcdef0123456789abcdef01234567" }
 

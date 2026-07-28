@@ -108,11 +108,12 @@ module Dependabot
       # finder exactly as before, so non-onboarded repos see byte-identical behavior.
       sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
       def onboarded_requirement?(req)
-        reader = lockfile_reader
-        return false unless reader
-
         file = dependency_files.find { |f| f.name == req.file }
         return false unless file
+        return false unless File.dirname(file.path.delete_prefix("/")) == WORKFLOW_DIRECTORY
+
+        reader = lockfile_reader
+        return false unless reader
 
         reader.onboarded?(file.path.delete_prefix("/"))
       end

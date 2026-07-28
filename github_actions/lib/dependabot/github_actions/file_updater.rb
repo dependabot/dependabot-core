@@ -57,11 +57,16 @@ module Dependabot
       # here, preserving today's regex-only behavior.
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def relocked_files
+        changed_repository_workflows = changed_workflow_files.select do |file|
+          File.dirname(repo_relative_path(file)) == WORKFLOW_DIRECTORY
+        end
+        return [] if changed_repository_workflows.empty?
+
         lock = lockfile
         reader = lockfile_reader
         return [] unless lock && reader
 
-        changed_onboarded = changed_workflow_files.select { |f| reader.onboarded?(repo_relative_path(f)) }
+        changed_onboarded = changed_repository_workflows.select { |f| reader.onboarded?(repo_relative_path(f)) }
         return [] if changed_onboarded.empty?
 
         # Gate only once the lock is authoritative for a workflow we're changing, so an

@@ -6,7 +6,7 @@ require "sorbet-runtime"
 module Dependabot
   module GithubActions
     # Integration with the gh-actions-lock lockfile (`.github/workflows/actions.lock`),
-    # which is generated and owned by the upstream `gh actions-pin` CLI. This namespace
+    # which is generated and owned by the upstream `gh-actions-lock` CLI. This namespace
     # is the boundary: {Lockfile::Reader} parses an existing lock (read-only),
     # {Lockfile::CliEngine} invokes the resolver/rewriter, {Lockfile::Env} builds
     # the subprocess env, and {Lockfile::VersionGate} rejects unsupported schemas.
