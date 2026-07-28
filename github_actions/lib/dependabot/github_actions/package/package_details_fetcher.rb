@@ -127,7 +127,7 @@ module Dependabot
               return ref if ref && ref.fetch(:version) > current_version
 
               lower_precision_ref = git_commit_checker.local_ref_for_latest_version_lower_precision
-              return ref if ref && lower_precision_ref&.fetch(:version) == current_version
+              return ref if ref&.fetch(:version) == current_version
 
               lower_precision_ref
             end,

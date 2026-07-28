@@ -135,6 +135,27 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
         it "does not broaden the ref to an equivalent lower-precision tag" do
           expect(fetcher.latest_version_tag.fetch(:tag)).to eq("v1.1.0")
         end
+
+        context "when the current full semver tag is no longer advertised" do
+          before do
+            checker = instance_double(
+              Dependabot::GitCommitChecker,
+              local_ref_for_latest_version_matching_existing_precision: Dependabot::GitTagDetails.new(
+                tag: "v1.0.4",
+                version: Dependabot::GithubActions::Version.new("1.0.4")
+              ),
+              local_ref_for_latest_version_lower_precision: Dependabot::GitTagDetails.new(
+                tag: "v1.1",
+                version: Dependabot::GithubActions::Version.new("1.1")
+              )
+            )
+            allow(fetcher).to receive(:git_commit_checker).and_return(checker)
+          end
+
+          it "does not downgrade to the older full semver tag" do
+            expect(fetcher.latest_version_tag.fetch(:tag)).to eq("v1.1")
+          end
+        end
       end
 
       context "when the latest version is being ignored" do

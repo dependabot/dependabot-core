@@ -46,8 +46,10 @@ module Dependabot
 
         if fetched_files.any?
           # The lockfile is additive: it is only fetched alongside workflow files
-          # and never activates the ecosystem on its own.
-          fetched_files += [actions_lockfile].compact
+          # and never activates the ecosystem on its own. Relocking also requires
+          # every workflow to be materialized, so retain the workflow-only path if
+          # an invalidly encoded workflow had to be omitted.
+          fetched_files += [actions_lockfile].compact if incorrectly_encoded_workflow_files.empty?
           return fetched_files
         end
 

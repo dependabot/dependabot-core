@@ -1238,15 +1238,6 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         reqs.find { |r| r[:file] == file }[:source][:ref]
       end
 
-      it "preserves trailing zeroes when scoping a finder to a source ref" do
-        source = T.cast(dependency.requirements.first.source, described_class::GitSource)
-        source = source.merge(ref: "v3.0.0")
-
-        scoped_dependency = checker.send(:per_source_dependency, source, "v3.0.0")
-
-        expect(scoped_dependency.version).to eq("3.0.0")
-      end
-
       context "without a lockfile (legacy regex path)" do
         let(:dependency_files) { [] }
 
@@ -1317,6 +1308,16 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
             expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
             expect(ref_for(updated_requirements, ".github/workflows/patch.yml")).to eq("v3.5.2")
             expect(checker.updated_dependencies(requirements_to_unlock: :own).first.version).to eq("3")
+          end
+        end
+
+        context "when the patch-pinned ref ends in zero" do
+          before do
+            dependency.requirements[1][:source][:ref] = "v3.5.0"
+          end
+
+          it "preserves its three-segment precision" do
+            expect(ref_for(updated_requirements, ".github/workflows/patch.yml")).to eq("v3.5.2")
           end
         end
       end

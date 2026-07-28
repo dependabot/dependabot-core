@@ -207,6 +207,24 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
         expect(file_fetcher_instance.files.map(&:name))
           .to match_array(%w(.github/workflows/integration-workflow.yml))
       end
+
+      context "when an actions.lock is present" do
+        before do
+          stub_request(:get, url + ".github/workflows?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "contents_githubaction_repo_workflows_with_lock.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "keeps the workflow-only path" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to contain_exactly(".github/workflows/integration-workflow.yml")
+          expect(a_request(:get, url + ".github/workflows/actions.lock?ref=sha")).not_to have_been_made
+        end
+      end
     end
 
     context "with an additional composite action file" do
