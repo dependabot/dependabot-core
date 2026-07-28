@@ -336,6 +336,7 @@ module Dependabot
           return nil unless dist_tag_version && !dist_tag_version.empty?
 
           release = releases.find { |r| r.version == Version.new(dist_tag_version) }
+          return nil if release && !resolutions_constraint.satisfied_by?(release.version)
 
           release
         end

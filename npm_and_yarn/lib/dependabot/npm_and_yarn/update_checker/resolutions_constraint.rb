@@ -44,7 +44,7 @@ module Dependabot
           @dependency = dependency
           @dependency_files = dependency_files
           @requirements = T.let(nil, T.nilable(T::Array[T::Array[Dependabot::NpmAndYarn::Requirement]]))
-          @updatable_values = T.let(nil, T.nilable(T::Array[String]))
+          @package_manager = T.let(nil, T.nilable(Symbol))
         end
 
         sig { returns(T::Boolean) }
@@ -143,15 +143,10 @@ module Dependabot
 
         sig { returns(T::Array[String]) }
         def manifest_constraint_values
-          content = root_manifest&.content
-          return [] unless content
+          parsed = parsed_manifest
+          return [] if parsed.empty?
 
-          parsed = JSON.parse(content)
-          return [] unless parsed.is_a?(Hash)
-
-          extract_matching(override_entries(parsed))
-        rescue JSON::ParserError
-          []
+          extract_matching(override_entries(parsed), source: :manifest)
         end
 
         # Modern pnpm projects declare root overrides in pnpm-workspace.yaml
@@ -164,7 +159,7 @@ module Dependabot
           parsed = YAML.safe_load(content, aliases: true)
           return [] unless parsed.is_a?(Hash)
 
-          extract_matching(parsed["overrides"])
+          extract_matching(parsed["overrides"], source: :pnpm_workspace)
         rescue Psych::Exception
           []
         end
@@ -190,8 +185,8 @@ module Dependabot
           pnpm["overrides"]
         end
 
-        sig { params(entries: Object).returns(T::Array[String]) }
-        def extract_matching(entries)
+        sig { params(entries: Object, source: Symbol).returns(T::Array[String]) }
+        def extract_matching(entries, source:)
           return [] unless entries.is_a?(Hash)
 
           entries.filter_map do |key, raw_value|
@@ -200,7 +195,7 @@ module Dependabot
             value = constraint_value(raw_value)
             # Skip entries the updater rewrites alongside the dependency; those
             # updates are realizable and must not be filtered out.
-            next if value.nil? || updatable_values.include?(value)
+            next if value.nil? || updatable?(value, source)
 
             value
           end
@@ -219,17 +214,40 @@ module Dependabot
           end
         end
 
-        sig { returns(T::Array[String]) }
-        def updatable_values
-          @updatable_values ||= begin
-            values = []
-            current = dependency.version
-            values << current if current
-            dependency.requirements.each do |req|
-              requirement = req[:requirement]
-              values << requirement if requirement.is_a?(String)
-            end
-            values
+        # Whether the file updater would rewrite `value` alongside the dependency,
+        # making the corresponding version realizable so it must not be filtered.
+        #
+        # * Manifest (package.json) resolutions/overrides: `PackageJsonUpdater`
+        #   rewrites entries that equal the current requirement/version
+        #   (`#matching_resolutions`) *and* ranges that contain the current
+        #   version (`#update_overrides_for_subdependency`, e.g. `^6.23.0`).
+        # * pnpm-workspace.yaml overrides: `PnpmWorkspaceUpdater` only rewrites
+        #   overrides for dependencies declared in the workspace file itself, so
+        #   the version-based exception does not apply there.
+        sig { params(value: String, source: Symbol).returns(T::Boolean) }
+        def updatable?(value, source)
+          return true if requirement_values_for(source).include?(value)
+          return false if source == :pnpm_workspace
+
+          current = dependency.version
+          return false unless current
+
+          value == current || value.include?(current)
+        end
+
+        # Requirement strings the dependency declares in the manifest that owns
+        # the constraint. Only these are rewritten by the matching updater.
+        sig { params(source: Symbol).returns(T::Array[String]) }
+        def requirement_values_for(source)
+          target = source == :pnpm_workspace ? "pnpm-workspace.yaml" : "package.json"
+
+          dependency.requirements.filter_map do |req|
+            requirement = req[:requirement]
+            file = req[:file]
+            next unless requirement.is_a?(String) && file.is_a?(String)
+            next unless file == target || file.end_with?("/#{target}")
+
+            requirement
           end
         end
 
@@ -254,18 +272,55 @@ module Dependabot
           dependency_files.find { |file| file.name == "pnpm-workspace.yaml" }
         end
 
+        # Detects the package manager from lockfiles first, then the manifest's
+        # `packageManager`/`engines` hints, before falling back to :unknown.
+        # This lets a lockfile-free but *declared* Yarn/pnpm project select the
+        # correct override field instead of guessing by precedence.
         sig { returns(Symbol) }
         def package_manager
-          return :pnpm if lockfile?("pnpm-lock.yaml") || pnpm_workspace_file
-          return :npm if lockfile?("package-lock.json") || lockfile?("npm-shrinkwrap.json")
-          return :yarn if lockfile?("yarn.lock")
-
-          :unknown
+          @package_manager ||= T.let(
+            manager_from_lockfiles || manager_from_manifest_hints || :unknown,
+            T.nilable(Symbol)
+          )
         end
 
-        sig { params(name: String).returns(T::Boolean) }
-        def lockfile?(name)
-          dependency_files.any? { |file| file.name == name || file.name.end_with?("/#{name}") }
+        sig { returns(T.nilable(Symbol)) }
+        def manager_from_lockfiles
+          return :pnpm if find_file("pnpm-lock.yaml") || pnpm_workspace_file
+          return :npm if find_file("package-lock.json") || find_file("npm-shrinkwrap.json")
+          return :yarn if find_file("yarn.lock")
+
+          nil
+        end
+
+        sig { returns(T.nilable(Symbol)) }
+        def manager_from_manifest_hints
+          %i(yarn pnpm npm).find { |manager| manifest_declares?(manager) }
+        end
+
+        sig { params(manager: Symbol).returns(T::Boolean) }
+        def manifest_declares?(manager)
+          package_manager_attr = parsed_manifest["packageManager"]
+          engines = parsed_manifest["engines"]
+
+          (package_manager_attr.is_a?(String) && package_manager_attr.start_with?("#{manager}@")) ||
+            (engines.is_a?(Hash) && engines.key?(manager.to_s))
+        end
+
+        sig { returns(T::Hash[String, Object]) }
+        def parsed_manifest
+          content = root_manifest&.content
+          return {} unless content
+
+          parsed = JSON.parse(content)
+          parsed.is_a?(Hash) ? parsed : {}
+        rescue JSON::ParserError
+          {}
+        end
+
+        sig { params(name: String).returns(T.nilable(Dependabot::DependencyFile)) }
+        def find_file(name)
+          dependency_files.find { |file| file.name == name || file.name.end_with?("/#{name}") }
         end
       end
     end

@@ -307,12 +307,13 @@ module Dependabot
             env: yarn_time_gate_env
           )
 
-          reqs.each do |req|
-            requirement = req[:requirement]
-            next unless requirement
-
-            BerryLockfileHandler.replace_declaration(yarn_lock.name, dep_name, T.cast(version, String), requirement)
-          end
+          # Rewrite the single resolved entry into a composite key carrying every
+          # workspace requirement at once. Rewriting per-requirement would drop
+          # all but the first descriptor and let `yarn install` re-resolve them.
+          requirements = reqs.filter_map { |req| req[:requirement] }.map { |req| T.cast(req, String) }
+          BerryLockfileHandler.replace_declarations(
+            yarn_lock.name, dep_name, T.cast(version, String), requirements
+          )
 
           # Restore package.json and re-install to normalize lockfile descriptors,
           # same as yarn classic's replaceLockfileDeclaration flow.

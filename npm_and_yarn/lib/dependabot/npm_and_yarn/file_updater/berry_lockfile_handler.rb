@@ -70,7 +70,32 @@ module Dependabot
           ).void
         end
         def self.replace_declaration(lockfile_path, dep_name, version, requirement)
+          replace_declarations(lockfile_path, dep_name, version, [requirement])
+        end
+
+        # Rewrites the single exact-version key for a dependency into a composite
+        # key that carries *every* required descriptor (one per workspace
+        # requirement), e.g. "etag@npm:1.7.0" → "etag@npm:*, etag@npm:^1.1".
+        #
+        # Rewriting each requirement separately would clobber the entry: the first
+        # rewrite renames the exact key so it no longer ends with the version, so
+        # later requirements find nothing and their descriptors are dropped. Yarn
+        # then re-resolves those missing descriptors on the next install, which can
+        # land above a cooldown/security target. Emitting one composite key keeps
+        # all descriptors pinned to the already-resolved version.
+        sig do
+          params(
+            lockfile_path: String,
+            dep_name: String,
+            version: String,
+            requirements: T::Array[String]
+          ).void
+        end
+        def self.replace_declarations(lockfile_path, dep_name, version, requirements)
           return unless File.exist?(lockfile_path)
+
+          descriptors = requirements.compact.uniq
+          return if descriptors.empty?
 
           content = File.read(lockfile_path)
           parsed = parse(lockfile_path)
@@ -80,7 +105,7 @@ module Dependabot
           return unless exact_key
 
           protocol = extract_protocol(exact_key, dep_name)
-          new_key = "#{dep_name}@#{protocol}#{requirement}"
+          new_key = descriptors.map { |req| "#{dep_name}@#{protocol}#{req}" }.join(", ")
 
           escaped = Regexp.escape(exact_key)
           File.write(lockfile_path, content.gsub(/^"#{escaped}":/m, "\"#{new_key}\":"))

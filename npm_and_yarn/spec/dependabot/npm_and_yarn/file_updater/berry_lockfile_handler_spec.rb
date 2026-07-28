@@ -189,4 +189,51 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::BerryLockfileHandler do
       expect(File.read(lockfile_path)).to eq(original)
     end
   end
+
+  describe ".replace_declarations" do
+    let(:tmp_dir) { Dir.mktmpdir }
+    let(:lockfile_path) { File.join(tmp_dir, "yarn.lock") }
+
+    after { FileUtils.rm_rf(tmp_dir) }
+
+    it "rewrites the exact key into a composite key with every requirement" do
+      File.write(lockfile_path, <<~YAML)
+        "etag@npm:1.7.0":
+          version: 1.7.0
+          resolution: "etag@npm:1.7.0"
+          checksum: abc123
+      YAML
+
+      described_class.replace_declarations(lockfile_path, "etag", "1.7.0", ["*", "^1.1"])
+
+      content = File.read(lockfile_path)
+      expect(content).to include('"etag@npm:*, etag@npm:^1.1":')
+      expect(content).not_to include('"etag@npm:1.7.0":')
+      expect(content).to include("version: 1.7.0")
+    end
+
+    it "deduplicates repeated requirements" do
+      File.write(lockfile_path, <<~YAML)
+        "etag@npm:1.7.0":
+          version: 1.7.0
+          resolution: "etag@npm:1.7.0"
+      YAML
+
+      described_class.replace_declarations(lockfile_path, "etag", "1.7.0", ["*", "*"])
+
+      expect(File.read(lockfile_path)).to include('"etag@npm:*":')
+    end
+
+    it "does nothing when the requirement list is empty" do
+      original = <<~YAML
+        "etag@npm:1.7.0":
+          version: 1.7.0
+      YAML
+      File.write(lockfile_path, original)
+
+      described_class.replace_declarations(lockfile_path, "etag", "1.7.0", [])
+
+      expect(File.read(lockfile_path)).to eq(original)
+    end
+  end
 end
