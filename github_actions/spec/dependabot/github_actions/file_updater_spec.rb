@@ -879,6 +879,14 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         )
       end
 
+      it "reuses the rewritten workflow when relocking" do
+        workflow = updated_files.find { |file| file.name == ".github/workflows/workflow.yml" }
+
+        expect(fake_engine).to have_received(:relock) do |workflow_files:, **|
+          expect(workflow_files.find { |file| file.name == workflow.name }).to equal(workflow)
+        end
+      end
+
       context "when relocking fails" do
         before do
           allow(fake_engine).to receive(:relock)

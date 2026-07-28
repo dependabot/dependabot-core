@@ -19,7 +19,7 @@ module Dependabot
         updated_files = changed_workflow_files.map do |file|
           updated_file(file: file, content: updated_workflow_file_content(file))
         end
-        updated_files.concat(relocked_files)
+        updated_files.concat(relocked_files(updated_files))
         updated_files.reject! { |f| dependency_files.include?(f) }
         raise "No files changed!" if updated_files.none?
 
@@ -55,8 +55,11 @@ module Dependabot
       # onboarding comparisons are repo-relative paths, independent of the Dependabot
       # `directory`. Workflows absent from the lock (and lockless repos) never reach
       # here, preserving today's regex-only behavior.
-      sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def relocked_files
+      sig do
+        params(updated_workflow_files: T::Array[Dependabot::DependencyFile])
+          .returns(T::Array[Dependabot::DependencyFile])
+      end
+      def relocked_files(updated_workflow_files)
         changed_repository_workflows = changed_workflow_files.select do |file|
           File.dirname(repo_relative_path(file)) == WORKFLOW_DIRECTORY
         end
@@ -77,7 +80,7 @@ module Dependabot
         # Materialize the full onboarded closure so the lock remains intact, but fix
         # only changed workflows so unrelated refs are not touched.
         content = Lockfile::CliEngine.new(credentials).relock(
-          workflow_files: rewritten_onboarded_workflow_files(reader),
+          workflow_files: rewritten_onboarded_workflow_files(reader, updated_workflow_files),
           lockfile: lock,
           workflow_paths: changed_onboarded.map { |file| repo_relative_path(file) }
         )
@@ -87,19 +90,16 @@ module Dependabot
 
       # The onboarded closure as the engine should see it: every workflow the lock
       # tracks, with bumped refs applied to changed ones and the rest left verbatim.
-      sig { params(reader: Lockfile::Reader).returns(T::Array[Dependabot::DependencyFile]) }
-      def rewritten_onboarded_workflow_files(reader)
-        changed = changed_workflow_files
+      sig do
+        params(
+          reader: Lockfile::Reader,
+          updated_workflow_files: T::Array[Dependabot::DependencyFile]
+        ).returns(T::Array[Dependabot::DependencyFile])
+      end
+      def rewritten_onboarded_workflow_files(reader, updated_workflow_files)
+        updated_by_path = updated_workflow_files.to_h { |file| [repo_relative_path(file), file] }
         onboarded_workflow_files(reader).map do |file|
-          next file unless changed.include?(file)
-
-          DependencyFile.new(
-            name: file.name,
-            content: updated_workflow_file_content(file),
-            directory: file.directory,
-            type: file.type,
-            support_file: file.support_file?
-          )
+          updated_by_path.fetch(repo_relative_path(file), file)
         end
       end
 
