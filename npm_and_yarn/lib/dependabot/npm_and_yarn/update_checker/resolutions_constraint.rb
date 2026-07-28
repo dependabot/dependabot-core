@@ -237,6 +237,11 @@ module Dependabot
 
         # Requirement strings the dependency declares in the manifest that owns
         # the constraint. Only these are rewritten by the matching updater.
+        #
+        # Only the *root* manifest counts: `PackageJsonUpdater` rewrites
+        # resolutions in the root `package.json` (the same file the constraint is
+        # read from), so a requirement declared in a nested workspace manifest
+        # must not make the root resolution look mutable.
         sig { params(source: Symbol).returns(T::Array[String]) }
         def requirement_values_for(source)
           target = source == :pnpm_workspace ? "pnpm-workspace.yaml" : "package.json"
@@ -244,8 +249,7 @@ module Dependabot
           dependency.requirements.filter_map do |req|
             requirement = req[:requirement]
             file = req[:file]
-            next unless requirement.is_a?(String) && file.is_a?(String)
-            next unless file == target || file.end_with?("/#{target}")
+            next unless requirement.is_a?(String) && file == target
 
             requirement
           end
@@ -293,18 +297,28 @@ module Dependabot
           nil
         end
 
+        # Mirrors `PackageManagerDetector`'s precedence: check every manager's
+        # `packageManager` attribute first, and only then fall back to `engines`.
+        # A definitive `packageManager` must win over a stale `engines` entry.
         sig { returns(T.nilable(Symbol)) }
         def manager_from_manifest_hints
-          %i(yarn pnpm npm).find { |manager| manifest_declares?(manager) }
+          manager_from_package_manager_attr || manager_from_engines
         end
 
-        sig { params(manager: Symbol).returns(T::Boolean) }
-        def manifest_declares?(manager)
-          package_manager_attr = parsed_manifest["packageManager"]
-          engines = parsed_manifest["engines"]
+        sig { returns(T.nilable(Symbol)) }
+        def manager_from_package_manager_attr
+          attr = parsed_manifest["packageManager"]
+          return nil unless attr.is_a?(String)
 
-          (package_manager_attr.is_a?(String) && package_manager_attr.start_with?("#{manager}@")) ||
-            (engines.is_a?(Hash) && engines.key?(manager.to_s))
+          %i(npm yarn pnpm).find { |manager| attr.start_with?("#{manager}@") }
+        end
+
+        sig { returns(T.nilable(Symbol)) }
+        def manager_from_engines
+          engines = parsed_manifest["engines"]
+          return nil unless engines.is_a?(Hash)
+
+          %i(npm yarn pnpm).find { |manager| engines.key?(manager.to_s) }
         end
 
         sig { returns(T::Hash[String, Object]) }

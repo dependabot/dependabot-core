@@ -451,6 +451,62 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
       end
     end
 
+    context "when packageManager says npm but a stale engines.yarn entry is present" do
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "example",
+            packageManager: "npm@10.2.3",
+            engines: { "yarn" => ">= 1" },
+            dependencies: { "etag" => "^1.0.0" },
+            resolutions: { "etag" => "< 1.7.0" }
+          }.to_json
+        )]
+      end
+
+      it "prefers packageManager over engines and ignores the yarn resolution" do
+        expect(latest_version_from_registry).to eq(Gem::Version.new("1.7.0"))
+      end
+    end
+
+    context "when only a nested workspace requirement matches a root resolution's value" do
+      let(:target_version) { "1.6.0" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: "1.0.0",
+          requirements: [{
+            file: "packages/a/package.json",
+            requirement: "< 1.7.0",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "package.json",
+            content: {
+              name: "example",
+              packageManager: "yarn@3.2.3",
+              resolutions: { "etag" => "< 1.7.0" }
+            }.to_json
+          ),
+          Dependabot::DependencyFile.new(
+            name: "packages/a/package.json",
+            content: { name: "a", dependencies: { "etag" => "< 1.7.0" } }.to_json
+          )
+        ]
+      end
+
+      it "keeps the immutable root resolution because only the root requirement can make it mutable" do
+        expect(latest_version_from_registry).to eq(Gem::Version.new("1.6.0"))
+      end
+    end
+
     context "when a named dist-tag requirement is excluded by a resolution" do
       let(:dependency) do
         Dependabot::Dependency.new(
