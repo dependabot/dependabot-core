@@ -52,6 +52,15 @@ RSpec.describe Dependabot::GithubActions::Lockfile::CliEngine do
     end
   end
 
+  describe "#relock when stdout is valid non-object JSON" do
+    before { stub_subprocess(stdout: "[]", exitstatus: 0, stderr: "") }
+
+    it "raises EngineError" do
+      expect { engine.relock(workflow_files: [workflow], lockfile: lockfile) }
+        .to raise_error(Dependabot::GithubActions::Lockfile::EngineError, /non-object JSON/)
+    end
+  end
+
   describe "#relock when the binary fails to start (capture3 returns a nil status)" do
     # capture3_with_timeout swallows Errno::ENOENT (binary missing / not executable)
     # by returning a nil status with the OS error on stderr. Without the guard in

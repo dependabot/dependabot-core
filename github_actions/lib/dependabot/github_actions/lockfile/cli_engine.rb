@@ -106,7 +106,10 @@ module Dependabot
           stdout, stderr, exit_status = invoke(dir, args)
           raise EngineError, "gh-actions-lock failed (exit #{exit_status}): #{stderr.strip}" if exit_status > 1
 
-          [T.cast(JSON.parse(stdout), JsonObject), exit_status]
+          json = JSON.parse(stdout)
+          raise EngineError, "gh-actions-lock emitted non-object JSON" unless json.is_a?(Hash)
+
+          [T.cast(json, JsonObject), exit_status]
         rescue JSON::ParserError => e
           raise EngineError, "gh-actions-lock emitted unparseable JSON: #{e.message}"
         end
