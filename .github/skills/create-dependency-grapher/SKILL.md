@@ -9,6 +9,10 @@ description: >-
   fetching, manifest grouping (layering) for ecosystems with multiple independent manifests per
   directory, and ephemeral lockfile generation, using Go, Python, and npm/yarn/pnpm as reference
   implementations.
+compatibility: >-
+  Requires a local checkout of dependabot-core. The Code Review Tasks run `bin/test
+  {ecosystem}`, `bin/lint -a`, and `bundle exec srb tc -a`, which expect this repo's Docker-based
+  ecosystem tooling to be available (see the repo's own CONTRIBUTING docs for setup).
 ---
 
 # Create Dependency Grapher
@@ -279,16 +283,15 @@ Explain how DependencyGraphers work before I implement one for Hex.
 ### Focusing on ephemeral lockfile support
 
 ```
-I need to add a grapher to Composer, and it needs ephemeral lockfile generation
-since composer.lock may not always be committed.
+Add a DependencyGrapher to Composer. composer.lock may not always be committed, so we
+probably need ephemeral lockfile generation.
 ```
 
 ### Focusing on layered/multi-manifest directories
 
 ```
-I need to add a grapher to GitHub Actions. A .github/workflows/ directory can hold
-several independent workflow files, each with its own action dependencies, so I think
-we need manifest grouping (layering) similar to Python's requirements layers.
+Add a DependencyGrapher to GitHub Actions. A .github/workflows/ directory can hold several
+independent workflow files, each with its own action dependencies.
 ```
 
 ## Edge Cases and Limitations
