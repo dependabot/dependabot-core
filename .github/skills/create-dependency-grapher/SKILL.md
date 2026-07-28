@@ -40,6 +40,11 @@ From the files determine the following:
 - Do we parse projects that have only the manifest file checked in?
 - Are there multiple packager managers involved in this ecosystem?
 - Do we use the native binary for each package manager involved?
+- Can a single directory routinely contain **multiple independent manifests** that should each be reported as their own snapshot, rather than being merged into one?
+  - Examples:
+    - Python's `base-requirements.txt` + `test-requirements.txt`
+    - GitHub Actions' `.github/workflows/` directory with several independent workflow files
+  - This is the "layering" case covered in Step 8.
 
 ### Step 3: Gather requirements
 
@@ -55,7 +60,15 @@ If the ecosystem uses lockfiles and we parse projects that have only the manifes
 
 - For {package_manager} should we generate ephemeral lockfiles?
 
-### Step 3: Create the Grapher Class
+#### Layered / multi-manifest directories
+
+Based on the answer from Step 2, ask the user:
+
+- Can this ecosystem have more than one independent manifest checked into the same directory, where each one should be attributed its own snapshot?
+
+If yes, note that basic functionality (Step 3-4) should still only address the common single-manifest case; layering support is added later in Step 8, once the basic grapher is working.
+
+### Step 4: Create the Grapher Class
 
 For this step, only basic functionality should be addressed, we should ignore subdependency fetching and ephemeral lockfiles.
 
@@ -77,7 +90,7 @@ The class must:
    Dependabot::DependencyGraphers.register("{ecosystem_key}", Dependabot::{Module}::DependencyGrapher)
    ```
 
-### Step 4: Create a test for the Grapher Class
+### Step 5: Create a test for the Grapher Class
 
 Create the spec at: `{ecosystem}/spec/dependabot/{ecosystem}/dependency_grapher_spec.rb`
 
@@ -93,7 +106,7 @@ Tests should cover:
    - Native commands fail
    - Lockfile is malformed
 
-### Step 5: Code review
+### Step 6: Code review
 
 Ask the user to review your work and tell you when to continue with the next step.
 
@@ -103,7 +116,7 @@ You should suggest some best practice to the user at this point:
 
 When they ask you to continue read the implementation and tests to see what improvements they have made.
 
-### Step 6: Implement subdependency fetching
+### Step 7: Implement subdependency fetching
 
 1. Write a test for the desired subdependency fetching behaviour for this ecosystem
 2. Confirm that the test fails since `fetch_subdependencies(dependency)` is hard-coded to return an empty array for now.
@@ -116,20 +129,45 @@ When they ask you to continue read the implementation and tests to see what impr
 5. Assess the need for test coverage for failure modes reading data in `fetch_subdependencies(dependency)`:
   - We should always log these errors and make sure error flags are set on the grapher so the job runner knows the data is degraded
 
-### Step 7: Code review
+### Step 8: Code review
+
+Ask the user to review your work.
+
+If neither manifest grouping (layering) nor ephemeral lockfile generation is required, we are now finished - otherwise we need to proceed to the next step(s).
+
+### Step 9: Implement manifest grouping (layering)
+
+Skip this step if the ecosystem cannot have multiple independent manifests in the same directory (see Step 3).
+
+1. Write a test asserting that a directory containing multiple independent manifests produces one snapshot per manifest, each attributed to the correct primary file and containing only that manifest's dependencies.
+2. Confirm that the test fails since `manifest_groups` is not yet overridden and defaults to a single group for the whole directory.
+3. Override `manifest_groups` (returns `T::Array[Dependabot::DependencyGraphers::ManifestGroup]`) to:
+  - Identify the set of files that act as an independent manifest's "primary" (the file dependencies should be attributed to; prefer a lockfile-like file over a bare manifest where both exist for the same layer).
+  - For each primary, gather every other file the parser needs to resolve it in isolation (paired lockfile/manifest, referenced/included files, shared constraints, etc.), marking siblings pulled in only for cross-referencing as support files (`support_file: true`) so they never win attribution.
+  - Return one `Dependabot::DependencyGraphers::ManifestGroup.new(primary:, files:)` per independent manifest.
+  - Fall back to `super` when only one group is found, so the common single-manifest case is unaffected (see `python/lib/dependabot/python/dependency_grapher.rb`'s `manifest_groups` for this pattern).
+4. Verify the test now passes. `manifest_group_snapshots` (inherited from `Base`) will resolve each group independently via a scoped grapher and propagate any subdependency-fetching errors.
+5. Add test coverage for edge cases:
+  - A directory with only one manifest still resolves via the base single-group path
+  - Cross-referenced/shared support files are included in every group that needs them but don't themselves win attribution
+  - Any files that don't belong to a recognised manifest are excluded
+
+See `python/lib/dependabot/python/dependency_grapher/requirements_layers.rb` for a full reference implementation, and the "Directories with multiple independent manifests" section of `common/lib/dependabot/dependency_graphers/README.md` for the underlying `ManifestGroup`/`manifest_groups` API.
+
+### Step 10: Code review
 
 Ask the user to review your work.
 
 If ephemeral lockfile generation is not required, we are now finished - otherwise we need to proceed to the next step.
 
-### Step 8: Prepare for Ephemeral Lockfile Generation
+### Step 11: Prepare for Ephemeral Lockfile Generation
 
 If ephemeral lockfile generation is required, ask the user to tell you when they are ready to start and suggest they
 open a PR with the work so far to test it.
 
 When they ask you to continue read the implementation and tests to see what improvements they have made.
 
-### Step 9: Implement Ephemeral Lockfile Generation
+### Step 12: Implement Ephemeral Lockfile Generation
 
 1. Write a test for the desired behaviour when a project has no lockfile checked in:
   - We should still get transitive dependencies only present in the lockfile
@@ -160,7 +198,7 @@ When they ask you to continue read the implementation and tests to see what impr
   - Generated lockfile is not reported as `relevant_dependency_file`
 
 
-### Step 10: Code review
+### Step 13: Code review
 
 As the user to verify your work, we are now finished.
 
@@ -219,6 +257,12 @@ Use these as models when implementing:
 | **Python** | `python/lib/dependabot/python/dependency_grapher.rb` |
 | **npm/yarn/pnpm** | `npm_and_yarn/lib/dependabot/npm_and_yarn/dependency_grapher.rb` |
 
+For layering (manifest grouping), see:
+
+| Ecosystem | Key File |
+|-----------|----------|
+| **Python** (pip/pip-compile requirements layers) | `python/lib/dependabot/python/dependency_grapher/requirements_layers.rb` |
+
 See the `references/` directory for annotated code from these implementations.
 
 ### Architectural Requirements
@@ -250,9 +294,18 @@ I need to add a grapher to Composer, and it needs ephemeral lockfile generation
 since composer.lock may not always be committed.
 ```
 
+### Focusing on layered/multi-manifest directories
+
+```
+I need to add a grapher to GitHub Actions. A .github/workflows/ directory can hold
+several independent workflow files, each with its own action dependencies, so I think
+we need manifest grouping (layering) similar to Python's requirements layers.
+```
+
 ## Edge Cases and Limitations
 
 - **Multiple lockfile formats**: Some ecosystems (like Python) support multiple package managers. Your grapher may need to handle different lockfile formats.
 - **Scoped/namespaced packages**: If your ecosystem has scoped names (like npm's `@scope/pkg`), ensure `purl_name_for` handles URL-encoding correctly.
 - **Multiple versions of same package**: If your ecosystem allows multiple versions of a single dependency, `fetch_subdependencies` **must** return PURLs (not just names) to be unambiguous.
 - **PURL spec compliance**: Always check [PURL-TYPES.rst](https://github.com/package-url/purl-spec/blob/main/PURL-TYPES.rst) for your ecosystem's conventions.
+- **Multiple independent manifests per directory**: Ecosystems that allow several independent manifests in one directory (e.g. Python's layered requirements, or a future GitHub Actions grapher covering multiple workflow files under `.github/workflows/`) need `manifest_groups` overridden so each manifest gets its own snapshot instead of being merged into one. See Step 9.
