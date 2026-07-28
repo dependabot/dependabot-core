@@ -148,10 +148,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
-    context "when there is a unsupported engine (npm) response from registry" do
+    context "when package.json declares an unsupported npm engine" do
       let(:dependency_name) { "@npmcli/fs" }
       let(:version) { "3.1.1" }
-      let(:previous_version) { "3.1.0 " }
+      let(:previous_version) { "3.1.0" }
       let(:requirements) do
         [{
           file: "package.json",
@@ -160,12 +160,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           source: nil
         }]
       end
+      let(:previous_requirements) do
+        [{
+          file: "package.json",
+          requirement: "3.1.0",
+          groups: ["devDependencies"],
+          source: nil
+        }]
+      end
 
       let(:project_name) { "pnpm/unsupported_engine_npm" }
 
-      it "raises a helpful error" do
-        expect { updated_pnpm_lock_content }
-          .to raise_error(Dependabot::ToolVersionNotSupported)
+      it "updates the dependency" do
+        expect(updated_pnpm_lock_content).to include("@npmcli/fs@3.1.1")
       end
     end
 
@@ -802,7 +809,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             .ordered
             .and_return("")
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
-            .with("audit --fix", { fingerprint: "audit --fix" })
+            .with("audit --fix=update", { fingerprint: "audit --fix=update" })
             .ordered
             .and_return("")
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)

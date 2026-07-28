@@ -71,10 +71,10 @@ module Dependabot
       sig { returns(String) }
       def self.run_pnpm_audit_fix_command
         # Fallback for transitive dependencies where `pnpm update` is a no-op.
-        # `pnpm audit --fix` adds overrides to the manifest for vulnerable deps.
+        # `pnpm audit --fix=update` adds overrides to the manifest for vulnerable deps.
         Helpers.run_pnpm_command(
-          "audit --fix",
-          fingerprint: "audit --fix"
+          "audit --fix=update",
+          fingerprint: "audit --fix=update"
         )
       end
 

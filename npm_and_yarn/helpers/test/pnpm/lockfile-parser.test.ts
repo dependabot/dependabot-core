@@ -48,6 +48,22 @@ describe("generates an updated pnpm lock for the original file", () => {
     expect(result.length).toEqual(122);
   });
 
+  it("that contains an environment lockfile document", async () => {
+    copyDependencies("multi_document", tempDir);
+    const result = await parseLockfile(tempDir);
+
+    expect(result).toEqual([
+      {
+        name: "etag",
+        version: "1.8.0",
+        resolved: undefined,
+        dev: false,
+        specifiers: ["^1.0.0"],
+        aliased: false,
+      },
+    ]);
+  });
+
   // Should have the version in the lock file.
   it("that contains dependencies with an empty version", async () => {
     copyDependencies("empty_version", tempDir);
