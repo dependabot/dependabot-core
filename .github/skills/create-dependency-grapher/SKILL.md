@@ -72,6 +72,10 @@ From the files determine the following:
 
 ### Gather requirements
 
+If the user's initial request already answers a question in this section (e.g. it confirms or
+rules out multiple manifests per directory, or states whether a lockfile is always committed),
+use that answer directly and do not re-ask it.
+
 #### PURLs for the ecosystem
 
 1. Refer to the [Package-URL type](https://github.com/package-url/purl-spec/blob/main/PURL-TYPES.rst) list to find a recommended type for this ecosystem (e.g., `gem`, `cargo`, `composer`, `hex`). Ask the user to confirm if this type is correct or to provide an alternative.
@@ -132,7 +136,8 @@ Tests should cover:
 
 ### Code review
 
-Ask the user to review your work and tell you when to continue with the next step.
+Run the checklist in Code Review Tasks below, then ask the user to review your work and tell you
+when to continue with the next step.
 
 You should suggest some best practice to the user at this point:
 - Consider opening a PR with the work so far and testing it against a range of projects for correctness
@@ -155,7 +160,7 @@ When they ask you to continue read the implementation and tests to see what impr
 
 ### Code review
 
-Ask the user to review your work.
+Run the checklist in Code Review Tasks below, then ask the user to review your work.
 
 If neither manifest grouping (layering) nor ephemeral lockfile generation is required, we are now finished - otherwise we need to proceed to the next step(s).
 
@@ -171,7 +176,7 @@ fall-back-to-`super` pattern, and the edge cases to add coverage for.
 
 ### Code review
 
-Ask the user to review your work.
+Run the checklist in Code Review Tasks below, then ask the user to review your work.
 
 If ephemeral lockfile generation is not required, we are now finished - otherwise we need to proceed to the next step.
 
@@ -190,7 +195,8 @@ procedure: it covers writing the failing test first, the `LockfileGenerator` cla
 
 ### Code review
 
-Ask the user to verify your work, we are now finished.
+Run the checklist in Code Review Tasks below, then ask the user to verify your work, we are now
+finished.
 
 ## Code Review Tasks
 
