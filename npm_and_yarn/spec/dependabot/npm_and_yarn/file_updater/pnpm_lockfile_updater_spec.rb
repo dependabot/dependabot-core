@@ -809,6 +809,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             .ordered
             .and_return("")
           expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+            .with("-v", { fingerprint: "-v" })
+            .ordered
+            .and_return("11.17.0")
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
             .with("audit --fix=update", { fingerprint: "audit --fix=update" })
             .ordered
             .and_return("")

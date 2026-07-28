@@ -10,12 +10,17 @@ describe("generates an updated pnpm lock for the original file", () => {
   });
   afterEach(() => fs.rm(tempDir, { recursive: true }, () => {}));
 
-  function copyDependencies(sourceDir: string, destDir: string) {
+  function copyDependencies(
+    sourceDir: string,
+    destDir: string,
+    transform: (content: string) => string = (content) => content
+  ) {
     const srcPnpmYaml = path.join(
       __dirname,
       `fixtures/parser/${sourceDir}/pnpm-lock.yaml`
     );
-    fs.copyFileSync(srcPnpmYaml, `${destDir}/pnpm-lock.yaml`);
+    const content = fs.readFileSync(srcPnpmYaml, "utf8");
+    fs.writeFileSync(`${destDir}/pnpm-lock.yaml`, transform(content), "utf8");
   }
 
   it("that contains duplicate dependencies", async () => {
@@ -63,6 +68,28 @@ describe("generates an updated pnpm lock for the original file", () => {
       },
     ]);
   });
+
+  it.each([
+    ["a byte order mark", (content: string) => `\uFEFF${content}`],
+    ["CRLF line endings", (content: string) => content.replace(/\n/g, "\r\n")],
+  ])(
+    "that contains an environment lockfile document with %s",
+    async (_description, transform) => {
+      copyDependencies("multi_document", tempDir, transform);
+      const result = await parseLockfile(tempDir);
+
+      expect(result).toEqual([
+        {
+          name: "etag",
+          version: "1.8.0",
+          resolved: undefined,
+          dev: false,
+          specifiers: ["^1.0.0"],
+          aliased: false,
+        },
+      ]);
+    }
+  );
 
   // Should have the version in the lock file.
   it("that contains dependencies with an empty version", async () => {
