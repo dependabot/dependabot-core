@@ -52,7 +52,7 @@ module Dependabot
         sig { returns(Dependabot::DependencyFile) }
         attr_reader :manifest
 
-        sig { params(dependency: Dependabot::Dependency).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyRequirement]) }
         def new_requirements(dependency)
           dependency.requirements.select { |r| r[:file] == manifest.name }
         end
@@ -70,7 +70,7 @@ module Dependabot
            .find { |r| r[:groups] == new_requirement[:groups] }
         end
 
-        sig { params(dependency: Dependabot::Dependency).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_requirements(dependency)
           new_requirements(dependency)
             .reject { |r| T.must(dependency.previous_requirements).include?(r) }
