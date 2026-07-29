@@ -992,9 +992,9 @@ module Dependabot
 
         sig do
           params(
-            requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            requirements: T::Array[Dependabot::DependencyRequirement],
             path: String
-          ).returns(T::Array[T::Hash[Symbol, T.untyped]])
+          ).returns(T::Array[Dependabot::DependencyRequirement])
         end
         def requirements_for_path(requirements, path)
           return requirements if path.to_s == "."
@@ -1002,7 +1002,7 @@ module Dependabot
           requirements.filter_map do |r|
             next unless r[:file].start_with?("#{path}/")
 
-            r.merge(file: r[:file].gsub(/^#{Regexp.quote("#{path}/")}/, ""))
+            Dependabot::DependencyRequirement.create(r.merge(file: r[:file].gsub(/^#{Regexp.quote("#{path}/")}/, "")))
           end
         end
 
