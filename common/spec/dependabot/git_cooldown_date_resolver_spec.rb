@@ -5,6 +5,7 @@ require "spec_helper"
 require "dependabot/git_cooldown_date_resolver"
 require "dependabot/shared_helpers"
 require "dependabot/clients/github_with_retries"
+require "tmpdir"
 
 RSpec.describe Dependabot::GitCooldownDateResolver do
   let(:test_class) do
@@ -162,6 +163,30 @@ RSpec.describe Dependabot::GitCooldownDateResolver do
 
       expect(resolver.github_release_published_at("v1.0.0")).to be_nil
     end
+
+    it "finds a release on a later page" do
+      first_page = Array.new(100) do |index|
+        github_release_resource(
+          sawyer_agent,
+          tag_name: "v#{index}.0.0",
+          published_at: Time.now.utc - (index * 60)
+        )
+      end
+      published_at = Time.now.utc
+      second_page = [
+        github_release_resource(sawyer_agent, tag_name: "v100.0.0", published_at: published_at)
+      ]
+      mock_client = instance_double(Octokit::Client)
+      allow(mock_client).to receive(:releases)
+        .with("owner/repo", per_page: 100, page: 1)
+        .and_return(first_page)
+      allow(mock_client).to receive(:releases)
+        .with("owner/repo", per_page: 100, page: 2)
+        .and_return(second_page)
+      allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+      expect(resolver.github_release_published_at("v100.0.0")).to eq(published_at)
+    end
   end
 
   describe "#resolve_candidate_date" do
@@ -219,6 +244,34 @@ RSpec.describe Dependabot::GitCooldownDateResolver do
         expect(result).to be_between(before_call, after_call)
       end
 
+      it "detects the lightweight tag using the escaped Git command" do
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+
+        Dir.mktmpdir do |dir|
+          Dir.chdir(dir) do
+            Dependabot::SharedHelpers.run_shell_command("git init --quiet")
+            Dependabot::SharedHelpers.run_shell_command("git config user.email dependabot@example.com")
+            Dependabot::SharedHelpers.run_shell_command("git config user.name Dependabot")
+            File.write("README.md", "test")
+            Dependabot::SharedHelpers.run_shell_command("git add README.md")
+            Dependabot::SharedHelpers.run_shell_command(
+              "git commit --quiet -m initial",
+              env: {
+                "GIT_AUTHOR_DATE" => "2020-01-01T00:00:00Z",
+                "GIT_COMMITTER_DATE" => "2020-01-01T00:00:00Z"
+              }
+            )
+            commit_sha = Dependabot::SharedHelpers.run_shell_command("git rev-parse HEAD").strip
+            Dependabot::SharedHelpers.run_shell_command("git tag release!100%")
+
+            result = resolver.resolve_candidate_date("release!100%", commit_sha)
+            expect(result).to be_within(5).of(Time.now)
+          end
+        end
+      end
+
       it "logs the conservative fallback" do
         mock_client = instance_double(Octokit::Client, releases: [])
         allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
@@ -228,6 +281,36 @@ RSpec.describe Dependabot::GitCooldownDateResolver do
 
         expect(Dependabot.logger).to receive(:info).with(/v1\.0\.0.*lightweight tag/i)
         resolver.resolve_candidate_date("v1.0.0", "abc123")
+      end
+    end
+
+    context "when the GitHub release lookup is incomplete" do
+      it "uses the existing Git date when a later page fails" do
+        first_page = Array.new(100) do |index|
+          github_release_resource(
+            sawyer_agent,
+            tag_name: "v#{index}.0.0",
+            published_at: Time.now.utc - (index * 60)
+          )
+        end
+        mock_client = instance_double(Octokit::Client)
+        allow(mock_client).to receive(:releases)
+          .with("owner/repo", per_page: 100, page: 1)
+          .and_return(first_page)
+        allow(mock_client).to receive(:releases)
+          .with("owner/repo", per_page: 100, page: 2)
+          .and_raise(StandardError.new("API rate limit"))
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+        fallback_date = Time.utc(2020, 1, 1)
+
+        result = resolver.resolve_candidate_date(
+          "v100.0.0",
+          "abc123",
+          tag_sha: "abc123",
+          fallback_date: fallback_date.iso8601
+        )
+
+        expect(result).to eq(fallback_date)
       end
     end
 

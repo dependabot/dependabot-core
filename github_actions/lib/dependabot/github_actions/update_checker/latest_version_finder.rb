@@ -297,7 +297,7 @@ module Dependabot
               # no published release. Their %(creatordate) reflects the underlying
               # commit date (not when the tag was pushed), so treat them as still
               # in cooldown to prevent bypassing the cooldown window.
-              if tag_name && github_source? && lightweight_tag?(tag_name)
+              if tag_name && conservative_lightweight_tag_date?(tag_name)
                 Dependabot.logger.info(
                   "Tag #{tag_name} is a lightweight tag with no published GitHub Release; " \
                   "treating version as still in cooldown to avoid bypassing cooldown window."

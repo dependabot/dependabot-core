@@ -112,37 +112,65 @@ module Dependabot
     end
 
     # Fetches and caches GitHub releases for the dependency source.
-    # Returns an empty array for non-GitHub sources.
+    # Returns an empty array for non-GitHub sources or incomplete lookups.
     sig { returns(T::Array[Dependabot::Clients::GithubRelease]) }
     def cached_github_releases
       @cached_github_releases ||= T.let(
-        begin
-          url = cooldown_source_url
-          source = Source.from_url(url)
-          if source&.provider == "github"
-            client = Dependabot::Clients::GithubWithRetries.for_source(
-              source: T.must(source),
-              credentials: cooldown_credentials
-            )
-            releases = T.let(
-              client.releases(T.must(source).repo, per_page: 100),
-              T.nilable(T::Array[Sawyer::Resource])
-            )
-            (releases || []).filter_map do |release|
-              Dependabot::Clients::GithubRelease.from_resource(release)
-            end
-          else
-            []
-          end
-        rescue StandardError => e
-          Dependabot.logger.debug("Error fetching GitHub releases: #{e.message}")
-          []
-        end,
+        fetch_github_releases,
         T.nilable(T::Array[Dependabot::Clients::GithubRelease])
       )
     end
 
     private
+
+    sig { returns(T::Array[Dependabot::Clients::GithubRelease]) }
+    def fetch_github_releases
+      @github_release_lookup_complete = T.let(false, T.nilable(T::Boolean))
+      source = Source.from_url(cooldown_source_url)
+      return [] unless source&.provider == "github"
+
+      release_resources = fetch_github_release_resources(T.must(source))
+      return [] unless release_resources
+
+      @github_release_lookup_complete = true
+      release_resources.filter_map do |release|
+        Dependabot::Clients::GithubRelease.from_resource(release)
+      end
+    rescue StandardError => e
+      Dependabot.logger.debug("Error fetching GitHub releases: #{e.message}")
+      []
+    end
+
+    sig { params(source: Dependabot::Source).returns(T.nilable(T::Array[Sawyer::Resource])) }
+    def fetch_github_release_resources(source)
+      client = Dependabot::Clients::GithubWithRetries.for_source(
+        source: source,
+        credentials: cooldown_credentials
+      )
+      releases = T.let([], T::Array[Sawyer::Resource])
+      page = 1
+
+      Kernel.loop do
+        page_releases = T.let(
+          client.releases(source.repo, per_page: 100, page: page),
+          T.nilable(T::Array[Sawyer::Resource])
+        )
+        return unless page_releases
+
+        releases.concat(page_releases)
+        break if page_releases.length < 100
+
+        page += 1
+      end
+
+      releases
+    end
+
+    sig { returns(T::Boolean) }
+    def github_release_lookup_complete?
+      cached_github_releases
+      @github_release_lookup_complete == true
+    end
 
     sig do
       params(
@@ -160,7 +188,7 @@ module Dependabot
         return published_at if published_at
       end
 
-      if github_source? && lightweight_tag?(tag_name, commit_sha: commit_sha, tag_sha: tag_sha)
+      if conservative_lightweight_tag_date?(tag_name, commit_sha: commit_sha, tag_sha: tag_sha)
         Dependabot.logger.info(
           "Tag #{tag_name} is a lightweight tag with no published GitHub Release; " \
           "treating version as still in cooldown to avoid bypassing cooldown window."
@@ -169,6 +197,20 @@ module Dependabot
       end
 
       Time.parse(fallback_date) if fallback_date
+    end
+
+    sig do
+      params(
+        tag_name: String,
+        commit_sha: T.nilable(String),
+        tag_sha: T.nilable(String)
+      ).returns(T::Boolean)
+    end
+    def conservative_lightweight_tag_date?(tag_name, commit_sha: nil, tag_sha: nil)
+      return false unless github_source?
+      return false unless github_release_lookup_complete?
+
+      lightweight_tag?(tag_name, commit_sha: commit_sha, tag_sha: tag_sha)
     end
 
     # Returns true if the dependency source is hosted on GitHub.
@@ -203,8 +245,8 @@ module Dependabot
 
       tag_ref = validated_tag_ref(tag_name)
       object_type = SharedHelpers.run_shell_command(
-        "git for-each-ref --format=\"%(objecttype)\" #{tag_ref}",
-        fingerprint: "git for-each-ref --format=\"%(objecttype)\" \"refs/tags/<tag_name>\""
+        "git for-each-ref --format=%(objecttype) #{tag_ref}",
+        fingerprint: "git for-each-ref --format=%(objecttype) \"refs/tags/<tag_name>\""
       ).strip
 
       # "tag" = annotated tag object with its own creation date
