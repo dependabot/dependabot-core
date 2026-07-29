@@ -210,6 +210,83 @@ RSpec.describe Dependabot::NpmAndYarn::Package::PackageDetailsFetcher do
       end
     end
 
+    context "with mixed scoped and unscoped deps alongside replaces-base" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "https://registry.proxy.example.com/npm",
+              "token" => "proxy_token",
+              "replaces-base" => true
+            }
+          ),
+          Dependabot::Credential.new(
+            {
+              "type" => "npm_registry",
+              "registry" => "https://npm.private.example.com/mycompany",
+              "token" => "private_token",
+              "scope" => "@mycompany"
+            }
+          )
+        ]
+      end
+
+      context "when the dependency is scoped and matches the credential scope" do
+        let(:dependency_name) { "@mycompany/utils" }
+        let(:registry_url) { "https://npm.private.example.com/mycompany/%40mycompany%2Futils" }
+
+        before do
+          stub_request(:get, registry_url)
+            .with(headers: { "Authorization" => "Bearer private_token" })
+            .to_return(status: 200, body: fixture("npm_responses", "react.json"))
+        end
+
+        it "routes to the scoped registry" do
+          expect(details).not_to be_nil
+          expect(WebMock).to have_requested(:get, registry_url)
+            .with(headers: { "Authorization" => "Bearer private_token" })
+          expect(WebMock).not_to have_requested(:get, /registry\.proxy\.example\.com/)
+        end
+      end
+
+      context "when the dependency is unscoped" do
+        let(:dependency_name) { "lodash" }
+        let(:registry_url) { "https://registry.proxy.example.com/npm/lodash" }
+
+        before do
+          stub_request(:get, registry_url)
+            .with(headers: { "Authorization" => "Bearer proxy_token" })
+            .to_return(status: 200, body: fixture("npm_responses", "react.json"))
+        end
+
+        it "routes to the replaces-base registry" do
+          expect(details).not_to be_nil
+          expect(WebMock).to have_requested(:get, registry_url)
+            .with(headers: { "Authorization" => "Bearer proxy_token" })
+          expect(WebMock).not_to have_requested(:get, /npm\.private\.example\.com/)
+        end
+      end
+
+      context "when the dependency is scoped but does NOT match the credential scope" do
+        let(:dependency_name) { "@other-org/library" }
+        let(:registry_url) { "https://registry.proxy.example.com/npm/%40other-org%2Flibrary" }
+
+        before do
+          stub_request(:get, registry_url)
+            .with(headers: { "Authorization" => "Bearer proxy_token" })
+            .to_return(status: 200, body: fixture("npm_responses", "react.json"))
+        end
+
+        it "routes to the replaces-base registry since no matching scope credential exists" do
+          expect(details).not_to be_nil
+          expect(WebMock).to have_requested(:get, registry_url)
+            .with(headers: { "Authorization" => "Bearer proxy_token" })
+          expect(WebMock).not_to have_requested(:get, /npm\.private\.example\.com/)
+        end
+      end
+    end
+
     context "when the registry raises Excon::Error::Socket" do
       context "with a private registry" do
         let(:registry_url) { "https://npm.fury.io/dependabot/react" }
