@@ -10,7 +10,10 @@ require "dependabot/logger"
 
 require "dependabot/vcpkg"
 require "dependabot/vcpkg/language"
+require "dependabot/vcpkg/manifest_baseline"
+require "dependabot/vcpkg/package/versions_database"
 require "dependabot/vcpkg/package_manager"
+require "dependabot/vcpkg/version"
 
 module Dependabot
   module Vcpkg
@@ -124,7 +127,7 @@ module Dependabot
 
       sig do
         params(
-          dep: T.untyped,
+          dep: Object,
           dependency_file: Dependabot::DependencyFile
         )
           .returns(T.nilable(Dependabot::Dependency))
@@ -132,38 +135,93 @@ module Dependabot
       def parse_port_dependency(dep:, dependency_file:)
         case dep
         when String
-          # Simple string dependency like "curl" - log and skip
-          Dependabot.logger.warn("Skipping vcpkg dependency '#{dep}' without version>= constraint")
-          nil
+          build_port_dependency(name: dep, constraint: nil, dependency_file:)
         when Hash
           name = dep["name"]
-          version_constraint = dep["version>="]
-
           return nil unless name.is_a?(String)
 
-          unless version_constraint
-            Dependabot.logger.warn("Skipping vcpkg dependency '#{name}' without version>= constraint")
-            return nil
-          end
-
-          # Parse version and optional port-version
-          version, _port_version = parse_version_with_port(version_constraint)
-
-          Dependabot::Dependency.new(
-            name:,
-            version:,
-            package_manager: "vcpkg",
-            requirements: [{
-              requirement: ">=#{version_constraint}",
-              groups: [],
-              source: nil,
-              file: dependency_file.name
-            }]
-          )
+          constraint = dep[VCPKG_VERSION_CONSTRAINT_KEY]
+          build_port_dependency(name:, constraint: constraint.is_a?(String) ? constraint : nil, dependency_file:)
         else
           Dependabot.logger.warn("Skipping unknown vcpkg dependency format: #{dep.inspect}")
           nil
         end
+      end
+
+      # A port's version comes from its `version>=` constraint, the registry baseline, or both.
+      # vcpkg installs the lowest version satisfying every constraint, so where both are present
+      # the effective version is the higher of the two.
+      sig do
+        params(
+          name: String,
+          constraint: T.nilable(String),
+          dependency_file: Dependabot::DependencyFile
+        )
+          .returns(T.nilable(Dependabot::Dependency))
+      end
+      def build_port_dependency(name:, constraint:, dependency_file:)
+        version = effective_port_version(name:, constraint:)
+
+        unless version
+          Dependabot.logger.warn("Skipping vcpkg dependency '#{name}' without version>= constraint")
+          return nil
+        end
+
+        Dependabot::Dependency.new(
+          name:,
+          version: version.to_s,
+          package_manager: "vcpkg",
+          requirements: [{
+            requirement: constraint && ">=#{constraint}",
+            groups: [],
+            source: nil,
+            file: dependency_file.name
+          }]
+        )
+      end
+
+      sig { params(name: String, constraint: T.nilable(String)).returns(T.nilable(Dependabot::Vcpkg::Version)) }
+      def effective_port_version(name:, constraint:)
+        constraint_version = constraint && Version.correct?(constraint) ? Version.new(constraint) : nil
+        baseline_version = baseline_port_version(name)
+
+        return constraint_version unless baseline_version
+        return baseline_version unless constraint_version
+        return constraint_version unless constraint_version.comparable_with?(baseline_version)
+
+        [constraint_version, baseline_version].max
+      end
+
+      sig { params(name: String).returns(T.nilable(Dependabot::Vcpkg::Version)) }
+      def baseline_port_version(name)
+        ref = builtin_baseline_ref
+        return nil unless ref
+
+        versions_database.baseline_version_for(port: name, ref:)
+      end
+
+      # The commit the manifest pins the built-in registry to. Ports resolved from any other
+      # registry are left alone, because the versions database shipped with the image only
+      # describes the built-in one.
+      sig { returns(T.nilable(String)) }
+      def builtin_baseline_ref
+        manifest_baseline.ref
+      end
+
+      sig { returns(Dependabot::Vcpkg::ManifestBaseline) }
+      def manifest_baseline
+        @manifest_baseline ||= T.let(
+          Dependabot::Vcpkg::ManifestBaseline.new(dependency_files:),
+          T.nilable(Dependabot::Vcpkg::ManifestBaseline)
+        )
+      end
+
+      sig { returns(Dependabot::Vcpkg::Package::VersionsDatabase) }
+      def versions_database
+        @versions_database ||= T.let(
+          Dependabot::Vcpkg::Package::VersionsDatabase.new,
+          T.nilable(Dependabot::Vcpkg::Package::VersionsDatabase)
+        )
       end
 
       sig do
@@ -227,15 +285,6 @@ module Dependabot
               default: is_default
             }
           )
-        end
-      end
-
-      sig { params(version_string: String).returns([String, T.nilable(String)]) }
-      def parse_version_with_port(version_string)
-        if version_string.include?("#")
-          version_string.split("#", 2).then { |parts| [parts[0] || "", parts[1]] }
-        else
-          [version_string, nil]
         end
       end
 
