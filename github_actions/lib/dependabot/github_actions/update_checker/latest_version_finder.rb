@@ -331,9 +331,12 @@ module Dependabot
         end
         def with_resolved_release_date(tag_info)
           tag_name = normalize_tag_name(tag_info.fetch(:tag))
+          commit_sha = tag_info.fetch(:commit_sha, nil)
+          return tag_info unless commit_sha.is_a?(String)
+
           release_date = resolve_candidate_date_from_details(
             tag_name,
-            tag_info.fetch(:commit_sha),
+            commit_sha,
             tag_sha: tag_info.fetch(:tag_sha, nil),
             fallback_date: tag_info.fetch(:release_date, nil)
           )
