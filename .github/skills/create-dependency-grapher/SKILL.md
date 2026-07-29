@@ -11,8 +11,9 @@ description: >-
   implementations.
 compatibility: >-
   Requires a local checkout of dependabot-core. The Code Review Tasks run `bin/test
-  {ecosystem}`, `bin/lint -a`, and `bundle exec srb tc -a`, which expect this repo's Docker-based
-  ecosystem tooling to be available (see the repo's own CONTRIBUTING docs for setup).
+  {ecosystem}`, `bin/test {ecosystem} rubocop -A`, and containerized `bundle exec srb tc`, which
+  expect this repo's Docker-based ecosystem tooling to be available (see the repo's own
+  CONTRIBUTING docs for setup).
 ---
 
 # Create Dependency Grapher
@@ -211,13 +212,13 @@ bin/test {ecosystem} spec/dependabot/{ecosystem}
 2. Check lint and fix any problems:
 
 ```
-bin/lint -a {created or changed files}
+bin/test {ecosystem} rubocop -A
 ```
 
 3. Run sorbet and fix any problems:
 
 ```
-bundle exec srb tc -a
+bundle exec srb tc
 ```
 
 ## References
