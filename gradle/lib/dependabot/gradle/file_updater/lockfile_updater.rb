@@ -7,6 +7,7 @@ require "shellwords"
 require "sorbet-runtime"
 
 require "dependabot/gradle/file_updater"
+require "dependabot/gradle/file_fetcher/settings_file_parser"
 
 module Dependabot
   module Gradle
@@ -21,7 +22,7 @@ module Dependabot
             "-Xmx1536m -Dfile.encoding=UTF-8",
             "-Xmx2048m -Dfile.encoding=UTF-8",
             "-Xmx3072m -Dfile.encoding=UTF-8"
-          ],
+          ].freeze,
           T::Array[String]
         )
         GRADLE_TOOLCHAIN_PATHS = T.let(
@@ -337,6 +338,9 @@ systemProp.https.proxyPort=#{https_proxy_port}"
 
         sig { params(build_file: Dependabot::DependencyFile).returns(T.nilable(String)) }
         def dependency_task_for(build_file)
+          settings_file = find_settings_file(build_file)
+          return nil unless settings_file
+
           root_dir = determine_root_dir(build_file: build_file)
           file_path = normalized_file_path(build_file)
           relative_path = path_relative_to_root(file_path, root_dir)
@@ -346,7 +350,15 @@ systemProp.https.proxyPort=#{https_proxy_port}"
           dirname = File.dirname(relative_path)
           return nil if dirname == "." || dirname.empty?
 
-          ":#{dirname.split('/').join(':')}:dependencies"
+          # Look up the canonical Gradle project name from the settings file to handle repos
+          # that use custom projectDir mappings
+          # (e.g. project(':chrome-trace').projectDir = file('subprojects/chrome-trace')).
+          # Deriving the task from the filesystem path alone would produce a wrong Gradle task path.
+          parser = FileFetcher::SettingsFileParser.new(settings_file: settings_file)
+          project_name = parser.subproject_path_to_name_map[dirname]
+          return nil unless project_name
+
+          "#{project_name}:dependencies"
         end
 
         sig { params(file_path: String, root_dir: String).returns(String) }

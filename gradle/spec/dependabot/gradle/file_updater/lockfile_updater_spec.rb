@@ -159,6 +159,55 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
         )
       end
 
+      context "when the subproject uses a custom projectDir mapping" do
+        let(:custom_settings) do
+          Dependabot::DependencyFile.new(
+            name: "settings.gradle",
+            directory: "/",
+            content: "include ':chrome-trace'\n" \
+                     "project(':chrome-trace').projectDir = new File(rootDir, 'subprojects/chrome-trace')\n"
+          )
+        end
+        let(:custom_buildfile) do
+          Dependabot::DependencyFile.new(
+            name: "build.gradle",
+            directory: "/",
+            content: "plugins { id 'java' }\n"
+          )
+        end
+        let(:custom_subproject_buildfile) do
+          Dependabot::DependencyFile.new(
+            name: "build.gradle",
+            directory: "/subprojects/chrome-trace",
+            content: "plugins { id 'java' }\n"
+          )
+        end
+        let(:custom_lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "gradle.lockfile",
+            directory: "/subprojects/chrome-trace",
+            content: "# old lockfile\n"
+          )
+        end
+
+        let(:dependency_files) { [custom_settings, custom_buildfile, custom_subproject_buildfile, custom_lockfile] }
+        let(:observed_commands) { [] }
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
+            observed_commands << command
+            File.write(File.join(cwd, "gradle.lockfile"), "# updated lockfile\n")
+          end
+        end
+
+        it "falls back to dependabotResolveAll only without a project-specific task" do
+          lockfile_updater.update_lockfiles(custom_subproject_buildfile)
+
+          expect(observed_commands.last).not_to include(":subprojects:chrome-trace:dependencies")
+          expect(observed_commands.last).to include("dependabotResolveAll")
+        end
+      end
+
       context "when a local gradlew script is available" do
         let(:dependency_files) do
           [
@@ -208,7 +257,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
         it "retries daemon failures through a larger heap size before succeeding" do
           attempts = []
 
-          allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
             properties_content = File.read(File.join(cwd, "gradle.properties"))
             attempts << properties_content[/^org\.gradle\.jvmargs=(.*)$/, 1]
 
