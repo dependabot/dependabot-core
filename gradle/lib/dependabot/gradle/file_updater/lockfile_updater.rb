@@ -15,8 +15,15 @@ module Dependabot
         extend T::Sig
 
         INIT_SCRIPT_TASK_NAME = T.let("dependabotResolveAll", String)
-        GRADLE_JVMARGS_OVERRIDE = T.let("-Xmx1024m -Dfile.encoding=UTF-8", String)
-        GRADLE_JVMARGS_RETRY = T.let("-Xmx1536m -Dfile.encoding=UTF-8", String)
+        GRADLE_JVMARGS_ATTEMPTS = T.let(
+          [
+            "-Xmx1024m -Dfile.encoding=UTF-8",
+            "-Xmx1536m -Dfile.encoding=UTF-8",
+            "-Xmx2048m -Dfile.encoding=UTF-8",
+            "-Xmx3072m -Dfile.encoding=UTF-8"
+          ],
+          T::Array[String]
+        )
         GRADLE_TOOLCHAIN_PATHS = T.let(
           "/usr/lib/jvm/java-17-openjdk-amd64,/usr/lib/jvm/java-21-openjdk-amd64",
           String
@@ -56,7 +63,7 @@ module Dependabot
             command_parts = [
               gradle_executable_for(cwd: cwd, workspace_root: temp_dir.to_s),
               "--init-script", init_script_path,
-              INIT_SCRIPT_TASK_NAME,
+              *lockfile_tasks_for(build_file),
               "--write-locks",
               "--no-daemon",
               "--no-configuration-cache"
@@ -262,25 +269,42 @@ systemProp.https.proxyPort=#{https_proxy_port}"
         def run_lockfile_update_with_retry(command:, cwd:, properties_file_path:)
           base_content = File.exist?(properties_file_path) ? File.read(properties_file_path) : ""
 
-          write_properties_file(properties_file_path, jvmargs: GRADLE_JVMARGS_OVERRIDE, base_content: base_content)
-          begin
-            SharedHelpers.run_shell_command(command, cwd: cwd)
-          rescue SharedHelpers::HelperSubprocessFailed => e
-            raise e unless daemon_disappeared?(e)
+          catch(:success) do
+            GRADLE_JVMARGS_ATTEMPTS.each_with_index do |jvmargs, index|
+              write_properties_file(properties_file_path, jvmargs: jvmargs, base_content: base_content)
+              begin
+                SharedHelpers.run_shell_command(command, cwd: cwd)
+                throw :success
+              rescue SharedHelpers::HelperSubprocessFailed => e
+                # If this is the last attempt, re-raise the error
+                raise e if index == GRADLE_JVMARGS_ATTEMPTS.length - 1
 
-            Dependabot.logger.warn(
-              "Gradle daemon disappeared during lockfile update with '#{GRADLE_JVMARGS_OVERRIDE}'. " \
-              "Retrying once with '#{GRADLE_JVMARGS_RETRY}'."
-            )
-            write_properties_file(properties_file_path, jvmargs: GRADLE_JVMARGS_RETRY, base_content: base_content)
-            SharedHelpers.run_shell_command(command, cwd: cwd)
+                # Only retry if it's a retryable failure
+                raise e unless retryable_daemon_failure?(e)
+
+                Dependabot.logger.warn(
+                  "Gradle build failed with jvmargs '#{jvmargs}'. Retrying once with larger heap size..."
+                )
+              end
+            end
           end
         end
 
         sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
-        def daemon_disappeared?(error)
+        def retryable_daemon_failure?(error)
           message = error.message.downcase
-          message.include?("daemon disappeared") || message.include?("build daemon disappeared unexpectedly")
+          # Retry if daemon disappeared
+          if message.include?("daemon disappeared") || message.include?("build daemon disappeared unexpectedly")
+            return true
+          end
+
+          # Retry if process was killed (SIGKILL)
+          return true if T.cast(error.error_context[:process_termsig], T.nilable(Integer)) == SharedHelpers::SIGKILL
+
+          # Retry if exit code suggests a kill (signal-based termination)
+          return true if message.include?("signal") || message.include?("killed")
+
+          false
         end
 
         sig { params(file_name: String).void }
@@ -301,6 +325,38 @@ systemProp.https.proxyPort=#{https_proxy_port}"
             }
           GRADLE
           File.write(file_name, script_content)
+        end
+
+        sig { params(build_file: Dependabot::DependencyFile).returns(T::Array[String]) }
+        def lockfile_tasks_for(build_file)
+          project_task = dependency_task_for(build_file)
+          return [INIT_SCRIPT_TASK_NAME] if project_task.nil?
+
+          [project_task, INIT_SCRIPT_TASK_NAME]
+        end
+
+        sig { params(build_file: Dependabot::DependencyFile).returns(T.nilable(String)) }
+        def dependency_task_for(build_file)
+          root_dir = determine_root_dir(build_file: build_file)
+          file_path = normalized_file_path(build_file)
+          relative_path = path_relative_to_root(file_path, root_dir)
+
+          return nil if relative_path.start_with?("gradle/")
+
+          dirname = File.dirname(relative_path)
+          return nil if dirname == "." || dirname.empty?
+
+          ":#{dirname.split('/').join(':')}:dependencies"
+        end
+
+        sig { params(file_path: String, root_dir: String).returns(String) }
+        def path_relative_to_root(file_path, root_dir)
+          return file_path.sub(%r{^/}, "") if root_dir == "/"
+
+          root_prefix = "#{root_dir}/"
+          return file_path.delete_prefix(root_prefix) if file_path.start_with?(root_prefix)
+
+          file_path.sub(%r{^/}, "")
         end
 
         sig { params(cwd: String, workspace_root: String).returns(String) }

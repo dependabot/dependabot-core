@@ -17,7 +17,7 @@ module Dependabot
       require_relative "file_updater/lockfile_updater"
       require_relative "file_updater/wrapper_updater"
 
-      SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts gradle.lockfile).freeze
+      SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
 
       sig { override.returns(T::Array[::Dependabot::DependencyFile]) }
       def updated_dependency_files
@@ -97,7 +97,10 @@ module Dependabot
             files[T.must(files.index(buildfile))] = update_version_in_buildfile(dependency, buildfile, old_req, new_req)
           end
 
-          buildfiles_processed[buildfile.name] = buildfile
+          # Always look up the updated buildfile from files after any modification
+          # to ensure buildfiles_processed contains the latest version
+          updated_buildfile = files.find { |f| f.name == buildfile.name }
+          buildfiles_processed[buildfile.name] = T.must(updated_buildfile)
         end
 
         # runs native updaters (e.g. wrapper, lockfile) on relevant build files updated
@@ -139,6 +142,7 @@ module Dependabot
           lockfile_roots_processed.add(root_dir)
 
           updated_files = lockfile_updater.update_lockfiles(buildfile)
+
           # Support files are only needed to populate Gradle's working directory;
           # they must never be reintroduced into the buildfiles-only result set.
           replace_updated_files(files, updated_files.reject(&:support_file?))

@@ -150,6 +150,15 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
         expect(result.find { |f| f.name == "external/gradle.lockfile" }.content).to eq("# external lockfile\n")
       end
 
+      it "runs the subproject dependencies task for subproject build files" do
+        lockfile_updater.update_lockfiles(app_buildfile)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          include(":app:dependencies"),
+          cwd: kind_of(String)
+        )
+      end
+
       context "when a local gradlew script is available" do
         let(:dependency_files) do
           [
@@ -194,6 +203,36 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
 
           expect(result.find { |f| f.name == "gradle.lockfile" }.content).to eq("# root lockfile\n")
           expect(Dependabot.logger).to have_received(:error).with(include("Failed to update lockfiles"))
+        end
+
+        it "retries daemon failures through a larger heap size before succeeding" do
+          attempts = []
+
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
+            properties_content = File.read(File.join(cwd, "gradle.properties"))
+            attempts << properties_content[/^org\.gradle\.jvmargs=(.*)$/, 1]
+
+            if attempts.length < 4
+              raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "Gradle build daemon disappeared unexpectedly",
+                error_context: { process_exit_value: 1 }
+              )
+            end
+
+            File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+          end
+
+          result = lockfile_updater.update_lockfiles(root_buildfile)
+
+          expect(attempts).to eq(
+            [
+              "-Xmx1024m -Dfile.encoding=UTF-8",
+              "-Xmx1536m -Dfile.encoding=UTF-8",
+              "-Xmx2048m -Dfile.encoding=UTF-8",
+              "-Xmx3072m -Dfile.encoding=UTF-8"
+            ]
+          )
+          expect(result.find { |f| f.name == "gradle.lockfile" }.content).to eq("# updated root lockfile\n")
         end
       end
 
@@ -377,7 +416,39 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
         expect(Dependabot.logger).to have_received(:error).with(include("Failed to update lockfiles"))
       end
 
-      it "retries once with larger jvmargs when daemon disappears" do
+      it "retries with larger jvmargs when daemon disappears" do
+        observed_properties = []
+        allow(Dependabot.logger).to receive(:warn)
+
+        call_count = 0
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+          properties_path = File.join(cwd, "gradle.properties")
+          observed_properties << File.read(properties_path)
+
+          call_count += 1
+          if call_count < 3
+            raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "Gradle build daemon disappeared unexpectedly",
+              error_context: { command: "gradle" }
+            )
+          end
+
+          File.write(File.join(cwd, "gradle.lockfile"), "# updated root lockfile\n")
+          FileUtils.mkdir_p(File.join(cwd, "app"))
+          File.write(File.join(cwd, "app/gradle.lockfile"), "# updated app lockfile\n")
+        end
+
+        result = lockfile_updater.update_lockfiles(app_buildfile)
+
+        expect(result.find { |f| f.name == "gradle.lockfile" }.content).to eq("# updated root lockfile\n")
+        expect(result.find { |f| f.name == "app/gradle.lockfile" }.content).to eq("# updated app lockfile\n")
+        expect(observed_properties.first).to include("org.gradle.jvmargs=-Xmx1024m -Dfile.encoding=UTF-8")
+        expect(observed_properties[1]).to include("org.gradle.jvmargs=-Xmx1536m -Dfile.encoding=UTF-8")
+        expect(observed_properties.last).to include("org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8")
+        expect(Dependabot.logger).to have_received(:warn).with(include("Retrying once")).twice
+      end
+
+      it "retries with larger jvmargs when the subprocess is killed" do
         observed_properties = []
         allow(Dependabot.logger).to receive(:warn)
 
@@ -389,8 +460,11 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
           call_count += 1
           if call_count == 1
             raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-              message: "Gradle build daemon disappeared unexpectedly",
-              error_context: { command: "gradle" }
+              message: "Gradle exited",
+              error_context: {
+                command: "gradle",
+                process_termsig: Dependabot::SharedHelpers::SIGKILL
+              }
             )
           end
 
@@ -590,6 +664,15 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
 
         expect(result.find { |f| f.name == "gradle.lockfile" }.content).to eq("# updated root lockfile\n")
         expect(result.find { |f| f.name == "app/gradle.lockfile" }.content).to eq("# updated app lockfile\n")
+      end
+
+      it "runs the scoped subproject dependencies task from the source directory" do
+        lockfile_updater.update_lockfiles(subdir_buildfile)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          include(":app:dependencies"),
+          cwd: kind_of(String)
+        )
       end
 
       context "when gradlew exists at the repository root" do
