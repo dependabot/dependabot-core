@@ -23,11 +23,9 @@ manager in this ecosystem.
 
    In the main grapher, override `prepare!` to:
    1. Detect when a lockfile is missing.
-   2. Call the generator.
-   3. Inject the ephemeral lockfile into `dependency_files`.
-   4. Set `@ephemeral_lockfile_generated = true`.
-   5. Call `super` to proceed with normal parsing.
-   6. Rescue errors and call `errored_fetching_subdependencies!`.
+   2. Call a narrowly scoped generation helper that rescues generation errors, calls `errored_fetching_subdependencies!`, stores the error, and returns without a lockfile.
+   3. On success, inject the ephemeral lockfile into `dependency_files` and set `@ephemeral_lockfile_generated = true`.
+   4. Call `super` outside that rescue so normal parser failures are not suppressed.
 4. Verify that the test added in step 1 now passes.
 5. Add a test file for the lockfile generator:
    `{ecosystem}/spec/dependabot/{ecosystem}/dependency_grapher/lockfile_generator_spec.rb`

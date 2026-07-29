@@ -76,8 +76,8 @@ Continue implementing subdependency fetching for the grapher we started.
 
 **Expected Behavior:**
 Before asking the user to review the subdependency fetching work, runs (and fixes any failures
-from) `bin/test {ecosystem} spec/dependabot/{ecosystem}`, `bin/lint -a` on the changed files, and
-`bundle exec srb tc -a`. Does NOT skip straight to "please review" without running these.
+from) `bin/test {ecosystem} spec/dependabot/{ecosystem}`, `bin/test {ecosystem} rubocop -A`
+on the changed Ruby files, and containerized `bundle exec srb tc` without autocorrect. Does NOT skip straight to "please review" without running these.
 
 ## Test: Never proposes altering the FileParser
 

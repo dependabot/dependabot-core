@@ -88,4 +88,4 @@ A `ManifestGroup` has:
 - `primary` — the `Dependabot::DependencyFile` the group's dependencies should be attributed to in the snapshot.
 - `files` — every file the parser needs to resolve the group, including `primary` and any sibling files pulled in only to satisfy cross-references (these should be marked as support files so they don't compete for attribution).
 
-Only override `manifest_groups` if your ecosystem can genuinely have more than one independent manifest per directory. See `python/lib/dependabot/python/dependency_grapher/requirements_layers.rb` for a full worked implementation, including how it falls back to the base single-group behaviour when only one manifest is actually present.
+Only override `manifest_groups` if your ecosystem can genuinely have more than one independent manifest per directory. See `python/lib/dependabot/python/dependency_grapher.rb` for the fallback to the base single-group behaviour and `python/lib/dependabot/python/dependency_grapher/requirements_layers.rb` for the full grouping implementation.
