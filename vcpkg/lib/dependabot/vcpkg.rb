@@ -1,6 +1,8 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "sorbet-runtime"
+
 # These all need to be required so the various classes can be registered in a
 # lookup table of package manager names to concrete classes.
 require "dependabot/vcpkg/language"
@@ -22,6 +24,8 @@ Dependabot::Dependency.register_production_check("vcpkg", ->(_) { true })
 
 module Dependabot
   module Vcpkg
+    extend T::Sig
+
     ECOSYSTEM = "vcpkg"
 
     PACKAGE_MANAGER = "vcpkg"
@@ -44,5 +48,32 @@ module Dependabot
     VCPKG_DEFAULT_BASELINE_DEFAULT_BRANCH = "master"
 
     VCPKG_SUPPORTED_REGISTRY_TYPES = %w(git builtin).freeze
+
+    # Manifest keys. See https://learn.microsoft.com/vcpkg/reference/vcpkg-json
+    VCPKG_BUILTIN_BASELINE_KEY = "builtin-baseline"
+
+    VCPKG_DEPENDENCIES_KEY = "dependencies"
+
+    VCPKG_OVERRIDES_KEY = "overrides"
+
+    VCPKG_VERSION_CONSTRAINT_KEY = "version>="
+
+    # The vcpkg checkout the updater image ships, holding the ports tree and versions database.
+    VCPKG_DEFAULT_REPOSITORY_PATH = "/opt/vcpkg"
+
+    # See https://learn.microsoft.com/vcpkg/users/versioning#version-schemes
+    VCPKG_VERSION_SCHEME_KEYS = %w(version version-semver version-date version-string).freeze
+
+    VCPKG_BASELINE_DATABASE_PATH = "versions/baseline.json"
+
+    VCPKG_VERSIONS_DIRECTORY = "versions"
+
+    # vcpkg publishes releases as date tags such as `2025.06.13`.
+    VCPKG_RELEASE_TAG_PATTERN = /\Av?\d{4}\.\d{2}\.\d{2}\z/
+
+    sig { returns(String) }
+    def self.repository_path
+      ENV.fetch("VCPKG_ROOT", VCPKG_DEFAULT_REPOSITORY_PATH)
+    end
   end
 end
