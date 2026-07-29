@@ -103,12 +103,12 @@ module Dependabot
            .find { |r| r[:groups] == new_requirement[:groups] }
         end
 
-        sig { params(dependency: Dependabot::Dependency).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyRequirement]) }
         def new_requirements(dependency)
           dependency.requirements.select { |r| r[:file] == package_json.name }
         end
 
-        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
+        sig { params(dependency: Dependabot::Dependency).returns(T.nilable(T::Array[Dependabot::DependencyRequirement])) }
         def updated_requirements(dependency)
           return unless dependency.previous_requirements
 

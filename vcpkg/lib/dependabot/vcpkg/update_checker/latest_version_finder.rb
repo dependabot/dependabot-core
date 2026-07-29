@@ -50,6 +50,26 @@ module Dependabot
           )
         end
 
+        # vcpkg refuses to compare versions whose schemes differ, so a release it could never
+        # select is not a candidate. Filtering here rather than in a later hook keeps every
+        # inherited comparison operating on a mutually comparable set. Registry baselines are
+        # exempt: they are release tags rather than port versions.
+        sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
+        def available_versions
+          releases = super
+          return releases if registry_dependency?
+
+          current = current_version
+          return releases unless releases && current
+
+          current_scheme = declared_scheme(releases, current)
+          releases.select do |release|
+            version = release.version
+            version.is_a?(Dependabot::Vcpkg::Version) &&
+              Dependabot::Vcpkg::Version.comparable?(version, scheme_of(release), current, current_scheme)
+          end
+        end
+
         # The release tag for the given commit SHA, if any.
         sig { params(commit_sha: String).returns(T.nilable(String)) }
         def tag_for_commit_sha(commit_sha)
@@ -60,6 +80,35 @@ module Dependabot
         end
 
         private
+
+        # The scheme the registry published the currently selected version under.
+        sig do
+          params(
+            releases: T::Array[Dependabot::Package::PackageRelease],
+            current: Dependabot::Vcpkg::Version
+          ).returns(T.nilable(String))
+        end
+        def declared_scheme(releases, current)
+          scheme_of(releases.find { |release| release.version.eql?(current) })
+        end
+
+        sig { params(release: T.nilable(Dependabot::Package::PackageRelease)).returns(T.nilable(String)) }
+        def scheme_of(release)
+          scheme = T.cast(release&.details&.dig("scheme"), T.nilable(Object))
+          scheme.is_a?(String) ? scheme : nil
+        end
+
+        sig { returns(T.nilable(Dependabot::Vcpkg::Version)) }
+        def current_version
+          return @current_version if @looked_up_current_version
+
+          @looked_up_current_version = T.let(true, T.nilable(T::Boolean))
+          version = dependency.version
+          @current_version = T.let(
+            version && Dependabot::Vcpkg::Version.correct?(version) ? Dependabot::Vcpkg::Version.new(version) : nil,
+            T.nilable(Dependabot::Vcpkg::Version)
+          )
+        end
 
         sig { returns(T::Boolean) }
         def registry_dependency?
