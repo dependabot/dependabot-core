@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/experiments"
 require "dependabot/github_actions/constants"
 
 module Dependabot
@@ -79,6 +80,7 @@ module Dependabot
       # repository workflows. Composite-action directories cannot own a lockfile.
       sig { returns(T.nilable(DependencyFile)) }
       def actions_lockfile
+        return unless Dependabot::Experiments.enabled?(:github_actions_lockfile)
         return unless source.hostname == GITHUB_COM
         return fetch_file_if_present(LOCKFILE_PATH) if directory == "/"
 

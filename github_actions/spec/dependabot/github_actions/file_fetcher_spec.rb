@@ -91,6 +91,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
 
       context "when an actions.lock is present" do
         before do
+          Dependabot::Experiments.register(:github_actions_lockfile, true)
           stub_request(:get, url + ".github/workflows?ref=sha")
             .with(headers: { "Authorization" => "token token" })
             .to_return(
@@ -117,6 +118,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
 
     context "when an actions.lock is present" do
       before do
+        Dependabot::Experiments.register(:github_actions_lockfile, true)
         # Re-stub the workflows listing to include the lockfile alongside the
         # workflow files, then stub the lockfile content fetch.
         stub_request(:get, url + ".github/workflows?ref=sha")
@@ -144,6 +146,19 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
                .github/workflows/integration-workflow.yml
                .github/workflows/actions.lock)
           )
+      end
+
+      context "when the experiment is disabled" do
+        before { Dependabot::Experiments.reset! }
+
+        it "keeps the existing workflow-only behavior" do
+          expect(file_fetcher_instance.files.map(&:name))
+            .to match_array(
+              %w(.github/workflows/sherlock-workflow.yaml
+                 .github/workflows/integration-workflow.yml)
+            )
+          expect(a_request(:get, url + ".github/workflows/actions.lock?ref=sha")).not_to have_been_made
+        end
       end
 
       context "with a non-github.com source" do
@@ -210,6 +225,7 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
 
       context "when an actions.lock is present" do
         before do
+          Dependabot::Experiments.register(:github_actions_lockfile, true)
           stub_request(:get, url + ".github/workflows?ref=sha")
             .with(headers: { "Authorization" => "token token" })
             .to_return(
