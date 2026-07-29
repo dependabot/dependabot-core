@@ -105,7 +105,7 @@ module Dependabot
         def git_metadata_fetcher
           @git_metadata_fetcher ||= T.let(
             Dependabot::GitMetadataFetcher.new(
-              url: dependency.source_details&.fetch(:url, nil),
+              url: T.must(dependency.source_string("url")),
               credentials: credentials
             ),
             T.nilable(Dependabot::GitMetadataFetcher)

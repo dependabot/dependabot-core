@@ -279,7 +279,7 @@ module Dependabot
       sig { returns(String) }
       def dependency_name_group_pr_name
         dep = T.must(dependencies.first)
-        directories = dep.metadata[:updated_directories] || [dep.metadata[:directory]].compact
+        directories = dep.metadata_string_array(:updated_directories) || [dep.metadata_string(:directory)].compact
 
         if directories.count > 1
           "bump #{dep.name} across #{directories.count} directories"
@@ -571,7 +571,7 @@ module Dependabot
       sig { returns(String) }
       def dependency_name_group_intro
         dep = T.must(dependencies.first)
-        directories = dep.metadata[:updated_directories] || [dep.metadata[:directory]].compact
+        directories = dep.metadata_string_array(:updated_directories) || [dep.metadata_string(:directory)].compact
 
         msg = "Bumps #{dependency_links.first}"
 
