@@ -454,6 +454,127 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       end
     end
 
+    context "with multiple locked versions of a transitive dependency" do
+      let(:manifest_fixture_name) { "multiple_locked_versions" }
+      let(:lockfile_fixture_name) { "multiple_locked_versions" }
+      let(:dependency_name) { "getrandom" }
+      let(:dependency_version) { "0.4.2" }
+      let(:requirements) { [] }
+
+      it "returns the version of the exact package Cargo updated" do
+        expect(latest_resolvable_version).to be >= Gem::Version.new("0.4.3")
+        expect(latest_resolvable_version).to be < Gem::Version.new("0.5.0")
+      end
+
+      context "when resolving the older locked line" do
+        let(:dependency_version) { "0.2.17" }
+
+        it "does not report the newer line as its update" do
+          expect(latest_resolvable_version).to be >= Gem::Version.new("0.2.17")
+          expect(latest_resolvable_version).to be < Gem::Version.new("0.3.0")
+        end
+      end
+    end
+
+    context "when Cargo splits a unified line across a version boundary" do
+      let(:manifest_fixture_name) { "split_locked_version" }
+      let(:lockfile_fixture_name) { "split_locked_version" }
+      let(:dependency_name) { "getrandom" }
+      let(:dependency_version) { "0.3.4" }
+      let(:requirements) { [] }
+      let(:new_entry) do
+        <<~ENTRY
+          [[package]]
+          name = "getrandom"
+          version = "0.4.3"
+          source = "registry+https://github.com/rust-lang/crates.io-index"
+          checksum = "33dd44ee55ff66aa77bb88cc99dd00ee11ff22aa33bb44cc55dd66aa77bb88cc"
+
+        ENTRY
+      end
+
+      before do
+        status = instance_double(Process::Status, success?: true)
+        allow(Open3).to receive(:capture2e) do
+          content = File.read("Cargo.lock")
+          File.write(
+            "Cargo.lock",
+            content.sub(
+              %([[package]]\nname = "split-locked-version"),
+              new_entry + %([[package]]\nname = "split-locked-version")
+            )
+          )
+          ["", status]
+        end
+      end
+
+      it "returns the newly introduced line rather than the retained one" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("0.4.3"))
+      end
+
+      context "when the split adds more than one new identity" do
+        let(:second_entry) do
+          <<~ENTRY
+            [[package]]
+            name = "getrandom"
+            version = "0.5.1"
+            source = "registry+https://github.com/rust-lang/crates.io-index"
+            checksum = "44ee55ff66aa77bb88cc99dd00ee11ff22aa33bb44cc55dd66aa77bb88cc99dd"
+
+          ENTRY
+        end
+
+        before do
+          status = instance_double(Process::Status, success?: true)
+          allow(Open3).to receive(:capture2e) do
+            content = File.read("Cargo.lock")
+            File.write(
+              "Cargo.lock",
+              content.sub(
+                %([[package]]\nname = "split-locked-version"),
+                new_entry + second_entry + %([[package]]\nname = "split-locked-version")
+              )
+            )
+            ["", status]
+          end
+        end
+
+        it "returns the highest newly introduced line" do
+          expect(latest_resolvable_version).to eq(Gem::Version.new("0.5.1"))
+        end
+      end
+    end
+
+    context "when a source-less package shares the git dependency's name" do
+      let(:manifest_fixture_name) { "git_dependency_multiple_refs" }
+      let(:lockfile_fixture_name) { "git_dependency_multiple_refs" }
+      let(:dependency_name) { "utf8-ranges" }
+      let(:dependency_version) { "83141b376b93484341c68fbca3ca110ae5cd2708" }
+      let(:requirements) do
+        [{
+          file: "Cargo.toml",
+          requirement: nil,
+          groups: ["dependencies"],
+          source: {
+            type: "git",
+            url: "https://github.com/BurntSushi/utf8-ranges",
+            branch: "main",
+            ref: nil
+          }
+        }]
+      end
+
+      before do
+        status = instance_double(Process::Status, success?: true)
+        allow(Open3).to receive(:capture2e).and_return(["", status])
+      end
+
+      it "ignores the source-less package when building the update spec" do
+        expect(latest_resolvable_version.to_s)
+          .to eq("83141b376b93484341c68fbca3ca110ae5cd2708")
+      end
+    end
+
     context "when there's a virtual workspace" do
       let(:manifest_fixture_name) { "virtual_workspace_root" }
       let(:lockfile_fixture_name) { "virtual_workspace" }

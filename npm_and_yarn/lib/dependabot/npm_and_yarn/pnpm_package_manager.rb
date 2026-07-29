@@ -21,13 +21,15 @@ module Dependabot
       PNPM_V8 = "8"
       PNPM_V9 = "9"
       PNPM_V10 = "10"
+      PNPM_V11 = "11"
 
       SUPPORTED_VERSIONS = T.let(
         [
           Version.new(PNPM_V7),
           Version.new(PNPM_V8),
           Version.new(PNPM_V9),
-          Version.new(PNPM_V10)
+          Version.new(PNPM_V10),
+          Version.new(PNPM_V11)
         ].freeze,
         T::Array[Dependabot::Version]
       )

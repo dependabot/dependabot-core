@@ -6,6 +6,7 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/credential"
+require "dependabot/security_advisory"
 
 require "dependabot/vcpkg/file_parser"
 require "dependabot/vcpkg/update_checker"
@@ -219,7 +220,7 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
       let(:commit_sha) { dependency_version }
       let(:mock_latest_release_info) { nil }
 
-      it "falls back to the base behaviour and is not up to date" do
+      it "falls back to the base behavior and is not up to date" do
         expect(up_to_date).to be(false)
       end
     end
@@ -586,6 +587,204 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
           file: "vcpkg.json"
         }]
       )
+    end
+  end
+
+  describe "security updates" do
+    subject(:security_checker) do
+      described_class.new(
+        dependency: port_dependency,
+        dependency_files: port_dependency_files,
+        credentials: [],
+        ignored_versions: ignored_versions,
+        security_advisories: port_advisories,
+        options: {}
+      )
+    end
+
+    let(:baseline_sha) { "fe1cde61e971d53c9687cf9a46308f8f55da19fa" }
+    let(:fix) { nil }
+    let(:port_constraint) { nil }
+    let(:port_version) { "1.2.11" }
+    let(:resolver) { instance_double(Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver) }
+
+    let(:port_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: "zlib",
+          package_manager: "vcpkg",
+          vulnerable_versions: ["<= 1.2.12"]
+        )
+      ]
+    end
+
+    let(:port_dependency) do
+      Dependabot::Dependency.new(
+        name: "zlib",
+        version: port_version,
+        package_manager: "vcpkg",
+        requirements: [{ requirement: port_constraint, groups: [], source: nil, file: "vcpkg.json" }]
+      )
+    end
+
+    let(:port_dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "vcpkg.json",
+          content: %({ "builtin-baseline": "#{baseline_sha}", "dependencies": ["zlib"] }),
+          directory: "/"
+        )
+      ]
+    end
+
+    before do
+      allow(Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver).to receive(:new).and_return(resolver)
+      allow(resolver).to receive(:fix).and_return(fix)
+      allow(Dependabot::Vcpkg::Package::PackageDetailsFetcher).to receive(:new).and_return(
+        instance_double(Dependabot::Vcpkg::Package::PackageDetailsFetcher, fetch: nil)
+      )
+    end
+
+    context "when the port is vulnerable and a fix exists" do
+      let(:fix) do
+        Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver::Fix.new(
+          version: Dependabot::Vcpkg::Version.new("1.2.13"),
+          kind: :baseline,
+          baseline_tag: "2023.01.09",
+          baseline_commit_sha: "c" * 40
+        )
+      end
+
+      it "reports the fix as the lowest security fix version" do
+        expect(security_checker.lowest_security_fix_version).to eq(Dependabot::Vcpkg::Version.new("1.2.13"))
+      end
+
+      it "reports the same version as resolvable" do
+        expect(security_checker.lowest_resolvable_security_fix_version)
+          .to eq(Dependabot::Vcpkg::Version.new("1.2.13"))
+      end
+
+      it "drives latest_version from the fix, so the security operation does not bail out" do
+        expect(security_checker.latest_version).to eq(Dependabot::Vcpkg::Version.new("1.2.13"))
+        expect(security_checker.up_to_date?).to be(false)
+      end
+
+      it "can update via an own-requirement unlock" do
+        expect(security_checker.can_update?(requirements_to_unlock: :own)).to be(true)
+      end
+
+      it "describes the remediation on the requirement so the file updater can apply it" do
+        expect(security_checker.updated_requirements.first[:metadata]).to eq(
+          security_remediation: :baseline,
+          security_version: "1.2.13",
+          baseline_commit_sha: "c" * 40,
+          baseline_tag: "2023.01.09"
+        )
+      end
+
+      it "leaves the constraint alone for a baseline remediation" do
+        expect(security_checker.updated_requirements.first[:requirement]).to be_nil
+      end
+
+      context "with a version constraint remediation" do
+        let(:port_constraint) { ">=1.2.11" }
+        let(:fix) do
+          Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver::Fix.new(
+            version: Dependabot::Vcpkg::Version.new("1.3.2"),
+            kind: :version_constraint,
+            baseline_tag: nil,
+            baseline_commit_sha: nil
+          )
+        end
+
+        it "raises the declared constraint" do
+          expect(security_checker.updated_requirements.first[:requirement]).to eq(">=1.3.2")
+        end
+      end
+
+      context "with an override remediation" do
+        let(:fix) do
+          Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver::Fix.new(
+            version: Dependabot::Vcpkg::Version.new("0.27.4"),
+            kind: :override,
+            baseline_tag: nil,
+            baseline_commit_sha: nil
+          )
+        end
+
+        it "adds no constraint, because the pin goes in overrides" do
+          expect(security_checker.updated_requirements.first[:requirement]).to be_nil
+        end
+      end
+
+      # vcpkg cannot order a `version-date` against a `version`, so the inherited numeric
+      # comparison would call the dependency current and the security operation would give up.
+      context "when the fix cannot be ordered against the current version" do
+        let(:port_version) { "2023-06-01" }
+        let(:port_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: "zlib",
+              package_manager: "vcpkg",
+              vulnerable_versions: ["= 2023-06-01"]
+            )
+          ]
+        end
+        let(:fix) do
+          Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver::Fix.new(
+            version: Dependabot::Vcpkg::Version.new("1.0.0"),
+            kind: :override,
+            baseline_tag: nil,
+            baseline_commit_sha: nil
+          )
+        end
+
+        it "is not reported as up to date" do
+          expect(security_checker.up_to_date?).to be(false)
+        end
+
+        it "can still update via an own-requirement unlock" do
+          expect(security_checker.can_update?(requirements_to_unlock: :own)).to be(true)
+        end
+
+        it "produces an updated dependency at the fix version" do
+          updated = security_checker.updated_dependencies(requirements_to_unlock: :own)
+
+          expect(updated.map(&:version)).to eq(["1.0.0"])
+        end
+      end
+    end
+
+    context "when no fix is available" do
+      it "reports no security fix version" do
+        expect(security_checker.lowest_security_fix_version).to be_nil
+      end
+
+      it "reports a baseline governed port as up to date rather than inventing a constraint" do
+        expect(security_checker.up_to_date?).to be(true)
+      end
+    end
+
+    context "when the port is not vulnerable" do
+      let(:port_version) { "1.3.1" }
+
+      it "does not consult the resolver" do
+        security_checker.lowest_security_fix_version
+
+        expect(Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver).not_to have_received(:new)
+      end
+
+      it "reports a baseline governed port as up to date" do
+        expect(security_checker.up_to_date?).to be(true)
+      end
+
+      context "with a declared constraint" do
+        let(:port_constraint) { ">=1.3.1" }
+
+        it "still looks for a newer version" do
+          expect(security_checker.latest_version).to be_nil
+        end
+      end
     end
   end
 end

@@ -80,10 +80,10 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def tarball_channel_input?
-        source = dependency.source_details(allowed_types: ["tarball"])
-        return false unless source
+        url = dependency.source_string("url", allowed_types: ["tarball"])
+        return false unless url
 
-        Channel.channel_url?(source[:url] || source["url"])
+        Channel.channel_url?(url)
       end
 
       sig { returns(T.nilable(String)) }
@@ -91,7 +91,7 @@ module Dependabot
         latest_channel&.fetch(:commit_sha) || channel_version_finder.current_channel_revision
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements_for_channel
         result = latest_channel
         return dependency.requirements unless result
@@ -100,7 +100,9 @@ module Dependabot
           source = req[:source]
           next req unless source
 
-          req.merge(source: source.merge(ref: result[:channel], url: result[:url]))
+          Dependabot::DependencyRequirement.create(
+            req.merge(source: source.merge(ref: result[:channel], url: result[:url]))
+          )
         end
       end
 
@@ -127,27 +129,23 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def tarball_channel_name
-        source = dependency.source_details(allowed_types: ["tarball"])
-        return unless source
-
-        ref = source[:ref] || source["ref"]
+        ref = dependency.source_string("ref", allowed_types: ["tarball"])
         return ref if ref
 
         # Fall back to the URL's channel when the source omits a ref.
-        Channel.channel_name_from_url(source[:url] || source["url"])
+        Channel.channel_name_from_url(dependency.source_string("url", allowed_types: ["tarball"]))
       end
 
       # Preserve the flake's existing tarball suffix (xz, gz, bz2) on a bump.
       sig { returns(String) }
       def tarball_channel_extension
-        source = dependency.source_details(allowed_types: ["tarball"])
-        url = source && (source[:url] || source["url"])
+        url = dependency.source_string("url", allowed_types: ["tarball"])
         Channel.extension_from_url(url) || Channel::DEFAULT_EXTENSION
       end
 
       # --- Tag-pinned ref support ---
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements_for_tag
         new_tag = latest_version_tag
         return dependency.requirements unless new_tag
@@ -156,7 +154,7 @@ module Dependabot
           source = req[:source]
           next req unless source
 
-          req.merge(source: source.merge(ref: new_tag[:tag], branch: nil))
+          Dependabot::DependencyRequirement.create(req.merge(source: source.merge(ref: new_tag[:tag], branch: nil)))
         end
       end
 
@@ -176,7 +174,7 @@ module Dependabot
 
       # --- Versioned branch support ---
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements_for_versioned_branch
         result = latest_versioned_branch
         return dependency.requirements unless result
@@ -185,7 +183,7 @@ module Dependabot
           source = req[:source]
           next req unless source
 
-          req.merge(source: source.merge(ref: result[:branch], branch: nil))
+          Dependabot::DependencyRequirement.create(req.merge(source: source.merge(ref: result[:branch], branch: nil)))
         end
       end
 
@@ -241,7 +239,7 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def dependency_source_ref
-        dependency.source_details(allowed_types: ["git"])&.fetch(:ref, nil)
+        dependency.source_string("ref", allowed_types: ["git"])
       end
 
       sig { returns(T.nilable(VersionedBranchFinder)) }

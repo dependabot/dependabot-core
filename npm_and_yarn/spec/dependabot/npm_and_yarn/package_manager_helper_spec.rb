@@ -118,7 +118,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
 
       it "returns a PNPMPackageManager instance from engines field" do
         expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::PNPMPackageManager)
-        expect(helper.package_manager.detected_version).to eq("10")
+        expect(helper.package_manager.detected_version).to eq("11")
       end
     end
 
@@ -167,7 +167,7 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
 
       it "selects the highest matching supported pnpm version" do
         expect(helper.package_manager).to be_a(Dependabot::NpmAndYarn::PNPMPackageManager)
-        expect(helper.package_manager.detected_version).to eq("10")
+        expect(helper.package_manager.detected_version).to eq("11")
       end
     end
 

@@ -114,4 +114,32 @@ describe("updater", () => {
       expect(error.message).toEqual("package.json: Name contains illegal characters")
     }
   });
+
+  it("correctly updates packages with multiple lockfile entries", async () => {
+    // This test verifies that replaceLockfileDeclaration correctly consolidates
+    // duplicate lockfile entries when updating versions. This ensures the regex
+    // change properly identifies all entries belonging to a dependency.
+    copyDependencies("scoped-git-source", tempDir);
+
+    const result = await updateDependencyFiles(tempDir, [
+      {
+        name: "is-positive",
+        version: "3.1.0",
+        requirements: [
+          {
+            requirement: "^3.0.0",
+            file: "package.json",
+            groups: ["dependencies"],
+          },
+        ],
+      },
+    ]);
+
+    // The updated lock should have the new version
+    expect(result["yarn.lock"]).toContain('version "3.1.0"');
+    // Old version should be gone
+    expect(result["yarn.lock"]).not.toContain('version "3.0.0"');
+    // The caret requirement entry should be preserved
+    expect(result["yarn.lock"]).toContain("is-positive@^3.0.0");
+  });
 });
