@@ -774,11 +774,16 @@ RSpec.describe Dependabot::Job do
       end
     end
 
-    context "when cooldown is nil" do
+    context "when cooldown is not configured" do
       let(:cooldown) { nil }
 
-      it "returns nil" do
-        expect(job.cooldown).to be_nil
+      it "defaults all cooldown periods to DEFAULT_COOLDOWN_DAYS" do
+        expect(job.cooldown).to have_attributes(
+          default_days: Dependabot::Job::DEFAULT_COOLDOWN_DAYS,
+          semver_major_days: Dependabot::Job::DEFAULT_COOLDOWN_DAYS,
+          semver_minor_days: Dependabot::Job::DEFAULT_COOLDOWN_DAYS,
+          semver_patch_days: Dependabot::Job::DEFAULT_COOLDOWN_DAYS
+        )
       end
     end
   end
