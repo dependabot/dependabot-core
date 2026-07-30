@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/maven/version_parser"
@@ -84,9 +84,12 @@ module Dependabot
         parts = token_bucket.tokens # e.g [1,2,3] if version is 1.2.3-alpha3
         return [] if parts.empty? # for non-semver versions
 
-        version_parts = parts.fill("0", parts.length...2)
+        version_parts = T.let(parts.fill("0", parts.length...2), T::Array[Object])
         # the a0 is so we can get the next earliest prerelease patch version
-        upper_parts = version_parts.first(1) + [version_parts[1].to_i + 1] + [lowest_prerelease_suffix]
+        upper_parts = T.let(
+          version_parts.first(1) + [numeric_token(version_parts[1]) + 1] + [lowest_prerelease_suffix],
+          T::Array[Object]
+        )
         lower_bound = "> #{to_semver}"
         upper_bound = "< #{upper_parts.join('.')}"
 
@@ -98,9 +101,15 @@ module Dependabot
         parts = token_bucket.tokens # e.g [1,2,3] if version is 1.2.3-alpha3
         return [] if parts.empty? # for non-semver versions
 
-        version_parts = parts.fill("0", parts.length...2)
-        lower_parts = version_parts.first(1) + [version_parts[1].to_i + 1] + [lowest_prerelease_suffix]
-        upper_parts = version_parts.first(0) + [version_parts[0].to_i + 1] + [lowest_prerelease_suffix]
+        version_parts = T.let(parts.fill("0", parts.length...2), T::Array[Object])
+        lower_parts = T.let(
+          version_parts.first(1) + [numeric_token(version_parts[1]) + 1] + [lowest_prerelease_suffix],
+          T::Array[Object]
+        )
+        upper_parts = T.let(
+          version_parts.first(0) + [numeric_token(version_parts[0]) + 1] + [lowest_prerelease_suffix],
+          T::Array[Object]
+        )
         lower_bound = ">= #{lower_parts.join('.')}"
         upper_bound = "< #{upper_parts.join('.')}"
 
@@ -112,7 +121,10 @@ module Dependabot
         version_parts = token_bucket.tokens # e.g [1,2,3] if version is 1.2.3-alpha3
         return [] if version_parts.empty? # for non-semver versions
 
-        lower_parts = [version_parts[0].to_i + 1] + [lowest_prerelease_suffix] # earliest next major version prerelease
+        lower_parts = T.let(
+          [numeric_token(version_parts[0]) + 1] + [lowest_prerelease_suffix],
+          T::Array[Object]
+        ) # earliest next major version prerelease
         lower_bound = ">= #{lower_parts.join('.')}"
 
         [lower_bound]
@@ -122,6 +134,11 @@ module Dependabot
 
       sig { returns(String) }
       attr_reader :version_string
+
+      sig { params(token: Object).returns(Integer) }
+      def numeric_token(token)
+        token.to_s.to_i
+      end
     end
   end
 end

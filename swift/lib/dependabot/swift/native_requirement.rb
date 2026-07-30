@@ -22,14 +22,20 @@ module Dependabot
       sig do
         type_parameters(:T)
           .params(
-            requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            requirements: T::Array[T::Hash[Symbol, Object]],
             _blk: T.proc.params(declaration: NativeRequirement).returns(String)
           )
-          .returns(T::Array[T::Hash[Symbol, T.untyped]])
+          .returns(T::Array[T::Hash[Symbol, Object]])
       end
       def self.map_requirements(requirements, &_blk)
         requirements.map do |requirement|
-          declaration = new(requirement[:metadata][:requirement_string])
+          metadata = requirement[:metadata]
+          next requirement unless metadata.is_a?(Hash)
+
+          requirement_string = metadata[:requirement_string]
+          next requirement unless requirement_string.is_a?(String)
+
+          declaration = new(requirement_string)
 
           new_declaration = yield(declaration)
           new_requirement = new(new_declaration)

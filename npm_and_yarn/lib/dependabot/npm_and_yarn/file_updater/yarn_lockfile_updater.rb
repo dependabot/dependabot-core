@@ -382,8 +382,8 @@ module Dependabot
         # (this intentionally overrides any `.yarnrc.yml` gate). Regular updates set
         # it to the dependabot.yml cooldown floor (in minutes) so yarn holds
         # transitive dependencies back to versions at least that old. For regular
-        # updates an explicit `npmMinimalAgeGate` in .yarnrc.yml takes precedence,
-        # so it is left untouched when present.
+        # updates an equal-or-longer `npmMinimalAgeGate` in .yarnrc.yml takes
+        # precedence, so it is left untouched.
         #
         # npmMinimalAgeGate was introduced in Yarn 4.10.0. Setting the env var on
         # older Yarn Berry releases (or Yarn classic) raises "Unrecognized or legacy
@@ -486,10 +486,10 @@ module Dependabot
 
         sig do
           params(
-            requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            requirements: T::Array[Dependabot::DependencyRequirement],
             path: String
           )
-            .returns(T::Array[T::Hash[Symbol, T.untyped]])
+            .returns(T::Array[Dependabot::DependencyRequirement])
         end
         def requirements_for_path(requirements, path)
           return requirements if path.to_s == "."
@@ -497,7 +497,7 @@ module Dependabot
           requirements.filter_map do |r|
             next unless r[:file].start_with?("#{path}/")
 
-            r.merge(file: r[:file].gsub(/^#{Regexp.quote("#{path}/")}/, ""))
+            Dependabot::DependencyRequirement.create(r.merge(file: r[:file].gsub(/^#{Regexp.quote("#{path}/")}/, "")))
           end
         end
 

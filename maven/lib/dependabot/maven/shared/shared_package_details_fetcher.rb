@@ -22,6 +22,15 @@ module Dependabot
         URL_KEY = T.let("url", String)
         AUTH_HEADERS_KEY = T.let("auth_headers", String)
         DEFAULT_CENTRAL_REPO_URL = T.let("https://repo.maven.apache.org/maven2", String)
+        RepositoryDetails = T.type_alias { T::Hash[String, T.any(String, T::Hash[String, String])] }
+        VersionDetails = T.type_alias do
+          {
+            version: Dependabot::Version,
+            source_url: String,
+            release_date: T.nilable(Time)
+          }
+        end
+        HtmlVersionDetails = T.type_alias { { release_date: T.nilable(Time) } }
 
         sig { abstract.returns(Dependabot::Dependency) }
         def dependency; end
@@ -31,7 +40,7 @@ module Dependabot
 
         # Subclasses must define how repositories are assembled.
         # Typically: credentials_repository_details + ecosystem-specific repos.
-        sig { abstract.returns(T::Array[T::Hash[String, T.untyped]]) }
+        sig { abstract.returns(T::Array[RepositoryDetails]) }
         def repositories; end
 
         # -- URL Construction --
@@ -93,10 +102,10 @@ module Dependabot
         # -- Metadata Fetching (XML) --
 
         # Fetches and parses maven-metadata.xml from a repository.
-        sig { params(repository_details: T::Hash[String, T.untyped]).returns(T.nilable(Nokogiri::XML::Document)) }
+        sig { params(repository_details: RepositoryDetails).returns(T.nilable(Nokogiri::XML::Document)) }
         def fetch_dependency_metadata(repository_details)
-          url = repository_details.fetch(URL_KEY)
-          headers = repository_details.fetch(AUTH_HEADERS_KEY)
+          url = repository_url(repository_details)
+          headers = repository_auth_headers(repository_details)
           response = Dependabot::RegistryClient.get(
             url: dependency_metadata_url(url),
             headers: headers
@@ -109,7 +118,7 @@ module Dependabot
           nil
         rescue Excon::Error::Socket, Excon::Error::Timeout,
                Excon::Error::TooManyRedirects => e
-          handle_registry_error(url, e, response)
+          handle_registry_error(T.must(url), e, response)
           nil
         end
 
@@ -118,24 +127,24 @@ module Dependabot
           params(
             xml: Nokogiri::XML::Document,
             url: String
-          ).returns(T::Array[T::Hash[Symbol, T.untyped]])
+          ).returns(T::Array[VersionDetails])
         end
         def extract_metadata_from_xml(xml, url)
           xml.css("versions > version")
              .select { |node| version_class.correct?(node.content) }
              .map { |node| version_class.new(node.content) }
-             .map { |version| { version: version, source_url: url } }
+             .map { |version| { version: version, source_url: url, release_date: nil } }
         end
 
         # -- Metadata Fetching (HTML directory listing) --
 
         # Fetches an HTML directory listing page from a repository.
         sig do
-          params(repository_details: T::Hash[String, T.untyped]).returns(T.nilable(Nokogiri::HTML::Document))
+          params(repository_details: RepositoryDetails).returns(T.nilable(Nokogiri::HTML::Document))
         end
         def fetch_dependency_metadata_from_html(repository_details)
-          url = repository_details.fetch(URL_KEY)
-          headers = repository_details.fetch(AUTH_HEADERS_KEY)
+          url = repository_url(repository_details)
+          headers = repository_auth_headers(repository_details)
           # Add trailing slash for directory listing
           base_directory_url = dependency_base_url(url)
           base_directory_url += "/" unless base_directory_url.end_with?("/")
@@ -151,17 +160,17 @@ module Dependabot
           nil
         rescue Excon::Error::Socket, Excon::Error::Timeout,
                Excon::Error::TooManyRedirects => e
-          handle_registry_error(url, e, response)
+          handle_registry_error(T.must(url), e, response)
           nil
         end
 
         # Parses release dates from an HTML directory listing page.
         sig do
           params(html_doc: Nokogiri::HTML::Document)
-            .returns(T::Hash[String, T::Hash[Symbol, T.untyped]])
+            .returns(T::Hash[String, HtmlVersionDetails])
         end
         def extract_version_details_from_html(html_doc)
-          versions_detail_hash = T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
+          versions_detail_hash = T.let({}, T::Hash[String, HtmlVersionDetails])
 
           html_doc.css("a[href]").each do |link|
             version = extract_version_from_link(link)
@@ -239,9 +248,9 @@ module Dependabot
         # Aggregates version details from XML metadata and enriches with
         # release dates from HTML directory listings. Returns a sorted array
         # of version detail hashes.
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[VersionDetails]) }
         def versions
-          @version_details = T.let(@version_details, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
+          @version_details = T.let(@version_details, T.nilable(T::Array[VersionDetails]))
           return @version_details if @version_details
 
           @version_details = versions_details_from_xml
@@ -276,11 +285,11 @@ module Dependabot
         end
 
         # Fetches version details from maven-metadata.xml across all repositories.
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[VersionDetails]) }
         def versions_details_from_xml
           forbidden_urls.clear
           version_details = repositories.flat_map do |repository_details|
-            url = repository_details.fetch(URL_KEY)
+            url = repository_url(repository_details)
             xml = dependency_metadata(repository_details)
             next [] if xml.nil?
 
@@ -293,12 +302,12 @@ module Dependabot
         end
 
         # Fetches version details (release dates) from HTML directory listings.
-        sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Hash[String, HtmlVersionDetails]) }
         def versions_details_hash_from_html
           forbidden_urls.clear
 
           versions_detail_hash = T.let(
-            {}, T::Hash[String, T::Hash[Symbol, T.untyped]]
+            {}, T::Hash[String, HtmlVersionDetails]
           )
           repositories.each do |repository_details|
             html = dependency_metadata_from_html(repository_details)
@@ -328,8 +337,8 @@ module Dependabot
 
           @released_check[version] =
             repositories.any? do |repository_details|
-              url = repository_details.fetch(URL_KEY)
-              headers = repository_details.fetch(AUTH_HEADERS_KEY)
+              url = repository_url(repository_details)
+              headers = repository_auth_headers(repository_details)
               response = Dependabot::RegistryClient.head(
                 url: dependency_files_url(url, version),
                 headers: headers
@@ -359,7 +368,7 @@ module Dependabot
         # -- Credential & Repository Helpers --
 
         # Builds repository details from credentials of type "maven_repository".
-        sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+        sig { returns(T::Array[RepositoryDetails]) }
         def credentials_repository_details
           credentials
             .select { |cred| cred["type"] == REPOSITORY_TYPE && cred[URL_KEY] }
@@ -398,6 +407,22 @@ module Dependabot
           auth_headers_finder.auth_headers(maven_repo_url)
         end
 
+        sig { params(repository_details: RepositoryDetails).returns(String) }
+        def repository_url(repository_details)
+          url = repository_details.fetch(URL_KEY)
+          return url if url.is_a?(String)
+
+          raise "Repository URL must be a string"
+        end
+
+        sig { params(repository_details: RepositoryDetails).returns(T::Hash[String, String]) }
+        def repository_auth_headers(repository_details)
+          headers = repository_details.fetch(AUTH_HEADERS_KEY)
+          return headers if headers.is_a?(Hash)
+
+          raise "Repository auth headers must be a hash"
+        end
+
         sig { returns(Utils::AuthHeadersFinder) }
         def auth_headers_finder
           @auth_headers_finder ||= T.let(Utils::AuthHeadersFinder.new(credentials), T.nilable(Utils::AuthHeadersFinder))
@@ -406,10 +431,10 @@ module Dependabot
         # -- Metadata Caching --
 
         # Fetches and caches XML metadata per repository.
-        sig { params(repository_details: T::Hash[String, T.untyped]).returns(T.nilable(Nokogiri::XML::Document)) }
+        sig { params(repository_details: RepositoryDetails).returns(T.nilable(Nokogiri::XML::Document)) }
         def dependency_metadata(repository_details)
           @dependency_metadata = T.let(
-            @dependency_metadata, T.nilable(T::Hash[T.untyped, Nokogiri::XML::Document])
+            @dependency_metadata, T.nilable(T::Hash[Integer, Nokogiri::XML::Document])
           )
           @dependency_metadata ||= {}
           repository_key = repository_details.hash
@@ -421,10 +446,10 @@ module Dependabot
         end
 
         # Fetches and caches HTML metadata per repository.
-        sig { params(repository_details: T::Hash[String, T.untyped]).returns(T.nilable(Nokogiri::HTML::Document)) }
+        sig { params(repository_details: RepositoryDetails).returns(T.nilable(Nokogiri::HTML::Document)) }
         def dependency_metadata_from_html(repository_details)
           @dependency_metadata_from_html = T.let(
-            @dependency_metadata_from_html, T.nilable(T::Hash[T.untyped, Nokogiri::HTML::Document])
+            @dependency_metadata_from_html, T.nilable(T::Hash[Integer, Nokogiri::HTML::Document])
           )
           @dependency_metadata_from_html ||= {}
           repository_key = repository_details.hash

@@ -14,13 +14,12 @@ module Dependabot
         require_relative "version_finder"
         require_relative "requirements_updater"
 
-        # rubocop:disable Metrics/AbcSize
         sig do
           params(
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            target_version_details: T.nilable(T::Hash[Symbol, Dependabot::Gradle::Version]),
+            target_version_details: T.nilable(T::Hash[Symbol, Object]),
             ignored_versions: T::Array[String],
             raise_on_ignored: T::Boolean
           ).void
@@ -37,11 +36,11 @@ module Dependabot
           @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
           @credentials = T.let(credentials, T::Array[Dependabot::Credential])
           @target_version = T.let(
-            target_version_details&.fetch(:version),
+            version_from_details(target_version_details),
             T.nilable(Dependabot::Gradle::Version)
           )
           @source_url = T.let(
-            T.cast(target_version_details&.fetch(:source_url), T.nilable(String)),
+            source_url_from_details(target_version_details),
             T.nilable(String)
           )
           @ignored_versions = T.let(ignored_versions, T::Array[String])
@@ -51,10 +50,8 @@ module Dependabot
           @dependencies_to_update = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
           @property_name = T.let(nil, T.nilable(String))
           @dependency_set = T.let(nil, T.nilable(T::Hash[Symbol, String]))
-          @updated_requirements = T.let({}, T::Hash[String, T::Array[T::Hash[Symbol, T.untyped]]])
+          @updated_requirements = T.let({}, T::Hash[String, T::Array[T::Hash[Symbol, Object]]])
         end
-        # rubocop:enable Metrics/AbcSize
-
         sig { returns(T::Boolean) }
         def update_possible?
           return false unless target_version
@@ -92,6 +89,18 @@ module Dependabot
         end
 
         private
+
+        sig { params(details: T.nilable(T::Hash[Symbol, Object])).returns(T.nilable(Dependabot::Gradle::Version)) }
+        def version_from_details(details)
+          version = details&.fetch(:version, nil)
+          version if version.is_a?(Dependabot::Gradle::Version)
+        end
+
+        sig { params(details: T.nilable(T::Hash[Symbol, Object])).returns(T.nilable(String)) }
+        def source_url_from_details(details)
+          source_url = details&.fetch(:source_url, nil)
+          source_url if source_url.is_a?(String)
+        end
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
@@ -142,7 +151,7 @@ module Dependabot
                                         &.dig(:metadata, :dependency_set)
         end
 
-        sig { params(dep: Dependabot::Dependency).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { params(dep: Dependabot::Dependency).returns(T::Array[T::Hash[Symbol, Object]]) }
         def updated_requirements(dep)
           @updated_requirements[dep.name] ||=
             RequirementsUpdater.new(

@@ -20,11 +20,12 @@ module Dependabot
               <path>.*?</path>|
               <artifactItem>.*?</artifactItem>
             }mx
+        Requirement = T.type_alias { T.any(Dependabot::DependencyRequirement, T::Hash[Symbol, Object]) }
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
-        sig { returns(T::Hash[Symbol, T.untyped]) }
+        sig { returns(Requirement) }
         attr_reader :declaring_requirement
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -34,7 +35,7 @@ module Dependabot
           params(
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
-            declaring_requirement: T::Hash[Symbol, T.untyped]
+            declaring_requirement: Requirement
           ).void
         end
         def initialize(dependency:, dependency_files:, declaring_requirement:)
@@ -191,7 +192,7 @@ module Dependabot
               callsite_pom: declaring_pom
             )&.fetch(:value)
 
-          return value unless property_value
+          return value unless property_value.is_a?(String)
 
           value.gsub(
             match_data.to_s,

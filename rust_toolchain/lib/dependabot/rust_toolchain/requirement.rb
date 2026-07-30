@@ -68,12 +68,11 @@ module Dependabot
         super(requirements)
       end
 
-      # rubocop:disable Metrics/AbcSize
       sig { override.params(version: T.any(Gem::Version, String)).returns(T::Boolean) }
       def satisfied_by?(version)
         version = RustToolchain::Version.new(version.to_s) unless version.is_a?(RustToolchain::Version)
 
-        T.cast(requirements, T::Array[T::Array[T.untyped]]).all? do |req|
+        T.cast(requirements, T::Array[T::Array[Object]]).all? do |req|
           op = T.cast(req[0], String)
           rv = T.cast(req[1], RustToolchain::Version)
 
@@ -90,13 +89,12 @@ module Dependabot
             satisfy_less_than_requirement?(version, rv)
           else
             # Fall back to default behavior for other operators
-            ops_method = T.let(OPS[op], T.nilable(T.proc.params(arg0: T.untyped, arg1: T.untyped).returns(T::Boolean)))
-            ops_method ||= T.cast(OPS["="], T.proc.params(arg0: T.untyped, arg1: T.untyped).returns(T::Boolean))
+            ops_method = T.let(OPS[op], T.nilable(T.proc.params(arg0: Object, arg1: Object).returns(T::Boolean)))
+            ops_method ||= T.cast(OPS["="], T.proc.params(arg0: Object, arg1: Object).returns(T::Boolean))
             ops_method.call(version, rv)
           end
         end
       end
-      # rubocop:enable Metrics/AbcSize
 
       private
 

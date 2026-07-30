@@ -46,6 +46,21 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
       expect(grapher.relevant_dependency_file).to eql(uv_lock_file)
     end
 
+    context "when uv.lock exists in a nested path" do
+      let(:nested_uv_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "projects/manufacturing/ops-assistant/uv.lock",
+          content: uv_lock_content,
+          directory: "/"
+        )
+      end
+      let(:dependency_files) { [pyproject_toml, nested_uv_lock_file] }
+
+      it "returns the nested uv.lock" do
+        expect(grapher.relevant_dependency_file).to eql(nested_uv_lock_file)
+      end
+    end
+
     context "when uv.lock is missing" do
       let(:dependency_files) { [pyproject_toml] }
 
@@ -63,6 +78,23 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
       it "raises a DependabotError" do
         expect { grapher.resolved_dependencies }
           .to raise_error(Dependabot::DependabotError, /No uv.lock present/)
+      end
+    end
+
+    context "when uv.lock exists in a nested path" do
+      let(:nested_uv_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "projects/manufacturing/ops-assistant/uv.lock",
+          content: uv_lock_content,
+          directory: "/"
+        )
+      end
+      let(:dependency_files) { [pyproject_toml, nested_uv_lock_file] }
+
+      it "extracts dependencies from the nested uv.lock" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies).to include("pkg:pypi/flask@3.1.3")
       end
     end
 

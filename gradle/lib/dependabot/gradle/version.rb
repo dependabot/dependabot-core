@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -47,14 +47,14 @@ module Dependabot
       )
       ANCHORED_VERSION_PATTERN = T.let(/\A\s*(#{VERSION_PATTERN})?\s*\z/, Regexp)
 
-      sig { override.params(version: T.untyped).returns(T::Boolean) }
+      sig { override.params(version: Object).returns(T::Boolean) }
       def self.correct?(version)
         return false if version.nil?
 
         version.to_s.match?(ANCHORED_VERSION_PATTERN)
       end
 
-      sig { override.params(version: T.untyped).void }
+      sig { override.params(version: Object).void }
       def initialize(version)
         @version_string = T.let(version.to_s, String)
         super(version.to_s.tr("_", "-"))
@@ -75,7 +75,7 @@ module Dependabot
         end
       end
 
-      sig { params(other: T.untyped).returns(Integer) }
+      sig { params(other: Object).returns(Integer) }
       def <=>(other)
         version = stringify_version(@version_string)
         version = fill_tokens(version)
@@ -122,7 +122,7 @@ module Dependabot
         @tokens
       end
 
-      sig { params(version: T.untyped).returns(String) }
+      sig { params(version: Object).returns(String) }
       def stringify_version(version)
         version = version.to_s.downcase
 

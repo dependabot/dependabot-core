@@ -212,7 +212,7 @@ module Dependabot
 
           metadata = T.let(
             { property_name: val_name, property_source: property_details[:file] },
-            T::Hash[Symbol, T.untyped]
+            T::Hash[Symbol, Object]
           )
           metadata[:packaging_type] = "cross-versioned" if cross_versioned
 
@@ -440,7 +440,7 @@ module Dependabot
           version: String,
           file: String,
           groups: T::Array[String],
-          metadata: T.nilable(T::Hash[Symbol, T.untyped])
+          metadata: T.nilable(T::Hash[Symbol, Object])
         ).returns(Dependabot::Dependency)
       end
       def new_dependency(name:, version:, file:, groups: [], metadata: nil)

@@ -278,15 +278,7 @@ module Dependabot
         # old to enforce it.
         sig { returns(T.nilable(String)) }
         def release_age_gate_config
-          minutes = effective_release_age_minutes
-          return nil if minutes.nil?
-
-          # Security updates pass minimumReleaseAge=0 unconditionally: older pnpm
-          # ignores it, and a transient version-probe failure must not leave a native
-          # gate active and block the fix.
-          return minimum_release_age_gate_args(minutes) if security_updates_only?
-
-          unless pnpm_supports_minimum_release_age?
+          if !security_updates_only? && @release_age_days&.positive? && !pnpm_supports_minimum_release_age?
             Dependabot.logger.warn(
               "pnpm #{pnpm_version || '(unknown version)'} does not support minimumReleaseAge " \
               "(added in pnpm 10.16); the release-age cooldown cannot be enforced for transitive " \
@@ -294,6 +286,14 @@ module Dependabot
             )
             return nil
           end
+
+          minutes = effective_release_age_minutes
+          return nil if minutes.nil?
+
+          # Security updates pass minimumReleaseAge=0 unconditionally: older pnpm
+          # ignores it, and a transient version-probe failure must not leave a native
+          # gate active and block the fix.
+          return minimum_release_age_gate_args(minutes) if security_updates_only?
 
           minimum_release_age_gate_args(minutes)
         end
@@ -378,9 +378,9 @@ module Dependabot
         end
 
         # True when the repo explicitly enables pnpm's `minimumReleaseAgeStrict`, in
-        # pnpm-workspace.yaml (`minimumReleaseAgeStrict: true`) or `.npmrc`
-        # (`minimum-release-age-strict=true`). The last occurrence wins, matching
-        # how pnpm/INI resolve a repeated key.
+        # pnpm-workspace.yaml (`minimumReleaseAgeStrict: true`) or, on pnpm 10.x,
+        # `.npmrc` (`minimum-release-age-strict=true`). The last occurrence wins,
+        # matching how pnpm/INI resolve a repeated key.
         sig { returns(T::Boolean) }
         def pnpm_strict_release_age_configured?
           dependency_files.any? do |file|
@@ -388,7 +388,8 @@ module Dependabot
             when "pnpm-workspace.yaml"
               strict_release_age_enabled?(file.content.to_s, "minimumReleaseAgeStrict", ":")
             when ".npmrc"
-              strict_release_age_enabled?(file.content.to_s, "minimum-release-age-strict", "=")
+              pnpm_reads_npmrc_release_age? &&
+                strict_release_age_enabled?(file.content.to_s, "minimum-release-age-strict", "=")
             else
               false
             end
@@ -473,10 +474,10 @@ module Dependabot
 
         # Tries `pnpm update --depth Infinity <dep>` for each dependency as a
         # first-tier fallback when the regular update is a no-op (typically
-        # transitive deps not listed in any package.json). Unlike `audit --fix`
-        # this does not write `overrides` to package.json. Routed through the
-        # release-age gate (with the missing-time retry) so this fallback cannot
-        # pull a just-published transitive release past the cooldown.
+        # transitive deps not listed in any package.json), without relying on
+        # audit fixes that may modify manifests on older pnpm versions. It is
+        # routed through the release-age gate so the fallback cannot bypass the
+        # transitive dependency cooldown.
         sig { void }
         def run_pnpm_deep_update_fallback
           recursive = workspace_files.any?
@@ -491,18 +492,17 @@ module Dependabot
           )
         end
 
-        # Runs `pnpm audit --fix` as a fallback when the primary update is a no-op.
-        # `pnpm audit --fix` adds `overrides` to `package.json` — since we can
-        # only return lockfile content from `run_pnpm_update`, any manifest
-        # changes would produce inconsistent output. If audit-fix modifies a
-        # package.json we revert both the manifest(s) and lockfile so the
-        # overall operation behaves as a no-op.
+        # Runs the version-compatible `pnpm audit --fix` strategy when the primary update is a no-op.
+        # pnpm 11 updates the lockfile directly, while older versions may add
+        # `overrides` to package.json. Since only lockfile content can be returned,
+        # revert any manifest and lockfile changes so the operation remains consistent.
         sig { params(pnpm_lock: Dependabot::DependencyFile, original_content: String).void }
         def run_pnpm_audit_fix_fallback(pnpm_lock, original_content)
           package_json_snapshots = Dir.glob("**/package.json").to_h { |f| [f, File.read(f)] }
 
           begin
-            run_pnpm_command_with_release_age_gate("audit --fix", "audit --fix")
+            cmd, fingerprint = NativeHelpers.pnpm_audit_fix_command
+            run_pnpm_command_with_release_age_gate(cmd, fingerprint)
             run_pnpm_install
 
             manifest_changed = package_json_snapshots.any? { |f, c| File.read(f) != c }

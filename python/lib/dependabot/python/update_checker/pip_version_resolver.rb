@@ -62,7 +62,7 @@ module Dependabot
           @constraints_files = T.let(nil, T.nilable(T::Array[String]))
           @constraints_file_basenames = T.let(nil, T.nilable(T::Array[String]))
           @requirement_file_directories = T.let(nil, T.nilable(T::Array[String]))
-          @pyproject_content_cache = T.let({}, T::Hash[String, T::Hash[String, T.untyped]])
+          @pyproject_content_cache = T.let({}, T::Hash[String, T::Hash[String, Object]])
         end
 
         sig { returns(T.nilable(Dependabot::Version)) }
@@ -200,7 +200,7 @@ module Dependabot
         sig { params(pyproject: Dependabot::DependencyFile).returns(T::Array[[String, String]]) }
         def pinned_pyproject_dependencies_for(pyproject)
           pyproject_content = pyproject_content_for(pyproject)
-          project_obj = T.cast(pyproject_content["project"], T.nilable(Object))
+          project_obj = pyproject_content["project"]
           return [] unless project_obj.is_a?(Hash)
 
           project_hash = project_obj
@@ -431,7 +431,7 @@ module Dependabot
         sig { params(pyproject: Dependabot::DependencyFile).returns(T::Array[String]) }
         def constraints_for_pyproject(pyproject)
           pyproject_content = pyproject_content_for(pyproject)
-          tool_obj = T.cast(pyproject_content["tool"], T.nilable(Object))
+          tool_obj = pyproject_content["tool"]
           return [] unless tool_obj.is_a?(Hash)
 
           pip_obj = T.cast(tool_obj["pip"], T.nilable(Object))
@@ -507,8 +507,8 @@ module Dependabot
 
         sig { params(response: Excon::Response).returns(T.nilable(T::Array[String])) }
         def requires_dist_from_response(response)
-          body = T.cast(JSON.parse(response.body), T::Hash[String, T.untyped])
-          info_obj = T.cast(body["info"], T.nilable(Object))
+          body = T.cast(JSON.parse(response.body), T::Hash[String, Object])
+          info_obj = body["info"]
           return nil unless info_obj.is_a?(Hash)
 
           requires_dist_obj = T.cast(info_obj["requires_dist"], T.nilable(Object))
@@ -554,16 +554,16 @@ module Dependabot
           marker_evaluator.marker_satisfied?(marker: marker, python_version: python_version)
         end
 
-        sig { params(pyproject: Dependabot::DependencyFile).returns(T::Hash[String, T.untyped]) }
+        sig { params(pyproject: Dependabot::DependencyFile).returns(T::Hash[String, Object]) }
         def pyproject_content_for(pyproject)
           cache_key = pyproject.name
           return T.must(@pyproject_content_cache[cache_key]) if @pyproject_content_cache.key?(cache_key)
 
           content =
             if pyproject.content
-              T.let(TomlRB.parse(pyproject.content), T::Hash[String, T.untyped])
+              T.let(TomlRB.parse(pyproject.content), T::Hash[String, Object])
             else
-              T.let({}, T::Hash[String, T.untyped])
+              T.let({}, T::Hash[String, Object])
             end
 
           @pyproject_content_cache[cache_key] = content

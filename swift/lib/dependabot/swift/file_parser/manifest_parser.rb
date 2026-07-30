@@ -27,7 +27,7 @@ module Dependabot
           @source = source
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[T::Hash[Symbol, Object]]) }
         def requirements
           found = manifest.content&.scan(DEPENDENCY)&.find do |_declaration, url, _requirement|
             SharedHelpers.scp_to_standard(url.to_s) == source[:url]

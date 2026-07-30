@@ -82,9 +82,9 @@ module Dependabot
         raise "No pubspec.yaml!" unless get_original_file("pubspec.yaml")
       end
 
-      sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+      sig { returns(T::Array[T::Hash[String, Object]]) }
       def list
-        @list ||= T.let(dependency_services_list, T.nilable(T::Array[T::Hash[String, T.untyped]]))
+        @list ||= T.let(dependency_services_list, T.nilable(T::Array[T::Hash[String, Object]]))
       end
     end
   end

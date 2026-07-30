@@ -588,6 +588,38 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             "Some release notes"
           )
       end
+
+      context "with unordered and incomplete tag metadata" do
+        let(:dependency_previous_version) { "1.2.0" }
+        let(:gitlab_response) do
+          [
+            {
+              name: "v1.3.0",
+              commit: { authored_date: "2026-01-01T12:00:00Z" },
+              release: { tag_name: "v1.3.0", description: "Notes for 1.3.0" }
+            },
+            {
+              name: "v9.0.0",
+              commit: { authored_date: "2026-01-03T12:00:00Z" }
+            },
+            {
+              name: "v1.4.0",
+              commit: { authored_date: "2026-01-02T12:00:00Z" },
+              release: { tag_name: "v1.4.0", description: nil }
+            }
+          ].to_json
+        end
+
+        it "sorts releases and ignores tags without release metadata" do
+          expect(releases_text)
+            .to eq(
+              "## v1.4.0\n" \
+              "No release notes provided.\n\n" \
+              "## v1.3.0\n" \
+              "Notes for 1.3.0"
+            )
+        end
+      end
     end
 
     context "with an azure source" do

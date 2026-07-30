@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "fileutils"
+require "pathname"
 require "shellwords"
 require "sorbet-runtime"
 
@@ -41,14 +42,13 @@ module Dependabot
             write_init_script(init_script_path)
 
             command_parts = [
-              "gradle",
+              gradle_executable_for(cwd: cwd, workspace_root: temp_dir.to_s),
               "--init-script", init_script_path,
               INIT_SCRIPT_TASK_NAME,
               "--write-locks",
               "--no-daemon"
             ]
             command = Shellwords.join(command_parts)
-
             SharedHelpers.run_shell_command(command, cwd: cwd)
 
             update_lockfiles_content(temp_dir, lockfiles, updated_files)
@@ -176,7 +176,7 @@ module Dependabot
             relative_dir = file.directory == "/" ? "" : file.directory
             in_path_name = File.join(temp_dir, relative_dir, file.name)
             FileUtils.mkdir_p(File.dirname(in_path_name))
-            File.write(in_path_name, file.content)
+            File.binwrite(in_path_name, file.decoded_content)
           end
         end
 
@@ -219,6 +219,34 @@ systemProp.https.proxyPort=#{https_proxy_port}"
             }
           GRADLE
           File.write(file_name, script_content)
+        end
+
+        sig { params(cwd: String, workspace_root: String).returns(String) }
+        def gradle_executable_for(cwd:, workspace_root:)
+          cwd_path = Pathname.new(cwd).expand_path
+          workspace_root_path = Pathname.new(workspace_root).expand_path
+
+          return "gradle" unless cwd_path == workspace_root_path || cwd_path.to_s.start_with?("#{workspace_root_path}/")
+
+          search_path = cwd_path
+
+          loop do
+            wrapper_script = search_path.join("gradlew")
+            if File.file?(wrapper_script)
+              wrapper_script_path = wrapper_script.to_s
+              FileUtils.chmod("+x", wrapper_script_path)
+
+              relative_path = wrapper_script.relative_path_from(cwd_path).to_s
+              return relative_path.start_with?(".") ? relative_path : "./#{relative_path}"
+            end
+
+            parent_path = search_path.parent
+            break if parent_path == search_path || search_path == workspace_root_path
+
+            search_path = parent_path
+          end
+
+          "gradle"
         end
 
         sig { params(build_file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }

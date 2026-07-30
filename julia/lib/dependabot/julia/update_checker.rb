@@ -77,19 +77,24 @@ module Dependabot
 
       sig { override.returns(T.nilable(T.any(Dependabot::Version, String))) }
       def latest_resolvable_version_with_no_unlock
-        # Return latest version that satisfies current requirement constraints
-        return nil unless latest_version
+        # Return the highest available version that satisfies the current
+        # requirement constraints. requirements_array applies Julia compat
+        # semantics (implicit caret, tilde, hyphen ranges) and returns
+        # alternatives that are OR'd together.
+        candidates = latest_version_finder.available_versions
+        return nil if candidates.empty?
 
         current_requirement = T.cast(dependency.requirements.first&.fetch(:requirement, nil), T.nilable(String))
 
-        if current_requirement.nil? || current_requirement == "*"
-          return Dependabot::Julia::Version.new(latest_version.to_s)
-        end
+        best = if current_requirement.nil? || current_requirement.strip == "*"
+                 candidates.max
+               else
+                 reqs = requirement_class.requirements_array(current_requirement)
+                 candidates.select { |version| reqs.any? { |req| req.satisfied_by?(version) } }.max
+               end
+        return nil unless best
 
-        req = requirement_class.new(current_requirement)
-        return unless T.cast(req.satisfied_by?(latest_version), T::Boolean)
-
-        Dependabot::Julia::Version.new(latest_version.to_s)
+        Dependabot::Julia::Version.new(best.to_s)
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
@@ -131,8 +136,9 @@ module Dependabot
           semver_major_days: cooldown.semver_major_days,
           semver_minor_days: cooldown.semver_minor_days,
           semver_patch_days: cooldown.semver_patch_days,
-          include: cooldown.include,
-          exclude: cooldown.exclude
+          # ReleaseCooldownOptions stores these as Sets; LatestVersionFinder expects Arrays.
+          include: cooldown.include.to_a,
+          exclude: cooldown.exclude.to_a
         }
       end
 

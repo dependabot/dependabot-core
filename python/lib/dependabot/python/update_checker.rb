@@ -453,7 +453,7 @@ module Dependabot
         requirements.map { |r| r.fetch(:file) }
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def requirements
         dependency.requirements
       end

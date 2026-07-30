@@ -883,10 +883,9 @@ RSpec.describe Dependabot::ApiClient do
           .to_return(status: 200, body: "not json", headers: headers)
       end
 
-      it "returns an empty array and logs a warning" do
-        expect(Dependabot.logger).to receive(:warn).with(/Failed to parse blocked versions/)
-        result = client.fetch_blocked_versions("npm_and_yarn")
-        expect(result).to eq([])
+      it "raises an API error" do
+        expect { client.fetch_blocked_versions("npm_and_yarn") }
+          .to raise_error(Dependabot::ApiError, /blocked versions response/)
       end
     end
 
@@ -901,10 +900,9 @@ RSpec.describe Dependabot::ApiClient do
           )
       end
 
-      it "returns an empty array and logs a warning" do
-        expect(Dependabot.logger).to receive(:warn).with(/Unexpected blocked versions format/)
-        result = client.fetch_blocked_versions("npm_and_yarn")
-        expect(result).to eq([])
+      it "raises an API error" do
+        expect { client.fetch_blocked_versions("npm_and_yarn") }
+          .to raise_error(Dependabot::ApiError, /blocked versions response/)
       end
     end
 
@@ -915,10 +913,9 @@ RSpec.describe Dependabot::ApiClient do
           .to_return(status: 200, body: "[]", headers: headers)
       end
 
-      it "returns an empty array and logs a warning" do
-        expect(Dependabot.logger).to receive(:warn).with(/Unexpected blocked versions format/)
-        result = client.fetch_blocked_versions("npm_and_yarn")
-        expect(result).to eq([])
+      it "raises an API error" do
+        expect { client.fetch_blocked_versions("npm_and_yarn") }
+          .to raise_error(Dependabot::ApiError, /blocked versions response/)
       end
     end
 
@@ -933,10 +930,41 @@ RSpec.describe Dependabot::ApiClient do
           )
       end
 
-      it "returns an empty array and logs a warning" do
-        expect(Dependabot.logger).to receive(:warn).with(/Unexpected blocked versions format/)
-        result = client.fetch_blocked_versions("npm_and_yarn")
-        expect(result).to eq([])
+      it "raises an API error" do
+        expect { client.fetch_blocked_versions("npm_and_yarn") }
+          .to raise_error(Dependabot::ApiError, /blocked versions response/)
+      end
+    end
+
+    context "when the API omits data" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(status: 200, body: {}.to_json, headers: headers)
+      end
+
+      it "raises an API error" do
+        expect { client.fetch_blocked_versions("npm_and_yarn") }
+          .to raise_error(Dependabot::ApiError, /blocked versions response/)
+      end
+    end
+
+    context "when an entry has malformed fields" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(
+            status: 200,
+            body: {
+              data: [{ "dependency-name" => 1, "version-requirement" => [], "reason" => true }]
+            }.to_json,
+            headers: headers
+          )
+      end
+
+      it "raises an API error" do
+        expect { client.fetch_blocked_versions("npm_and_yarn") }
+          .to raise_error(Dependabot::ApiError, /blocked versions response/)
       end
     end
   end

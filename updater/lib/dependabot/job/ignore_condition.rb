@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -19,16 +19,43 @@ module Dependabot
       const :source, T.nilable(String)
       const :updated_at, T.nilable(String)
 
-      sig { params(hash: T::Hash[String, T.untyped]).returns(IgnoreCondition) }
+      sig { params(hash: T::Hash[String, Object]).returns(IgnoreCondition) }
       def self.from_hash(hash)
         new(
-          dependency_name: hash.fetch("dependency-name"),
-          version_requirement: hash["version-requirement"],
-          update_types: hash["update-types"],
-          source: hash["source"],
-          updated_at: hash["updated-at"]
+          dependency_name: required_string(hash, "dependency-name"),
+          version_requirement: optional_string(hash["version-requirement"], "version-requirement"),
+          update_types: optional_string_array(hash["update-types"], "update-types"),
+          source: optional_string(hash["source"], "source"),
+          updated_at: optional_string(hash["updated-at"], "updated-at")
         )
       end
+
+      sig { params(hash: T::Hash[String, Object], key: String).returns(String) }
+      def self.required_string(hash, key)
+        value = hash.fetch(key)
+        raise TypeError, "#{key} must be a string" unless value.is_a?(String)
+
+        value
+      end
+      private_class_method :required_string
+
+      sig { params(value: T.nilable(Object), key: String).returns(T.nilable(String)) }
+      def self.optional_string(value, key)
+        return if value.nil?
+        raise TypeError, "#{key} must be a string" unless value.is_a?(String)
+
+        value
+      end
+      private_class_method :optional_string
+
+      sig { params(value: T.nilable(Object), key: String).returns(T.nilable(T::Array[String])) }
+      def self.optional_string_array(value, key)
+        return if value.nil?
+        raise TypeError, "#{key} must be an array of strings" unless value.is_a?(Array) && value.all?(String)
+
+        value.map { |entry| T.cast(entry, String) }
+      end
+      private_class_method :optional_string_array
     end
   end
 end
