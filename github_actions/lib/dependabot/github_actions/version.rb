@@ -24,14 +24,32 @@ module Dependabot
 
       sig { params(version: VersionParameter).returns(VersionParameter) }
       def self.remove_leading_v(version)
-        return version unless version.to_s.match?(%r{\A(?:.*/)?v?([0-9])})
+        str = version.to_s.split("/").last || "" # drop a leading path segment
+        return str if str.match?(/\A\d/) # already a bare version
+        return T.must(str[1..]) if str.match?(/\Av\d/) # leading "v1.2.3"
 
-        version.to_s.sub(%r{\A(?:.*/)?v?}, "")
+        # An action-name prefix precedes the version (e.g. "resolve-gh-token-v2.1.0", or
+        # "cache-v2-helper-v1.0.0" whose name itself contains "-v2"). The version begins at the
+        # first "-v" with a dotted core; fall back to the last "-v" for moving-major tags ("...-v2").
+        last = T.let(nil, T.nilable(Integer))
+        offset = 0
+        while (i = str.index(/-v\d/, offset))
+          core = T.must(str[(i + 2)..])
+          return core if core.match?(/\A\d+\.\d/)
+
+          last = i
+          offset = i + 2
+        end
+        last ? T.must(str[(last + 2)..]) : str
       end
 
       sig { params(version: VersionParameter).returns(T::Boolean) }
       def self.path_based?(version)
-        version.to_s.match?(%r{\A.+/v?([0-9])})
+        str = version.to_s
+        idx = str.rindex("/")
+        return false if idx.nil? || idx.zero? # needs a non-empty path prefix before "/"
+
+        T.must(str[(idx + 1)..]).match?(/\Av?[0-9]/)
       end
 
       sig { override.params(version: VersionParameter).returns(T::Boolean) }

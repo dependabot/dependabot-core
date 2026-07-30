@@ -430,8 +430,58 @@ module Dependabot
 
     sig { params(commit_sha: T.nilable(String)).returns(T::Array[Dependabot::GitRef]) }
     def local_tags_matching_sha(commit_sha)
-      local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
-                .sort_by { |t| version_class.new(t.name) }
+      tags = local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
+      tags_for_this_action(tags).sort_by { |t| version_class.new(t.name) }
+    end
+
+    # Keep only this action's tags so a monorepo SHA pin never resolves to an unrelated action's tag.
+    sig { params(tags: T::Array[Dependabot::GitRef]).returns(T::Array[Dependabot::GitRef]) }
+    def tags_for_this_action(tags)
+      action = action_path_segment
+      return tags unless action
+
+      # Prefer this action's own family, e.g. "<action>-v1.2.3"/"<action>/1.2.3" (not "<action>-utils-v1").
+      mine = tags.select { |t| t.name.match?(%r{\A#{Regexp.escape(action)}[-/]v?\d}) }
+      return mine if mine.any?
+
+      # No per-action family here (e.g. repo publishes only repo-wide tags like "v3.1.0"),
+      # so keep repo-wide tags while still dropping other actions' families.
+      tags.reject { |t| action_family_tag?(t.name) }
+    end
+
+    # True for a name-prefixed tag like "<action>-v1.2.3" or "<action>/1.2.3", but not a
+    # repo-wide tag ("v1.2.3") or a date-style tag ("2021-01-01").
+    sig { params(name: String).returns(T::Boolean) }
+    def action_family_tag?(name)
+      dash = name.index(/-v\d/) # dash form requires the "v" so dates aren't treated as families
+      return true if dash&.positive?
+
+      slash = name.index(%r{/v?\d})
+      slash&.positive? || false
+    end
+
+    # The action's directory name in a monorepo, e.g. "resolve-gh-token" for the
+    # dependency "owner/repo/resolve-gh-token" (nil when it isn't a sub-path).
+    sig { returns(T.nilable(String)) }
+    def action_path_segment
+      url = dependency_source_details&.url
+      repo = url && Source.from_url(url)&.repo
+      return unless repo
+
+      name = dependency.name
+      prefix = "#{repo}/"
+      # GitHub owner/repo names are case-insensitive, so compare case-insensitively.
+      return unless name.downcase.start_with?(prefix.downcase)
+
+      action = name[prefix.length..]
+      return if action.nil? || action.empty?
+
+      segment = action.split("/").last
+      # Reusable-workflow refs (e.g. ".github/workflows/test.yml") use repo-wide
+      # tags rather than action-prefixed ones, so they aren't scoped to a sub-path.
+      return if segment.nil? || segment.end_with?(".yml", ".yaml")
+
+      segment
     end
 
     sig { params(version: T.any(String, Gem::Version)).returns(T::Boolean) }

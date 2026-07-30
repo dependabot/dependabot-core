@@ -1,0 +1,59 @@
+{
+  "service": "git-upload-pack",
+  "description": "Decoded ref advertisement for a GitHub Actions monorepo where one commit is tagged for two different action families (resolve-gh-token and usage-metrics).",
+  "refs": [
+    {
+      "sha": "1111111111111111111111111111111111111111",
+      "ref": "HEAD",
+      "type": "head"
+    },
+    {
+      "sha": "1111111111111111111111111111111111111111",
+      "ref": "refs/heads/main",
+      "type": "branch",
+      "name": "main"
+    },
+    {
+      "sha": "ae04af897f79a65c232823bd96070ed1d7897213",
+      "ref": "refs/tags/resolve-gh-token-v2.1.0",
+      "type": "tag",
+      "name": "resolve-gh-token-v2.1.0"
+    },
+    {
+      "sha": "ae04af897f79a65c232823bd96070ed1d7897213",
+      "ref": "refs/tags/usage-metrics-v9.9.9",
+      "type": "tag",
+      "name": "usage-metrics-v9.9.9"
+    },
+    {
+      "sha": "371c4bd81e6db3f0d9f03fdd3b510580b3f0e0c2",
+      "ref": "refs/tags/resolve-gh-token-v2",
+      "type": "tag",
+      "name": "resolve-gh-token-v2"
+    },
+    {
+      "sha": "371c4bd81e6db3f0d9f03fdd3b510580b3f0e0c2",
+      "ref": "refs/tags/resolve-gh-token-v2.1.1",
+      "type": "tag",
+      "name": "resolve-gh-token-v2.1.1"
+    },
+    {
+      "sha": "55e9c392bee14d03cc0ca8bf875fd0bf37602bd1",
+      "ref": "refs/tags/usage-metrics-v1.0.4",
+      "type": "tag",
+      "name": "usage-metrics-v1.0.4"
+    },
+    {
+      "sha": "55e9c392bee14d03cc0ca8bf875fd0bf37602bd1",
+      "ref": "refs/tags/v1.0.4",
+      "type": "tag",
+      "name": "v1.0.4"
+    },
+    {
+      "sha": "2222222222222222222222222222222222222222",
+      "ref": "refs/tags/v1.0.0",
+      "type": "tag",
+      "name": "v1.0.0"
+    }
+  ]
+}

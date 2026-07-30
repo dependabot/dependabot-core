@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "json"
 require "dependabot/dependency"
 require "dependabot/github_actions/update_checker"
 require "dependabot/github_actions/metadata_finder"
@@ -1750,5 +1751,128 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       it { is_expected.to eq(expected_requirements) }
     end
+  end
+
+  describe "#local_tag_for_pinned_sha in a monorepo with multiple tag families" do
+    subject(:local_tag) { git_commit_checker.local_tag_for_pinned_sha }
+
+    # Keep the outer `before` happy; this describe re-stubs the request below with
+    # a git ref advertisement built at runtime from the JSON fixture.
+    let(:upload_pack_fixture) { "checkout" }
+    let(:service_pack_url) do
+      "https://github.com/some-org/monorepo-actions.git/info/refs" \
+        "?service=git-upload-pack"
+    end
+    # Pinned commit that is tagged for two different actions at once:
+    # "resolve-gh-token-v2.1.0" and the higher "usage-metrics-v9.9.9".
+    let(:pinned_sha) { "ae04af897f79a65c232823bd96070ed1d7897213" }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: nil,
+        requirements: [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          source: {
+            type: "git",
+            url: "https://github.com/some-org/monorepo-actions",
+            ref: pinned_sha,
+            branch: nil
+          },
+          metadata: { declaration_string: "#{dependency_name}@#{pinned_sha}" }
+        }],
+        package_manager: "github_actions"
+      )
+    end
+
+    before do
+      stub_request(:get, service_pack_url).to_return(
+        status: 200,
+        body: git_upload_pack_from_json("monorepo-multi-family"),
+        headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
+      )
+    end
+
+    context "when the dependency is the resolve-gh-token action" do
+      let(:dependency_name) { "some-org/monorepo-actions/resolve-gh-token" }
+
+      it "resolves to the resolve-gh-token tag, not the higher usage-metrics tag" do
+        expect(local_tag).to eq("resolve-gh-token-v2.1.0")
+      end
+    end
+
+    context "when the dependency is the usage-metrics action" do
+      let(:dependency_name) { "some-org/monorepo-actions/usage-metrics" }
+
+      it "resolves to the usage-metrics tag sharing the commit" do
+        expect(local_tag).to eq("usage-metrics-v9.9.9")
+      end
+    end
+
+    context "when the dependency name casing differs from the repo url" do
+      # GitHub owner/repo names are case-insensitive, so the action scoping must
+      # still match when the manifest uses different casing than the source url.
+      let(:dependency_name) { "Some-Org/Monorepo-Actions/resolve-gh-token" }
+
+      it "still scopes to the resolve-gh-token tag" do
+        expect(local_tag).to eq("resolve-gh-token-v2.1.0")
+      end
+    end
+
+    context "when the dependency is a reusable workflow sub-path" do
+      # Reusable workflows are pinned to repo-wide tags, not action-prefixed ones,
+      # so scoping must not filter them out.
+      let(:dependency_name) { "some-org/monorepo-actions/.github/workflows/test.yml" }
+
+      it "does not scope away the repo-wide tags" do
+        expect(local_tag).to eq("usage-metrics-v9.9.9")
+      end
+    end
+
+    context "when the action has no tag family and only repo-wide tags exist" do
+      # A monorepo sub-path that publishes only repo-wide tags (e.g. "v1.0.0")
+      # must still resolve to those tags rather than nothing.
+      let(:dependency_name) { "some-org/monorepo-actions/some-action" }
+      let(:pinned_sha) { "2222222222222222222222222222222222222222" }
+
+      it "keeps the repo-wide tag" do
+        expect(local_tag).to eq("v1.0.0")
+      end
+    end
+
+    context "when a repo-wide tag and another action's tag share the commit" do
+      # Repo-wide tags are preserved, but a different action's family is excluded.
+      let(:dependency_name) { "some-org/monorepo-actions/some-action" }
+      let(:pinned_sha) { "55e9c392bee14d03cc0ca8bf875fd0bf37602bd1" }
+
+      it "keeps the repo-wide tag and drops the other action's tag" do
+        expect(local_tag).to eq("v1.0.4")
+      end
+    end
+  end
+
+  # Builds a git-upload-pack ref advertisement (pkt-line format) from a decoded
+  # JSON fixture, so the repository of record for the refs is human-readable JSON.
+  def git_upload_pack_from_json(name)
+    data = JSON.parse(fixture("git", "upload_packs", "#{name}.json"))
+    caps = "multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since deepen-not " \
+           "deepen-relative no-progress include-tag multi_ack_detailed allow-tip-sha1-in-want " \
+           "allow-reachable-sha1-in-want no-done symref=HEAD:refs/heads/main filter " \
+           "object-format=sha1 agent=git/github-test"
+
+    body = +""
+    body << pkt_line("# service=#{data['service']}\n")
+    body << "0000"
+    data["refs"].each do |ref|
+      line = ref["ref"] == "HEAD" ? "#{ref['sha']} HEAD\x00#{caps}\n" : "#{ref['sha']} #{ref['ref']}\n"
+      body << pkt_line(line)
+    end
+    body << "0000"
+    body
+  end
+
+  def pkt_line(line)
+    format("%04x", line.bytesize + 4) + line
   end
 end
