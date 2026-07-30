@@ -122,6 +122,422 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
       it { is_expected.to eq(Gem::Version.new("1.6.0")) }
     end
 
+    context "when a resolution pins the dependency below the latest version" do
+      let(:target_version) { "1.6.0" }
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "example",
+            dependencies: { "etag" => "^1.0.0" },
+            resolutions: { "etag" => "< 1.7.0" }
+          }.to_json
+        )]
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.6.0")) }
+    end
+
+    context "when an npm override pins the dependency below the latest version" do
+      let(:target_version) { "1.6.0" }
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "example",
+            dependencies: { "etag" => "^1.0.0" },
+            overrides: { "etag" => "< 1.7.0" }
+          }.to_json
+        )]
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.6.0")) }
+    end
+
+    context "when a nested resolution key pins the dependency below the latest version" do
+      let(:target_version) { "1.6.0" }
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "example",
+            dependencies: { "etag" => "^1.0.0" },
+            resolutions: { "**/etag" => "< 1.7.0" }
+          }.to_json
+        )]
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.6.0")) }
+    end
+
+    context "when a resolution constrains an unrelated dependency" do
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "example",
+            dependencies: { "etag" => "^1.0.0" },
+            resolutions: { "lodash" => "< 1.7.0" }
+          }.to_json
+        )]
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.7.0")) }
+    end
+
+    context "when a resolution pins the dependency to its current version" do
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "example",
+            dependencies: { "etag" => "^1.0.0" },
+            resolutions: { "etag" => "1.0.0" }
+          }.to_json
+        )]
+      end
+
+      it "ignores the pin because the updater rewrites it and proposes the latest version" do
+        expect(latest_version_from_registry).to eq(Gem::Version.new("1.7.0"))
+      end
+    end
+
+    context "when a resolution range contains the dependency's current version" do
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "example",
+            dependencies: { "etag" => "^1.0.0" },
+            resolutions: { "etag" => "~1.0.0" }
+          }.to_json
+        )]
+      end
+
+      it "ignores the range because the updater rewrites it and proposes the latest version" do
+        expect(latest_version_from_registry).to eq(Gem::Version.new("1.7.0"))
+      end
+    end
+
+    context "when an object-valued npm override pins the dependency below the latest version" do
+      let(:target_version) { "1.6.0" }
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "example",
+            dependencies: { "etag" => "^1.0.0" },
+            overrides: { "etag" => { "." => "< 1.7.0" } }
+          }.to_json
+        )]
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.6.0")) }
+    end
+
+    context "when a resolution field is present but the project uses npm" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "package.json",
+            content: {
+              name: "example",
+              dependencies: { "etag" => "^1.0.0" },
+              resolutions: { "etag" => "< 1.7.0" }
+            }.to_json
+          ),
+          Dependabot::DependencyFile.new(name: "package-lock.json", content: "{}")
+        ]
+      end
+
+      it "ignores yarn resolutions in an npm project and proposes the latest version" do
+        expect(latest_version_from_registry).to eq(Gem::Version.new("1.7.0"))
+      end
+    end
+
+    context "when an override lives in a nested workspace manifest" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "package.json",
+            content: { name: "example", dependencies: { "etag" => "^1.0.0" } }.to_json
+          ),
+          Dependabot::DependencyFile.new(
+            name: "packages/a/package.json",
+            content: { name: "a", resolutions: { "etag" => "< 1.7.0" } }.to_json
+          )
+        ]
+      end
+
+      it "ignores workspace-level overrides and proposes the latest version" do
+        expect(latest_version_from_registry).to eq(Gem::Version.new("1.7.0"))
+      end
+    end
+
+    context "when a parent-scoped resolution selector pins the dependency" do
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "example",
+            dependencies: { "etag" => "^1.0.0" },
+            resolutions: { "some-parent/etag" => "< 1.7.0" }
+          }.to_json
+        )]
+      end
+
+      it "ignores parent-scoped selectors and proposes the latest version" do
+        expect(latest_version_from_registry).to eq(Gem::Version.new("1.7.0"))
+      end
+    end
+
+    context "when a pnpm-workspace.yaml override pins the dependency below the latest version" do
+      let(:target_version) { "1.6.0" }
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "package.json",
+            content: { name: "example", dependencies: { "etag" => "^1.0.0" } }.to_json
+          ),
+          Dependabot::DependencyFile.new(
+            name: "pnpm-workspace.yaml",
+            content: "overrides:\n  etag: \"< 1.7.0\"\n"
+          )
+        ]
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.6.0")) }
+    end
+
+    context "when a pnpm-workspace.yaml override uses YAML anchors" do
+      let(:target_version) { "1.6.0" }
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "package.json",
+            content: { name: "example", dependencies: { "etag" => "^1.0.0" } }.to_json
+          ),
+          Dependabot::DependencyFile.new(
+            name: "pnpm-workspace.yaml",
+            content: "defs:\n  etag: &etag \"< 1.7.0\"\noverrides:\n  etag: *etag\n"
+          )
+        ]
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.6.0")) }
+    end
+
+    context "when a pnpm-workspace.yaml override equals the current version but the dep is in package.json" do
+      let(:target_version) { "1.0.0" }
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "package.json",
+            content: { name: "example", dependencies: { "etag" => "^1.0.0" } }.to_json
+          ),
+          Dependabot::DependencyFile.new(
+            name: "pnpm-workspace.yaml",
+            content: "overrides:\n  etag: \"1.0.0\"\n"
+          )
+        ]
+      end
+
+      it "keeps the immutable workspace override because PnpmWorkspaceUpdater cannot rewrite it" do
+        expect(latest_version_from_registry).to eq(Gem::Version.new("1.0.0"))
+      end
+    end
+
+    context "when a package.json pnpm.overrides field pins the dependency below the latest version" do
+      let(:target_version) { "1.6.0" }
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "package.json",
+            content: {
+              name: "example",
+              dependencies: { "etag" => "^1.0.0" },
+              pnpm: { overrides: { "etag" => "< 1.7.0" } }
+            }.to_json
+          ),
+          Dependabot::DependencyFile.new(name: "pnpm-lock.yaml", content: "lockfileVersion: '9.0'\n")
+        ]
+      end
+
+      it { is_expected.to eq(Gem::Version.new("1.6.0")) }
+    end
+
+    # Reproduces #14121: a wildcard requirement would otherwise let the checker
+    # propose the latest version, but a project-wide resolution makes anything
+    # >= 1.7.0 unrealizable, so those versions must be filtered out.
+    context "when a wildcard requirement is combined with a resolution" do
+      let(:target_version) { "1.6.0" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: "1.0.0",
+          requirements: [{ file: "package.json", requirement: "*", groups: ["dependencies"], source: nil }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "example",
+            dependencies: { "etag" => "*" },
+            resolutions: { "etag" => "< 1.7.0" }
+          }.to_json
+        )]
+      end
+
+      it "filters out versions the resolution makes unrealizable" do
+        expect(latest_version_from_registry).to eq(Gem::Version.new("1.6.0"))
+      end
+    end
+
+    context "when a lockfile-free project declares yarn via packageManager" do
+      let(:target_version) { "1.6.0" }
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "example",
+            packageManager: "yarn@3.2.3",
+            dependencies: { "etag" => "^1.0.0" },
+            resolutions: { "etag" => "< 1.7.0" }
+          }.to_json
+        )]
+      end
+
+      it "honors yarn resolutions detected from packageManager" do
+        expect(latest_version_from_registry).to eq(Gem::Version.new("1.6.0"))
+      end
+    end
+
+    context "when a lockfile-free project declares yarn via engines" do
+      let(:target_version) { "1.6.0" }
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "example",
+            engines: { "yarn" => ">= 3" },
+            dependencies: { "etag" => "^1.0.0" },
+            resolutions: { "etag" => "< 1.7.0" }
+          }.to_json
+        )]
+      end
+
+      it "honors yarn resolutions detected from engines" do
+        expect(latest_version_from_registry).to eq(Gem::Version.new("1.6.0"))
+      end
+    end
+
+    context "when a lockfile-free project declares npm via packageManager but has stale resolutions" do
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "example",
+            packageManager: "npm@10.2.3",
+            dependencies: { "etag" => "^1.0.0" },
+            resolutions: { "etag" => "< 1.7.0" }
+          }.to_json
+        )]
+      end
+
+      it "ignores yarn resolutions in an npm project and proposes the latest version" do
+        expect(latest_version_from_registry).to eq(Gem::Version.new("1.7.0"))
+      end
+    end
+
+    context "when packageManager says npm but a stale engines.yarn entry is present" do
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "example",
+            packageManager: "npm@10.2.3",
+            engines: { "yarn" => ">= 1" },
+            dependencies: { "etag" => "^1.0.0" },
+            resolutions: { "etag" => "< 1.7.0" }
+          }.to_json
+        )]
+      end
+
+      it "prefers packageManager over engines and ignores the yarn resolution" do
+        expect(latest_version_from_registry).to eq(Gem::Version.new("1.7.0"))
+      end
+    end
+
+    context "when only a nested workspace requirement matches a root resolution's value" do
+      let(:target_version) { "1.6.0" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: "1.0.0",
+          requirements: [{
+            file: "packages/a/package.json",
+            requirement: "< 1.7.0",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "package.json",
+            content: {
+              name: "example",
+              packageManager: "yarn@3.2.3",
+              resolutions: { "etag" => "< 1.7.0" }
+            }.to_json
+          ),
+          Dependabot::DependencyFile.new(
+            name: "packages/a/package.json",
+            content: { name: "a", dependencies: { "etag" => "< 1.7.0" } }.to_json
+          )
+        ]
+      end
+
+      it "keeps the immutable root resolution because only the root requirement can make it mutable" do
+        expect(latest_version_from_registry).to eq(Gem::Version.new("1.6.0"))
+      end
+    end
+
+    context "when a named dist-tag requirement is excluded by a resolution" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: "1.0.0",
+          requirements: [{
+            file: "package.json",
+            requirement: "stable",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "example",
+            packageManager: "yarn@3.2.3",
+            dependencies: { "etag" => "stable" },
+            resolutions: { "etag" => "< 1.5.0" }
+          }.to_json
+        )]
+      end
+
+      it "does not propose the dist-tag version the resolution forbids" do
+        expect(latest_version_from_registry).to be_nil
+      end
+    end
+
     context "when the current version isn't known" do
       let(:dependency_version) { nil }
 
@@ -1132,6 +1548,30 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
     end
 
     it { is_expected.to eq(Gem::Version.new("1.2.1")) }
+
+    context "when a resolution pins the dependency below the security fix" do
+      let(:dependency_files) do
+        [Dependabot::DependencyFile.new(
+          name: "package.json",
+          content: {
+            name: "example",
+            dependencies: { "etag" => "^1.0.0" },
+            resolutions: { "etag" => "< 1.2.1" }
+          }.to_json
+        )]
+      end
+
+      it "does not propose the blocked fix" do
+        expect(lowest_security_fix_version).to be_nil
+      end
+
+      it "warns that the security fix is blocked by the constraint" do
+        allow(Dependabot.logger).to receive(:warn)
+        lowest_security_fix_version
+        expect(Dependabot.logger)
+          .to have_received(:warn).with(%r{blocked by a resolutions/overrides constraint})
+      end
+    end
 
     context "when the lowest version has been yanked" do
       before do

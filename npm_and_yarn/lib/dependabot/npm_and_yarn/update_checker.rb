@@ -14,6 +14,7 @@ module Dependabot
 
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/library_detector"
+      require_relative "update_checker/resolutions_constraint"
       require_relative "update_checker/latest_version_finder"
       require_relative "update_checker/version_resolver"
       require_relative "update_checker/subdependency_version_resolver"
