@@ -345,9 +345,10 @@ module Dependabot
 
       sig { returns(T::Hash[String, String]) }
       def registry_auth_headers
-        return {} unless auth_token
+        token = auth_token
+        return {} unless token
 
-        { "Authorization" => "Bearer #{auth_token}" }
+        auth_header_for(token)
       end
 
       sig { returns(String) }
@@ -367,7 +368,7 @@ module Dependabot
       def auth_token
         credentials
           .select { |cred| cred["type"] == "npm_registry" }
-          .find { |cred| cred["registry"] == dependency_registry }
+          .find { |cred| cred["registry"]&.sub(%r{^https?://}, "")&.gsub(%r{/+$}, "") == dependency_registry }
           &.fetch("token", nil)
       end
 
