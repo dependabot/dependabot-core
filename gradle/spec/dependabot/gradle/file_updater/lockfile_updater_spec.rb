@@ -268,7 +268,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
             properties_content = File.read(File.join(cwd, "gradle.properties"))
             attempts << properties_content[/^org\.gradle\.jvmargs=(.*)$/, 1]
 
-            if attempts.length < 4
+            if attempts.length < 2
               raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                 message: "Gradle build daemon disappeared unexpectedly",
                 error_context: { process_exit_value: 1 }
@@ -282,10 +282,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
 
           expect(attempts).to eq(
             [
-              "-Xmx1024m -Dfile.encoding=UTF-8",
               "-Xmx1536m -Dfile.encoding=UTF-8",
-              "-Xmx2048m -Dfile.encoding=UTF-8",
-              "-Xmx3072m -Dfile.encoding=UTF-8"
+              "-Xmx2048m -Dfile.encoding=UTF-8"
             ]
           )
           expect(result.find { |f| f.name == "gradle.lockfile" }.content).to eq("# updated root lockfile\n")
@@ -482,7 +480,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
           observed_properties << File.read(properties_path)
 
           call_count += 1
-          if call_count < 3
+          if call_count == 1
             raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
               message: "Gradle build daemon disappeared unexpectedly",
               error_context: { command: "gradle" }
@@ -498,10 +496,9 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
 
         expect(result.find { |f| f.name == "gradle.lockfile" }.content).to eq("# updated root lockfile\n")
         expect(result.find { |f| f.name == "app/gradle.lockfile" }.content).to eq("# updated app lockfile\n")
-        expect(observed_properties.first).to include("org.gradle.jvmargs=-Xmx1024m -Dfile.encoding=UTF-8")
-        expect(observed_properties[1]).to include("org.gradle.jvmargs=-Xmx1536m -Dfile.encoding=UTF-8")
+        expect(observed_properties.first).to include("org.gradle.jvmargs=-Xmx1536m -Dfile.encoding=UTF-8")
         expect(observed_properties.last).to include("org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8")
-        expect(Dependabot.logger).to have_received(:warn).with(include("Retrying once")).twice
+        expect(Dependabot.logger).to have_received(:warn).with(include("Retrying once"))
       end
 
       it "retries with larger jvmargs when the subprocess is killed" do
@@ -533,8 +530,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
 
         expect(result.find { |f| f.name == "gradle.lockfile" }.content).to eq("# updated root lockfile\n")
         expect(result.find { |f| f.name == "app/gradle.lockfile" }.content).to eq("# updated app lockfile\n")
-        expect(observed_properties.first).to include("org.gradle.jvmargs=-Xmx1024m -Dfile.encoding=UTF-8")
-        expect(observed_properties.last).to include("org.gradle.jvmargs=-Xmx1536m -Dfile.encoding=UTF-8")
+        expect(observed_properties.first).to include("org.gradle.jvmargs=-Xmx1536m -Dfile.encoding=UTF-8")
+        expect(observed_properties.last).to include("org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8")
         expect(Dependabot.logger).to have_received(:warn).with(include("Retrying once"))
       end
 
@@ -597,11 +594,13 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
 
         expect(observed_properties.last).to include("GROUP=com.example")
         expect(observed_properties.last).to include("VERSION=1.0.0")
-        expect(observed_properties.last).to include("org.gradle.jvmargs=-Xmx1024m -Dfile.encoding=UTF-8")
+        expect(observed_properties.last).to include("org.gradle.jvmargs=-Xmx1536m -Dfile.encoding=UTF-8")
+        expect(observed_properties.last).to include("org.gradle.workers.max=1")
         expect(observed_properties.last).to include("org.gradle.java.installations.auto-download=false")
         expect(observed_properties.last).to include(
           "org.gradle.java.installations.paths=/usr/lib/jvm/java-17-openjdk-arm64"
         )
+        expect(observed_properties.last).to include("kotlin.compiler.execution.strategy=in-process")
         expect(observed_properties.last).to include("systemProp.http.proxyHost=")
       end
 
@@ -633,7 +632,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
           jvmargs_line = observed_properties.last.lines.find { |line| line.start_with?("org.gradle.jvmargs=") }
 
           expect(jvmargs_line).to include("--add-opens java.base/java.lang=ALL-UNNAMED")
-          expect(jvmargs_line).to include("-Xmx1024m -Dfile.encoding=UTF-8")
+          expect(jvmargs_line).to include("-Xmx1536m -Dfile.encoding=UTF-8")
           expect(observed_properties.last.scan(/^org\.gradle\.jvmargs=/).size).to eq(1)
         end
       end
@@ -663,7 +662,10 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
         lockfile_updater.update_lockfiles(root_buildfile)
 
         expect(observed_init_script).to match(/doLast \{\s+configurations\.findAll/)
-        expect(observed_init_script).to include(".each { it.resolve() }")
+        expect(observed_init_script).to include("it.resolutionStrategy.dependencyLockingEnabled")
+        expect(observed_init_script).to include("it.allDependencies.any")
+        expect(observed_init_script).to include("dependency instanceof org.gradle.api.artifacts.ModuleDependency")
+        expect(observed_init_script).to include(".each { it.incoming.resolutionResult.allDependencies }")
       end
     end
 

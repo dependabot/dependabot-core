@@ -18,10 +18,8 @@ module Dependabot
         INIT_SCRIPT_TASK_NAME = T.let("dependabotResolveAll", String)
         GRADLE_JVMARGS_ATTEMPTS = T.let(
           [
-            "-Xmx1024m -Dfile.encoding=UTF-8",
             "-Xmx1536m -Dfile.encoding=UTF-8",
-            "-Xmx2048m -Dfile.encoding=UTF-8",
-            "-Xmx3072m -Dfile.encoding=UTF-8"
+            "-Xmx2048m -Dfile.encoding=UTF-8"
           ].freeze,
           T::Array[String]
         )
@@ -253,8 +251,10 @@ module Dependabot
 
           proxy_properties = "
 org.gradle.jvmargs=#{combined_jvmargs}
+org.gradle.workers.max=1
 org.gradle.java.installations.auto-download=false
 org.gradle.java.installations.paths=#{installed_gradle_toolchain_paths}
+kotlin.compiler.execution.strategy=in-process
 systemProp.http.proxyHost=#{http_proxy_host}
 systemProp.http.proxyPort=#{http_proxy_port}
 systemProp.https.proxyHost=#{https_proxy_host}
@@ -317,7 +317,13 @@ systemProp.https.proxyPort=#{https_proxy_port}"
               if (tasks.findByName("#{INIT_SCRIPT_TASK_NAME}") == null) {
                 tasks.register("#{INIT_SCRIPT_TASK_NAME}") {
                   doLast {
-                    configurations.findAll { it.canBeResolved }.each { it.resolve() }
+                    configurations.findAll {
+                      it.canBeResolved &&
+                        it.resolutionStrategy.dependencyLockingEnabled &&
+                        it.allDependencies.any { dependency ->
+                          dependency instanceof org.gradle.api.artifacts.ModuleDependency
+                        }
+                    }.each { it.incoming.resolutionResult.allDependencies }
                   }
                 }
               }
