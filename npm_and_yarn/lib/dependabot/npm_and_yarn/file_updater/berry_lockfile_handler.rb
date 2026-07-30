@@ -24,38 +24,15 @@ module Dependabot
           parsed.is_a?(Hash) ? parsed : nil
         end
 
-        # Checks whether the lockfile entry for a specific requirement/descriptor
-        # (e.g. the `*` range in one workspace) already resolves to the target
-        # version. Unlike `version_matches?`, this is scoped to a single
-        # descriptor so a different descriptor already at the target does not mask
-        # a stale one.
-        sig do
-          params(
-            parsed: T::Hash[String, T.untyped],
-            dep_name: String,
-            version: String,
-            requirement: String
-          ).returns(T::Boolean)
-        end
-        def self.descriptor_at_version?(parsed, dep_name, version, requirement)
+        # Checks if the parsed lockfile has the target version for a dependency.
+        sig { params(parsed: T::Hash[String, T.untyped], dep_name: String, version: String).returns(T::Boolean) }
+        def self.version_matches?(parsed, dep_name, version)
           parsed.any? do |key, value|
             next false unless value.is_a?(Hash)
-            next false unless value["version"] == version
 
-            key.to_s.split(", ").any? do |part|
-              name, desc = split_descriptor(part)
-              name == dep_name && descriptor_range(desc) == requirement
-            end
+            key.to_s.split(", ").any? { |part| split_descriptor(part)[0] == dep_name } &&
+              value["version"] == version
           end
-        end
-
-        # Strips the protocol prefix (e.g. "npm:") from a descriptor, returning
-        # the bare range/requirement.
-        sig { params(descriptor: T.nilable(String)).returns(T.nilable(String)) }
-        def self.descriptor_range(descriptor)
-          return nil unless descriptor
-
-          descriptor.sub(/^[a-z]+:/, "")
         end
 
         # Rewrites a lockfile descriptor key from exact version to range.
@@ -70,32 +47,7 @@ module Dependabot
           ).void
         end
         def self.replace_declaration(lockfile_path, dep_name, version, requirement)
-          replace_declarations(lockfile_path, dep_name, version, [requirement])
-        end
-
-        # Rewrites the single exact-version key for a dependency into a composite
-        # key that carries *every* required descriptor (one per workspace
-        # requirement), e.g. "etag@npm:1.7.0" → "etag@npm:*, etag@npm:^1.1".
-        #
-        # Rewriting each requirement separately would clobber the entry: the first
-        # rewrite renames the exact key so it no longer ends with the version, so
-        # later requirements find nothing and their descriptors are dropped. Yarn
-        # then re-resolves those missing descriptors on the next install, which can
-        # land above a cooldown/security target. Emitting one composite key keeps
-        # all descriptors pinned to the already-resolved version.
-        sig do
-          params(
-            lockfile_path: String,
-            dep_name: String,
-            version: String,
-            requirements: T::Array[String]
-          ).void
-        end
-        def self.replace_declarations(lockfile_path, dep_name, version, requirements)
           return unless File.exist?(lockfile_path)
-
-          descriptors = requirements.compact.uniq
-          return if descriptors.empty?
 
           content = File.read(lockfile_path)
           parsed = parse(lockfile_path)
@@ -105,7 +57,7 @@ module Dependabot
           return unless exact_key
 
           protocol = extract_protocol(exact_key, dep_name)
-          new_key = descriptors.map { |req| "#{dep_name}@#{protocol}#{req}" }.join(", ")
+          new_key = "#{dep_name}@#{protocol}#{requirement}"
 
           escaped = Regexp.escape(exact_key)
           File.write(lockfile_path, content.gsub(/^"#{escaped}":/m, "\"#{new_key}\":"))

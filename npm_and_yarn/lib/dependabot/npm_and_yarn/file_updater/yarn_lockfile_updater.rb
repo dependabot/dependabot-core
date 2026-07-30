@@ -231,6 +231,13 @@ module Dependabot
 
           if top_level_dependency_updates.all? { |dep| requirements_changed?(dep[:name]) }
             Helpers.run_yarn_command("install #{yarn_berry_args}".strip, env: yarn_time_gate_env)
+
+            # Yarn berry resolves ranges to the latest matching version, which
+            # may differ from Dependabot's target. If the lockfile resolved to a
+            # different version, re-install with the exact target and rewrite
+            # the lockfile descriptor back to the range — same approach as yarn
+            # classic's replaceLockfileDeclaration.
+            pin_berry_versions_if_needed(top_level_dependency_updates, yarn_lock)
           else
             updates = top_level_dependency_updates.collect do |dep|
               dep[:name]
@@ -242,16 +249,6 @@ module Dependabot
               env: yarn_time_gate_env
             )
           end
-
-          # Yarn berry resolves ranges to the latest matching version, which may
-          # differ from Dependabot's target. In particular, for wildcard ranges
-          # (e.g. "*") `yarn up -R` does not move the lockfile at all, producing a
-          # spurious NoChangeError. If the lockfile resolved to a different version
-          # than the target, re-install with the exact target and rewrite the
-          # lockfile descriptor back to the range — same approach as yarn classic's
-          # replaceLockfileDeclaration.
-          pin_berry_versions_if_needed(top_level_dependency_updates, yarn_lock)
-
           { yarn_lock.name => File.read(yarn_lock.name) }
         end
 
@@ -297,7 +294,7 @@ module Dependabot
           reqs = dep[:requirements]
           return if reqs.nil? || reqs.empty?
           return if reqs.any? { |req| req[:source] && req[:source][:type] == "git" }
-          return if all_descriptors_pinned?(dep_name, T.cast(version, String), reqs, parsed_lockfile)
+          return if BerryLockfileHandler.version_matches?(parsed_lockfile, dep_name, T.cast(version, String))
 
           saved_package_jsons = save_package_jsons
 
@@ -307,40 +304,17 @@ module Dependabot
             env: yarn_time_gate_env
           )
 
-          # Rewrite the single resolved entry into a composite key carrying every
-          # workspace requirement at once. Rewriting per-requirement would drop
-          # all but the first descriptor and let `yarn install` re-resolve them.
-          requirements = reqs.filter_map { |req| req[:requirement] }.map { |req| T.cast(req, String) }
-          BerryLockfileHandler.replace_declarations(
-            yarn_lock.name, dep_name, T.cast(version, String), requirements
-          )
+          reqs.each do |req|
+            requirement = req[:requirement]
+            next unless requirement
+
+            BerryLockfileHandler.replace_declaration(yarn_lock.name, dep_name, T.cast(version, String), requirement)
+          end
 
           # Restore package.json and re-install to normalize lockfile descriptors,
           # same as yarn classic's replaceLockfileDeclaration flow.
           restore_package_jsons(saved_package_jsons)
           Helpers.run_yarn_command("install #{yarn_berry_args}".strip, env: yarn_time_gate_env)
-        end
-
-        # Skip pinning only when every descriptor for this dependency (across
-        # workspaces) is already at the target. Checking each requirement's own
-        # descriptor avoids one entry (e.g. `^1.1`) masking a stale wildcard
-        # (`*`) entry that still needs pinning.
-        sig do
-          params(
-            dep_name: String,
-            version: String,
-            reqs: T::Array[T::Hash[Symbol, T.untyped]],
-            parsed_lockfile: T::Hash[String, T.untyped]
-          ).returns(T::Boolean)
-        end
-        def all_descriptors_pinned?(dep_name, version, reqs, parsed_lockfile)
-          reqs.all? do |req|
-            requirement = req[:requirement]
-            requirement.nil? ||
-              BerryLockfileHandler.descriptor_at_version?(
-                parsed_lockfile, dep_name, version, T.cast(requirement, String)
-              )
-          end
         end
 
         sig { returns(T::Hash[String, String]) }
