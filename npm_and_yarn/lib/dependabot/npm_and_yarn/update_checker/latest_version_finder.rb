@@ -40,7 +40,6 @@ module Dependabot
           cooldown_options: nil
         )
           @package_fetcher = T.let(nil, T.nilable(Package::PackageDetailsFetcher))
-          @resolutions_constraint = T.let(nil, T.nilable(ResolutionsConstraint))
           super
         end
 
@@ -221,11 +220,6 @@ module Dependabot
             r.details["deprecated"]
           end
 
-          # Applied on every path (including the security-fix path, which passes
-          # filter_ignored: false) so unrealizable versions excluded by
-          # resolutions/overrides are never proposed.
-          releases = filter_by_resolutions(releases)
-
           return filter_releases(releases) if filter_ignored
 
           releases
@@ -336,7 +330,6 @@ module Dependabot
           return nil unless dist_tag_version && !dist_tag_version.empty?
 
           release = releases.find { |r| r.version == Version.new(dist_tag_version) }
-          return nil if release && !resolutions_constraint.satisfied_by?(release.version)
 
           release
         end
@@ -362,7 +355,6 @@ module Dependabot
           return false if current_version_greater_than?(version)
           return false if current_requirement_greater_than?(version)
           return false if ignore_requirements.any? { |r| r.satisfied_by?(version) }
-          return false unless resolutions_constraint.satisfied_by?(version)
           return false if yanked_version?(version)
 
           true
@@ -427,30 +419,6 @@ module Dependabot
           releases.select do |release|
             reqs.all? { |r| r.any? { |o| o.satisfied_by?(release.version) } }
           end
-        end
-
-        # A yarn `resolutions` / npm `overrides` entry pins the resolved version
-        # of a dependency across the whole tree. When one constrains the
-        # dependency we're checking (e.g. `"react-dom": "^18"`), versions outside
-        # that constraint can never be installed, so proposing them only produces
-        # a spurious NoChangeError when the file updater runs. Filter them out so
-        # the checker reports the dependency as up to date.
-        sig do
-          params(releases: T::Array[Dependabot::Package::PackageRelease])
-            .returns(T::Array[Dependabot::Package::PackageRelease])
-        end
-        def filter_by_resolutions(releases)
-          return releases unless resolutions_constraint.any?
-
-          filtered = releases.select { |release| resolutions_constraint.satisfied_by?(release.version) }
-          resolutions_constraint.log_filtered(releases, filtered, security_advisories)
-          filtered
-        end
-
-        sig { returns(ResolutionsConstraint) }
-        def resolutions_constraint
-          @resolutions_constraint ||=
-            ResolutionsConstraint.new(dependency: dependency, dependency_files: dependency_files)
         end
       end
     end
