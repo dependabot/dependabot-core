@@ -341,8 +341,7 @@ module Dependabot
     # rubocop:disable Metrics/MethodLength
     sig { params(job: T.nilable(Dependabot::Job)).void }
     def record_cooldown_meta(job)
-      # The CLI's local API does not implement this hosted-service telemetry endpoint.
-      return if job.nil? || job_id == "cli"
+      return if job.nil?
 
       cooldown = job.cooldown
 
