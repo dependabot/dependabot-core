@@ -5,7 +5,7 @@ hashin==1.0.5
 pipenv==2024.4.1
 plette==2.2.1
 poetry==2.4.1
-pytest==9.0.3
+pytest==9.1.1
 # TODO: Replace 3p package `tomli` with 3.11's new stdlib `tomllib` once we drop support for Python 3.10.
 tomli==2.4.1
 
