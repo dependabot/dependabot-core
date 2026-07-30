@@ -1220,72 +1220,45 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.0.0"))
         end
 
-        let(:files) do
-          project_dependency_files(project_name) +
-            [Dependabot::DependencyFile.new(
-              name: "pnpm-workspace.yaml",
-              content: "minimumReleaseAge: 4320\nminimumReleaseAgeStrict: true\n"
-            )]
+        context "when the cooldown is longer than the native gate" do
+          let(:files) do
+            project_dependency_files(project_name) +
+              [Dependabot::DependencyFile.new(
+                name: "pnpm-workspace.yaml",
+                content: "minimumReleaseAge: 4320\nminimumReleaseAgeStrict: true\n"
+              )]
+          end
+
+          it "disables strict mode for the --no-save CLI override" do
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+              expect(cmd).to include("--no-save")
+              expect(cmd).to include("--config.minimumReleaseAge=10080")
+              expect(cmd).to include("--config.minimumReleaseAgeStrict=false")
+              ""
+            end.at_least(:once)
+
+            updater.send(:run_pnpm_update_packages)
+          end
         end
 
-        it "preserves the user's strict setting rather than forcing strict=false" do
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-            # Cooldown (10080) wins over the user's 4320, but their explicit
-            # strict=true must not be overridden with strict=false.
-            expect(cmd).to include("--config.minimumReleaseAge=10080")
-            expect(cmd).not_to include("minimumReleaseAgeStrict")
-            ""
-          end.at_least(:once)
+        context "when the native gate is longer than the cooldown" do
+          let(:files) do
+            project_dependency_files(project_name) +
+              [Dependabot::DependencyFile.new(
+                name: "pnpm-workspace.yaml",
+                content: "minimumReleaseAge: 20160\nminimumReleaseAgeStrict: true\n"
+              )]
+          end
 
-          updater.send(:run_pnpm_update_packages)
-        end
-      end
+          it "leaves the native age and strict settings untouched" do
+            expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+              expect(cmd).not_to include("--config.minimumReleaseAge")
+              expect(cmd).not_to include("--config.minimumReleaseAgeStrict")
+              ""
+            end.at_least(:once)
 
-      context "when the strict opt-in uses uppercase casing and a trailing comment" do
-        before do
-          allow(Dependabot::NpmAndYarn::Helpers)
-            .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.0.0"))
-        end
-
-        let(:files) do
-          project_dependency_files(project_name) +
-            [Dependabot::DependencyFile.new(
-              name: "pnpm-workspace.yaml",
-              content: "minimumReleaseAge: 4320\nminimumReleaseAgeStrict: True # enforce policy\n"
-            )]
-        end
-
-        it "still detects the strict opt-in and does not force strict=false" do
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-            expect(cmd).not_to include("minimumReleaseAgeStrict")
-            ""
-          end.at_least(:once)
-
-          updater.send(:run_pnpm_update_packages)
-        end
-      end
-
-      context "when the strict opt-in uses a quoted YAML key" do
-        before do
-          allow(Dependabot::NpmAndYarn::Helpers)
-            .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.0.0"))
-        end
-
-        let(:files) do
-          project_dependency_files(project_name) +
-            [Dependabot::DependencyFile.new(
-              name: "pnpm-workspace.yaml",
-              content: "minimumReleaseAge: 4320\n\"minimumReleaseAgeStrict\": true\n"
-            )]
-        end
-
-        it "still detects the strict opt-in and does not force strict=false" do
-          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-            expect(cmd).not_to include("minimumReleaseAgeStrict")
-            ""
-          end.at_least(:once)
-
-          updater.send(:run_pnpm_update_packages)
+            updater.send(:run_pnpm_update_packages)
+          end
         end
       end
     end

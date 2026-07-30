@@ -328,14 +328,13 @@ module Dependabot
 
         # pnpm defaults `minimumReleaseAgeStrict` to *on* when `minimumReleaseAge`
         # is set via the CLI, which fails resolution when no version satisfies the
-        # window (and would gate the exact direct version Dependabot pins). We
-        # disable strict so pnpm falls back to the newest version instead of
-        # erroring — but only on pnpm >= 11.0, where the toggle exists, and only
-        # when the repo has not itself opted into strict enforcement, which we must
-        # not silently weaken.
+        # window and is incompatible with the `--no-save` update command. We
+        # disable strict for Dependabot's CLI override on pnpm >= 11.0, where the
+        # toggle exists. Equal-or-longer native gates remain untouched because no
+        # CLI override is added for them.
         sig { returns(T::Boolean) }
         def disable_strict_release_age?
-          pnpm_supports_minimum_release_age_strict? && !pnpm_strict_release_age_configured?
+          pnpm_supports_minimum_release_age_strict?
         end
 
         sig { returns(String) }
@@ -377,25 +376,6 @@ module Dependabot
           !version.nil? && version >= Version.new(PNPM_MINIMUM_RELEASE_AGE_STRICT_VERSION)
         end
 
-        # True when the repo explicitly enables pnpm's `minimumReleaseAgeStrict`, in
-        # pnpm-workspace.yaml (`minimumReleaseAgeStrict: true`) or, on pnpm 10.x,
-        # `.npmrc` (`minimum-release-age-strict=true`). The last occurrence wins,
-        # matching how pnpm/INI resolve a repeated key.
-        sig { returns(T::Boolean) }
-        def pnpm_strict_release_age_configured?
-          dependency_files.any? do |file|
-            case File.basename(file.name)
-            when "pnpm-workspace.yaml"
-              strict_release_age_enabled?(file.content.to_s, "minimumReleaseAgeStrict", ":")
-            when ".npmrc"
-              pnpm_reads_npmrc_release_age? &&
-                strict_release_age_enabled?(file.content.to_s, "minimum-release-age-strict", "=")
-            else
-              false
-            end
-          end
-        end
-
         # pnpm 10.x ignores `minimumReleaseAge` when `shared-workspace-lockfile` is
         # disabled (pnpm/pnpm#10008), so the cooldown cannot be enforced there.
         sig { returns(T::Boolean) }
@@ -410,11 +390,6 @@ module Dependabot
               false
             end
           end
-        end
-
-        sig { params(content: String, key: String, separator: String).returns(T::Boolean) }
-        def strict_release_age_enabled?(content, key, separator)
-          yaml_boolean_setting(content, key, separator) == true
         end
 
         # Reads a YAML/INI boolean `key`, returning true/false, or nil when absent or
