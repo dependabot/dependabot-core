@@ -793,9 +793,20 @@ RSpec.describe Dependabot::ApiClient do
       )
     end
 
-    context "when cooldown is nil" do
+    context "when job is nil" do
       it "does not send a request" do
         client.record_cooldown_meta(nil)
+        expect(WebMock).not_to have_requested(:post, record_cooldown_meta_url)
+      end
+    end
+
+    context "when running through the Dependabot CLI" do
+      subject(:client) { described_class.new("http://example.com", "cli", "token") }
+
+      let(:record_cooldown_meta_url) { "http://example.com/update_jobs/cli/record_cooldown_meta" }
+
+      it "does not send hosted-service telemetry" do
+        client.record_cooldown_meta(job)
         expect(WebMock).not_to have_requested(:post, record_cooldown_meta_url)
       end
     end
