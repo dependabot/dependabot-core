@@ -1,0 +1,16 @@
+[
+  {
+    "name": "build.gradle",
+    "path": "included/convention/build.gradle",
+    "sha": "5555555555555555555555555555555555555555",
+    "size": 140,
+    "type": "file"
+  },
+  {
+    "name": "src",
+    "path": "included/convention/src",
+    "sha": "6666666666666666666666666666666666666666",
+    "size": 0,
+    "type": "dir"
+  }
+]
