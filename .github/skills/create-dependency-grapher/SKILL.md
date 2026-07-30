@@ -305,6 +305,6 @@ independent workflow files, each with its own action dependencies.
 
 - **Multiple lockfile formats**: Some ecosystems (like Python) support multiple package managers. Your grapher may need to handle different lockfile formats.
 - **Scoped/namespaced packages**: If your ecosystem has scoped names (like npm's `@scope/pkg`), ensure `purl_name_for` handles URL-encoding correctly.
-- **Multiple versions of same package**: If your ecosystem allows multiple versions of a single dependency, `fetch_subdependencies` **must** return PURLs (not just names) to be unambiguous.
+- **Multiple versions of same package**: The base grapher resolves `fetch_subdependencies` results by package name and cannot distinguish multiple versions. Follow npm/yarn/pnpm's `resolved_dependencies` / `subdependency_purls_for` override to emit version-specific entries and PURL edges.
 - **PURL spec compliance**: Always check [PURL-TYPES.rst](https://github.com/package-url/purl-spec/blob/main/PURL-TYPES.rst) for your ecosystem's conventions.
 - **Multiple independent manifests per directory**: Ecosystems that allow several independent manifests in one directory (e.g. Python's layered requirements, or a future GitHub Actions grapher covering multiple workflow files under `.github/workflows/`) need `manifest_groups` overridden so each manifest gets its own snapshot instead of being merged into one — see [`references/manifest-layering.md`](references/manifest-layering.md).
