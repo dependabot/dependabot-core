@@ -25,11 +25,6 @@ module Dependabot
           ].freeze,
           T::Array[String]
         )
-        GRADLE_TOOLCHAIN_PATHS = T.let(
-          "/usr/lib/jvm/java-17-openjdk-amd64,/usr/lib/jvm/java-21-openjdk-amd64",
-          String
-        )
-
         sig do
           params(
             dependency_files: T::Array[Dependabot::DependencyFile],
@@ -41,8 +36,13 @@ module Dependabot
           @repo_contents_path = repo_contents_path
         end
 
-        sig { params(build_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
-        def update_lockfiles(build_file)
+        sig do
+          params(
+            build_file: Dependabot::DependencyFile,
+            build_files: T::Array[Dependabot::DependencyFile]
+          ).returns(T::Array[Dependabot::DependencyFile])
+        end
+        def update_lockfiles(build_file, build_files: [build_file])
           root_dir = determine_root_dir(build_file: build_file)
           lockfiles = lockfiles_for_root(root_dir)
 
@@ -64,7 +64,7 @@ module Dependabot
             command_parts = [
               gradle_executable_for(cwd: cwd, workspace_root: temp_dir.to_s),
               "--init-script", init_script_path,
-              *lockfile_tasks_for(build_file),
+              *lockfile_tasks_for(build_files),
               "--write-locks",
               "--no-daemon",
               "--no-configuration-cache"
@@ -230,8 +230,6 @@ module Dependabot
               FileUtils.cp_r(source_entry, dest_entry)
             end
           end
-        rescue StandardError => e
-          Dependabot.logger.warn("Failed to copy full repo contents for lockfile update: #{e.message}")
         end
 
         sig { params(file_name: String, jvmargs: String, base_content: String).void }
@@ -256,7 +254,7 @@ module Dependabot
           proxy_properties = "
 org.gradle.jvmargs=#{combined_jvmargs}
 org.gradle.java.installations.auto-download=false
-org.gradle.java.installations.paths=#{GRADLE_TOOLCHAIN_PATHS}
+org.gradle.java.installations.paths=#{installed_gradle_toolchain_paths}
 systemProp.http.proxyHost=#{http_proxy_host}
 systemProp.http.proxyPort=#{http_proxy_port}
 systemProp.https.proxyHost=#{https_proxy_host}
@@ -302,10 +300,12 @@ systemProp.https.proxyPort=#{https_proxy_port}"
           # Retry if process was killed (SIGKILL)
           return true if T.cast(error.error_context[:process_termsig], T.nilable(Integer)) == SharedHelpers::SIGKILL
 
-          # Retry if exit code suggests a kill (signal-based termination)
-          return true if message.include?("signal") || message.include?("killed")
-
           false
+        end
+
+        sig { returns(String) }
+        def installed_gradle_toolchain_paths
+          Dir.glob("/usr/lib/jvm/java-*-openjdk-*").join(",")
         end
 
         sig { params(file_name: String).void }
@@ -314,12 +314,10 @@ systemProp.https.proxyPort=#{https_proxy_port}"
           # Gradle rewrites every relevant lockfile in one invocation.
           script_content = <<~GRADLE
             allprojects {
-              def resolvableConfigurations = configurations.findAll { it.canBeResolved }
-
               if (tasks.findByName("#{INIT_SCRIPT_TASK_NAME}") == null) {
                 tasks.register("#{INIT_SCRIPT_TASK_NAME}") {
                   doLast {
-                    resolvableConfigurations.each { it.resolve() }
+                    configurations.findAll { it.canBeResolved }.each { it.resolve() }
                   }
                 }
               }
@@ -328,12 +326,9 @@ systemProp.https.proxyPort=#{https_proxy_port}"
           File.write(file_name, script_content)
         end
 
-        sig { params(build_file: Dependabot::DependencyFile).returns(T::Array[String]) }
-        def lockfile_tasks_for(build_file)
-          project_task = dependency_task_for(build_file)
-          return [INIT_SCRIPT_TASK_NAME] if project_task.nil?
-
-          [project_task, INIT_SCRIPT_TASK_NAME]
+        sig { params(build_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[String]) }
+        def lockfile_tasks_for(build_files)
+          build_files.filter_map { |build_file| dependency_task_for(build_file) }.uniq << INIT_SCRIPT_TASK_NAME
         end
 
         sig { params(build_file: Dependabot::DependencyFile).returns(T.nilable(String)) }

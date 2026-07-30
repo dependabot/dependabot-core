@@ -159,6 +159,13 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
         )
       end
 
+      it "runs scoped tasks for every changed build file in the root" do
+        lockfile_updater.update_lockfiles(root_buildfile, build_files: [root_buildfile, app_buildfile])
+
+        expect(observed_commands.last).to include(":app:dependencies")
+        expect(observed_commands.last).to include("dependabotResolveAll")
+      end
+
       context "when the subproject uses a custom projectDir mapping" do
         let(:custom_settings) do
           Dependabot::DependencyFile.new(
@@ -530,6 +537,18 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
         expect(observed_properties.last).to include("org.gradle.jvmargs=-Xmx1536m -Dfile.encoding=UTF-8")
         expect(Dependabot.logger).to have_received(:warn).with(include("Retrying once"))
       end
+
+      it "does not retry failures that only mention signal-related words" do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: "Dependency signaling mechanism failed after a killed resolution",
+                       error_context: { command: "gradle" }
+                     ))
+
+        lockfile_updater.update_lockfiles(app_buildfile)
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).once
+      end
     end
 
     context "when there are no lockfiles in scope" do
@@ -571,17 +590,18 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
       end
 
       it "preserves existing gradle.properties content and appends proxy settings" do
+        allow(Dir).to receive(:glob).with("/usr/lib/jvm/java-*-openjdk-*")
+                                    .and_return(["/usr/lib/jvm/java-17-openjdk-arm64"])
+
         lockfile_updater.update_lockfiles(root_buildfile)
 
         expect(observed_properties.last).to include("GROUP=com.example")
         expect(observed_properties.last).to include("VERSION=1.0.0")
         expect(observed_properties.last).to include("org.gradle.jvmargs=-Xmx1024m -Dfile.encoding=UTF-8")
         expect(observed_properties.last).to include("org.gradle.java.installations.auto-download=false")
-        expect(observed_properties.last)
-          .to include(
-            "org.gradle.java.installations.paths=/usr/lib/jvm/java-17-openjdk-amd64," \
-            "/usr/lib/jvm/java-21-openjdk-amd64"
-          )
+        expect(observed_properties.last).to include(
+          "org.gradle.java.installations.paths=/usr/lib/jvm/java-17-openjdk-arm64"
+        )
         expect(observed_properties.last).to include("systemProp.http.proxyHost=")
       end
 
@@ -642,9 +662,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
 
         lockfile_updater.update_lockfiles(root_buildfile)
 
-        expect(observed_init_script).to include("def resolvableConfigurations = configurations.findAll")
-        expect(observed_init_script).to include("resolvableConfigurations.each")
-        expect(observed_init_script).not_to include("project.configurations")
+        expect(observed_init_script).to match(/doLast \{\s+configurations\.findAll/)
+        expect(observed_init_script).to include(".each { it.resolve() }")
       end
     end
 
@@ -931,6 +950,12 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
         expect(observed_plugin_files.last).to be(true)
         expect(observed_git_symlinks.last).to be(true)
         expect(File.exist?(File.join(repo_dir, ".git", "marker"))).to be(true)
+      end
+
+      it "propagates repository copy failures" do
+        allow(FileUtils).to receive(:cp_r).and_raise(Errno::ENOSPC, "No space left on device")
+
+        expect { lockfile_updater.update_lockfiles(root_buildfile) }.to raise_error(Errno::ENOSPC)
       end
     end
   end
