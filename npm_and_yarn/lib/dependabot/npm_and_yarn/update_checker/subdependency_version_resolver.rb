@@ -277,7 +277,7 @@ module Dependabot
 
         # First-tier fallback: try `pnpm update --depth Infinity <dep>` to
         # update transitive dependencies in the lockfile without modifying
-        # any package.json (unlike `pnpm audit --fix`).
+        # manifests or relying on older pnpm audit fixes that may add overrides.
         sig { void }
         def run_pnpm_deep_update_fallback
           recursive = Dir.glob("**/pnpm-workspace.yaml").any?
@@ -289,11 +289,10 @@ module Dependabot
           )
         end
 
-        # Runs `pnpm audit --fix` as a fallback when `pnpm update` is a no-op.
-        # `pnpm audit --fix` adds `overrides` to `package.json`, but this method
-        # only returns the lockfile. If audit-fix modifies any package.json we
-        # revert both the manifest(s) and lockfile so no inconsistent state is
-        # surfaced upstream.
+        # Runs the version-compatible `pnpm audit --fix` strategy when `pnpm update` is a no-op.
+        # pnpm 11 updates the lockfile directly, while older versions may add
+        # `overrides` to package.json. If any manifest changes, revert both the
+        # manifest(s) and lockfile so no inconsistent state is surfaced upstream.
         sig { params(lockfile_name: String, original_content: String).void }
         def run_pnpm_audit_fix_fallback(lockfile_name, original_content)
           package_json_snapshots = Dir.glob("**/package.json").to_h { |f| [f, File.read(f)] }

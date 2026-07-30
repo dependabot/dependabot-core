@@ -62,7 +62,7 @@ module Dependabot
           @yanked = T.let({}, T::Hash[Gem::Version, T.nilable(T::Boolean)])
         end
 
-        sig { returns(Dependabot::Dependency) }
+        sig { override.returns(Dependabot::Dependency) }
         attr_reader :dependency
 
         sig { override.returns(T::Array[Dependabot::Credential]) }

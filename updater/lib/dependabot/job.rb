@@ -39,8 +39,7 @@ module Dependabot
     extend T::Sig
 
     TOP_LEVEL_DEPENDENCY_TYPES = T.let(%w(direct production development).freeze, T::Array[String])
-    # Default cooldown period (in days) applied when a cooldown is configured
-    # without an explicit `default-days` value.
+    # Default cooldown period (in days) applied when `default-days` is not configured.
     DEFAULT_COOLDOWN_DAYS = 3
     PERMITTED_KEYS = T.let(
       %i(
@@ -128,7 +127,7 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     attr_reader :dependency_group_to_refresh
 
-    sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+    sig { returns(Dependabot::Package::ReleaseCooldownOptions) }
     attr_reader :cooldown
 
     sig { returns(T::Array[Dependabot::Job::BlockedVersion]) }
@@ -246,7 +245,7 @@ module Dependabot
       @vendor_dependencies = T.let(definition.vendor_dependencies, T::Boolean)
       @cooldown = T.let(
         build_cooldown(definition.cooldown),
-        T.nilable(Dependabot::Package::ReleaseCooldownOptions)
+        Dependabot::Package::ReleaseCooldownOptions
       )
       @multi_ecosystem_update = T.let(definition.multi_ecosystem_update, T::Boolean)
       @dependency_groups = T.let(definition.dependency_groups, T::Array[DependencyGroupDefinition])
@@ -692,23 +691,22 @@ module Dependabot
 
     sig do
       params(cooldown: T.nilable(CooldownDefinition))
-        .returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+        .returns(Dependabot::Package::ReleaseCooldownOptions)
     end
     def build_cooldown(cooldown)
-      return nil unless cooldown
+      unless cooldown
+        return Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: default_cooldown_days
+        )
+      end
 
       cooldown.to_options(default_days: default_cooldown_days)
     end
 
-    # The fallback applied when a cooldown block is present but `default-days`
-    # is not explicitly set. Behind the `enable_cooldown_default_days`
-    # experiment this defaults to DEFAULT_COOLDOWN_DAYS, otherwise it remains 0
-    # (no cooldown) to preserve the previous behaviour.
+    # The fallback applied when `default-days` is not explicitly set.
     sig { returns(Integer) }
     def default_cooldown_days
-      return DEFAULT_COOLDOWN_DAYS if experiments[:enable_cooldown_default_days]
-
-      0
+      DEFAULT_COOLDOWN_DAYS
     end
 
     # Provides a Dependabot::Config::UpdateConfig objected hydrated with

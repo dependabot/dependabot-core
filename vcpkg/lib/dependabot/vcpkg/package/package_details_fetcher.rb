@@ -12,6 +12,7 @@ require "dependabot/shared_helpers"
 require "dependabot/update_checkers/base"
 
 require "dependabot/vcpkg"
+require "dependabot/vcpkg/package/versions_database"
 require "dependabot/vcpkg/version"
 
 module Dependabot
@@ -22,15 +23,20 @@ module Dependabot
 
         sig do
           params(
-            dependency: Dependabot::Dependency
+            dependency: Dependabot::Dependency,
+            versions_database: Dependabot::Vcpkg::Package::VersionsDatabase
           ).void
         end
-        def initialize(dependency:)
+        def initialize(dependency:, versions_database: Dependabot::Vcpkg::Package::VersionsDatabase.new)
           @dependency = dependency
+          @versions_database = versions_database
         end
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
+        sig { returns(Dependabot::Vcpkg::Package::VersionsDatabase) }
+        attr_reader :versions_database
 
         sig { returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def fetch
@@ -75,88 +81,14 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def fetch_port_releases
-          fetch_port_versions_from_git
-            .filter_map { |version_info| create_port_package_release(version_info) }
-            .reverse
-            .uniq(&:version)
-            .then do |releases|
-            Dependabot::Package::PackageDetails.new(
-              dependency: dependency,
-              releases: releases
-            )
-          end
-        end
+          release_dates = versions_database.release_dates_for(dependency.name)
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
-        def fetch_port_versions_from_git
-          port_path = "ports/#{dependency.name}/vcpkg.json"
-          vcpkg_repo_path = "/opt/vcpkg"
+          releases = versions_database
+                     .versions_for(dependency.name)
+                     .map { |port_version| create_port_package_release(port_version, release_dates) }
+                     .uniq(&:version)
 
-          # Get each commit that modified the port's vcpkg.json
-          git_log_cmd = [
-            "git", "log", "--format=%H", "--follow", "--", port_path
-          ]
-
-          Dir.chdir(vcpkg_repo_path) do
-            log_output = Dependabot::SharedHelpers.run_shell_command(git_log_cmd.join(" "))
-
-            log_output.lines.map(&:strip).filter_map do |line|
-              next if line.empty?
-
-              commit_sha = line.strip
-              next unless commit_sha.match?(/\A[0-9a-f]{40}\z/) # Validate SHA format
-
-              # Get the vcpkg.json content for this commit
-              version_info = extract_version_from_commit(commit_sha, port_path)
-              version_info[:commit_sha] = commit_sha if version_info
-              version_info
-            end
-          end
-        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
-          Dependabot.logger.warn("Failed to fetch port versions for #{dependency.name}: #{e.message}")
-          []
-        end
-
-        sig { params(commit_sha: String, file_path: String).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
-        def extract_version_from_commit(commit_sha, file_path)
-          show_cmd = ["git", "show", "#{commit_sha}:#{file_path}"]
-
-          file_content = Dependabot::SharedHelpers.run_shell_command(show_cmd.join(" "))
-          parsed_json = JSON.parse(file_content)
-
-          version = parsed_json["version"]
-          port_version = parsed_json["port-version"] || 0
-
-          return nil unless version
-
-          # Combine version and port-version
-          full_version = port_version.zero? ? version : "#{version}##{port_version}"
-
-          {
-            version: version,
-            port_version: port_version,
-            full_version: full_version,
-            commit_date: get_commit_date(commit_sha)
-          }
-        rescue JSON::ParserError => e
-          Dependabot.logger.warn("Failed to parse vcpkg.json for commit #{commit_sha}: #{e.message}")
-          nil
-        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
-          Dependabot.logger.warn("Failed to show file #{file_path} for commit #{commit_sha}: #{e.message}")
-          nil
-        end
-
-        sig { params(commit_sha: String).returns(T.nilable(Time)) }
-        def get_commit_date(commit_sha)
-          date_cmd = ["git", "show", "--no-patch", "--format=%ci", commit_sha]
-          date_output = Dependabot::SharedHelpers.run_shell_command(date_cmd.join(" "))
-          Time.parse(date_output.strip)
-        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
-          Dependabot.logger.warn("Failed to get commit date for #{commit_sha}: #{e.message}")
-          nil
-        rescue ArgumentError => e
-          Dependabot.logger.warn("Invalid date format for commit #{commit_sha}: #{e.message}")
-          nil
+          Dependabot::Package::PackageDetails.new(dependency: dependency, releases: releases)
         end
 
         sig { params(tag_info: T::Hash[Symbol, T.untyped]).returns(Dependabot::Package::PackageRelease) }
@@ -173,17 +105,27 @@ module Dependabot
           )
         end
 
-        sig { params(version_info: T::Hash[Symbol, T.untyped]).returns(Dependabot::Package::PackageRelease) }
-        def create_port_package_release(version_info)
+        sig do
+          params(
+            port_version: Dependabot::Vcpkg::Package::VersionsDatabase::PortVersion,
+            release_dates: T::Hash[String, Time]
+          ).returns(Dependabot::Package::PackageRelease)
+        end
+        def create_port_package_release(port_version, release_dates)
+          version = port_version.version
+          git_tree = port_version.git_tree
+
           Dependabot::Package::PackageRelease.new(
-            version: Dependabot::Vcpkg::Version.new(version_info.fetch(:full_version)),
-            tag: version_info.fetch(:full_version),
-            url: "#{Vcpkg::VCPKG_DEFAULT_BASELINE_URL}/tree/#{version_info[:commit_sha]}/ports/#{dependency.name}",
-            released_at: version_info[:commit_date],
+            version: version,
+            tag: version.to_s,
+            url: "#{Vcpkg::VCPKG_DEFAULT_REGISTRY_REPOSITORY}/tree/" \
+                 "#{Vcpkg::VCPKG_DEFAULT_BASELINE_DEFAULT_BRANCH}/ports/#{dependency.name}",
+            released_at: git_tree && release_dates[git_tree],
             details: {
-              "commit_sha" => version_info[:commit_sha],
-              "base_version" => version_info[:version],
-              "port_version" => version_info[:port_version]
+              "scheme" => port_version.scheme,
+              "base_version" => version.text,
+              "port_version" => version.port_version,
+              "git_tree" => git_tree
             }
           )
         end
