@@ -793,7 +793,7 @@ RSpec.describe Dependabot::ApiClient do
       )
     end
 
-    context "when cooldown is nil" do
+    context "when job is nil" do
       it "does not send a request" do
         client.record_cooldown_meta(nil)
         expect(WebMock).not_to have_requested(:post, record_cooldown_meta_url)

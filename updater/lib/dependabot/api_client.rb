@@ -341,9 +341,9 @@ module Dependabot
     # rubocop:disable Metrics/MethodLength
     sig { params(job: T.nilable(Dependabot::Job)).void }
     def record_cooldown_meta(job)
-      return if job&.cooldown.nil?
+      return unless job
 
-      cooldown = T.must(job).cooldown
+      cooldown = job.cooldown
 
       begin
         ::Dependabot::OpenTelemetry.tracer.in_span("record_cooldown_meta", kind: :internal) do |_span|
@@ -353,13 +353,13 @@ module Dependabot
             data: [
               {
                 cooldown: {
-                  ecosystem_name: T.must(job).package_manager,
+                  ecosystem_name: job.package_manager,
                   config:
                   {
-                    default_days: T.must(cooldown).default_days,
-                    semver_major_days: T.must(cooldown).semver_major_days,
-                    semver_minor_days: T.must(cooldown).semver_minor_days,
-                    semver_patch_days: T.must(cooldown).semver_patch_days
+                    default_days: cooldown.default_days,
+                    semver_major_days: cooldown.semver_major_days,
+                    semver_minor_days: cooldown.semver_minor_days,
+                    semver_patch_days: cooldown.semver_patch_days
                   }
                 }
               }
