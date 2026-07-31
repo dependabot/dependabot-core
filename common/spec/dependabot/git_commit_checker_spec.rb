@@ -1819,7 +1819,7 @@ RSpec.describe Dependabot::GitCommitChecker do
   end
 
   describe "#local_tag_for_pinned_sha" do
-    subject { checker.local_tag_for_pinned_sha }
+    subject(:local_tag_for_pinned_sha) { checker.local_tag_for_pinned_sha }
 
     context "with a git commit pin" do
       let(:source) do
@@ -1874,6 +1874,131 @@ RSpec.describe Dependabot::GitCommitChecker do
         let(:source_commit) { "5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f" }
 
         it { is_expected.to eq("v2.3.4") }
+      end
+    end
+
+    context "with github actions monorepo tags" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: source_commit,
+          requirements: requirements,
+          package_manager: "dummy"
+        )
+      end
+      let(:source_commit) { "a" * 40 }
+      let(:dependency_name) { "some-org/monorepo-actions/resolve-gh-token" }
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/some-org/monorepo-actions",
+          branch: "main",
+          ref: source_commit
+        }
+      end
+      let(:matching_tag) do
+        Dependabot::GitRef.new(name: "resolve-gh-token-v2.1.0", commit_sha: source_commit)
+      end
+      let(:local_tags) do
+        [
+          Dependabot::GitRef.new(name: "resolve-gh-token-v2.0.0", commit_sha: source_commit),
+          matching_tag,
+          Dependabot::GitRef.new(name: "usage-metrics-v3.0.0", commit_sha: source_commit),
+          Dependabot::GitRef.new(name: "v9.9.9", commit_sha: source_commit)
+        ]
+      end
+
+      let(:stub_version_class) do
+        Class.new do
+          def self.correct?(_name)
+            true
+          end
+
+          def self.new(name)
+            normalized = name.to_s
+                             .sub(%r{\A.*(?:-v|/v?)}, "")
+                             .delete_prefix("v")
+            Gem::Version.new(normalized)
+          end
+        end
+      end
+
+      before do
+        allow(checker).to receive_messages(
+          pinned_ref_looks_like_commit_sha?: true,
+          local_tags: local_tags,
+          version_class: stub_version_class
+        )
+      end
+
+      it "selects only tags from the current action family when present" do
+        expect(local_tag_for_pinned_sha).to eq("resolve-gh-token-v2.1.0")
+      end
+
+      context "when no tag exists for the current action family" do
+        let(:local_tags) do
+          [
+            Dependabot::GitRef.new(name: "v1.0.0", commit_sha: source_commit),
+            Dependabot::GitRef.new(name: "1.0.0-v2", commit_sha: source_commit),
+            Dependabot::GitRef.new(name: "v1.0.0-v2", commit_sha: source_commit),
+            Dependabot::GitRef.new(name: "usage-metrics-v3.0.0", commit_sha: source_commit)
+          ]
+        end
+
+        it "falls back to repo-wide tags and excludes other action families" do
+          selected_tags = checker.most_specific_version_tags_for_sha(source_commit)
+          expect(selected_tags).to include("v1.0.0", "1.0.0-v2", "v1.0.0-v2")
+          expect(selected_tags).not_to include("usage-metrics-v3.0.0")
+          expect(local_tag_for_pinned_sha).to eq(selected_tags.last)
+        end
+      end
+
+      context "when dependency casing differs from repository casing" do
+        let(:dependency_name) { "Some-Org/Monorepo-Actions/resolve-gh-token" }
+        let(:local_tags) do
+          [
+            Dependabot::GitRef.new(name: "resolve-gh-token-v1.0.0", commit_sha: source_commit),
+            Dependabot::GitRef.new(name: "usage-metrics-v9.0.0", commit_sha: source_commit)
+          ]
+        end
+
+        it "matches repository prefix case-insensitively" do
+          expect(local_tag_for_pinned_sha).to eq("resolve-gh-token-v1.0.0")
+        end
+      end
+
+      context "when the ref is a path-based tag rather than a SHA" do
+        let(:dependency_name) { "some-org/monorepo-actions/first/run@run/v1.0.0" }
+        let(:local_tags) do
+          [
+            Dependabot::GitRef.new(name: "run/v1.0.0", commit_sha: source_commit),
+            Dependabot::GitRef.new(name: "usage-metrics-v3.0.0", commit_sha: source_commit)
+          ]
+        end
+
+        before do
+          allow(checker).to receive(:pinned_ref_looks_like_commit_sha?).and_return(false)
+        end
+
+        it "retains the real family tag instead of scoping by action" do
+          selected_tags = checker.most_specific_version_tags_for_sha(source_commit)
+          expect(selected_tags).to include("run/v1.0.0")
+        end
+      end
+
+      context "when dependency is a reusable workflow" do
+        let(:dependency_name) { "some-org/monorepo-actions/.github/workflows/release.yml" }
+        let(:local_tags) do
+          [
+            Dependabot::GitRef.new(name: "resolve-gh-token-v1.0.0", commit_sha: source_commit),
+            Dependabot::GitRef.new(name: "usage-metrics-v3.0.0", commit_sha: source_commit),
+            Dependabot::GitRef.new(name: "v2.0.0", commit_sha: source_commit)
+          ]
+        end
+
+        it "skips action-family scoping" do
+          expect(local_tag_for_pinned_sha).to eq("usage-metrics-v3.0.0")
+        end
       end
     end
   end

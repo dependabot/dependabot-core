@@ -24,9 +24,23 @@ module Dependabot
 
       sig { params(version: VersionParameter).returns(VersionParameter) }
       def self.remove_leading_v(version)
-        return version unless version.to_s.match?(%r{\A(?:.*/)?v?([0-9])})
+        str = version.to_s.split("/").last.to_s
+        return str if str.match?(/\A\d/)
+        return T.must(str[1..]) if str.match?(/\Av\d/)
 
-        version.to_s.sub(%r{\A(?:.*/)?v?}, "")
+        last_moving_major = T.let(nil, T.nilable(Integer))
+        offset = 0
+        while (idx = str.index(/-v\d/, offset))
+          core = T.must(str[(idx + 2)..])
+          return core if core.match?(/\A\d+\.\d/)
+
+          last_moving_major = idx
+          offset = idx + 2
+        end
+
+        return T.must(str[(last_moving_major + 2)..]) if last_moving_major
+
+        str
       end
 
       sig { params(version: VersionParameter).returns(T::Boolean) }

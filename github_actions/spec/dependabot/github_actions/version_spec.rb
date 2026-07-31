@@ -87,4 +87,27 @@ RSpec.describe Dependabot::GithubActions::Version do
       expect(described_class.path_based?(semver_without_v)).to be(false)
     end
   end
+
+  describe ".remove_leading_v" do
+    it "strips prefixed semver tags" do
+      expect(described_class.remove_leading_v("action-v1.2.3")).to eq("1.2.3")
+    end
+
+    it "uses the semver boundary when action names include -v digits" do
+      expect(described_class.remove_leading_v("cache-v2-helper-v1.0.0")).to eq("1.0.0")
+    end
+
+    it "preserves prerelease suffixes" do
+      expect(described_class.remove_leading_v("action-v1.0.0-v2")).to eq("1.0.0-v2")
+      expect(described_class.remove_leading_v("1.0.0-v2")).to eq("1.0.0-v2")
+    end
+
+    it "preserves date-like tags" do
+      expect(described_class.remove_leading_v("2021-01-01")).to eq("2021-01-01")
+    end
+
+    it "falls back to moving-major tags" do
+      expect(described_class.remove_leading_v("action-v2")).to eq("2")
+    end
+  end
 end

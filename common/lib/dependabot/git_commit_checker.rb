@@ -430,8 +430,55 @@ module Dependabot
 
     sig { params(commit_sha: T.nilable(String)).returns(T::Array[Dependabot::GitRef]) }
     def local_tags_matching_sha(commit_sha)
-      local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
-                .sort_by { |t| version_class.new(t.name) }
+      tags = local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
+      tags_for_this_action(tags).sort_by { |t| version_class.new(t.name) }
+    end
+
+    sig { params(tags: T::Array[Dependabot::GitRef]).returns(T::Array[Dependabot::GitRef]) }
+    def tags_for_this_action(tags)
+      # Action-family scoping only applies to SHA-pinned refs. For non-SHA refs
+      # (e.g. path-based tags such as "run/v1.0.0") the dependency name isn't a
+      # plain action path, so scoping would drop the real tag; leave it unscoped.
+      return tags unless pinned_ref_looks_like_commit_sha?
+
+      action = action_path_segment
+      return tags unless action
+
+      action_family_pattern = %r{\A#{Regexp.escape(action)}(?:-v|/v?)\d}
+      matching_action_family = tags.select { |tag| tag.name.match?(action_family_pattern) }
+      return matching_action_family if matching_action_family.any?
+
+      tags.reject { |tag| action_family_tag?(tag.name) }
+    end
+
+    sig { params(name: String).returns(T::Boolean) }
+    def action_family_tag?(name)
+      return false if name.match?(/\Av?\d/)
+
+      dash = name.index(/-v\d/)
+      return true if dash&.positive?
+
+      slash = name.index(%r{/v?\d})
+      slash&.positive? || false
+    end
+
+    sig { returns(T.nilable(String)) }
+    def action_path_segment
+      source_url = dependency_source_details&.url
+      return unless source_url
+
+      repo = Source.from_url(source_url)&.repo
+      return unless repo
+
+      name = dependency.name
+      prefix = "#{repo}/"
+      return unless name.downcase.start_with?(prefix.downcase)
+
+      action_path = name[prefix.length..]
+      return if action_path.nil? || action_path.empty?
+      return if action_path.downcase.start_with?(".github/workflows/")
+
+      action_path.split("/").last
     end
 
     sig { params(version: T.any(String, Gem::Version)).returns(T::Boolean) }
