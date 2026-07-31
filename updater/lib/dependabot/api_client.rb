@@ -355,8 +355,7 @@ module Dependabot
               {
                 cooldown: {
                   ecosystem_name: job.package_manager,
-                  config:
-                  {
+                  config: {
                     default_days: cooldown.default_days,
                     semver_major_days: cooldown.semver_major_days,
                     semver_minor_days: cooldown.semver_minor_days,
@@ -371,7 +370,13 @@ module Dependabot
 
           begin
             response = post(path: api_url, body: body.to_json)
-            raise ApiError, response.body if response.status >= 400
+
+            # Not every host implements this telemetry endpoint, so a client error won't clear on retry.
+            if response.status >= 500
+              raise ApiError, response.body
+            elsif response.status >= 400
+              Dependabot.logger.debug("Unable to record cooldown meta: #{response.status} #{response.body}")
+            end
           rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError, ApiError => e
             retry_count += 1
             if retry_count <= MAX_REQUEST_RETRIES
