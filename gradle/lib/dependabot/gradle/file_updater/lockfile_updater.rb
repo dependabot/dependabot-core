@@ -64,8 +64,7 @@ module Dependabot
               "--init-script", init_script_path,
               *lockfile_tasks_for(build_files),
               "--write-locks",
-              "--no-daemon",
-              "--no-configuration-cache"
+              "--no-daemon"
             ]
             command = Shellwords.join(command_parts)
             run_lockfile_update_with_retry(
@@ -310,26 +309,72 @@ systemProp.https.proxyPort=#{https_proxy_port}"
 
         sig { params(file_name: String).void }
         def write_init_script(file_name)
-          # Resolve all resolvable configurations across all loaded projects so
-          # Gradle rewrites every relevant lockfile in one invocation.
+          # Resolve every lockable configuration in one invocation. Not from the task action: that
+          # needs the project, which the configuration cache forbids.
           script_content = <<~GRADLE
             allprojects {
               if (tasks.findByName("#{INIT_SCRIPT_TASK_NAME}") == null) {
-                tasks.register("#{INIT_SCRIPT_TASK_NAME}") {
-                  doLast {
-                    configurations.findAll {
-                      it.canBeResolved &&
-                        it.resolutionStrategy.dependencyLockingEnabled &&
-                        it.allDependencies.any { dependency ->
-                          dependency instanceof org.gradle.api.artifacts.ModuleDependency
-                        }
-                    }.each { it.incoming.resolutionResult.allDependencies }
-                  }
-                }
+                tasks.register("#{INIT_SCRIPT_TASK_NAME}") { }
+              }
+            }
+
+            gradle.projectsEvaluated {
+              // Prepare every project before resolving anything: with a project dependency,
+              // resolving one project computes the other project's javaCompiler.
+            #{compiler_fallback_snippet}
+
+              gradle.rootProject.allprojects { target ->
+                target.configurations.findAll {
+                  it.canBeResolved &&
+                    it.resolutionStrategy.dependencyLockingEnabled &&
+                    it.allDependencies.any { dependency ->
+                      dependency instanceof org.gradle.api.artifacts.ModuleDependency
+                    }
+                }.each { it.incoming.resolutionResult.allDependencies }
               }
             }
           GRADLE
           File.write(file_name, script_content)
+        end
+
+        # Resolving computes the compile task's javaCompiler, which fails when the toolchain is
+        # missing. Only the compiler is swapped, so resolution is unaffected.
+        sig { returns(String) }
+        def compiler_fallback_snippet
+          <<~GRADLE.gsub(/^/, "  ")
+            gradle.rootProject.allprojects { target ->
+                // By name: JavaToolchainService only exists from 6.7, locking from 4.8.
+                def javaExtension = target.extensions.findByName("java")
+                def toolchainService = target.extensions.findByName("javaToolchains")
+                if (javaExtension != null && toolchainService != null) {
+                  def toolchain = javaExtension.toolchain
+                  // Toolchains landed in 6.7, vendor and implementation in 6.8, native image in 8.14.
+                  def constraints = ["vendor", "implementation", "nativeImageCapable"].collectEntries { name ->
+                    [(name): toolchain.hasProperty(name) ? toolchain."$name".getOrNull() : null]
+                  }
+                  if (toolchain.languageVersion.present) {
+                    def requested = toolchain.languageVersion.get()
+                    try {
+                      // Throwaway spec: compilerFor finalizes whatever spec it is given.
+                      toolchainService.compilerFor { spec ->
+                        spec.languageVersion.set(requested)
+                        constraints.each { name, value -> if (value != null) spec."$name".set(value) }
+                      }.get()
+                    } catch (Exception ignored) {
+                      def fallback = JavaLanguageVersion.of(JavaVersion.current().majorVersion)
+                      target.logger.lifecycle("Dependabot: Java toolchain " + requested +
+                        " is not available, compiling with " + fallback + " to resolve dependencies.")
+                      def c = toolchainService.compilerFor { s -> s.languageVersion.set(fallback) }
+                      target.tasks.withType(JavaCompile).configureEach { t -> t.javaCompiler.set(c) }
+                      // Kotlin asks for its own toolchain; convention plugins compile during config.
+                      def l = toolchainService.launcherFor { s -> s.languageVersion.set(fallback) }
+                      target.tasks.matching { it.hasProperty("kotlinJavaToolchain") }
+                        .configureEach { t -> t.kotlinJavaToolchain.toolchain.use(l) }
+                    }
+                  }
+                }
+              }
+          GRADLE
         end
 
         sig { params(build_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[String]) }
