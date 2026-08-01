@@ -181,17 +181,7 @@ public class ProjectBuildFileTests
         """,
         "Aspire.AppHost.Sdk", null
     )]
-    // Form 5: <Import Project="Sdk.props" Sdk="SdkName/version" />
-    [InlineData(
-        // language=xml
-        """
-        <Project>
-          <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk/9.2.0" />
-        </Project>
-        """,
-        "Aspire.AppHost.Sdk", "9.2.0"
-    )]
-    // Form 6: <Import Project="Sdk.props" Sdk="SdkName" /> (version from global.json; handled by GlobalJsonUpdater)
+    // Form 5: <Import Project="Sdk.props" Sdk="SdkName" /> (version from global.json; handled by GlobalJsonUpdater)
     [InlineData(
         // language=xml
         """
@@ -201,7 +191,8 @@ public class ProjectBuildFileTests
         """,
         "Aspire.AppHost.Sdk", null
     )]
-    // Form 7: <Import Project="Sdk.props" Sdk="SdkName" Version="version" /> (separate Version attribute)
+    // Form 6: <Import Project="Sdk.props" Sdk="SdkName" Version="version" /> (separate Version attribute)
+    // Note: Sdk="Name/version" embedded slash form is NOT valid on <Import> elements (MSBuild cannot resolve it)
     [InlineData(
         // language=xml
         """

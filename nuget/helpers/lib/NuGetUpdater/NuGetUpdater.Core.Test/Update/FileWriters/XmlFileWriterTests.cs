@@ -2927,30 +2927,6 @@ public class XmlFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
-    public async Task ImportElement_WithSdkAttributeContainingVersion_UpdatesVersion()
-    {
-        // <Import Project="Sdk.props" Sdk="SomeSdk/1.0.0" /> => <Import Project="Sdk.props" Sdk="SomeSdk/2.0.0" />
-        await TestAsync(
-            files: [
-                ("project.csproj", """
-                    <Project>
-                      <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk/9.0.0" />
-                    </Project>
-                    """)
-            ],
-            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
-            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"],
-            expectedFiles: [
-                ("project.csproj", """
-                    <Project>
-                      <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk/13.0.0" />
-                    </Project>
-                    """)
-            ]
-        );
-    }
-
-    [Fact]
     public async Task ImportElement_WithSdkNameAndSeparateVersionAttribute_UpdatesVersion()
     {
         // <Import Project="Sdk.props" Sdk="SomeSdk" Version="1.0.0" /> => <Import Project="Sdk.props" Sdk="SomeSdk" Version="2.0.0" />

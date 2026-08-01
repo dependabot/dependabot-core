@@ -1096,91 +1096,61 @@ public class XmlFileWriter : IFileWriter
                 }
 
                 logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
-                replaceNode(filePath, versionAttr, versionAttr.WithValue(requiredVersion.ToString()));
+                var annotation = versionAttr.GetAnnotations(UpdaterAnnotationKind).First();
+                var currentVersionAttr = (XmlAttributeSyntax)filesAndContents[filePath]
+                    .DescendantNodes()
+                    .OfType<XmlAttributeSyntax>()
+                    .First(a => a.GetAnnotations(UpdaterAnnotationKind).Any(an => an == annotation));
+                replaceNode(filePath, currentVersionAttr, currentVersionAttr.WithValue(requiredVersion.ToString()));
             }
 
             return found;
         }
 
-        // <Import Project="Sdk.props" Sdk="SdkName/version" /> or <Import Project="Sdk.props" Sdk="SdkName" Version="version" />
+        // <Import Project="Sdk.props" Sdk="SdkName" Version="version" />
+        // Note: the embedded Sdk="Name/version" slash form is NOT valid on <Import> elements (MSBuild cannot resolve it)
         bool TryUpdateImportSdkAttribute(string filePath, IXmlElementSyntax rootElement)
         {
             var found = false;
             foreach (var importElement in rootElement.GetElements("Import", StringComparison.OrdinalIgnoreCase))
             {
                 var importSdkAttr = importElement.GetAttributeCaseInsensitive("Sdk");
-                if (importSdkAttr is null)
+                if (importSdkAttr is null || !importSdkAttr.Value.Equals(sdkName, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
 
-                var slashIndex = importSdkAttr.Value.IndexOf('/');
-                if (slashIndex >= 0)
+                var versionAttr = importElement.GetAttributeCaseInsensitive("Version");
+                if (versionAttr is null)
                 {
-                    // Sdk="SdkName/version" embedded form
-                    var importSdkName = importSdkAttr.Value[..slashIndex];
-                    var importSdkVersion = importSdkAttr.Value[(slashIndex + 1)..];
-                    if (!importSdkName.Equals(sdkName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    if (!NuGetVersion.TryParse(importSdkVersion, out var candidateVersion))
-                    {
-                        continue;
-                    }
-
-                    found = true;
-
-                    if (candidateVersion == requiredVersion)
-                    {
-                        logger.Info($"Sdk {sdkName} is already at version {requiredVersion} in {filePath}; no update needed.");
-                        continue;
-                    }
-
-                    if (candidateVersion != oldVersion)
-                    {
-                        continue;
-                    }
-
-                    logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
-                    replaceNode(filePath, importSdkAttr, importSdkAttr.WithValue($"{importSdkName}/{requiredVersion}"));
+                    continue;
                 }
-                else
+
+                if (!NuGetVersion.TryParse(versionAttr.Value, out var candidateVersion))
                 {
-                    // Sdk="SdkName" Version="version" separate-attribute form
-                    if (!importSdkAttr.Value.Equals(sdkName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    var versionAttr = importElement.GetAttributeCaseInsensitive("Version");
-                    if (versionAttr is null)
-                    {
-                        continue;
-                    }
-
-                    if (!NuGetVersion.TryParse(versionAttr.Value, out var candidateVersion))
-                    {
-                        continue;
-                    }
-
-                    found = true;
-
-                    if (candidateVersion == requiredVersion)
-                    {
-                        logger.Info($"Sdk {sdkName} is already at version {requiredVersion} in {filePath}; no update needed.");
-                        continue;
-                    }
-
-                    if (candidateVersion != oldVersion)
-                    {
-                        continue;
-                    }
-
-                    logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
-                    replaceNode(filePath, versionAttr, versionAttr.WithValue(requiredVersion.ToString()));
+                    continue;
                 }
+
+                found = true;
+
+                if (candidateVersion == requiredVersion)
+                {
+                    logger.Info($"Sdk {sdkName} is already at version {requiredVersion} in {filePath}; no update needed.");
+                    continue;
+                }
+
+                if (candidateVersion != oldVersion)
+                {
+                    continue;
+                }
+
+                logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
+                var annotation = versionAttr.GetAnnotations(UpdaterAnnotationKind).First();
+                var currentVersionAttr = (XmlAttributeSyntax)filesAndContents[filePath]
+                    .DescendantNodes()
+                    .OfType<XmlAttributeSyntax>()
+                    .First(a => a.GetAnnotations(UpdaterAnnotationKind).Any(an => an == annotation));
+                replaceNode(filePath, currentVersionAttr, currentVersionAttr.WithValue(requiredVersion.ToString()));
             }
 
             return found;
