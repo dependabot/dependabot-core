@@ -2855,4 +2855,74 @@ public class XmlFileWriterTests : FileWriterTestsBase
             ]
         );
     }
+
+    // SDK reference update tests
+
+    [Fact]
+    public async Task SdkAttribute_WithEmbeddedVersion_UpdatesVersion()
+    {
+        // <Project Sdk="SomeSdk/1.0.0"> => <Project Sdk="SomeSdk/2.0.0">
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Aspire.AppHost.Sdk/1.0.0">
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/1.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/2.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Aspire.AppHost.Sdk/2.0.0">
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SdkAttribute_WithEmbeddedVersion_AndOtherSdkFirst_UpdatesVersion()
+    {
+        // <Project Sdk="Microsoft.NET.Sdk;SomeSdk/1.0.0"> - semicolon-separated SDKs in attribute
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk;Aspire.AppHost.Sdk/1.0.0">
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/1.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/2.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk;Aspire.AppHost.Sdk/2.0.0">
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SdkChildElement_WithVersionAttribute_UpdatesVersion()
+    {
+        // <Sdk Name="SomeSdk" Version="1.0.0" /> => <Sdk Name="SomeSdk" Version="2.0.0" />
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <Sdk Name="Aspire.AppHost.Sdk" Version="1.0.0" />
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/1.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/2.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <Sdk Name="Aspire.AppHost.Sdk" Version="2.0.0" />
+                    </Project>
+                    """)
+            ]
+        );
+    }
 }

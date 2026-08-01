@@ -134,6 +134,57 @@ public class ProjectBuildFileTests
     }
 
     [Theory]
+    // Form 1: Sdk attribute with embedded version (e.g. <Project Sdk="SomeSdk/1.2.3">)
+    [InlineData(
+        // language=xml
+        """
+        <Project Sdk="Aspire.AppHost.Sdk/9.2.0">
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", "9.2.0"
+    )]
+    // Form 2: Sdk attribute without version (version from global.json)
+    [InlineData(
+        // language=xml
+        """
+        <Project Sdk="Aspire.AppHost.Sdk">
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", null
+    )]
+    // Form 3: <Sdk> child element with Name and Version attributes
+    [InlineData(
+        // language=xml
+        """
+        <Project Sdk="Microsoft.NET.Sdk">
+          <Sdk Name="Aspire.AppHost.Sdk" Version="9.2.0" />
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", "9.2.0"
+    )]
+    // Form 4: <Sdk> child element with Name only (version from global.json)
+    [InlineData(
+        // language=xml
+        """
+        <Project Sdk="Microsoft.NET.Sdk">
+          <Sdk Name="Aspire.AppHost.Sdk" />
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", null
+    )]
+    public void SdkReference_GetDependencies_ReturnsExpectedSdkDependency(string xml, string expectedName, string? expectedVersion)
+    {
+        var buildFile = GetBuildFile(xml, "project.csproj");
+
+        var dependencies = buildFile.GetDependencies()
+            .Where(d => d.Type == DependencyType.MSBuildSdk && d.Name == expectedName);
+
+        var match = Assert.Single(dependencies);
+        Assert.Equal(expectedName, match.Name);
+        Assert.Equal(expectedVersion, match.Version);
+    }
+
+    [Theory]
     // no change made
     [InlineData(
         // language=csproj

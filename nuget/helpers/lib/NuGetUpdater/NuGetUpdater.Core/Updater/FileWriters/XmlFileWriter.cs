@@ -153,6 +153,13 @@ public class XmlFileWriter : IFileWriter
                 return newlyAddedNode;
             }
 
+            // Check for MSBuild SDK references: <Project Sdk="SdkName/version"> and <Sdk Name="SdkName" Version="version" />
+            if (TryUpdateSdkVersion(filesAndContents, requiredPackageVersion.Name, oldVersion, requiredVersion, ReplaceNode, _logger))
+            {
+                updatesPerformed[requiredPackageVersion.Name] = true;
+                continue;
+            }
+
             if (packageReferenceElementsAndPaths.Length == 0)
             {
                 // no matching `<PackageReference>` elements found; pin it as a transitive dependency
@@ -973,5 +980,107 @@ public class XmlFileWriter : IFileWriter
         var nodeLeadingLineTrivia = nodeLeadingLineTrivias
             .FirstOrDefault(t => !string.IsNullOrEmpty(t));
         return nodeLeadingLineTrivia ?? "  ";
+    }
+
+    private static bool TryUpdateSdkVersion(
+        Dictionary<string, XmlDocumentSyntax> filesAndContents,
+        string sdkName,
+        NuGetVersion oldVersion,
+        NuGetVersion requiredVersion,
+        Func<string, SyntaxNode, SyntaxNode, SyntaxNode> replaceNode,
+        ILogger logger)
+    {
+        foreach (var (filePath, doc) in filesAndContents)
+        {
+            var rootElement = doc.RootSyntax;
+            if (rootElement is null)
+            {
+                continue;
+            }
+
+            // Form 1: <Project Sdk="SdkName/version"> or <Project Sdk="Sdk1;SdkName/version">
+            var sdkAttribute = rootElement.GetAttributeCaseInsensitive("Sdk");
+            if (sdkAttribute is not null)
+            {
+                var sdkValue = sdkAttribute.Value;
+                var sdkParts = sdkValue.Split(';');
+                for (int i = 0; i < sdkParts.Length; i++)
+                {
+                    var part = sdkParts[i].Trim();
+                    var slashIndex = part.IndexOf('/');
+                    if (slashIndex < 0)
+                    {
+                        continue;
+                    }
+
+                    var partName = part[..slashIndex];
+                    var partVersion = part[(slashIndex + 1)..];
+                    if (!partName.Equals(sdkName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    if (!NuGetVersion.TryParse(partVersion, out var candidateVersion))
+                    {
+                        continue;
+                    }
+
+                    if (candidateVersion == requiredVersion)
+                    {
+                        logger.Info($"Sdk {sdkName} is already at version {requiredVersion} in {filePath}; no update needed.");
+                        return true;
+                    }
+
+                    if (candidateVersion != oldVersion)
+                    {
+                        continue;
+                    }
+
+                    sdkParts[i] = $"{partName}/{requiredVersion}";
+                    var newSdkValue = string.Join(";", sdkParts);
+                    logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
+                    replaceNode(filePath, sdkAttribute, sdkAttribute.WithValue(newSdkValue));
+                    return true;
+                }
+            }
+
+            // Form 2: <Sdk Name="SdkName" Version="version" />
+            foreach (var sdkElement in rootElement.GetElements("Sdk", StringComparison.OrdinalIgnoreCase))
+            {
+                var nameAttr = sdkElement.GetAttributeCaseInsensitive("Name");
+                if (nameAttr is null || !nameAttr.Value.Equals(sdkName, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var versionAttr = sdkElement.GetAttributeCaseInsensitive("Version");
+                if (versionAttr is null)
+                {
+                    continue;
+                }
+
+                if (!NuGetVersion.TryParse(versionAttr.Value, out var candidateVersion))
+                {
+                    continue;
+                }
+
+                if (candidateVersion == requiredVersion)
+                {
+                    logger.Info($"Sdk {sdkName} is already at version {requiredVersion} in {filePath}; no update needed.");
+                    return true;
+                }
+
+                if (candidateVersion != oldVersion)
+                {
+                    continue;
+                }
+
+                logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
+                replaceNode(filePath, versionAttr, versionAttr.WithValue(requiredVersion.ToString()));
+                return true;
+            }
+        }
+
+        return false;
     }
 }
