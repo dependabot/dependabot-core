@@ -10,45 +10,45 @@
 # pkg:gem/excon#lib/excon/version.rb:3
 module Excon
   class << self
-    # pkg:gem/excon#lib/excon.rb:254
+    # pkg:gem/excon#lib/excon.rb:253
     def connect(url, params = T.unsafe(nil), &block); end
 
     # @return [Hash] defaults for Excon connections
     # Change defaults for Excon connections
     # @return [Hash] defaults for Excon connections
     #
-    # pkg:gem/excon#lib/excon.rb:54
+    # pkg:gem/excon#lib/excon.rb:53
     def defaults; end
 
     # @return [Hash] defaults for Excon connections
     # Change defaults for Excon connections
     # @return [Hash] defaults for Excon connections
     #
-    # pkg:gem/excon#lib/excon.rb:60
+    # pkg:gem/excon#lib/excon.rb:59
     def defaults=(_arg0); end
 
-    # pkg:gem/excon#lib/excon.rb:254
+    # pkg:gem/excon#lib/excon.rb:253
     def delete(url, params = T.unsafe(nil), &block); end
 
-    # pkg:gem/excon#lib/excon.rb:62
+    # pkg:gem/excon#lib/excon.rb:61
     def display_warning(warning); end
 
-    # pkg:gem/excon#lib/excon.rb:254
+    # pkg:gem/excon#lib/excon.rb:253
     def get(url, params = T.unsafe(nil), &block); end
 
-    # pkg:gem/excon#lib/excon.rb:254
+    # pkg:gem/excon#lib/excon.rb:253
     def head(url, params = T.unsafe(nil), &block); end
 
     # Status of mocking
     #
-    # pkg:gem/excon#lib/excon.rb:76
+    # pkg:gem/excon#lib/excon.rb:75
     def mock; end
 
     # Change the status of mocking
     # false is the default and works as expected
     # true returns a value from stubs or raises
     #
-    # pkg:gem/excon#lib/excon.rb:84
+    # pkg:gem/excon#lib/excon.rb:83
     def mock=(new_mock); end
 
     # @see Connection#initialize
@@ -57,73 +57,73 @@ module Excon
     # @param [Hash<Symbol, >] params One or more option params to set on the Connection instance
     # @return [Connection] A new Excon::Connection instance
     #
-    # pkg:gem/excon#lib/excon.rb:120
+    # pkg:gem/excon#lib/excon.rb:119
     def new(url, params = T.unsafe(nil)); end
 
-    # pkg:gem/excon#lib/excon.rb:254
+    # pkg:gem/excon#lib/excon.rb:253
     def options(url, params = T.unsafe(nil), &block); end
 
-    # pkg:gem/excon#lib/excon.rb:254
+    # pkg:gem/excon#lib/excon.rb:253
     def patch(url, params = T.unsafe(nil), &block); end
 
-    # pkg:gem/excon#lib/excon.rb:254
+    # pkg:gem/excon#lib/excon.rb:253
     def post(url, params = T.unsafe(nil), &block); end
 
-    # pkg:gem/excon#lib/excon.rb:254
+    # pkg:gem/excon#lib/excon.rb:253
     def put(url, params = T.unsafe(nil), &block); end
 
-    # pkg:gem/excon#lib/excon.rb:71
+    # pkg:gem/excon#lib/excon.rb:70
     def set_raise_on_warnings!(should_raise); end
 
     # @return [String] The filesystem path to the SSL Certificate Authority
     #
-    # pkg:gem/excon#lib/excon.rb:90
+    # pkg:gem/excon#lib/excon.rb:89
     def ssl_ca_path; end
 
     # Change path to the SSL Certificate Authority
     # @return [String] The filesystem path to the SSL Certificate Authority
     #
-    # pkg:gem/excon#lib/excon.rb:97
+    # pkg:gem/excon#lib/excon.rb:96
     def ssl_ca_path=(new_ssl_ca_path); end
 
     # @return [true, false] Whether or not to verify the peer's SSL certificate / chain
     #
-    # pkg:gem/excon#lib/excon.rb:103
+    # pkg:gem/excon#lib/excon.rb:102
     def ssl_verify_peer; end
 
     # Change the status of ssl peer verification
     # @see Excon#ssl_verify_peer (attr_reader)
     #
-    # pkg:gem/excon#lib/excon.rb:110
+    # pkg:gem/excon#lib/excon.rb:109
     def ssl_verify_peer=(new_ssl_verify_peer); end
 
     # push an additional stub onto the list to check for mock requests
     # @param request_params [Hash<Symbol, >] request params to match against, omitted params match all
     # @param response_params [Hash<Symbol, >] response params to return or block to call with matched params
     #
-    # pkg:gem/excon#lib/excon.rb:142
+    # pkg:gem/excon#lib/excon.rb:141
     def stub(request_params = T.unsafe(nil), response_params = T.unsafe(nil), &block); end
 
     # get a stub matching params or nil
     # @param request_params [Hash<Symbol, >] request params to match against, omitted params match all
     # @return [Hash<Symbol, >] response params to return from matched request or block to call with params
     #
-    # pkg:gem/excon#lib/excon.rb:186
+    # pkg:gem/excon#lib/excon.rb:185
     def stub_for(request_params = T.unsafe(nil)); end
 
     # get a list of defined stubs
     #
-    # pkg:gem/excon#lib/excon.rb:234
+    # pkg:gem/excon#lib/excon.rb:233
     def stubs; end
 
-    # pkg:gem/excon#lib/excon.rb:254
+    # pkg:gem/excon#lib/excon.rb:253
     def trace(url, params = T.unsafe(nil), &block); end
 
     # remove first/oldest stub matching request_params or nil if none match
     # @param request_params [Hash<Symbol, >] request params to match against, omitted params match all
     # @return [Hash<Symbol, >] response params from deleted stub
     #
-    # pkg:gem/excon#lib/excon.rb:246
+    # pkg:gem/excon#lib/excon.rb:245
     def unstub(request_params = T.unsafe(nil)); end
   end
 end
@@ -168,10 +168,10 @@ class Excon::Connection
   # limit by default, typically 256.
   # @param pipeline_params [Array<Hash>] An array of one or more optional params, override defaults set in Connection.new, see #request for details
   #
-  # pkg:gem/excon#lib/excon/connection.rb:359
+  # pkg:gem/excon#lib/excon/connection.rb:367
   def batch_requests(pipeline_params, limit = T.unsafe(nil)); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:379
+  # pkg:gem/excon#lib/excon/connection.rb:387
   def connect(params = T.unsafe(nil), &block); end
 
   # pkg:gem/excon#lib/excon/connection.rb:9
@@ -183,19 +183,19 @@ class Excon::Connection
   # pkg:gem/excon#lib/excon/connection.rb:7
   def data; end
 
-  # pkg:gem/excon#lib/excon/connection.rb:379
+  # pkg:gem/excon#lib/excon/connection.rb:387
   def delete(params = T.unsafe(nil), &block); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:110
+  # pkg:gem/excon#lib/excon/connection.rb:114
   def error_call(datum); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:379
+  # pkg:gem/excon#lib/excon/connection.rb:387
   def get(params = T.unsafe(nil), &block); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:379
+  # pkg:gem/excon#lib/excon/connection.rb:387
   def head(params = T.unsafe(nil), &block); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:396
+  # pkg:gem/excon#lib/excon/connection.rb:404
   def inspect; end
 
   # pkg:gem/excon#lib/excon/connection.rb:36
@@ -204,7 +204,7 @@ class Excon::Connection
   # pkg:gem/excon#lib/excon/connection.rb:41
   def logger=(logger); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:379
+  # pkg:gem/excon#lib/excon/connection.rb:387
   def options(params = T.unsafe(nil), &block); end
 
   # pkg:gem/excon#lib/excon/connection.rb:18
@@ -213,10 +213,10 @@ class Excon::Connection
   # pkg:gem/excon#lib/excon/connection.rb:22
   def params=(new_params); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:379
+  # pkg:gem/excon#lib/excon/connection.rb:387
   def patch(params = T.unsafe(nil), &block); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:379
+  # pkg:gem/excon#lib/excon/connection.rb:387
   def post(params = T.unsafe(nil), &block); end
 
   # pkg:gem/excon#lib/excon/connection.rb:27
@@ -225,7 +225,7 @@ class Excon::Connection
   # pkg:gem/excon#lib/excon/connection.rb:31
   def proxy=(new_proxy); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:379
+  # pkg:gem/excon#lib/excon/connection.rb:387
   def put(params = T.unsafe(nil), &block); end
 
   # Sends the supplied request to the destination host.
@@ -236,66 +236,66 @@ class Excon::Connection
   # @option params [String] :path appears after 'scheme://host:port/'
   # @option params [Hash]   :query appended to the 'scheme://host:port/path/' in the form of '?key=value'
   #
-  # pkg:gem/excon#lib/excon/connection.rb:231
+  # pkg:gem/excon#lib/excon/connection.rb:235
   def request(params = T.unsafe(nil), &block); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:116
+  # pkg:gem/excon#lib/excon/connection.rb:120
   def request_call(datum); end
 
   # Sends the supplied requests to the destination host using pipelining.
   # @param pipeline_params [Array<Hash>] An array of one or more optional params, override defaults set in Connection.new, see #request for details
   #
-  # pkg:gem/excon#lib/excon/connection.rb:332
+  # pkg:gem/excon#lib/excon/connection.rb:340
   def requests(pipeline_params); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:370
+  # pkg:gem/excon#lib/excon/connection.rb:378
   def reset; end
 
-  # pkg:gem/excon#lib/excon/connection.rb:210
+  # pkg:gem/excon#lib/excon/connection.rb:214
   def response_call(datum); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:391
+  # pkg:gem/excon#lib/excon/connection.rb:399
   def retry_limit; end
 
-  # pkg:gem/excon#lib/excon/connection.rb:386
+  # pkg:gem/excon#lib/excon/connection.rb:394
   def retry_limit=(new_retry_limit); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:379
+  # pkg:gem/excon#lib/excon/connection.rb:387
   def trace(params = T.unsafe(nil), &block); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:410
+  # pkg:gem/excon#lib/excon/connection.rb:418
   def valid_request_keys(middlewares); end
 
   private
 
-  # pkg:gem/excon#lib/excon/connection.rb:416
+  # pkg:gem/excon#lib/excon/connection.rb:424
   def detect_content_length(body); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:543
+  # pkg:gem/excon#lib/excon/connection.rb:551
   def proxy_from_env; end
 
-  # pkg:gem/excon#lib/excon/connection.rb:530
+  # pkg:gem/excon#lib/excon/connection.rb:538
   def proxy_match_host_port(host, port); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:522
+  # pkg:gem/excon#lib/excon/connection.rb:530
   def raise_socket_error(error); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:473
+  # pkg:gem/excon#lib/excon/connection.rb:481
   def response(datum = T.unsafe(nil)); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:571
+  # pkg:gem/excon#lib/excon/connection.rb:579
   def setup_proxy; end
 
-  # pkg:gem/excon#lib/excon/connection.rb:484
+  # pkg:gem/excon#lib/excon/connection.rb:492
   def socket(datum = T.unsafe(nil)); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:502
+  # pkg:gem/excon#lib/excon/connection.rb:510
   def sockets; end
 
-  # pkg:gem/excon#lib/excon/connection.rb:428
+  # pkg:gem/excon#lib/excon/connection.rb:436
   def valid_middleware_keys(middlewares); end
 
-  # pkg:gem/excon#lib/excon/connection.rb:441
+  # pkg:gem/excon#lib/excon/connection.rb:449
   def validate_params(validation, params, middlewares); end
 end
 
@@ -327,29 +327,29 @@ class Excon::Error < ::StandardError
   class << self
     # Messages for nicer exceptions, from rfc2616
     #
-    # pkg:gem/excon#lib/excon/error.rb:174
+    # pkg:gem/excon#lib/excon/error.rb:175
     def status_error(request, response); end
 
     # 504
     #
-    # pkg:gem/excon#lib/excon/error.rb:127
+    # pkg:gem/excon#lib/excon/error.rb:128
     def status_errors; end
   end
 end
 
 # 201
 #
-# pkg:gem/excon#lib/excon/error.rb:89
+# pkg:gem/excon#lib/excon/error.rb:90
 class Excon::Error::Accepted < ::Excon::Error::Success; end
 
 # 501
 #
-# pkg:gem/excon#lib/excon/error.rb:123
+# pkg:gem/excon#lib/excon/error.rb:124
 class Excon::Error::BadGateway < ::Excon::Error::Server; end
 
 # 307
 #
-# pkg:gem/excon#lib/excon/error.rb:101
+# pkg:gem/excon#lib/excon/error.rb:102
 class Excon::Error::BadRequest < ::Excon::Error::Client; end
 
 # Certificate related errors
@@ -360,69 +360,69 @@ class Excon::Error::Certificate < ::Excon::Error::Socket
   def initialize(socket_error = T.unsafe(nil)); end
 end
 
-# pkg:gem/excon#lib/excon/error.rb:82
+# pkg:gem/excon#lib/excon/error.rb:83
 class Excon::Error::Client < ::Excon::Error::HTTPStatus; end
 
 # 408
 #
-# pkg:gem/excon#lib/excon/error.rb:110
+# pkg:gem/excon#lib/excon/error.rb:111
 class Excon::Error::Conflict < ::Excon::Error::Client; end
 
-# pkg:gem/excon#lib/excon/error.rb:85
+# pkg:gem/excon#lib/excon/error.rb:86
 class Excon::Error::Continue < ::Excon::Error::Informational; end
 
 # 200
 #
-# pkg:gem/excon#lib/excon/error.rb:88
+# pkg:gem/excon#lib/excon/error.rb:89
 class Excon::Error::Created < ::Excon::Error::Success; end
 
 # 416
 #
-# pkg:gem/excon#lib/excon/error.rb:118
+# pkg:gem/excon#lib/excon/error.rb:119
 class Excon::Error::ExpectationFailed < ::Excon::Error::Client; end
 
 # 402
 #
-# pkg:gem/excon#lib/excon/error.rb:104
+# pkg:gem/excon#lib/excon/error.rb:105
 class Excon::Error::Forbidden < ::Excon::Error::Client; end
 
 # 301
 #
-# pkg:gem/excon#lib/excon/error.rb:96
+# pkg:gem/excon#lib/excon/error.rb:97
 class Excon::Error::Found < ::Excon::Error::Redirection; end
 
 # 503
 #
-# pkg:gem/excon#lib/excon/error.rb:125
+# pkg:gem/excon#lib/excon/error.rb:126
 class Excon::Error::GatewayTimeout < ::Excon::Error::Server; end
 
 # 409
 #
-# pkg:gem/excon#lib/excon/error.rb:111
+# pkg:gem/excon#lib/excon/error.rb:112
 class Excon::Error::Gone < ::Excon::Error::Client; end
 
 # Base class for HTTP Error classes
 #
-# pkg:gem/excon#lib/excon/error.rb:68
+# pkg:gem/excon#lib/excon/error.rb:69
 class Excon::Error::HTTPStatus < ::Excon::Error
-  # pkg:gem/excon#lib/excon/error.rb:71
+  # pkg:gem/excon#lib/excon/error.rb:72
   def initialize(msg, request = T.unsafe(nil), response = T.unsafe(nil)); end
 
-  # pkg:gem/excon#lib/excon/error.rb:69
+  # pkg:gem/excon#lib/excon/error.rb:70
   def request; end
 
-  # pkg:gem/excon#lib/excon/error.rb:69
+  # pkg:gem/excon#lib/excon/error.rb:70
   def response; end
 end
 
 # HTTP Error classes
 #
-# pkg:gem/excon#lib/excon/error.rb:79
+# pkg:gem/excon#lib/excon/error.rb:80
 class Excon::Error::Informational < ::Excon::Error::HTTPStatus; end
 
 # 429
 #
-# pkg:gem/excon#lib/excon/error.rb:121
+# pkg:gem/excon#lib/excon/error.rb:122
 class Excon::Error::InternalServerError < ::Excon::Error::Server; end
 
 # pkg:gem/excon#lib/excon/error.rb:49
@@ -431,141 +431,144 @@ class Excon::Error::InvalidHeaderKey < ::Excon::Error; end
 # pkg:gem/excon#lib/excon/error.rb:50
 class Excon::Error::InvalidHeaderValue < ::Excon::Error; end
 
+# pkg:gem/excon#lib/excon/error.rb:51
+class Excon::Error::InvalidParameter < ::Excon::Error; end
+
 # pkg:gem/excon#lib/excon/error.rb:8
 class Excon::Error::InvalidStub < ::Excon::Error; end
 
 # 410
 #
-# pkg:gem/excon#lib/excon/error.rb:112
+# pkg:gem/excon#lib/excon/error.rb:113
 class Excon::Error::LengthRequired < ::Excon::Error::Client; end
 
 # 404
 #
-# pkg:gem/excon#lib/excon/error.rb:106
+# pkg:gem/excon#lib/excon/error.rb:107
 class Excon::Error::MethodNotAllowed < ::Excon::Error::Client; end
 
 # 300
 #
-# pkg:gem/excon#lib/excon/error.rb:95
+# pkg:gem/excon#lib/excon/error.rb:96
 class Excon::Error::MovedPermanently < ::Excon::Error::Redirection; end
 
 # 206
 #
-# pkg:gem/excon#lib/excon/error.rb:94
+# pkg:gem/excon#lib/excon/error.rb:95
 class Excon::Error::MultipleChoices < ::Excon::Error::Redirection; end
 
 # 203
 #
-# pkg:gem/excon#lib/excon/error.rb:91
+# pkg:gem/excon#lib/excon/error.rb:92
 class Excon::Error::NoContent < ::Excon::Error::Success; end
 
 # 202
 #
-# pkg:gem/excon#lib/excon/error.rb:90
+# pkg:gem/excon#lib/excon/error.rb:91
 class Excon::Error::NonAuthoritativeInformation < ::Excon::Error::Success; end
 
 # 405
 #
-# pkg:gem/excon#lib/excon/error.rb:107
+# pkg:gem/excon#lib/excon/error.rb:108
 class Excon::Error::NotAcceptable < ::Excon::Error::Client; end
 
 # 403
 #
-# pkg:gem/excon#lib/excon/error.rb:105
+# pkg:gem/excon#lib/excon/error.rb:106
 class Excon::Error::NotFound < ::Excon::Error::Client; end
 
 # 500
 #
-# pkg:gem/excon#lib/excon/error.rb:122
+# pkg:gem/excon#lib/excon/error.rb:123
 class Excon::Error::NotImplemented < ::Excon::Error::Server; end
 
 # 303
 #
-# pkg:gem/excon#lib/excon/error.rb:98
+# pkg:gem/excon#lib/excon/error.rb:99
 class Excon::Error::NotModified < ::Excon::Error::Redirection; end
 
 # 101
 #
-# pkg:gem/excon#lib/excon/error.rb:87
+# pkg:gem/excon#lib/excon/error.rb:88
 class Excon::Error::OK < ::Excon::Error::Success; end
 
 # 205
 #
-# pkg:gem/excon#lib/excon/error.rb:93
+# pkg:gem/excon#lib/excon/error.rb:94
 class Excon::Error::PartialContent < ::Excon::Error::Success; end
 
 # 401
 #
-# pkg:gem/excon#lib/excon/error.rb:103
+# pkg:gem/excon#lib/excon/error.rb:104
 class Excon::Error::PaymentRequired < ::Excon::Error::Client; end
 
 # 411
 #
-# pkg:gem/excon#lib/excon/error.rb:113
+# pkg:gem/excon#lib/excon/error.rb:114
 class Excon::Error::PreconditionFailed < ::Excon::Error::Client; end
 
 # 406
 #
-# pkg:gem/excon#lib/excon/error.rb:108
+# pkg:gem/excon#lib/excon/error.rb:109
 class Excon::Error::ProxyAuthenticationRequired < ::Excon::Error::Client; end
 
-# pkg:gem/excon#lib/excon/error.rb:54
+# pkg:gem/excon#lib/excon/error.rb:55
 class Excon::Error::ProxyConnectionError < ::Excon::Error
-  # pkg:gem/excon#lib/excon/error.rb:57
+  # pkg:gem/excon#lib/excon/error.rb:58
   def initialize(msg, request = T.unsafe(nil), response = T.unsafe(nil)); end
 
-  # pkg:gem/excon#lib/excon/error.rb:55
+  # pkg:gem/excon#lib/excon/error.rb:56
   def request; end
 
-  # pkg:gem/excon#lib/excon/error.rb:55
+  # pkg:gem/excon#lib/excon/error.rb:56
   def response; end
 end
 
-# pkg:gem/excon#lib/excon/error.rb:64
+# pkg:gem/excon#lib/excon/error.rb:65
 class Excon::Error::ProxyParse < ::Excon::Error; end
 
-# pkg:gem/excon#lib/excon/error.rb:81
+# pkg:gem/excon#lib/excon/error.rb:82
 class Excon::Error::Redirection < ::Excon::Error::HTTPStatus; end
 
 # 412
 #
-# pkg:gem/excon#lib/excon/error.rb:114
+# pkg:gem/excon#lib/excon/error.rb:115
 class Excon::Error::RequestEntityTooLarge < ::Excon::Error::Client; end
 
 # 407
 #
-# pkg:gem/excon#lib/excon/error.rb:109
+# pkg:gem/excon#lib/excon/error.rb:110
 class Excon::Error::RequestTimeout < ::Excon::Error::Client; end
 
 # 413
 #
-# pkg:gem/excon#lib/excon/error.rb:115
+# pkg:gem/excon#lib/excon/error.rb:116
 class Excon::Error::RequestURITooLong < ::Excon::Error::Client; end
 
 # 415
 #
-# pkg:gem/excon#lib/excon/error.rb:117
+# pkg:gem/excon#lib/excon/error.rb:118
 class Excon::Error::RequestedRangeNotSatisfiable < ::Excon::Error::Client; end
 
 # 204
 #
-# pkg:gem/excon#lib/excon/error.rb:92
+# pkg:gem/excon#lib/excon/error.rb:93
 class Excon::Error::ResetContent < ::Excon::Error::Success; end
 
-# pkg:gem/excon#lib/excon/error.rb:52
+# pkg:gem/excon#lib/excon/error.rb:53
 class Excon::Error::ResponseParse < ::Excon::Error; end
 
 # 302
 #
-# pkg:gem/excon#lib/excon/error.rb:97
+# pkg:gem/excon#lib/excon/error.rb:98
 class Excon::Error::SeeOther < ::Excon::Error::Redirection; end
 
-# pkg:gem/excon#lib/excon/error.rb:83
+# pkg:gem/excon#lib/excon/error.rb:84
 class Excon::Error::Server < ::Excon::Error::HTTPStatus; end
 
 # 502
 #
-# pkg:gem/excon#lib/excon/error.rb:124
+# pkg:gem/excon#lib/excon/error.rb:125
 class Excon::Error::ServiceUnavailable < ::Excon::Error::Server; end
 
 # Socket related errors
@@ -582,48 +585,48 @@ end
 # pkg:gem/excon#lib/excon/error.rb:7
 class Excon::Error::StubNotFound < ::Excon::Error; end
 
-# pkg:gem/excon#lib/excon/error.rb:80
+# pkg:gem/excon#lib/excon/error.rb:81
 class Excon::Error::Success < ::Excon::Error::HTTPStatus; end
 
 # 100
 #
-# pkg:gem/excon#lib/excon/error.rb:86
+# pkg:gem/excon#lib/excon/error.rb:87
 class Excon::Error::SwitchingProtocols < ::Excon::Error::Informational; end
 
 # 305
 #
-# pkg:gem/excon#lib/excon/error.rb:100
+# pkg:gem/excon#lib/excon/error.rb:101
 class Excon::Error::TemporaryRedirect < ::Excon::Error::Redirection; end
 
-# pkg:gem/excon#lib/excon/error.rb:51
+# pkg:gem/excon#lib/excon/error.rb:52
 class Excon::Error::Timeout < ::Excon::Error; end
 
-# pkg:gem/excon#lib/excon/error.rb:65
+# pkg:gem/excon#lib/excon/error.rb:66
 class Excon::Error::TooManyRedirects < ::Excon::Error; end
 
 # 422
 #
-# pkg:gem/excon#lib/excon/error.rb:120
+# pkg:gem/excon#lib/excon/error.rb:121
 class Excon::Error::TooManyRequests < ::Excon::Error::Client; end
 
 # 400
 #
-# pkg:gem/excon#lib/excon/error.rb:102
+# pkg:gem/excon#lib/excon/error.rb:103
 class Excon::Error::Unauthorized < ::Excon::Error::Client; end
 
 # 417
 #
-# pkg:gem/excon#lib/excon/error.rb:119
+# pkg:gem/excon#lib/excon/error.rb:120
 class Excon::Error::UnprocessableEntity < ::Excon::Error::Client; end
 
 # 414
 #
-# pkg:gem/excon#lib/excon/error.rb:116
+# pkg:gem/excon#lib/excon/error.rb:117
 class Excon::Error::UnsupportedMediaType < ::Excon::Error::Client; end
 
 # 304
 #
-# pkg:gem/excon#lib/excon/error.rb:99
+# pkg:gem/excon#lib/excon/error.rb:100
 class Excon::Error::UseProxy < ::Excon::Error::Redirection; end
 
 # pkg:gem/excon#lib/excon/error.rb:9
@@ -631,192 +634,195 @@ class Excon::Error::Warning < ::Excon::Error; end
 
 # Legacy
 #
-# pkg:gem/excon#lib/excon/error.rb:199
+# pkg:gem/excon#lib/excon/error.rb:200
 module Excon::Errors
   class << self
-    # pkg:gem/excon#lib/excon/error.rb:225
+    # pkg:gem/excon#lib/excon/error.rb:226
     def status_error(request, response); end
   end
 end
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::Accepted = Excon::Error::Accepted
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::BadGateway = Excon::Error::BadGateway
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::BadRequest = Excon::Error::BadRequest
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::CertificateError = Excon::Error::Certificate
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::ClientError = Excon::Error::Client
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::Conflict = Excon::Error::Conflict
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::Continue = Excon::Error::Continue
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::Created = Excon::Error::Created
 
-# pkg:gem/excon#lib/excon/error.rb:200
+# pkg:gem/excon#lib/excon/error.rb:201
 Excon::Errors::Error = Excon::Error
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::ExpectationFailed = Excon::Error::ExpectationFailed
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::Forbidden = Excon::Error::Forbidden
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::Found = Excon::Error::Found
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::GatewayTimeout = Excon::Error::GatewayTimeout
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::Gone = Excon::Error::Gone
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::HTTPStatusError = Excon::Error::HTTPStatus
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::Informational = Excon::Error::Informational
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::InternalServerError = Excon::Error::InternalServerError
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::InvalidHeaderKey = Excon::Error::InvalidHeaderKey
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::InvalidHeaderValue = Excon::Error::InvalidHeaderValue
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
+Excon::Errors::InvalidParameter = Excon::Error::InvalidParameter
+
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::InvalidStub = Excon::Error::InvalidStub
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::LengthRequired = Excon::Error::LengthRequired
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::MethodNotAllowed = Excon::Error::MethodNotAllowed
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::MovedPermanently = Excon::Error::MovedPermanently
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::MultipleChoices = Excon::Error::MultipleChoices
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::NoContent = Excon::Error::NoContent
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::NonAuthoritativeInformation = Excon::Error::NonAuthoritativeInformation
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::NotAcceptable = Excon::Error::NotAcceptable
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::NotFound = Excon::Error::NotFound
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::NotImplemented = Excon::Error::NotImplemented
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::NotModified = Excon::Error::NotModified
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::OK = Excon::Error::OK
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::PartialContent = Excon::Error::PartialContent
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::PaymentRequired = Excon::Error::PaymentRequired
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::PreconditionFailed = Excon::Error::PreconditionFailed
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::ProxyAuthenticationRequired = Excon::Error::ProxyAuthenticationRequired
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::ProxyConnectionError = Excon::Error::ProxyConnectionError
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::ProxyParse = Excon::Error::ProxyParse
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::Redirection = Excon::Error::Redirection
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::RequestEntityTooLarge = Excon::Error::RequestEntityTooLarge
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::RequestTimeout = Excon::Error::RequestTimeout
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::RequestURITooLong = Excon::Error::RequestURITooLong
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::RequestedRangeNotSatisfiable = Excon::Error::RequestedRangeNotSatisfiable
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::ResetContent = Excon::Error::ResetContent
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::ResponseParse = Excon::Error::ResponseParse
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::SeeOther = Excon::Error::SeeOther
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::ServerError = Excon::Error::Server
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::ServiceUnavailable = Excon::Error::ServiceUnavailable
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::SocketError = Excon::Error::Socket
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::StubNotFound = Excon::Error::StubNotFound
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::Success = Excon::Error::Success
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::SwitchingProtocols = Excon::Error::SwitchingProtocols
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::TemporaryRedirect = Excon::Error::TemporaryRedirect
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::Timeout = Excon::Error::Timeout
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::TooManyRedirects = Excon::Error::TooManyRedirects
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::TooManyRequests = Excon::Error::TooManyRequests
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::Unauthorized = Excon::Error::Unauthorized
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::UnprocessableEntity = Excon::Error::UnprocessableEntity
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::UnsupportedMediaType = Excon::Error::UnsupportedMediaType
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::UseProxy = Excon::Error::UseProxy
 
-# pkg:gem/excon#lib/excon/error.rb:222
+# pkg:gem/excon#lib/excon/error.rb:223
 Excon::Errors::Warning = Excon::Error::Warning
 
 # pkg:gem/excon#lib/excon/constants.rb:24
@@ -955,18 +961,6 @@ class Excon::Middleware::Base
   end
 end
 
-# pkg:gem/excon#lib/excon/middlewares/capture_cookies.rb:4
-class Excon::Middleware::CaptureCookies < ::Excon::Middleware::Base
-  # pkg:gem/excon#lib/excon/middlewares/capture_cookies.rb:6
-  def extract_cookies_from_set_cookie(set_cookie); end
-
-  # pkg:gem/excon#lib/excon/middlewares/capture_cookies.rb:10
-  def get_header(datum, header); end
-
-  # pkg:gem/excon#lib/excon/middlewares/capture_cookies.rb:17
-  def response_call(datum); end
-end
-
 # pkg:gem/excon#lib/excon/middlewares/decompress.rb:5
 class Excon::Middleware::Decompress < ::Excon::Middleware::Base
   # Zlib::MAX_WBITS * -1
@@ -1047,20 +1041,23 @@ end
 
 # pkg:gem/excon#lib/excon/middlewares/redirect_follower.rb:4
 class Excon::Middleware::RedirectFollower < ::Excon::Middleware::Base
-  # pkg:gem/excon#lib/excon/middlewares/redirect_follower.rb:18
+  # pkg:gem/excon#lib/excon/middlewares/redirect_follower.rb:31
   def get_header(datum, header); end
 
-  # pkg:gem/excon#lib/excon/middlewares/redirect_follower.rb:12
+  # pkg:gem/excon#lib/excon/middlewares/redirect_follower.rb:25
   def request_call(datum); end
 
-  # pkg:gem/excon#lib/excon/middlewares/redirect_follower.rb:25
+  # pkg:gem/excon#lib/excon/middlewares/redirect_follower.rb:38
   def response_call(datum); end
 
   class << self
-    # pkg:gem/excon#lib/excon/middlewares/redirect_follower.rb:5
+    # pkg:gem/excon#lib/excon/middlewares/redirect_follower.rb:18
     def valid_parameter_keys; end
   end
 end
+
+# pkg:gem/excon#lib/excon/middlewares/redirect_follower.rb:5
+Excon::Middleware::RedirectFollower::REDACTION_HEADERS = T.let(T.unsafe(nil), Array)
 
 # pkg:gem/excon#lib/excon/middlewares/response_parser.rb:4
 class Excon::Middleware::ResponseParser < ::Excon::Middleware::Base
@@ -1361,7 +1358,7 @@ class Excon::Socket
   def initialize(data = T.unsafe(nil)); end
 
   # pkg:gem/excon#lib/excon/socket.rb:48
-  def close(*args, **_arg1, &block); end
+  def close(*_arg0, **_arg1, &_arg2); end
 
   # pkg:gem/excon#lib/excon/socket.rb:10
   def data; end
@@ -1369,10 +1366,10 @@ class Excon::Socket
   # pkg:gem/excon#lib/excon/socket.rb:10
   def data=(_arg0); end
 
-  # pkg:gem/excon#lib/excon/socket.rb:112
+  # pkg:gem/excon#lib/excon/socket.rb:113
   def local_address; end
 
-  # pkg:gem/excon#lib/excon/socket.rb:116
+  # pkg:gem/excon#lib/excon/socket.rb:117
   def local_port; end
 
   # pkg:gem/excon#lib/excon/socket.rb:36
@@ -1381,59 +1378,59 @@ class Excon::Socket
   # pkg:gem/excon#lib/excon/socket.rb:41
   def params=(new_params); end
 
-  # pkg:gem/excon#lib/excon/socket.rb:63
+  # pkg:gem/excon#lib/excon/socket.rb:64
   def read(max_length = T.unsafe(nil)); end
 
-  # pkg:gem/excon#lib/excon/socket.rb:73
+  # pkg:gem/excon#lib/excon/socket.rb:74
   def readline; end
 
   # pkg:gem/excon#lib/excon/socket.rb:46
   def remote_ip; end
 
-  # pkg:gem/excon#lib/excon/socket.rb:104
+  # pkg:gem/excon#lib/excon/socket.rb:105
   def write(data); end
 
   private
 
-  # pkg:gem/excon#lib/excon/socket.rb:122
+  # pkg:gem/excon#lib/excon/socket.rb:123
   def connect; end
 
   # Consume any bytes remaining in the read buffer before making a system call.
   #
-  # pkg:gem/excon#lib/excon/socket.rb:212
+  # pkg:gem/excon#lib/excon/socket.rb:213
   def consume_read_buffer; end
 
-  # pkg:gem/excon#lib/excon/socket.rb:296
+  # pkg:gem/excon#lib/excon/socket.rb:297
   def read_block(max_length); end
 
-  # pkg:gem/excon#lib/excon/socket.rb:227
+  # pkg:gem/excon#lib/excon/socket.rb:228
   def read_nonblock(max_length); end
 
-  # pkg:gem/excon#lib/excon/socket.rb:292
+  # pkg:gem/excon#lib/excon/socket.rb:293
   def readable_bytes; end
 
   # Returns the remaining time in seconds until we reach the deadline for the request timeout.
   # Raises an exception if we have exceeded the request timeout's deadline.
   #
-  # pkg:gem/excon#lib/excon/socket.rb:383
+  # pkg:gem/excon#lib/excon/socket.rb:384
   def request_time_remaining; end
 
   # Rewind the read buffer to just after the given index.
   # The offset is moved back to the start of the current chunk and then forward until just after the index.
   #
-  # pkg:gem/excon#lib/excon/socket.rb:222
+  # pkg:gem/excon#lib/excon/socket.rb:223
   def rewind_read_buffer(chunk, idx); end
 
-  # pkg:gem/excon#lib/excon/socket.rb:349
+  # pkg:gem/excon#lib/excon/socket.rb:350
   def select_with_timeout(socket, type); end
 
-  # pkg:gem/excon#lib/excon/socket.rb:375
+  # pkg:gem/excon#lib/excon/socket.rb:376
   def unpacked_sockaddr; end
 
-  # pkg:gem/excon#lib/excon/socket.rb:341
+  # pkg:gem/excon#lib/excon/socket.rb:342
   def write_block(data); end
 
-  # pkg:gem/excon#lib/excon/socket.rb:308
+  # pkg:gem/excon#lib/excon/socket.rb:309
   def write_nonblock(data); end
 end
 

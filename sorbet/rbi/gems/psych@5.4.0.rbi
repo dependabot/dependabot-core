@@ -2372,3 +2372,14 @@ class Psych::Visitors::YAMLTree::Registrar
   # pkg:gem/psych#lib/psych/visitors/yaml_tree.rb:23
   def register(target, node); end
 end
+
+# pkg:gem/psych#lib/psych/core_ext.rb:22
+class Set
+  include ::Enumerable
+
+  # pkg:gem/psych#lib/psych/core_ext.rb:23
+  def encode_with(coder); end
+
+  # pkg:gem/psych#lib/psych/core_ext.rb:32
+  def init_with(coder); end
+end
