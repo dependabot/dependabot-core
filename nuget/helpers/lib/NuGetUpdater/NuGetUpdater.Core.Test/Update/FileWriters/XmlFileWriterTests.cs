@@ -2865,15 +2865,15 @@ public class XmlFileWriterTests : FileWriterTestsBase
         await TestAsync(
             files: [
                 ("project.csproj", """
-                    <Project Sdk="Aspire.AppHost.Sdk/1.0.0">
+                    <Project Sdk="Aspire.AppHost.Sdk/9.0.0">
                     </Project>
                     """)
             ],
-            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/1.0.0"],
-            requiredDependencyStrings: ["Aspire.AppHost.Sdk/2.0.0"],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"],
             expectedFiles: [
                 ("project.csproj", """
-                    <Project Sdk="Aspire.AppHost.Sdk/2.0.0">
+                    <Project Sdk="Aspire.AppHost.Sdk/13.0.0">
                     </Project>
                     """)
             ]
@@ -2887,15 +2887,15 @@ public class XmlFileWriterTests : FileWriterTestsBase
         await TestAsync(
             files: [
                 ("project.csproj", """
-                    <Project Sdk="Microsoft.NET.Sdk;Aspire.AppHost.Sdk/1.0.0">
+                    <Project Sdk="Microsoft.NET.Sdk;Aspire.AppHost.Sdk/9.0.0">
                     </Project>
                     """)
             ],
-            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/1.0.0"],
-            requiredDependencyStrings: ["Aspire.AppHost.Sdk/2.0.0"],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"],
             expectedFiles: [
                 ("project.csproj", """
-                    <Project Sdk="Microsoft.NET.Sdk;Aspire.AppHost.Sdk/2.0.0">
+                    <Project Sdk="Microsoft.NET.Sdk;Aspire.AppHost.Sdk/13.0.0">
                     </Project>
                     """)
             ]
@@ -2910,16 +2910,16 @@ public class XmlFileWriterTests : FileWriterTestsBase
             files: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
-                      <Sdk Name="Aspire.AppHost.Sdk" Version="1.0.0" />
+                      <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
                     </Project>
                     """)
             ],
-            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/1.0.0"],
-            requiredDependencyStrings: ["Aspire.AppHost.Sdk/2.0.0"],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
-                      <Sdk Name="Aspire.AppHost.Sdk" Version="2.0.0" />
+                      <Sdk Name="Aspire.AppHost.Sdk" Version="13.0.0" />
                     </Project>
                     """)
             ]
@@ -2934,16 +2934,16 @@ public class XmlFileWriterTests : FileWriterTestsBase
             files: [
                 ("project.csproj", """
                     <Project>
-                      <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk/1.0.0" />
+                      <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk/9.0.0" />
                     </Project>
                     """)
             ],
-            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/1.0.0"],
-            requiredDependencyStrings: ["Aspire.AppHost.Sdk/2.0.0"],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"],
             expectedFiles: [
                 ("project.csproj", """
                     <Project>
-                      <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk/2.0.0" />
+                      <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk/13.0.0" />
                     </Project>
                     """)
             ]
