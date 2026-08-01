@@ -172,6 +172,26 @@ public class ProjectBuildFileTests
         """,
         "Aspire.AppHost.Sdk", null
     )]
+    // Form 5: <Import Project="Sdk.props" Sdk="SdkName/version" />
+    [InlineData(
+        // language=xml
+        """
+        <Project>
+          <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk/9.2.0" />
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", "9.2.0"
+    )]
+    // Form 6: <Import Project="Sdk.props" Sdk="SdkName" /> (version from global.json)
+    [InlineData(
+        // language=xml
+        """
+        <Project>
+          <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" />
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", null
+    )]
     public void SdkReference_GetDependencies_ReturnsExpectedSdkDependency(string xml, string expectedName, string? expectedVersion)
     {
         var buildFile = GetBuildFile(xml, "project.csproj");

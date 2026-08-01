@@ -1079,6 +1079,50 @@ public class XmlFileWriter : IFileWriter
                 replaceNode(filePath, versionAttr, versionAttr.WithValue(requiredVersion.ToString()));
                 return true;
             }
+
+            // Form 3: <Import Project="Sdk.props" Sdk="SdkName/version" />
+            foreach (var importElement in rootElement.GetElements("Import", StringComparison.OrdinalIgnoreCase))
+            {
+                var importSdkAttr = importElement.GetAttributeCaseInsensitive("Sdk");
+                if (importSdkAttr is null)
+                {
+                    continue;
+                }
+
+                var slashIndex = importSdkAttr.Value.IndexOf('/');
+                if (slashIndex < 0)
+                {
+                    continue;
+                }
+
+                var importSdkName = importSdkAttr.Value[..slashIndex];
+                var importSdkVersion = importSdkAttr.Value[(slashIndex + 1)..];
+                if (!importSdkName.Equals(sdkName, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (!NuGetVersion.TryParse(importSdkVersion, out var candidateVersion))
+                {
+                    continue;
+                }
+
+                if (candidateVersion == requiredVersion)
+                {
+                    logger.Info($"Sdk {sdkName} is already at version {requiredVersion} in {filePath}; no update needed.");
+                    return true;
+                }
+
+                if (candidateVersion != oldVersion)
+                {
+                    continue;
+                }
+
+                var newImportSdkValue = $"{importSdkName}/{requiredVersion}";
+                logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
+                replaceNode(filePath, importSdkAttr, importSdkAttr.WithValue(newImportSdkValue));
+                return true;
+            }
         }
 
         return false;
