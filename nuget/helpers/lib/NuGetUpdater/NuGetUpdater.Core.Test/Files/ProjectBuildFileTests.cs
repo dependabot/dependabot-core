@@ -143,6 +143,15 @@ public class ProjectBuildFileTests
         """,
         "Aspire.AppHost.Sdk", "9.2.0"
     )]
+    // Form 1b: Sdk attribute with multiple semicolon-separated SDKs
+    [InlineData(
+        // language=xml
+        """
+        <Project Sdk="Microsoft.NET.Sdk;Aspire.AppHost.Sdk/9.2.0">
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", "9.2.0"
+    )]
     // Form 2: Sdk attribute without version (version from global.json; handled by GlobalJsonUpdater)
     [InlineData(
         // language=xml
@@ -191,6 +200,16 @@ public class ProjectBuildFileTests
         </Project>
         """,
         "Aspire.AppHost.Sdk", null
+    )]
+    // Form 7: <Import Project="Sdk.props" Sdk="SdkName" Version="version" /> (separate Version attribute)
+    [InlineData(
+        // language=xml
+        """
+        <Project>
+          <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="9.2.0" />
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", "9.2.0"
     )]
     public void SdkReference_GetDependencies_ReturnsExpectedSdkDependency(string xml, string expectedName, string? expectedVersion)
     {

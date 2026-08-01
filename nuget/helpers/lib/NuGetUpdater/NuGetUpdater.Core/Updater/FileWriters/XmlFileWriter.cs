@@ -990,6 +990,8 @@ public class XmlFileWriter : IFileWriter
         Func<string, SyntaxNode, SyntaxNode, SyntaxNode> replaceNode,
         ILogger logger)
     {
+        var sdkFound = false;
+
         foreach (var (filePath, doc) in filesAndContents)
         {
             var rootElement = doc.RootSyntax;
@@ -998,23 +1000,12 @@ public class XmlFileWriter : IFileWriter
                 continue;
             }
 
-            if (TryUpdateProjectSdkAttribute(filePath, rootElement))
-            {
-                return true;
-            }
-
-            if (TryUpdateSdkChildElement(filePath, rootElement))
-            {
-                return true;
-            }
-
-            if (TryUpdateImportSdkAttribute(filePath, rootElement))
-            {
-                return true;
-            }
+            sdkFound |= TryUpdateProjectSdkAttribute(filePath, rootElement);
+            sdkFound |= TryUpdateSdkChildElement(filePath, rootElement);
+            sdkFound |= TryUpdateImportSdkAttribute(filePath, rootElement);
         }
 
-        return false;
+        return sdkFound;
 
         // <Project Sdk="SdkName/version"> or <Project Sdk="Sdk1;SdkName/version">
         bool TryUpdateProjectSdkAttribute(string filePath, IXmlElementSyntax rootElement)
@@ -1071,6 +1062,7 @@ public class XmlFileWriter : IFileWriter
         // <Sdk Name="SdkName" Version="version" />
         bool TryUpdateSdkChildElement(string filePath, IXmlElementSyntax rootElement)
         {
+            var found = false;
             foreach (var sdkElement in rootElement.GetElements("Sdk", StringComparison.OrdinalIgnoreCase))
             {
                 var nameAttr = sdkElement.GetAttributeCaseInsensitive("Name");
@@ -1090,10 +1082,12 @@ public class XmlFileWriter : IFileWriter
                     continue;
                 }
 
+                found = true;
+
                 if (candidateVersion == requiredVersion)
                 {
                     logger.Info($"Sdk {sdkName} is already at version {requiredVersion} in {filePath}; no update needed.");
-                    return true;
+                    continue;
                 }
 
                 if (candidateVersion != oldVersion)
@@ -1103,15 +1097,15 @@ public class XmlFileWriter : IFileWriter
 
                 logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
                 replaceNode(filePath, versionAttr, versionAttr.WithValue(requiredVersion.ToString()));
-                return true;
             }
 
-            return false;
+            return found;
         }
 
-        // <Import Project="Sdk.props" Sdk="SdkName/version" />
+        // <Import Project="Sdk.props" Sdk="SdkName/version" /> or <Import Project="Sdk.props" Sdk="SdkName" Version="version" />
         bool TryUpdateImportSdkAttribute(string filePath, IXmlElementSyntax rootElement)
         {
+            var found = false;
             foreach (var importElement in rootElement.GetElements("Import", StringComparison.OrdinalIgnoreCase))
             {
                 var importSdkAttr = importElement.GetAttributeCaseInsensitive("Sdk");
@@ -1121,40 +1115,75 @@ public class XmlFileWriter : IFileWriter
                 }
 
                 var slashIndex = importSdkAttr.Value.IndexOf('/');
-                if (slashIndex < 0)
+                if (slashIndex >= 0)
                 {
-                    continue;
-                }
+                    // Sdk="SdkName/version" embedded form
+                    var importSdkName = importSdkAttr.Value[..slashIndex];
+                    var importSdkVersion = importSdkAttr.Value[(slashIndex + 1)..];
+                    if (!importSdkName.Equals(sdkName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
 
-                var importSdkName = importSdkAttr.Value[..slashIndex];
-                var importSdkVersion = importSdkAttr.Value[(slashIndex + 1)..];
-                if (!importSdkName.Equals(sdkName, StringComparison.OrdinalIgnoreCase))
+                    if (!NuGetVersion.TryParse(importSdkVersion, out var candidateVersion))
+                    {
+                        continue;
+                    }
+
+                    found = true;
+
+                    if (candidateVersion == requiredVersion)
+                    {
+                        logger.Info($"Sdk {sdkName} is already at version {requiredVersion} in {filePath}; no update needed.");
+                        continue;
+                    }
+
+                    if (candidateVersion != oldVersion)
+                    {
+                        continue;
+                    }
+
+                    logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
+                    replaceNode(filePath, importSdkAttr, importSdkAttr.WithValue($"{importSdkName}/{requiredVersion}"));
+                }
+                else
                 {
-                    continue;
-                }
+                    // Sdk="SdkName" Version="version" separate-attribute form
+                    if (!importSdkAttr.Value.Equals(sdkName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
 
-                if (!NuGetVersion.TryParse(importSdkVersion, out var candidateVersion))
-                {
-                    continue;
-                }
+                    var versionAttr = importElement.GetAttributeCaseInsensitive("Version");
+                    if (versionAttr is null)
+                    {
+                        continue;
+                    }
 
-                if (candidateVersion == requiredVersion)
-                {
-                    logger.Info($"Sdk {sdkName} is already at version {requiredVersion} in {filePath}; no update needed.");
-                    return true;
-                }
+                    if (!NuGetVersion.TryParse(versionAttr.Value, out var candidateVersion))
+                    {
+                        continue;
+                    }
 
-                if (candidateVersion != oldVersion)
-                {
-                    continue;
-                }
+                    found = true;
 
-                logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
-                replaceNode(filePath, importSdkAttr, importSdkAttr.WithValue($"{importSdkName}/{requiredVersion}"));
-                return true;
+                    if (candidateVersion == requiredVersion)
+                    {
+                        logger.Info($"Sdk {sdkName} is already at version {requiredVersion} in {filePath}; no update needed.");
+                        continue;
+                    }
+
+                    if (candidateVersion != oldVersion)
+                    {
+                        continue;
+                    }
+
+                    logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
+                    replaceNode(filePath, versionAttr, versionAttr.WithValue(requiredVersion.ToString()));
+                }
             }
 
-            return false;
+            return found;
         }
     }
 }

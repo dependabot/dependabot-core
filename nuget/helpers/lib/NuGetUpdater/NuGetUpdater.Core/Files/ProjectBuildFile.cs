@@ -55,7 +55,10 @@ internal sealed class ProjectBuildFile : XmlBuildFile
         List<Dependency> dependencies = [];
         if (ProjectNode.GetAttributeValueCaseInsensitive("Sdk") is string sdk)
         {
-            dependencies.Add(GetMSBuildSdkDependency(sdk));
+            foreach (var sdkPart in sdk.Split(';', StringSplitOptions.RemoveEmptyEntries))
+            {
+                dependencies.Add(GetMSBuildSdkDependency(sdkPart.Trim()));
+            }
         }
 
         foreach (var sdkNode in SdkNodes)
@@ -79,11 +82,12 @@ internal sealed class ProjectBuildFile : XmlBuildFile
                 dependencies.Add(GetMSBuildSdkDependency(name, version));
             }
 
-            // <Import Project="Sdk.props" Sdk="SdkName/version" /> form
+            // <Import Project="Sdk.props" Sdk="SdkName/version" /> or <Import Project="Sdk.props" Sdk="SdkName" Version="version" />
             var sdkAttr = importNode.GetAttributeValueCaseInsensitive("Sdk");
             if (sdkAttr is not null)
             {
-                dependencies.Add(GetMSBuildSdkDependency(sdkAttr));
+                var importVersion = importNode.GetAttributeValueCaseInsensitive("Version");
+                dependencies.Add(GetMSBuildSdkDependency(sdkAttr, importVersion));
             }
         }
 
