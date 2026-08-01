@@ -998,53 +998,79 @@ public class XmlFileWriter : IFileWriter
                 continue;
             }
 
-            // Form 1: <Project Sdk="SdkName/version"> or <Project Sdk="Sdk1;SdkName/version">
-            var sdkAttribute = rootElement.GetAttributeCaseInsensitive("Sdk");
-            if (sdkAttribute is not null)
+            if (TryUpdateProjectSdkAttribute(filePath, rootElement))
             {
-                var sdkValue = sdkAttribute.Value;
-                var sdkParts = sdkValue.Split(';');
-                for (int i = 0; i < sdkParts.Length; i++)
-                {
-                    var part = sdkParts[i].Trim();
-                    var slashIndex = part.IndexOf('/');
-                    if (slashIndex < 0)
-                    {
-                        continue;
-                    }
-
-                    var partName = part[..slashIndex];
-                    var partVersion = part[(slashIndex + 1)..];
-                    if (!partName.Equals(sdkName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    if (!NuGetVersion.TryParse(partVersion, out var candidateVersion))
-                    {
-                        continue;
-                    }
-
-                    if (candidateVersion == requiredVersion)
-                    {
-                        logger.Info($"Sdk {sdkName} is already at version {requiredVersion} in {filePath}; no update needed.");
-                        return true;
-                    }
-
-                    if (candidateVersion != oldVersion)
-                    {
-                        continue;
-                    }
-
-                    sdkParts[i] = $"{partName}/{requiredVersion}";
-                    var newSdkValue = string.Join(";", sdkParts);
-                    logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
-                    replaceNode(filePath, sdkAttribute, sdkAttribute.WithValue(newSdkValue));
-                    return true;
-                }
+                return true;
             }
 
-            // Form 2: <Sdk Name="SdkName" Version="version" />
+            if (TryUpdateSdkChildElement(filePath, rootElement))
+            {
+                return true;
+            }
+
+            if (TryUpdateImportSdkAttribute(filePath, rootElement))
+            {
+                return true;
+            }
+        }
+
+        return false;
+
+        // <Project Sdk="SdkName/version"> or <Project Sdk="Sdk1;SdkName/version">
+        bool TryUpdateProjectSdkAttribute(string filePath, IXmlElementSyntax rootElement)
+        {
+            var sdkAttribute = rootElement.GetAttributeCaseInsensitive("Sdk");
+            if (sdkAttribute is null)
+            {
+                return false;
+            }
+
+            var sdkParts = sdkAttribute.Value.Split(';');
+            for (int i = 0; i < sdkParts.Length; i++)
+            {
+                var part = sdkParts[i].Trim();
+                var slashIndex = part.IndexOf('/');
+                if (slashIndex < 0)
+                {
+                    continue;
+                }
+
+                var partName = part[..slashIndex];
+                var partVersion = part[(slashIndex + 1)..];
+                if (!partName.Equals(sdkName, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (!NuGetVersion.TryParse(partVersion, out var candidateVersion))
+                {
+                    continue;
+                }
+
+                if (candidateVersion == requiredVersion)
+                {
+                    logger.Info($"Sdk {sdkName} is already at version {requiredVersion} in {filePath}; no update needed.");
+                    return true;
+                }
+
+                if (candidateVersion != oldVersion)
+                {
+                    continue;
+                }
+
+                sdkParts[i] = $"{partName}/{requiredVersion}";
+                var newSdkValue = string.Join(";", sdkParts);
+                logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
+                replaceNode(filePath, sdkAttribute, sdkAttribute.WithValue(newSdkValue));
+                return true;
+            }
+
+            return false;
+        }
+
+        // <Sdk Name="SdkName" Version="version" />
+        bool TryUpdateSdkChildElement(string filePath, IXmlElementSyntax rootElement)
+        {
             foreach (var sdkElement in rootElement.GetElements("Sdk", StringComparison.OrdinalIgnoreCase))
             {
                 var nameAttr = sdkElement.GetAttributeCaseInsensitive("Name");
@@ -1080,7 +1106,12 @@ public class XmlFileWriter : IFileWriter
                 return true;
             }
 
-            // Form 3: <Import Project="Sdk.props" Sdk="SdkName/version" />
+            return false;
+        }
+
+        // <Import Project="Sdk.props" Sdk="SdkName/version" />
+        bool TryUpdateImportSdkAttribute(string filePath, IXmlElementSyntax rootElement)
+        {
             foreach (var importElement in rootElement.GetElements("Import", StringComparison.OrdinalIgnoreCase))
             {
                 var importSdkAttr = importElement.GetAttributeCaseInsensitive("Sdk");
@@ -1118,13 +1149,12 @@ public class XmlFileWriter : IFileWriter
                     continue;
                 }
 
-                var newImportSdkValue = $"{importSdkName}/{requiredVersion}";
                 logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
-                replaceNode(filePath, importSdkAttr, importSdkAttr.WithValue(newImportSdkValue));
+                replaceNode(filePath, importSdkAttr, importSdkAttr.WithValue($"{importSdkName}/{requiredVersion}"));
                 return true;
             }
-        }
 
-        return false;
+            return false;
+        }
     }
 }
