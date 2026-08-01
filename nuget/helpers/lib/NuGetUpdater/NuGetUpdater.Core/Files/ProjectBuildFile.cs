@@ -23,7 +23,9 @@ internal sealed class ProjectBuildFile : XmlBuildFile
         .GetElements("Sdk", StringComparison.OrdinalIgnoreCase);
 
     public IEnumerable<IXmlElementSyntax> ImportNodes => ProjectNode
-        .GetElements("Import", StringComparison.OrdinalIgnoreCase);
+        .GetElements("Import", StringComparison.OrdinalIgnoreCase)
+        .Concat(ProjectNode.GetElements("ImportGroup", StringComparison.OrdinalIgnoreCase)
+            .SelectMany(g => g.GetElements("Import", StringComparison.OrdinalIgnoreCase)));
 
     public IEnumerable<IXmlElementSyntax> PropertyNodes => ProjectNode
         .GetElements("PropertyGroup", StringComparison.OrdinalIgnoreCase)

@@ -202,6 +202,18 @@ public class ProjectBuildFileTests
         """,
         "Aspire.AppHost.Sdk", "9.2.0"
     )]
+    // Form 7: <Import> inside <ImportGroup>
+    [InlineData(
+        // language=xml
+        """
+        <Project>
+          <ImportGroup>
+            <Import Project="Sdk.props" Sdk="Aspire.AppHost.Sdk" Version="9.2.0" />
+          </ImportGroup>
+        </Project>
+        """,
+        "Aspire.AppHost.Sdk", "9.2.0"
+    )]
     public void SdkReference_GetDependencies_ReturnsExpectedSdkDependency(string xml, string expectedName, string? expectedVersion)
     {
         var buildFile = GetBuildFile(xml, "project.csproj");

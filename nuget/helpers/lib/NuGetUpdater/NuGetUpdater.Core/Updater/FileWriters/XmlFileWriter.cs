@@ -1049,7 +1049,9 @@ public class XmlFileWriter : IFileWriter
                     continue;
                 }
 
-                sdkParts[i] = $"{partName}/{requiredVersion}";
+                // Preserve original surrounding whitespace in each part
+                var rawSlashIndex = sdkParts[i].IndexOf('/');
+                sdkParts[i] = sdkParts[i][..(rawSlashIndex + 1)] + requiredVersion;
                 var newSdkValue = string.Join(";", sdkParts);
                 logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
                 replaceNode(filePath, sdkAttribute, sdkAttribute.WithValue(newSdkValue));
@@ -1112,7 +1114,10 @@ public class XmlFileWriter : IFileWriter
         bool TryUpdateImportSdkAttribute(string filePath, IXmlElementSyntax rootElement)
         {
             var found = false;
-            foreach (var importElement in rootElement.GetElements("Import", StringComparison.OrdinalIgnoreCase))
+            var importElements = rootElement.GetElements("Import", StringComparison.OrdinalIgnoreCase)
+                .Concat(rootElement.GetElements("ImportGroup", StringComparison.OrdinalIgnoreCase)
+                    .SelectMany(g => g.GetElements("Import", StringComparison.OrdinalIgnoreCase)));
+            foreach (var importElement in importElements)
             {
                 var importSdkAttr = importElement.GetAttributeCaseInsensitive("Sdk");
                 if (importSdkAttr is null || !importSdkAttr.Value.Equals(sdkName, StringComparison.OrdinalIgnoreCase))
