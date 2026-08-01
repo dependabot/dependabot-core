@@ -431,8 +431,21 @@ module Dependabot
 
     sig { params(commit_sha: T.nilable(String)).returns(T::Array[Dependabot::GitRef]) }
     def local_tags_matching_sha(commit_sha)
-      local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
-                .sort_by { |t| version_class.new(t.name) }
+      tags = local_tags.select { |tag| tag.commit_sha == commit_sha }
+      if dependency.package_manager == "github_actions"
+        component_tags = tags.select { |tag| github_actions_component_tag?(tag.name) }
+        tags = component_tags.any? ? component_tags : tags.select { |tag| version_class.correct?(tag.name) }
+      else
+        tags = tags.select { |tag| version_class.correct?(tag.name) }
+      end
+
+      tags.sort_by { |tag| version_from_tag(tag) }
+    end
+
+    sig { params(tag: String).returns(T::Boolean) }
+    def github_actions_component_tag?(tag)
+      component_name = T.must(dependency.name.split("/").last)
+      tag.start_with?("#{component_name}-v") && version_tag?(tag)
     end
 
     sig { params(version: T.any(String, Gem::Version)).returns(T::Boolean) }
