@@ -2905,7 +2905,7 @@ public class XmlFileWriterTests : FileWriterTestsBase
     [Fact]
     public async Task SdkAttribute_WithWhitespaceBetweenSemicolonEntries_PreservesWhitespace()
     {
-        // Whitespace around semicolon-separated SDK entries is preserved
+        // Leading whitespace around semicolon-separated SDK entries is preserved
         await TestAsync(
             files: [
                 ("project.csproj", """
@@ -2918,6 +2918,28 @@ public class XmlFileWriterTests : FileWriterTestsBase
             expectedFiles: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk; Aspire.AppHost.Sdk/13.0.0">
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SdkAttribute_WithTrailingWhitespaceAfterVersion_PreservesWhitespace()
+    {
+        // Trailing whitespace in a semicolon-separated SDK entry is preserved
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Aspire.AppHost.Sdk/9.0.0 ;Microsoft.NET.Sdk">
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Aspire.AppHost.Sdk/9.0.0"],
+            requiredDependencyStrings: ["Aspire.AppHost.Sdk/13.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Aspire.AppHost.Sdk/13.0.0 ;Microsoft.NET.Sdk">
                     </Project>
                     """)
             ]

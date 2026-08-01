@@ -154,10 +154,15 @@ public class XmlFileWriter : IFileWriter
             }
 
             // Check for MSBuild SDK references: <Project Sdk="SdkName/version"> and <Sdk Name="SdkName" Version="version" />
-            if (TryUpdateSdkVersion(filesAndContents, requiredPackageVersion.Name, oldVersion, requiredVersion, ReplaceNode, _logger))
+            var sdkUpdated = TryUpdateSdkVersion(filesAndContents, requiredPackageVersion.Name, oldVersion, requiredVersion, ReplaceNode, _logger);
+            if (sdkUpdated)
             {
                 updatesPerformed[requiredPackageVersion.Name] = true;
-                continue;
+                if (packageReferenceElementsAndPaths.Length == 0)
+                {
+                    continue; // SDK-only reference; no <PackageReference> elements to update
+                }
+                // A PackageReference with the same ID also exists; fall through to update it too
             }
 
             if (packageReferenceElementsAndPaths.Length == 0)
@@ -1051,7 +1056,9 @@ public class XmlFileWriter : IFileWriter
 
                 // Preserve original surrounding whitespace in each part
                 var rawSlashIndex = sdkParts[i].IndexOf('/');
-                sdkParts[i] = sdkParts[i][..(rawSlashIndex + 1)] + requiredVersion;
+                var rawSuffix = sdkParts[i][(rawSlashIndex + 1)..];
+                var trailingSuffix = rawSuffix[rawSuffix.TrimEnd().Length..]; // trailing whitespace after version
+                sdkParts[i] = sdkParts[i][..(rawSlashIndex + 1)] + requiredVersion + trailingSuffix;
                 var newSdkValue = string.Join(";", sdkParts);
                 logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
                 replaceNode(filePath, sdkAttribute, sdkAttribute.WithValue(newSdkValue));
