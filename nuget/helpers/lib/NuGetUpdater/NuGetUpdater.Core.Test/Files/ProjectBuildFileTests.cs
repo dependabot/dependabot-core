@@ -143,7 +143,7 @@ public class ProjectBuildFileTests
         """,
         "Aspire.AppHost.Sdk", "9.2.0"
     )]
-    // Form 2: Sdk attribute without version (version from global.json)
+    // Form 2: Sdk attribute without version (version from global.json; handled by the dotnet-sdk ecosystem, not nuget)
     [InlineData(
         // language=xml
         """
@@ -162,7 +162,7 @@ public class ProjectBuildFileTests
         """,
         "Aspire.AppHost.Sdk", "9.2.0"
     )]
-    // Form 4: <Sdk> child element with Name only (version from global.json)
+    // Form 4: <Sdk> child element with Name only (version from global.json; handled by the dotnet-sdk ecosystem, not nuget)
     [InlineData(
         // language=xml
         """
@@ -182,7 +182,7 @@ public class ProjectBuildFileTests
         """,
         "Aspire.AppHost.Sdk", "9.2.0"
     )]
-    // Form 6: <Import Project="Sdk.props" Sdk="SdkName" /> (version from global.json)
+    // Form 6: <Import Project="Sdk.props" Sdk="SdkName" /> (version from global.json; handled by the dotnet-sdk ecosystem, not nuget)
     [InlineData(
         // language=xml
         """
