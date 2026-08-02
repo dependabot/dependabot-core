@@ -196,7 +196,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #     the required types.
   #
   #   @option options [Boolean] :correct_clock_skew (true)
-  #     Used only in `standard` and adaptive retry modes. Specifies whether to apply
+  #     Used only in `standard` and `adaptive` retry modes. Specifies whether to apply
   #     a clock skew correction and retry requests with skewed client clocks.
   #
   #   @option options [String] :defaults_mode ("legacy")
@@ -320,17 +320,15 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   @option options [String] :retry_mode ("legacy")
   #     Specifies which retry algorithm to use. Values are:
   #
-  #     * `legacy` - The pre-existing retry behavior.  This is default value if
-  #       no retry mode is provided.
+  #     * `legacy` - The pre-existing retry behavior. This is the default
+  #       value if no retry mode is provided.
   #
   #     * `standard` - A standardized set of retry rules across the AWS SDKs.
   #       This includes support for retry quotas, which limit the number of
   #       unsuccessful retries a client can make.
   #
-  #     * `adaptive` - An experimental retry mode that includes all the
-  #       functionality of `standard` mode along with automatic client side
-  #       throttling.  This is a provisional mode that may change behavior
-  #       in the future.
+  #     * `adaptive` - A retry mode that includes all the functionality of
+  #       `standard` mode along with automatic client side throttling.
   #
   #   @option options [String] :sdk_ua_app_id
   #     A unique and opaque application ID that is appended to the
@@ -474,7 +472,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   #   @option options [Boolean] :ssl_verify_peer (true)
   #     When `true`, SSL peer certificates are verified when establishing a connection.
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:480
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:478
   def initialize(*args); end
 
   # Creates an association between an approval rule template and a
@@ -507,7 +505,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload associate_approval_rule_template_with_repository(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:515
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:513
   def associate_approval_rule_template_with_repository(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates an association between an approval rule template and one or
@@ -551,7 +549,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload batch_associate_approval_rule_template_with_repositories(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:560
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:558
   def batch_associate_approval_rule_template_with_repositories(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about one or more merge conflicts in the attempted
@@ -671,7 +669,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload batch_describe_merge_conflicts(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:681
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:679
   def batch_describe_merge_conflicts(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Removes the association between an approval rule template and one or
@@ -716,7 +714,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload batch_disassociate_approval_rule_template_from_repositories(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:727
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:725
   def batch_disassociate_approval_rule_template_from_repositories(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about the contents of one or more commits in a
@@ -770,7 +768,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload batch_get_commits(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:782
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:780
   def batch_get_commits(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about one or more repositories.
@@ -831,13 +829,13 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload batch_get_repositories(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:844
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:842
   def batch_get_repositories(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # @param params ({})
   # @api private
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:5198
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:5196
   def build_request(operation_name, params = T.unsafe(nil)); end
 
   # Creates a template for approval rules that can then be associated with
@@ -926,7 +924,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload create_approval_rule_template(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:934
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:932
   def create_approval_rule_template(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates a branch in a repository and points the branch to a commit.
@@ -960,7 +958,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload create_branch(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:969
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:967
   def create_branch(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates a commit for a repository on the tip of a specified branch.
@@ -1066,7 +1064,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload create_commit(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1076
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1074
   def create_commit(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates a pull request in the specified repository.
@@ -1157,7 +1155,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload create_pull_request(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1168
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1166
   def create_pull_request(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates an approval rule for a pull request.
@@ -1238,7 +1236,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload create_pull_request_approval_rule(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1250
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1248
   def create_pull_request_approval_rule(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates a new, empty repository.
@@ -1322,7 +1320,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload create_repository(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1335
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1333
   def create_repository(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates an unreferenced commit that represents the result of merging
@@ -1436,7 +1434,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload create_unreferenced_merge_commit(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1450
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1448
   def create_unreferenced_merge_commit(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes a specified approval rule template. Deleting a template does
@@ -1465,7 +1463,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload delete_approval_rule_template(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1480
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1478
   def delete_approval_rule_template(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes a branch from a repository, unless that branch is the default
@@ -1498,7 +1496,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload delete_branch(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1514
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1512
   def delete_branch(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes the content of a comment made on a change, file, or commit in
@@ -1538,7 +1536,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload delete_comment_content(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1555
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1553
   def delete_comment_content(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes a specified file from a specified branch. A commit is created
@@ -1617,7 +1615,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload delete_file(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1635
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1633
   def delete_file(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes an approval rule from a specified pull request. Approval rules
@@ -1654,7 +1652,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload delete_pull_request_approval_rule(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1673
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1671
   def delete_pull_request_approval_rule(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes a repository. If a specified repository was already deleted, a
@@ -1686,7 +1684,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload delete_repository(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1706
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1704
   def delete_repository(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about one or more merge conflicts in the attempted
@@ -1799,7 +1797,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload describe_merge_conflicts(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1820
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1818
   def describe_merge_conflicts(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about one or more pull request events.
@@ -1879,7 +1877,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload describe_pull_request_events(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1901
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1899
   def describe_pull_request_events(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Removes the association between a template and a repository so that
@@ -1909,7 +1907,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload disassociate_approval_rule_template_from_repository(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1932
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1930
   def disassociate_approval_rule_template_from_repository(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Evaluates whether a pull request has met all the conditions specified
@@ -1947,7 +1945,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload evaluate_pull_request_approval_rules(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1971
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:1969
   def evaluate_pull_request_approval_rules(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about a specified approval rule template.
@@ -1982,7 +1980,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload get_approval_rule_template(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2007
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2005
   def get_approval_rule_template(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns the base-64 encoded content of an individual blob in a
@@ -2014,7 +2012,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload get_blob(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2040
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2038
   def get_blob(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about a repository branch, including its name and
@@ -2048,7 +2046,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload get_branch(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2075
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2073
   def get_branch(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns the content of a comment made on a change, file, or commit in
@@ -2094,7 +2092,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload get_comment(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2122
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2120
   def get_comment(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about reactions to a specified comment ID.
@@ -2148,7 +2146,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload get_comment_reactions(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2177
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2175
   def get_comment_reactions(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about comments made on the comparison between two
@@ -2227,7 +2225,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload get_comments_for_compared_commit(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2257
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2255
   def get_comments_for_compared_commit(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns comments made on a pull request.
@@ -2318,7 +2316,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload get_comments_for_pull_request(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2349
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2347
   def get_comments_for_pull_request(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about a commit, including commit message and
@@ -2361,7 +2359,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload get_commit(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2393
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2391
   def get_commit(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about the differences in a valid commit specifier
@@ -2438,7 +2436,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload get_differences(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2471
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2469
   def get_differences(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns the base-64 encoded contents of a specified file and its
@@ -2489,7 +2487,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload get_file(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2523
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2521
   def get_file(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns the contents of a specified folder in a repository.
@@ -2557,7 +2555,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload get_folder(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2592
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2590
   def get_folder(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about a specified merge commit.
@@ -2616,7 +2614,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload get_merge_commit(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2652
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2650
   def get_merge_commit(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about merge conflicts between the before and after
@@ -2713,7 +2711,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload get_merge_conflicts(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2750
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2748
   def get_merge_conflicts(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about the merge options available for merging two
@@ -2775,7 +2773,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload get_merge_options(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2813
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2811
   def get_merge_options(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Gets information about a pull request in a specified repository.
@@ -2832,7 +2830,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload get_pull_request(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2871
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2869
   def get_pull_request(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Gets information about the approval states for a specified pull
@@ -2867,7 +2865,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload get_pull_request_approval_states(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2907
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2905
   def get_pull_request_approval_states(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about whether approval rules have been set aside
@@ -2905,7 +2903,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload get_pull_request_override_state(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2946
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2944
   def get_pull_request_override_state(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns information about a repository.
@@ -2951,7 +2949,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload get_repository(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2993
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:2991
   def get_repository(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Gets information about triggers configured for a repository.
@@ -2987,7 +2985,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload get_repository_triggers(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3030
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3028
   def get_repository_triggers(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Lists all approval rule templates in the specified Amazon Web Services
@@ -3028,7 +3026,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload list_approval_rule_templates(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3072
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3070
   def list_approval_rule_templates(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Lists all approval rule templates that are associated with a specified
@@ -3072,7 +3070,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload list_associated_approval_rule_templates_for_repository(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3117
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3115
   def list_associated_approval_rule_templates_for_repository(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Gets information about one or more branches in a repository.
@@ -3108,7 +3106,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload list_branches(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3154
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3152
   def list_branches(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Retrieves a list of commits and changes to a specified file.
@@ -3176,7 +3174,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload list_file_commit_history(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3223
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3221
   def list_file_commit_history(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns a list of pull requests for a specified repository. The return
@@ -3230,7 +3228,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload list_pull_requests(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3278
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3276
   def list_pull_requests(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Gets information about one or more repositories.
@@ -3276,7 +3274,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload list_repositories(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3325
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3323
   def list_repositories(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Lists all repositories associated with the specified approval rule
@@ -3320,7 +3318,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload list_repositories_for_approval_rule_template(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3370
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3368
   def list_repositories_for_approval_rule_template(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Gets information about Amazon Web Servicestags for a specified Amazon
@@ -3363,7 +3361,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload list_tags_for_resource(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3414
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3412
   def list_tags_for_resource(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Merges two branches using the fast-forward merge strategy.
@@ -3406,7 +3404,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload merge_branches_by_fast_forward(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3458
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3456
   def merge_branches_by_fast_forward(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Merges two branches using the squash merge strategy.
@@ -3510,7 +3508,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload merge_branches_by_squash(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3563
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3561
   def merge_branches_by_squash(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Merges two specified branches using the three-way merge strategy.
@@ -3613,7 +3611,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload merge_branches_by_three_way(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3667
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3665
   def merge_branches_by_three_way(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Attempts to merge the source commit of a pull request into the
@@ -3684,7 +3682,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload merge_pull_request_by_fast_forward(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3739
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3737
   def merge_pull_request_by_fast_forward(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Attempts to merge the source commit of a pull request into the
@@ -3815,7 +3813,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload merge_pull_request_by_squash(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3871
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:3869
   def merge_pull_request_by_squash(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Attempts to merge the source commit of a pull request into the
@@ -3946,7 +3944,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload merge_pull_request_by_three_way(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4003
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4001
   def merge_pull_request_by_three_way(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Sets aside (overrides) all approval rule requirements for a specified
@@ -3983,7 +3981,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload override_pull_request_approval_rules(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4041
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4039
   def override_pull_request_approval_rules(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Posts a comment on the comparison between two commits.
@@ -4070,7 +4068,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload post_comment_for_compared_commit(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4129
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4127
   def post_comment_for_compared_commit(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Posts a comment on a pull request.
@@ -4167,7 +4165,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload post_comment_for_pull_request(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4227
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4225
   def post_comment_for_pull_request(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Posts a comment in reply to an existing comment on a comparison
@@ -4223,7 +4221,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload post_comment_reply(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4284
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4282
   def post_comment_reply(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Adds or updates a reaction to a specified comment for the user whose
@@ -4258,7 +4256,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload put_comment_reaction(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4320
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4318
   def put_comment_reaction(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Adds or updates a file in a branch in an CodeCommit repository, and
@@ -4341,7 +4339,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload put_file(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4404
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4402
   def put_file(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Replaces all triggers for a repository. Used to create or delete
@@ -4382,7 +4380,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload put_repository_triggers(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4446
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4444
   def put_repository_triggers(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Adds or updates tags for a resource in CodeCommit. For a list of valid
@@ -4416,7 +4414,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload tag_resource(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4481
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4479
   def tag_resource(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Tests the functionality of repository triggers by sending information
@@ -4463,7 +4461,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload test_repository_triggers(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4529
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4527
   def test_repository_triggers(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Removes tags for a resource in CodeCommit. For a list of valid
@@ -4495,7 +4493,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload untag_resource(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4562
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4560
   def untag_resource(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Updates the content of an approval rule template. You can change the
@@ -4542,7 +4540,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload update_approval_rule_template_content(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4610
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4608
   def update_approval_rule_template_content(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Updates the description for a specified approval rule template.
@@ -4580,7 +4578,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload update_approval_rule_template_description(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4649
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4647
   def update_approval_rule_template_description(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Updates the name of a specified approval rule template.
@@ -4618,7 +4616,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload update_approval_rule_template_name(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4688
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4686
   def update_approval_rule_template_name(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Replaces the contents of a comment.
@@ -4661,7 +4659,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload update_comment(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4732
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4730
   def update_comment(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Sets or changes the default branch name for the specified repository.
@@ -4693,7 +4691,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload update_default_branch(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4765
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4763
   def update_default_branch(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Updates the structure of an approval rule created specifically for a
@@ -4777,7 +4775,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload update_pull_request_approval_rule_content(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4850
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4848
   def update_pull_request_approval_rule_content(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Updates the state of a user's approval on a pull request. The user is
@@ -4807,7 +4805,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload update_pull_request_approval_state(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4881
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4879
   def update_pull_request_approval_state(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Replaces the contents of the description of a pull request.
@@ -4869,7 +4867,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload update_pull_request_description(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4944
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:4942
   def update_pull_request_description(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Updates the status of a pull request.
@@ -4932,7 +4930,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload update_pull_request_status(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:5008
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:5006
   def update_pull_request_status(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Replaces the title of a pull request.
@@ -4994,7 +4992,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload update_pull_request_title(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:5071
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:5069
   def update_pull_request_title(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Sets or changes the comment or description for a repository.
@@ -5030,7 +5028,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload update_repository_description(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:5108
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:5106
   def update_repository_description(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Updates the Key Management Service encryption key used to encrypt and
@@ -5075,7 +5073,7 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload update_repository_encryption_key(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:5154
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:5152
   def update_repository_encryption_key(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Renames a repository. The repository name must be unique across the
@@ -5109,24 +5107,24 @@ class Aws::CodeCommit::Client < ::Seahorse::Client::Base
   # @overload update_repository_name(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:5189
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:5187
   def update_repository_name(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # @api private
   # @deprecated
   #
-  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:5218
+  # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:5216
   def waiter_names; end
 
   class << self
     # @api private
     #
-    # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:5228
+    # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:5226
     def errors_module; end
 
     # @api private
     #
-    # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:5225
+    # pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/client.rb:5223
     def identifier; end
   end
 end
@@ -9019,7 +9017,7 @@ class Aws::CodeCommit::Types::ActorDoesNotExistException < ::Aws::EmptyStructure
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/Approval AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:35
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:33
 class Aws::CodeCommit::Types::Approval < ::Struct
   include ::Aws::Structure
 end
@@ -9065,7 +9063,7 @@ Aws::CodeCommit::Types::Approval::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ApprovalRule AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:86
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:78
 class Aws::CodeCommit::Types::ApprovalRule < ::Struct
   include ::Aws::Structure
 end
@@ -9104,7 +9102,7 @@ class Aws::CodeCommit::Types::ApprovalRuleDoesNotExistException < ::Aws::EmptySt
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ApprovalRuleEventMetadata AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:123
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:120
 class Aws::CodeCommit::Types::ApprovalRuleEventMetadata < ::Struct
   include ::Aws::Structure
 end
@@ -9141,7 +9139,7 @@ class Aws::CodeCommit::Types::ApprovalRuleNameRequiredException < ::Aws::EmptySt
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ApprovalRuleOverriddenEventMetadata AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:157
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:155
 class Aws::CodeCommit::Types::ApprovalRuleOverriddenEventMetadata < ::Struct
   include ::Aws::Structure
 end
@@ -9189,7 +9187,7 @@ Aws::CodeCommit::Types::ApprovalRuleOverriddenEventMetadata::SENSITIVE = T.let(T
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ApprovalRuleTemplate AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:210
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:202
 class Aws::CodeCommit::Types::ApprovalRuleTemplate < ::Struct
   include ::Aws::Structure
 end
@@ -9254,7 +9252,7 @@ class Aws::CodeCommit::Types::ApprovalRuleTemplateNameRequiredException < ::Aws:
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ApprovalStateChangedEventMetadata AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:269
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:267
 class Aws::CodeCommit::Types::ApprovalStateChangedEventMetadata < ::Struct
   include ::Aws::Structure
 end
@@ -9280,7 +9278,7 @@ class Aws::CodeCommit::Types::ApprovalStateRequiredException < ::Aws::EmptyStruc
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/AssociateApprovalRuleTemplateWithRepositoryInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:293
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:291
 class Aws::CodeCommit::Types::AssociateApprovalRuleTemplateWithRepositoryInput < ::Struct
   include ::Aws::Structure
 end
@@ -9315,7 +9313,7 @@ class Aws::CodeCommit::Types::AuthorDoesNotExistException < ::Aws::EmptyStructur
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchAssociateApprovalRuleTemplateWithRepositoriesError AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:327
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:324
 class Aws::CodeCommit::Types::BatchAssociateApprovalRuleTemplateWithRepositoriesError < ::Struct
   include ::Aws::Structure
 end
@@ -9340,7 +9338,7 @@ Aws::CodeCommit::Types::BatchAssociateApprovalRuleTemplateWithRepositoriesError:
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchAssociateApprovalRuleTemplateWithRepositoriesInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:351
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:349
 class Aws::CodeCommit::Types::BatchAssociateApprovalRuleTemplateWithRepositoriesInput < ::Struct
   include ::Aws::Structure
 end
@@ -9360,7 +9358,7 @@ Aws::CodeCommit::Types::BatchAssociateApprovalRuleTemplateWithRepositoriesInput:
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchAssociateApprovalRuleTemplateWithRepositoriesOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:370
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:368
 class Aws::CodeCommit::Types::BatchAssociateApprovalRuleTemplateWithRepositoriesOutput < ::Struct
   include ::Aws::Structure
 end
@@ -9385,7 +9383,7 @@ Aws::CodeCommit::Types::BatchAssociateApprovalRuleTemplateWithRepositoriesOutput
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchDescribeMergeConflictsError AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:395
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:392
 class Aws::CodeCommit::Types::BatchDescribeMergeConflictsError < ::Struct
   include ::Aws::Structure
 end
@@ -9447,7 +9445,7 @@ Aws::CodeCommit::Types::BatchDescribeMergeConflictsError::SENSITIVE = T.let(T.un
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchDescribeMergeConflictsInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:464
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:454
 class Aws::CodeCommit::Types::BatchDescribeMergeConflictsInput < ::Struct
   include ::Aws::Structure
 end
@@ -9486,7 +9484,7 @@ Aws::CodeCommit::Types::BatchDescribeMergeConflictsInput::SENSITIVE = T.let(T.un
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchDescribeMergeConflictsOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:506
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:500
 class Aws::CodeCommit::Types::BatchDescribeMergeConflictsOutput < ::Struct
   include ::Aws::Structure
 end
@@ -9514,7 +9512,7 @@ Aws::CodeCommit::Types::BatchDescribeMergeConflictsOutput::SENSITIVE = T.let(T.u
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchDisassociateApprovalRuleTemplateFromRepositoriesError AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:534
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:531
 class Aws::CodeCommit::Types::BatchDisassociateApprovalRuleTemplateFromRepositoriesError < ::Struct
   include ::Aws::Structure
 end
@@ -9539,7 +9537,7 @@ Aws::CodeCommit::Types::BatchDisassociateApprovalRuleTemplateFromRepositoriesErr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchDisassociateApprovalRuleTemplateFromRepositoriesInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:558
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:556
 class Aws::CodeCommit::Types::BatchDisassociateApprovalRuleTemplateFromRepositoriesInput < ::Struct
   include ::Aws::Structure
 end
@@ -9559,7 +9557,7 @@ Aws::CodeCommit::Types::BatchDisassociateApprovalRuleTemplateFromRepositoriesInp
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchDisassociateApprovalRuleTemplateFromRepositoriesOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:577
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:575
 class Aws::CodeCommit::Types::BatchDisassociateApprovalRuleTemplateFromRepositoriesOutput < ::Struct
   include ::Aws::Structure
 end
@@ -9586,7 +9584,7 @@ Aws::CodeCommit::Types::BatchDisassociateApprovalRuleTemplateFromRepositoriesOut
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchGetCommitsError AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:604
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:601
 class Aws::CodeCommit::Types::BatchGetCommitsError < ::Struct
   include ::Aws::Structure
 end
@@ -9609,7 +9607,7 @@ Aws::CodeCommit::Types::BatchGetCommitsError::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchGetCommitsInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:626
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:624
 class Aws::CodeCommit::Types::BatchGetCommitsInput < ::Struct
   include ::Aws::Structure
 end
@@ -9631,7 +9629,7 @@ Aws::CodeCommit::Types::BatchGetCommitsInput::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchGetCommitsOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:647
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:645
 class Aws::CodeCommit::Types::BatchGetCommitsOutput < ::Struct
   include ::Aws::Structure
 end
@@ -9662,7 +9660,7 @@ Aws::CodeCommit::Types::BatchGetCommitsOutput::SENSITIVE = T.let(T.unsafe(nil), 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchGetRepositoriesError AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:679
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:675
 class Aws::CodeCommit::Types::BatchGetRepositoriesError < ::Struct
   include ::Aws::Structure
 end
@@ -9683,7 +9681,7 @@ Aws::CodeCommit::Types::BatchGetRepositoriesError::SENSITIVE = T.let(T.unsafe(ni
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchGetRepositoriesInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:698
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:697
 class Aws::CodeCommit::Types::BatchGetRepositoriesInput < ::Struct
   include ::Aws::Structure
 end
@@ -9710,7 +9708,7 @@ Aws::CodeCommit::Types::BatchGetRepositoriesInput::SENSITIVE = T.let(T.unsafe(ni
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BatchGetRepositoriesOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:725
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:722
 class Aws::CodeCommit::Types::BatchGetRepositoriesOutput < ::Struct
   include ::Aws::Structure
 end
@@ -9766,7 +9764,7 @@ class Aws::CodeCommit::Types::BlobIdRequiredException < ::Aws::EmptyStructure; e
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BlobMetadata AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:778
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:775
 class Aws::CodeCommit::Types::BlobMetadata < ::Struct
   include ::Aws::Structure
 end
@@ -9793,7 +9791,7 @@ class Aws::CodeCommit::Types::BranchDoesNotExistException < ::Aws::EmptyStructur
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/BranchInfo AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:803
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:801
 class Aws::CodeCommit::Types::BranchInfo < ::Struct
   include ::Aws::Structure
 end
@@ -9907,7 +9905,7 @@ class Aws::CodeCommit::Types::ClientRequestTokenRequiredException < ::Aws::Empty
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/Comment AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:918
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:908
 class Aws::CodeCommit::Types::Comment < ::Struct
   include ::Aws::Structure
 end
@@ -10001,7 +9999,7 @@ class Aws::CodeCommit::Types::CommentNotCreatedByCallerException < ::Aws::EmptyS
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CommentsForComparedCommit AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1010
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1003
 class Aws::CodeCommit::Types::CommentsForComparedCommit < ::Struct
   include ::Aws::Structure
 end
@@ -10055,7 +10053,7 @@ Aws::CodeCommit::Types::CommentsForComparedCommit::SENSITIVE = T.let(T.unsafe(ni
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CommentsForPullRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1069
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1061
 class Aws::CodeCommit::Types::CommentsForPullRequest < ::Struct
   include ::Aws::Structure
 end
@@ -10110,7 +10108,7 @@ Aws::CodeCommit::Types::CommentsForPullRequest::SENSITIVE = T.let(T.unsafe(nil),
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/Commit AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1128
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1121
 class Aws::CodeCommit::Types::Commit < ::Struct
   include ::Aws::Structure
 end
@@ -10193,7 +10191,7 @@ class Aws::CodeCommit::Types::ConcurrentReferenceUpdateException < ::Aws::EmptyS
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/Conflict AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1202
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1200
 class Aws::CodeCommit::Types::Conflict < ::Struct
   include ::Aws::Structure
 end
@@ -10254,7 +10252,7 @@ Aws::CodeCommit::Types::Conflict::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ConflictMetadata AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1270
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1260
 class Aws::CodeCommit::Types::ConflictMetadata < ::Struct
   include ::Aws::Structure
 end
@@ -10280,7 +10278,7 @@ Aws::CodeCommit::Types::ConflictMetadata::SENSITIVE = T.let(T.unsafe(nil), Array
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ConflictResolution AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1296
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1293
 class Aws::CodeCommit::Types::ConflictResolution < ::Struct
   include ::Aws::Structure
 end
@@ -10345,7 +10343,7 @@ Aws::CodeCommit::Types::ConflictResolution::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateApprovalRuleTemplateInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1361
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1358
 class Aws::CodeCommit::Types::CreateApprovalRuleTemplateInput < ::Struct
   include ::Aws::Structure
 end
@@ -10359,7 +10357,7 @@ Aws::CodeCommit::Types::CreateApprovalRuleTemplateInput::SENSITIVE = T.let(T.uns
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateApprovalRuleTemplateOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1373
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1372
 class Aws::CodeCommit::Types::CreateApprovalRuleTemplateOutput < ::Struct
   include ::Aws::Structure
 end
@@ -10384,7 +10382,7 @@ Aws::CodeCommit::Types::CreateApprovalRuleTemplateOutput::SENSITIVE = T.let(T.un
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateBranchInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1398
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1395
 class Aws::CodeCommit::Types::CreateBranchInput < ::Struct
   include ::Aws::Structure
 end
@@ -10441,7 +10439,7 @@ Aws::CodeCommit::Types::CreateBranchInput::SENSITIVE = T.let(T.unsafe(nil), Arra
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateCommitInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1462
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1452
 class Aws::CodeCommit::Types::CreateCommitInput < ::Struct
   include ::Aws::Structure
 end
@@ -10473,7 +10471,7 @@ Aws::CodeCommit::Types::CreateCommitInput::SENSITIVE = T.let(T.unsafe(nil), Arra
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateCommitOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1496
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1491
 class Aws::CodeCommit::Types::CreateCommitOutput < ::Struct
   include ::Aws::Structure
 end
@@ -10534,7 +10532,7 @@ Aws::CodeCommit::Types::CreateCommitOutput::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreatePullRequestApprovalRuleInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1557
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1554
 class Aws::CodeCommit::Types::CreatePullRequestApprovalRuleInput < ::Struct
   include ::Aws::Structure
 end
@@ -10548,7 +10546,7 @@ Aws::CodeCommit::Types::CreatePullRequestApprovalRuleInput::SENSITIVE = T.let(T.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreatePullRequestApprovalRuleOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1569
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1568
 class Aws::CodeCommit::Types::CreatePullRequestApprovalRuleOutput < ::Struct
   include ::Aws::Structure
 end
@@ -10591,7 +10589,7 @@ Aws::CodeCommit::Types::CreatePullRequestApprovalRuleOutput::SENSITIVE = T.let(T
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreatePullRequestInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1613
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1609
 class Aws::CodeCommit::Types::CreatePullRequestInput < ::Struct
   include ::Aws::Structure
 end
@@ -10605,7 +10603,7 @@ Aws::CodeCommit::Types::CreatePullRequestInput::SENSITIVE = T.let(T.unsafe(nil),
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreatePullRequestOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1625
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1624
 class Aws::CodeCommit::Types::CreatePullRequestOutput < ::Struct
   include ::Aws::Structure
 end
@@ -10666,7 +10664,7 @@ Aws::CodeCommit::Types::CreatePullRequestOutput::SENSITIVE = T.let(T.unsafe(nil)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateRepositoryInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1687
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1683
 class Aws::CodeCommit::Types::CreateRepositoryInput < ::Struct
   include ::Aws::Structure
 end
@@ -10682,7 +10680,7 @@ Aws::CodeCommit::Types::CreateRepositoryInput::SENSITIVE = T.let(T.unsafe(nil), 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateRepositoryOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1701
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1700
 class Aws::CodeCommit::Types::CreateRepositoryOutput < ::Struct
   include ::Aws::Structure
 end
@@ -10752,7 +10750,7 @@ Aws::CodeCommit::Types::CreateRepositoryOutput::SENSITIVE = T.let(T.unsafe(nil),
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateUnreferencedMergeCommitInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1779
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1768
 class Aws::CodeCommit::Types::CreateUnreferencedMergeCommitInput < ::Struct
   include ::Aws::Structure
 end
@@ -10771,7 +10769,7 @@ Aws::CodeCommit::Types::CreateUnreferencedMergeCommitInput::SENSITIVE = T.let(T.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/CreateUnreferencedMergeCommitOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1797
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1795
 class Aws::CodeCommit::Types::CreateUnreferencedMergeCommitOutput < ::Struct
   include ::Aws::Structure
 end
@@ -10794,7 +10792,7 @@ class Aws::CodeCommit::Types::DefaultBranchCannotBeDeletedException < ::Aws::Emp
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteApprovalRuleTemplateInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1817
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1816
 class Aws::CodeCommit::Types::DeleteApprovalRuleTemplateInput < ::Struct
   include ::Aws::Structure
 end
@@ -10810,7 +10808,7 @@ Aws::CodeCommit::Types::DeleteApprovalRuleTemplateInput::SENSITIVE = T.let(T.uns
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteApprovalRuleTemplateOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1831
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1830
 class Aws::CodeCommit::Types::DeleteApprovalRuleTemplateOutput < ::Struct
   include ::Aws::Structure
 end
@@ -10830,7 +10828,7 @@ Aws::CodeCommit::Types::DeleteApprovalRuleTemplateOutput::SENSITIVE = T.let(T.un
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteBranchInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1850
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1848
 class Aws::CodeCommit::Types::DeleteBranchInput < ::Struct
   include ::Aws::Structure
 end
@@ -10847,7 +10845,7 @@ Aws::CodeCommit::Types::DeleteBranchInput::SENSITIVE = T.let(T.unsafe(nil), Arra
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteBranchOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1865
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1864
 class Aws::CodeCommit::Types::DeleteBranchOutput < ::Struct
   include ::Aws::Structure
 end
@@ -10862,7 +10860,7 @@ Aws::CodeCommit::Types::DeleteBranchOutput::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteCommentContentInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1878
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1877
 class Aws::CodeCommit::Types::DeleteCommentContentInput < ::Struct
   include ::Aws::Structure
 end
@@ -10876,7 +10874,7 @@ Aws::CodeCommit::Types::DeleteCommentContentInput::SENSITIVE = T.let(T.unsafe(ni
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteCommentContentOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1890
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1889
 class Aws::CodeCommit::Types::DeleteCommentContentOutput < ::Struct
   include ::Aws::Structure
 end
@@ -10893,7 +10891,7 @@ Aws::CodeCommit::Types::DeleteCommentContentOutput::SENSITIVE = T.let(T.unsafe(n
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteFileEntry AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1905
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1904
 class Aws::CodeCommit::Types::DeleteFileEntry < ::Struct
   include ::Aws::Structure
 end
@@ -10953,7 +10951,7 @@ Aws::CodeCommit::Types::DeleteFileEntry::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteFileInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1970
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1962
 class Aws::CodeCommit::Types::DeleteFileInput < ::Struct
   include ::Aws::Structure
 end
@@ -10982,7 +10980,7 @@ Aws::CodeCommit::Types::DeleteFileInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteFileOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2000
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:1996
 class Aws::CodeCommit::Types::DeleteFileOutput < ::Struct
   include ::Aws::Structure
 end
@@ -11001,7 +10999,7 @@ Aws::CodeCommit::Types::DeleteFileOutput::SENSITIVE = T.let(T.unsafe(nil), Array
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeletePullRequestApprovalRuleInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2018
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2016
 class Aws::CodeCommit::Types::DeletePullRequestApprovalRuleInput < ::Struct
   include ::Aws::Structure
 end
@@ -11020,7 +11018,7 @@ Aws::CodeCommit::Types::DeletePullRequestApprovalRuleInput::SENSITIVE = T.let(T.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeletePullRequestApprovalRuleOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2035
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2034
 class Aws::CodeCommit::Types::DeletePullRequestApprovalRuleOutput < ::Struct
   include ::Aws::Structure
 end
@@ -11036,7 +11034,7 @@ Aws::CodeCommit::Types::DeletePullRequestApprovalRuleOutput::SENSITIVE = T.let(T
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteRepositoryInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2049
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2048
 class Aws::CodeCommit::Types::DeleteRepositoryInput < ::Struct
   include ::Aws::Structure
 end
@@ -11052,7 +11050,7 @@ Aws::CodeCommit::Types::DeleteRepositoryInput::SENSITIVE = T.let(T.unsafe(nil), 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DeleteRepositoryOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2063
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2062
 class Aws::CodeCommit::Types::DeleteRepositoryOutput < ::Struct
   include ::Aws::Structure
 end
@@ -11109,7 +11107,7 @@ Aws::CodeCommit::Types::DeleteRepositoryOutput::SENSITIVE = T.let(T.unsafe(nil),
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DescribeMergeConflictsInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2126
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2117
 class Aws::CodeCommit::Types::DescribeMergeConflictsInput < ::Struct
   include ::Aws::Structure
 end
@@ -11146,7 +11144,7 @@ Aws::CodeCommit::Types::DescribeMergeConflictsInput::SENSITIVE = T.let(T.unsafe(
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DescribeMergeConflictsOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2166
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2160
 class Aws::CodeCommit::Types::DescribeMergeConflictsOutput < ::Struct
   include ::Aws::Structure
 end
@@ -11183,7 +11181,7 @@ Aws::CodeCommit::Types::DescribeMergeConflictsOutput::SENSITIVE = T.let(T.unsafe
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DescribePullRequestEventsInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2205
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2200
 class Aws::CodeCommit::Types::DescribePullRequestEventsInput < ::Struct
   include ::Aws::Structure
 end
@@ -11202,7 +11200,7 @@ Aws::CodeCommit::Types::DescribePullRequestEventsInput::SENSITIVE = T.let(T.unsa
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DescribePullRequestEventsOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2223
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2221
 class Aws::CodeCommit::Types::DescribePullRequestEventsOutput < ::Struct
   include ::Aws::Structure
 end
@@ -11229,7 +11227,7 @@ Aws::CodeCommit::Types::DescribePullRequestEventsOutput::SENSITIVE = T.let(T.uns
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/Difference AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2250
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2247
 class Aws::CodeCommit::Types::Difference < ::Struct
   include ::Aws::Structure
 end
@@ -11259,7 +11257,7 @@ class Aws::CodeCommit::Types::DirectoryNameConflictsWithFileNameException < ::Aw
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/DisassociateApprovalRuleTemplateFromRepositoryInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2278
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2276
 class Aws::CodeCommit::Types::DisassociateApprovalRuleTemplateFromRepositoryInput < ::Struct
   include ::Aws::Structure
 end
@@ -11336,7 +11334,7 @@ class Aws::CodeCommit::Types::EncryptionKeyUnavailableException < ::Aws::EmptySt
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/EvaluatePullRequestApprovalRulesInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2346
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2344
 class Aws::CodeCommit::Types::EvaluatePullRequestApprovalRulesInput < ::Struct
   include ::Aws::Structure
 end
@@ -11354,7 +11352,7 @@ Aws::CodeCommit::Types::EvaluatePullRequestApprovalRulesInput::SENSITIVE = T.let
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/EvaluatePullRequestApprovalRulesOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2362
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2361
 class Aws::CodeCommit::Types::EvaluatePullRequestApprovalRulesOutput < ::Struct
   include ::Aws::Structure
 end
@@ -11385,7 +11383,7 @@ Aws::CodeCommit::Types::EvaluatePullRequestApprovalRulesOutput::SENSITIVE = T.le
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/Evaluation AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2394
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2390
 class Aws::CodeCommit::Types::Evaluation < ::Struct
   include ::Aws::Structure
 end
@@ -11415,7 +11413,7 @@ Aws::CodeCommit::Types::Evaluation::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/File AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2425
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2421
 class Aws::CodeCommit::Types::File < ::Struct
   include ::Aws::Structure
 end
@@ -11484,7 +11482,7 @@ class Aws::CodeCommit::Types::FileEntryRequiredException < ::Aws::EmptyStructure
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/FileMetadata AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2489
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2486
 class Aws::CodeCommit::Types::FileMetadata < ::Struct
   include ::Aws::Structure
 end
@@ -11517,7 +11515,7 @@ class Aws::CodeCommit::Types::FileModeRequiredException < ::Aws::EmptyStructure;
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/FileModes AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2521
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2518
 class Aws::CodeCommit::Types::FileModes < ::Struct
   include ::Aws::Structure
 end
@@ -11560,7 +11558,7 @@ class Aws::CodeCommit::Types::FilePathConflictsWithSubmodulePathException < ::Aw
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/FileSizes AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2562
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2559
 class Aws::CodeCommit::Types::FileSizes < ::Struct
   include ::Aws::Structure
 end
@@ -11606,7 +11604,7 @@ class Aws::CodeCommit::Types::FileTooLargeException < ::Aws::EmptyStructure; end
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/FileVersion AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2608
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2604
 class Aws::CodeCommit::Types::FileVersion < ::Struct
   include ::Aws::Structure
 end
@@ -11632,7 +11630,7 @@ Aws::CodeCommit::Types::FileVersion::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/Folder AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2634
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2631
 class Aws::CodeCommit::Types::Folder < ::Struct
   include ::Aws::Structure
 end
@@ -11665,7 +11663,7 @@ class Aws::CodeCommit::Types::FolderDoesNotExistException < ::Aws::EmptyStructur
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetApprovalRuleTemplateInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2663
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2662
 class Aws::CodeCommit::Types::GetApprovalRuleTemplateInput < ::Struct
   include ::Aws::Structure
 end
@@ -11679,7 +11677,7 @@ Aws::CodeCommit::Types::GetApprovalRuleTemplateInput::SENSITIVE = T.let(T.unsafe
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetApprovalRuleTemplateOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2675
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2674
 class Aws::CodeCommit::Types::GetApprovalRuleTemplateOutput < ::Struct
   include ::Aws::Structure
 end
@@ -11699,7 +11697,7 @@ Aws::CodeCommit::Types::GetApprovalRuleTemplateOutput::SENSITIVE = T.let(T.unsaf
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetBlobInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2694
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2692
 class Aws::CodeCommit::Types::GetBlobInput < ::Struct
   include ::Aws::Structure
 end
@@ -11715,7 +11713,7 @@ Aws::CodeCommit::Types::GetBlobInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetBlobOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2708
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2707
 class Aws::CodeCommit::Types::GetBlobOutput < ::Struct
   include ::Aws::Structure
 end
@@ -11736,7 +11734,7 @@ Aws::CodeCommit::Types::GetBlobOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetBranchInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2728
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2726
 class Aws::CodeCommit::Types::GetBranchInput < ::Struct
   include ::Aws::Structure
 end
@@ -11752,7 +11750,7 @@ Aws::CodeCommit::Types::GetBranchInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetBranchOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2742
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2741
 class Aws::CodeCommit::Types::GetBranchOutput < ::Struct
   include ::Aws::Structure
 end
@@ -11767,7 +11765,7 @@ Aws::CodeCommit::Types::GetBranchOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommentInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2755
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2754
 class Aws::CodeCommit::Types::GetCommentInput < ::Struct
   include ::Aws::Structure
 end
@@ -11781,7 +11779,7 @@ Aws::CodeCommit::Types::GetCommentInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommentOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2767
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2766
 class Aws::CodeCommit::Types::GetCommentOutput < ::Struct
   include ::Aws::Structure
 end
@@ -11812,7 +11810,7 @@ Aws::CodeCommit::Types::GetCommentOutput::SENSITIVE = T.let(T.unsafe(nil), Array
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommentReactionsInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2799
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2795
 class Aws::CodeCommit::Types::GetCommentReactionsInput < ::Struct
   include ::Aws::Structure
 end
@@ -11831,7 +11829,7 @@ Aws::CodeCommit::Types::GetCommentReactionsInput::SENSITIVE = T.let(T.unsafe(nil
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommentReactionsOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2817
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2815
 class Aws::CodeCommit::Types::GetCommentReactionsOutput < ::Struct
   include ::Aws::Structure
 end
@@ -11866,7 +11864,7 @@ Aws::CodeCommit::Types::GetCommentReactionsOutput::SENSITIVE = T.let(T.unsafe(ni
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommentsForComparedCommitInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2854
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2849
 class Aws::CodeCommit::Types::GetCommentsForComparedCommitInput < ::Struct
   include ::Aws::Structure
 end
@@ -11885,7 +11883,7 @@ Aws::CodeCommit::Types::GetCommentsForComparedCommitInput::SENSITIVE = T.let(T.u
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommentsForComparedCommitOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2872
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2870
 class Aws::CodeCommit::Types::GetCommentsForComparedCommitOutput < ::Struct
   include ::Aws::Structure
 end
@@ -11931,7 +11929,7 @@ Aws::CodeCommit::Types::GetCommentsForComparedCommitOutput::SENSITIVE = T.let(T.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommentsForPullRequestInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2921
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2915
 class Aws::CodeCommit::Types::GetCommentsForPullRequestInput < ::Struct
   include ::Aws::Structure
 end
@@ -11950,7 +11948,7 @@ Aws::CodeCommit::Types::GetCommentsForPullRequestInput::SENSITIVE = T.let(T.unsa
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommentsForPullRequestOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2939
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2937
 class Aws::CodeCommit::Types::GetCommentsForPullRequestOutput < ::Struct
   include ::Aws::Structure
 end
@@ -11970,7 +11968,7 @@ Aws::CodeCommit::Types::GetCommentsForPullRequestOutput::SENSITIVE = T.let(T.uns
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommitInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2958
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2956
 class Aws::CodeCommit::Types::GetCommitInput < ::Struct
   include ::Aws::Structure
 end
@@ -11987,7 +11985,7 @@ Aws::CodeCommit::Types::GetCommitInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetCommitOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2973
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:2972
 class Aws::CodeCommit::Types::GetCommitOutput < ::Struct
   include ::Aws::Structure
 end
@@ -12038,7 +12036,7 @@ Aws::CodeCommit::Types::GetCommitOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetDifferencesInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3028
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3021
 class Aws::CodeCommit::Types::GetDifferencesInput < ::Struct
   include ::Aws::Structure
 end
@@ -12059,7 +12057,7 @@ Aws::CodeCommit::Types::GetDifferencesInput::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetDifferencesOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3048
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3046
 class Aws::CodeCommit::Types::GetDifferencesOutput < ::Struct
   include ::Aws::Structure
 end
@@ -12086,7 +12084,7 @@ Aws::CodeCommit::Types::GetDifferencesOutput::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetFileInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3075
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3072
 class Aws::CodeCommit::Types::GetFileInput < ::Struct
   include ::Aws::Structure
 end
@@ -12130,7 +12128,7 @@ Aws::CodeCommit::Types::GetFileInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetFileOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3122
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3116
 class Aws::CodeCommit::Types::GetFileOutput < ::Struct
   include ::Aws::Structure
 end
@@ -12159,7 +12157,7 @@ Aws::CodeCommit::Types::GetFileOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetFolderInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3151
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3148
 class Aws::CodeCommit::Types::GetFolderInput < ::Struct
   include ::Aws::Structure
 end
@@ -12200,7 +12198,7 @@ Aws::CodeCommit::Types::GetFolderInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetFolderOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3196
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3189
 class Aws::CodeCommit::Types::GetFolderOutput < ::Struct
   include ::Aws::Structure
 end
@@ -12240,7 +12238,7 @@ Aws::CodeCommit::Types::GetFolderOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetMergeCommitInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3238
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3233
 class Aws::CodeCommit::Types::GetMergeCommitInput < ::Struct
   include ::Aws::Structure
 end
@@ -12270,7 +12268,7 @@ Aws::CodeCommit::Types::GetMergeCommitInput::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetMergeCommitOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3269
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3265
 class Aws::CodeCommit::Types::GetMergeCommitOutput < ::Struct
   include ::Aws::Structure
 end
@@ -12322,7 +12320,7 @@ Aws::CodeCommit::Types::GetMergeCommitOutput::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetMergeConflictsInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3326
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3318
 class Aws::CodeCommit::Types::GetMergeConflictsInput < ::Struct
   include ::Aws::Structure
 end
@@ -12361,7 +12359,7 @@ Aws::CodeCommit::Types::GetMergeConflictsInput::SENSITIVE = T.let(T.unsafe(nil),
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetMergeConflictsOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3368
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3362
 class Aws::CodeCommit::Types::GetMergeConflictsOutput < ::Struct
   include ::Aws::Structure
 end
@@ -12401,7 +12399,7 @@ Aws::CodeCommit::Types::GetMergeConflictsOutput::SENSITIVE = T.let(T.unsafe(nil)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetMergeOptionsInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3410
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3405
 class Aws::CodeCommit::Types::GetMergeOptionsInput < ::Struct
   include ::Aws::Structure
 end
@@ -12429,7 +12427,7 @@ Aws::CodeCommit::Types::GetMergeOptionsInput::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetMergeOptionsOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3439
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3435
 class Aws::CodeCommit::Types::GetMergeOptionsOutput < ::Struct
   include ::Aws::Structure
 end
@@ -12447,7 +12445,7 @@ Aws::CodeCommit::Types::GetMergeOptionsOutput::SENSITIVE = T.let(T.unsafe(nil), 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetPullRequestApprovalStatesInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3456
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3454
 class Aws::CodeCommit::Types::GetPullRequestApprovalStatesInput < ::Struct
   include ::Aws::Structure
 end
@@ -12461,7 +12459,7 @@ Aws::CodeCommit::Types::GetPullRequestApprovalStatesInput::SENSITIVE = T.let(T.u
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetPullRequestApprovalStatesOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3468
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3467
 class Aws::CodeCommit::Types::GetPullRequestApprovalStatesOutput < ::Struct
   include ::Aws::Structure
 end
@@ -12476,7 +12474,7 @@ Aws::CodeCommit::Types::GetPullRequestApprovalStatesOutput::SENSITIVE = T.let(T.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetPullRequestInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3481
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3480
 class Aws::CodeCommit::Types::GetPullRequestInput < ::Struct
   include ::Aws::Structure
 end
@@ -12490,7 +12488,7 @@ Aws::CodeCommit::Types::GetPullRequestInput::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetPullRequestOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3493
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3492
 class Aws::CodeCommit::Types::GetPullRequestOutput < ::Struct
   include ::Aws::Structure
 end
@@ -12510,7 +12508,7 @@ Aws::CodeCommit::Types::GetPullRequestOutput::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetPullRequestOverrideStateInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3512
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3510
 class Aws::CodeCommit::Types::GetPullRequestOverrideStateInput < ::Struct
   include ::Aws::Structure
 end
@@ -12531,7 +12529,7 @@ Aws::CodeCommit::Types::GetPullRequestOverrideStateInput::SENSITIVE = T.let(T.un
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetPullRequestOverrideStateOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3532
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3530
 class Aws::CodeCommit::Types::GetPullRequestOverrideStateOutput < ::Struct
   include ::Aws::Structure
 end
@@ -12547,7 +12545,7 @@ Aws::CodeCommit::Types::GetPullRequestOverrideStateOutput::SENSITIVE = T.let(T.u
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetRepositoryInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3546
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3545
 class Aws::CodeCommit::Types::GetRepositoryInput < ::Struct
   include ::Aws::Structure
 end
@@ -12563,7 +12561,7 @@ Aws::CodeCommit::Types::GetRepositoryInput::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetRepositoryOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3560
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3559
 class Aws::CodeCommit::Types::GetRepositoryOutput < ::Struct
   include ::Aws::Structure
 end
@@ -12579,7 +12577,7 @@ Aws::CodeCommit::Types::GetRepositoryOutput::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetRepositoryTriggersInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3574
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3573
 class Aws::CodeCommit::Types::GetRepositoryTriggersInput < ::Struct
   include ::Aws::Structure
 end
@@ -12599,7 +12597,7 @@ Aws::CodeCommit::Types::GetRepositoryTriggersInput::SENSITIVE = T.let(T.unsafe(n
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/GetRepositoryTriggersOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3593
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:3591
 class Aws::CodeCommit::Types::GetRepositoryTriggersOutput < ::Struct
   include ::Aws::Structure
 end
@@ -13157,7 +13155,7 @@ class Aws::CodeCommit::Types::InvalidTitleException < ::Aws::EmptyStructure; end
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/IsBinaryFile AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4087
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4084
 class Aws::CodeCommit::Types::IsBinaryFile < ::Struct
   include ::Aws::Structure
 end
@@ -13177,7 +13175,7 @@ Aws::CodeCommit::Types::IsBinaryFile::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListApprovalRuleTemplatesInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4106
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4104
 class Aws::CodeCommit::Types::ListApprovalRuleTemplatesInput < ::Struct
   include ::Aws::Structure
 end
@@ -13197,7 +13195,7 @@ Aws::CodeCommit::Types::ListApprovalRuleTemplatesInput::SENSITIVE = T.let(T.unsa
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListApprovalRuleTemplatesOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4125
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4123
 class Aws::CodeCommit::Types::ListApprovalRuleTemplatesOutput < ::Struct
   include ::Aws::Structure
 end
@@ -13222,7 +13220,7 @@ Aws::CodeCommit::Types::ListApprovalRuleTemplatesOutput::SENSITIVE = T.let(T.uns
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListAssociatedApprovalRuleTemplatesForRepositoryInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4150
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4147
 class Aws::CodeCommit::Types::ListAssociatedApprovalRuleTemplatesForRepositoryInput < ::Struct
   include ::Aws::Structure
 end
@@ -13242,7 +13240,7 @@ Aws::CodeCommit::Types::ListAssociatedApprovalRuleTemplatesForRepositoryInput::S
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListAssociatedApprovalRuleTemplatesForRepositoryOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4169
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4167
 class Aws::CodeCommit::Types::ListAssociatedApprovalRuleTemplatesForRepositoryOutput < ::Struct
   include ::Aws::Structure
 end
@@ -13262,7 +13260,7 @@ Aws::CodeCommit::Types::ListAssociatedApprovalRuleTemplatesForRepositoryOutput::
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListBranchesInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4188
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4186
 class Aws::CodeCommit::Types::ListBranchesInput < ::Struct
   include ::Aws::Structure
 end
@@ -13282,7 +13280,7 @@ Aws::CodeCommit::Types::ListBranchesInput::SENSITIVE = T.let(T.unsafe(nil), Arra
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListBranchesOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4207
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4205
 class Aws::CodeCommit::Types::ListBranchesOutput < ::Struct
   include ::Aws::Structure
 end
@@ -13317,7 +13315,7 @@ Aws::CodeCommit::Types::ListBranchesOutput::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListFileCommitHistoryRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4244
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4239
 class Aws::CodeCommit::Types::ListFileCommitHistoryRequest < ::Struct
   include ::Aws::Structure
 end
@@ -13338,7 +13336,7 @@ Aws::CodeCommit::Types::ListFileCommitHistoryRequest::SENSITIVE = T.let(T.unsafe
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListFileCommitHistoryResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4264
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4262
 class Aws::CodeCommit::Types::ListFileCommitHistoryResponse < ::Struct
   include ::Aws::Structure
 end
@@ -13373,7 +13371,7 @@ Aws::CodeCommit::Types::ListFileCommitHistoryResponse::SENSITIVE = T.let(T.unsaf
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListPullRequestsInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4301
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4296
 class Aws::CodeCommit::Types::ListPullRequestsInput < ::Struct
   include ::Aws::Structure
 end
@@ -13392,7 +13390,7 @@ Aws::CodeCommit::Types::ListPullRequestsInput::SENSITIVE = T.let(T.unsafe(nil), 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListPullRequestsOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4319
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4317
 class Aws::CodeCommit::Types::ListPullRequestsOutput < ::Struct
   include ::Aws::Structure
 end
@@ -13417,7 +13415,7 @@ Aws::CodeCommit::Types::ListPullRequestsOutput::SENSITIVE = T.let(T.unsafe(nil),
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListRepositoriesForApprovalRuleTemplateInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4344
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4341
 class Aws::CodeCommit::Types::ListRepositoriesForApprovalRuleTemplateInput < ::Struct
   include ::Aws::Structure
 end
@@ -13437,7 +13435,7 @@ Aws::CodeCommit::Types::ListRepositoriesForApprovalRuleTemplateInput::SENSITIVE 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListRepositoriesForApprovalRuleTemplateOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4363
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4361
 class Aws::CodeCommit::Types::ListRepositoriesForApprovalRuleTemplateOutput < ::Struct
   include ::Aws::Structure
 end
@@ -13466,7 +13464,7 @@ Aws::CodeCommit::Types::ListRepositoriesForApprovalRuleTemplateOutput::SENSITIVE
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListRepositoriesInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4392
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4389
 class Aws::CodeCommit::Types::ListRepositoriesInput < ::Struct
   include ::Aws::Structure
 end
@@ -13489,7 +13487,7 @@ Aws::CodeCommit::Types::ListRepositoriesInput::SENSITIVE = T.let(T.unsafe(nil), 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListRepositoriesOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4414
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4412
 class Aws::CodeCommit::Types::ListRepositoriesOutput < ::Struct
   include ::Aws::Structure
 end
@@ -13509,7 +13507,7 @@ Aws::CodeCommit::Types::ListRepositoriesOutput::SENSITIVE = T.let(T.unsafe(nil),
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListTagsForResourceInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4433
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4431
 class Aws::CodeCommit::Types::ListTagsForResourceInput < ::Struct
   include ::Aws::Structure
 end
@@ -13529,7 +13527,7 @@ Aws::CodeCommit::Types::ListTagsForResourceInput::SENSITIVE = T.let(T.unsafe(nil
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ListTagsForResourceOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4452
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4450
 class Aws::CodeCommit::Types::ListTagsForResourceOutput < ::Struct
   include ::Aws::Structure
 end
@@ -13556,7 +13554,7 @@ Aws::CodeCommit::Types::ListTagsForResourceOutput::SENSITIVE = T.let(T.unsafe(ni
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/Location AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4479
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4476
 class Aws::CodeCommit::Types::Location < ::Struct
   include ::Aws::Structure
 end
@@ -13673,7 +13671,7 @@ class Aws::CodeCommit::Types::MaximumRuleTemplatesAssociatedWithRepositoryExcept
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeBranchesByFastForwardInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4586
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4582
 class Aws::CodeCommit::Types::MergeBranchesByFastForwardInput < ::Struct
   include ::Aws::Structure
 end
@@ -13691,7 +13689,7 @@ Aws::CodeCommit::Types::MergeBranchesByFastForwardInput::SENSITIVE = T.let(T.uns
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeBranchesByFastForwardOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4603
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4601
 class Aws::CodeCommit::Types::MergeBranchesByFastForwardOutput < ::Struct
   include ::Aws::Structure
 end
@@ -13760,7 +13758,7 @@ Aws::CodeCommit::Types::MergeBranchesByFastForwardOutput::SENSITIVE = T.let(T.un
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeBranchesBySquashInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4680
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4669
 class Aws::CodeCommit::Types::MergeBranchesBySquashInput < ::Struct
   include ::Aws::Structure
 end
@@ -13778,7 +13776,7 @@ Aws::CodeCommit::Types::MergeBranchesBySquashInput::SENSITIVE = T.let(T.unsafe(n
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeBranchesBySquashOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4697
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4695
 class Aws::CodeCommit::Types::MergeBranchesBySquashOutput < ::Struct
   include ::Aws::Structure
 end
@@ -13847,7 +13845,7 @@ Aws::CodeCommit::Types::MergeBranchesBySquashOutput::SENSITIVE = T.let(T.unsafe(
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeBranchesByThreeWayInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4774
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4763
 class Aws::CodeCommit::Types::MergeBranchesByThreeWayInput < ::Struct
   include ::Aws::Structure
 end
@@ -13865,7 +13863,7 @@ Aws::CodeCommit::Types::MergeBranchesByThreeWayInput::SENSITIVE = T.let(T.unsafe
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeBranchesByThreeWayOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4791
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4789
 class Aws::CodeCommit::Types::MergeBranchesByThreeWayOutput < ::Struct
   include ::Aws::Structure
 end
@@ -13901,7 +13899,7 @@ Aws::CodeCommit::Types::MergeBranchesByThreeWayOutput::SENSITIVE = T.let(T.unsaf
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeHunk AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4828
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4824
 class Aws::CodeCommit::Types::MergeHunk < ::Struct
   include ::Aws::Structure
 end
@@ -13927,7 +13925,7 @@ Aws::CodeCommit::Types::MergeHunk::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeHunkDetail AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4854
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4851
 class Aws::CodeCommit::Types::MergeHunkDetail < ::Struct
   include ::Aws::Structure
 end
@@ -13956,7 +13954,7 @@ Aws::CodeCommit::Types::MergeHunkDetail::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeMetadata AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4884
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4880
 class Aws::CodeCommit::Types::MergeMetadata < ::Struct
   include ::Aws::Structure
 end
@@ -13978,7 +13976,7 @@ Aws::CodeCommit::Types::MergeMetadata::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergeOperations AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4905
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4903
 class Aws::CodeCommit::Types::MergeOperations < ::Struct
   include ::Aws::Structure
 end
@@ -14011,7 +14009,7 @@ class Aws::CodeCommit::Types::MergeOptionRequiredException < ::Aws::EmptyStructu
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergePullRequestByFastForwardInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4937
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4934
 class Aws::CodeCommit::Types::MergePullRequestByFastForwardInput < ::Struct
   include ::Aws::Structure
 end
@@ -14025,7 +14023,7 @@ Aws::CodeCommit::Types::MergePullRequestByFastForwardInput::SENSITIVE = T.let(T.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergePullRequestByFastForwardOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4949
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:4948
 class Aws::CodeCommit::Types::MergePullRequestByFastForwardOutput < ::Struct
   include ::Aws::Structure
 end
@@ -14092,7 +14090,7 @@ Aws::CodeCommit::Types::MergePullRequestByFastForwardOutput::SENSITIVE = T.let(T
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergePullRequestBySquashInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5023
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5013
 class Aws::CodeCommit::Types::MergePullRequestBySquashInput < ::Struct
   include ::Aws::Structure
 end
@@ -14106,7 +14104,7 @@ Aws::CodeCommit::Types::MergePullRequestBySquashInput::SENSITIVE = T.let(T.unsaf
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergePullRequestBySquashOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5035
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5034
 class Aws::CodeCommit::Types::MergePullRequestBySquashOutput < ::Struct
   include ::Aws::Structure
 end
@@ -14173,7 +14171,7 @@ Aws::CodeCommit::Types::MergePullRequestBySquashOutput::SENSITIVE = T.let(T.unsa
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergePullRequestByThreeWayInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5109
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5099
 class Aws::CodeCommit::Types::MergePullRequestByThreeWayInput < ::Struct
   include ::Aws::Structure
 end
@@ -14187,7 +14185,7 @@ Aws::CodeCommit::Types::MergePullRequestByThreeWayInput::SENSITIVE = T.let(T.uns
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/MergePullRequestByThreeWayOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5121
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5120
 class Aws::CodeCommit::Types::MergePullRequestByThreeWayOutput < ::Struct
   include ::Aws::Structure
 end
@@ -14261,7 +14259,7 @@ class Aws::CodeCommit::Types::NumberOfRulesExceededException < ::Aws::EmptyStruc
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ObjectTypes AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5189
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5186
 class Aws::CodeCommit::Types::ObjectTypes < ::Struct
   include ::Aws::Structure
 end
@@ -14289,7 +14287,7 @@ class Aws::CodeCommit::Types::OperationNotAllowedException < ::Aws::EmptyStructu
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/OriginApprovalRuleTemplate AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5215
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5213
 class Aws::CodeCommit::Types::OriginApprovalRuleTemplate < ::Struct
   include ::Aws::Structure
 end
@@ -14325,7 +14323,7 @@ class Aws::CodeCommit::Types::OverrideAlreadySetException < ::Aws::EmptyStructur
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/OverridePullRequestApprovalRulesInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5250
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5247
 class Aws::CodeCommit::Types::OverridePullRequestApprovalRulesInput < ::Struct
   include ::Aws::Structure
 end
@@ -14419,7 +14417,7 @@ class Aws::CodeCommit::Types::PathRequiredException < ::Aws::EmptyStructure; end
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PostCommentForComparedCommitInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5341
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5335
 class Aws::CodeCommit::Types::PostCommentForComparedCommitInput < ::Struct
   include ::Aws::Structure
 end
@@ -14463,7 +14461,7 @@ Aws::CodeCommit::Types::PostCommentForComparedCommitInput::SENSITIVE = T.let(T.u
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PostCommentForComparedCommitOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5389
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5382
 class Aws::CodeCommit::Types::PostCommentForComparedCommitOutput < ::Struct
   include ::Aws::Structure
 end
@@ -14516,7 +14514,7 @@ Aws::CodeCommit::Types::PostCommentForComparedCommitOutput::SENSITIVE = T.let(T.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PostCommentForPullRequestInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5446
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5439
 class Aws::CodeCommit::Types::PostCommentForPullRequestInput < ::Struct
   include ::Aws::Structure
 end
@@ -14564,7 +14562,7 @@ Aws::CodeCommit::Types::PostCommentForPullRequestInput::SENSITIVE = T.let(T.unsa
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PostCommentForPullRequestOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5499
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5491
 class Aws::CodeCommit::Types::PostCommentForPullRequestOutput < ::Struct
   include ::Aws::Structure
 end
@@ -14595,7 +14593,7 @@ Aws::CodeCommit::Types::PostCommentForPullRequestOutput::SENSITIVE = T.let(T.uns
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PostCommentReplyInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5530
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5527
 class Aws::CodeCommit::Types::PostCommentReplyInput < ::Struct
   include ::Aws::Structure
 end
@@ -14609,7 +14607,7 @@ Aws::CodeCommit::Types::PostCommentReplyInput::SENSITIVE = T.let(T.unsafe(nil), 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PostCommentReplyOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5542
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5541
 class Aws::CodeCommit::Types::PostCommentReplyOutput < ::Struct
   include ::Aws::Structure
 end
@@ -14677,7 +14675,7 @@ Aws::CodeCommit::Types::PostCommentReplyOutput::SENSITIVE = T.let(T.unsafe(nil),
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5618
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5607
 class Aws::CodeCommit::Types::PullRequest < ::Struct
   include ::Aws::Structure
 end
@@ -14734,7 +14732,7 @@ class Aws::CodeCommit::Types::PullRequestCannotBeApprovedByAuthorException < ::A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequestCreatedEventMetadata AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5673
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5669
 class Aws::CodeCommit::Types::PullRequestCreatedEventMetadata < ::Struct
   include ::Aws::Structure
 end
@@ -14807,7 +14805,7 @@ class Aws::CodeCommit::Types::PullRequestDoesNotExistException < ::Aws::EmptyStr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequestEvent AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5753
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5742
 class Aws::CodeCommit::Types::PullRequestEvent < ::Struct
   include ::Aws::Structure
 end
@@ -14839,7 +14837,7 @@ class Aws::CodeCommit::Types::PullRequestIdRequiredException < ::Aws::EmptyStruc
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequestMergedStateChangedEventMetadata AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5784
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5781
 class Aws::CodeCommit::Types::PullRequestMergedStateChangedEventMetadata < ::Struct
   include ::Aws::Structure
 end
@@ -14870,7 +14868,7 @@ Aws::CodeCommit::Types::PullRequestMergedStateChangedEventMetadata::SENSITIVE = 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequestSourceReferenceUpdatedEventMetadata AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5816
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5812
 class Aws::CodeCommit::Types::PullRequestSourceReferenceUpdatedEventMetadata < ::Struct
   include ::Aws::Structure
 end
@@ -14886,7 +14884,7 @@ Aws::CodeCommit::Types::PullRequestSourceReferenceUpdatedEventMetadata::SENSITIV
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequestStatusChangedEventMetadata AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5830
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5829
 class Aws::CodeCommit::Types::PullRequestStatusChangedEventMetadata < ::Struct
   include ::Aws::Structure
 end
@@ -14942,7 +14940,7 @@ class Aws::CodeCommit::Types::PullRequestStatusRequiredException < ::Aws::EmptyS
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PullRequestTarget AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5889
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5882
 class Aws::CodeCommit::Types::PullRequestTarget < ::Struct
   include ::Aws::Structure
 end
@@ -14967,7 +14965,7 @@ Aws::CodeCommit::Types::PullRequestTarget::SENSITIVE = T.let(T.unsafe(nil), Arra
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PutCommentReactionInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5913
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5911
 class Aws::CodeCommit::Types::PutCommentReactionInput < ::Struct
   include ::Aws::Structure
 end
@@ -14999,7 +14997,7 @@ Aws::CodeCommit::Types::PutCommentReactionInput::SENSITIVE = T.let(T.unsafe(nil)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PutFileEntry AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5946
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:5942
 class Aws::CodeCommit::Types::PutFileEntry < ::Struct
   include ::Aws::Structure
 end
@@ -15072,7 +15070,7 @@ class Aws::CodeCommit::Types::PutFileEntryConflictException < ::Aws::EmptyStruct
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PutFileInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6024
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6015
 class Aws::CodeCommit::Types::PutFileInput < ::Struct
   include ::Aws::Structure
 end
@@ -15095,7 +15093,7 @@ Aws::CodeCommit::Types::PutFileInput::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PutFileOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6047
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6044
 class Aws::CodeCommit::Types::PutFileOutput < ::Struct
   include ::Aws::Structure
 end
@@ -15116,7 +15114,7 @@ Aws::CodeCommit::Types::PutFileOutput::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PutRepositoryTriggersInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6067
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6065
 class Aws::CodeCommit::Types::PutRepositoryTriggersInput < ::Struct
   include ::Aws::Structure
 end
@@ -15132,7 +15130,7 @@ Aws::CodeCommit::Types::PutRepositoryTriggersInput::SENSITIVE = T.let(T.unsafe(n
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/PutRepositoryTriggersOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6081
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6080
 class Aws::CodeCommit::Types::PutRepositoryTriggersOutput < ::Struct
   include ::Aws::Structure
 end
@@ -15160,7 +15158,7 @@ Aws::CodeCommit::Types::PutRepositoryTriggersOutput::SENSITIVE = T.let(T.unsafe(
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ReactionForComment AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6109
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6106
 class Aws::CodeCommit::Types::ReactionForComment < ::Struct
   include ::Aws::Structure
 end
@@ -15195,7 +15193,7 @@ class Aws::CodeCommit::Types::ReactionLimitExceededException < ::Aws::EmptyStruc
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ReactionValueFormats AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6143
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6140
 class Aws::CodeCommit::Types::ReactionValueFormats < ::Struct
   include ::Aws::Structure
 end
@@ -15255,7 +15253,7 @@ class Aws::CodeCommit::Types::ReferenceTypeNotSupportedException < ::Aws::EmptyS
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/ReplaceContentEntry AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6200
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6196
 class Aws::CodeCommit::Types::ReplaceContentEntry < ::Struct
   include ::Aws::Structure
 end
@@ -15343,7 +15341,7 @@ class Aws::CodeCommit::Types::RepositoryLimitExceededException < ::Aws::EmptyStr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RepositoryMetadata AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6292
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6281
 class Aws::CodeCommit::Types::RepositoryMetadata < ::Struct
   include ::Aws::Structure
 end
@@ -15370,7 +15368,7 @@ class Aws::CodeCommit::Types::RepositoryNameExistsException < ::Aws::EmptyStruct
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RepositoryNameIdPair AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6317
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6315
 class Aws::CodeCommit::Types::RepositoryNameIdPair < ::Struct
   include ::Aws::Structure
 end
@@ -15449,7 +15447,7 @@ class Aws::CodeCommit::Types::RepositoryNotAssociatedWithPullRequestException < 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RepositoryTrigger AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6395
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6390
 class Aws::CodeCommit::Types::RepositoryTrigger < ::Struct
   include ::Aws::Structure
 end
@@ -15492,7 +15490,7 @@ class Aws::CodeCommit::Types::RepositoryTriggerEventsListRequiredException < ::A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/RepositoryTriggerExecutionFailure AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6434
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6432
 class Aws::CodeCommit::Types::RepositoryTriggerExecutionFailure < ::Struct
   include ::Aws::Structure
 end
@@ -15583,7 +15581,7 @@ class Aws::CodeCommit::Types::SamePathRequestException < ::Aws::EmptyStructure; 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/SetFileModeEntry AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6516
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6514
 class Aws::CodeCommit::Types::SetFileModeEntry < ::Struct
   include ::Aws::Structure
 end
@@ -15621,7 +15619,7 @@ class Aws::CodeCommit::Types::SourceFileOrContentRequiredException < ::Aws::Empt
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/SourceFileSpecifier AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6551
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6549
 class Aws::CodeCommit::Types::SourceFileSpecifier < ::Struct
   include ::Aws::Structure
 end
@@ -15648,7 +15646,7 @@ Aws::CodeCommit::Types::SourceFileSpecifier::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/SubModule AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6578
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6575
 class Aws::CodeCommit::Types::SubModule < ::Struct
   include ::Aws::Structure
 end
@@ -15679,7 +15677,7 @@ Aws::CodeCommit::Types::SubModule::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/SymbolicLink AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6610
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6606
 class Aws::CodeCommit::Types::SymbolicLink < ::Struct
   include ::Aws::Structure
 end
@@ -15712,7 +15710,7 @@ class Aws::CodeCommit::Types::TagPolicyException < ::Aws::EmptyStructure; end
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/TagResourceInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6640
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6638
 class Aws::CodeCommit::Types::TagResourceInput < ::Struct
   include ::Aws::Structure
 end
@@ -15745,7 +15743,7 @@ class Aws::CodeCommit::Types::TagsMapRequiredException < ::Aws::EmptyStructure; 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/Target AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6672
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6669
 class Aws::CodeCommit::Types::Target < ::Struct
   include ::Aws::Structure
 end
@@ -15781,7 +15779,7 @@ class Aws::CodeCommit::Types::TargetsRequiredException < ::Aws::EmptyStructure; 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/TestRepositoryTriggersInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6705
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6703
 class Aws::CodeCommit::Types::TestRepositoryTriggersInput < ::Struct
   include ::Aws::Structure
 end
@@ -15804,7 +15802,7 @@ Aws::CodeCommit::Types::TestRepositoryTriggersInput::SENSITIVE = T.let(T.unsafe(
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/TestRepositoryTriggersOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6727
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6725
 class Aws::CodeCommit::Types::TestRepositoryTriggersOutput < ::Struct
   include ::Aws::Structure
 end
@@ -15857,7 +15855,7 @@ class Aws::CodeCommit::Types::TooManyTagsException < ::Aws::EmptyStructure; end
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UntagResourceInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6775
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6773
 class Aws::CodeCommit::Types::UntagResourceInput < ::Struct
   include ::Aws::Structure
 end
@@ -15882,7 +15880,7 @@ Aws::CodeCommit::Types::UntagResourceInput::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateApprovalRuleTemplateContentInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6800
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6797
 class Aws::CodeCommit::Types::UpdateApprovalRuleTemplateContentInput < ::Struct
   include ::Aws::Structure
 end
@@ -15896,7 +15894,7 @@ Aws::CodeCommit::Types::UpdateApprovalRuleTemplateContentInput::SENSITIVE = T.le
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateApprovalRuleTemplateContentOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6812
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6811
 class Aws::CodeCommit::Types::UpdateApprovalRuleTemplateContentOutput < ::Struct
   include ::Aws::Structure
 end
@@ -15915,7 +15913,7 @@ Aws::CodeCommit::Types::UpdateApprovalRuleTemplateContentOutput::SENSITIVE = T.l
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateApprovalRuleTemplateDescriptionInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6830
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6828
 class Aws::CodeCommit::Types::UpdateApprovalRuleTemplateDescriptionInput < ::Struct
   include ::Aws::Structure
 end
@@ -15929,7 +15927,7 @@ Aws::CodeCommit::Types::UpdateApprovalRuleTemplateDescriptionInput::SENSITIVE = 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateApprovalRuleTemplateDescriptionOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6842
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6841
 class Aws::CodeCommit::Types::UpdateApprovalRuleTemplateDescriptionOutput < ::Struct
   include ::Aws::Structure
 end
@@ -15947,7 +15945,7 @@ Aws::CodeCommit::Types::UpdateApprovalRuleTemplateDescriptionOutput::SENSITIVE =
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateApprovalRuleTemplateNameInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6859
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6857
 class Aws::CodeCommit::Types::UpdateApprovalRuleTemplateNameInput < ::Struct
   include ::Aws::Structure
 end
@@ -15961,7 +15959,7 @@ Aws::CodeCommit::Types::UpdateApprovalRuleTemplateNameInput::SENSITIVE = T.let(T
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateApprovalRuleTemplateNameOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6871
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6870
 class Aws::CodeCommit::Types::UpdateApprovalRuleTemplateNameOutput < ::Struct
   include ::Aws::Structure
 end
@@ -15981,7 +15979,7 @@ Aws::CodeCommit::Types::UpdateApprovalRuleTemplateNameOutput::SENSITIVE = T.let(
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateCommentInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6890
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6888
 class Aws::CodeCommit::Types::UpdateCommentInput < ::Struct
   include ::Aws::Structure
 end
@@ -15995,7 +15993,7 @@ Aws::CodeCommit::Types::UpdateCommentInput::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateCommentOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6902
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6901
 class Aws::CodeCommit::Types::UpdateCommentOutput < ::Struct
   include ::Aws::Structure
 end
@@ -16016,7 +16014,7 @@ Aws::CodeCommit::Types::UpdateCommentOutput::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateDefaultBranchInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6922
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6920
 class Aws::CodeCommit::Types::UpdateDefaultBranchInput < ::Struct
   include ::Aws::Structure
 end
@@ -16078,7 +16076,7 @@ Aws::CodeCommit::Types::UpdateDefaultBranchInput::SENSITIVE = T.let(T.unsafe(nil
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestApprovalRuleContentInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6985
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6981
 class Aws::CodeCommit::Types::UpdatePullRequestApprovalRuleContentInput < ::Struct
   include ::Aws::Structure
 end
@@ -16092,7 +16090,7 @@ Aws::CodeCommit::Types::UpdatePullRequestApprovalRuleContentInput::SENSITIVE = T
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestApprovalRuleContentOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6997
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:6996
 class Aws::CodeCommit::Types::UpdatePullRequestApprovalRuleContentOutput < ::Struct
   include ::Aws::Structure
 end
@@ -16114,7 +16112,7 @@ Aws::CodeCommit::Types::UpdatePullRequestApprovalRuleContentOutput::SENSITIVE = 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestApprovalStateInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7019
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7016
 class Aws::CodeCommit::Types::UpdatePullRequestApprovalStateInput < ::Struct
   include ::Aws::Structure
 end
@@ -16134,7 +16132,7 @@ Aws::CodeCommit::Types::UpdatePullRequestApprovalStateInput::SENSITIVE = T.let(T
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestDescriptionInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7038
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7036
 class Aws::CodeCommit::Types::UpdatePullRequestDescriptionInput < ::Struct
   include ::Aws::Structure
 end
@@ -16148,7 +16146,7 @@ Aws::CodeCommit::Types::UpdatePullRequestDescriptionInput::SENSITIVE = T.let(T.u
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestDescriptionOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7050
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7049
 class Aws::CodeCommit::Types::UpdatePullRequestDescriptionOutput < ::Struct
   include ::Aws::Structure
 end
@@ -16169,7 +16167,7 @@ Aws::CodeCommit::Types::UpdatePullRequestDescriptionOutput::SENSITIVE = T.let(T.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestStatusInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7070
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7068
 class Aws::CodeCommit::Types::UpdatePullRequestStatusInput < ::Struct
   include ::Aws::Structure
 end
@@ -16183,7 +16181,7 @@ Aws::CodeCommit::Types::UpdatePullRequestStatusInput::SENSITIVE = T.let(T.unsafe
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestStatusOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7082
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7081
 class Aws::CodeCommit::Types::UpdatePullRequestStatusOutput < ::Struct
   include ::Aws::Structure
 end
@@ -16203,7 +16201,7 @@ Aws::CodeCommit::Types::UpdatePullRequestStatusOutput::SENSITIVE = T.let(T.unsaf
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestTitleInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7101
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7099
 class Aws::CodeCommit::Types::UpdatePullRequestTitleInput < ::Struct
   include ::Aws::Structure
 end
@@ -16217,7 +16215,7 @@ Aws::CodeCommit::Types::UpdatePullRequestTitleInput::SENSITIVE = T.let(T.unsafe(
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdatePullRequestTitleOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7113
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7112
 class Aws::CodeCommit::Types::UpdatePullRequestTitleOutput < ::Struct
   include ::Aws::Structure
 end
@@ -16239,7 +16237,7 @@ Aws::CodeCommit::Types::UpdatePullRequestTitleOutput::SENSITIVE = T.let(T.unsafe
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateRepositoryDescriptionInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7134
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7132
 class Aws::CodeCommit::Types::UpdateRepositoryDescriptionInput < ::Struct
   include ::Aws::Structure
 end
@@ -16266,7 +16264,7 @@ Aws::CodeCommit::Types::UpdateRepositoryDescriptionInput::SENSITIVE = T.let(T.un
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateRepositoryEncryptionKeyInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7160
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7158
 class Aws::CodeCommit::Types::UpdateRepositoryEncryptionKeyInput < ::Struct
   include ::Aws::Structure
 end
@@ -16289,7 +16287,7 @@ Aws::CodeCommit::Types::UpdateRepositoryEncryptionKeyInput::SENSITIVE = T.let(T.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateRepositoryEncryptionKeyOutput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7183
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7180
 class Aws::CodeCommit::Types::UpdateRepositoryEncryptionKeyOutput < ::Struct
   include ::Aws::Structure
 end
@@ -16309,7 +16307,7 @@ Aws::CodeCommit::Types::UpdateRepositoryEncryptionKeyOutput::SENSITIVE = T.let(T
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UpdateRepositoryNameInput AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7202
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7200
 class Aws::CodeCommit::Types::UpdateRepositoryNameInput < ::Struct
   include ::Aws::Structure
 end
@@ -16335,7 +16333,7 @@ Aws::CodeCommit::Types::UpdateRepositoryNameInput::SENSITIVE = T.let(T.unsafe(ni
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/codecommit-2015-04-13/UserInfo AWS API Documentation
 #
-# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7228
+# pkg:gem/aws-sdk-codecommit#lib/aws-sdk-codecommit/types.rb:7225
 class Aws::CodeCommit::Types::UserInfo < ::Struct
   include ::Aws::Structure
 end

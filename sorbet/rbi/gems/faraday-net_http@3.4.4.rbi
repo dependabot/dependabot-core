@@ -54,7 +54,7 @@ class Faraday::Adapter::NetHttp < ::Faraday::Adapter
   # pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:179
   def ssl_verify_mode(ssl); end
 
-  # pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:201
+  # pkg:gem/faraday-net_http#lib/faraday/adapter/net_http.rb:200
   def verify_hostname_enabled?(http, ssl); end
 end
 

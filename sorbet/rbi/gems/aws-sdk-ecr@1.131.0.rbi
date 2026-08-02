@@ -196,7 +196,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #     the required types.
   #
   #   @option options [Boolean] :correct_clock_skew (true)
-  #     Used only in `standard` and adaptive retry modes. Specifies whether to apply
+  #     Used only in `standard` and `adaptive` retry modes. Specifies whether to apply
   #     a clock skew correction and retry requests with skewed client clocks.
   #
   #   @option options [String] :defaults_mode ("legacy")
@@ -320,17 +320,15 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   @option options [String] :retry_mode ("legacy")
   #     Specifies which retry algorithm to use. Values are:
   #
-  #     * `legacy` - The pre-existing retry behavior.  This is default value if
-  #       no retry mode is provided.
+  #     * `legacy` - The pre-existing retry behavior. This is the default
+  #       value if no retry mode is provided.
   #
   #     * `standard` - A standardized set of retry rules across the AWS SDKs.
   #       This includes support for retry quotas, which limit the number of
   #       unsuccessful retries a client can make.
   #
-  #     * `adaptive` - An experimental retry mode that includes all the
-  #       functionality of `standard` mode along with automatic client side
-  #       throttling.  This is a provisional mode that may change behavior
-  #       in the future.
+  #     * `adaptive` - A retry mode that includes all the functionality of
+  #       `standard` mode along with automatic client side throttling.
   #
   #   @option options [String] :sdk_ua_app_id
   #     A unique and opaque application ID that is appended to the
@@ -474,7 +472,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   #   @option options [Boolean] :ssl_verify_peer (true)
   #     When `true`, SSL peer certificates are verified when establishing a connection.
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:480
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:478
   def initialize(*args); end
 
   # Checks the availability of one or more image layers in a repository.
@@ -531,7 +529,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload batch_check_layer_availability(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:539
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:537
   def batch_check_layer_availability(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes a list of specified images within a repository. Images are
@@ -618,7 +616,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload batch_delete_image(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:627
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:625
   def batch_delete_image(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Gets detailed information for an image. Images are specified with
@@ -718,7 +716,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload batch_get_image(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:728
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:726
   def batch_get_image(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Gets the scanning configuration for one or more repositories.
@@ -757,13 +755,13 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload batch_get_repository_scanning_configuration(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:768
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:766
   def batch_get_repository_scanning_configuration(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # @param params ({})
   # @api private
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4516
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4514
   def build_request(operation_name, params = T.unsafe(nil)); end
 
   # Informs Amazon ECR that the image layer upload has completed for a
@@ -823,7 +821,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload complete_layer_upload(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:829
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:827
   def complete_layer_upload(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates a pull through cache rule. A pull through cache rule provides
@@ -928,7 +926,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload create_pull_through_cache_rule(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:935
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:933
   def create_pull_through_cache_rule(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates a repository. For more information, see [Amazon ECR
@@ -1054,7 +1052,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload create_repository(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1062
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1060
   def create_repository(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates a repository creation template. This template is used to
@@ -1247,7 +1245,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload create_repository_creation_template(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1256
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1254
   def create_repository_creation_template(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes the lifecycle policy associated with the specified repository.
@@ -1286,7 +1284,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload delete_lifecycle_policy(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1296
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1294
   def delete_lifecycle_policy(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes a pull through cache rule.
@@ -1332,7 +1330,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload delete_pull_through_cache_rule(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1343
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1341
   def delete_pull_through_cache_rule(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes the registry permissions policy.
@@ -1352,7 +1350,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload delete_registry_policy(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1364
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1362
   def delete_registry_policy(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes a repository. If the repository isn't empty, you must either
@@ -1425,7 +1423,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload delete_repository(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1438
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1436
   def delete_repository(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes a repository creation template.
@@ -1495,7 +1493,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload delete_repository_creation_template(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1509
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1507
   def delete_repository_creation_template(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes the repository policy associated with the specified
@@ -1550,7 +1548,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload delete_repository_policy(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1565
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1563
   def delete_repository_policy(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes the registry's signing configuration. Images pushed after
@@ -1588,7 +1586,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload delete_signing_configuration(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1604
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1602
   def delete_signing_configuration(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Removes a principal from the pull time update exclusion list for a
@@ -1633,7 +1631,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload deregister_pull_time_update_exclusion(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1650
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1648
   def deregister_pull_time_update_exclusion(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns the replication status for a specified image.
@@ -1682,7 +1680,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload describe_image_replication_status(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1700
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1698
   def describe_image_replication_status(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns the scan findings for the specified image.
@@ -1838,7 +1836,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload describe_image_scan_findings(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1857
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1855
   def describe_image_scan_findings(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns the signing status for a specified image. If the image matched
@@ -1898,7 +1896,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload describe_image_signing_status(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1918
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:1916
   def describe_image_signing_status(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns metadata about the images in a repository.
@@ -2012,7 +2010,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload describe_images(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2033
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2031
   def describe_images(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns the pull through cache rules for a registry.
@@ -2082,7 +2080,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload describe_pull_through_cache_rules(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2104
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2102
   def describe_pull_through_cache_rules(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Describes the settings for a registry. The replication configuration
@@ -2110,7 +2108,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload describe_registry(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2133
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2131
   def describe_registry(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Describes image repositories in a registry.
@@ -2214,7 +2212,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload describe_repositories(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2238
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2236
   def describe_repositories(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Returns details about the repository creation templates in a registry.
@@ -2345,7 +2343,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload describe_repository_creation_templates(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2370
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2368
   def describe_repository_creation_templates(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Retrieves the account setting value for the specified setting name.
@@ -2375,7 +2373,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload get_account_setting(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2401
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2399
   def get_account_setting(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Retrieves an authorization token. An authorization token represents
@@ -2440,7 +2438,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload get_authorization_token(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2467
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2465
   def get_authorization_token(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Retrieves the pre-signed Amazon S3 download URL corresponding to an
@@ -2491,7 +2489,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload get_download_url_for_layer(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2519
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2517
   def get_download_url_for_layer(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Retrieves the lifecycle policy for the specified repository.
@@ -2530,7 +2528,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload get_lifecycle_policy(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2559
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2557
   def get_lifecycle_policy(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Retrieves the results of the lifecycle policy preview request for the
@@ -2634,7 +2632,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload get_lifecycle_policy_preview(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2664
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2662
   def get_lifecycle_policy_preview(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Retrieves the permissions policy for a registry.
@@ -2654,7 +2652,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload get_registry_policy(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2685
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2683
   def get_registry_policy(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Retrieves the scanning configuration for a registry.
@@ -2679,7 +2677,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload get_registry_scanning_configuration(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2711
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2709
   def get_registry_scanning_configuration(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Retrieves the repository policy for the specified repository.
@@ -2732,7 +2730,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload get_repository_policy(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2765
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2763
   def get_repository_policy(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Retrieves the registry's signing configuration, which defines rules
@@ -2764,7 +2762,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload get_signing_configuration(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2798
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2796
   def get_signing_configuration(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Notifies Amazon ECR that you intend to upload an image layer.
@@ -2810,7 +2808,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload initiate_layer_upload(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2845
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:2843
   def initiate_layer_upload(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Lists the artifacts associated with a specified subject image.
@@ -3008,7 +3006,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload list_image_referrers(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3044
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3042
   def list_image_referrers(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Lists all the image IDs for the specified repository.
@@ -3106,7 +3104,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload list_images(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3143
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3141
   def list_images(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Lists the IAM principals that are excluded from having their image
@@ -3192,7 +3190,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload list_pull_time_update_exclusions(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3230
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3228
   def list_pull_time_update_exclusions(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # List the tags for an Amazon ECR resource.
@@ -3223,7 +3221,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload list_tags_for_resource(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3262
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3260
   def list_tags_for_resource(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Allows you to change the basic scan type version or registry policy
@@ -3260,7 +3258,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload put_account_setting(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3300
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3298
   def put_account_setting(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates or updates the image manifest and tags associated with an
@@ -3327,7 +3325,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload put_image(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3368
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3366
   def put_image(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # The `PutImageScanningConfiguration` API is being deprecated, in favor
@@ -3378,7 +3376,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload put_image_scanning_configuration(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3420
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3418
   def put_image_scanning_configuration(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Updates the image tag mutability settings for the specified
@@ -3444,7 +3442,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload put_image_tag_mutability(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3487
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3485
   def put_image_tag_mutability(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates or updates the lifecycle policy for the specified repository.
@@ -3490,7 +3488,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload put_lifecycle_policy(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3534
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3532
   def put_lifecycle_policy(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates or updates the permissions policy for your registry.
@@ -3535,7 +3533,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload put_registry_policy(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3580
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3578
   def put_registry_policy(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates or updates the scanning configuration for your private
@@ -3596,7 +3594,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload put_registry_scanning_configuration(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3642
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3640
   def put_registry_scanning_configuration(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates or updates the replication configuration for a registry. The
@@ -3666,7 +3664,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload put_replication_configuration(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3713
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3711
   def put_replication_configuration(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Creates or updates the registry's signing configuration, which
@@ -3724,7 +3722,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload put_signing_configuration(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3772
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3770
   def put_signing_configuration(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Adds an IAM principal to the pull time update exclusion list for a
@@ -3772,7 +3770,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload register_pull_time_update_exclusion(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3821
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3819
   def register_pull_time_update_exclusion(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Applies a repository policy to the specified repository to control
@@ -3832,7 +3830,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload set_repository_policy(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3882
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3880
   def set_repository_policy(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Starts a basic image vulnerability scan.
@@ -3892,7 +3890,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload start_image_scan(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3943
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3941
   def start_image_scan(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Starts a preview of a lifecycle policy for the specified repository.
@@ -3938,7 +3936,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload start_lifecycle_policy_preview(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3990
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:3988
   def start_lifecycle_policy_preview(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Adds specified tags to a resource with the specified ARN. Existing
@@ -3974,7 +3972,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload tag_resource(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4027
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4025
   def tag_resource(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Deletes specified tags from a resource.
@@ -4001,7 +3999,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload untag_resource(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4055
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4053
   def untag_resource(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Transitions an image between storage classes. You can transition
@@ -4104,7 +4102,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload update_image_storage_class(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4159
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4157
   def update_image_storage_class(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Updates an existing pull through cache rule.
@@ -4160,7 +4158,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload update_pull_through_cache_rule(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4216
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4214
   def update_pull_through_cache_rule(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Updates an existing repository creation template.
@@ -4328,7 +4326,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload update_repository_creation_template(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4385
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4383
   def update_repository_creation_template(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Uploads an image layer part to Amazon ECR.
@@ -4397,7 +4395,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload upload_layer_part(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4455
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4453
   def upload_layer_part(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Validates an existing pull through cache rule for an upstream registry
@@ -4448,7 +4446,7 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @overload validate_pull_through_cache_rule(params = {})
   # @param [Hash] params ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4507
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4505
   def validate_pull_through_cache_rule(params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # Polls an API operation until a resource enters a desired state.
@@ -4537,13 +4535,13 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @option options [Proc] :before_attempt
   # @option options [Proc] :before_wait
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4623
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4621
   def wait_until(waiter_name, params = T.unsafe(nil), options = T.unsafe(nil)); end
 
   # @api private
   # @deprecated
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4631
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4629
   def waiter_names; end
 
   private
@@ -4551,21 +4549,21 @@ class Aws::ECR::Client < ::Seahorse::Client::Base
   # @param [Symbol] waiter_name
   # @param [Hash] options ({})
   #
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4639
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4637
   def waiter(waiter_name, options = T.unsafe(nil)); end
 
-  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4648
+  # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4646
   def waiters; end
 
   class << self
     # @api private
     #
-    # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4661
+    # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4659
     def errors_module; end
 
     # @api private
     #
-    # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4658
+    # pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/client.rb:4656
     def identifier; end
   end
 end
@@ -6748,7 +6746,7 @@ module Aws::ECR::Types; end
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/Attribute AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:27
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:25
 class Aws::ECR::Types::Attribute < ::Struct
   include ::Aws::Structure
 end
@@ -6779,7 +6777,7 @@ Aws::ECR::Types::Attribute::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/AuthorizationData AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:58
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:55
 class Aws::ECR::Types::AuthorizationData < ::Struct
   include ::Aws::Structure
 end
@@ -6833,7 +6831,7 @@ Aws::ECR::Types::AuthorizationData::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/AwsEcrContainerImageDetails AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:119
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:109
 class Aws::ECR::Types::AwsEcrContainerImageDetails < ::Struct
   include ::Aws::Structure
 end
@@ -6858,7 +6856,7 @@ Aws::ECR::Types::AwsEcrContainerImageDetails::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/BatchCheckLayerAvailabilityRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:144
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:141
 class Aws::ECR::Types::BatchCheckLayerAvailabilityRequest < ::Struct
   include ::Aws::Structure
 end
@@ -6877,7 +6875,7 @@ Aws::ECR::Types::BatchCheckLayerAvailabilityRequest::SENSITIVE = T.let(T.unsafe(
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/BatchCheckLayerAvailabilityResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:162
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:160
 class Aws::ECR::Types::BatchCheckLayerAvailabilityResponse < ::Struct
   include ::Aws::Structure
 end
@@ -6906,7 +6904,7 @@ Aws::ECR::Types::BatchCheckLayerAvailabilityResponse::SENSITIVE = T.let(T.unsafe
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/BatchDeleteImageRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:191
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:188
 class Aws::ECR::Types::BatchDeleteImageRequest < ::Struct
   include ::Aws::Structure
 end
@@ -6924,7 +6922,7 @@ Aws::ECR::Types::BatchDeleteImageRequest::SENSITIVE = T.let(T.unsafe(nil), Array
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/BatchDeleteImageResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:208
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:206
 class Aws::ECR::Types::BatchDeleteImageResponse < ::Struct
   include ::Aws::Structure
 end
@@ -6958,7 +6956,7 @@ Aws::ECR::Types::BatchDeleteImageResponse::SENSITIVE = T.let(T.unsafe(nil), Arra
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/BatchGetImageRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:243
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:239
 class Aws::ECR::Types::BatchGetImageRequest < ::Struct
   include ::Aws::Structure
 end
@@ -6977,7 +6975,7 @@ Aws::ECR::Types::BatchGetImageRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/BatchGetImageResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:261
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:259
 class Aws::ECR::Types::BatchGetImageResponse < ::Struct
   include ::Aws::Structure
 end
@@ -6991,7 +6989,7 @@ Aws::ECR::Types::BatchGetImageResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/BatchGetRepositoryScanningConfigurationRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:273
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:272
 class Aws::ECR::Types::BatchGetRepositoryScanningConfigurationRequest < ::Struct
   include ::Aws::Structure
 end
@@ -7009,7 +7007,7 @@ Aws::ECR::Types::BatchGetRepositoryScanningConfigurationRequest::SENSITIVE = T.l
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/BatchGetRepositoryScanningConfigurationResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:290
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:288
 class Aws::ECR::Types::BatchGetRepositoryScanningConfigurationResponse < ::Struct
   include ::Aws::Structure
 end
@@ -7025,7 +7023,7 @@ Aws::ECR::Types::BatchGetRepositoryScanningConfigurationResponse::SENSITIVE = T.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/BlockedByOrganizationPolicyException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:304
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:303
 class Aws::ECR::Types::BlockedByOrganizationPolicyException < ::Struct
   include ::Aws::Structure
 end
@@ -7054,7 +7052,7 @@ Aws::ECR::Types::BlockedByOrganizationPolicyException::SENSITIVE = T.let(T.unsaf
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/CompleteLayerUploadRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:334
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:330
 class Aws::ECR::Types::CompleteLayerUploadRequest < ::Struct
   include ::Aws::Structure
 end
@@ -7080,7 +7078,7 @@ Aws::ECR::Types::CompleteLayerUploadRequest::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/CompleteLayerUploadResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:361
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:357
 class Aws::ECR::Types::CompleteLayerUploadResponse < ::Struct
   include ::Aws::Structure
 end
@@ -7152,7 +7150,7 @@ Aws::ECR::Types::CompleteLayerUploadResponse::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/CreatePullThroughCacheRuleRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:437
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:430
 class Aws::ECR::Types::CreatePullThroughCacheRuleRequest < ::Struct
   include ::Aws::Structure
 end
@@ -7200,7 +7198,7 @@ Aws::ECR::Types::CreatePullThroughCacheRuleRequest::SENSITIVE = T.let(T.unsafe(n
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/CreatePullThroughCacheRuleResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:490
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:482
 class Aws::ECR::Types::CreatePullThroughCacheRuleResponse < ::Struct
   include ::Aws::Structure
 end
@@ -7286,7 +7284,7 @@ Aws::ECR::Types::CreatePullThroughCacheRuleResponse::SENSITIVE = T.let(T.unsafe(
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/CreateRepositoryCreationTemplateRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:583
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:573
 class Aws::ECR::Types::CreateRepositoryCreationTemplateRequest < ::Struct
   include ::Aws::Structure
 end
@@ -7305,7 +7303,7 @@ Aws::ECR::Types::CreateRepositoryCreationTemplateRequest::SENSITIVE = T.let(T.un
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/CreateRepositoryCreationTemplateResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:601
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:599
 class Aws::ECR::Types::CreateRepositoryCreationTemplateResponse < ::Struct
   include ::Aws::Structure
 end
@@ -7368,7 +7366,7 @@ Aws::ECR::Types::CreateRepositoryCreationTemplateResponse::SENSITIVE = T.let(T.u
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/CreateRepositoryRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:668
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:661
 class Aws::ECR::Types::CreateRepositoryRequest < ::Struct
   include ::Aws::Structure
 end
@@ -7382,7 +7380,7 @@ Aws::ECR::Types::CreateRepositoryRequest::SENSITIVE = T.let(T.unsafe(nil), Array
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/CreateRepositoryResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:680
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:679
 class Aws::ECR::Types::CreateRepositoryResponse < ::Struct
   include ::Aws::Structure
 end
@@ -7410,7 +7408,7 @@ Aws::ECR::Types::CreateRepositoryResponse::SENSITIVE = T.let(T.unsafe(nil), Arra
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/CvssScore AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:709
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:705
 class Aws::ECR::Types::CvssScore < ::Struct
   include ::Aws::Structure
 end
@@ -7431,7 +7429,7 @@ Aws::ECR::Types::CvssScore::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/CvssScoreAdjustment AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:729
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:727
 class Aws::ECR::Types::CvssScoreAdjustment < ::Struct
   include ::Aws::Structure
 end
@@ -7464,7 +7462,7 @@ Aws::ECR::Types::CvssScoreAdjustment::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/CvssScoreDetails AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:764
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:759
 class Aws::ECR::Types::CvssScoreDetails < ::Struct
   include ::Aws::Structure
 end
@@ -7484,7 +7482,7 @@ Aws::ECR::Types::CvssScoreDetails::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DeleteLifecyclePolicyRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:783
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:781
 class Aws::ECR::Types::DeleteLifecyclePolicyRequest < ::Struct
   include ::Aws::Structure
 end
@@ -7510,7 +7508,7 @@ Aws::ECR::Types::DeleteLifecyclePolicyRequest::SENSITIVE = T.let(T.unsafe(nil), 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DeleteLifecyclePolicyResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:810
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:806
 class Aws::ECR::Types::DeleteLifecyclePolicyResponse < ::Struct
   include ::Aws::Structure
 end
@@ -7531,7 +7529,7 @@ Aws::ECR::Types::DeleteLifecyclePolicyResponse::SENSITIVE = T.let(T.unsafe(nil),
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DeletePullThroughCacheRuleRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:830
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:828
 class Aws::ECR::Types::DeletePullThroughCacheRuleRequest < ::Struct
   include ::Aws::Structure
 end
@@ -7572,7 +7570,7 @@ Aws::ECR::Types::DeletePullThroughCacheRuleRequest::SENSITIVE = T.let(T.unsafe(n
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DeletePullThroughCacheRuleResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:875
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:868
 class Aws::ECR::Types::DeletePullThroughCacheRuleResponse < ::Struct
   include ::Aws::Structure
 end
@@ -7597,7 +7595,7 @@ class Aws::ECR::Types::DeleteRegistryPolicyRequest < ::Aws::EmptyStructure; end
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DeleteRegistryPolicyResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:898
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:896
 class Aws::ECR::Types::DeleteRegistryPolicyResponse < ::Struct
   include ::Aws::Structure
 end
@@ -7612,7 +7610,7 @@ Aws::ECR::Types::DeleteRegistryPolicyResponse::SENSITIVE = T.let(T.unsafe(nil), 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DeleteRepositoryCreationTemplateRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:911
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:910
 class Aws::ECR::Types::DeleteRepositoryCreationTemplateRequest < ::Struct
   include ::Aws::Structure
 end
@@ -7630,7 +7628,7 @@ Aws::ECR::Types::DeleteRepositoryCreationTemplateRequest::SENSITIVE = T.let(T.un
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DeleteRepositoryCreationTemplateResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:928
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:926
 class Aws::ECR::Types::DeleteRepositoryCreationTemplateResponse < ::Struct
   include ::Aws::Structure
 end
@@ -7651,7 +7649,7 @@ Aws::ECR::Types::DeleteRepositoryCreationTemplateResponse::SENSITIVE = T.let(T.u
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DeleteRepositoryPolicyRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:948
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:946
 class Aws::ECR::Types::DeleteRepositoryPolicyRequest < ::Struct
   include ::Aws::Structure
 end
@@ -7673,7 +7671,7 @@ Aws::ECR::Types::DeleteRepositoryPolicyRequest::SENSITIVE = T.let(T.unsafe(nil),
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DeleteRepositoryPolicyResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:970
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:967
 class Aws::ECR::Types::DeleteRepositoryPolicyResponse < ::Struct
   include ::Aws::Structure
 end
@@ -7699,7 +7697,7 @@ Aws::ECR::Types::DeleteRepositoryPolicyResponse::SENSITIVE = T.let(T.unsafe(nil)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DeleteRepositoryRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:996
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:993
 class Aws::ECR::Types::DeleteRepositoryRequest < ::Struct
   include ::Aws::Structure
 end
@@ -7713,7 +7711,7 @@ Aws::ECR::Types::DeleteRepositoryRequest::SENSITIVE = T.let(T.unsafe(nil), Array
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DeleteRepositoryResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1008
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1007
 class Aws::ECR::Types::DeleteRepositoryResponse < ::Struct
   include ::Aws::Structure
 end
@@ -7738,7 +7736,7 @@ class Aws::ECR::Types::DeleteSigningConfigurationRequest < ::Aws::EmptyStructure
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DeleteSigningConfigurationResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1031
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1029
 class Aws::ECR::Types::DeleteSigningConfigurationResponse < ::Struct
   include ::Aws::Structure
 end
@@ -7753,7 +7751,7 @@ Aws::ECR::Types::DeleteSigningConfigurationResponse::SENSITIVE = T.let(T.unsafe(
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DeregisterPullTimeUpdateExclusionRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1044
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1043
 class Aws::ECR::Types::DeregisterPullTimeUpdateExclusionRequest < ::Struct
   include ::Aws::Structure
 end
@@ -7768,7 +7766,7 @@ Aws::ECR::Types::DeregisterPullTimeUpdateExclusionRequest::SENSITIVE = T.let(T.u
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DeregisterPullTimeUpdateExclusionResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1057
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1056
 class Aws::ECR::Types::DeregisterPullTimeUpdateExclusionResponse < ::Struct
   include ::Aws::Structure
 end
@@ -7792,7 +7790,7 @@ Aws::ECR::Types::DeregisterPullTimeUpdateExclusionResponse::SENSITIVE = T.let(T.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeImageReplicationStatusRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1081
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1078
 class Aws::ECR::Types::DescribeImageReplicationStatusRequest < ::Struct
   include ::Aws::Structure
 end
@@ -7816,7 +7814,7 @@ Aws::ECR::Types::DescribeImageReplicationStatusRequest::SENSITIVE = T.let(T.unsa
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeImageReplicationStatusResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1105
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1102
 class Aws::ECR::Types::DescribeImageReplicationStatusResponse < ::Struct
   include ::Aws::Structure
 end
@@ -7864,7 +7862,7 @@ Aws::ECR::Types::DescribeImageReplicationStatusResponse::SENSITIVE = T.let(T.uns
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeImageScanFindingsRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1155
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1150
 class Aws::ECR::Types::DescribeImageScanFindingsRequest < ::Struct
   include ::Aws::Structure
 end
@@ -7903,7 +7901,7 @@ Aws::ECR::Types::DescribeImageScanFindingsRequest::SENSITIVE = T.let(T.unsafe(ni
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeImageScanFindingsResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1197
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1191
 class Aws::ECR::Types::DescribeImageScanFindingsResponse < ::Struct
   include ::Aws::Structure
 end
@@ -7927,7 +7925,7 @@ Aws::ECR::Types::DescribeImageScanFindingsResponse::SENSITIVE = T.let(T.unsafe(n
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeImageSigningStatusRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1221
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1218
 class Aws::ECR::Types::DescribeImageSigningStatusRequest < ::Struct
   include ::Aws::Structure
 end
@@ -7954,7 +7952,7 @@ Aws::ECR::Types::DescribeImageSigningStatusRequest::SENSITIVE = T.let(T.unsafe(n
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeImageSigningStatusResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1249
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1245
 class Aws::ECR::Types::DescribeImageSigningStatusResponse < ::Struct
   include ::Aws::Structure
 end
@@ -7977,7 +7975,7 @@ Aws::ECR::Types::DescribeImageSigningStatusResponse::SENSITIVE = T.let(T.unsafe(
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeImagesFilter AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1271
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1269
 class Aws::ECR::Types::DescribeImagesFilter < ::Struct
   include ::Aws::Structure
 end
@@ -8028,7 +8026,7 @@ Aws::ECR::Types::DescribeImagesFilter::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeImagesRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1325
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1319
 class Aws::ECR::Types::DescribeImagesRequest < ::Struct
   include ::Aws::Structure
 end
@@ -8050,7 +8048,7 @@ Aws::ECR::Types::DescribeImagesRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeImagesResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1346
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1344
 class Aws::ECR::Types::DescribeImagesResponse < ::Struct
   include ::Aws::Structure
 end
@@ -8094,7 +8092,7 @@ Aws::ECR::Types::DescribeImagesResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribePullThroughCacheRulesRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1391
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1387
 class Aws::ECR::Types::DescribePullThroughCacheRulesRequest < ::Struct
   include ::Aws::Structure
 end
@@ -8117,7 +8115,7 @@ Aws::ECR::Types::DescribePullThroughCacheRulesRequest::SENSITIVE = T.let(T.unsaf
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribePullThroughCacheRulesResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1413
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1411
 class Aws::ECR::Types::DescribePullThroughCacheRulesResponse < ::Struct
   include ::Aws::Structure
 end
@@ -8142,7 +8140,7 @@ class Aws::ECR::Types::DescribeRegistryRequest < ::Aws::EmptyStructure; end
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeRegistryResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1436
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1434
 class Aws::ECR::Types::DescribeRegistryResponse < ::Struct
   include ::Aws::Structure
 end
@@ -8192,7 +8190,7 @@ Aws::ECR::Types::DescribeRegistryResponse::SENSITIVE = T.let(T.unsafe(nil), Arra
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeRepositoriesRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1487
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1483
 class Aws::ECR::Types::DescribeRepositoriesRequest < ::Struct
   include ::Aws::Structure
 end
@@ -8214,7 +8212,7 @@ Aws::ECR::Types::DescribeRepositoriesRequest::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeRepositoriesResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1508
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1506
 class Aws::ECR::Types::DescribeRepositoriesResponse < ::Struct
   include ::Aws::Structure
 end
@@ -8260,7 +8258,7 @@ Aws::ECR::Types::DescribeRepositoriesResponse::SENSITIVE = T.let(T.unsafe(nil), 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeRepositoryCreationTemplatesRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1554
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1551
 class Aws::ECR::Types::DescribeRepositoryCreationTemplatesRequest < ::Struct
   include ::Aws::Structure
 end
@@ -8286,7 +8284,7 @@ Aws::ECR::Types::DescribeRepositoryCreationTemplatesRequest::SENSITIVE = T.let(T
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/DescribeRepositoryCreationTemplatesResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1580
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1577
 class Aws::ECR::Types::DescribeRepositoryCreationTemplatesResponse < ::Struct
   include ::Aws::Structure
 end
@@ -8302,7 +8300,7 @@ Aws::ECR::Types::DescribeRepositoryCreationTemplatesResponse::SENSITIVE = T.let(
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/EmptyUploadException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1594
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1593
 class Aws::ECR::Types::EmptyUploadException < ::Struct
   include ::Aws::Structure
 end
@@ -8368,7 +8366,7 @@ Aws::ECR::Types::EmptyUploadException::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/EncryptionConfiguration AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1659
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1657
 class Aws::ECR::Types::EncryptionConfiguration < ::Struct
   include ::Aws::Structure
 end
@@ -8415,7 +8413,7 @@ Aws::ECR::Types::EncryptionConfiguration::SENSITIVE = T.let(T.unsafe(nil), Array
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/EncryptionConfigurationForRepositoryCreationTemplate AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1705
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1703
 class Aws::ECR::Types::EncryptionConfigurationForRepositoryCreationTemplate < ::Struct
   include ::Aws::Structure
 end
@@ -8502,7 +8500,7 @@ Aws::ECR::Types::EncryptionConfigurationForRepositoryCreationTemplate::SENSITIVE
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/EnhancedImageScanFinding AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1806
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1789
 class Aws::ECR::Types::EnhancedImageScanFinding < ::Struct
   include ::Aws::Structure
 end
@@ -8518,7 +8516,7 @@ Aws::ECR::Types::EnhancedImageScanFinding::SENSITIVE = T.let(T.unsafe(nil), Arra
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ExclusionAlreadyExistsException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1820
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1819
 class Aws::ECR::Types::ExclusionAlreadyExistsException < ::Struct
   include ::Aws::Structure
 end
@@ -8533,7 +8531,7 @@ Aws::ECR::Types::ExclusionAlreadyExistsException::SENSITIVE = T.let(T.unsafe(nil
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ExclusionNotFoundException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1833
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1832
 class Aws::ECR::Types::ExclusionNotFoundException < ::Struct
   include ::Aws::Structure
 end
@@ -8548,7 +8546,7 @@ Aws::ECR::Types::ExclusionNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetAccountSettingRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1846
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1845
 class Aws::ECR::Types::GetAccountSettingRequest < ::Struct
   include ::Aws::Structure
 end
@@ -8568,7 +8566,7 @@ Aws::ECR::Types::GetAccountSettingRequest::SENSITIVE = T.let(T.unsafe(nil), Arra
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetAccountSettingResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1865
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1863
 class Aws::ECR::Types::GetAccountSettingResponse < ::Struct
   include ::Aws::Structure
 end
@@ -8584,7 +8582,7 @@ Aws::ECR::Types::GetAccountSettingResponse::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetAuthorizationTokenRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1879
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1878
 class Aws::ECR::Types::GetAuthorizationTokenRequest < ::Struct
   include ::Aws::Structure
 end
@@ -8605,7 +8603,7 @@ Aws::ECR::Types::GetAuthorizationTokenRequest::SENSITIVE = T.let(T.unsafe(nil), 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetAuthorizationTokenResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1898
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1897
 class Aws::ECR::Types::GetAuthorizationTokenResponse < ::Struct
   include ::Aws::Structure
 end
@@ -8630,7 +8628,7 @@ Aws::ECR::Types::GetAuthorizationTokenResponse::SENSITIVE = T.let(T.unsafe(nil),
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetDownloadUrlForLayerRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1923
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1920
 class Aws::ECR::Types::GetDownloadUrlForLayerRequest < ::Struct
   include ::Aws::Structure
 end
@@ -8648,7 +8646,7 @@ Aws::ECR::Types::GetDownloadUrlForLayerRequest::SENSITIVE = T.let(T.unsafe(nil),
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetDownloadUrlForLayerResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1940
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1938
 class Aws::ECR::Types::GetDownloadUrlForLayerResponse < ::Struct
   include ::Aws::Structure
 end
@@ -8701,7 +8699,7 @@ Aws::ECR::Types::GetDownloadUrlForLayerResponse::SENSITIVE = T.let(T.unsafe(nil)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetLifecyclePolicyPreviewRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1996
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:1990
 class Aws::ECR::Types::GetLifecyclePolicyPreviewRequest < ::Struct
   include ::Aws::Structure
 end
@@ -8743,7 +8741,7 @@ Aws::ECR::Types::GetLifecyclePolicyPreviewRequest::SENSITIVE = T.let(T.unsafe(ni
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetLifecyclePolicyPreviewResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2042
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2035
 class Aws::ECR::Types::GetLifecyclePolicyPreviewResponse < ::Struct
   include ::Aws::Structure
 end
@@ -8763,7 +8761,7 @@ Aws::ECR::Types::GetLifecyclePolicyPreviewResponse::SENSITIVE = T.let(T.unsafe(n
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetLifecyclePolicyRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2061
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2059
 class Aws::ECR::Types::GetLifecyclePolicyRequest < ::Struct
   include ::Aws::Structure
 end
@@ -8789,7 +8787,7 @@ Aws::ECR::Types::GetLifecyclePolicyRequest::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetLifecyclePolicyResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2088
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2084
 class Aws::ECR::Types::GetLifecyclePolicyResponse < ::Struct
   include ::Aws::Structure
 end
@@ -8814,7 +8812,7 @@ class Aws::ECR::Types::GetRegistryPolicyRequest < ::Aws::EmptyStructure; end
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetRegistryPolicyResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2111
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2109
 class Aws::ECR::Types::GetRegistryPolicyResponse < ::Struct
   include ::Aws::Structure
 end
@@ -8839,7 +8837,7 @@ class Aws::ECR::Types::GetRegistryScanningConfigurationRequest < ::Aws::EmptyStr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetRegistryScanningConfigurationResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2134
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2132
 class Aws::ECR::Types::GetRegistryScanningConfigurationResponse < ::Struct
   include ::Aws::Structure
 end
@@ -8859,7 +8857,7 @@ Aws::ECR::Types::GetRegistryScanningConfigurationResponse::SENSITIVE = T.let(T.u
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetRepositoryPolicyRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2153
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2151
 class Aws::ECR::Types::GetRepositoryPolicyRequest < ::Struct
   include ::Aws::Structure
 end
@@ -8881,7 +8879,7 @@ Aws::ECR::Types::GetRepositoryPolicyRequest::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetRepositoryPolicyResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2175
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2172
 class Aws::ECR::Types::GetRepositoryPolicyResponse < ::Struct
   include ::Aws::Structure
 end
@@ -8906,7 +8904,7 @@ class Aws::ECR::Types::GetSigningConfigurationRequest < ::Aws::EmptyStructure; e
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/GetSigningConfigurationResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2198
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2196
 class Aws::ECR::Types::GetSigningConfigurationResponse < ::Struct
   include ::Aws::Structure
 end
@@ -8940,7 +8938,7 @@ Aws::ECR::Types::GetSigningConfigurationResponse::SENSITIVE = T.let(T.unsafe(nil
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/Image AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2234
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2229
 class Aws::ECR::Types::Image < ::Struct
   include ::Aws::Structure
 end
@@ -8957,7 +8955,7 @@ Aws::ECR::Types::Image::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageAlreadyExistsException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2249
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2248
 class Aws::ECR::Types::ImageAlreadyExistsException < ::Struct
   include ::Aws::Structure
 end
@@ -8972,7 +8970,7 @@ Aws::ECR::Types::ImageAlreadyExistsException::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageArchivedException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2262
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2261
 class Aws::ECR::Types::ImageArchivedException < ::Struct
   include ::Aws::Structure
 end
@@ -9072,7 +9070,7 @@ Aws::ECR::Types::ImageArchivedException::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageDetail AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2374
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2359
 class Aws::ECR::Types::ImageDetail < ::Struct
   include ::Aws::Structure
 end
@@ -9088,7 +9086,7 @@ Aws::ECR::Types::ImageDetail::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageDigestDoesNotMatchException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2388
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2387
 class Aws::ECR::Types::ImageDigestDoesNotMatchException < ::Struct
   include ::Aws::Structure
 end
@@ -9112,7 +9110,7 @@ Aws::ECR::Types::ImageDigestDoesNotMatchException::SENSITIVE = T.let(T.unsafe(ni
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageFailure AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2412
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2409
 class Aws::ECR::Types::ImageFailure < ::Struct
   include ::Aws::Structure
 end
@@ -9133,7 +9131,7 @@ Aws::ECR::Types::ImageFailure::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageIdentifier AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2432
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2430
 class Aws::ECR::Types::ImageIdentifier < ::Struct
   include ::Aws::Structure
 end
@@ -9148,7 +9146,7 @@ Aws::ECR::Types::ImageIdentifier::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageNotFoundException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2445
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2444
 class Aws::ECR::Types::ImageNotFoundException < ::Struct
   include ::Aws::Structure
 end
@@ -9185,7 +9183,7 @@ Aws::ECR::Types::ImageNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageReferrer AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2485
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2479
 class Aws::ECR::Types::ImageReferrer < ::Struct
   include ::Aws::Structure
 end
@@ -9214,7 +9212,7 @@ Aws::ECR::Types::ImageReferrer::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageReplicationStatus AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2515
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2511
 class Aws::ECR::Types::ImageReplicationStatus < ::Struct
   include ::Aws::Structure
 end
@@ -9248,7 +9246,7 @@ Aws::ECR::Types::ImageReplicationStatus::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageScanFinding AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2551
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2546
 class Aws::ECR::Types::ImageScanFinding < ::Struct
   include ::Aws::Structure
 end
@@ -9280,7 +9278,7 @@ Aws::ECR::Types::ImageScanFinding::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageScanFindings AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2585
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2580
 class Aws::ECR::Types::ImageScanFindings < ::Struct
   include ::Aws::Structure
 end
@@ -9304,7 +9302,7 @@ Aws::ECR::Types::ImageScanFindings::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageScanFindingsSummary AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2609
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2606
 class Aws::ECR::Types::ImageScanFindingsSummary < ::Struct
   include ::Aws::Structure
 end
@@ -9324,7 +9322,7 @@ Aws::ECR::Types::ImageScanFindingsSummary::SENSITIVE = T.let(T.unsafe(nil), Arra
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageScanStatus AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2628
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2626
 class Aws::ECR::Types::ImageScanStatus < ::Struct
   include ::Aws::Structure
 end
@@ -9348,7 +9346,7 @@ Aws::ECR::Types::ImageScanStatus::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageScanningConfiguration AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2650
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2649
 class Aws::ECR::Types::ImageScanningConfiguration < ::Struct
   include ::Aws::Structure
 end
@@ -9386,7 +9384,7 @@ Aws::ECR::Types::ImageScanningConfiguration::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageSigningStatus AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2689
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2685
 class Aws::ECR::Types::ImageSigningStatus < ::Struct
   include ::Aws::Structure
 end
@@ -9401,7 +9399,7 @@ Aws::ECR::Types::ImageSigningStatus::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageStorageClassUpdateNotSupportedException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2702
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2701
 class Aws::ECR::Types::ImageStorageClassUpdateNotSupportedException < ::Struct
   include ::Aws::Structure
 end
@@ -9417,7 +9415,7 @@ Aws::ECR::Types::ImageStorageClassUpdateNotSupportedException::SENSITIVE = T.let
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageTagAlreadyExistsException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2716
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2715
 class Aws::ECR::Types::ImageTagAlreadyExistsException < ::Struct
   include ::Aws::Structure
 end
@@ -9440,7 +9438,7 @@ Aws::ECR::Types::ImageTagAlreadyExistsException::SENSITIVE = T.let(T.unsafe(nil)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ImageTagMutabilityExclusionFilter AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2738
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2736
 class Aws::ECR::Types::ImageTagMutabilityExclusionFilter < ::Struct
   include ::Aws::Structure
 end
@@ -9460,7 +9458,7 @@ Aws::ECR::Types::ImageTagMutabilityExclusionFilter::SENSITIVE = T.let(T.unsafe(n
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/InitiateLayerUploadRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2757
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2755
 class Aws::ECR::Types::InitiateLayerUploadRequest < ::Struct
   include ::Aws::Structure
 end
@@ -9480,7 +9478,7 @@ Aws::ECR::Types::InitiateLayerUploadRequest::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/InitiateLayerUploadResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2776
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2774
 class Aws::ECR::Types::InitiateLayerUploadResponse < ::Struct
   include ::Aws::Structure
 end
@@ -9497,7 +9495,7 @@ Aws::ECR::Types::InitiateLayerUploadResponse::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/InvalidLayerException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2791
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2790
 class Aws::ECR::Types::InvalidLayerException < ::Struct
   include ::Aws::Structure
 end
@@ -9531,7 +9529,7 @@ Aws::ECR::Types::InvalidLayerException::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/InvalidLayerPartException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2827
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2822
 class Aws::ECR::Types::InvalidLayerPartException < ::Struct
   include ::Aws::Structure
 end
@@ -9548,7 +9546,7 @@ Aws::ECR::Types::InvalidLayerPartException::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/InvalidParameterException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2842
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2841
 class Aws::ECR::Types::InvalidParameterException < ::Struct
   include ::Aws::Structure
 end
@@ -9565,7 +9563,7 @@ Aws::ECR::Types::InvalidParameterException::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/InvalidTagParameterException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2857
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2856
 class Aws::ECR::Types::InvalidTagParameterException < ::Struct
   include ::Aws::Structure
 end
@@ -9584,7 +9582,7 @@ Aws::ECR::Types::InvalidTagParameterException::SENSITIVE = T.let(T.unsafe(nil), 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/KmsException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2875
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2873
 class Aws::ECR::Types::KmsException < ::Struct
   include ::Aws::Structure
 end
@@ -9614,7 +9612,7 @@ Aws::ECR::Types::KmsException::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/Layer AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2906
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2902
 class Aws::ECR::Types::Layer < ::Struct
   include ::Aws::Structure
 end
@@ -9630,7 +9628,7 @@ Aws::ECR::Types::Layer::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LayerAlreadyExistsException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2920
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2919
 class Aws::ECR::Types::LayerAlreadyExistsException < ::Struct
   include ::Aws::Structure
 end
@@ -9654,7 +9652,7 @@ Aws::ECR::Types::LayerAlreadyExistsException::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LayerFailure AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2944
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2941
 class Aws::ECR::Types::LayerFailure < ::Struct
   include ::Aws::Structure
 end
@@ -9671,7 +9669,7 @@ Aws::ECR::Types::LayerFailure::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LayerInaccessibleException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2959
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2958
 class Aws::ECR::Types::LayerInaccessibleException < ::Struct
   include ::Aws::Structure
 end
@@ -9687,7 +9685,7 @@ Aws::ECR::Types::LayerInaccessibleException::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LayerPartTooSmallException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2973
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2972
 class Aws::ECR::Types::LayerPartTooSmallException < ::Struct
   include ::Aws::Structure
 end
@@ -9704,7 +9702,7 @@ Aws::ECR::Types::LayerPartTooSmallException::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LayersNotFoundException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2988
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:2987
 class Aws::ECR::Types::LayersNotFoundException < ::Struct
   include ::Aws::Structure
 end
@@ -9720,7 +9718,7 @@ Aws::ECR::Types::LayersNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LifecyclePolicyNotFoundException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3002
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3001
 class Aws::ECR::Types::LifecyclePolicyNotFoundException < ::Struct
   include ::Aws::Structure
 end
@@ -9736,7 +9734,7 @@ Aws::ECR::Types::LifecyclePolicyNotFoundException::SENSITIVE = T.let(T.unsafe(ni
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LifecyclePolicyPreviewFilter AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3016
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3015
 class Aws::ECR::Types::LifecyclePolicyPreviewFilter < ::Struct
   include ::Aws::Structure
 end
@@ -9752,7 +9750,7 @@ Aws::ECR::Types::LifecyclePolicyPreviewFilter::SENSITIVE = T.let(T.unsafe(nil), 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LifecyclePolicyPreviewInProgressException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3030
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3029
 class Aws::ECR::Types::LifecyclePolicyPreviewInProgressException < ::Struct
   include ::Aws::Structure
 end
@@ -9767,7 +9765,7 @@ Aws::ECR::Types::LifecyclePolicyPreviewInProgressException::SENSITIVE = T.let(T.
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LifecyclePolicyPreviewNotFoundException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3043
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3042
 class Aws::ECR::Types::LifecyclePolicyPreviewNotFoundException < ::Struct
   include ::Aws::Structure
 end
@@ -9804,7 +9802,7 @@ Aws::ECR::Types::LifecyclePolicyPreviewNotFoundException::SENSITIVE = T.let(T.un
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LifecyclePolicyPreviewResult AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3083
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3077
 class Aws::ECR::Types::LifecyclePolicyPreviewResult < ::Struct
   include ::Aws::Structure
 end
@@ -9826,7 +9824,7 @@ Aws::ECR::Types::LifecyclePolicyPreviewResult::SENSITIVE = T.let(T.unsafe(nil), 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LifecyclePolicyPreviewSummary AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3104
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3102
 class Aws::ECR::Types::LifecyclePolicyPreviewSummary < ::Struct
   include ::Aws::Structure
 end
@@ -9847,7 +9845,7 @@ Aws::ECR::Types::LifecyclePolicyPreviewSummary::SENSITIVE = T.let(T.unsafe(nil),
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LifecyclePolicyRuleAction AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3124
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3122
 class Aws::ECR::Types::LifecyclePolicyRuleAction < ::Struct
   include ::Aws::Structure
 end
@@ -9869,7 +9867,7 @@ Aws::ECR::Types::LifecyclePolicyRuleAction::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/LimitExceededException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3144
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3143
 class Aws::ECR::Types::LimitExceededException < ::Struct
   include ::Aws::Structure
 end
@@ -9893,7 +9891,7 @@ Aws::ECR::Types::LimitExceededException::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListImageReferrersFilter AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3167
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3165
 class Aws::ECR::Types::ListImageReferrersFilter < ::Struct
   include ::Aws::Structure
 end
@@ -9951,7 +9949,7 @@ Aws::ECR::Types::ListImageReferrersFilter::SENSITIVE = T.let(T.unsafe(nil), Arra
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListImageReferrersRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3228
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3222
 class Aws::ECR::Types::ListImageReferrersRequest < ::Struct
   include ::Aws::Structure
 end
@@ -9973,7 +9971,7 @@ Aws::ECR::Types::ListImageReferrersRequest::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListImageReferrersResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3249
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3247
 class Aws::ECR::Types::ListImageReferrersResponse < ::Struct
   include ::Aws::Structure
 end
@@ -9995,7 +9993,7 @@ Aws::ECR::Types::ListImageReferrersResponse::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListImagesFilter AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3270
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3268
 class Aws::ECR::Types::ListImagesFilter < ::Struct
   include ::Aws::Structure
 end
@@ -10045,7 +10043,7 @@ Aws::ECR::Types::ListImagesFilter::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListImagesRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3322
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3317
 class Aws::ECR::Types::ListImagesRequest < ::Struct
   include ::Aws::Structure
 end
@@ -10066,7 +10064,7 @@ Aws::ECR::Types::ListImagesRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListImagesResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3342
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3340
 class Aws::ECR::Types::ListImagesResponse < ::Struct
   include ::Aws::Structure
 end
@@ -10104,7 +10102,7 @@ Aws::ECR::Types::ListImagesResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListPullTimeUpdateExclusionsRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3379
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3377
 class Aws::ECR::Types::ListPullTimeUpdateExclusionsRequest < ::Struct
   include ::Aws::Structure
 end
@@ -10127,7 +10125,7 @@ Aws::ECR::Types::ListPullTimeUpdateExclusionsRequest::SENSITIVE = T.let(T.unsafe
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListPullTimeUpdateExclusionsResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3401
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3399
 class Aws::ECR::Types::ListPullTimeUpdateExclusionsResponse < ::Struct
   include ::Aws::Structure
 end
@@ -10143,7 +10141,7 @@ Aws::ECR::Types::ListPullTimeUpdateExclusionsResponse::SENSITIVE = T.let(T.unsaf
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListTagsForResourceRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3415
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3414
 class Aws::ECR::Types::ListTagsForResourceRequest < ::Struct
   include ::Aws::Structure
 end
@@ -10157,7 +10155,7 @@ Aws::ECR::Types::ListTagsForResourceRequest::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ListTagsForResourceResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3427
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3426
 class Aws::ECR::Types::ListTagsForResourceResponse < ::Struct
   include ::Aws::Structure
 end
@@ -10212,7 +10210,7 @@ Aws::ECR::Types::ListTagsForResourceResponse::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PackageVulnerabilityDetails AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3489
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3479
 class Aws::ECR::Types::PackageVulnerabilityDetails < ::Struct
   include ::Aws::Structure
 end
@@ -10267,7 +10265,7 @@ Aws::ECR::Types::PackageVulnerabilityDetails::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PullThroughCacheRule AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3550
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3541
 class Aws::ECR::Types::PullThroughCacheRule < ::Struct
   include ::Aws::Structure
 end
@@ -10283,7 +10281,7 @@ Aws::ECR::Types::PullThroughCacheRule::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PullThroughCacheRuleAlreadyExistsException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3564
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3563
 class Aws::ECR::Types::PullThroughCacheRuleAlreadyExistsException < ::Struct
   include ::Aws::Structure
 end
@@ -10299,7 +10297,7 @@ Aws::ECR::Types::PullThroughCacheRuleAlreadyExistsException::SENSITIVE = T.let(T
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PullThroughCacheRuleNotFoundException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3578
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3577
 class Aws::ECR::Types::PullThroughCacheRuleNotFoundException < ::Struct
   include ::Aws::Structure
 end
@@ -10320,7 +10318,7 @@ Aws::ECR::Types::PullThroughCacheRuleNotFoundException::SENSITIVE = T.let(T.unsa
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutAccountSettingRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3598
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3596
 class Aws::ECR::Types::PutAccountSettingRequest < ::Struct
   include ::Aws::Structure
 end
@@ -10338,7 +10336,7 @@ Aws::ECR::Types::PutAccountSettingRequest::SENSITIVE = T.let(T.unsafe(nil), Arra
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutAccountSettingResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3615
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3613
 class Aws::ECR::Types::PutAccountSettingResponse < ::Struct
   include ::Aws::Structure
 end
@@ -10376,7 +10374,7 @@ Aws::ECR::Types::PutAccountSettingResponse::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutImageRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3656
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3650
 class Aws::ECR::Types::PutImageRequest < ::Struct
   include ::Aws::Structure
 end
@@ -10390,7 +10388,7 @@ Aws::ECR::Types::PutImageRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutImageResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3668
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3667
 class Aws::ECR::Types::PutImageResponse < ::Struct
   include ::Aws::Structure
 end
@@ -10418,7 +10416,7 @@ Aws::ECR::Types::PutImageResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutImageScanningConfigurationRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3696
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3693
 class Aws::ECR::Types::PutImageScanningConfigurationRequest < ::Struct
   include ::Aws::Structure
 end
@@ -10440,7 +10438,7 @@ Aws::ECR::Types::PutImageScanningConfigurationRequest::SENSITIVE = T.let(T.unsaf
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutImageScanningConfigurationResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3718
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3715
 class Aws::ECR::Types::PutImageScanningConfigurationResponse < ::Struct
   include ::Aws::Structure
 end
@@ -10474,7 +10472,7 @@ Aws::ECR::Types::PutImageScanningConfigurationResponse::SENSITIVE = T.let(T.unsa
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutImageTagMutabilityRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3753
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3749
 class Aws::ECR::Types::PutImageTagMutabilityRequest < ::Struct
   include ::Aws::Structure
 end
@@ -10501,7 +10499,7 @@ Aws::ECR::Types::PutImageTagMutabilityRequest::SENSITIVE = T.let(T.unsafe(nil), 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutImageTagMutabilityResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3781
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3777
 class Aws::ECR::Types::PutImageTagMutabilityResponse < ::Struct
   include ::Aws::Structure
 end
@@ -10525,7 +10523,7 @@ Aws::ECR::Types::PutImageTagMutabilityResponse::SENSITIVE = T.let(T.unsafe(nil),
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutLifecyclePolicyRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3805
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3802
 class Aws::ECR::Types::PutLifecyclePolicyRequest < ::Struct
   include ::Aws::Structure
 end
@@ -10547,7 +10545,7 @@ Aws::ECR::Types::PutLifecyclePolicyRequest::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutLifecyclePolicyResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3827
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3824
 class Aws::ECR::Types::PutLifecyclePolicyResponse < ::Struct
   include ::Aws::Structure
 end
@@ -10568,7 +10566,7 @@ Aws::ECR::Types::PutLifecyclePolicyResponse::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutRegistryPolicyRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3846
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3845
 class Aws::ECR::Types::PutRegistryPolicyRequest < ::Struct
   include ::Aws::Structure
 end
@@ -10586,7 +10584,7 @@ Aws::ECR::Types::PutRegistryPolicyRequest::SENSITIVE = T.let(T.unsafe(nil), Arra
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutRegistryPolicyResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3863
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3861
 class Aws::ECR::Types::PutRegistryPolicyResponse < ::Struct
   include ::Aws::Structure
 end
@@ -10618,7 +10616,7 @@ Aws::ECR::Types::PutRegistryPolicyResponse::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutRegistryScanningConfigurationRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3894
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3892
 class Aws::ECR::Types::PutRegistryScanningConfigurationRequest < ::Struct
   include ::Aws::Structure
 end
@@ -10632,7 +10630,7 @@ Aws::ECR::Types::PutRegistryScanningConfigurationRequest::SENSITIVE = T.let(T.un
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutRegistryScanningConfigurationResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3906
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3905
 class Aws::ECR::Types::PutRegistryScanningConfigurationResponse < ::Struct
   include ::Aws::Structure
 end
@@ -10646,7 +10644,7 @@ Aws::ECR::Types::PutRegistryScanningConfigurationResponse::SENSITIVE = T.let(T.u
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutReplicationConfigurationRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3918
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3917
 class Aws::ECR::Types::PutReplicationConfigurationRequest < ::Struct
   include ::Aws::Structure
 end
@@ -10660,7 +10658,7 @@ Aws::ECR::Types::PutReplicationConfigurationRequest::SENSITIVE = T.let(T.unsafe(
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutReplicationConfigurationResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3930
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3929
 class Aws::ECR::Types::PutReplicationConfigurationResponse < ::Struct
   include ::Aws::Structure
 end
@@ -10674,7 +10672,7 @@ Aws::ECR::Types::PutReplicationConfigurationResponse::SENSITIVE = T.let(T.unsafe
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutSigningConfigurationRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3942
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3941
 class Aws::ECR::Types::PutSigningConfigurationRequest < ::Struct
   include ::Aws::Structure
 end
@@ -10688,7 +10686,7 @@ Aws::ECR::Types::PutSigningConfigurationRequest::SENSITIVE = T.let(T.unsafe(nil)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/PutSigningConfigurationResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3954
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3953
 class Aws::ECR::Types::PutSigningConfigurationResponse < ::Struct
   include ::Aws::Structure
 end
@@ -10709,7 +10707,7 @@ Aws::ECR::Types::PutSigningConfigurationResponse::SENSITIVE = T.let(T.unsafe(nil
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/Recommendation AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3974
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3972
 class Aws::ECR::Types::Recommendation < ::Struct
   include ::Aws::Structure
 end
@@ -10724,7 +10722,7 @@ Aws::ECR::Types::Recommendation::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ReferencedImagesNotFoundException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3987
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3986
 class Aws::ECR::Types::ReferencedImagesNotFoundException < ::Struct
   include ::Aws::Structure
 end
@@ -10739,7 +10737,7 @@ Aws::ECR::Types::ReferencedImagesNotFoundException::SENSITIVE = T.let(T.unsafe(n
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RegisterPullTimeUpdateExclusionRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4000
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:3999
 class Aws::ECR::Types::RegisterPullTimeUpdateExclusionRequest < ::Struct
   include ::Aws::Structure
 end
@@ -10759,7 +10757,7 @@ Aws::ECR::Types::RegisterPullTimeUpdateExclusionRequest::SENSITIVE = T.let(T.uns
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RegisterPullTimeUpdateExclusionResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4019
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4017
 class Aws::ECR::Types::RegisterPullTimeUpdateExclusionResponse < ::Struct
   include ::Aws::Structure
 end
@@ -10774,7 +10772,7 @@ Aws::ECR::Types::RegisterPullTimeUpdateExclusionResponse::SENSITIVE = T.let(T.un
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RegistryPolicyNotFoundException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4032
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4031
 class Aws::ECR::Types::RegistryPolicyNotFoundException < ::Struct
   include ::Aws::Structure
 end
@@ -10794,7 +10792,7 @@ Aws::ECR::Types::RegistryPolicyNotFoundException::SENSITIVE = T.let(T.unsafe(nil
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RegistryScanningConfiguration AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4051
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4049
 class Aws::ECR::Types::RegistryScanningConfiguration < ::Struct
   include ::Aws::Structure
 end
@@ -10820,7 +10818,7 @@ Aws::ECR::Types::RegistryScanningConfiguration::SENSITIVE = T.let(T.unsafe(nil),
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RegistryScanningRule AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4076
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4074
 class Aws::ECR::Types::RegistryScanningRule < ::Struct
   include ::Aws::Structure
 end
@@ -10837,7 +10835,7 @@ Aws::ECR::Types::RegistryScanningRule::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/Remediation AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4091
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4090
 class Aws::ECR::Types::Remediation < ::Struct
   include ::Aws::Structure
 end
@@ -10854,7 +10852,7 @@ Aws::ECR::Types::Remediation::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ReplicationConfiguration AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4106
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4105
 class Aws::ECR::Types::ReplicationConfiguration < ::Struct
   include ::Aws::Structure
 end
@@ -10877,7 +10875,7 @@ Aws::ECR::Types::ReplicationConfiguration::SENSITIVE = T.let(T.unsafe(nil), Arra
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ReplicationDestination AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4128
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4126
 class Aws::ECR::Types::ReplicationDestination < ::Struct
   include ::Aws::Structure
 end
@@ -10902,7 +10900,7 @@ Aws::ECR::Types::ReplicationDestination::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ReplicationRule AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4152
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4150
 class Aws::ECR::Types::ReplicationRule < ::Struct
   include ::Aws::Structure
 end
@@ -10959,7 +10957,7 @@ Aws::ECR::Types::ReplicationRule::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/Repository AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4215
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4206
 class Aws::ECR::Types::Repository < ::Struct
   include ::Aws::Structure
 end
@@ -10975,7 +10973,7 @@ Aws::ECR::Types::Repository::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RepositoryAlreadyExistsException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4229
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4228
 class Aws::ECR::Types::RepositoryAlreadyExistsException < ::Struct
   include ::Aws::Structure
 end
@@ -11058,7 +11056,7 @@ Aws::ECR::Types::RepositoryAlreadyExistsException::SENSITIVE = T.let(T.unsafe(ni
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RepositoryCreationTemplate AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4321
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4309
 class Aws::ECR::Types::RepositoryCreationTemplate < ::Struct
   include ::Aws::Structure
 end
@@ -11086,7 +11084,7 @@ Aws::ECR::Types::RepositoryCreationTemplate::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RepositoryFilter AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4348
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4346
 class Aws::ECR::Types::RepositoryFilter < ::Struct
   include ::Aws::Structure
 end
@@ -11104,7 +11102,7 @@ Aws::ECR::Types::RepositoryFilter::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RepositoryNotEmptyException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4364
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4363
 class Aws::ECR::Types::RepositoryNotEmptyException < ::Struct
   include ::Aws::Structure
 end
@@ -11122,7 +11120,7 @@ Aws::ECR::Types::RepositoryNotEmptyException::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RepositoryNotFoundException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4380
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4379
 class Aws::ECR::Types::RepositoryNotFoundException < ::Struct
   include ::Aws::Structure
 end
@@ -11139,7 +11137,7 @@ Aws::ECR::Types::RepositoryNotFoundException::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RepositoryPolicyNotFoundException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4395
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4394
 class Aws::ECR::Types::RepositoryPolicyNotFoundException < ::Struct
   include ::Aws::Structure
 end
@@ -11171,7 +11169,7 @@ Aws::ECR::Types::RepositoryPolicyNotFoundException::SENSITIVE = T.let(T.unsafe(n
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RepositoryScanningConfiguration AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4429
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4424
 class Aws::ECR::Types::RepositoryScanningConfiguration < ::Struct
   include ::Aws::Structure
 end
@@ -11196,7 +11194,7 @@ Aws::ECR::Types::RepositoryScanningConfiguration::SENSITIVE = T.let(T.unsafe(nil
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/RepositoryScanningConfigurationFailure AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4454
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4451
 class Aws::ECR::Types::RepositoryScanningConfigurationFailure < ::Struct
   include ::Aws::Structure
 end
@@ -11225,7 +11223,7 @@ Aws::ECR::Types::RepositoryScanningConfigurationFailure::SENSITIVE = T.let(T.uns
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/Resource AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4484
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4480
 class Aws::ECR::Types::Resource < ::Struct
   include ::Aws::Structure
 end
@@ -11242,7 +11240,7 @@ Aws::ECR::Types::Resource::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ResourceDetails AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4499
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4498
 class Aws::ECR::Types::ResourceDetails < ::Struct
   include ::Aws::Structure
 end
@@ -11258,7 +11256,7 @@ Aws::ECR::Types::ResourceDetails::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ScanNotFoundException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4513
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4512
 class Aws::ECR::Types::ScanNotFoundException < ::Struct
   include ::Aws::Structure
 end
@@ -11284,7 +11282,7 @@ Aws::ECR::Types::ScanNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ScanningRepositoryFilter AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4538
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4536
 class Aws::ECR::Types::ScanningRepositoryFilter < ::Struct
   include ::Aws::Structure
 end
@@ -11301,7 +11299,7 @@ Aws::ECR::Types::ScanningRepositoryFilter::SENSITIVE = T.let(T.unsafe(nil), Arra
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ScoreDetails AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4553
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4552
 class Aws::ECR::Types::ScoreDetails < ::Struct
   include ::Aws::Structure
 end
@@ -11318,7 +11316,7 @@ Aws::ECR::Types::ScoreDetails::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/SecretNotFoundException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4568
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4567
 class Aws::ECR::Types::SecretNotFoundException < ::Struct
   include ::Aws::Structure
 end
@@ -11334,7 +11332,7 @@ Aws::ECR::Types::SecretNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ServerException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4582
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4581
 class Aws::ECR::Types::ServerException < ::Struct
   include ::Aws::Structure
 end
@@ -11371,7 +11369,7 @@ Aws::ECR::Types::ServerException::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/SetRepositoryPolicyRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4620
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4616
 class Aws::ECR::Types::SetRepositoryPolicyRequest < ::Struct
   include ::Aws::Structure
 end
@@ -11393,7 +11391,7 @@ Aws::ECR::Types::SetRepositoryPolicyRequest::SENSITIVE = T.let(T.unsafe(nil), Ar
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/SetRepositoryPolicyResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4642
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4639
 class Aws::ECR::Types::SetRepositoryPolicyResponse < ::Struct
   include ::Aws::Structure
 end
@@ -11412,7 +11410,7 @@ Aws::ECR::Types::SetRepositoryPolicyResponse::SENSITIVE = T.let(T.unsafe(nil), A
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/SigningConfiguration AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4659
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4658
 class Aws::ECR::Types::SigningConfiguration < ::Struct
   include ::Aws::Structure
 end
@@ -11430,7 +11428,7 @@ Aws::ECR::Types::SigningConfiguration::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/SigningConfigurationNotFoundException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4675
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4674
 class Aws::ECR::Types::SigningConfigurationNotFoundException < ::Struct
   include ::Aws::Structure
 end
@@ -11464,7 +11462,7 @@ Aws::ECR::Types::SigningConfigurationNotFoundException::SENSITIVE = T.let(T.unsa
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/SigningRepositoryFilter AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4708
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4706
 class Aws::ECR::Types::SigningRepositoryFilter < ::Struct
   include ::Aws::Structure
 end
@@ -11496,7 +11494,7 @@ Aws::ECR::Types::SigningRepositoryFilter::SENSITIVE = T.let(T.unsafe(nil), Array
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/SigningRule AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4739
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4737
 class Aws::ECR::Types::SigningRule < ::Struct
   include ::Aws::Structure
 end
@@ -11521,7 +11519,7 @@ Aws::ECR::Types::SigningRule::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/StartImageScanRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4764
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4761
 class Aws::ECR::Types::StartImageScanRequest < ::Struct
   include ::Aws::Structure
 end
@@ -11548,7 +11546,7 @@ Aws::ECR::Types::StartImageScanRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/StartImageScanResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4792
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4788
 class Aws::ECR::Types::StartImageScanResponse < ::Struct
   include ::Aws::Structure
 end
@@ -11573,7 +11571,7 @@ Aws::ECR::Types::StartImageScanResponse::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/StartLifecyclePolicyPreviewRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4817
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4814
 class Aws::ECR::Types::StartLifecyclePolicyPreviewRequest < ::Struct
   include ::Aws::Structure
 end
@@ -11599,7 +11597,7 @@ Aws::ECR::Types::StartLifecyclePolicyPreviewRequest::SENSITIVE = T.let(T.unsafe(
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/StartLifecyclePolicyPreviewResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4844
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4840
 class Aws::ECR::Types::StartLifecyclePolicyPreviewResponse < ::Struct
   include ::Aws::Structure
 end
@@ -11615,7 +11613,7 @@ Aws::ECR::Types::StartLifecyclePolicyPreviewResponse::SENSITIVE = T.let(T.unsafe
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/SubjectIdentifier AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4858
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4857
 class Aws::ECR::Types::SubjectIdentifier < ::Struct
   include ::Aws::Structure
 end
@@ -11641,7 +11639,7 @@ Aws::ECR::Types::SubjectIdentifier::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/Tag AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4883
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4881
 class Aws::ECR::Types::Tag < ::Struct
   include ::Aws::Structure
 end
@@ -11664,7 +11662,7 @@ Aws::ECR::Types::Tag::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/TagResourceRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4905
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4903
 class Aws::ECR::Types::TagResourceRequest < ::Struct
   include ::Aws::Structure
 end
@@ -11685,7 +11683,7 @@ class Aws::ECR::Types::TagResourceResponse < ::Aws::EmptyStructure; end
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/TemplateAlreadyExistsException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4923
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4922
 class Aws::ECR::Types::TemplateAlreadyExistsException < ::Struct
   include ::Aws::Structure
 end
@@ -11701,7 +11699,7 @@ Aws::ECR::Types::TemplateAlreadyExistsException::SENSITIVE = T.let(T.unsafe(nil)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/TemplateNotFoundException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4937
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4936
 class Aws::ECR::Types::TemplateNotFoundException < ::Struct
   include ::Aws::Structure
 end
@@ -11717,7 +11715,7 @@ Aws::ECR::Types::TemplateNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Arr
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/TooManyTagsException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4951
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4950
 class Aws::ECR::Types::TooManyTagsException < ::Struct
   include ::Aws::Structure
 end
@@ -11737,7 +11735,7 @@ Aws::ECR::Types::TooManyTagsException::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/TransitioningImageTotalCount AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4970
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4968
 class Aws::ECR::Types::TransitioningImageTotalCount < ::Struct
   include ::Aws::Structure
 end
@@ -11753,7 +11751,7 @@ Aws::ECR::Types::TransitioningImageTotalCount::SENSITIVE = T.let(T.unsafe(nil), 
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UnableToAccessSecretException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4984
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4983
 class Aws::ECR::Types::UnableToAccessSecretException < ::Struct
   include ::Aws::Structure
 end
@@ -11769,7 +11767,7 @@ Aws::ECR::Types::UnableToAccessSecretException::SENSITIVE = T.let(T.unsafe(nil),
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UnableToDecryptSecretValueException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4998
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:4997
 class Aws::ECR::Types::UnableToDecryptSecretValueException < ::Struct
   include ::Aws::Structure
 end
@@ -11787,7 +11785,7 @@ Aws::ECR::Types::UnableToDecryptSecretValueException::SENSITIVE = T.let(T.unsafe
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UnableToGetUpstreamImageException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5014
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5013
 class Aws::ECR::Types::UnableToGetUpstreamImageException < ::Struct
   include ::Aws::Structure
 end
@@ -11803,7 +11801,7 @@ Aws::ECR::Types::UnableToGetUpstreamImageException::SENSITIVE = T.let(T.unsafe(n
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UnableToGetUpstreamLayerException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5028
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5027
 class Aws::ECR::Types::UnableToGetUpstreamLayerException < ::Struct
   include ::Aws::Structure
 end
@@ -11821,7 +11819,7 @@ Aws::ECR::Types::UnableToGetUpstreamLayerException::SENSITIVE = T.let(T.unsafe(n
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UnableToListUpstreamImageReferrersException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5044
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5043
 class Aws::ECR::Types::UnableToListUpstreamImageReferrersException < ::Struct
   include ::Aws::Structure
 end
@@ -11836,7 +11834,7 @@ Aws::ECR::Types::UnableToListUpstreamImageReferrersException::SENSITIVE = T.let(
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UnsupportedImageTypeException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5057
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5056
 class Aws::ECR::Types::UnsupportedImageTypeException < ::Struct
   include ::Aws::Structure
 end
@@ -11851,7 +11849,7 @@ Aws::ECR::Types::UnsupportedImageTypeException::SENSITIVE = T.let(T.unsafe(nil),
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UnsupportedUpstreamRegistryException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5070
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5069
 class Aws::ECR::Types::UnsupportedUpstreamRegistryException < ::Struct
   include ::Aws::Structure
 end
@@ -11871,7 +11869,7 @@ Aws::ECR::Types::UnsupportedUpstreamRegistryException::SENSITIVE = T.let(T.unsaf
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UntagResourceRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5089
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5087
 class Aws::ECR::Types::UntagResourceRequest < ::Struct
   include ::Aws::Structure
 end
@@ -11905,7 +11903,7 @@ class Aws::ECR::Types::UntagResourceResponse < ::Aws::EmptyStructure; end
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UpdateImageStorageClassRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5123
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5119
 class Aws::ECR::Types::UpdateImageStorageClassRequest < ::Struct
   include ::Aws::Structure
 end
@@ -11934,7 +11932,7 @@ Aws::ECR::Types::UpdateImageStorageClassRequest::SENSITIVE = T.let(T.unsafe(nil)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UpdateImageStorageClassResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5153
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5149
 class Aws::ECR::Types::UpdateImageStorageClassResponse < ::Struct
   include ::Aws::Structure
 end
@@ -11967,7 +11965,7 @@ Aws::ECR::Types::UpdateImageStorageClassResponse::SENSITIVE = T.let(T.unsafe(nil
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UpdatePullThroughCacheRuleRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5187
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5183
 class Aws::ECR::Types::UpdatePullThroughCacheRuleRequest < ::Struct
   include ::Aws::Structure
 end
@@ -12005,7 +12003,7 @@ Aws::ECR::Types::UpdatePullThroughCacheRuleRequest::SENSITIVE = T.let(T.unsafe(n
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UpdatePullThroughCacheRuleResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5228
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5222
 class Aws::ECR::Types::UpdatePullThroughCacheRuleResponse < ::Struct
   include ::Aws::Structure
 end
@@ -12085,7 +12083,7 @@ Aws::ECR::Types::UpdatePullThroughCacheRuleResponse::SENSITIVE = T.let(T.unsafe(
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UpdateRepositoryCreationTemplateRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5315
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5305
 class Aws::ECR::Types::UpdateRepositoryCreationTemplateRequest < ::Struct
   include ::Aws::Structure
 end
@@ -12104,7 +12102,7 @@ Aws::ECR::Types::UpdateRepositoryCreationTemplateRequest::SENSITIVE = T.let(T.un
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UpdateRepositoryCreationTemplateResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5333
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5331
 class Aws::ECR::Types::UpdateRepositoryCreationTemplateResponse < ::Struct
   include ::Aws::Structure
 end
@@ -12143,7 +12141,7 @@ Aws::ECR::Types::UpdateRepositoryCreationTemplateResponse::SENSITIVE = T.let(T.u
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UploadLayerPartRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5375
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5369
 class Aws::ECR::Types::UploadLayerPartRequest < ::Struct
   include ::Aws::Structure
 end
@@ -12169,7 +12167,7 @@ Aws::ECR::Types::UploadLayerPartRequest::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UploadLayerPartResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5402
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5398
 class Aws::ECR::Types::UploadLayerPartResponse < ::Struct
   include ::Aws::Structure
 end
@@ -12186,7 +12184,7 @@ Aws::ECR::Types::UploadLayerPartResponse::SENSITIVE = T.let(T.unsafe(nil), Array
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/UploadNotFoundException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5417
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5416
 class Aws::ECR::Types::UploadNotFoundException < ::Struct
   include ::Aws::Structure
 end
@@ -12206,7 +12204,7 @@ Aws::ECR::Types::UploadNotFoundException::SENSITIVE = T.let(T.unsafe(nil), Array
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ValidatePullThroughCacheRuleRequest AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5436
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5434
 class Aws::ECR::Types::ValidatePullThroughCacheRuleRequest < ::Struct
   include ::Aws::Structure
 end
@@ -12261,7 +12259,7 @@ Aws::ECR::Types::ValidatePullThroughCacheRuleRequest::SENSITIVE = T.let(T.unsafe
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ValidatePullThroughCacheRuleResponse AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5496
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5488
 class Aws::ECR::Types::ValidatePullThroughCacheRuleResponse < ::Struct
   include ::Aws::Structure
 end
@@ -12276,7 +12274,7 @@ Aws::ECR::Types::ValidatePullThroughCacheRuleResponse::SENSITIVE = T.let(T.unsaf
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/ValidationException AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5509
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5508
 class Aws::ECR::Types::ValidationException < ::Struct
   include ::Aws::Structure
 end
@@ -12324,7 +12322,7 @@ Aws::ECR::Types::ValidationException::SENSITIVE = T.let(T.unsafe(nil), Array)
 #
 # @see http://docs.aws.amazon.com/goto/WebAPI/ecr-2015-09-21/VulnerablePackage AWS API Documentation
 #
-# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5563
+# pkg:gem/aws-sdk-ecr#lib/aws-sdk-ecr/types.rb:5554
 class Aws::ECR::Types::VulnerablePackage < ::Struct
   include ::Aws::Structure
 end
