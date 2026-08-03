@@ -194,6 +194,11 @@ RSpec.describe Dependabot::Maven::FileParser::WrapperMojo do
       expect(described_class.extract_distribution_version(url)).to eq("3.9.9")
     end
 
+    it "extracts the version from a custom mirror layout" do
+      url = "https://downloads.apache.org/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.zip"
+      expect(described_class.extract_distribution_version(url)).to eq("3.9.9")
+    end
+
     it "extracts an alpha pre-release version" do
       url = "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.0-alpha-1/apache-maven-3.9.0-alpha-1-bin.zip"
       expect(described_class.extract_distribution_version(url)).to eq("3.9.0-alpha-1")

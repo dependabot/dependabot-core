@@ -60,10 +60,11 @@ module Dependabot
         end
 
         # Extracts the version from a distributionUrl value (the resolved URL,
-        # not the raw properties line). Matches the version from the directory
-        # path segment (e.g. `.../apache-maven/3.9.9/apache-maven-3.9.9-bin.zip`)
-        # to avoid capturing classifiers like `-bin` or `-src` as part of the version.
-        DIST_URL_VERSION_REGEX = %r{/apache-maven/(?<version>[^/]+)/apache-maven-}x
+        # not the raw properties line). Match the standard artifact filename so
+        # custom mirrors do not need to preserve Maven Central's directory layout.
+        DIST_URL_VERSION_REGEX = %r{
+          /apache-maven-(?<version>[^/?#]+)-(?:bin|src)\.(?:zip|tar\.gz)(?:[?#].*)?\z
+        }x
 
         sig do
           params(

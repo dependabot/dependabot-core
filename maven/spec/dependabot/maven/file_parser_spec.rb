@@ -1301,6 +1301,31 @@ RSpec.describe Dependabot::Maven::FileParser do
         expect(dep.requirements.first[:source][:type]).to eq("maven-distribution")
       end
 
+      context "when transitive dependency parsing is enabled" do
+        let(:wrapper_content) { fixture("wrapper_files", "maven-wrapper-3.9.6-bin.properties") }
+
+        before do
+          allow(Dependabot::Maven::FileParser::MavenDependencyParser).to receive(:build_dependency_set)
+            .and_return(Dependabot::FileParsers::Base::DependencySet.new)
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:maven_transitive_dependencies).and_return(true)
+        end
+
+        it "includes the wrapper dependencies" do
+          expect(dependencies.map(&:name)).to include(
+            "org.apache.maven:apache-maven",
+            "org.apache.maven.wrapper:maven-wrapper"
+          )
+        end
+
+        it "preserves every wrapper requirement" do
+          dependency = dependencies.find { |dep| dep.name == "org.apache.maven:apache-maven" }
+          properties = dependency.requirements.map { |requirement| requirement.dig(:source, :property) }
+
+          expect(properties).to contain_exactly("distributionUrl", "wrapperUrl")
+        end
+      end
+
       context "when the maven_wrapper_updater experiment is disabled" do
         before do
           allow(Dependabot::Experiments).to receive(:enabled?)

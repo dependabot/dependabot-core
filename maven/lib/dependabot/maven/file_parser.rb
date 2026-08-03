@@ -74,6 +74,7 @@ module Dependabot
 
         pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
         extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
+        add_wrapper_dependencies(dependency_set)
 
         dependencies = []
         dependency_set.dependencies.each do |dep|
@@ -95,18 +96,23 @@ module Dependabot
         extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
         targetfiles.each { |target| dependency_set += targetfile_dependencies(target) }
 
-        if Dependabot::Experiments.enabled?(:maven_wrapper_updater)
-          wrapper_properties_files.each do |properties_file|
-            dir = File.dirname(properties_file.name).sub(%r{/?\.mvn/wrapper$}, "")
-            dir = "." if dir.empty?
-            scripts = wrapper_script_files_for(dir)
-            FileParser::WrapperMojo.resolve_dependencies(properties_file, script_files: scripts).each do |dep|
-              dependency_set << dep
-            end
-          end
-        end
+        add_wrapper_dependencies(dependency_set)
 
         dependency_set.dependencies
+      end
+
+      sig { params(dependency_set: DependencySet).void }
+      def add_wrapper_dependencies(dependency_set)
+        return unless Dependabot::Experiments.enabled?(:maven_wrapper_updater)
+
+        wrapper_properties_files.each do |properties_file|
+          dir = File.dirname(properties_file.name).sub(%r{/?\.mvn/wrapper$}, "")
+          dir = "." if dir.empty?
+          scripts = wrapper_script_files_for(dir)
+          FileParser::WrapperMojo.resolve_dependencies(properties_file, script_files: scripts).each do |dep|
+            dependency_set << dep
+          end
+        end
       end
 
       sig { returns(Ecosystem::VersionManager) }
@@ -535,7 +541,13 @@ module Dependabot
         merged = []
         used_indices = Set.new
         requirements.each_with_index do |dep_scan_req, i|
-          next if used_indices.include?(i) || dep_scan_req.dig(:metadata, :pom_file).nil?
+          next if used_indices.include?(i)
+
+          if dep_scan_req.dig(:metadata, :pom_file).nil?
+            merged << dep_scan_req
+            used_indices.add(i)
+            next
+          end
 
           # Look for another requirement where pom_file matches property_source
           match_index = requirements.find_index.with_index do |parsing_req, j|
