@@ -314,7 +314,7 @@ systemProp.https.proxyPort=#{https_proxy_port}"
           script_content = <<~GRADLE
             allprojects {
               if (tasks.findByName("#{INIT_SCRIPT_TASK_NAME}") == null) {
-                tasks.register("#{INIT_SCRIPT_TASK_NAME}") { }
+                tasks.create("#{INIT_SCRIPT_TASK_NAME}") { }
               }
             }
 
