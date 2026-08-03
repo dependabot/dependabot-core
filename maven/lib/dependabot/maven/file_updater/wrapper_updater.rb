@@ -178,7 +178,7 @@ module Dependabot
           raise
         end
 
-        sig { params(url: String, response: T.untyped).void }
+        sig { params(url: String, response: Excon::Response).void }
         def raise_on_auth_failure(url, response)
           return unless response.status == 401
 

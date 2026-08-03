@@ -95,10 +95,10 @@ module Dependabot
         end
         def bump_distribution_requirement(req)
           new_version = T.must(latest_version).to_s
-          old_version = req[:requirement]
-          updated = req.merge(requirement: new_version)
+          old_version = req.requirement_string
+          updated = Dependabot::DependencyRequirement.create(req.merge(requirement: new_version))
 
-          case req.dig(:source, :property)
+          case req.source_string("property")
           when "distributionUrl"
             updated = merge_metadata_version(updated, :distribution_version, new_version)
             updated = merge_source_url(updated, old_version, new_version)
@@ -110,26 +110,28 @@ module Dependabot
         end
 
         sig do
-          params(req: T::Hash[Symbol, T.untyped], key: Symbol, new_version: String)
-            .returns(T::Hash[Symbol, T.untyped])
+          params(req: Dependabot::DependencyRequirement, key: Symbol, new_version: String)
+            .returns(Dependabot::DependencyRequirement)
         end
         def merge_metadata_version(req, key, new_version)
-          metadata = req[:metadata]
-          return req unless metadata.is_a?(Hash)
+          metadata = req.metadata
+          return req unless metadata
 
-          req.merge(metadata: metadata.merge(key => new_version))
+          Dependabot::DependencyRequirement.create(req.merge(metadata: metadata.merge(key => new_version)))
         end
 
         sig do
-          params(req: T::Hash[Symbol, T.untyped], old_version: T.nilable(String), new_version: String)
-            .returns(T::Hash[Symbol, T.untyped])
+          params(req: Dependabot::DependencyRequirement, old_version: T.nilable(String), new_version: String)
+            .returns(Dependabot::DependencyRequirement)
         end
         def merge_source_url(req, old_version, new_version)
-          source = req[:source]
-          url = source.is_a?(Hash) ? source[:url] : nil
-          return req unless url && old_version && !old_version.empty?
+          source = req.source_hash
+          url = req.source_string("url")
+          return req unless source && url && old_version && !old_version.empty?
 
-          req.merge(source: source.merge(url: url.sub(old_version, new_version)))
+          Dependabot::DependencyRequirement.create(
+            req.merge(source: source.merge(url: url.sub(old_version, new_version)))
+          )
         end
 
         sig { returns(T.nilable(Version)) }

@@ -4,6 +4,7 @@
 # Parses maven-wrapper.properties and emits Dependency objects for the two
 # tracked Maven coordinates: org.apache.maven:apache-maven (the maven distribution)
 # and org.apache.maven.wrapper:maven-wrapper (the wrapper plugin).
+require "dependabot/dependency_requirement"
 require "dependabot/maven/file_parser"
 require "dependabot/maven/distributions"
 
@@ -119,7 +120,7 @@ module Dependabot
             props: WrapperProperties,
             dist_version: String,
             has_debug_scripts: T::Boolean
-          ).returns(T::Array[T::Hash[Symbol, T.untyped]])
+          ).returns(T::Array[Dependabot::DependencyRequirement])
         end
         def self.build_distribution_requirements(file_name, props, dist_version, has_debug_scripts)
           metadata = T.let(
@@ -130,11 +131,11 @@ module Dependabot
               distribution_version: dist_version,
               include_debug_script: has_debug_scripts
             },
-            T::Hash[Symbol, T.untyped]
+            Dependabot::DependencyRequirement::ObjectHash
           )
           metadata[:distribution_sha256_sum] = props.distribution_sha256_sum if props.distribution_sha256_sum
 
-          main_req = T.let(
+          main_req = Dependabot::DependencyRequirement.create(
             {
               requirement: dist_version,
               file: file_name,
@@ -147,11 +148,10 @@ module Dependabot
               # The Apache Maven distribution is not a JAR, but a POM is available
               # We can use this POM to query for new versions using the existing update checker for maven
               metadata: metadata
-            },
-            T::Hash[Symbol, T.untyped]
+            }
           )
 
-          requirements = T.let([main_req], T::Array[T::Hash[Symbol, T.untyped]])
+          requirements = T.let([main_req], T::Array[Dependabot::DependencyRequirement])
           requirements.concat(build_wrapper_url_requirement(file_name, props))
           requirements
         end
@@ -160,16 +160,16 @@ module Dependabot
           params(
             file_name: String,
             props: WrapperProperties
-          ).returns(T::Array[T::Hash[Symbol, T.untyped]])
+          ).returns(T::Array[Dependabot::DependencyRequirement])
         end
         def self.build_wrapper_url_requirement(file_name, props)
           return [] unless props.wrapper_url
 
           Dependabot.logger.debug "wrapperUrl is present #{props.wrapper_url} version=#{props.wrapper_version}"
-          metadata = T.let({}, T::Hash[Symbol, T.untyped])
+          metadata = T.let({}, Dependabot::DependencyRequirement::ObjectHash)
           metadata[:wrapper_sha256_sum] = props.wrapper_sha256_sum if props.wrapper_sha256_sum
 
-          req = T.let(
+          req = Dependabot::DependencyRequirement.create(
             {
               requirement: props.wrapper_version,
               file: file_name,
@@ -179,8 +179,7 @@ module Dependabot
                 url: props.wrapper_url
               },
               groups: []
-            },
-            T::Hash[Symbol, T.untyped]
+            }
           )
           req[:metadata] = metadata if metadata.any?
           [req]
@@ -204,22 +203,24 @@ module Dependabot
               distribution_type: props.distribution_type,
               include_debug_script: has_debug_scripts
             },
-            T::Hash[Symbol, T.untyped]
+            Dependabot::DependencyRequirement::ObjectHash
           )
           Dependency.new(
             name: Distributions::MAVEN_WRAPPER_PACKAGE,
             version: props.wrapper_version,
             requirements: [
-              {
-                requirement: props.wrapper_version,
-                file: file_name,
-                source: {
-                  type: Distributions::DISTRIBUTION_DEPENDENCY_TYPE,
-                  property: "wrapperVersion"
-                },
-                groups: [],
-                metadata: metadata
-              }
+              Dependabot::DependencyRequirement.create(
+                {
+                  requirement: props.wrapper_version,
+                  file: file_name,
+                  source: {
+                    type: Distributions::DISTRIBUTION_DEPENDENCY_TYPE,
+                    property: "wrapperVersion"
+                  },
+                  groups: [],
+                  metadata: metadata
+                }
+              )
             ],
             package_manager: "maven"
           )

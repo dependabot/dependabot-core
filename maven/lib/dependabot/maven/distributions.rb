@@ -1,6 +1,8 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "dependabot/dependency_requirement"
+
 module Dependabot
   module Maven
     module Distributions
@@ -17,7 +19,7 @@ module Dependabot
       MAVEN_DISTRIBUTION_PACKAGE = "org.apache.maven:apache-maven"
       MAVEN_WRAPPER_PACKAGE      = "org.apache.maven.wrapper:maven-wrapper"
 
-      sig { params(requirements: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Boolean) }
+      sig { params(requirements: T::Array[Dependabot::DependencyRequirement]).returns(T::Boolean) }
       def self.distribution_requirements?(requirements)
         # Returns true if any requirement came from a maven-wrapper.properties
         # file rather than a pom.xml. Used as the primary guard throughout the
