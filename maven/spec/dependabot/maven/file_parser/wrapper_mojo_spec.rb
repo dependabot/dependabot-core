@@ -226,7 +226,7 @@ RSpec.describe Dependabot::Maven::FileParser::WrapperMojo do
 
     it "raises when the URL contains no recognizable version path segment" do
       expect { described_class.extract_distribution_version("https://example.com/some-artifact.zip") }
-        .to raise_error(RuntimeError, /Could not extract Maven version from content/)
+        .to raise_error(described_class::UnparseableDistributionUrl, /Could not extract Maven version/)
     end
   end
 
