@@ -576,6 +576,22 @@ RSpec.describe Dependabot::Maven::FileUpdater::WrapperUpdater do
         expect(received[:extra_args]).to include("-DalwaysDownload=true", "-DalwaysUnpack=true")
       end
     end
+
+    context "when the wrapper disables persistent download options" do
+      include_context "with native helpers stubbed"
+
+      let(:properties_content) do
+        fixture_content("maven-wrapper-3.9.9-only-script.properties") +
+          "alwaysDownload=false\nalwaysUnpack=false\n"
+      end
+
+      it "relies on the plugin defaults instead of forwarding true flags" do
+        received = {}
+        allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvnw_wrapper) { |**kwargs| received = kwargs }
+        updater.update_files(buildfile)
+        expect(received[:extra_args]).not_to include("-DalwaysDownload=true", "-DalwaysUnpack=true")
+      end
+    end
   end
 
   describe "private registry authentication failures" do
