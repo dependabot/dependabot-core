@@ -39,7 +39,7 @@ module Dependabot
           source_url:,
           properties_to_update:
         )
-          @requirements = requirements
+          @requirements = requirements.map { |req| Dependabot::DependencyRequirement.create(req) }
           @source_url = source_url
           @properties_to_update = properties_to_update
           return unless latest_version

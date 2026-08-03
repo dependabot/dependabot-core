@@ -421,7 +421,7 @@ RSpec.describe Dependabot::Maven::FileUpdater::WrapperUpdater do
       end
 
       before do
-        response = Struct.new(:status, :body).new(200, artifact_bytes)
+        response = Excon::Response.new(status: 200, body: artifact_bytes)
         allow(Dependabot::RegistryClient).to receive(:get).and_return(response)
       end
 
