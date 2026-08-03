@@ -252,17 +252,9 @@ module Dependabot
         def build_extra_args_from_requirements
           args = T.let([], T::Array[String])
           properties = wrapper_properties_file&.content.to_s
-          distribution_url = dependency.requirements
-                                       .find { |r| r.source_string("property") == "distributionUrl" }
-                                       &.source_string("url")
-          distribution_url ||= FileParser::WrapperMojo.get_property_value(properties, "distributionUrl")
+          distribution_url = effective_distribution_url(properties)
           args << "-DdistributionUrl=#{distribution_url}" if distribution_url
-
-          %w(alwaysDownload alwaysUnpack).each do |property|
-            value = FileParser::WrapperMojo.get_property_value(properties, property)
-            args << "-D#{property}=true" if value&.casecmp?("true")
-          end
-
+          args.concat(enabled_persistence_args(properties))
           include_debug = dependency.requirements
                                     .find { |r| r.dig(:metadata, :include_debug_script) }
                                     &.dig(:metadata, :include_debug_script)
@@ -272,6 +264,21 @@ module Dependabot
           # https://maven.apache.org/tools/wrapper/maven-wrapper-plugin/wrapper-mojo.html
           args << "-DincludeDebug=true" if include_debug
           args
+        end
+
+        sig { params(properties: String).returns(T.nilable(String)) }
+        def effective_distribution_url(properties)
+          dependency.requirements
+                    .find { |r| r.source_string("property") == "distributionUrl" }
+                    &.source_string("url") || FileParser::WrapperMojo.get_property_value(properties, "distributionUrl")
+        end
+
+        sig { params(properties: String).returns(T::Array[String]) }
+        def enabled_persistence_args(properties)
+          %w(alwaysDownload alwaysUnpack).filter_map do |property|
+            value = FileParser::WrapperMojo.get_property_value(properties, property)
+            "-D#{property}=true" if value&.casecmp?("true")
+          end
         end
 
         # Builds the environment hash passed to the native wrapper command.

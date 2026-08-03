@@ -690,10 +690,32 @@ RSpec.describe Dependabot::Maven::FileFetcher do
 
       context "when a bin wrapper is present" do
         before do
+          root_contents = %w(mvnw mvnw.cmd mvnwDebug mvnwDebug.cmd).map do |script|
+            JSON.parse(fixture("github", "#{script}.json"))
+          end
+          stub_request(:get, url + "?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: root_contents.to_json,
+              headers: { "content-type" => "application/json" }
+            )
+
           properties_response = JSON.parse(fixture("github", "maven-wrapper.properties.json"))
           properties_response["content"] = Base64.encode64(
             fixture("wrapper_files", "maven-wrapper-3.9.6-bin.properties")
           )
+          wrapper_contents = [
+            JSON.parse(fixture("github", "maven-wrapper.properties.json")),
+            JSON.parse(fixture("github", "maven-wrapper.jar.json"))
+          ]
+          stub_request(:get, File.join(url, ".mvn/wrapper?ref=sha"))
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: wrapper_contents.to_json,
+              headers: { "content-type" => "application/json" }
+            )
           stub_request(:get, File.join(url, ".mvn/wrapper/maven-wrapper.properties?ref=sha"))
             .with(headers: { "Authorization" => "token token" })
             .to_return(

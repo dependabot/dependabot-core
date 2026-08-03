@@ -565,7 +565,8 @@ RSpec.describe Dependabot::Maven::FileUpdater::WrapperUpdater do
       include_context "with native helpers stubbed"
 
       let(:properties_content) do
-        fixture_content("maven-wrapper-3.9.9-only-script.properties") +
+        "distributionUrl=#{dependency.requirements.first.source_string('url')}\n" \
+          "distributionType=only-script\nwrapperVersion=3.3.4\n" \
           "alwaysDownload=true\nalwaysUnpack=true\n"
       end
 
@@ -581,7 +582,8 @@ RSpec.describe Dependabot::Maven::FileUpdater::WrapperUpdater do
       include_context "with native helpers stubbed"
 
       let(:properties_content) do
-        fixture_content("maven-wrapper-3.9.9-only-script.properties") +
+        "distributionUrl=#{dependency.requirements.first.source_string('url')}\n" \
+          "distributionType=only-script\nwrapperVersion=3.3.4\n" \
           "alwaysDownload=false\nalwaysUnpack=false\n"
       end
 

@@ -15,6 +15,7 @@ module Dependabot
       extend T::Sig
 
       require_relative "file_updater/declaration_finder"
+      require_relative "file_updater/dependency_requirement_scopes"
       require_relative "file_updater/property_value_updater"
       require_relative "file_updater/wrapper_updater"
 
@@ -41,7 +42,7 @@ module Dependabot
         # file). Each wrapper is regenerated exactly once, so a grouped distribution + wrapper-plugin
         # update produces a single coherent set of files instead of duplicates, and module wrappers
         # are updated in place rather than at the repo root.
-        wrapper_dependency_groups.each do |properties_name, group|
+        dependency_requirement_scopes.wrapper_groups.each do |properties_name, group|
           buildfile = build_file_for_wrapper(properties_name)
           next unless buildfile
 
@@ -58,26 +59,6 @@ module Dependabot
           updated += wu.update_files(buildfile)
         end
         updated
-      end
-
-      # Groups the distribution-type requirements by their wrapper properties file path. A single
-      # Dependency may contain requirements from multiple wrappers (or from both a wrapper and a
-      # pom.xml), so each group receives a copy scoped to exactly one properties file.
-      sig { returns(T::Hash[String, T::Array[Dependabot::Dependency]]) }
-      def wrapper_dependency_groups
-        groups = T.let({}, T::Hash[String, T::Array[Dependabot::Dependency]])
-        dependencies.each do |dependency|
-          requirement_pairs(dependency)
-            .select { |requirement, _| distribution_requirement?(requirement) }
-            .group_by { |requirement, _| requirement.file }
-            .each do |properties_name, pairs|
-              next unless properties_name
-
-              group = groups.fetch(properties_name) { groups[properties_name] = [] }
-              group << dependency_with_requirement_pairs(dependency, pairs)
-            end
-        end
-        groups
       end
 
       # Finds the pom.xml that owns a wrapper, so the native command runs in the wrapper's directory.
@@ -117,14 +98,12 @@ module Dependabot
         # inheritance across files
         updated_files = T.let(dependency_files.dup, T::Array[Dependabot::DependencyFile])
         dependencies.each do |dependency|
-          pom_pairs = requirement_pairs(dependency).reject do |requirement, _|
-            distribution_requirement?(requirement)
-          end
-          next if pom_pairs.empty?
+          pom_dependency = dependency_requirement_scopes.pom_dependency(dependency)
+          next unless pom_dependency
 
           updated_files = update_files_for_dependency(
             original_files: updated_files,
-            dependency: dependency_with_requirement_pairs(dependency, pom_pairs)
+            dependency: pom_dependency
           )
         end
         updated_files.select! { |f| f.name.end_with?(".xml", ".target") }
@@ -133,41 +112,9 @@ module Dependabot
         updated_files
       end
 
-      sig do
-        params(dependency: Dependabot::Dependency)
-          .returns(T::Array[[Dependabot::DependencyRequirement, T.nilable(Dependabot::DependencyRequirement)]])
-      end
-      def requirement_pairs(dependency)
-        dependency.requirements.zip(dependency.previous_requirements || [])
-      end
-
-      sig { params(requirement: Dependabot::DependencyRequirement).returns(T::Boolean) }
-      def distribution_requirement?(requirement)
-        requirement.source_string("type") == Distributions::DISTRIBUTION_DEPENDENCY_TYPE
-      end
-
-      sig do
-        params(
-          dependency: Dependabot::Dependency,
-          pairs: T::Array[[Dependabot::DependencyRequirement, T.nilable(Dependabot::DependencyRequirement)]]
-        ).returns(Dependabot::Dependency)
-      end
-      def dependency_with_requirement_pairs(dependency, pairs)
-        previous_requirements = if dependency.previous_requirements
-                                  pairs.map { |_, previous| T.must(previous) }
-                                end
-        Dependabot::Dependency.new(
-          name: dependency.name,
-          version: dependency.version,
-          requirements: pairs.map(&:first),
-          previous_version: dependency.previous_version,
-          previous_requirements: previous_requirements,
-          package_manager: dependency.package_manager,
-          directory: dependency.directory,
-          subdependency_metadata: dependency.subdependency_metadata,
-          removed: dependency.removed?,
-          metadata: dependency.metadata
-        )
+      sig { returns(DependencyRequirementScopes) }
+      def dependency_requirement_scopes
+        DependencyRequirementScopes.new(dependencies: dependencies)
       end
 
       sig { override.void }
