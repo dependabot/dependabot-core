@@ -193,7 +193,7 @@ RSpec.describe Dependabot::Maven::FileUpdater::WrapperUpdater do
           File.write(
             ".mvn/wrapper/maven-wrapper.properties",
             "distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/" \
-              "3.9.9/apache-maven-3.9.9-bin.zip\ndistributionType=bin\n"
+            "3.9.9/apache-maven-3.9.9-bin.zip\ndistributionType=bin\n"
           )
         end
       end
