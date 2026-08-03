@@ -52,6 +52,19 @@ jobs:
           # For security, the `gh` call that retrieves the PR approval status *must* also retrieve the commit at the
           # tip of the PR to ensure that any subsequent unreviewed commits are not pulled into this action workflow.
           DECISION=$(gh pr view ${{ env.PR }} --json reviewDecision,state,commits --jq '"\(.reviewDecision):\(.state):\(.commits | last .oid)"')
+
+          # Verify the last approval was granted on the exact current PR tip commit.
+          # This guards against stale approvals when "Dismiss stale reviews" is not enforced:
+          # without this check, reviewDecision stays APPROVED even after new (unreviewed) commits
+          # are pushed, allowing an attacker's commit to be recorded as the "approved" SHA.
+          PR_TIP=$(gh pr view ${{ env.PR }} --json commits --jq '.commits | last .oid')
+          APPROVED_COMMIT=$(gh api "repos/${{ github.repository }}/pulls/${{ env.PR }}/reviews" \
+            --jq '[.[] | select(.state == "APPROVED")] | sort_by(.submitted_at) | last | .commit_id')
+          if [[ "$APPROVED_COMMIT" != "$PR_TIP" ]]; then
+            echo "Stale approval detected: last approval was on $APPROVED_COMMIT but PR tip is $PR_TIP. Blocking build."
+            exit 1
+          fi
+
           echo "decision=$DECISION" >> $GITHUB_OUTPUT
 
   push-updater-images:
