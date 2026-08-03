@@ -1359,9 +1359,9 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
       end
 
-      it "keeps metadata and rewritten version tag aligned to cooled-down target" do
-        expect(checker.latest_version).to eq(Dependabot::GithubActions::Version.new("2.7.0"))
-        expect(updated_requirements.first.dig(:source, :ref)).to eq("v2.7.0")
+      it "keeps the major-only precision instead of rewriting to a full version tag" do
+        expect(checker.latest_version).to eq(Dependabot::GithubActions::Version.new("2"))
+        expect(updated_requirements.first.dig(:source, :ref)).to eq("v2")
       end
     end
 
