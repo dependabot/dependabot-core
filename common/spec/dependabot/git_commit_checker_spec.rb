@@ -1875,6 +1875,118 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         it { is_expected.to eq("v2.3.4") }
       end
+
+      context "when in a monorepo with hyphenated-prefix tags and repo-wide tags on the same SHA" do
+        let(:repo_url) { "https://github.com/example/monorepo-actions.git" }
+        let(:upload_pack_fixture) { "monorepo-hyphenated-prefix-tags.txt" }
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/example/monorepo-actions",
+            branch: "main",
+            ref: source_commit
+          }
+        end
+
+        let(:source_commit) { "ae04af897f79a65c232823bd96070ed1d7897213" }
+
+        context "when the dependency targets the repository root (no subpath)" do
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "example/monorepo-actions",
+              version: nil,
+              requirements: requirements,
+              package_manager: "dummy"
+            )
+          end
+
+          it { is_expected.to eq("v1.0.3") }
+        end
+      end
+
+      context "with a subpath action when multiple tag families share the SHA" do
+        let(:repo_url) { "https://github.com/example/monorepo-actions.git" }
+        let(:upload_pack_fixture) { "monorepo-hyphenated-prefix-tags.txt" }
+        let(:source_commit) { "ae04af897f79a65c232823bd96070ed1d7897213" }
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/example/monorepo-actions",
+            branch: "main",
+            ref: source_commit
+          }
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: dependency_name,
+            version: nil,
+            requirements: requirements,
+            package_manager: "dummy"
+          )
+        end
+
+        context "when the referenced action has a shorter tag prefix than a co-located family" do
+          let(:dependency_name) { "example/monorepo-actions/usage-metrics" }
+
+          it { is_expected.to eq("usage-metrics-v1.0.5") }
+        end
+
+        context "when the referenced action has the longer tag prefix" do
+          let(:dependency_name) { "example/monorepo-actions/resolve-gh-token" }
+
+          it { is_expected.to eq("resolve-gh-token-v2.1.0") }
+        end
+      end
+    end
+  end
+
+  describe "#version_for_pinned_sha" do
+    subject { checker.version_for_pinned_sha }
+
+    let(:repo_url) { "https://github.com/example/monorepo-actions.git" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+    let(:upload_pack_fixture) { "monorepo-hyphenated-prefix-tags.txt" }
+    let(:source_commit) { "ae04af897f79a65c232823bd96070ed1d7897213" }
+    let(:source) do
+      {
+        type: "git",
+        url: "https://github.com/example/monorepo-actions",
+        branch: "main",
+        ref: source_commit
+      }
+    end
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "example/monorepo-actions/resolve-gh-token",
+        version: nil,
+        requirements: requirements,
+        package_manager: "dummy"
+      )
+    end
+
+    before do
+      stub_request(:get, service_pack_url)
+        .to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
+    end
+
+    it { is_expected.to eq(Gem::Version.new("2.1.0")) }
+  end
+
+  describe "#version_string_for_tag" do
+    it "extracts the numeric version from hyphen and slash prefixed monorepo tags" do
+      expect(checker.version_string_for_tag("resolve-gh-token-v2.1.0")).to eq("2.1.0")
+      expect(checker.version_string_for_tag("create-github-app-token/v0.2.0")).to eq("0.2.0")
+      expect(checker.version_string_for_tag("v1.2.3")).to eq("1.2.3")
+    end
+
+    it "returns nil for tags without a version" do
+      expect(checker.version_string_for_tag("not-a-version")).to be_nil
     end
   end
 
