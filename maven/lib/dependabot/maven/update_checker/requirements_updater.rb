@@ -133,7 +133,7 @@ module Dependabot
           return req unless source && url && old_version && !old_version.empty?
 
           Dependabot::DependencyRequirement.create(
-            req.merge(source: source.merge(url: url.sub(old_version, new_version)))
+            req.merge(source: source.merge(url: url.gsub(old_version, new_version)))
           )
         end
 
