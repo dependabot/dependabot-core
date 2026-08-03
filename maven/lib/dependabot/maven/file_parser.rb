@@ -545,7 +545,6 @@ module Dependabot
 
           if dep_scan_req.dig(:metadata, :pom_file).nil?
             merged << dep_scan_req
-            used_indices.add(i)
             next
           end
 
