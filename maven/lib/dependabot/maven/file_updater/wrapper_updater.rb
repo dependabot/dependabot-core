@@ -180,7 +180,7 @@ module Dependabot
 
         sig { params(url: String, response: Excon::Response).void }
         def raise_on_auth_failure(url, response)
-          return unless response.status == 401
+          return unless [401, 403].include?(response.status)
 
           repository_url = url.match(%r{^(https?://[^/]+(?:/[^/]+)*)/org/})&.captures&.first ||
                            URI.parse(url).host.to_s
@@ -251,6 +251,18 @@ module Dependabot
         sig { returns(T::Array[String]) }
         def build_extra_args_from_requirements
           args = T.let([], T::Array[String])
+          properties = wrapper_properties_file&.content.to_s
+          distribution_url = dependency.requirements
+                                       .find { |r| r.source_string("property") == "distributionUrl" }
+                                       &.source_string("url")
+          distribution_url ||= FileParser::WrapperMojo.get_property_value(properties, "distributionUrl")
+          args << "-DdistributionUrl=#{distribution_url}" if distribution_url
+
+          %w(alwaysDownload alwaysUnpack).each do |property|
+            value = FileParser::WrapperMojo.get_property_value(properties, property)
+            args << "-D#{property}=true" if value&.casecmp?("true")
+          end
+
           include_debug = dependency.requirements
                                     .find { |r| r.dig(:metadata, :include_debug_script) }
                                     &.dig(:metadata, :include_debug_script)
@@ -289,7 +301,7 @@ module Dependabot
           returns([T.nilable(String), T.nilable(Dependabot::Credential)])
         end
         def resolve_registry_base_and_credential
-          dist_req = dependency.requirements.find { |r| r[:source][:property] == "distributionUrl" }
+          dist_req = dependency.requirements.find { |r| r.source_string("property") == "distributionUrl" }
           dist_url = dist_req&.dig(:source, :url)
           Dependabot.logger.debug "Distribution URL from requirements: #{dist_url}"
 

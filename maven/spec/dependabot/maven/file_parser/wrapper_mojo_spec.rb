@@ -42,9 +42,9 @@ RSpec.describe Dependabot::Maven::FileParser::WrapperMojo do
     context "with bin mode (< 3.3.0)" do
       let(:content) { fixture_content("maven-wrapper-3.9.6-bin.properties") }
 
-      it "returns raw distribution_url with \\: escapes" do
+      it "decodes Java properties escapes in distributionUrl" do
         expect(props.distribution_url).to eq(
-          "https\\://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.6/apache-maven-3.9.6-bin.zip"
+          "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.6/apache-maven-3.9.6-bin.zip"
         )
       end
 

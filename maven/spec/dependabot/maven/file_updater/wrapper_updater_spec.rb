@@ -147,6 +147,14 @@ RSpec.describe Dependabot::Maven::FileUpdater::WrapperUpdater do
         names = updater.update_files(buildfile).map(&:name)
         expect(names).to include(".mvn/wrapper/maven-wrapper.properties")
       end
+
+      it "passes the updated distribution URL to the wrapper plugin" do
+        received = {}
+        allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvnw_wrapper) { |**kwargs| received = kwargs }
+        updater.update_files(buildfile)
+        expected_arg = "-DdistributionUrl=#{dependency.requirements.first.source_string('url')}"
+        expect(received[:extra_args]).to include(expected_arg)
+      end
     end
 
     context "when updating the wrapperVersion" do
@@ -215,6 +223,13 @@ RSpec.describe Dependabot::Maven::FileUpdater::WrapperUpdater do
           ],
           package_manager: "maven"
         )
+      end
+
+      it "preserves the current distribution URL through plugin arguments" do
+        received = {}
+        allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvnw_wrapper) { |**kwargs| received = kwargs }
+        updater.update_files(buildfile)
+        expect(received[:extra_args]).to include("-DdistributionUrl=#{dist_url}")
       end
     end
 
@@ -544,6 +559,32 @@ RSpec.describe Dependabot::Maven::FileUpdater::WrapperUpdater do
         updater.update_files(buildfile)
         expect(received[:extra_args]).to include("-DincludeDebug=true")
       end
+    end
+
+    context "when the wrapper enables persistent download options" do
+      include_context "with native helpers stubbed"
+
+      let(:properties_content) do
+        fixture_content("maven-wrapper-3.9.9-only-script.properties") +
+          "alwaysDownload=true\nalwaysUnpack=true\n"
+      end
+
+      it "preserves alwaysDownload and alwaysUnpack through plugin arguments" do
+        received = {}
+        allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvnw_wrapper) { |**kwargs| received = kwargs }
+        updater.update_files(buildfile)
+        expect(received[:extra_args]).to include("-DalwaysDownload=true", "-DalwaysUnpack=true")
+      end
+    end
+  end
+
+  describe "private registry authentication failures" do
+    let(:url) { "https://repo.example.test/org/apache/maven/apache-maven/3.9.9/apache-maven-3.9.9-bin.zip" }
+
+    it "maps HTTP 403 responses to a private source authentication failure" do
+      allow(Dependabot::RegistryClient).to receive(:get).and_return(Excon::Response.new(status: 403))
+      expect { updater.send(:calculate_sha256_from_url, url) }
+        .to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
     end
   end
 end

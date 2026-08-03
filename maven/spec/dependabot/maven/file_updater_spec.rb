@@ -1516,5 +1516,89 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         expect(captured.name).to eq("module/pom.xml")
       end
     end
+
+    context "when one dependency contains requirements for multiple wrappers" do
+      let(:module_properties_name) { "module/.mvn/wrapper/maven-wrapper.properties" }
+      let(:module_properties_file) do
+        Dependabot::DependencyFile.new(name: module_properties_name, content: "distributionUrl=y\n")
+      end
+      let(:module_pom) { Dependabot::DependencyFile.new(name: "module/pom.xml", content: "<project></project>") }
+      let(:dependency_files) { [pom, properties_file, module_pom, module_properties_file] }
+      let(:dependencies) do
+        [Dependabot::Dependency.new(
+          name: "org.apache.maven:apache-maven",
+          version: "3.9.11",
+          previous_version: "3.9.9",
+          requirements: [properties_name, module_properties_name].map do |file|
+            {
+              requirement: "3.9.11",
+              file: file,
+              source: {
+                type: "maven-distribution",
+                property: "distributionUrl",
+                url: "https://example/3.9.11.zip"
+              },
+              groups: [],
+              metadata: { distribution_version: "3.9.11", wrapper_version: "3.3.5" }
+            }
+          end,
+          package_manager: "maven"
+        )]
+      end
+
+      it "regenerates every wrapper with requirements scoped to its properties file" do
+        captured_dependencies = []
+        allow(wrapper_updater_class).to receive(:new) do |**kwargs|
+          captured_dependencies << kwargs.fetch(:dependency)
+          wrapper_double
+        end
+        updater.updated_dependency_files
+        expect(captured_dependencies.map { |dep| dep.requirements.map(&:file) })
+          .to contain_exactly([properties_name], [module_properties_name])
+      end
+    end
+
+    context "when a wrapper coordinate also has a regular POM requirement" do
+      let(:dependencies) do
+        [Dependabot::Dependency.new(
+          name: "org.apache.maven:apache-maven",
+          version: "3.9.11",
+          previous_version: "3.9.9",
+          requirements: [
+            distribution_dep.requirements.first,
+            {
+              requirement: "3.9.11",
+              file: "pom.xml",
+              source: nil,
+              groups: [],
+              metadata: { packaging_type: "jar" }
+            }
+          ],
+          previous_requirements: [
+            Dependabot::DependencyRequirement.create(
+              distribution_dep.requirements.first.merge(requirement: "3.9.9")
+            ),
+            {
+              requirement: "3.9.9",
+              file: "pom.xml",
+              source: nil,
+              groups: [],
+              metadata: { packaging_type: "jar" }
+            }
+          ],
+          package_manager: "maven"
+        )]
+      end
+
+      it "routes the non-wrapper requirement through the POM updater" do
+        captured_dependency = nil
+        allow(updater).to receive(:update_files_for_dependency) do |original_files:, dependency:|
+          captured_dependency = dependency
+          original_files
+        end
+        updater.updated_dependency_files
+        expect(captured_dependency.requirements.map(&:file)).to eq(["pom.xml"])
+      end
+    end
   end
 end

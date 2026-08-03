@@ -254,6 +254,43 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
           expect(updated.dig(:source, :url)).to be_nil
         end
       end
+
+      context "when the distribution dependency carries a wrapperUrl requirement" do
+        subject(:updated) { updater.updated_requirements.last }
+
+        let(:latest_version) { version_class.new("3.9.11") }
+        let(:wrapper_url) do
+          "https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/" \
+            "maven-wrapper/3.3.4/maven-wrapper-3.3.4.jar"
+        end
+        let(:requirements) do
+          [
+            {
+              file: ".mvn/wrapper/maven-wrapper.properties",
+              requirement: "3.9.9",
+              groups: [],
+              source: {
+                type: "maven-distribution",
+                property: "distributionUrl",
+                url: "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/" \
+                     "3.9.9/apache-maven-3.9.9-bin.zip"
+              },
+              metadata: { distribution_version: "3.9.9", wrapper_version: "3.3.4" }
+            },
+            {
+              file: ".mvn/wrapper/maven-wrapper.properties",
+              requirement: "3.3.4",
+              groups: [],
+              source: { type: "maven-distribution", property: "wrapperUrl", url: wrapper_url }
+            }
+          ]
+        end
+
+        it "leaves the independent wrapper requirement unchanged" do
+          expect(updated.requirement_string).to eq("3.3.4")
+          expect(updated.source_string("url")).to eq(wrapper_url)
+        end
+      end
     end
   end
 end

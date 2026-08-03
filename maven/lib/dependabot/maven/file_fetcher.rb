@@ -73,6 +73,7 @@ module Dependabot
         WRAPPER_ALL_SCRIPTS.each do |script|
           script_path = dir == "." ? script : File.join(dir, script)
           f = fetch_file_if_present(script_path)
+          f.mode = DependencyFile::Mode::EXECUTABLE if f && WRAPPER_UNIX_SCRIPTS.include?(script)
           files << f if f
         end
 

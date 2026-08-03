@@ -687,6 +687,56 @@ RSpec.describe Dependabot::Maven::FileFetcher do
           expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
         end
       end
+
+      context "when a bin wrapper is present" do
+        before do
+          properties_response = JSON.parse(fixture("github", "maven-wrapper.properties.json"))
+          properties_response["content"] = Base64.encode64(
+            fixture("wrapper_files", "maven-wrapper-3.9.6-bin.properties")
+          )
+          stub_request(:get, File.join(url, ".mvn/wrapper/maven-wrapper.properties?ref=sha"))
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: properties_response.to_json,
+              headers: { "content-type" => "application/json" }
+            )
+
+          %w(mvnw mvnw.cmd mvnwDebug mvnwDebug.cmd).each do |script|
+            stub_request(:get, File.join(url, "#{script}?ref=sha"))
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
+                status: 200,
+                body: fixture("github", "#{script}.json"),
+                headers: { "content-type" => "application/json" }
+              )
+          end
+          stub_request(:get, File.join(url, ".mvn/wrapper/maven-wrapper.jar?ref=sha"))
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "maven-wrapper.jar.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches properties, scripts, and the base64-encoded wrapper JAR" do
+          files = file_fetcher_instance.files
+          expect(files.map(&:name)).to contain_exactly(
+            "pom.xml",
+            ".mvn/wrapper/maven-wrapper.properties",
+            "mvnw",
+            "mvnw.cmd",
+            "mvnwDebug",
+            "mvnwDebug.cmd",
+            ".mvn/wrapper/maven-wrapper.jar"
+          )
+          expect(files.find { |file| file.name == "mvnw" }&.mode)
+            .to eq(Dependabot::DependencyFile::Mode::EXECUTABLE)
+          expect(files.find { |file| file.name == ".mvn/wrapper/maven-wrapper.jar" }&.content_encoding)
+            .to eq(Dependabot::DependencyFile::ContentEncoding::BASE64)
+        end
+      end
     end
   end
 end

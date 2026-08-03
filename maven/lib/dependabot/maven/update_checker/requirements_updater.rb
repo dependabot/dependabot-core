@@ -99,17 +99,18 @@ module Dependabot
         def bump_distribution_requirement(req)
           new_version = T.must(latest_version).to_s
           old_version = req.requirement_string
-          updated = Dependabot::DependencyRequirement.create(req.merge(requirement: new_version))
 
           case req.source_string("property")
           when "distributionUrl"
+            updated = Dependabot::DependencyRequirement.create(req.merge(requirement: new_version))
             updated = merge_metadata_version(updated, :distribution_version, new_version)
-            updated = merge_source_url(updated, old_version, new_version)
+            merge_source_url(updated, old_version, new_version)
           when "wrapperVersion"
-            updated = merge_metadata_version(updated, :wrapper_version, new_version)
+            updated = Dependabot::DependencyRequirement.create(req.merge(requirement: new_version))
+            merge_metadata_version(updated, :wrapper_version, new_version)
+          else
+            req
           end
-
-          Dependabot::DependencyRequirement.create(updated)
         end
 
         sig do

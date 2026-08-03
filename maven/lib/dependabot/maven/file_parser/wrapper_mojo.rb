@@ -291,10 +291,28 @@ module Dependabot
             next if line.start_with?("#", "!") # Skip Java comments
 
             if (match = line.match(pattern))
-              return T.must(match[1]).strip
+              return decode_property_value(T.must(match[1]).strip)
             end
           end
           nil
+        end
+
+        # Decodes Java properties escapes so URLs are usable by URI parsing, registry matching, and
+        # HTTP clients. Maven commonly writes URL schemes as `https\://` in legacy wrapper files.
+        sig { params(value: String).returns(String) }
+        def self.decode_property_value(value)
+          value.gsub(/\\(?:u(?<unicode>[0-9a-fA-F]{4})|(?<escaped>.))/) do
+            unicode = Regexp.last_match(:unicode)
+            next [unicode.hex].pack("U") if unicode
+
+            case Regexp.last_match(:escaped)
+            when "t" then "\t"
+            when "n" then "\n"
+            when "r" then "\r"
+            when "f" then "\f"
+            else Regexp.last_match(:escaped)
+            end
+          end
         end
 
         sig { params(content: String, target_key: String).returns(String) }
@@ -310,6 +328,7 @@ module Dependabot
         private_class_method :build_wrapper_dependency
         private_class_method :build_distribution_requirements
         private_class_method :build_wrapper_url_requirement
+        private_class_method :decode_property_value
 
         # Matches the human-readable banner embedded in mvnw / mvnw.cmd, e.g.:
         #   "Apache Maven Wrapper startup script, version 3.3.2"

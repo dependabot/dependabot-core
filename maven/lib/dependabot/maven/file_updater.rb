@@ -60,15 +60,24 @@ module Dependabot
         updated
       end
 
-      # Groups the distribution-type dependencies by their wrapper properties file path.
-      sig { returns(T::Hash[T.nilable(String), T::Array[Dependabot::Dependency]]) }
+      # Groups the distribution-type requirements by their wrapper properties file path. A single
+      # Dependency may contain requirements from multiple wrappers (or from both a wrapper and a
+      # pom.xml), so each group receives a copy scoped to exactly one properties file.
+      sig { returns(T::Hash[String, T::Array[Dependabot::Dependency]]) }
       def wrapper_dependency_groups
-        dependencies.select { |d| Distributions.distribution_requirements?(d.requirements) }
-                    .group_by do |dep|
-          dep.requirements
-             .find { |r| r.dig(:source, :type) == Distributions::DISTRIBUTION_DEPENDENCY_TYPE }
-             &.fetch(:file, nil)
+        groups = T.let({}, T::Hash[String, T::Array[Dependabot::Dependency]])
+        dependencies.each do |dependency|
+          requirement_pairs(dependency)
+            .select { |requirement, _| distribution_requirement?(requirement) }
+            .group_by { |requirement, _| requirement.file }
+            .each do |properties_name, pairs|
+              next unless properties_name
+
+              group = groups.fetch(properties_name) { groups[properties_name] = [] }
+              group << dependency_with_requirement_pairs(dependency, pairs)
+            end
         end
+        groups
       end
 
       # Finds the pom.xml that owns a wrapper, so the native command runs in the wrapper's directory.
@@ -108,17 +117,57 @@ module Dependabot
         # inheritance across files
         updated_files = T.let(dependency_files.dup, T::Array[Dependabot::DependencyFile])
         dependencies.each do |dependency|
-          next if Distributions.distribution_requirements?(dependency.requirements)
+          pom_pairs = requirement_pairs(dependency).reject do |requirement, _|
+            distribution_requirement?(requirement)
+          end
+          next if pom_pairs.empty?
 
           updated_files = update_files_for_dependency(
             original_files: updated_files,
-            dependency: dependency
+            dependency: dependency_with_requirement_pairs(dependency, pom_pairs)
           )
         end
         updated_files.select! { |f| f.name.end_with?(".xml", ".target") }
         updated_files.reject! { |f| dependency_files.include?(f) }
 
         updated_files
+      end
+
+      sig do
+        params(dependency: Dependabot::Dependency)
+          .returns(T::Array[[Dependabot::DependencyRequirement, T.nilable(Dependabot::DependencyRequirement)]])
+      end
+      def requirement_pairs(dependency)
+        dependency.requirements.zip(dependency.previous_requirements || [])
+      end
+
+      sig { params(requirement: Dependabot::DependencyRequirement).returns(T::Boolean) }
+      def distribution_requirement?(requirement)
+        requirement.source_string("type") == Distributions::DISTRIBUTION_DEPENDENCY_TYPE
+      end
+
+      sig do
+        params(
+          dependency: Dependabot::Dependency,
+          pairs: T::Array[[Dependabot::DependencyRequirement, T.nilable(Dependabot::DependencyRequirement)]]
+        ).returns(Dependabot::Dependency)
+      end
+      def dependency_with_requirement_pairs(dependency, pairs)
+        previous_requirements = if dependency.previous_requirements
+                                  pairs.map { |_, previous| T.must(previous) }
+                                end
+        Dependabot::Dependency.new(
+          name: dependency.name,
+          version: dependency.version,
+          requirements: pairs.map(&:first),
+          previous_version: dependency.previous_version,
+          previous_requirements: previous_requirements,
+          package_manager: dependency.package_manager,
+          directory: dependency.directory,
+          subdependency_metadata: dependency.subdependency_metadata,
+          removed: dependency.removed?,
+          metadata: dependency.metadata
+        )
       end
 
       sig { override.void }
