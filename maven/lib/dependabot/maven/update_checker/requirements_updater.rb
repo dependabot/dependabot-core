@@ -39,7 +39,10 @@ module Dependabot
           source_url:,
           properties_to_update:
         )
-          @requirements = requirements.map { |req| Dependabot::DependencyRequirement.create(req) }
+          @requirements = T.let(
+            requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
+            T::Array[Dependabot::DependencyRequirement]
+          )
           @source_url = source_url
           @properties_to_update = properties_to_update
           return unless latest_version
