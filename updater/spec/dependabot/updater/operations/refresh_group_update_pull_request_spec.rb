@@ -417,17 +417,13 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
         stub_rubygems_calls
       end
 
-      it "does nothing, logs a warning and notices an error" do
-        # Our mocks will fail due to unexpected messages if any errors or PRs are dispatched
-
+      it "logs a warning and proceeds with a fallback group based on existing PR dependencies" do
         expect(Dependabot.logger).to receive(:warn).with(
-          "The 'everything-everywhere-all-at-once' group has been removed from the update config."
+          "The 'everything-everywhere-all-at-once' group was not found in the update config, " \
+          "attempting to refresh with a fallback group based on existing PR dependencies."
         )
 
-        expect(mock_service).to receive(:capture_exception).with(
-          error: an_instance_of(Dependabot::DependabotError),
-          job: job
-        )
+        expect(mock_service).to receive(:update_pull_request)
 
         refresh_group.perform
       end

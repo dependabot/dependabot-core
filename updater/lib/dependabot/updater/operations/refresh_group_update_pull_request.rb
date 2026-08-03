@@ -89,22 +89,21 @@ module Dependabot
 
         sig { void }
         def perform
-          # This guards against any jobs being performed where the data is malformed, this should not happen unless
-          # there was is defect in the service and we emitted a payload where the job and configuration data objects
-          # were out of sync.
-          unless dependency_snapshot.job_group
+          job_group = dependency_snapshot.job_group
+
+          # If the group is not found in the current config, construct a fallback group from the existing PR metadata.
+          # This can happen when the config has changed since the PR was created or when the backend sends a group name
+          # that doesn't match any current group definition.
+          unless job_group
+            group_name = job.dependency_group_to_refresh || "unknown"
             Dependabot.logger.warn(
-              "The '#{job.dependency_group_to_refresh || 'unknown'}' group has been removed from the update config."
+              "The '#{group_name}' group was not found in the update config, " \
+              "attempting to refresh with a fallback group based on existing PR dependencies."
             )
 
-            service.capture_exception(
-              error: DependabotError.new("Attempted to refresh a missing group."),
-              job: job
-            )
-            return
+            job_group = build_fallback_group(group_name)
+            @group = job_group
           end
-
-          job_group = T.must(dependency_snapshot.job_group)
 
           Dependabot.logger.info("Starting PR update job for #{job.source.repo}")
 
@@ -157,11 +156,28 @@ module Dependabot
 
         private
 
+        sig { params(group_name: String).returns(Dependabot::DependencyGroup) }
+        def build_fallback_group(group_name)
+          dependency_names = job.dependencies || []
+
+          fallback_group = Dependabot::DependencyGroup.new(
+            name: group_name,
+            rules: { "patterns" => dependency_names }
+          )
+
+          # Assign matching dependencies from the snapshot to the fallback group
+          dependency_snapshot.all_dependencies.each do |dep|
+            fallback_group.dependencies << dep if fallback_group.contains?(dep)
+          end
+
+          fallback_group
+        end
+
         sig { returns(T.nilable(Dependabot::DependencyChange)) }
         def dependency_change
           return @dependency_change if defined?(@dependency_change)
 
-          job_group = T.must(dependency_snapshot.job_group)
+          job_group = group
 
           if job.source.directories.nil?
             @dependency_change = compile_all_dependency_changes_for(job_group)
