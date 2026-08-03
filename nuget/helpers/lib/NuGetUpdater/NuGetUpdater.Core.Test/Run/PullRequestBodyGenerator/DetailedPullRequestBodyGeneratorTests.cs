@@ -1088,6 +1088,56 @@ public class DetailedPullRequestBodyGeneratorTests
         );
     }
 
+    [Fact]
+    public async Task ExceptionDuringDetailFetchDoesNotAbortDetailsBuilding()
+    {
+        // arrange
+        var throwingHttpFetcher = new TestHttpFetcher(_ => throw new HttpRequestException("this endpoint cannot be queried"));
+        var prGenerator = new DetailedPullRequestBodyGenerator(throwingHttpFetcher);
+        var job = new Job()
+        {
+            Source = new()
+            {
+                Provider = "github",
+                Repo = "test/repo"
+            },
+        };
+        var updateOperationsPerformed = ImmutableArray.Create<UpdateOperationBase>(
+            new DirectUpdate()
+            {
+                DependencyName = "Some.Dependency",
+                OldVersion = NuGetVersion.Parse("1.0.0"),
+                NewVersion = NuGetVersion.Parse("2.0.0"),
+                UpdatedFiles = []
+            }
+        );
+        var updatedDependencies = ImmutableArray.Create(
+            new ReportedDependency()
+            {
+                Name = "Some.Dependency",
+                PreviousVersion = "1.0.0",
+                Version = "2.0.0",
+                Requirements = [
+                    new ReportedRequirement()
+                    {
+                        File = "",
+                        Requirement = "2.0.0",
+                        Source = new()
+                        {
+                            SourceUrl = "https://github.com/Some.Owner/Some.Dependency",
+                        },
+                    }
+                ]
+            }
+        );
+
+        // act
+        var prBody = await prGenerator.GeneratePullRequestBodyTextAsync(job, updateOperationsPerformed, updatedDependencies);
+
+        // assert
+        Assert.Contains("No release notes found for this version range.", prBody);
+    }
+
     private static async Task TestAsync(
         ImmutableArray<UpdateOperationBase> updateOperationsPerformed,
         ImmutableArray<ReportedDependency> updatedDependencies,
@@ -1108,7 +1158,7 @@ public class DetailedPullRequestBodyGeneratorTests
 
         // act
         var responses = httpResponses.ToDictionary(x => x.Url, x => x.Body);
-        var httpFetcher = new TestHttpFetcher(responses);
+        var httpFetcher = new TestStringResponseHttpFetcher(responses);
         var generator = new DetailedPullRequestBodyGenerator(httpFetcher);
         var actualBody = await generator.GeneratePullRequestBodyTextAsync(job, updateOperationsPerformed, updatedDependencies);
 
