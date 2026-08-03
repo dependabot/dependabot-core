@@ -36,14 +36,22 @@ module Dependabot
           return [] unless found
 
           declaration = T.cast(found, T::Array[String]).first
-          requirement = NativeRequirement.new(T.must(T.cast(found, T::Array[String]).last))
+          requirement_string = T.must(T.cast(found, T::Array[String]).last)
+          requirement = NativeRequirement.new(requirement_string)
+
+          req_value, source_override = if requirement.revision_pinned?
+                                         sha = NativeRequirement.extract_revision_sha(requirement_string)
+                                         [nil, source.merge(type: "git", ref: sha)]
+                                       else
+                                         [requirement.to_s, source]
+                                       end
 
           [
             {
-              requirement: requirement.to_s,
+              requirement: req_value,
               groups: ["dependencies"],
               file: manifest.name,
-              source: source,
+              source: source_override,
               metadata: { declaration_string: declaration, requirement_string: requirement.declaration }
             }
           ]

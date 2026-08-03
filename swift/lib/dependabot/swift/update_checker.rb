@@ -53,6 +53,7 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         return updated_xcode_requirements if xcode_spm_mode?
+        return updated_revision_requirements if revision_pinned?
 
         # If no target version is available, return old requirements unchanged
         target = preferred_resolvable_version
@@ -99,6 +100,41 @@ module Dependabot
       end
 
       sig { returns(T::Boolean) }
+      def revision_pinned?
+        return false if xcode_spm_mode?
+
+        git_commit_checker.pinned_ref_looks_like_commit_sha?
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
+      def updated_revision_requirements
+        new_sha = latest_commit_sha_for_revision
+        return old_requirements unless new_sha
+
+        old_requirements.map do |req|
+          metadata = req.metadata || {}
+          requirement_string = metadata[:requirement_string]
+          next req unless requirement_string.is_a?(String)
+          next req unless NativeRequirement.revision_declaration?(requirement_string)
+
+          new_req_string = NativeRequirement.replace_revision_sha(requirement_string, new_sha)
+          old_source = req.source || {}
+          Dependabot::DependencyRequirement.create(
+            req.merge(
+              source: old_source.merge(ref: new_sha),
+              metadata: metadata.merge(requirement_string: new_req_string)
+            )
+          )
+        end
+      end
+
+      sig { returns(T.nilable(String)) }
+      def latest_commit_sha_for_revision
+        tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
+        tag&.commit_sha
+      end
+
+      sig { returns(T::Boolean) }
       def xcode_spm_mode?
         manifest.nil? && xcode_resolved_files.any?
       end
@@ -106,6 +142,11 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::Version)) }
       def fetch_latest_version
         return fetch_xcode_latest_version if xcode_spm_mode?
+
+        if git_commit_checker.pinned_ref_looks_like_commit_sha?
+          tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
+          return tag_version(tag) if tag
+        end
 
         return unless git_commit_checker.pinned_ref_looks_like_version? && latest_version_tag
 
@@ -131,6 +172,11 @@ module Dependabot
       def fetch_lowest_security_fix_version
         return fetch_xcode_lowest_security_fix_version if xcode_spm_mode?
 
+        if git_commit_checker.pinned_ref_looks_like_commit_sha?
+          tag = lowest_security_fix_version_tag
+          return tag_version(tag) if tag
+        end
+
         return unless git_commit_checker.pinned_ref_looks_like_version? && latest_version_tag
 
         tag = lowest_security_fix_version_tag
@@ -147,6 +193,7 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::Version)) }
       def fetch_latest_resolvable_version
         return fetch_xcode_latest_resolvable_version if xcode_spm_mode?
+        return fetch_latest_version if revision_pinned?
 
         latest_resolvable_version = version_resolver_for(unlocked_requirements).latest_resolvable_version
         return current_version unless latest_resolvable_version
