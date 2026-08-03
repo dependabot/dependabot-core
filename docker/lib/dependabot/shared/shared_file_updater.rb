@@ -232,13 +232,13 @@ module Dependabot
         !source[:digest].nil?
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { params(file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyRequirement]) }
       def requirements(file)
         T.must(dependency).requirements
          .select { |r| r[:file] == file.name }
       end
 
-      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Array[T::Hash[Symbol, T.untyped]])) }
+      sig { params(file: Dependabot::DependencyFile).returns(T.nilable(T::Array[Dependabot::DependencyRequirement])) }
       def previous_requirements(file)
         T.must(dependency).previous_requirements
          &.select { |r| r[:file] == file.name }

@@ -79,7 +79,7 @@ module Dependabot
 
       sig do
         params(
-          dependencies: T::Array[T.untyped],
+          dependencies: T::Array[Object],
           file: Dependabot::DependencyFile
         ).returns(T::Array[Dependabot::Dependency])
       end
@@ -98,12 +98,14 @@ module Dependabot
 
           parsed_dep = parse_conda_dependency_string(dep, file)
           next unless parsed_dep
-          next if parsed_dep[:name] == "pip"
+
+          name = T.cast(parsed_dep[:name], String)
+          next if name == "pip"
 
           parsed_dependencies << create_dependency(
-            name: parsed_dep[:name],
-            version: parsed_dep[:version],
-            requirements: parsed_dep[:requirements],
+            name: name,
+            version: T.cast(parsed_dep[:version], T.nilable(String)),
+            requirements: T.cast(parsed_dep[:requirements], T::Array[T::Hash[Symbol, T.anything]]),
             package_manager: "conda"
           )
         end
@@ -111,7 +113,7 @@ module Dependabot
         parsed_dependencies
       end
 
-      sig { params(dependencies: T.untyped).returns(T.nilable(T::Array[String])) }
+      sig { params(dependencies: Object).returns(T.nilable(T::Array[String])) }
       def find_pip_dependencies(dependencies)
         return nil unless dependencies.is_a?(Array)
 
@@ -135,9 +137,9 @@ module Dependabot
           next unless parsed_dep
 
           parsed_dependencies << create_dependency(
-            name: parsed_dep[:name],
-            version: parsed_dep[:version],
-            requirements: parsed_dep[:requirements],
+            name: T.cast(parsed_dep[:name], String),
+            version: T.cast(parsed_dep[:version], T.nilable(String)),
+            requirements: T.cast(parsed_dep[:requirements], T::Array[T::Hash[Symbol, T.anything]]),
             package_manager: "pip"
           )
         end
@@ -146,7 +148,7 @@ module Dependabot
       end
 
       sig do
-        params(dep_string: String, file: Dependabot::DependencyFile).returns(T.nilable(T::Hash[Symbol, T.untyped]))
+        params(dep_string: String, file: Dependabot::DependencyFile).returns(T.nilable(T::Hash[Symbol, T.anything]))
       end
       def parse_conda_dependency_string(dep_string, file)
         return nil if dep_string.nil?
@@ -219,7 +221,7 @@ module Dependabot
           constraint: T.nilable(String),
           file: Dependabot::DependencyFile,
           channel: T.nilable(String)
-        ).returns(T::Array[T::Hash[Symbol, T.untyped]])
+        ).returns(T::Array[T::Hash[Symbol, T.anything]])
       end
       def build_conda_requirements(constraint, file, channel = nil)
         source = channel ? { channel: channel } : nil
@@ -233,7 +235,7 @@ module Dependabot
       end
 
       sig do
-        params(dep_string: String, file: Dependabot::DependencyFile).returns(T.nilable(T::Hash[Symbol, T.untyped]))
+        params(dep_string: String, file: Dependabot::DependencyFile).returns(T.nilable(T::Hash[Symbol, T.anything]))
       end
       def parse_pip_dependency_string(dep_string, file)
         match = dep_string.match(/^([a-zA-Z0-9_.-]+)(?:\s*(==|>=|>|<=|<|!=|~=)\s*([0-9][a-zA-Z0-9._+-]*))?$/)
@@ -279,7 +281,7 @@ module Dependabot
         params(
           name: String,
           version: T.nilable(String),
-          requirements: T::Array[T::Hash[Symbol, T.untyped]],
+          requirements: T::Array[T::Hash[Symbol, T.anything]],
           package_manager: String
         ).returns(Dependabot::Dependency)
       end

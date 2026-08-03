@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/experiments"
 require "dependabot/github_actions/constants"
 
 module Dependabot
@@ -29,7 +30,7 @@ module Dependabot
             source: Dependabot::Source,
             credentials: T::Array[Dependabot::Credential],
             repo_contents_path: T.nilable(String),
-            options: T::Hash[String, String],
+            options: T::Hash[Symbol, Object],
             update_config: T.nilable(Dependabot::Config::UpdateConfig)
           )
           .void
@@ -44,7 +45,14 @@ module Dependabot
         fetched_files = []
         fetched_files += correctly_encoded_workflow_files
 
-        return fetched_files if fetched_files.any?
+        if fetched_files.any?
+          # The lockfile is additive: it is only fetched alongside workflow files
+          # and never activates the ecosystem on its own. Relocking also requires
+          # every workflow to be materialized, so retain the workflow-only path if
+          # an invalidly encoded workflow had to be omitted.
+          fetched_files += [actions_lockfile].compact if incorrectly_encoded_workflow_files.empty?
+          return fetched_files
+        end
 
         if incorrectly_encoded_workflow_files.none?
           expected_paths =
@@ -67,6 +75,17 @@ module Dependabot
       end
 
       private
+
+      # Fetches the canonical `.github/workflows/actions.lock` when the update covers
+      # repository workflows. Composite-action directories cannot own a lockfile.
+      sig { returns(T.nilable(DependencyFile)) }
+      def actions_lockfile
+        return unless Dependabot::Experiments.enabled?(:github_actions_lockfile)
+        return unless source.hostname == GITHUB_COM
+        return fetch_file_if_present(LOCKFILE_PATH) if directory == "/"
+
+        fetch_file_if_present(LOCKFILE_NAME) if directory.delete_prefix("/") == WORKFLOW_DIRECTORY
+      end
 
       sig { returns(T::Array[DependencyFile]) }
       def workflow_files

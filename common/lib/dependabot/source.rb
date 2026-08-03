@@ -126,16 +126,36 @@ module Dependabot
       )
     end
 
+    @github_enterprise_cache = T.let({}, T::Hash[String, T::Boolean])
+
+    sig { void }
+    def self.reset_github_enterprise_cache!
+      @github_enterprise_cache.clear
+    end
+
     sig { params(base_url: String).returns(T::Boolean) }
     def self.github_enterprise?(base_url)
-      resp = Excon.get(File.join(base_url, "status"))
-      resp.status == 200 &&
-        # Alternatively: resp.headers["Server"] == "GitHub.com", but this
-        # currently doesn't work with development environments
-        ((resp.headers["X-GitHub-Request-Id"] && !resp.headers["X-GitHub-Request-Id"]&.empty?) || false)
-    rescue StandardError
-      false
+      return T.must(@github_enterprise_cache[base_url]) if @github_enterprise_cache.key?(base_url)
+
+      result = detect_github_enterprise(base_url)
+      @github_enterprise_cache[base_url] = result unless result.nil?
+      result || false
     end
+
+    sig { params(base_url: String).returns(T.nilable(T::Boolean)) }
+    def self.detect_github_enterprise(base_url)
+      resp = Excon.get(File.join(base_url, "status"))
+      return false if resp.status == 404
+
+      return unless resp.status == 200
+
+      # Alternatively: resp.headers["Server"] == "GitHub.com", but this
+      # currently doesn't work with development environments
+      (resp.headers["X-GitHub-Request-Id"] && !resp.headers["X-GitHub-Request-Id"]&.empty?) || false
+    rescue StandardError
+      nil
+    end
+    private_class_method :detect_github_enterprise
 
     sig do
       params(

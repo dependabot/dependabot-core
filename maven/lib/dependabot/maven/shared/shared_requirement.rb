@@ -22,7 +22,7 @@ module Dependabot
         sig { abstract.returns(Regexp) }
         def self.ruby_style_pattern; end
 
-        sig { params(requirements: T.untyped).void }
+        sig { params(requirements: T.nilable(String)).void }
         def initialize(*requirements)
           requirements = requirements.flatten.flat_map do |req_string|
             convert_java_constraint_to_ruby_constraint(req_string)

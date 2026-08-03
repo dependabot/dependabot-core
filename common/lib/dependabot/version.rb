@@ -24,6 +24,15 @@ module Dependabot
       T.cast(super, Dependabot::Version)
     end
 
+    sig do
+      overridable
+        .params(_from_version: String, _to_version: String)
+        .returns(T.nilable(String))
+    end
+    def self.update_type(_from_version, _to_version)
+      nil
+    end
+
     # Opt-in to Rubygems 4 behavior
     sig { override.overridable.params(version: VersionParameter).returns(T::Boolean) }
     def self.correct?(version)

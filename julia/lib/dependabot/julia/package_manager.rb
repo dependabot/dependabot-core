@@ -60,7 +60,7 @@ module Dependabot
         )
       end
 
-      sig { returns(T::Hash[T.untyped, T.untyped]) }
+      sig { returns(T::Hash[Symbol, Object]) }
       def ecosystem
         {
           package_manager: "julia",

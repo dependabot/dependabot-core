@@ -17,7 +17,7 @@ module Dependabot
         const :channel, String
 
         # Creates a RustToolchainConfig from a hash representation
-        sig { params(data: T::Hash[String, T.untyped]).returns(RustToolchainConfig) }
+        sig { params(data: T::Hash[String, Object]).returns(RustToolchainConfig) }
         def self.from_hash(data)
           new(
             channel: T.cast(data["channel"], String)

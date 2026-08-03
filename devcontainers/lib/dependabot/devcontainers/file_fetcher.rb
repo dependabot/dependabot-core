@@ -63,21 +63,21 @@ module Dependabot
         return [] unless devcontainer_directory
 
         custom_directories.flat_map do |directory|
-          fetch_config_and_lockfile_from(directory.path)
+          fetch_config_and_lockfile_from(T.must(directory.path))
         end
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[Dependabot::FileFetchers::RepositoryContent]) }
       def custom_directories
         repo_contents(dir: ".devcontainer").select { |f| f.type == "dir" && f.name != ".devcontainer" }
       end
 
-      sig { returns(T.untyped) }
+      sig { returns(T.nilable(Dependabot::FileFetchers::RepositoryContent)) }
       def devcontainer_directory
         @devcontainer_directory ||=
           T.let(
             repo_contents.find { |f| f.type == "dir" && f.name == ".devcontainer" },
-            T.untyped
+            T.nilable(Dependabot::FileFetchers::RepositoryContent)
           )
       end
 

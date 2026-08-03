@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/errors"
@@ -86,21 +86,21 @@ module Dependabot
 
         error_details = error_details_for(error, dependency: dependency, dependency_group: dependency_group)
         service.record_update_job_error(
-          error_type: error_details.fetch(:"error-type"),
-          error_details: error_details[:"error-detail"],
+          error_type: error_details.error_type,
+          error_details: error_details.error_detail,
           dependency: dependency
         )
         # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
         if Experiments.enabled?(:record_update_job_unknown_error) &&
-           error_details.fetch(:"error-type") == "unknown_error"
+           error_details.error_type == "unknown_error"
           log_unknown_error_with_backtrace(error)
         end
 
         log_dependency_error(
           dependency: dependency,
           error: error,
-          error_type: error_details.fetch(:"error-type"),
-          error_detail: error_details.fetch(:"error-detail", nil)
+          error_type: error_details.error_type,
+          error_detail: error_details.error_detail
         )
       end
 
@@ -110,7 +110,7 @@ module Dependabot
           dependency: T.nilable(Dependabot::Dependency),
           error: StandardError,
           error_type: String,
-          error_detail: T.nilable(T.any(T::Hash[Symbol, T.untyped], String))
+          error_detail: T.nilable(Dependabot::ErrorDetails::Detail)
         ).void
       end
       def log_dependency_error(dependency:, error:, error_type:, error_detail: nil)
@@ -143,19 +143,19 @@ module Dependabot
 
         error_details = error_details_for(error, dependency_group: dependency_group)
         service.record_update_job_error(
-          error_type: error_details.fetch(:"error-type"),
-          error_details: error_details[:"error-detail"]
+          error_type: error_details.error_type,
+          error_details: error_details.error_detail
         )
         # We don't set this flag in GHES because there older GHES version does not support reporting unknown errors.
         if Experiments.enabled?(:record_update_job_unknown_error) &&
-           error_details.fetch(:"error-type") == "unknown_error"
+           error_details.error_type == "unknown_error"
           log_unknown_error_with_backtrace(error)
         end
 
         log_job_error(
           error: error,
-          error_type: error_details.fetch(:"error-type"),
-          error_detail: error_details.fetch(:"error-detail", nil)
+          error_type: error_details.error_type,
+          error_detail: error_details.error_detail
         )
       end
 
@@ -164,7 +164,7 @@ module Dependabot
         params(
           error: StandardError,
           error_type: String,
-          error_detail: T.nilable(T.any(T::Hash[Symbol, T.untyped], String))
+          error_detail: T.nilable(Dependabot::ErrorDetails::Detail)
         ).void
       end
       def log_job_error(error:, error_type:, error_detail: nil)
@@ -218,7 +218,7 @@ module Dependabot
           error: StandardError,
           dependency: T.nilable(Dependabot::Dependency),
           dependency_group: T.nilable(Dependabot::DependencyGroup)
-        ).returns(T::Hash[Symbol, T.untyped])
+        ).returns(Dependabot::ErrorDetails)
       end
       def error_details_for(error, dependency: nil, dependency_group: nil)
         error_details = Dependabot.updater_error_details(error)
@@ -243,7 +243,7 @@ module Dependabot
           )
         end
 
-        { "error-type": "unknown_error" }
+        Dependabot::ErrorDetails.new(error_type: "unknown_error", error_detail: nil)
       end
 
       sig { params(error: StandardError).void }
@@ -273,7 +273,8 @@ module Dependabot
       def extract_fingerprint(error)
         if error.respond_to?(:sentry_context)
           context = T.cast(error, Dependabot::HasSentryContext).sentry_context
-          return context[:fingerprint] if context.is_a?(Hash)
+          fingerprint = T.cast(context[:fingerprint], Object)
+          return fingerprint.map { |value| T.cast(value, Object).to_s } if fingerprint.is_a?(Array)
         end
 
         nil

@@ -75,6 +75,8 @@ module Dependabot
             ┬\s(?<requiring_dep>[^\n]+)\n
             [^\n]*✕\sunmet\speer\s(?<required_dep>[^:]+):
           /mx
+        PNPM_V11_PEER_DEP_CHECK_HINT = 'Run "pnpm peers check" to list them.'
+        PNPM_V11_PEER_DEP_ERROR_REGEX = /^✕\s(?:unmet|missing|conflicting)\speer\s/
 
         # Error message returned by `npm install` (for NPM 6):
         # react-dom@15.2.0 requires a peer of react@^15.2.0 \
@@ -346,8 +348,8 @@ module Dependabot
             relevant_versions = latest_version_finder(dependency)
                                 .possible_previous_versions_with_details
                                 .map(&:first)
-            reqs = dep.requirements.filter_map { |r| r[:requirement] }
-                                   .map { |r| requirement_class.requirements_array(r) }
+            reqs = dep.requirements.filter_map(&:requirement_string)
+                      .map { |r| requirement_class.requirements_array(r) }
 
             # Pick the lowest version from the max possible version from all
             # requirements. This matches the logic when combining the same
@@ -584,12 +586,41 @@ module Dependabot
               T.must(captures["requiring_dep"]).tr!(" ", "@")
               errors << captures
             end
+          elsif message.match?(PNPM_V11_PEER_DEP_ERROR_REGEX)
+            errors.concat(pnpm_v11_peer_dependency_errors(message))
           else
             raise
           end
           errors
         end
         # rubocop:enable Metrics/AbcSize
+
+        sig { params(message: String).returns(T::Array[T::Hash[String, T.nilable(String)]]) }
+        def pnpm_v11_peer_dependency_errors(message)
+          errors = T.let([], T::Array[T::Hash[String, T.nilable(String)]])
+          required_name = T.let(nil, T.nilable(String))
+          requirement = T.let(nil, T.nilable(String))
+
+          message.each_line do |line|
+            if (match = line.match(/^✕\s(?:unmet|missing|conflicting)\speer\s(?<name>.+)$/))
+              required_name = match[:name]
+              requirement = nil
+            elsif (match = line.match(/^\s{4}(?<requirement>.+):$/))
+              next unless required_name
+
+              requirement = T.must(match[:requirement]).delete_prefix('"').delete_suffix('"')
+            elsif (match = line.match(/^\s{6}(?<requiring_dep>.+)$/))
+              next unless required_name && requirement
+
+              errors << {
+                "required_dep" => "#{required_name}@#{requirement}",
+                "requiring_dep" => match[:requiring_dep]
+              }
+            end
+          end
+
+          errors
+        end
 
         sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def unmet_peer_dependencies
@@ -824,6 +855,10 @@ module Dependabot
                   error_context: {}
                 )
               end
+
+              if output.include?(PNPM_V11_PEER_DEP_CHECK_HINT)
+                Helpers.run_pnpm_command("--filter . peers check", fingerprint: "--filter . peers check")
+              end
             end
           end
         end
@@ -946,10 +981,10 @@ module Dependabot
           ).returns(String)
         end
         def version_install_arg(version:)
-          git_source = dependency.requirements.find { |req| req[:source] && req[:source][:type] == "git" }
+          git_source = dependency.requirements.find { |req| req.source_string("type") == "git" }
 
           if git_source
-            "#{dependency.name}@#{git_source[:source][:url]}##{version}"
+            "#{dependency.name}@#{git_source.source_string('url')}##{version}"
           else
             "#{dependency.name}@#{version}"
           end
@@ -957,17 +992,18 @@ module Dependabot
 
         sig do
           params(
-            requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            requirements: T::Array[Dependabot::DependencyRequirement],
             path: String
-          ).returns(T::Array[T::Hash[Symbol, T.untyped]])
+          ).returns(T::Array[Dependabot::DependencyRequirement])
         end
         def requirements_for_path(requirements, path)
           return requirements if path.to_s == "."
 
           requirements.filter_map do |r|
-            next unless r[:file].start_with?("#{path}/")
+            file = r.file
+            next unless file&.start_with?("#{path}/")
 
-            r.merge(file: r[:file].gsub(/^#{Regexp.quote("#{path}/")}/, ""))
+            Dependabot::DependencyRequirement.create(r.merge(file: file.gsub(/^#{Regexp.quote("#{path}/")}/, "")))
           end
         end
 
@@ -1015,13 +1051,13 @@ module Dependabot
         def version_for_dependency(dep)
           return version_class.new(dep.version) if dep.version && version_class.correct?(dep.version)
 
-          dep.requirements.filter_map { |r| r[:requirement] }
-                          .reject { |req_string| req_string.start_with?("<") }
-                          .select { |req_string| req_string.match?(version_regex) }
-                          .map { |req_string| req_string.match(version_regex) }
-                          .select { |version| version_class.correct?(version.to_s) }
-                          .map { |version| version_class.new(version.to_s) }
-                          .max
+          dep.requirements.filter_map(&:requirement_string)
+             .reject { |req_string| req_string.start_with?("<") }
+             .select { |req_string| req_string.match?(version_regex) }
+             .map { |req_string| req_string.match(version_regex) }
+             .select { |version| version_class.correct?(version.to_s) }
+             .map { |version| version_class.new(version.to_s) }
+             .max
         end
 
         sig { returns(T.class_of(Dependabot::Version)) }

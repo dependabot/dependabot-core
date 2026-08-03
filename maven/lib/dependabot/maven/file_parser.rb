@@ -415,7 +415,7 @@ module Dependabot
           .property_details(property_name: property_name, callsite_pom: pom)
           &.fetch(:file)
 
-        return declaring_pom if declaring_pom
+        return declaring_pom if declaring_pom.is_a?(String)
 
         msg = "Property not found: #{property_name}"
         raise DependencyFileNotEvaluatable, msg
@@ -428,7 +428,7 @@ module Dependabot
           .property_details(property_name: property_name, callsite_pom: pom)
           &.fetch(:value)
 
-        return value if value
+        return value if value.is_a?(String)
 
         msg = "Property not found: #{property_name}"
         raise DependencyFileNotEvaluatable, msg
@@ -497,7 +497,8 @@ module Dependabot
       # so we know when certain requirement not a literal value and can differentiate transitive dependencies
       # from direct dependencies.
       sig do
-        params(requirements: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Array[T::Hash[Symbol, T.untyped]])
+        params(requirements: T::Array[Dependabot::DependencyRequirement])
+          .returns(T::Array[Dependabot::DependencyRequirement])
       end
       def merge_requirements(requirements)
         return requirements if requirements.length <= 1
@@ -528,7 +529,7 @@ module Dependabot
               metadata: merge_metadata(dep_scan_req[:metadata], parsing_req[:metadata])
             }
 
-            merged << merged_req
+            merged << Dependabot::DependencyRequirement.create(merged_req)
             used_indices.add(i)
             used_indices.add(match_index)
           else
@@ -544,9 +545,9 @@ module Dependabot
       # Merge metadata from two requirements, combining all keys
       sig do
         params(
-          metadata1: T::Hash[Symbol, T.untyped],
-          metadata2: T::Hash[Symbol, T.untyped]
-        ).returns(T::Hash[Symbol, T.untyped])
+          metadata1: T::Hash[Symbol, Object],
+          metadata2: T::Hash[Symbol, Object]
+        ).returns(T::Hash[Symbol, Object])
       end
       def merge_metadata(metadata1, metadata2)
         metadata1.merge(metadata2) do |_key, old_value, new_value|

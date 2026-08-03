@@ -279,7 +279,7 @@ module Dependabot
       sig { returns(String) }
       def dependency_name_group_pr_name
         dep = T.must(dependencies.first)
-        directories = dep.metadata[:updated_directories] || [dep.metadata[:directory]].compact
+        directories = dep.metadata_string_array(:updated_directories) || [dep.metadata_string(:directory)].compact
 
         if directories.count > 1
           "bump #{dep.name} across #{directories.count} directories"
@@ -571,7 +571,7 @@ module Dependabot
       sig { returns(String) }
       def dependency_name_group_intro
         dep = T.must(dependencies.first)
-        directories = dep.metadata[:updated_directories] || [dep.metadata[:directory]].compact
+        directories = dep.metadata_string_array(:updated_directories) || [dep.metadata_string(:directory)].compact
 
         msg = "Bumps #{dependency_links.first}"
 
@@ -636,14 +636,14 @@ module Dependabot
       def updating_a_property?
         T.must(dependencies.first)
          .requirements
-         .any? { |r| r.dig(:metadata, :property_name) }
+         .any? { |r| r.metadata_string("property_name") }
       end
 
       sig { returns(T::Boolean) }
       def updating_a_dependency_set?
         T.must(dependencies.first)
          .requirements
-         .any? { |r| r.dig(:metadata, :dependency_set) }
+         .any? { |r| r.metadata_string_hash("dependency_set") }
       end
 
       sig { returns(T::Boolean) }
@@ -663,8 +663,8 @@ module Dependabot
           T.let(
             dependencies.first
               &.requirements
-              &.find { |r| r.dig(:metadata, :property_name) }
-              &.dig(:metadata, :property_name),
+              &.find { |r| r.metadata_string("property_name") }
+              &.metadata_string("property_name"),
             T.nilable(String)
           )
 
@@ -679,9 +679,9 @@ module Dependabot
           T.let(
             dependencies.first
               &.requirements
-              &.find { |r| r.dig(:metadata, :dependency_set) }
-              &.dig(:metadata, :dependency_set),
-            T.nilable(T.nilable(T::Hash[Symbol, String]))
+              &.find { |r| r.metadata_string_hash("dependency_set") }
+              &.metadata_string_hash("dependency_set"),
+            T.nilable(T::Hash[Symbol, String])
           )
 
         raise "No dependency set!" unless @dependency_set
@@ -801,6 +801,9 @@ module Dependabot
           vulnerabilities_fixed: vulnerabilities_fixed[dependency.name],
           github_redirection_service: github_redirection_service
         ).to_s
+      rescue StandardError => e
+        suppress_error("metadata cascades for #{dependency.name}", e)
+        ""
       end
 
       sig { returns(String) }
@@ -907,10 +910,10 @@ module Dependabot
           T.must(dependency.previous_requirements) - dependency.requirements
 
         gemspec =
-          old_reqs.find { |r| r[:file].match?(%r{^[^/]*\.gemspec$}) }
-        return gemspec.fetch(:requirement) if gemspec
+          old_reqs.find { |r| T.must(r.file).match?(%r{^[^/]*\.gemspec$}) }
+        return gemspec.requirement_string if gemspec
 
-        req = T.must(old_reqs.first).fetch(:requirement)
+        req = T.must(old_reqs.first).requirement_string
         return req if req
 
         dependency.previous_ref if dependency.ref_changed?
@@ -922,10 +925,10 @@ module Dependabot
           dependency.requirements - T.must(dependency.previous_requirements)
 
         gemspec =
-          updated_reqs.find { |r| r[:file].match?(%r{^[^/]*\.gemspec$}) }
-        return gemspec.fetch(:requirement) if gemspec
+          updated_reqs.find { |r| T.must(r.file).match?(%r{^[^/]*\.gemspec$}) }
+        return T.must(gemspec.requirement_string) if gemspec
 
-        req = T.must(updated_reqs.first).fetch(:requirement)
+        req = T.must(updated_reqs.first).requirement_string
         return req if req
         return T.must(dependency.new_ref) if dependency.ref_changed? && dependency.new_ref
 

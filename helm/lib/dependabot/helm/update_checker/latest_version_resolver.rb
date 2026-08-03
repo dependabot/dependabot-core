@@ -49,11 +49,11 @@ module Dependabot
 
       sig do
         params(
-          versions: T::Array[T::Hash[String, T.untyped]],
+          versions: T::Array[T::Hash[String, Object]],
           repo_name: T.nilable(String),
           chart_name: T.nilable(String)
         )
-          .returns(T::Array[T::Hash[String, T.untyped]])
+          .returns(T::Array[T::Hash[String, Object]])
       end
       def fetch_tag_and_release_date_helm_chart(versions, repo_name, chart_name)
         Dependabot.logger.info("Filtering versions in cooldown period from chart: #{repo_name}")

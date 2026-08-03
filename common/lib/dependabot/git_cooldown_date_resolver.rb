@@ -1,7 +1,8 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/clients/github_release"
 require "dependabot/clients/github_with_retries"
 require "dependabot/shared_helpers"
 require "dependabot/source"
@@ -45,7 +46,8 @@ module Dependabot
       releases = cached_github_releases
       unless releases.empty?
         release = releases.find { |r| r.tag_name == tag_name }
-        return release.published_at if release&.published_at
+        published_at = release&.published_at
+        return published_at if published_at
       end
 
       tag_creation_date(tag_name, commit_sha)
@@ -88,7 +90,7 @@ module Dependabot
 
     # Fetches and caches GitHub releases for the dependency source.
     # Returns an empty array for non-GitHub sources.
-    sig { returns(T::Array[T.untyped]) } # rubocop:disable Sorbet/ForbidTUntyped
+    sig { returns(T::Array[Dependabot::Clients::GithubRelease]) }
     def cached_github_releases
       @cached_github_releases ||= T.let(
         begin
@@ -99,7 +101,13 @@ module Dependabot
               source: T.must(source),
               credentials: cooldown_credentials
             )
-            client.releases(T.must(source).repo, per_page: 100)
+            releases = T.let(
+              client.releases(T.must(source).repo, per_page: 100),
+              T.nilable(T::Array[Sawyer::Resource])
+            )
+            (releases || []).filter_map do |release|
+              Dependabot::Clients::GithubRelease.from_resource(release)
+            end
           else
             []
           end
@@ -107,7 +115,7 @@ module Dependabot
           Dependabot.logger.debug("Error fetching GitHub releases: #{e.message}")
           []
         end,
-        T.nilable(T::Array[T.untyped]) # rubocop:disable Sorbet/ForbidTUntyped
+        T.nilable(T::Array[Dependabot::Clients::GithubRelease])
       )
     end
   end

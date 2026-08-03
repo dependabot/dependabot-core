@@ -4,12 +4,15 @@
 require "sorbet-runtime"
 
 require "dependabot/sbt/file_parser"
+require "dependabot/maven/shared/property_value_finding"
 
 module Dependabot
   module Sbt
     class FileParser < Dependabot::FileParsers::Base
       class PropertyValueFinder
         extend T::Sig
+
+        include Dependabot::Maven::Shared::PropertyValueFinding
 
         # Matches: val someVersion = "1.2.3"
         # Also:   val someVersion: String = "1.2.3"
@@ -26,7 +29,8 @@ module Dependabot
         end
 
         sig do
-          params(property_name: String, callsite_buildfile: Dependabot::DependencyFile)
+          override
+            .params(property_name: String, callsite_buildfile: Dependabot::DependencyFile)
             .returns(T.nilable(T::Hash[Symbol, String]))
         end
         def property_details(property_name:, callsite_buildfile:)

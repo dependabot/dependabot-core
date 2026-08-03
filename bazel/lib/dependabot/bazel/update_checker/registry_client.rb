@@ -49,7 +49,7 @@ module Dependabot
           versions.max_by { |v| version_sort_key(v) }
         end
 
-        sig { params(module_name: String).returns(T.nilable(T::Hash[String, T.untyped])) }
+        sig { params(module_name: String).returns(T.nilable(T::Hash[String, Object])) }
         def get_metadata(module_name)
           versions = all_module_versions(module_name)
           return nil if versions.empty?
@@ -61,7 +61,7 @@ module Dependabot
           }
         end
 
-        sig { params(module_name: String, version: String).returns(T.nilable(T::Hash[String, T.untyped])) }
+        sig { params(module_name: String, version: String).returns(T.nilable(T::Hash[String, Object])) }
         def get_source(module_name, version)
           file_path = "modules/#{module_name}/#{version}/source.json"
 

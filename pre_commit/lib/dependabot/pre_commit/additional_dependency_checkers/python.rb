@@ -26,14 +26,14 @@ module Dependabot
           )
         end
 
-        sig { override.params(latest_version: String).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { override.params(latest_version: String).returns(T::Array[T::Hash[Symbol, Object]]) }
         def updated_requirements(latest_version)
           requirements.map do |original_req|
             original_source = original_req[:source]
             next original_req unless original_source.is_a?(Hash)
             next original_req unless original_source[:type] == "additional_dependency"
 
-            original_requirement = original_req[:requirement]
+            original_requirement = requirement_string(original_req)
             new_requirement = build_updated_requirement(original_requirement, latest_version)
 
             new_original_string = build_original_string(
@@ -126,7 +126,7 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def extract_version_from_requirement
-          req_string = requirements.first&.dig(:requirement)
+          req_string = requirement_string(requirements.first)
           return nil unless req_string
 
           match = req_string.match(/[\d]+(?:\.[\d]+)*(?:\.?\w+)*/)

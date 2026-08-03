@@ -52,14 +52,14 @@ module Dependabot
 
       sig do
         params(
-          modules: T::Hash[String, T::Array[T::Hash[String, T.untyped]]],
+          modules: T::Hash[String, T::Array[T::Hash[String, Object]]],
           base_modules: T::Hash[String,
                                 T::Array[T::Hash[String,
-                                                 T.untyped]]]
+                                                 Object]]]
         )
           .returns(T::Hash[String,
                            T::Array[T::Hash[String,
-                                            T.untyped]]])
+                                            Object]]])
       end
       def merge_modules(modules, base_modules)
         merged_modules = base_modules.dup

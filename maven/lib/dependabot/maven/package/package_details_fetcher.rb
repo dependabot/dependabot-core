@@ -31,9 +31,9 @@ module Dependabot
           @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
           @credentials = T.let(credentials, T::Array[Dependabot::Credential])
 
-          @pom_repository_details = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
+          @pom_repository_details = T.let(nil, T.nilable(T::Array[RepositoryDetails]))
           @repository_finder = T.let(nil, T.nilable(Maven::FileParser::RepositoriesFinder))
-          @repositories_cache = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
+          @repositories_cache = T.let(nil, T.nilable(T::Array[RepositoryDetails]))
           @package_details = T.let(nil, T.nilable(Dependabot::Package::PackageDetails))
         end
 
@@ -66,13 +66,13 @@ module Dependabot
           @package_details
         end
 
-        sig { returns(T::Array[T.untyped]) }
+        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
         def releases
           fetch.releases
         end
 
         # Assembles the list of Maven repositories to search: credential repos + POM repos.
-        sig { override.returns(T::Array[T::Hash[String, T.untyped]]) }
+        sig { override.returns(T::Array[RepositoryDetails]) }
         def repositories
           return @repositories_cache if @repositories_cache
 
@@ -107,7 +107,7 @@ module Dependabot
         end
 
         # Returns the repository details for the POM file.
-        sig { returns(T::Array[T::Hash[String, T.untyped]]) }
+        sig { returns(T::Array[RepositoryDetails]) }
         def pom_repository_details
           return @pom_repository_details if @pom_repository_details
 

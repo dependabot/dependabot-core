@@ -576,8 +576,8 @@ begin
     error_details = Dependabot.fetcher_error_details(e)
     raise unless error_details
 
-    puts " => handled error whilst fetching dependencies: #{error_details.fetch(:"error-type")} " \
-         "#{error_details.fetch(:"error-detail")}"
+    puts " => handled error whilst fetching dependencies: #{error_details.error_type} " \
+         "#{error_details.error_detail}"
 
     []
   end
@@ -588,8 +588,8 @@ begin
     error_details = Dependabot.parser_error_details(e)
     raise unless error_details
 
-    puts " => handled error whilst parsing dependencies: #{error_details.fetch(:"error-type")} " \
-         "#{error_details.fetch(:"error-detail")}"
+    puts " => handled error whilst parsing dependencies: #{error_details.error_type} " \
+         "#{error_details.error_detail}"
 
     []
   end
@@ -954,8 +954,8 @@ begin
     error_details = Dependabot.updater_error_details(e)
     raise unless error_details
 
-    puts " => handled error whilst updating #{dep.name}: #{error_details.fetch(:"error-type")} " \
-         "#{error_details.fetch(:"error-detail")}"
+    puts " => handled error whilst updating #{dep.name}: #{error_details.error_type} " \
+         "#{error_details.error_detail}"
   end
 
   StackProf.stop if $options[:profile]

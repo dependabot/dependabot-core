@@ -68,16 +68,16 @@ module Dependabot
           reqs = dep.requirements
 
           # Ignore dependencies defined in support files, since we don't want PRs for those
-          support_reqs = reqs.select { |r| support_package_files.any? { |f| f.name == r[:file] } }
+          support_reqs = reqs.select { |r| support_package_files.any? { |f| f.name == r.file } }
           next true if support_reqs.any?
 
           # TODO: Currently, Dependabot can't handle dependencies that have both
           # a git source *and* a non-git source. Fix that!
-          git_reqs = reqs.select { |r| r.dig(:source, :type) == "git" }
+          git_reqs = reqs.select { |r| r.source_string("type") == "git" }
           next false if git_reqs.none?
-          next true if git_reqs.map { |r| r.fetch(:source) }.uniq.count > 1
+          next true if git_reqs.map(&:source).uniq.count > 1
 
-          dep.requirements.any? { |r| r.dig(:source, :type) != "git" }
+          dep.requirements.any? { |r| r.source_string("type") != "git" }
         end
       end
 

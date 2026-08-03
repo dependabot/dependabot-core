@@ -117,7 +117,7 @@ module Dependabot
         def extract_channel_from_source
           return nil unless dependency.requirements.first
 
-          source = T.let(T.must(dependency.requirements.first)[:source], T.nilable(T::Hash[Symbol, T.untyped]))
+          source = T.let(T.must(dependency.requirements.first)[:source], T.nilable(T::Hash[Symbol, Object]))
           return nil unless source
 
           channel = source[:channel]
@@ -185,7 +185,7 @@ module Dependabot
           )
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[T::Hash[Symbol, T.anything]]) }
         def python_compatible_requirements
           dependency.requirements.map do |req|
             req.merge(

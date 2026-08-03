@@ -32,7 +32,8 @@ module Dependabot
             security_advisories: T::Array[Dependabot::SecurityAdvisory],
             raise_on_ignored: T::Boolean,
             options: T::Hash[Symbol, T.untyped],
-            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
+            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
+            git_metadata_fetcher: T.nilable(Dependabot::GitMetadataFetcher)
           ).void
         end
         def initialize(
@@ -43,7 +44,8 @@ module Dependabot
           security_advisories:,
           raise_on_ignored:,
           options: {},
-          cooldown_options: nil
+          cooldown_options: nil,
+          git_metadata_fetcher: nil
         )
           @dependency          = dependency
           @dependency_files    = dependency_files
@@ -53,9 +55,19 @@ module Dependabot
           @raise_on_ignored    = raise_on_ignored
           @options             = options
           @cooldown_options = cooldown_options
+          @git_metadata_fetcher = git_metadata_fetcher
 
           @git_helper = T.let(git_helper, Dependabot::GithubActions::Helpers::Githelper)
-          super
+          super(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            security_advisories: security_advisories,
+            raise_on_ignored: raise_on_ignored,
+            options: options,
+            cooldown_options: cooldown_options
+          )
         end
 
         sig { returns(Dependabot::Dependency) }
@@ -131,7 +143,7 @@ module Dependabot
 
         sig { override.returns(T.nilable(String)) }
         def cooldown_source_url
-          @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
+          @git_helper.git_commit_checker.dependency_source_details&.url
         end
 
         sig { override.returns(T::Array[Dependabot::Credential]) }
@@ -150,7 +162,8 @@ module Dependabot
                           credentials: credentials,
                           ignored_versions: ignored_versions,
                           raise_on_ignored: raise_on_ignored,
-                          security_advisories: security_advisories
+                          security_advisories: security_advisories,
+                          git_metadata_fetcher: @git_metadata_fetcher
                         ),
             T.nilable(Dependabot::GithubActions::Package::PackageDetailsFetcher)
           )
@@ -345,7 +358,7 @@ module Dependabot
 
         sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
         def current_version
-          return dependency.source_details(allowed_types: ["git"])&.fetch(:ref) if release_type_sha?
+          return dependency.source_string("ref", allowed_types: ["git"]) if release_type_sha?
 
           T.let(dependency.numeric_version, T.nilable(Dependabot::Version))
         end
@@ -363,7 +376,8 @@ module Dependabot
             ignored_versions: ignored_versions,
             raise_on_ignored: raise_on_ignored,
             consider_version_branches_pinned: false,
-            dependency_source_details: nil
+            dependency_source_details: nil,
+            git_metadata_fetcher: @git_metadata_fetcher
           )
         end
       end

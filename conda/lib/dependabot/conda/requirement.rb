@@ -22,7 +22,7 @@ module Dependabot
           "==" => ->(v, r) { v == r },        # pip equality
           "~=" => ->(v, r) { v >= r && v.release < r.bump } # pip compatible release
         ),
-        T::Hash[String, T.proc.params(arg0: T.untyped, arg1: T.untyped).returns(T.untyped)]
+        T::Hash[String, T.proc.params(arg0: Gem::Version, arg1: Gem::Version).returns(T::Boolean)]
       )
 
       quoted = OPS.keys.sort_by(&:length).reverse

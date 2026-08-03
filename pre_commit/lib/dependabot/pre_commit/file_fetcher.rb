@@ -33,7 +33,7 @@ module Dependabot
         end
       end
 
-      sig { override.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { override.returns(T.nilable(T::Hash[Symbol, Object])) }
       def ecosystem_versions
         nil
       end
