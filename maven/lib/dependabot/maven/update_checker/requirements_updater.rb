@@ -89,7 +89,10 @@ module Dependabot
         #   - wrapperVersion   -> metadata[:wrapper_version]
         # The wrapperUrl tag-along requirement (present only on the distribution dependency) is left
         # otherwise untouched, since bumping the distribution does not change the wrapper JAR.
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+        sig do
+          params(req: Dependabot::DependencyRequirement)
+            .returns(Dependabot::DependencyRequirement)
+        end
         def bump_distribution_requirement(req)
           new_version = T.must(latest_version).to_s
           old_version = req[:requirement]
@@ -103,7 +106,7 @@ module Dependabot
             updated = merge_metadata_version(updated, :wrapper_version, new_version)
           end
 
-          updated
+          Dependabot::DependencyRequirement.create(updated)
         end
 
         sig do

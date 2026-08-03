@@ -216,7 +216,7 @@ module Dependabot
 
         sig { returns(String) }
         def maven_wrapper_version_from_requirements
-          return T.must(@wrapper_version_override) if @wrapper_version_override
+          return @wrapper_version_override if @wrapper_version_override
 
           wrapper_version = dependency.requirements
                                       .find { |r| r.dig(:metadata, :wrapper_version) }
@@ -228,7 +228,7 @@ module Dependabot
 
         sig { returns(String) }
         def distribution_version_from_requirements
-          return T.must(@distribution_version_override) if @distribution_version_override
+          return @distribution_version_override if @distribution_version_override
 
           distribution_version = dependency.requirements
                                            .find { |r| r.dig(:metadata, :distribution_version) }
