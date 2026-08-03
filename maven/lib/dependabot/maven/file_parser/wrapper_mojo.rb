@@ -65,6 +65,7 @@ module Dependabot
         DIST_URL_VERSION_REGEX = %r{
           /apache-maven-(?<version>[^/?#]+)-(?:bin|src)\.(?:zip|tar\.gz)(?:[?#].*)?\z
         }x
+        class UnparseableDistributionUrl < RuntimeError; end
 
         sig do
           params(
@@ -82,7 +83,12 @@ module Dependabot
             return []
           end
 
-          props = load_properties(content, script_files: script_files)
+          begin
+            props = load_properties(content, script_files: script_files)
+          rescue UnparseableDistributionUrl => e
+            Dependabot.logger.warn("#{e.message}, skipping wrapper update")
+            return []
+          end
 
           if props.wrapper_url&.include?("takari")
             Dependabot.logger.warn("The Takari distribution is not supported, skipping wrapper update")
@@ -270,7 +276,9 @@ module Dependabot
         sig { params(content: String).returns(String) }
         def self.extract_distribution_version(content)
           match = content.match(DIST_URL_VERSION_REGEX)
-          raise "Could not extract Maven version from content" unless match && match[:version]
+          unless match && match[:version]
+            raise UnparseableDistributionUrl, "Could not extract Maven version from distributionUrl"
+          end
 
           T.must(match[:version])
         end

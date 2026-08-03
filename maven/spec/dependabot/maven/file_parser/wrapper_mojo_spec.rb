@@ -321,6 +321,23 @@ RSpec.describe Dependabot::Maven::FileParser::WrapperMojo do
       end
     end
 
+    context "when the distribution URL uses a custom archive filename" do
+      let(:content) do
+        "distributionUrl=https://downloads.example.test/maven/current.zip\n" \
+          "distributionType=only-script\nwrapperVersion=3.3.4\n"
+      end
+
+      it "skips wrapper dependencies instead of failing Maven parsing" do
+        expect(described_class.resolve_dependencies(properties_file)).to eq([])
+      end
+
+      it "logs that wrapper tracking was skipped" do
+        expect(Dependabot.logger).to receive(:warn)
+          .with(/Could not extract Maven version from distributionUrl, skipping wrapper update/)
+        described_class.resolve_dependencies(properties_file)
+      end
+    end
+
     context "when the wrapperUrl points to a Takari distribution" do
       let(:takari_url) { "https://repo.maven.apache.org/maven2/io/takari/maven-wrapper/0.5.6/maven-wrapper-0.5.6.jar" }
       let(:dist_url) do
