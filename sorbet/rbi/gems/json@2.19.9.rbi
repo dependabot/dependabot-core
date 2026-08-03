@@ -2120,44 +2120,6 @@ module JSON::GeneratorMethods
   def to_json(state = T.unsafe(nil), *_arg1); end
 end
 
-# pkg:gem/json#lib/json/generic_object.rb:9
-class JSON::GenericObject < ::OpenStruct
-  # pkg:gem/json#lib/json/generic_object.rb:59
-  def as_json(*_arg0); end
-
-  # pkg:gem/json#lib/json/generic_object.rb:51
-  def to_hash; end
-
-  # pkg:gem/json#lib/json/generic_object.rb:63
-  def to_json(*a); end
-
-  # pkg:gem/json#lib/json/generic_object.rb:55
-  def |(other); end
-
-  class << self
-    # pkg:gem/json#lib/json/generic_object.rb:11
-    def [](*_arg0); end
-
-    # pkg:gem/json#lib/json/generic_object.rb:45
-    def dump(obj, *args); end
-
-    # pkg:gem/json#lib/json/generic_object.rb:25
-    def from_hash(object); end
-
-    # pkg:gem/json#lib/json/generic_object.rb:17
-    def json_creatable=(_arg0); end
-
-    # pkg:gem/json#lib/json/generic_object.rb:13
-    def json_creatable?; end
-
-    # pkg:gem/json#lib/json/generic_object.rb:19
-    def json_create(data); end
-
-    # pkg:gem/json#lib/json/generic_object.rb:40
-    def load(source, proc = T.unsafe(nil), opts = T.unsafe(nil)); end
-  end
-end
-
 # pkg:gem/json#lib/json/common.rb:358
 JSON::PARSE_L_OPTIONS = T.let(T.unsafe(nil), Hash)
 
