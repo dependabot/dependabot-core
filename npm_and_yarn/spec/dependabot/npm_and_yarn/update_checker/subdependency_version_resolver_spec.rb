@@ -321,7 +321,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
 
           expect(Dependabot::NpmAndYarn::NativeHelpers)
             .to have_received(:run_npm8_subdependency_update_command)
-            .with(["acorn"], security_updates_only: true)
+            .with(["acorn"], min_release_age_arg: "--min-release-age=0")
         end
       end
 
