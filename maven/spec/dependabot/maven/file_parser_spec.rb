@@ -1197,6 +1197,7 @@ RSpec.describe Dependabot::Maven::FileParser do
 
         allow(Dependabot::Maven::FileParser::MavenDependencyParser).to receive(:build_dependency_set)
           .and_return(dependency_set)
+        allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:maven_transitive_dependencies).and_return(true)
       end
