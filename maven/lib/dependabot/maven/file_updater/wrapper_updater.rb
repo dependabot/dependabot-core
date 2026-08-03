@@ -65,6 +65,7 @@ module Dependabot
           # Capture the user's original properties before we mutate the on-disk copy, so we can
           # tell which checksums they were tracking and restore exactly those afterwards.
           original_properties = wrapper_properties_file&.content
+          desired_distribution_url = effective_distribution_url(original_properties.to_s)
 
           SharedHelpers.in_a_temporary_directory(project_root(buildfile)) do
             write_dependency_files
@@ -79,6 +80,10 @@ module Dependabot
             distribution_type = distribution_type_from_requirements
             # Run the native wrapper command to regenerate the shell scripts
             run_wrapper_command(distribution_type)
+
+            # Older wrapper plugins ignore -DdistributionUrl and reconstruct a Maven Central URL.
+            # Restore the effective URL so custom mirrors survive distribution-only updates too.
+            restore_distribution_url(desired_distribution_url)
 
             # Maven Central only publishes SHA-512 checksums.
             # But the wrapper only supports SHA-256 validation
@@ -145,10 +150,18 @@ module Dependabot
           !FileParser::WrapperMojo.get_property_value(content, key).nil?
         end
 
+        sig { params(distribution_url: T.nilable(String)).void }
+        def restore_distribution_url(distribution_url)
+          return unless distribution_url && File.exist?(properties_path)
+
+          content = File.read(properties_path)
+          File.write(properties_path, set_property(content, "distributionUrl", distribution_url))
+        end
+
         sig { params(content: String, property_name: String, url: String).returns(String) }
         def set_checksum_from_url(content, property_name, url)
           sha256 = calculate_sha256_from_url(url)
-          set_checksum_property(content, property_name, sha256)
+          set_property(content, property_name, sha256)
         end
 
         sig { params(url: String).returns(String) }
@@ -188,11 +201,11 @@ module Dependabot
         end
 
         sig { params(content: String, key: String, value: String).returns(String) }
-        def set_checksum_property(content, key, value)
+        def set_property(content, key, value)
           pattern = /^[ \t]*#{Regexp.escape(key)}[ \t]*[=:].*$/
           if content.match?(pattern)
             Dependabot.logger.debug "Replacing #{key}"
-            content.sub(pattern, "#{key}=#{value}")
+            content.sub(pattern) { "#{key}=#{value}" }
           else
             Dependabot.logger.debug "Appending #{key}"
             "#{content.rstrip}\n#{key}=#{value}\n"
@@ -308,9 +321,9 @@ module Dependabot
           returns([T.nilable(String), T.nilable(Dependabot::Credential)])
         end
         def resolve_registry_base_and_credential
-          dist_req = dependency.requirements.find { |r| r.source_string("property") == "distributionUrl" }
-          dist_url = dist_req&.dig(:source, :url)
-          Dependabot.logger.debug "Distribution URL from requirements: #{dist_url}"
+          properties = wrapper_properties_file&.content.to_s
+          dist_url = effective_distribution_url(properties)
+          Dependabot.logger.debug "Effective distribution URL: #{dist_url}"
 
           registry_base_regex = %r{^(https?://[^/]+(?:/[^/]+)*)/org/apache/maven/apache-maven/}
           registry_base = dist_url&.match(registry_base_regex)&.captures&.first

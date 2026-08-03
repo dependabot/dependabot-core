@@ -157,6 +157,55 @@ RSpec.describe Dependabot::Maven::FileUpdater::WrapperUpdater do
       end
     end
 
+    context "when a legacy wrapper plugin ignores a custom distributionUrl" do
+      include_context "with native helpers stubbed"
+
+      let(:old_dist_url) do
+        "https://downloads.example.test/maven/3.9.8/binaries/apache-maven-3.9.8-bin.zip"
+      end
+      let(:new_dist_url) do
+        "https://downloads.example.test/maven/3.9.9/binaries/apache-maven-3.9.9-bin.zip"
+      end
+      let(:properties_content) do
+        "distributionUrl=#{old_dist_url}\ndistributionType=bin\n" \
+          "wrapperUrl=https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/" \
+          "maven-wrapper/3.2.0/maven-wrapper-3.2.0.jar\n"
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "org.apache.maven:apache-maven",
+          version: "3.9.9",
+          previous_version: "3.9.8",
+          requirements: [{
+            requirement: "3.9.9",
+            file: ".mvn/wrapper/maven-wrapper.properties",
+            source: { type: "maven-distribution", url: new_dist_url, property: "distributionUrl" },
+            groups: [],
+            metadata: { packaging_type: "pom", wrapper_version: "3.2.0", distribution_type: "bin",
+                        distribution_version: "3.9.9", include_debug_script: false }
+          }],
+          package_manager: "maven"
+        )
+      end
+
+      before do
+        allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvnw_wrapper) do
+          File.write(
+            ".mvn/wrapper/maven-wrapper.properties",
+            "distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/" \
+              "3.9.9/apache-maven-3.9.9-bin.zip\ndistributionType=bin\n"
+          )
+        end
+      end
+
+      it "restores the updated custom distribution URL after generation" do
+        properties = updater.update_files(buildfile)
+                            .find { |file| file.name == ".mvn/wrapper/maven-wrapper.properties" }
+
+        expect(properties&.content).to include("distributionUrl=#{new_dist_url}")
+      end
+    end
+
     context "when updating the wrapperVersion" do
       include_context "with native helpers stubbed"
 
@@ -230,6 +279,37 @@ RSpec.describe Dependabot::Maven::FileUpdater::WrapperUpdater do
         allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvnw_wrapper) { |**kwargs| received = kwargs }
         updater.update_files(buildfile)
         expect(received[:extra_args]).to include("-DdistributionUrl=#{dist_url}")
+      end
+
+      context "with only the wrapper requirement and a private distribution URL" do
+        let(:dist_url) do
+          "https://repo.example.test/maven/releases/org/apache/maven/apache-maven/" \
+            "3.9.9/apache-maven-3.9.9-bin.zip"
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.apache.maven.wrapper:maven-wrapper",
+            version: "3.3.4",
+            previous_version: "3.3.3",
+            requirements: [{
+              requirement: "3.3.4",
+              file: ".mvn/wrapper/maven-wrapper.properties",
+              source: { type: "maven-distribution", property: "wrapperVersion" },
+              groups: [],
+              metadata: { wrapper_version: "3.3.4", distribution_version: "3.9.9",
+                          distribution_type: "only-script", include_debug_script: false }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        it "derives MVNW_REPOURL from the existing properties" do
+          received = {}
+          allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvnw_wrapper) { |**kwargs| received = kwargs }
+          updater.update_files(buildfile)
+
+          expect(received[:env]).to include("MVNW_REPOURL" => "https://repo.example.test/maven/releases")
+        end
       end
     end
 
