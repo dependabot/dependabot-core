@@ -194,6 +194,15 @@ module Dependabot
         @files = files
       end
 
+      # The canonical set of files handed across the fetch/update trust boundary.
+      # This is the single, explicit contract for "which files the
+      # update phase is allowed to see": the fetch phase serialises exactly this
+      # set, and nothing else (no working-tree clone, no `.git`) crosses.
+      sig { overridable.returns(T::Array[DependencyFile]) }
+      def files_to_persist
+        files
+      end
+
       sig { returns(T.nilable(String)) }
       def commit
         resolved_cloned_commit = cloned_commit
