@@ -1229,6 +1229,44 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
   end
 
+  describe "#normalize_index_url" do
+    subject(:normalized) { updater.send(:normalize_index_url, url) }
+
+    context "with a trailing slash" do
+      let(:url) { "https://private-pypi.example.com/simple/" }
+
+      it "strips the trailing slash" do
+        expect(normalized).to eq("https://private-pypi.example.com/simple")
+      end
+    end
+
+    context "with embedded userinfo" do
+      let(:url) { "https://oauth2accesstoken@private-pypi.example.com/simple/" }
+
+      it "strips both the userinfo and trailing slash" do
+        expect(normalized).to eq("https://private-pypi.example.com/simple")
+      end
+    end
+
+    context "with embedded username and password" do
+      let(:url) { "https://user:secret@private-pypi.example.com/simple" }
+
+      it "strips the full userinfo" do
+        expect(normalized).to eq("https://private-pypi.example.com/simple")
+      end
+    end
+
+    context "when the URL cannot be parsed by URI.parse" do
+      # A userinfo password containing an unencoded slash raises URI::InvalidURIError;
+      # the method must fall back to trailing-slash normalization without raising.
+      let(:url) { "https://user:pa/ss@private-pypi.example.com/simple/" }
+
+      it "falls back to chomping the trailing slash" do
+        expect(normalized).to eq("https://user:pa/ss@private-pypi.example.com/simple")
+      end
+    end
+  end
+
   describe "#lock_options_fingerprint" do
     subject(:lock_options_fingerprint) { updater.send(:lock_options_fingerprint, options) }
 
