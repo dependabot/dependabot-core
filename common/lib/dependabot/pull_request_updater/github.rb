@@ -70,7 +70,7 @@ module Dependabot
         @pull_request_number = pull_request_number
         @author_details      = author_details
         @signature_key       = signature_key
-        @commit_message      = T.let(commit_message, T.nilable(String))
+        @commit_message      = commit_message
       end
 
       sig { returns(T.nilable(Sawyer::Resource)) }

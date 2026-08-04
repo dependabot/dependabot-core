@@ -45,8 +45,8 @@ module Dependabot
         ).void
       end
       def initialize(registry_config_files, credentials)
-        @registry_config_files = T.let(registry_config_files, T::Hash[Symbol, T.nilable(Dependabot::DependencyFile)])
-        @credentials = T.let(credentials, T.nilable(T::Array[Dependabot::Credential]))
+        @registry_config_files = registry_config_files
+        @credentials = credentials
       end
 
       sig { returns(T::Hash[String, String]) }

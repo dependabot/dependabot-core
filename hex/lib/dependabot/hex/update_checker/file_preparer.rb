@@ -34,11 +34,11 @@ module Dependabot
           replacement_git_pin: nil,
           latest_allowable_version: nil
         )
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @dependency = T.let(dependency, Dependabot::Dependency)
+          @dependency_files = dependency_files
+          @dependency = dependency
           @unlock_requirement = T.let(unlock_requirement ? true : false, T::Boolean)
-          @replacement_git_pin = T.let(replacement_git_pin, T.nilable(String))
-          @latest_allowable_version = T.let(latest_allowable_version, T.nilable(Gem::Version))
+          @replacement_git_pin = replacement_git_pin
+          @latest_allowable_version = latest_allowable_version
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }

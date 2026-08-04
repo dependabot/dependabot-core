@@ -14,28 +14,16 @@ module Dependabot
         CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
 
         # Matches: resolvers += "Name" at "https://url"
-        RESOLVER_AT_REGEX = T.let(
-          /resolvers\s*\+?=\s*(?:Seq\s*\()?\s*"[^"]*"\s+at\s+"(?<url>[^"]+)"/,
-          Regexp
-        )
+        RESOLVER_AT_REGEX = /resolvers\s*\+?=\s*(?:Seq\s*\()?\s*"[^"]*"\s+at\s+"(?<url>[^"]+)"/
 
         # Matches: resolvers ++= Seq("Name" at "url", ...)
-        RESOLVER_SEQ_AT_REGEX = T.let(
-          /"[^"]*"\s+at\s+"(?<url>[^"]+)"/,
-          Regexp
-        )
+        RESOLVER_SEQ_AT_REGEX = /"[^"]*"\s+at\s+"(?<url>[^"]+)"/
 
         # Matches: Resolver.url("name", url("https://url"))
-        RESOLVER_URL_REGEX = T.let(
-          /Resolver\.url\(\s*"[^"]*"\s*,\s*url\(\s*"(?<url>[^"]+)"\s*\)/,
-          Regexp
-        )
+        RESOLVER_URL_REGEX = /Resolver\.url\(\s*"[^"]*"\s*,\s*url\(\s*"(?<url>[^"]+)"\s*\)/
 
         # Matches: MavenRepository("name", "https://url")
-        MAVEN_REPOSITORY_REGEX = T.let(
-          /MavenRepository\(\s*"[^"]*"\s*,\s*"(?<url>[^"]+)"\s*\)/,
-          Regexp
-        )
+        MAVEN_REPOSITORY_REGEX = /MavenRepository\(\s*"[^"]*"\s*,\s*"(?<url>[^"]+)"\s*\)/
 
         sig do
           params(
@@ -44,8 +32,8 @@ module Dependabot
           ).void
         end
         def initialize(dependency_files:, credentials: [])
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @dependency_files = dependency_files
+          @credentials = credentials
         end
 
         sig { returns(T::Array[String]) }

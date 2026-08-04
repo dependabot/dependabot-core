@@ -12,7 +12,7 @@ module Dependabot
       class WorkspaceFetcher
         extend T::Sig
 
-        README_FILENAMES = T.let(%w(README.md README.rst README.txt README).freeze, T::Array[String])
+        README_FILENAMES = %w(README.md README.rst README.txt README).freeze
 
         sig do
           params(

@@ -26,9 +26,9 @@ module Dependabot
           ).void
         end
         def initialize(dependency:, dependency_files:, credentials:)
-          @dependency = T.let(dependency, Dependabot::Dependency)
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @dependency = dependency
+          @dependency_files = dependency_files
+          @credentials = credentials
 
           @repositories_cache = T.let(nil, T.nilable(T::Array[T::Hash[String, T.untyped]]))
           @repository_finder = T.let(nil, T.nilable(Sbt::FileParser::RepositoriesFinder))

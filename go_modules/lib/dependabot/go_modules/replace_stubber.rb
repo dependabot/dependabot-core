@@ -18,7 +18,7 @@ module Dependabot
 
       sig { params(repo_contents_path: String).void }
       def initialize(repo_contents_path)
-        @repo_contents_path = T.let(repo_contents_path, String)
+        @repo_contents_path = repo_contents_path
       end
 
       sig do

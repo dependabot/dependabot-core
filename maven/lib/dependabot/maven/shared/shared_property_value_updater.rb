@@ -21,7 +21,7 @@ module Dependabot
 
         sig { params(dependency_files: T::Array[DependencyFile]).void }
         def initialize(dependency_files:)
-          @dependency_files = T.let(dependency_files, T::Array[DependencyFile])
+          @dependency_files = dependency_files
         end
 
         sig do

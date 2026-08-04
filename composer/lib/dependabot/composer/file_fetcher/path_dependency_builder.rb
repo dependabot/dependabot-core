@@ -16,9 +16,9 @@ module Dependabot
 
         sig { params(path: String, directory: String, lockfile: T.nilable(Dependabot::DependencyFile)).void }
         def initialize(path:, directory:, lockfile:)
-          @path = T.let(path, String)
-          @directory = T.let(directory, String)
-          @lockfile = T.let(lockfile, T.nilable(Dependabot::DependencyFile))
+          @path = path
+          @directory = directory
+          @lockfile = lockfile
           @parsed_lockfile = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
         end
 

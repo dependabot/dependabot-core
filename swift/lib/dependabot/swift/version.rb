@@ -14,7 +14,7 @@ module Dependabot
       extend T::Sig
 
       # SEMVER_REGEX uses ^/$ line anchors; anchor to the whole string to reject multiline.
-      SEMVER_ANCHORED = T.let(/\A#{SEMVER_REGEX.source}\z/x, Regexp)
+      SEMVER_ANCHORED = /\A#{SEMVER_REGEX.source}\z/x
 
       sig { override.params(version: VersionParameter).returns(T::Boolean) }
       def self.correct?(version)

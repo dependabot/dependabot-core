@@ -19,7 +19,7 @@ module Dependabot
       class LockfileUpdater
         extend T::Sig
 
-        LOCKFILE_FILENAME = T.let("deno.lock", String)
+        LOCKFILE_FILENAME = "deno.lock"
 
         sig do
           params(
