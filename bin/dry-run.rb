@@ -544,6 +544,22 @@ begin
   # rubocop:enable Metrics/MethodLength
   # rubocop:enable Metrics/AbcSize
 
+  # Simulates the fetch/update trust boundary: the fetch phase
+  # produces every file via `files`, but only `files_to_persist` crosses to the
+  # update phase.
+  # Enable an ecosystem's narrowing with e.g.
+  #   --updater-options bundler_minimal_update_files=true
+  def files_for_update(fetcher)
+    all_files = fetcher.files
+    persisted = fetcher.files_to_persist
+    withheld = all_files.map(&:name) - persisted.map(&:name)
+    if withheld.any?
+      puts "=> withholding #{withheld.count} file(s) from the update phase " \
+           "at the fetch/update boundary: #{withheld.join(', ')}"
+    end
+    persisted
+  end
+
   def fetch_files(fetcher)
     if $repo_contents_path
       if $options[:cache_steps].include?("files") && Dir.exist?($repo_contents_path)
@@ -559,10 +575,10 @@ begin
           Dependabot::SharedHelpers.run_shell_command("git checkout #{$options[:commit]}")
         end
       end
-      fetcher.files
+      files_for_update(fetcher)
     else
       cached_dependency_files_read do
-        fetcher.files
+        files_for_update(fetcher)
       end
     end
   rescue Dependabot::RepoNotFound => e
