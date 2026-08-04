@@ -15,14 +15,11 @@ module Dependabot
       class LockfileUpdater
         extend T::Sig
 
-        INIT_SCRIPT_TASK_NAME = T.let("dependabotResolveAll", String)
-        GRADLE_JVMARGS_ATTEMPTS = T.let(
-          [
-            "-Xmx1536m -Dfile.encoding=UTF-8",
-            "-Xmx2048m -Dfile.encoding=UTF-8"
-          ].freeze,
-          T::Array[String]
-        )
+        INIT_SCRIPT_TASK_NAME = "dependabotResolveAll"
+        GRADLE_JVMARGS_ATTEMPTS = [
+          "-Xmx1536m -Dfile.encoding=UTF-8",
+          "-Xmx2048m -Dfile.encoding=UTF-8"
+        ].freeze
         sig do
           params(
             dependency_files: T::Array[Dependabot::DependencyFile],

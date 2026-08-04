@@ -29,8 +29,8 @@ module Dependabot
 
           # Properties files use `=`, `:` or whitespace as the key/value separator. Gradle always
           # writes `=`, but we parse all three so user-authored files are handled faithfully.
-          KEY_VALUE_REGEX = T.let(/\A(\s*)([^\s:=]+)(\s*[:=]\s*|\s+)(.*)\z/, Regexp)
-          COMMENT_REGEX = T.let(/\A\s*[#!]/, Regexp)
+          KEY_VALUE_REGEX = /\A(\s*)([^\s:=]+)(\s*[:=]\s*|\s+)(.*)\z/
+          COMMENT_REGEX = /\A\s*[#!]/
 
           sig { params(content: String).returns(PropertiesDocument) }
           def self.parse(content)

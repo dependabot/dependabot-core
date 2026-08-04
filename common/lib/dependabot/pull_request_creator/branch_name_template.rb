@@ -13,18 +13,9 @@ module Dependabot
 
       class Error < Dependabot::DependabotError; end
 
-      SOLO_PLACEHOLDERS = T.let(
-        %w(prefix package_manager directory target_branch dependency version name).freeze,
-        T::Array[String]
-      )
-      GROUP_PLACEHOLDERS = T.let(
-        %w(prefix package_manager directory target_branch group_name name).freeze,
-        T::Array[String]
-      )
-      MULTI_ECO_PLACEHOLDERS = T.let(
-        %w(prefix target_branch group_name name).freeze,
-        T::Array[String]
-      )
+      SOLO_PLACEHOLDERS = %w(prefix package_manager directory target_branch dependency version name).freeze
+      GROUP_PLACEHOLDERS = %w(prefix package_manager directory target_branch group_name name).freeze
+      MULTI_ECO_PLACEHOLDERS = %w(prefix target_branch group_name name).freeze
 
       # ---------------------------------------------------------------
       # 1. validate_template(template, strategy:)

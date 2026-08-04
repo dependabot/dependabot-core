@@ -11,10 +11,8 @@ module Dependabot
       # versions like "1.6.10+0", "1.6.10+1" where the build number orders new
       # builds of the same upstream version.
       # See: https://docs.julialang.org/en/v1/stdlib/Pkg/#Version-specifier-format
-      VERSION_PATTERN = T.let(
-        /^v?\d+(?:\.\d+)*(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/,
-        Regexp
-      )
+      VERSION_PATTERN =
+        /^v?\d+(?:\.\d+)*(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/
 
       sig { override.params(version: T.nilable(T.any(String, Integer, Gem::Version))).returns(T::Boolean) }
       def self.correct?(version)

@@ -16,7 +16,7 @@ module Dependabot
       class RegistryClient
         extend T::Sig
 
-        GITHUB_REPO = T.let("bazelbuild/bazel-central-registry", String)
+        GITHUB_REPO = "bazelbuild/bazel-central-registry"
         RAW_BASE = T.let("https://raw.githubusercontent.com/#{GITHUB_REPO}/main".freeze, String)
 
         sig { params(credentials: T::Array[Dependabot::Credential]).void }

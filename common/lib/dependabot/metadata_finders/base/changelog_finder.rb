@@ -62,10 +62,7 @@ module Dependabot
         require_relative "commits_finder"
 
         # Earlier entries are preferred
-        CHANGELOG_NAMES = T.let(
-          %w(changelog news changes history release whatsnew releases).freeze,
-          T::Array[String]
-        )
+        CHANGELOG_NAMES = %w(changelog news changes history release whatsnew releases).freeze
 
         sig { returns(T.nilable(Dependabot::Source)) }
         attr_reader :source
@@ -452,7 +449,7 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def previous_ref
           previous_refs = dependency.previous_requirements&.filter_map do |r|
-            r.dig(:source, "ref") || r.dig(:source, :ref)
+            r.source_string("ref")
           end&.uniq
           previous_refs.first if previous_refs&.one?
         end
@@ -460,7 +457,7 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def new_ref
           new_refs = dependency.requirements.filter_map do |r|
-            r.dig(:source, "ref") || r.dig(:source, :ref)
+            r.source_string("ref")
           end.uniq
           new_refs.first if new_refs.one?
         end
@@ -479,7 +476,7 @@ module Dependabot
           return false if dependency.package_manager == "composer"
 
           requirements = dependency.requirements
-          sources = requirements.map { |r| r.fetch(:source) }.uniq.compact
+          sources = requirements.map(&:source_hash).uniq.compact
           return false if sources.empty?
 
           sources.all? { |s| s[:type] == "git" || s["type"] == "git" }

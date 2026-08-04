@@ -12,25 +12,25 @@ module Dependabot
     class Requirement < Dependabot::Requirement
       extend T::Sig
 
-      AND_SEPARATOR = T.let(/(?<=[a-zA-Z0-9*])\s+(?:&+\s+)?(?!\s*[|-])/, Regexp)
-      OR_SEPARATOR = T.let(/(?<=[a-zA-Z0-9*])\s*\|+/, Regexp)
+      AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s+(?:&+\s+)?(?!\s*[|-])/
+      OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
 
-      NAME_AT_VERSION_SPLIT = T.let(/(?<=\w)@/, Regexp)
+      NAME_AT_VERSION_SPLIT = /(?<=\w)@/
 
       # Override the version pattern to allow a 'v' prefix
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
       version_pattern = "v?#{NpmAndYarn::Version::VERSION_PATTERN}"
 
       PATTERN_RAW = T.let("\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze, String)
-      PATTERN = T.let(/\A#{PATTERN_RAW}\z/, Regexp)
+      PATTERN = /\A#{PATTERN_RAW}\z/
 
       # Matches the JSR (jsr.io) registry prefix used by pnpm.
       # Short form: "jsr:^3.0.0" → "^3.0.0"
       # Long form:  "jsr:@scope/name@^3.0.0" → "^3.0.0"
-      JSR_PREFIX = T.let(/\Ajsr:(?:@?[^@]+@)?/, Regexp)
+      JSR_PREFIX = /\Ajsr:(?:@?[^@]+@)?/
 
       # The npm-compatible registry endpoint for JSR packages.
-      JSR_REGISTRY = T.let("https://npm.jsr.io", String)
+      JSR_REGISTRY = "https://npm.jsr.io"
 
       sig do
         params(

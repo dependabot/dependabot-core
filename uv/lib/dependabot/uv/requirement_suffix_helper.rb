@@ -8,13 +8,10 @@ module Dependabot
     module RequirementSuffixHelper
       extend T::Sig
 
-      REQUIREMENT_SUFFIX_REGEX = T.let(
-        Regexp.new(
-          "\\A(?<requirement>.*?)(?<suffix>\\s*(?:;|#).*)?\\z",
-          Regexp::MULTILINE
-        ).freeze,
-        Regexp
-      )
+      REQUIREMENT_SUFFIX_REGEX = Regexp.new(
+        "\\A(?<requirement>.*?)(?<suffix>\\s*(?:;|#).*)?\\z",
+        Regexp::MULTILINE
+      ).freeze
 
       sig { params(segment: String).returns(T::Array[String]) }
       def self.split(segment)

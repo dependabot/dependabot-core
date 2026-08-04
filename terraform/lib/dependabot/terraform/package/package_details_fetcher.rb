@@ -21,10 +21,7 @@ module Dependabot
         # https://registry.terraform.io/v2/providers/hashicorp/aws?include=provider-versions
         # https://registry.terraform.io/v2/modules/terraform-aws-modules/iam/aws?include=module-versions
 
-        ELIGIBLE_SOURCE_TYPES = T.let(
-          %w(git provider registry).freeze,
-          T::Array[String]
-        )
+        ELIGIBLE_SOURCE_TYPES = %w(git provider registry).freeze
 
         sig do
           params(
