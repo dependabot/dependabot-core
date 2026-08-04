@@ -17,7 +17,7 @@ module Dependabot
       extend T::Sig
 
       # RFC 3986 unreserved; others need encoding (explicit ASCII class avoids UTF-8 \w issues)
-      CHARS_REQUIRING_ENCODING = T.let(/[^A-Za-z0-9._~-]/, Regexp)
+      CHARS_REQUIRING_ENCODING = /[^A-Za-z0-9._~-]/
       private_constant :CHARS_REQUIRING_ENCODING
 
       sig { override.returns(T.nilable(String)) }

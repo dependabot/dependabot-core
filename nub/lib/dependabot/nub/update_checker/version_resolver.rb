@@ -37,10 +37,7 @@ module Dependabot
 
         # Manifest groups the candidate version is pinned into before re-resolving; includes
         # peerDependencies (unlike FileParser::DEPENDENCY_TYPES) so a peer-only dep is pinned too.
-        PINNABLE_DEPENDENCY_GROUPS = T.let(
-          %w(dependencies devDependencies optionalDependencies peerDependencies).freeze,
-          T::Array[String]
-        )
+        PINNABLE_DEPENDENCY_GROUPS = %w(dependencies devDependencies optionalDependencies peerDependencies).freeze
 
         # Error message returned by `npm install` (for NPM 6):
         # react-dom@15.2.0 requires a peer of react@^15.2.0 \

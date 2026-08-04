@@ -49,9 +49,9 @@ module Dependabot
           dependency_files:,
           credentials:
         )
-          @dependency = T.let(dependency, Dependabot::Dependency)
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @dependency = dependency
+          @dependency_files = dependency_files
+          @credentials = credentials
 
           @npm_details = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
           @dist_tags = T.let(nil, T.nilable(T::Hash[String, String]))
