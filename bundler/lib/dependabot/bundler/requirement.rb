@@ -11,7 +11,7 @@ module Dependabot
     class Requirement < Dependabot::Requirement
       extend T::Sig
 
-      GEM_DEP_SPLIT = T.let(/\A(?<name>[a-zA-Z0-9_\-]+):(?<version>.+)\z/, Regexp)
+      GEM_DEP_SPLIT = /\A(?<name>[a-zA-Z0-9_\-]+):(?<version>.+)\z/
 
       sig { params(req: Dependabot::DependencyRequirement, version: Gem::Version).returns(T::Boolean) }
       def self.satisfied_by?(req, version)

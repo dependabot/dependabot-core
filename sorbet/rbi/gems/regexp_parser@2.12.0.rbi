@@ -2636,7 +2636,7 @@ class Regexp::Syntax::Base
 end
 
 # pkg:gem/regexp_parser#lib/regexp_parser/syntax/versions.rb:10
-Regexp::Syntax::CURRENT = Regexp::Syntax::V3_2_0
+Regexp::Syntax::CURRENT = Regexp::Syntax::V4_0_0
 
 # pkg:gem/regexp_parser#lib/regexp_parser/syntax/version_lookup.rb:8
 class Regexp::Syntax::InvalidVersionNameError < ::Regexp::Syntax::SyntaxError
@@ -2934,7 +2934,7 @@ Regexp::Syntax::Token::PosixClass::Type = T.let(T.unsafe(nil), Symbol)
 
 # alias for symmetry between token symbol and Token module name
 #
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:764
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:809
 Regexp::Syntax::Token::Property = Regexp::Syntax::Token::UnicodeProperty
 
 # pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/quantifier.rb:5
@@ -2993,235 +2993,257 @@ Regexp::Syntax::Token::SubexpressionCall::Number = T.let(T.unsafe(nil), Array)
 Regexp::Syntax::Token::Types = T.let(T.unsafe(nil), Array)
 
 # pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:5
-module Regexp::Syntax::Token::UnicodeProperty; end
+module Regexp::Syntax::Token::UnicodeProperty
+  class << self
+    private
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:68
+    # pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:6
+    def all(name); end
+  end
+end
+
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:73
 Regexp::Syntax::Token::UnicodeProperty::Age = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:42
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:45
 Regexp::Syntax::Token::UnicodeProperty::Age_V1_9_3 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:46
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:49
 Regexp::Syntax::Token::UnicodeProperty::Age_V2_0_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:48
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:51
 Regexp::Syntax::Token::UnicodeProperty::Age_V2_2_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:50
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:53
 Regexp::Syntax::Token::UnicodeProperty::Age_V2_3_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:52
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:55
 Regexp::Syntax::Token::UnicodeProperty::Age_V2_4_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:54
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:57
 Regexp::Syntax::Token::UnicodeProperty::Age_V2_5_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:56
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:59
 Regexp::Syntax::Token::UnicodeProperty::Age_V2_6_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:58
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:61
 Regexp::Syntax::Token::UnicodeProperty::Age_V2_6_2 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:60
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:63
 Regexp::Syntax::Token::UnicodeProperty::Age_V2_6_3 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:62
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:65
 Regexp::Syntax::Token::UnicodeProperty::Age_V3_1_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:64
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:67
 Regexp::Syntax::Token::UnicodeProperty::Age_V3_2_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:66
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:69
 Regexp::Syntax::Token::UnicodeProperty::Age_V3_5_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:754
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:71
+Regexp::Syntax::Token::UnicodeProperty::Age_V4_0_0 = T.let(T.unsafe(nil), Array)
+
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:799
 Regexp::Syntax::Token::UnicodeProperty::All = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:15
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:18
 module Regexp::Syntax::Token::UnicodeProperty::Category; end
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:38
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:41
 Regexp::Syntax::Token::UnicodeProperty::Category::All = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:35
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:38
 Regexp::Syntax::Token::UnicodeProperty::Category::Codepoint = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:16
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:19
 Regexp::Syntax::Token::UnicodeProperty::Category::Letter = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:19
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:22
 Regexp::Syntax::Token::UnicodeProperty::Category::Mark = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:22
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:25
 Regexp::Syntax::Token::UnicodeProperty::Category::Number = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:25
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:28
 Regexp::Syntax::Token::UnicodeProperty::Category::Punctuation = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:32
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:35
 Regexp::Syntax::Token::UnicodeProperty::Category::Separator = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:29
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:32
 Regexp::Syntax::Token::UnicodeProperty::Category::Symbol = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:8
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:11
 Regexp::Syntax::Token::UnicodeProperty::CharType_V1_9_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:11
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:14
 Regexp::Syntax::Token::UnicodeProperty::CharType_V2_5_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:143
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:152
 Regexp::Syntax::Token::UnicodeProperty::Derived = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:70
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:75
 Regexp::Syntax::Token::UnicodeProperty::Derived_V1_9_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:124
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:129
 Regexp::Syntax::Token::UnicodeProperty::Derived_V2_0_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:129
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:134
 Regexp::Syntax::Token::UnicodeProperty::Derived_V2_4_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:133
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:138
 Regexp::Syntax::Token::UnicodeProperty::Derived_V2_5_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:137
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:142
 Regexp::Syntax::Token::UnicodeProperty::Derived_V3_5_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:738
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:148
+Regexp::Syntax::Token::UnicodeProperty::Derived_V4_0_0 = T.let(T.unsafe(nil), Array)
+
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:782
 Regexp::Syntax::Token::UnicodeProperty::Emoji = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:708
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:752
 Regexp::Syntax::Token::UnicodeProperty::Emoji_V2_5_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:716
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:760
 Regexp::Syntax::Token::UnicodeProperty::Emoji_V2_6_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:736
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:780
 Regexp::Syntax::Token::UnicodeProperty::Enumerated = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:720
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:764
 Regexp::Syntax::Token::UnicodeProperty::Enumerated_V2_4_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:757
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:802
 Regexp::Syntax::Token::UnicodeProperty::NonType = T.let(T.unsafe(nil), Symbol)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:13
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:16
 Regexp::Syntax::Token::UnicodeProperty::POSIX = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:342
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:365
 Regexp::Syntax::Token::UnicodeProperty::Script = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:145
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:154
 Regexp::Syntax::Token::UnicodeProperty::Script_V1_9_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:241
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:250
 Regexp::Syntax::Token::UnicodeProperty::Script_V1_9_3 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:247
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:256
 Regexp::Syntax::Token::UnicodeProperty::Script_V2_0_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:257
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:266
 Regexp::Syntax::Token::UnicodeProperty::Script_V2_2_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:283
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:292
 Regexp::Syntax::Token::UnicodeProperty::Script_V2_3_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:292
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:301
 Regexp::Syntax::Token::UnicodeProperty::Script_V2_4_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:301
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:310
 Regexp::Syntax::Token::UnicodeProperty::Script_V2_5_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:308
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:317
 Regexp::Syntax::Token::UnicodeProperty::Script_V2_6_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:318
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:327
 Regexp::Syntax::Token::UnicodeProperty::Script_V2_6_2 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:325
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:334
 Regexp::Syntax::Token::UnicodeProperty::Script_V3_1_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:332
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:341
 Regexp::Syntax::Token::UnicodeProperty::Script_V3_2_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:756
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:351
+Regexp::Syntax::Token::UnicodeProperty::Script_V4_0_0 = T.let(T.unsafe(nil), Array)
+
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:801
 Regexp::Syntax::Token::UnicodeProperty::Type = T.let(T.unsafe(nil), Symbol)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:706
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:750
 Regexp::Syntax::Token::UnicodeProperty::UnicodeBlock = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:344
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:367
 Regexp::Syntax::Token::UnicodeProperty::UnicodeBlock_V1_9_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:443
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:466
 Regexp::Syntax::Token::UnicodeProperty::UnicodeBlock_V2_0_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:571
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:594
 Regexp::Syntax::Token::UnicodeProperty::UnicodeBlock_V2_2_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:606
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:629
 Regexp::Syntax::Token::UnicodeProperty::UnicodeBlock_V2_3_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:619
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:642
 Regexp::Syntax::Token::UnicodeProperty::UnicodeBlock_V2_4_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:633
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:656
 Regexp::Syntax::Token::UnicodeProperty::UnicodeBlock_V2_5_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:643
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:666
 Regexp::Syntax::Token::UnicodeProperty::UnicodeBlock_V2_6_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:657
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:680
 Regexp::Syntax::Token::UnicodeProperty::UnicodeBlock_V2_6_2 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:669
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:692
 Regexp::Syntax::Token::UnicodeProperty::UnicodeBlock_V3_1_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:680
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:703
 Regexp::Syntax::Token::UnicodeProperty::UnicodeBlock_V3_2_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:702
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:725
 Regexp::Syntax::Token::UnicodeProperty::UnicodeBlock_V3_5_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:740
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:729
+Regexp::Syntax::Token::UnicodeProperty::UnicodeBlock_V4_0_0 = T.let(T.unsafe(nil), Array)
+
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:784
 Regexp::Syntax::Token::UnicodeProperty::V1_9_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:741
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:785
 Regexp::Syntax::Token::UnicodeProperty::V1_9_3 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:742
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:786
 Regexp::Syntax::Token::UnicodeProperty::V2_0_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:743
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:787
 Regexp::Syntax::Token::UnicodeProperty::V2_2_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:744
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:788
 Regexp::Syntax::Token::UnicodeProperty::V2_3_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:745
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:789
 Regexp::Syntax::Token::UnicodeProperty::V2_4_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:746
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:790
 Regexp::Syntax::Token::UnicodeProperty::V2_5_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:747
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:791
 Regexp::Syntax::Token::UnicodeProperty::V2_6_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:748
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:792
 Regexp::Syntax::Token::UnicodeProperty::V2_6_2 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:749
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:793
 Regexp::Syntax::Token::UnicodeProperty::V2_6_3 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:750
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:794
 Regexp::Syntax::Token::UnicodeProperty::V3_1_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:751
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:795
 Regexp::Syntax::Token::UnicodeProperty::V3_2_0 = T.let(T.unsafe(nil), Array)
 
-# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:752
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:796
 Regexp::Syntax::Token::UnicodeProperty::V3_5_0 = T.let(T.unsafe(nil), Array)
+
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/token/unicode_property.rb:797
+Regexp::Syntax::Token::UnicodeProperty::V4_0_0 = T.let(T.unsafe(nil), Array)
 
 # pkg:gem/regexp_parser#lib/regexp_parser/syntax/version_lookup.rb:14
 class Regexp::Syntax::UnknownSyntaxNameError < ::Regexp::Syntax::SyntaxError
@@ -3273,6 +3295,9 @@ class Regexp::Syntax::V3_2_0 < ::Regexp::Syntax::V3_1_0; end
 
 # pkg:gem/regexp_parser#lib/regexp_parser/syntax/versions/3.5.0.rb:1
 class Regexp::Syntax::V3_5_0 < ::Regexp::Syntax::V3_2_0; end
+
+# pkg:gem/regexp_parser#lib/regexp_parser/syntax/versions/4.0.0.rb:1
+class Regexp::Syntax::V4_0_0 < ::Regexp::Syntax::V3_5_0; end
 
 # pkg:gem/regexp_parser#lib/regexp_parser/syntax/version_lookup.rb:6
 Regexp::Syntax::VERSION_CONST_REGEXP = T.let(T.unsafe(nil), Regexp)

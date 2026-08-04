@@ -62,10 +62,7 @@ module Dependabot
         require_relative "commits_finder"
 
         # Earlier entries are preferred
-        CHANGELOG_NAMES = T.let(
-          %w(changelog news changes history release whatsnew releases).freeze,
-          T::Array[String]
-        )
+        CHANGELOG_NAMES = %w(changelog news changes history release whatsnew releases).freeze
 
         sig { returns(T.nilable(Dependabot::Source)) }
         attr_reader :source

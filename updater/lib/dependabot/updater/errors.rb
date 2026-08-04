@@ -16,7 +16,7 @@ module Dependabot
       def initialize(message, sentry_context:)
         super(message)
 
-        @sentry_context = T.let(sentry_context, T::Hash[Symbol, T.anything])
+        @sentry_context = sentry_context
       end
     end
   end

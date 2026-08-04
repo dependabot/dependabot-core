@@ -26,7 +26,7 @@ module Dependabot
             T::Array[Dependabot::DependencyRequirement]
           )
           @xcode_mode = xcode_mode
-          @target_commit_sha = T.let(target_commit_sha, T.nilable(String))
+          @target_commit_sha = target_commit_sha
 
           return unless target_version && Version.correct?(target_version)
 

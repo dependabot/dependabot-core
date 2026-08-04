@@ -17,8 +17,8 @@ module Dependabot
         extend T::Sig
 
         # URL extraction patterns
-        GENERIC_URL_REGEX = T.let(%r{(https?://[^\s"']+)}, Regexp)
-        NETWORK_ERROR_HOST_REGEX = T.let(/E(?:NOTFOUND|TIMEDOUT)\s+(\S+)/i, Regexp)
+        GENERIC_URL_REGEX = %r{(https?://[^\s"']+)}
+        NETWORK_ERROR_HOST_REGEX = /E(?:NOTFOUND|TIMEDOUT)\s+(\S+)/i
 
         FALLBACK_SOURCE = "a private registry"
 

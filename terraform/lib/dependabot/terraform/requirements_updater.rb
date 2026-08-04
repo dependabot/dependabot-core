@@ -124,7 +124,8 @@ module Dependabot
         return req if ruby_req.satisfied_by?(latest)
 
         new_req =
-          if ruby_req.exact? then latest.to_s
+          if ruby_req.exact?
+            latest.to_s
           elsif string_req.start_with?("~>")
             update_twiddle_version(string_req).to_s
           else

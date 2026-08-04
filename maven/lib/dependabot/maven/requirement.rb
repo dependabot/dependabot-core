@@ -15,9 +15,9 @@ module Dependabot
 
       quoted = OPS.keys.map { |k| Regexp.quote k }.join("|")
       PATTERN_RAW = T.let("\\s*(#{quoted})?\\s*(#{Maven::Version::VERSION_PATTERN})\\s*".freeze, String)
-      PATTERN = T.let(/\A#{PATTERN_RAW}\z/, Regexp)
+      PATTERN = /\A#{PATTERN_RAW}\z/
       # Like PATTERN, but the leading operator is required
-      RUBY_STYLE_PATTERN = T.let(/\A\s*(#{quoted})\s*(#{Maven::Version::VERSION_PATTERN})\s*\z/, Regexp)
+      RUBY_STYLE_PATTERN = /\A\s*(#{quoted})\s*(#{Maven::Version::VERSION_PATTERN})\s*\z/
 
       sig { override.returns(Regexp) }
       def self.pattern

@@ -166,7 +166,7 @@ RSpec/RepeatedExampleGroupBody:
     - "cargo/spec/dependabot/cargo/file_fetcher_spec.rb"
     - "composer/spec/dependabot/composer/update_checker/latest_version_finder_spec.rb"
     - "maven/spec/dependabot/maven_spec.rb"
-    - "pub/spec/dependabot/pub/requirements_spec.rb"
+    - "pub/spec/dependabot/pub/requirement_spec.rb"
 
 # Offense count: 106
 RSpec/RepeatedExampleGroupDescription:

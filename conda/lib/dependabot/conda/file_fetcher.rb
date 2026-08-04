@@ -11,17 +11,14 @@ module Dependabot
     class FileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig
 
-      ENVIRONMENT_FILE_NAMES = T.let(
-        %w(
-          environment.yml
-          environment.yaml
-        ).freeze,
-        T::Array[String]
-      )
+      ENVIRONMENT_FILE_NAMES = %w(
+        environment.yml
+        environment.yaml
+      ).freeze
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
-        filenames.any? { |filename| ENVIRONMENT_FILE_NAMES.include?(filename) }
+        filenames.intersect?(ENVIRONMENT_FILE_NAMES)
       end
 
       sig { override.returns(String) }

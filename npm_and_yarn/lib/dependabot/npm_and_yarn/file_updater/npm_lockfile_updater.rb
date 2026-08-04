@@ -39,7 +39,7 @@ module Dependabot
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
-          @security_updates_only = T.let(security_updates_only, T::Boolean)
+          @security_updates_only = security_updates_only
         end
 
         sig { returns(Dependabot::DependencyFile) }
