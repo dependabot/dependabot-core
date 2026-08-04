@@ -1046,6 +1046,84 @@ RSpec.describe Dependabot::Uv::FileParser do
         )
       end
     end
+
+    context "with an editable path dependency that is not a workspace member" do
+      let(:files) { [pyproject, editable_path_pyproject] }
+      let(:parsed_files) { [] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: <<~TOML
+            [project]
+            name = "service-c"
+            version = "0.1.0"
+            dependencies = [
+              "click>=8.4.1",
+              "pkg-b",
+            ]
+
+            [tool.uv.sources]
+            pkg-b = { path = "../../packages/b", editable = true }
+          TOML
+        )
+      end
+      let(:editable_path_pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "../../packages/b/pyproject.toml",
+          support_file: true,
+          content: <<~TOML
+            [project]
+            name = "pkg-b"
+            version = "0.1.0"
+            dependencies = [
+              "click>=8.4.1",
+            ]
+          TOML
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess) do |function:, args:, **|
+          raise "Unexpected helper function: #{function}" unless function == "parse_pep621_pep735_dependencies"
+
+          pyproject_path = args.first
+          parsed_files << pyproject_path
+
+          raise "Unexpected pyproject path: #{pyproject_path}" unless pyproject_path == "pyproject.toml"
+
+          [
+            {
+              "name" => "click",
+              "version" => nil,
+              "markers" => nil,
+              "file" => "pyproject.toml",
+              "requirement" => ">=8.4.1",
+              "extras" => [],
+              "requirement_type" => nil
+            }
+          ]
+        end
+      end
+
+      it "does not parse the editable package's manifest" do
+        dependencies
+
+        expect(parsed_files).to contain_exactly("pyproject.toml")
+      end
+
+      it "only records click's requirement from the consumer manifest" do
+        dependency = dependencies.find { |dep| dep.name == "click" }
+
+        expect(dependency&.requirements).to eq(
+          [{
+            requirement: ">=8.4.1",
+            file: "pyproject.toml",
+            groups: [],
+            source: nil
+          }]
+        )
+      end
+    end
   end
 
   describe "#run_in_parsed_context" do

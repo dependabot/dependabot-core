@@ -109,7 +109,35 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         def workspace_member_pyproject_files
-          dependency_files.select { |file| file.support_file? && file.name.end_with?("pyproject.toml") }
+          return [] if workspace_member_patterns.empty?
+
+          dependency_files.select do |file|
+            next false unless file.support_file? && file.name.end_with?("pyproject.toml")
+
+            workspace_member_file?(file)
+          end
+        end
+
+        # Only pyprojects declared under `[tool.uv.workspace].members` in the root
+        # manifest are true workspace members whose requirements should be updated.
+        # Editable `[tool.uv.sources]` path dependencies are separate packages that
+        # are fetched as support files for resolution but must not be modified.
+        sig { returns(T::Array[String]) }
+        def workspace_member_patterns
+          return [] unless pyproject
+
+          members = parsed_pyproject.dig("tool", "uv", "workspace", "members")
+          members.is_a?(Array) ? members.grep(String) : []
+        end
+
+        sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
+        def workspace_member_file?(file)
+          member_dir = File.dirname(file.name)
+
+          workspace_member_patterns.any? do |pattern|
+            normalized_pattern = pattern.gsub(%r{^\./}, "").chomp("/")
+            File.fnmatch?(normalized_pattern, member_dir, File::FNM_PATHNAME)
+          end
         end
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
