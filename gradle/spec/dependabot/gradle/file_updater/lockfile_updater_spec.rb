@@ -838,8 +838,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
 
         lockfile_updater.update_lockfiles(root_buildfile)
 
-        expect(observed_init_script).to match(/projectsEvaluated \{/)
-        expect(observed_init_script).to match(/configurations\.findAll/)
+        expect(observed_init_script).to include("projectsEvaluated {")
+        expect(observed_init_script).to include("configurations.findAll")
         expect(observed_init_script).to include("it.resolutionStrategy.dependencyLockingEnabled")
         expect(observed_init_script).to include("it.allDependencies.any")
         expect(observed_init_script).to include("dependency instanceof org.gradle.api.artifacts.ModuleDependency")
