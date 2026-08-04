@@ -74,7 +74,7 @@ module Dependabot
 
       # Julia hyphen ranges require whitespace around the hyphen ("1.2 - 3.4");
       # without spaces the hyphen introduces a prerelease tag instead.
-      HYPHEN_RANGE_PATTERN = T.let(/^(\d+(?:\.\d+)*)\s+-\s+(\d+(?:\.\d+)*)$/, Regexp)
+      HYPHEN_RANGE_PATTERN = /^(\d+(?:\.\d+)*)\s+-\s+(\d+(?:\.\d+)*)$/
 
       sig { params(constraint: String).returns(T::Array[String]) }
       def self.normalize_julia_constraint(constraint)

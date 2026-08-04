@@ -17,7 +17,7 @@ module Dependabot
       class XcodeLockfileUpdater
         extend T::Sig
 
-        SUPPORTED_VERSIONS = T.let([1, 2, 3].freeze, T::Array[Integer])
+        SUPPORTED_VERSIONS = [1, 2, 3].freeze
 
         # Maps schema version to the JSON keys used for each pin field
         PIN_KEYS = T.let(

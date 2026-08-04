@@ -66,6 +66,12 @@ RSpec.describe Dependabot::DependencyRequirement do
       expect(minimal.metadata).to be_nil
     end
 
+    it "returns string source names" do
+      req = described_class.create(requirement: ">= 1.0", file: "pyproject.toml", groups: [], source: "internal")
+
+      expect(req.source).to eq("internal")
+    end
+
     it "returns nil groups without raising when the entry has groups: nil" do
       req = described_class.create(requirement: ">= 1.0", file: "Gemfile", groups: nil, source: nil)
 
@@ -107,9 +113,9 @@ RSpec.describe Dependabot::DependencyRequirement do
       malformed_metadata = described_class.create(requirement_hash.merge(metadata: "rails.version"))
 
       expect { malformed_source.source }
-        .to raise_error(TypeError, "source must be a hash with string or symbol keys, or nil")
+        .to raise_error(TypeError, "source must be a string or hash with string or symbol keys, or nil")
       expect { malformed_source_key.source }
-        .to raise_error(TypeError, "source must be a hash with string or symbol keys, or nil")
+        .to raise_error(TypeError, "source must be a string or hash with string or symbol keys, or nil")
       expect { malformed_metadata.metadata }
         .to raise_error(TypeError, "metadata must be a hash with string or symbol keys, or nil")
     end
@@ -117,9 +123,149 @@ RSpec.describe Dependabot::DependencyRequirement do
     it "returns the mutable source and metadata hashes" do
       requirement.source[:mirror] = "https://example.com"
       requirement.metadata[:property_name] = "rack.version"
-
       expect(requirement.dig(:source, :mirror)).to eq("https://example.com")
       expect(requirement.dig(:metadata, :property_name)).to eq("rack.version")
+    end
+  end
+
+  describe "source helpers" do
+    it "reads symbol-keyed source fields" do
+      req = described_class.create(requirement_hash)
+
+      expect(req.source_hash).to eq(type: "rubygems", url: "https://rubygems.org")
+      expect(req.source_string("type")).to eq("rubygems")
+      expect(req.source_string("url")).to eq("https://rubygems.org")
+    end
+
+    it "reads string-keyed source fields" do
+      req = described_class.create(
+        requirement_hash.merge(source: { "type" => "git", "ref" => "main" })
+      )
+
+      expect(req.source_string("type")).to eq("git")
+      expect(req.source_string("ref")).to eq("main")
+    end
+
+    it "returns nil for absent source fields" do
+      req = described_class.create(requirement_hash)
+
+      expect(req.source_string("ref")).to be_nil
+    end
+
+    it "returns nil when the requirement has no source" do
+      req = described_class.create(requirement_hash.merge(source: nil))
+
+      expect(req.source_hash).to be_nil
+      expect(req.source_string("type")).to be_nil
+    end
+
+    it "returns nil when the source is a registry name string" do
+      req = described_class.create(requirement_hash.merge(source: "internal"))
+
+      expect(req.source_hash).to be_nil
+      expect(req.source_string("type")).to be_nil
+    end
+
+    it "rejects a non-string value under a known source key" do
+      req = described_class.create(requirement_hash.merge(source: { type: 1 }))
+
+      expect { req.source_string("type") }
+        .to raise_error(TypeError, "source type must be a string or nil")
+    end
+
+    it "rejects a malformed source container" do
+      req = described_class.create(requirement_hash.merge(source: []))
+
+      expect { req.source_hash }
+        .to raise_error(TypeError, "source must be a string or hash with string or symbol keys, or nil")
+    end
+  end
+
+  describe "#requirement_string" do
+    it "returns a string requirement" do
+      req = described_class.create(requirement_hash)
+
+      expect(req.requirement_string).to eq(">= 1.0, < 2.0")
+    end
+
+    it "returns nil when the requirement is absent" do
+      req = described_class.create(requirement_hash.merge(requirement: nil))
+
+      expect(req.requirement_string).to be_nil
+    end
+
+    it "rejects the unfixable sentinel" do
+      req = described_class.create(requirement_hash.merge(requirement: :unfixable))
+
+      expect { req.requirement_string }
+        .to raise_error(TypeError, "requirement must be a string or nil")
+    end
+  end
+
+  describe "metadata helpers" do
+    it "reads a symbol-keyed metadata string" do
+      req = described_class.create(requirement_hash)
+
+      expect(req.metadata_string("property_name")).to eq("rails.version")
+    end
+
+    it "reads a string-keyed metadata string" do
+      req = described_class.create(
+        requirement_hash.merge(metadata: { "property_name" => "rails.version" })
+      )
+
+      expect(req.metadata_string("property_name")).to eq("rails.version")
+    end
+
+    it "returns nil when the metadata key is absent" do
+      req = described_class.create(requirement_hash)
+
+      expect(req.metadata_string("dependency_set")).to be_nil
+    end
+
+    it "returns nil when the requirement has no metadata" do
+      req = described_class.create(requirement_hash.merge(metadata: nil))
+
+      expect(req.metadata_string("property_name")).to be_nil
+      expect(req.metadata_string_hash("dependency_set")).to be_nil
+    end
+
+    it "rejects a non-string metadata value" do
+      req = described_class.create(requirement_hash.merge(metadata: { property_name: 1 }))
+
+      expect { req.metadata_string("property_name") }
+        .to raise_error(TypeError, "metadata property_name must be a string or nil")
+    end
+
+    it "reads a metadata hash of strings" do
+      req = described_class.create(
+        requirement_hash.merge(metadata: { dependency_set: { group: "my.group", version: "1.4.0" } })
+      )
+
+      expect(req.metadata_string_hash("dependency_set"))
+        .to eq(group: "my.group", version: "1.4.0")
+    end
+
+    it "symbolises string keys in a metadata hash" do
+      req = described_class.create(
+        requirement_hash.merge(metadata: { dependency_set: { "group" => "my.group" } })
+      )
+
+      expect(req.metadata_string_hash("dependency_set")).to eq(group: "my.group")
+    end
+
+    it "rejects a metadata hash that is not a hash" do
+      req = described_class.create(requirement_hash.merge(metadata: { dependency_set: "nope" }))
+
+      expect { req.metadata_string_hash("dependency_set") }
+        .to raise_error(TypeError, "metadata dependency_set must be a hash of strings or nil")
+    end
+
+    it "rejects a non-string value inside a metadata hash" do
+      req = described_class.create(requirement_hash.merge(metadata: { dependency_set: { group: 1 } }))
+
+      expect { req.metadata_string_hash("dependency_set") }
+        .to raise_error(TypeError, "metadata dependency_set must be a hash of strings or nil")
     end
   end
 

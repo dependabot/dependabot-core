@@ -63,9 +63,9 @@ module Dependabot
 
       sig { params(service: Service, job: Job, operation_name: String).void }
       def initialize(service:, job:, operation_name: "unknown")
-        @service = T.let(service, Service)
-        @job = T.let(job, Job)
-        @operation_name = T.let(operation_name, String)
+        @service = service
+        @job = job
+        @operation_name = operation_name
       end
 
       # This method handles errors where there is a dependency in the current

@@ -36,6 +36,7 @@ module Dependabot
     Group = T.type_alias { T.any(String, Symbol) }
     ObjectHash = T.type_alias { T::Hash[T.any(Symbol, String), Object] }
     Requirement = T.type_alias { T.any(String, Symbol) }
+    Source = T.type_alias { T.any(String, ObjectHash) }
     Input = T.type_alias { T.any(DependencyRequirement, ObjectHash) }
 
     K = type_member { { fixed: Symbol } }
@@ -98,9 +99,13 @@ module Dependabot
     # { type: "git", url: "https://github.com/..." }. Keys may be symbols
     # or strings depending on whether the requirement was built by a file
     # parser or deserialised from a job definition.
-    sig { returns(T.nilable(ObjectHash)) }
+    sig { returns(T.nilable(Source)) }
     def source
-      optional_object_hash(:source)
+      value = T.cast(self[:source], T.nilable(Object))
+      return if value.nil?
+      return value if value.is_a?(String)
+
+      object_hash(value, :source)
     end
 
     # Optional ecosystem-specific metadata about the requirement, e.g.
@@ -110,7 +115,88 @@ module Dependabot
       optional_object_hash(:metadata)
     end
 
+    # The source as a hash, or nil when the requirement has no source or
+    # names a registry as a bare string (e.g. Python's "internal" index).
+    sig { returns(T.nilable(ObjectHash)) }
+    def source_hash
+      value = source
+      return if value.nil? || value.is_a?(String)
+
+      value
+    end
+
+    # Reads a known source field such as "type", "ref", "url", or "digest".
+    # Accepts either key style because file parsers emit symbols while
+    # deserialised job definitions emit strings. Returns nil when the source
+    # is absent or a bare registry name.
+    sig { params(key: String).returns(T.nilable(String)) }
+    def source_string(key)
+      details = source_hash
+      return if details.nil?
+
+      value = details[key.to_sym] || details[key]
+      return if value.nil?
+      return value if value.is_a?(String)
+
+      raise TypeError, "source #{key} must be a string or nil"
+    end
+
+    # The requirement as a plain string. Nil when the requirement is absent,
+    # and a TypeError for the `:unfixable` sentinel, which callers that build
+    # manifest content cannot render.
+    sig { returns(T.nilable(String)) }
+    def requirement_string
+      value = requirement
+      return if value.nil?
+      return value if value.is_a?(String)
+
+      raise TypeError, "requirement must be a string or nil"
+    end
+
+    # Reads a known metadata field such as "property_name". Accepts either key
+    # style for the same reason as `source_string`. Returns nil when the
+    # requirement carries no metadata or the key is absent.
+    sig { params(key: String).returns(T.nilable(String)) }
+    def metadata_string(key)
+      value = metadata_value(key)
+      return if value.nil?
+      return value if value.is_a?(String)
+
+      raise TypeError, "metadata #{key} must be a string or nil"
+    end
+
+    # Reads a nested metadata hash whose values are all strings, such as
+    # "dependency_set" (`{ group: "my.group", version: "1.4.0" }`). Keys are
+    # symbolised so callers can read them with symbols regardless of how the
+    # requirement was built.
+    sig { params(key: String).returns(T.nilable(T::Hash[Symbol, String])) }
+    def metadata_string_hash(key)
+      value = metadata_value(key)
+      return if value.nil?
+      raise TypeError, "metadata #{key} must be a hash of strings or nil" unless value.is_a?(Hash)
+
+      value.to_h do |raw_entry_key, raw_entry_value|
+        entry_key = T.cast(raw_entry_key, Object)
+        entry_value = T.cast(raw_entry_value, Object)
+        unless (entry_key.is_a?(Symbol) || entry_key.is_a?(String)) && entry_value.is_a?(String)
+          raise TypeError, "metadata #{key} must be a hash of strings or nil"
+        end
+
+        [entry_key.to_sym, entry_value]
+      end
+    end
+
     private
+
+    # Reads a raw metadata field, accepting either key style. Nil when the
+    # requirement carries no metadata or the key is absent.
+    sig { params(key: String).returns(T.nilable(Object)) }
+    def metadata_value(key)
+      details = metadata
+      return if details.nil?
+
+      details[key.to_sym] || details[key]
+    end
 
     sig { params(key: Symbol).returns(T.nilable(String)) }
     def optional_string(key)
@@ -125,15 +211,29 @@ module Dependabot
     def optional_object_hash(key)
       value = T.cast(self[key], T.nilable(Object))
       return if value.nil?
-      raise TypeError, "#{key} must be a hash with string or symbol keys, or nil" unless value.is_a?(Hash)
+
+      object_hash(value, key)
+    end
+
+    sig { params(value: Object, key: Symbol).returns(ObjectHash) }
+    def object_hash(value, key)
+      message = object_hash_message(key)
+      raise TypeError, "#{key} must be #{message}" unless value.is_a?(Hash)
 
       value.each_key do |raw_nested_key|
         nested_key = T.cast(raw_nested_key, Object)
         next if nested_key.is_a?(String) || nested_key.is_a?(Symbol)
 
-        raise TypeError, "#{key} must be a hash with string or symbol keys, or nil"
+        raise TypeError, "#{key} must be #{message}"
       end
       value
+    end
+
+    sig { params(key: Symbol).returns(String) }
+    def object_hash_message(key)
+      return "a string or hash with string or symbol keys, or nil" if key == :source
+
+      "a hash with string or symbol keys, or nil"
     end
   end
 end

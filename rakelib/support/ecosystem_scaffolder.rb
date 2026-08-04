@@ -11,10 +11,10 @@ class EcosystemScaffolder
 
   sig { params(name: String, overwrite_mode: String).void }
   def initialize(name, overwrite_mode = "ask")
-    @ecosystem_name = T.let(name, String)
+    @ecosystem_name = name
     @ecosystem_module = T.let(name.split("_").map(&:capitalize).join, String)
     @template_dir = T.let(File.expand_path("ecosystem_templates", __dir__), String)
-    @initial_overwrite_mode = T.let(overwrite_mode, String)
+    @initial_overwrite_mode = overwrite_mode
   end
 
   sig { void }

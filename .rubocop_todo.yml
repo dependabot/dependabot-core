@@ -166,7 +166,7 @@ RSpec/RepeatedExampleGroupBody:
     - "cargo/spec/dependabot/cargo/file_fetcher_spec.rb"
     - "composer/spec/dependabot/composer/update_checker/latest_version_finder_spec.rb"
     - "maven/spec/dependabot/maven_spec.rb"
-    - "pub/spec/dependabot/pub/requirements_spec.rb"
+    - "pub/spec/dependabot/pub/requirement_spec.rb"
 
 # Offense count: 106
 RSpec/RepeatedExampleGroupDescription:
@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 1054
+# Offense count: 991
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bun/lib/dependabot/bun.rb"
@@ -249,7 +249,6 @@ Sorbet/ForbidTUntyped:
     - "bun/lib/dependabot/bun/file_parser.rb"
     - "bun/lib/dependabot/bun/file_parser/bun_lock.rb"
     - "bun/lib/dependabot/bun/file_parser/lockfile_parser.rb"
-    - "bun/lib/dependabot/bun/file_updater/package_json_updater.rb"
     - "bun/lib/dependabot/bun/metadata_finder.rb"
     - "bun/lib/dependabot/bun/package/package_details_fetcher.rb"
     - "bun/lib/dependabot/bun/package/registry_finder.rb"
@@ -259,7 +258,6 @@ Sorbet/ForbidTUntyped:
     - "bun/lib/dependabot/bun/update_checker.rb"
     - "bun/lib/dependabot/bun/update_checker/latest_version_finder.rb"
     - "bun/lib/dependabot/bun/update_checker/library_detector.rb"
-    - "bun/lib/dependabot/bun/update_checker/requirements_updater.rb"
     - "bun/lib/dependabot/bun/update_checker/version_resolver.rb"
     - "bun/lib/dependabot/bun/update_checker/vulnerability_auditor.rb"
     - "bun/lib/dependabot/bun/version_selector.rb"
@@ -275,7 +273,6 @@ Sorbet/ForbidTUntyped:
     - "bundler/lib/dependabot/bundler/update_checker/force_updater.rb"
     - "bundler/lib/dependabot/bundler/update_checker/latest_version_finder.rb"
     - "bundler/lib/dependabot/bundler/update_checker/latest_version_finder/dependency_source.rb"
-    - "bundler/lib/dependabot/bundler/update_checker/requirements_updater.rb"
     - "bundler/lib/dependabot/bundler/update_checker/shared_bundler_helpers.rb"
     - "bundler/lib/dependabot/bundler/update_checker/version_resolver.rb"
     - "common/lib/dependabot/clients/azure.rb"
@@ -284,7 +281,6 @@ Sorbet/ForbidTUntyped:
     - "common/lib/dependabot/clients/codecommit.rb"
     - "common/lib/dependabot/clients/github_with_retries.rb"
     - "common/lib/dependabot/clients/gitlab_with_retries.rb"
-    - "common/lib/dependabot/dependency.rb"
     - "common/lib/dependabot/file_fetchers/base.rb"
     - "common/lib/dependabot/metadata_finders/base/changelog_finder.rb"
     - "common/lib/dependabot/pull_request_creator/github.rb"
@@ -353,7 +349,6 @@ Sorbet/ForbidTUntyped:
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/latest_version_finder.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/library_detector.rb"
-    - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/requirements_updater.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/version_resolver.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/vulnerability_auditor.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/version_selector.rb"

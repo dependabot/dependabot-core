@@ -15,12 +15,9 @@ module Dependabot
       require_relative "file_updater/property_value_updater"
 
       # Regex matching scalaVersion declarations in all supported SBT syntaxes
-      SCALA_VERSION_DECL = T.let(
-        "(?:ThisBuild\\s*/\\s*)?" \
-        "(?:scalaVersion\\s+in\\s+ThisBuild|scalaVersion)" \
-        '\\s*:=\\s*"',
-        String
-      )
+      SCALA_VERSION_DECL = "(?:ThisBuild\\s*/\\s*)?" \
+                           "(?:scalaVersion\\s+in\\s+ThisBuild|scalaVersion)" \
+                           '\\s*:=\\s*"'
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
