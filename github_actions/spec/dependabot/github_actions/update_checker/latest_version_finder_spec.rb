@@ -261,11 +261,52 @@ RSpec.describe namespace::LatestVersionFinder do
         end
       end
 
-      it "returns the tag hash for the selected cooled-down release" do
+      it "keeps the major-only precision instead of rewriting to a full version" do
         expect(latest_version_tag_respecting_cooldown).to include(
-          tag: "v2.7.0",
-          commit_sha: "ee0669bd1cc54295c223e0bb666b733df41de1c5",
-          version: Dependabot::GithubActions::Version.new("2.7.0")
+          tag: "v2",
+          version: Dependabot::GithubActions::Version.new("2")
+        )
+      end
+    end
+
+    context "when cooldown filters out every major tag above the pinned one" do
+      let(:dependency_name) { "actions/checkout" }
+      let(:upload_pack_fixture) { "checkout" }
+      let(:reference) { "v2" }
+      let(:dependency_version) { "2" }
+      let(:dependency_source) do
+        {
+          type: "git",
+          url: "https://github.com/actions/checkout",
+          ref: "v2",
+          branch: nil
+        }
+      end
+      let(:finder) do
+        described_class.new(
+          dependency: dependency,
+          dependency_files: [],
+          credentials: github_credentials,
+          security_advisories: security_advisories,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: raise_on_ignored,
+          cooldown_options: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+        )
+      end
+
+      before do
+        allow(finder).to receive(:select_version_tags_in_cooldown_period) do |tags_with_dates|
+          tags_with_dates.filter_map do |tag|
+            tag_name = tag.is_a?(Hash) ? tag.fetch(:tag) : tag.tag
+            tag_name unless tag_name == "v1"
+          end
+        end
+      end
+
+      it "does not downgrade to an older major tag" do
+        expect(latest_version_tag_respecting_cooldown).to include(
+          tag: "v2",
+          version: Dependabot::GithubActions::Version.new("2")
         )
       end
     end
