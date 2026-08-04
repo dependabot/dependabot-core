@@ -719,7 +719,7 @@ module Dependabot
         def create_or_update_lock_file?
           return true if lockfile && T.must(dependency).requirements.empty?
 
-          T.must(dependency).requirements.select { _1[:file].end_with?(*REQUIRED_FILES) }.any?
+          T.must(dependency).requirements.any? { _1[:file].end_with?(*REQUIRED_FILES) }
         end
 
         sig { returns(T::Hash[String, String]) }

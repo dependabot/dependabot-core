@@ -18,7 +18,7 @@ module Dependabot
 
     sig { params(fetched_files: Dependabot::FetchedFiles).void }
     def initialize(fetched_files)
-      @fetched_files = T.let(fetched_files, Dependabot::FetchedFiles)
+      @fetched_files = fetched_files
     end
 
     sig { override.void }

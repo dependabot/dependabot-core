@@ -14,8 +14,8 @@ module Dependabot
 
         sig { params(mixfile: Dependabot::DependencyFile, dependencies: T::Array[Dependabot::Dependency]).void }
         def initialize(mixfile:, dependencies:)
-          @mixfile = T.let(mixfile, Dependabot::DependencyFile)
-          @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
+          @mixfile = mixfile
+          @dependencies = dependencies
         end
 
         sig { returns(String) }

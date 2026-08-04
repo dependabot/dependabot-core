@@ -73,7 +73,7 @@ module Dependabot
 
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
         def initialize(dependency_files:)
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
+          @dependency_files = dependency_files
           @properties = T.let({}, T::Hash[String, T::Hash[String, T::Hash[Symbol, String]]])
           @top_level_buildfile = T.let(nil, T.nilable(Dependabot::DependencyFile))
         end

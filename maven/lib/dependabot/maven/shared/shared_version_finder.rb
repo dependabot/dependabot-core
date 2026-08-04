@@ -52,10 +52,7 @@ module Dependabot
         # - Only hexadecimal characters (0-9, a-f)
         # - Case-insensitive
         # - At least one letter a-f to avoid purely numeric strings
-        GIT_COMMIT = T.let(
-          /\A(?=[0-9a-f]{#{MIN_GIT_SHA_LENGTH},#{MAX_GIT_SHA_LENGTH}}\z)(?=.*[a-f])/i,
-          Regexp
-        )
+        GIT_COMMIT = /\A(?=[0-9a-f]{#{MIN_GIT_SHA_LENGTH},#{MAX_GIT_SHA_LENGTH}}\z)(?=.*[a-f])/i
 
         sig { params(comparison_version: Dependabot::Version).returns(T::Boolean) }
         def matches_dependency_version_type?(comparison_version)

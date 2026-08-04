@@ -52,24 +52,18 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
-      MANIFEST_LIST_TYPES = T.let(
-        [
-          "application/vnd.docker.distribution.manifest.list.v2+json",
-          "application/vnd.oci.image.index.v1+json"
-        ].freeze,
-        T::Array[String]
-      )
+      MANIFEST_LIST_TYPES = [
+        "application/vnd.docker.distribution.manifest.list.v2+json",
+        "application/vnd.oci.image.index.v1+json"
+      ].freeze
 
       # Media types returned for single-platform (non manifest-list) images.
       # Used to cheaply rule out manifest-list comparison via a HEAD request's
       # negotiated Content-Type, avoiding a full manifest GET for these images.
-      SINGLE_PLATFORM_MANIFEST_TYPES = T.let(
-        [
-          "application/vnd.docker.distribution.manifest.v2+json",
-          "application/vnd.oci.image.manifest.v1+json"
-        ].freeze,
-        T::Array[String]
-      )
+      SINGLE_PLATFORM_MANIFEST_TYPES = [
+        "application/vnd.docker.distribution.manifest.v2+json",
+        "application/vnd.oci.image.manifest.v1+json"
+      ].freeze
 
       # Tolerance window for platform timestamp comparison.
       # Multi-arch CI builds may finish platforms at slightly different times.
@@ -78,7 +72,7 @@ module Dependabot
       # Maximum number of candidates to run platform timestamp validation against.
       # Each validation can require 1 + 1 + N*2 registry API calls for N platforms,
       # so we cap the attempts to avoid rate limiting or excessive latency.
-      MAX_PLATFORM_VALIDATION_ATTEMPTS = T.let(5, Integer)
+      MAX_PLATFORM_VALIDATION_ATTEMPTS = 5
 
       # Page size used when listing tags from a registry. Without an explicit page
       # size, registries such as Docker Hub try to return every tag in a single
@@ -86,7 +80,7 @@ module Dependabot
       # (e.g. hexpm/elixir has ~1M tags). Requesting a bounded page keeps each
       # request fast; the client then follows the registry's pagination links to
       # collect the remaining tags.
-      TAGS_PAGE_SIZE = T.let(100, Integer)
+      TAGS_PAGE_SIZE = 100
 
       DockerSource = T.type_alias do
         T::Hash[Symbol, T.nilable(String)]

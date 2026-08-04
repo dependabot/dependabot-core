@@ -23,13 +23,10 @@ module Dependabot
           # Anchored to the `gradle-<version>-(bin|all).zip` filename so host/port numbers in custom
           # mirror URLs are never mistaken for the version. The captured token is validated with
           # Version.correct? so non-version matches (and RC/milestone names) are handled safely.
-          DISTRIBUTION_URL_VERSION_REGEX = T.let(
-            /gradle-(?<version>.+?)-(?:bin|all)\.zip/,
-            Regexp
-          )
+          DISTRIBUTION_URL_VERSION_REGEX = /gradle-(?<version>.+?)-(?:bin|all)\.zip/
 
           # Matches the version printed by `gradle --version`, e.g. "Gradle 9.2.1".
-          GRADLE_VERSION_OUTPUT_REGEX = T.let(/^Gradle\s+(?<version>\d+(?:\.\d+){1,2}(?:-[\w.]+)?)/, Regexp)
+          GRADLE_VERSION_OUTPUT_REGEX = /^Gradle\s+(?<version>\d+(?:\.\d+){1,2}(?:-[\w.]+)?)/
 
           sig { params(distribution_url: T.nilable(String)).returns(T.nilable(Dependabot::Gradle::Version)) }
           def self.from_distribution_url(distribution_url)
