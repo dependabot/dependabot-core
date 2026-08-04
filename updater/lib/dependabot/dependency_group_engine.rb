@@ -87,7 +87,18 @@ module Dependabot
 
     sig { params(name: String).returns(T.nilable(Dependabot::DependencyGroup)) }
     def find_group(name:)
-      dependency_groups.find { |group| group.name == name }
+      # First try an exact match (covers both top-level groups and dynamic sub-groups
+      # that have already been created by assign_to_groups!)
+      found = dependency_groups.find { |group| group.name == name }
+      return found if found
+
+      # For dynamic sub-groups created by group-by: dependency-name, the PR metadata
+      # stores names like "parent-group/dependency-name". When rebasing, the sub-group
+      # may not yet exist, so fall back to looking up the parent group by prefix.
+      parent_name = name.split("/", 2).first
+      return nil unless parent_name && parent_name != name
+
+      dependency_groups.find { |group| group.name == parent_name }
     end
 
     sig { params(dependencies: T::Array[Dependabot::Dependency]).void }

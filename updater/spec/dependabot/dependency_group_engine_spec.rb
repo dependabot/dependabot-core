@@ -186,6 +186,16 @@ RSpec.describe Dependabot::DependencyGroupEngine do
       it "returns nil if the group does not exist" do
         expect(dependency_group_engine.find_group(name: "no-such-thing")).to be_nil
       end
+
+      it "falls back to the parent group when given a dynamic sub-group name" do
+        group = dependency_group_engine.find_group(name: "group-a/dummy-pkg-a")
+        expect(group).not_to be_nil
+        expect(group.name).to eq("group-a")
+      end
+
+      it "returns nil for a sub-group name whose parent does not exist" do
+        expect(dependency_group_engine.find_group(name: "nonexistent/dummy-pkg-a")).to be_nil
+      end
     end
 
     describe "#assign_to_groups!" do
