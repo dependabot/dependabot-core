@@ -22,7 +22,7 @@ module Dependabot
           ).void
         end
         def initialize(requirements:, latest_resolvable_version:)
-          @requirements = T.let(requirements, T::Array[T::Hash[Symbol, T.nilable(String)]])
+          @requirements = requirements
 
           return unless latest_resolvable_version
           return unless version_class.correct?(latest_resolvable_version)

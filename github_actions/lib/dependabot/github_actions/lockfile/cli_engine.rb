@@ -24,8 +24,8 @@ module Dependabot
         extend T::Sig
 
         JsonObject = T.type_alias { T::Hash[String, Object] }
-        FIXED_FINDING_CATEGORIES = T.let(%w(onboarding-required ref-changed stale).freeze, T::Array[String])
-        UNRESOLVABLE_CATEGORIES = T.let(%w(impostor-commit lockfile-forgery).freeze, T::Array[String])
+        FIXED_FINDING_CATEGORIES = %w(onboarding-required ref-changed stale).freeze
+        UNRESOLVABLE_CATEGORIES = %w(impostor-commit lockfile-forgery).freeze
 
         sig { params(credentials: T::Array[Dependabot::Credential]).void }
         def initialize(credentials)

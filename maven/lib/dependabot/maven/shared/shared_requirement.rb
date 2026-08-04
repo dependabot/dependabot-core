@@ -14,7 +14,7 @@ module Dependabot
 
         abstract!
 
-        OR_SYNTAX = T.let(/(?<=\]|\)),/, Regexp)
+        OR_SYNTAX = /(?<=\]|\)),/
 
         sig { abstract.returns(Regexp) }
         def self.pattern; end

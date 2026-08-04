@@ -41,29 +41,29 @@ module Addressable::IDNA
 
     # Bias adaptation method
     #
-    # pkg:gem/addressable#lib/addressable/idna/pure.rb:4703
+    # pkg:gem/addressable#lib/addressable/idna/pure.rb:4693
     def punycode_adapt(delta, numpoints, firsttime); end
 
-    # pkg:gem/addressable#lib/addressable/idna/pure.rb:4671
+    # pkg:gem/addressable#lib/addressable/idna/pure.rb:4661
     def punycode_basic?(codepoint); end
 
-    # pkg:gem/addressable#lib/addressable/idna/pure.rb:4549
+    # pkg:gem/addressable#lib/addressable/idna/pure.rb:4539
     def punycode_decode(punycode); end
 
     # Returns the numeric value of a basic codepoint
     # (for use in representing integers) in the range 0 to
     # base - 1, or PUNYCODE_BASE if codepoint does not represent a value.
     #
-    # pkg:gem/addressable#lib/addressable/idna/pure.rb:4689
+    # pkg:gem/addressable#lib/addressable/idna/pure.rb:4679
     def punycode_decode_digit(codepoint); end
 
-    # pkg:gem/addressable#lib/addressable/idna/pure.rb:4676
+    # pkg:gem/addressable#lib/addressable/idna/pure.rb:4666
     def punycode_delimiter?(codepoint); end
 
-    # pkg:gem/addressable#lib/addressable/idna/pure.rb:4428
+    # pkg:gem/addressable#lib/addressable/idna/pure.rb:4418
     def punycode_encode(unicode); end
 
-    # pkg:gem/addressable#lib/addressable/idna/pure.rb:4681
+    # pkg:gem/addressable#lib/addressable/idna/pure.rb:4671
     def punycode_encode_digit(d); end
 
     # Unicode aware downcase method.
@@ -78,7 +78,7 @@ module Addressable::IDNA
   end
 end
 
-# pkg:gem/addressable#lib/addressable/idna/pure.rb:4398
+# pkg:gem/addressable#lib/addressable/idna/pure.rb:4388
 Addressable::IDNA::ACE_MAX_LENGTH = T.let(T.unsafe(nil), Integer)
 
 # This module is loosely based on idn_actionmailer by Mick Staugaard,
@@ -97,52 +97,49 @@ Addressable::IDNA::ACE_MAX_LENGTH = T.let(T.unsafe(nil), Integer)
 # pkg:gem/addressable#lib/addressable/idna/pure.rb:35
 Addressable::IDNA::ACE_PREFIX = T.let(T.unsafe(nil), String)
 
-# pkg:gem/addressable#lib/addressable/idna/pure.rb:4387
-Addressable::IDNA::COMPOSITION_TABLE = T.let(T.unsafe(nil), Hash)
-
-# pkg:gem/addressable#lib/addressable/idna/pure.rb:4400
+# pkg:gem/addressable#lib/addressable/idna/pure.rb:4390
 Addressable::IDNA::PUNYCODE_BASE = T.let(T.unsafe(nil), Integer)
 
-# pkg:gem/addressable#lib/addressable/idna/pure.rb:4404
+# pkg:gem/addressable#lib/addressable/idna/pure.rb:4394
 Addressable::IDNA::PUNYCODE_DAMP = T.let(T.unsafe(nil), Integer)
 
-# pkg:gem/addressable#lib/addressable/idna/pure.rb:4407
+# pkg:gem/addressable#lib/addressable/idna/pure.rb:4397
 Addressable::IDNA::PUNYCODE_DELIMITER = T.let(T.unsafe(nil), Integer)
 
-# pkg:gem/addressable#lib/addressable/idna/pure.rb:4405
+# pkg:gem/addressable#lib/addressable/idna/pure.rb:4395
 Addressable::IDNA::PUNYCODE_INITIAL_BIAS = T.let(T.unsafe(nil), Integer)
 
-# pkg:gem/addressable#lib/addressable/idna/pure.rb:4406
+# pkg:gem/addressable#lib/addressable/idna/pure.rb:4396
 Addressable::IDNA::PUNYCODE_INITIAL_N = T.let(T.unsafe(nil), Integer)
 
-# pkg:gem/addressable#lib/addressable/idna/pure.rb:4409
+# pkg:gem/addressable#lib/addressable/idna/pure.rb:4399
 Addressable::IDNA::PUNYCODE_MAXINT = T.let(T.unsafe(nil), Integer)
 
-# pkg:gem/addressable#lib/addressable/idna/pure.rb:4411
+# pkg:gem/addressable#lib/addressable/idna/pure.rb:4401
 Addressable::IDNA::PUNYCODE_PRINT_ASCII = T.let(T.unsafe(nil), String)
 
-# pkg:gem/addressable#lib/addressable/idna/pure.rb:4403
+# pkg:gem/addressable#lib/addressable/idna/pure.rb:4393
 Addressable::IDNA::PUNYCODE_SKEW = T.let(T.unsafe(nil), Integer)
 
-# pkg:gem/addressable#lib/addressable/idna/pure.rb:4402
+# pkg:gem/addressable#lib/addressable/idna/pure.rb:4392
 Addressable::IDNA::PUNYCODE_TMAX = T.let(T.unsafe(nil), Integer)
 
-# pkg:gem/addressable#lib/addressable/idna/pure.rb:4401
+# pkg:gem/addressable#lib/addressable/idna/pure.rb:4391
 Addressable::IDNA::PUNYCODE_TMIN = T.let(T.unsafe(nil), Integer)
 
 # Input is invalid.
 #
-# pkg:gem/addressable#lib/addressable/idna/pure.rb:4422
+# pkg:gem/addressable#lib/addressable/idna/pure.rb:4412
 class Addressable::IDNA::PunycodeBadInput < ::StandardError; end
 
 # Output would exceed the space provided.
 #
-# pkg:gem/addressable#lib/addressable/idna/pure.rb:4424
+# pkg:gem/addressable#lib/addressable/idna/pure.rb:4414
 class Addressable::IDNA::PunycodeBigOutput < ::StandardError; end
 
 # Input needs wider integers to process.
 #
-# pkg:gem/addressable#lib/addressable/idna/pure.rb:4426
+# pkg:gem/addressable#lib/addressable/idna/pure.rb:4416
 class Addressable::IDNA::PunycodeOverflow < ::StandardError; end
 
 # pkg:gem/addressable#lib/addressable/idna/pure.rb:151
@@ -169,7 +166,7 @@ Addressable::IDNA::UNICODE_DATA_TITLECASE = T.let(T.unsafe(nil), Integer)
 # pkg:gem/addressable#lib/addressable/idna/pure.rb:147
 Addressable::IDNA::UNICODE_DATA_UPPERCASE = T.let(T.unsafe(nil), Integer)
 
-# pkg:gem/addressable#lib/addressable/idna/pure.rb:4397
+# pkg:gem/addressable#lib/addressable/idna/pure.rb:4387
 Addressable::IDNA::UNICODE_MAX_LENGTH = T.let(T.unsafe(nil), Integer)
 
 # pkg:gem/addressable#lib/addressable/idna/pure.rb:37
@@ -189,7 +186,7 @@ class Addressable::Template
   #
   # @return [Addressable::Template] The initialized Template object.
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:234
+  # pkg:gem/addressable#lib/addressable/template.rb:236
   def initialize(pattern); end
 
   # Returns <code>true</code> if the Template objects are equal. This method
@@ -201,14 +198,14 @@ class Addressable::Template
   #   <code>true</code> if the Templates are equivalent, <code>false</code>
   #   otherwise.
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:274
+  # pkg:gem/addressable#lib/addressable/template.rb:276
   def ==(template); end
 
   # Addressable::Template makes no distinction between `==` and `eql?`.
   #
   # @see #==
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:283
+  # pkg:gem/addressable#lib/addressable/template.rb:285
   def eql?(template); end
 
   # Expands a URI template into a full URI.
@@ -269,7 +266,7 @@ class Addressable::Template
   #   ).to_str
   #   #=> Addressable::Template::InvalidTemplateValueError
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:591
+  # pkg:gem/addressable#lib/addressable/template.rb:593
   def expand(mapping, processor = T.unsafe(nil), normalize_values = T.unsafe(nil)); end
 
   # Extracts a mapping from the URI using a URI Template pattern.
@@ -329,24 +326,24 @@ class Addressable::Template
   #   ).extract(uri)
   #   #=> {"first" => "a", "second" => ["b", "c"]}
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:342
+  # pkg:gem/addressable#lib/addressable/template.rb:344
   def extract(uri, processor = T.unsafe(nil)); end
 
   # Freeze URI, initializing instance variables.
   #
   # @return [Addressable::URI] The frozen URI object.
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:245
+  # pkg:gem/addressable#lib/addressable/template.rb:247
   def freeze; end
 
   # Returns a <tt>String</tt> representation of the Template object's state.
   #
   # @return [String] The Template object's state, as a <tt>String</tt>.
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:260
+  # pkg:gem/addressable#lib/addressable/template.rb:262
   def inspect; end
 
-  # pkg:gem/addressable#lib/addressable/template.rb:610
+  # pkg:gem/addressable#lib/addressable/template.rb:612
   def keys; end
 
   # Extracts match data from the URI using a URI Template pattern.
@@ -415,7 +412,7 @@ class Addressable::Template
   #   match.captures
   #   #=> ["a", ["b", "c"]]
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:413
+  # pkg:gem/addressable#lib/addressable/template.rb:415
   def match(uri, processor = T.unsafe(nil)); end
 
   # Returns the named captures of the coerced `Regexp`.
@@ -424,10 +421,10 @@ class Addressable::Template
   #
   # @api private
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:651
+  # pkg:gem/addressable#lib/addressable/template.rb:653
   def named_captures; end
 
-  # pkg:gem/addressable#lib/addressable/template.rb:611
+  # pkg:gem/addressable#lib/addressable/template.rb:613
   def names; end
 
   # Expands a URI template into another URI template.
@@ -468,12 +465,12 @@ class Addressable::Template
   #   ).partial_expand({"one" => "1", "three" => 3}).pattern
   #   #=> "http://example.com/?one=1{&two}&three=3"
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:524
+  # pkg:gem/addressable#lib/addressable/template.rb:526
   def partial_expand(mapping, processor = T.unsafe(nil), normalize_values = T.unsafe(nil)); end
 
   # @return [String] The Template object's pattern.
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:254
+  # pkg:gem/addressable#lib/addressable/template.rb:256
   def pattern; end
 
   # Returns the source of the coerced `Regexp`.
@@ -482,7 +479,7 @@ class Addressable::Template
   #
   # @api private
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:641
+  # pkg:gem/addressable#lib/addressable/template.rb:643
   def source; end
 
   # Coerces a template into a `Regexp` object. This regular expression will
@@ -492,7 +489,7 @@ class Addressable::Template
   #
   # @return [Regexp] A regular expression which should match the template.
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:630
+  # pkg:gem/addressable#lib/addressable/template.rb:632
   def to_regexp; end
 
   # Returns a mapping of variables to their default values specified
@@ -500,7 +497,7 @@ class Addressable::Template
   #
   # @return [Hash] Mapping of template variables to their defaults
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:618
+  # pkg:gem/addressable#lib/addressable/template.rb:620
   def variable_defaults; end
 
   # Returns an Array of variables used within the template pattern.
@@ -510,7 +507,7 @@ class Addressable::Template
   #
   # @return [Array] The variables present in the template's pattern.
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:607
+  # pkg:gem/addressable#lib/addressable/template.rb:609
   def variables; end
 
   private
@@ -526,7 +523,7 @@ class Addressable::Template
   #
   # @return [String] The transformed mapped value
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:861
+  # pkg:gem/addressable#lib/addressable/template.rb:863
   def join_values(operator, return_value); end
 
   # Generates a hash with string keys
@@ -536,7 +533,7 @@ class Addressable::Template
   # @return [Hash]
   #   A hash with stringified keys
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:924
+  # pkg:gem/addressable#lib/addressable/template.rb:926
   def normalize_keys(mapping); end
 
   # Takes a set of values, and joins them together based on the
@@ -547,10 +544,10 @@ class Addressable::Template
   #
   # @return [Hash, Array, String] The normalized values
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:898
+  # pkg:gem/addressable#lib/addressable/template.rb:900
   def normalize_value(value); end
 
-  # pkg:gem/addressable#lib/addressable/template.rb:656
+  # pkg:gem/addressable#lib/addressable/template.rb:658
   def ordered_variable_defaults; end
 
   # Generates the <tt>Regexp</tt> that parses a template pattern.
@@ -562,7 +559,7 @@ class Addressable::Template
   #   An array of expansion variables nad a regular expression which may be
   #   used to parse a template pattern
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:968
+  # pkg:gem/addressable#lib/addressable/template.rb:970
   def parse_new_template_pattern(pattern, processor = T.unsafe(nil)); end
 
   # Generates the <tt>Regexp</tt> that parses a template pattern. Memoizes the
@@ -575,7 +572,7 @@ class Addressable::Template
   #   An array of expansion variables nad a regular expression which may be
   #   used to parse a template pattern
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:950
+  # pkg:gem/addressable#lib/addressable/template.rb:952
   def parse_template_pattern(pattern, processor = T.unsafe(nil)); end
 
   # Transforms a mapped value so that values can be substituted into the
@@ -604,7 +601,7 @@ class Addressable::Template
   #
   # @return [String] The expanded expression
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:753
+  # pkg:gem/addressable#lib/addressable/template.rb:755
   def transform_capture(mapping, capture, processor = T.unsafe(nil), normalize_values = T.unsafe(nil)); end
 
   # Loops through each capture and expands any values available in mapping
@@ -632,33 +629,33 @@ class Addressable::Template
   #
   # @return [String] The expanded expression
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:694
+  # pkg:gem/addressable#lib/addressable/template.rb:696
   def transform_partial_capture(mapping, capture, processor = T.unsafe(nil), normalize_values = T.unsafe(nil)); end
 end
 
-# pkg:gem/addressable#lib/addressable/template.rb:58
+# pkg:gem/addressable#lib/addressable/template.rb:60
 Addressable::Template::EXPRESSION = T.let(T.unsafe(nil), Regexp)
 
 # Raised if an invalid template operator is used in a pattern.
 #
-# pkg:gem/addressable#lib/addressable/template.rb:85
+# pkg:gem/addressable#lib/addressable/template.rb:87
 class Addressable::Template::InvalidTemplateOperatorError < ::StandardError; end
 
 # Raised if an invalid template value is supplied.
 #
-# pkg:gem/addressable#lib/addressable/template.rb:80
+# pkg:gem/addressable#lib/addressable/template.rb:82
 class Addressable::Template::InvalidTemplateValueError < ::StandardError; end
 
-# pkg:gem/addressable#lib/addressable/template.rb:70
+# pkg:gem/addressable#lib/addressable/template.rb:72
 Addressable::Template::JOINERS = T.let(T.unsafe(nil), Hash)
 
-# pkg:gem/addressable#lib/addressable/template.rb:62
+# pkg:gem/addressable#lib/addressable/template.rb:64
 Addressable::Template::LEADERS = T.let(T.unsafe(nil), Hash)
 
 # This class represents the data that is extracted when a Template
 # is matched against a URI.
 #
-# pkg:gem/addressable#lib/addressable/template.rb:96
+# pkg:gem/addressable#lib/addressable/template.rb:98
 class Addressable::Template::MatchData
   # Creates a new MatchData object.
   # MatchData objects should never be instantiated directly.
@@ -666,7 +663,7 @@ class Addressable::Template::MatchData
   # @param [Addressable::URI] uri
   #   The URI that the template was matched against.
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:103
+  # pkg:gem/addressable#lib/addressable/template.rb:105
   def initialize(uri, template, mapping); end
 
   # Accesses captured values by name or by index.
@@ -688,20 +685,20 @@ class Addressable::Template::MatchData
   #   If the second parameter is provided, an array of that length will
   #   be returned instead.
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:170
+  # pkg:gem/addressable#lib/addressable/template.rb:172
   def [](key, len = T.unsafe(nil)); end
 
-  # pkg:gem/addressable#lib/addressable/template.rb:149
+  # pkg:gem/addressable#lib/addressable/template.rb:151
   def captures; end
 
   # Returns a <tt>String</tt> representation of the MatchData's state.
   #
   # @return [String] The MatchData's state, as a <tt>String</tt>.
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:213
+  # pkg:gem/addressable#lib/addressable/template.rb:215
   def inspect; end
 
-  # pkg:gem/addressable#lib/addressable/template.rb:135
+  # pkg:gem/addressable#lib/addressable/template.rb:137
   def keys; end
 
   # @return [Hash]
@@ -710,48 +707,48 @@ class Addressable::Template::MatchData
   #   variables that appear in the Template, but are not present
   #   in the URI.
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:125
+  # pkg:gem/addressable#lib/addressable/template.rb:127
   def mapping; end
 
-  # pkg:gem/addressable#lib/addressable/template.rb:136
+  # pkg:gem/addressable#lib/addressable/template.rb:138
   def names; end
 
-  # pkg:gem/addressable#lib/addressable/template.rb:225
+  # pkg:gem/addressable#lib/addressable/template.rb:227
   def post_match; end
 
   # Dummy method for code expecting a ::MatchData instance
   #
   # @return [String] An empty string.
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:222
+  # pkg:gem/addressable#lib/addressable/template.rb:224
   def pre_match; end
 
-  # pkg:gem/addressable#lib/addressable/template.rb:194
+  # pkg:gem/addressable#lib/addressable/template.rb:196
   def string; end
 
   # @return [Addressable::Template]
   #   The Template used for the match.
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:117
+  # pkg:gem/addressable#lib/addressable/template.rb:119
   def template; end
 
   # @return [Array]
   #   Array with the matched URI as first element followed by the captured
   #   values.
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:184
+  # pkg:gem/addressable#lib/addressable/template.rb:186
   def to_a; end
 
   # @return [String]
   #   The matched URI as String.
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:191
+  # pkg:gem/addressable#lib/addressable/template.rb:193
   def to_s; end
 
   # @return [Addressable::URI]
   #   The URI that the Template was matched against.
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:112
+  # pkg:gem/addressable#lib/addressable/template.rb:114
   def uri; end
 
   # @return [Array]
@@ -759,7 +756,7 @@ class Addressable::Template::MatchData
   #   Note that this list will include nils for any variables which
   #   were in the Template, but did not appear in the URI.
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:143
+  # pkg:gem/addressable#lib/addressable/template.rb:145
   def values; end
 
   # Returns multiple captured values at once.
@@ -772,7 +769,7 @@ class Addressable::Template::MatchData
   #
   # @see Addressable::Template::MatchData#[]
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:205
+  # pkg:gem/addressable#lib/addressable/template.rb:207
   def values_at(*indexes); end
 
   # @return [Array]
@@ -780,28 +777,31 @@ class Addressable::Template::MatchData
   #   Note that this list will include variables which do not appear
   #   in the mapping because they were not present in URI.
   #
-  # pkg:gem/addressable#lib/addressable/template.rb:132
+  # pkg:gem/addressable#lib/addressable/template.rb:134
   def variables; end
 end
 
 # pkg:gem/addressable#lib/addressable/template.rb:40
 Addressable::Template::RESERVED = T.let(T.unsafe(nil), String)
 
+# pkg:gem/addressable#lib/addressable/template.rb:42
+Addressable::Template::RESERVED_NO_COMMA = T.let(T.unsafe(nil), String)
+
 # Raised if an invalid template operator is used in a pattern.
 #
-# pkg:gem/addressable#lib/addressable/template.rb:90
+# pkg:gem/addressable#lib/addressable/template.rb:92
 class Addressable::Template::TemplateOperatorAbortedError < ::StandardError; end
 
-# pkg:gem/addressable#lib/addressable/template.rb:42
+# pkg:gem/addressable#lib/addressable/template.rb:44
 Addressable::Template::UNRESERVED = T.let(T.unsafe(nil), String)
 
-# pkg:gem/addressable#lib/addressable/template.rb:54
+# pkg:gem/addressable#lib/addressable/template.rb:56
 Addressable::Template::VARIABLE_LIST = T.let(T.unsafe(nil), Regexp)
 
-# pkg:gem/addressable#lib/addressable/template.rb:50
+# pkg:gem/addressable#lib/addressable/template.rb:52
 Addressable::Template::VARNAME = T.let(T.unsafe(nil), Regexp)
 
-# pkg:gem/addressable#lib/addressable/template.rb:52
+# pkg:gem/addressable#lib/addressable/template.rb:54
 Addressable::Template::VARSPEC = T.let(T.unsafe(nil), Regexp)
 
 # This is an implementation of a URI parser based on

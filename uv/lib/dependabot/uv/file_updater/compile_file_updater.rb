@@ -26,19 +26,14 @@ module Dependabot
         require_relative "requirement_file_updater"
         require_relative "lock_file_error_handler"
 
-        UNSAFE_PACKAGES = T.let(%w(setuptools distribute pip).freeze, T::Array[String])
-        INCOMPATIBLE_VERSIONS_REGEX = T.let(
-          /There are incompatible versions in the resolved dependencies:.*\z/m,
-          Regexp
-        )
-        WARNINGS = T.let(/\s*# WARNING:.*\Z/m, Regexp)
-        UNSAFE_NOTE = T.let(/\s*# The following packages are considered to be unsafe.*\Z/m, Regexp)
-        RESOLVER_REGEX = T.let(/(?<=--resolver=)(\w+)/, Regexp)
-        NATIVE_COMPILATION_ERROR = T.let(
-          "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1",
-          String
-        )
-        PYTHON_VERSION_REGEX = T.let(/--python-version[=\s]+(?<version>\d+\.\d+(?:\.\d+)?)/, Regexp)
+        UNSAFE_PACKAGES = %w(setuptools distribute pip).freeze
+        INCOMPATIBLE_VERSIONS_REGEX = /There are incompatible versions in the resolved dependencies:.*\z/m
+        WARNINGS = /\s*# WARNING:.*\Z/m
+        UNSAFE_NOTE = /\s*# The following packages are considered to be unsafe.*\Z/m
+        RESOLVER_REGEX = /(?<=--resolver=)(\w+)/
+        NATIVE_COMPILATION_ERROR =
+          "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1"
+        PYTHON_VERSION_REGEX = /--python-version[=\s]+(?<version>\d+\.\d+(?:\.\d+)?)/
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
@@ -58,10 +53,10 @@ module Dependabot
           ).void
         end
         def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil)
-          @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
-          @index_urls = T.let(index_urls, T.nilable(T::Array[T.nilable(String)]))
+          @dependencies = dependencies
+          @dependency_files = dependency_files
+          @credentials = credentials
+          @index_urls = index_urls
           @build_isolation = T.let(true, T::Boolean)
         end
 

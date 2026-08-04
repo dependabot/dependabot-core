@@ -27,12 +27,9 @@ module Dependabot
       ).void
     end
     def initialize(dependency_files:, base_commit_sha:, directory_fetch_errors: {})
-      @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-      @base_commit_sha = T.let(base_commit_sha, String)
-      @directory_fetch_errors = T.let(
-        directory_fetch_errors,
-        T::Hash[String, Dependabot::DependabotError]
-      )
+      @dependency_files = dependency_files
+      @base_commit_sha = base_commit_sha
+      @directory_fetch_errors = directory_fetch_errors
     end
   end
 end
