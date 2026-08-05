@@ -18,10 +18,7 @@ module Dependabot
 
       sig { override.returns(T::Array[DependencyFile]) }
       def updated_dependency_files
-        updated_files = if uv_lock_present?
-                          # When uv.lock exists, it is the source of truth. Only update
-                          # pyproject.toml and uv.lock; leave requirement .txt/.in files
-                          # untouched so they stay consistent with uv.lock and respect cooldown.
+        updated_files = if uv_lock_project?
                           updated_uv_lock_files
                         else
                           updated_pip_compile_based_files
@@ -103,8 +100,8 @@ module Dependabot
       end
 
       sig { returns(T::Boolean) }
-      def uv_lock_present?
-        dependency_files.any? { |f| f.name == "uv.lock" }
+      def uv_lock_project?
+        !pyproject.nil? && dependency_files.any? { |f| f.name == "uv.lock" }
       end
 
       sig { returns(T::Array[DependencyFile]) }

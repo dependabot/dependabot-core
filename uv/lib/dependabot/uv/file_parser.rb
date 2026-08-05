@@ -55,9 +55,7 @@ module Dependabot
 
         dependency_set += pyproject_file_dependencies if pyproject
         dependency_set += uv_lock_file_dependencies
-        # When uv.lock exists, requirement .txt/.in files are derived artifacts
-        # and should not be parsed as independent dependency sources.
-        dependency_set += requirement_dependencies if requirement_files.any? && uv_lock_files.none?
+        dependency_set += requirement_dependencies if requirement_files.any? && (pyproject.nil? || uv_lock_files.none?)
 
         dependency_set.dependencies
       end

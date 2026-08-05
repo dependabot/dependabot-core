@@ -948,7 +948,13 @@ RSpec.describe Dependabot::Uv::FileParser do
     end
 
     context "with a uv.lock file and requirement txt files" do
-      let(:files) { [uv_lock, requirements] }
+      let(:files) { [pyproject, uv_lock, requirements] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "uv_simple.toml")
+        )
+      end
       let(:uv_lock) do
         Dependabot::DependencyFile.new(
           name: "uv.lock",
@@ -957,12 +963,24 @@ RSpec.describe Dependabot::Uv::FileParser do
       end
 
       it "does not parse requirement txt files when uv.lock is present" do
-        # Only dependencies from uv.lock should be parsed, not from requirements.txt
-        deps = dependencies
-        expect(deps.flat_map(&:requirements).map { |r| r[:file] })
+        expect(dependencies.flat_map(&:requirements).map { |r| r[:file] })
           .not_to include("requirements.txt")
-        # Should still have dependencies from uv.lock
-        expect(deps).not_to be_empty
+        expect(dependencies).not_to be_empty
+      end
+    end
+
+    context "with a uv.lock file and requirement txt files but no pyproject" do
+      let(:files) { [uv_lock, requirements] }
+      let(:uv_lock) do
+        Dependabot::DependencyFile.new(
+          name: "uv.lock",
+          content: fixture("uv_locks", "simple.lock")
+        )
+      end
+
+      it "parses requirement txt files" do
+        expect(dependencies.flat_map(&:requirements).map { |r| r[:file] })
+          .to include("requirements.txt")
       end
     end
 

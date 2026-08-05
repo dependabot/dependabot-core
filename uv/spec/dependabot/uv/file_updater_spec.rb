@@ -199,7 +199,7 @@ RSpec.describe Dependabot::Uv::FileUpdater do
       end
     end
 
-    context "when compile and lock updaters both return the same manifest file" do
+    context "with a uv.lock file and requirement txt files but no pyproject" do
       let(:uv_lock_file) do
         Dependabot::DependencyFile.new(
           name: "uv.lock",
@@ -207,29 +207,16 @@ RSpec.describe Dependabot::Uv::FileUpdater do
         )
       end
       let(:dependency_files) { [requirements, uv_lock_file] }
-      let(:manifest_from_lock_updater) do
-        Dependabot::DependencyFile.new(
-          name: "libs/testing_tools/pyproject.toml",
-          content: "lock updater content"
-        )
-      end
-      let(:lockfile_from_lock_updater) do
-        Dependabot::DependencyFile.new(
-          name: "uv.lock",
-          content: "updated lock content"
-        )
-      end
 
-      it "only delegates to LockFileUpdater when uv.lock is present" do
-        lock_updater = instance_double(described_class::LockFileUpdater)
+      it "delegates to CompileFileUpdater" do
+        updated_requirements = Dependabot::DependencyFile.new(name: "requirements.txt", content: "updated")
+        compile_updater = instance_double(described_class::CompileFileUpdater)
 
-        allow(described_class::LockFileUpdater).to receive(:new).and_return(lock_updater)
-        allow(lock_updater).to receive(:updated_dependency_files).and_return(
-          [manifest_from_lock_updater, lockfile_from_lock_updater]
-        )
+        allow(described_class::CompileFileUpdater).to receive(:new).and_return(compile_updater)
+        allow(compile_updater).to receive(:updated_dependency_files).and_return([updated_requirements])
 
-        expect(described_class::CompileFileUpdater).not_to receive(:new)
-        expect(updated_files.map(&:name)).to contain_exactly("libs/testing_tools/pyproject.toml", "uv.lock")
+        expect(described_class::LockFileUpdater).not_to receive(:new)
+        expect(updated_files.map(&:name)).to eq(["requirements.txt"])
       end
     end
 
