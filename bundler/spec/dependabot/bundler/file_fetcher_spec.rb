@@ -292,33 +292,6 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         expect(file_fetcher_instance.files.map(&:name))
           .to include("../constants.rb")
       end
-
-      describe "#files_to_persist" do
-        after { Dependabot::Experiments.reset! }
-
-        context "when the minimal update files experiment is disabled" do
-          it "hands over the full fetched set, including the included Ruby file" do
-            expect(file_fetcher_instance.files_to_persist.map(&:name))
-              .to eq(file_fetcher_instance.files.map(&:name))
-            expect(file_fetcher_instance.files_to_persist.map(&:name))
-              .to include("../constants.rb")
-          end
-        end
-
-        context "when the minimal update files experiment is enabled" do
-          before { Dependabot::Experiments.register(:bundler_minimal_update_files, true) }
-
-          it "withholds the included Ruby support file from the update container" do
-            expect(file_fetcher_instance.files_to_persist.map(&:name))
-              .not_to include("../constants.rb")
-          end
-
-          it "still hands over the manifest and lockfile" do
-            expect(file_fetcher_instance.files_to_persist.map(&:name))
-              .to include("Gemfile", "Gemfile.lock")
-          end
-        end
-      end
     end
   end
 

@@ -47,6 +47,19 @@ module Dependabot
         filtered_files
       end
 
+      # Terraform hands its full fetched set across the fetch/update trust
+      # boundary; nothing is safe to drop. Every fetched `.tf`/`.hcl`/lockfile is
+      # either parsed for provider/module requirements or rewritten by the
+      # FileUpdater. In particular, local-module `.tf` files are marked as
+      # support files but still carry provider requirements the updater may
+      # rewrite, so they must cross the boundary too. Terraform's isolation win
+      # comes from dropping the repo clone -- its version bumps are pure HCL
+      # rewrites that need no working tree -- not from narrowing this set.
+      sig { override.returns(T::Array[Dependabot::DependencyFile]) }
+      def files_to_persist
+        files
+      end
+
       private
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

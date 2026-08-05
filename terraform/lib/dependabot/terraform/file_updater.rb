@@ -8,6 +8,7 @@ require "dependabot/file_updaters/base"
 require "dependabot/errors"
 require "dependabot/terraform/file_selector"
 require "dependabot/shared_helpers"
+require "fileutils"
 
 module Dependabot
   module Terraform
@@ -210,6 +211,12 @@ module Dependabot
         # the platform must be determined before the updated manifest files
         # are written to disk
         SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+          # Without a repo clone the working tree is empty, so the Terraform CLI
+          # cannot see the root manifests or local path modules it needs to
+          # resolve providers. Materialise the persisted dependency files first;
+          # with a clone these already exist on disk.
+          write_dependency_files_to_disk if repo_contents_path.nil?
+
           possible_architectures.each do |arch|
             # Exit early if we have detected all of the architectures present
             break if architectures.count == hashes.count
@@ -277,6 +284,12 @@ module Dependabot
 
         base_dir = T.must(dependency_files.first).directory
         SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+          # Without a repo clone the working tree is empty; materialise the
+          # persisted dependency files (root manifests + local path modules) so
+          # `terraform init`/`providers lock` can resolve them. With a clone
+          # these already exist on disk.
+          write_dependency_files_to_disk if repo_contents_path.nil?
+
           # Determine the provider using the original manifest files
           platforms = architecture_type.map { |arch| "-platform=#{arch}" }.join(" ")
 
@@ -342,6 +355,18 @@ module Dependabot
           end
 
           raise Dependabot::DependencyFileNotResolvable, "Error running `terraform init`: #{output}"
+        end
+      end
+
+      # Materialises the persisted dependency files into the current working
+      # directory. Used when the update runs without a repo clone (the
+      # fetch/update container split) so the Terraform CLI can read the root
+      # manifests and local path modules it would otherwise get from the clone.
+      sig { void }
+      def write_dependency_files_to_disk
+        dependency_files.each do |file|
+          FileUtils.mkdir_p(File.dirname(file.name))
+          File.write(file.name, file.content)
         end
       end
 
