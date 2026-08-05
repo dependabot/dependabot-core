@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
-require "dependabot/experiments"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/file_filtering"
@@ -61,18 +60,6 @@ module Dependabot
         end
 
         filtered_files
-      end
-
-      # The update phase resolves the lockfile from the Gemfile, lockfile and
-      # gemspecs. The arbitrary Ruby files pulled in from gemspecs/Gemfiles via
-      # `require`/`require_relative`/`File.read` (marked as support files by
-      # `find_included_files`) are only needed by the trusted fetch/parse phase,
-      # so they are withheld from the untrusted update container.
-      sig { override.returns(T::Array[Dependabot::DependencyFile]) }
-      def files_to_persist
-        return super unless Dependabot::Experiments.enabled?(:bundler_minimal_update_files)
-
-        super.reject { |file| file.support_file? && file.name.end_with?(".rb") }
       end
 
       private
