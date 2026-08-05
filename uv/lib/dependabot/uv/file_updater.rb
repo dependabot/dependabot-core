@@ -4,6 +4,7 @@
 require "toml-rb"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/package/release_cooldown_options"
 require "dependabot/shared_helpers"
 require "sorbet-runtime"
 
@@ -44,8 +45,14 @@ module Dependabot
           dependencies: dependencies,
           dependency_files: dependency_files,
           credentials: credentials,
-          index_urls: pip_compile_index_urls
+          index_urls: pip_compile_index_urls,
+          update_cooldown: update_cooldown
         ).updated_dependency_files
+      end
+
+      sig { returns(T.nilable(Dependabot::Package::ReleaseCooldownOptions)) }
+      def update_cooldown
+        T.cast(options[:update_cooldown], T.nilable(Dependabot::Package::ReleaseCooldownOptions))
       end
 
       sig { returns(T::Array[DependencyFile]) }

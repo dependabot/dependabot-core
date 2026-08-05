@@ -4,6 +4,7 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/package/release_cooldown_options"
 require "dependabot/uv/file_updater"
 require "dependabot/shared_helpers"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
@@ -51,9 +52,11 @@ RSpec.describe Dependabot::Uv::FileUpdater do
     described_class.new(
       dependency_files: dependency_files,
       dependencies: [dependency],
-      credentials: credentials
+      credentials: credentials,
+      options: options
     )
   end
+  let(:options) { {} }
 
   before { FileUtils.mkdir_p(tmp_path) }
 
@@ -107,6 +110,26 @@ RSpec.describe Dependabot::Uv::FileUpdater do
           .and_return([stub_file])
         expect(updater.updated_dependency_files)
           .to eq([stub_file])
+      end
+
+      context "with cooldown options" do
+        let(:cooldown_options) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+        end
+        let(:options) { { update_cooldown: cooldown_options } }
+
+        it "passes cooldown options to CompileFileUpdater" do
+          dummy_updater = instance_double(
+            described_class::CompileFileUpdater,
+            updated_dependency_files: [Data.define(:name).new("updated files")]
+          )
+
+          allow(described_class::CompileFileUpdater).to receive(:new).and_return(dummy_updater)
+
+          expect(updated_files).to eq(dummy_updater.updated_dependency_files)
+          expect(described_class::CompileFileUpdater).to have_received(:new)
+            .with(hash_including(update_cooldown: cooldown_options))
+        end
       end
 
       context "when a requirements.txt that specifies a subdependency" do

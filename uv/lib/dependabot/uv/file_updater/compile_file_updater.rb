@@ -14,6 +14,7 @@ require "dependabot/uv/language_version_manager"
 require "dependabot/uv/native_helpers"
 require "dependabot/uv/name_normaliser"
 require "dependabot/uv/authed_url_builder"
+require "dependabot/package/release_cooldown_options"
 
 module Dependabot
   module Uv
@@ -34,6 +35,7 @@ module Dependabot
         NATIVE_COMPILATION_ERROR =
           "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1"
         PYTHON_VERSION_REGEX = /--python-version[=\s]+(?<version>\d+\.\d+(?:\.\d+)?)/
+        COOLDOWN_CONSTRAINTS_FILE = ".dependabot-cooldown-constraints.txt"
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
@@ -49,14 +51,16 @@ module Dependabot
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
-            index_urls: T.nilable(T::Array[T.nilable(String)])
+            index_urls: T.nilable(T::Array[T.nilable(String)]),
+            update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
-        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil)
+        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil, update_cooldown: nil)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
           @index_urls = index_urls
+          @update_cooldown = update_cooldown
           @build_isolation = T.let(true, T::Boolean)
         end
 
@@ -111,6 +115,7 @@ module Dependabot
 
               updated_content =
                 post_process_compiled_file(updated_content, file)
+              validate_cooldown_constraints!(updated_content, T.must(file.content))
               next if updated_content == file.content
 
               file.dup.tap { |f| f.content = updated_content }
@@ -122,6 +127,7 @@ module Dependabot
         def compile_file(filename)
           # Shell out to pip-compile, generate a new set of requirements.
           # This is slow, as pip-compile needs to do installs.
+          write_cooldown_constraints(filename)
           options = compile_options(filename)
           options_fingerprint = compile_options_fingerprint(options)
 
@@ -490,12 +496,78 @@ module Dependabot
         def compile_options(filename)
           options = @build_isolation ? ["--build-isolation"] : ["--no-build-isolation"]
           options += compile_index_options
+          options << "--constraint=#{COOLDOWN_CONSTRAINTS_FILE}" if cooldown_constraints?(filename)
 
           if (requirements_file = compiled_file_for_filename(filename))
             options += uv_compile_options_from_compiled_file(requirements_file)
           end
 
           options.join(" ")
+        end
+
+        sig { params(filename: String).void }
+        def write_cooldown_constraints(filename)
+          constraints = cooldown_constraints(filename)
+          return if constraints.empty?
+
+          File.write(COOLDOWN_CONSTRAINTS_FILE, constraints.join("\n") + "\n")
+        end
+
+        sig { params(filename: String).returns(T::Boolean) }
+        def cooldown_constraints?(filename)
+          cooldown_constraints(filename).any?
+        end
+
+        sig { params(filename: String).returns(T::Array[String]) }
+        def cooldown_constraints(filename)
+          return [] unless @update_cooldown
+
+          compiled_file = compiled_file_for_filename(filename)
+          return [] unless compiled_file
+
+          T.must(compiled_file.content).lines.filter_map do |line|
+            parsed = RequirementParser.parse(line)
+            next unless parsed
+            next if normalise(T.must(parsed[:name])) == normalise(T.must(dependency).name)
+
+            requirement = "#{T.must(parsed[:name])}==#{T.must(parsed[:version])}"
+            markers = parsed[:markers]
+            markers ? "#{requirement}; #{markers}" : requirement
+          end.uniq
+        end
+
+        sig { params(updated_content: String, original_content: String).void }
+        def validate_cooldown_constraints!(updated_content, original_content)
+          return unless @update_cooldown
+
+          original_versions = pinned_versions(original_content)
+          updated_versions = pinned_versions(updated_content)
+          changed_dependencies = updated_versions.each_key.filter_map do |name|
+            next if name == normalise(T.must(dependency).name)
+            next if original_versions[name] == updated_versions[name]
+
+            name
+          end
+          return if changed_dependencies.empty?
+
+          raise DependencyFileNotResolvable,
+                "uv pip compile changed dependencies outside the cooldown-approved update: " \
+                "#{changed_dependencies.sort.join(', ')}"
+        end
+
+        sig { params(content: String).returns(T::Hash[String, T::Array[String]]) }
+        def pinned_versions(content)
+          versions = T.let({}, T::Hash[String, T::Array[String]])
+
+          content.lines.each do |line|
+            parsed = RequirementParser.parse(line)
+            next unless parsed
+
+            name = normalise(T.must(parsed[:name]))
+            (versions[name] ||= []) << T.must(parsed[:version])
+          end
+
+          versions.transform_values { |package_versions| package_versions.uniq.sort }
         end
 
         sig { params(requirements_file: Dependabot::DependencyFile).returns(T::Array[String]) }
