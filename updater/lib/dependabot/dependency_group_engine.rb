@@ -25,10 +25,7 @@ module Dependabot
 
     class ConfigurationError < StandardError; end
 
-    PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE = T.let(
-      %w(bundler composer hex maven npm_and_yarn pip uv silent).freeze,
-      T::Array[String]
-    )
+    PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE = %w(bundler composer hex maven npm_and_yarn pip uv silent).freeze
 
     sig { params(job: Dependabot::Job).returns(Dependabot::DependencyGroupEngine) }
     def self.from_job_config(job:)

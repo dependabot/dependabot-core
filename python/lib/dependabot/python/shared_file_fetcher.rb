@@ -21,10 +21,10 @@ module Dependabot
 
       abstract!
 
-      CHILD_REQUIREMENT_REGEX = T.let(/^-r\s?(?<path>.*\.(?:txt|in))/, Regexp)
-      CONSTRAINT_REGEX = T.let(/^-c\s?(?<path>.*\.(?:txt|in))/, Regexp)
-      DEPENDENCY_TYPES = T.let(%w(packages dev-packages).freeze, T::Array[String])
-      MAX_FILE_SIZE = T.let(500_000, Integer)
+      CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/
+      CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/
+      DEPENDENCY_TYPES = %w(packages dev-packages).freeze
+      MAX_FILE_SIZE = 500_000
 
       sig { abstract.returns(T::Array[String]) }
       def self.ecosystem_specific_required_files; end
@@ -34,7 +34,7 @@ module Dependabot
         return true if filenames.any? { |name| name.end_with?(".txt", ".in") }
         return true if filenames.include?("requirements")
         return true if filenames.include?("pyproject.toml")
-        return true if filenames.any? { |name| ecosystem_specific_required_files.include?(name) }
+        return true if filenames.intersect?(ecosystem_specific_required_files)
 
         false
       end

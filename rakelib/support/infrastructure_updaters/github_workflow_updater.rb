@@ -9,7 +9,7 @@ class GitHubWorkflowUpdater < BaseUpdater
   extend T::Sig
 
   # Keys that should appear first in ci-filters.yml
-  FIRST_KEYS = T.let(%w(shared rakefile_tests dry_run).freeze, T::Array[String])
+  FIRST_KEYS = %w(shared rakefile_tests dry_run).freeze
 
   sig { void }
   def update_all

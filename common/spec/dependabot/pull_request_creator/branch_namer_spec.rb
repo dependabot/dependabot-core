@@ -838,13 +838,13 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
     end
 
-    context "with branch_name_case set to lower" do
+    context "with branch_name_case set to lowercase" do
       let(:namer) do
         described_class.new(
           dependencies: dependencies,
           files: files,
           target_branch: target_branch,
-          branch_name_case: "lower"
+          branch_name_case: "lowercase"
         )
       end
 
@@ -864,7 +864,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             files: files,
             target_branch: target_branch,
             prefix: "MyProject",
-            branch_name_case: "lower"
+            branch_name_case: "lowercase"
           )
         end
         let(:dependency_name) { "MyPackage" }
@@ -876,13 +876,13 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
     end
 
-    context "with branch_name_case set to upper" do
+    context "with branch_name_case set to uppercase" do
       let(:namer) do
         described_class.new(
           dependencies: dependencies,
           files: files,
           target_branch: target_branch,
-          branch_name_case: "upper"
+          branch_name_case: "uppercase"
         )
       end
 
@@ -902,7 +902,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             files: files,
             target_branch: target_branch,
             prefix: "myPrefix",
-            branch_name_case: "upper"
+            branch_name_case: "uppercase"
           )
         end
         let(:dependency_name) { "business" }
@@ -939,7 +939,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
           target_branch: target_branch,
           separator: "-",
           word_separator: "-",
-          branch_name_case: "lower"
+          branch_name_case: "lowercase"
         )
       end
 
@@ -977,7 +977,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             target_branch: target_branch,
             separator: "-",
             word_separator: "-",
-            branch_name_case: "lower",
+            branch_name_case: "lowercase",
             prefix: "MyProject-Deps"
           )
         end
@@ -996,7 +996,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             target_branch: target_branch,
             separator: "-",
             word_separator: "-",
-            branch_name_case: "lower",
+            branch_name_case: "lowercase",
             max_length: 30
           )
         end
@@ -1065,7 +1065,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             files: files,
             target_branch: target_branch,
             word_separator: "-",
-            branch_name_case: "lower",
+            branch_name_case: "lowercase",
             template: "{prefix}/{package_manager}/{dependency}-{version}"
           )
         end

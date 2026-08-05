@@ -17,7 +17,7 @@ module Dependabot
       require_relative "file_updater/lockfile_updater"
       require_relative "file_updater/wrapper_updater"
 
-      SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts gradle.lockfile).freeze
+      SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
 
       sig { override.returns(T::Array[::Dependabot::DependencyFile]) }
       def updated_dependency_files
@@ -97,7 +97,10 @@ module Dependabot
             files[T.must(files.index(buildfile))] = update_version_in_buildfile(dependency, buildfile, old_req, new_req)
           end
 
-          buildfiles_processed[buildfile.name] = buildfile
+          # Always look up the updated buildfile from files after any modification
+          # to ensure buildfiles_processed contains the latest version
+          updated_buildfile = files.find { |f| f.name == buildfile.name }
+          buildfiles_processed[buildfile.name] = T.must(updated_buildfile)
         end
 
         # runs native updaters (e.g. wrapper, lockfile) on relevant build files updated
@@ -122,17 +125,28 @@ module Dependabot
         ).void
       end
       def update_lockfiles_for_buildfiles(files, buildfiles_processed)
-        lockfile_roots_processed = T.let(Set.new, T::Set[String])
+        # Support files (e.g. fetched convention plugin sources) are excluded from
+        # `buildfiles`/`files`, but Gradle still needs them on disk to compile
+        # plugins referenced by included/buildSrc builds, so pass them through too.
+        support_files = dependency_files.select(&:support_file?)
+        lockfile_updater = LockfileUpdater.new(
+          dependency_files: files + support_files,
+          repo_contents_path: repo_contents_path
+        )
+        buildfiles_by_root = T.let({}, T::Hash[String, T::Array[Dependabot::DependencyFile]])
 
         buildfiles_processed.each_value do |buildfile|
-          lockfile_updater = LockfileUpdater.new(dependency_files: files)
           root_dir = lockfile_updater.determine_root_dir(build_file: buildfile)
-          next if lockfile_roots_processed.include?(root_dir)
+          buildfiles_by_root[root_dir] ||= []
+          T.must(buildfiles_by_root[root_dir]) << buildfile
+        end
 
-          lockfile_roots_processed.add(root_dir)
+        buildfiles_by_root.each_value do |buildfiles|
+          updated_files = lockfile_updater.update_lockfiles(T.must(buildfiles.first), build_files: buildfiles)
 
-          updated_files = lockfile_updater.update_lockfiles(buildfile)
-          replace_updated_files(files, updated_files)
+          # Support files are only needed to populate Gradle's working directory;
+          # they must never be reintroduced into the buildfiles-only result set.
+          replace_updated_files(files, updated_files.reject(&:support_file?))
         end
       end
       sig do

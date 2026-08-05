@@ -32,9 +32,9 @@ module Dependabot
           ignored_versions:,
           raise_on_ignored: false
         )
-          @dependency = T.let(dependency, Dependabot::Dependency)
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @dependency = dependency
+          @dependency_files = dependency_files
+          @credentials = credentials
           @target_version = T.let(
             version_from_details(target_version_details),
             T.nilable(Dependabot::Gradle::Version)
@@ -43,8 +43,8 @@ module Dependabot
             source_url_from_details(target_version_details),
             T.nilable(String)
           )
-          @ignored_versions = T.let(ignored_versions, T::Array[String])
-          @raise_on_ignored = T.let(raise_on_ignored, T::Boolean)
+          @ignored_versions = ignored_versions
+          @raise_on_ignored = raise_on_ignored
           @update_possible = T.let(nil, T.nilable(T::Boolean))
           @updated_dependencies = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
           @dependencies_to_update = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))

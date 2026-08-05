@@ -128,6 +128,36 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
 
       it { is_expected.to eq(Dependabot::GithubActions::Version.new("1.1.0")) }
 
+      context "when a full semver ref is already the latest version" do
+        let(:reference) { "v1.1.0" }
+        let(:dependency_version) { "1.1.0" }
+
+        it "does not broaden the ref to an equivalent lower-precision tag" do
+          expect(fetcher.latest_version_tag.fetch(:tag)).to eq("v1.1.0")
+        end
+
+        context "when the current full semver tag is no longer advertised" do
+          before do
+            checker = instance_double(
+              Dependabot::GitCommitChecker,
+              local_ref_for_latest_version_matching_existing_precision: Dependabot::GitTagDetails.new(
+                tag: "v1.0.4",
+                version: Dependabot::GithubActions::Version.new("1.0.4")
+              ),
+              local_ref_for_latest_version_lower_precision: Dependabot::GitTagDetails.new(
+                tag: "v1.1",
+                version: Dependabot::GithubActions::Version.new("1.1")
+              )
+            )
+            allow(fetcher).to receive(:git_commit_checker).and_return(checker)
+          end
+
+          it "does not downgrade to the older full semver tag" do
+            expect(fetcher.latest_version_tag.fetch(:tag)).to eq("v1.1")
+          end
+        end
+      end
+
       context "when the latest version is being ignored" do
         let(:ignored_versions) { [">= 1.1.0"] }
 
@@ -158,6 +188,54 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
 
       it "considers the commit itself as the latest version" do
         expect(latest_version).to eq(tip_of_master)
+      end
+    end
+
+    context "when a git commit SHA is not present in the cloned repository" do
+      let(:reference) { "0123456789abcdef0123456789abcdef01234567" }
+
+      before do
+        allow(Dir).to receive(:chdir).and_yield
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(%r{git clone --no-recurse-submodules https://github\.com/actions/setup-node},
+                any_args)
+          .and_return("")
+      end
+
+      context "when git reports that the commit is missing" do
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with("git branch --remotes --contains #{reference}",
+                  any_args)
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "error: no such commit #{reference}\n",
+                error_context: {}
+              )
+            )
+        end
+
+        it { is_expected.to be_nil }
+      end
+
+      context "when the containing-branch lookup fails for an unexpected reason" do
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with("git branch --remotes --contains #{reference}",
+                  any_args)
+            .and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "fatal: not a git repository\n",
+                error_context: {}
+              )
+            )
+        end
+
+        it "re-raises the error" do
+          expect { latest_version }
+            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+        end
       end
     end
 
@@ -231,11 +309,11 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
       it "updates to the least new supported version" do
         expect(lowest_security_fix_version).to eq(
           (
-                    { tag: "v1",
-                      version: Dependabot::GithubActions::Version.new("1.0.0"),
-                      commit_sha: "d0b521928fa734513b5cd9c7d9d8e09db50e884a",
-                      tag_sha: "d0b521928fa734513b5cd9c7d9d8e09db50e884a" }
-                  )
+            { tag: "v1",
+              version: Dependabot::GithubActions::Version.new("1.0.0"),
+              commit_sha: "d0b521928fa734513b5cd9c7d9d8e09db50e884a",
+              tag_sha: "d0b521928fa734513b5cd9c7d9d8e09db50e884a" }
+          )
         )
       end
     end

@@ -25,13 +25,13 @@ module Dependabot
         extend T::Sig
         include Dependabot::HasSentryContext
 
-        sig { params(message: String, error_context: T::Hash[Symbol, T.untyped]).void }
+        sig { params(message: String, error_context: T::Hash[Symbol, T.anything]).void }
         def initialize(message:, error_context:)
           super(message)
           @error_context = error_context
         end
 
-        sig { override.returns(T::Hash[Symbol, T.untyped]) }
+        sig { override.returns(T::Hash[Symbol, T.anything]) }
         def sentry_context
           { extra: @error_context }
         end
@@ -211,7 +211,7 @@ module Dependabot
         raise DependencyFileNotFound.new(nil, "package.json not found.") unless get_original_file("package.json")
       end
 
-      sig { params(updated_files: T::Array[DependencyFile]).returns(T::Hash[Symbol, T.untyped]) }
+      sig { params(updated_files: T::Array[DependencyFile]).returns(T::Hash[Symbol, T.anything]) }
       def error_context(updated_files:)
         {
           dependencies: dependencies.map(&:to_h),

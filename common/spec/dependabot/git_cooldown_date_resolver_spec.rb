@@ -39,6 +39,18 @@ RSpec.describe Dependabot::GitCooldownDateResolver do
 
   let(:source_url) { "https://github.com/owner/repo" }
   let(:resolver) { test_class.new(source_url: source_url, credentials: credentials) }
+  let(:sawyer_agent) { instance_double(Sawyer::Agent) }
+
+  before do
+    allow(sawyer_agent).to receive(:parse_links) { |value| [value, {}] }
+  end
+
+  def github_release_resource(agent, tag_name:, published_at:)
+    Sawyer::Resource.new(
+      agent,
+      { tag_name: tag_name, published_at: published_at, prerelease: false }
+    )
+  end
 
   describe "#normalize_tag_name" do
     it "strips tags/ prefix" do
@@ -82,8 +94,7 @@ RSpec.describe Dependabot::GitCooldownDateResolver do
   describe "#github_release_published_at" do
     it "returns published_at when a matching release exists" do
       published_at = Time.now.utc - (3 * 24 * 60 * 60)
-      mock_release = Struct.new(:tag_name, :published_at, :prerelease)
-                           .new("v1.0.0", published_at, false)
+      mock_release = github_release_resource(sawyer_agent, tag_name: "v1.0.0", published_at: published_at)
       mock_client = instance_double(Octokit::Client, releases: [mock_release])
       allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
 
@@ -91,8 +102,7 @@ RSpec.describe Dependabot::GitCooldownDateResolver do
     end
 
     it "returns nil when no release matches the tag" do
-      mock_release = Struct.new(:tag_name, :published_at, :prerelease)
-                           .new("v2.0.0", Time.now, false)
+      mock_release = github_release_resource(sawyer_agent, tag_name: "v2.0.0", published_at: Time.now)
       mock_client = instance_double(Octokit::Client, releases: [mock_release])
       allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
 
@@ -110,8 +120,7 @@ RSpec.describe Dependabot::GitCooldownDateResolver do
   describe "#resolve_candidate_date" do
     it "prefers GitHub Release published_at over git dates" do
       published_at = Time.now.utc - (2 * 24 * 60 * 60)
-      mock_release = Struct.new(:tag_name, :published_at, :prerelease)
-                           .new("v1.0.0", published_at, false)
+      mock_release = github_release_resource(sawyer_agent, tag_name: "v1.0.0", published_at: published_at)
       mock_client = instance_double(Octokit::Client, releases: [mock_release])
       allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
 
@@ -138,13 +147,22 @@ RSpec.describe Dependabot::GitCooldownDateResolver do
 
   describe "#cached_github_releases" do
     it "fetches releases from GitHub" do
-      mock_release = Struct.new(:tag_name, :published_at, :prerelease)
-                           .new("v1.0.0", Time.now, false)
+      published_at = Time.now
+      mock_release = github_release_resource(sawyer_agent, tag_name: "v1.0.0", published_at: published_at)
       mock_client = instance_double(Octokit::Client, releases: [mock_release])
       allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
 
       result = resolver.cached_github_releases
-      expect(result).to eq([mock_release])
+      expect(result).to contain_exactly(
+        have_attributes(tag_name: "v1.0.0", published_at: published_at)
+      )
+    end
+
+    it "returns an empty array for a nil releases response" do
+      mock_client = instance_double(Octokit::Client, releases: nil)
+      allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+      expect(resolver.cached_github_releases).to eq([])
     end
 
     it "returns empty array for non-GitHub sources" do

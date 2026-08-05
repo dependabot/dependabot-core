@@ -22,10 +22,7 @@ module Dependabot
 
           # Keys whose value is owned by the update itself and therefore taken from the regenerated
           # file. Everything not listed here is preserved verbatim from the user's original file.
-          MANAGED_KEYS = T.let(
-            %w(distributionUrl distributionSha256Sum).freeze,
-            T::Array[String]
-          )
+          MANAGED_KEYS = %w(distributionUrl distributionSha256Sum).freeze
 
           # Reconciles the regenerated wrapper properties back onto the user's original file.
           #

@@ -19,19 +19,13 @@ module Dependabot
 
       # Archive extensions supported by OpenTofu for HTTP URLs
       # https://opentofu.org/docs/language/modules/sources/#http-urls
-      ARCHIVE_EXTENSIONS = T.let(
-        %w(.zip .bz2 .tar.bz2 .tar.tbz2 .tbz2 .gz .tar.gz .tgz .xz .tar.xz .txz).freeze,
-        T::Array[String]
-      )
+      ARCHIVE_EXTENSIONS = %w(.zip .bz2 .tar.bz2 .tar.tbz2 .tbz2 .gz .tar.gz .tgz .xz .tar.xz .txz).freeze
       PUBLIC_HOSTNAME = "registry.opentofu.org"
       API_BASE_URL = "api.opentofu.org"
 
       # The OpenTofu Module Registry HTTP API is wire-compatible with Terraform's,
       # so credentials issued for either ecosystem are valid here.
-      ACCEPTED_CREDENTIAL_TYPES = T.let(
-        %w(opentofu_registry terraform_registry).freeze,
-        T::Array[String]
-      )
+      ACCEPTED_CREDENTIAL_TYPES = %w(opentofu_registry terraform_registry).freeze
 
       sig { params(hostname: String, credentials: T::Array[Dependabot::Credential]).void }
       def initialize(hostname: PUBLIC_HOSTNAME, credentials: [])
@@ -128,6 +122,39 @@ module Dependabot
         tags.filter_map { |t| Version.new(t) if Version.correct?(t) }
       rescue Excon::Error::Socket, Excon::Error::Timeout
         raise Dependabot::PrivateSourceBadResponse, host
+      end
+
+      # Fetch the package hashes for every platform of a given provider version.
+      # Returns a Hash mapping "<os>_<arch>" strings to arrays of hash strings
+      # (e.g. {"linux_amd64" => ["h1:...", "zh:..."], "darwin_arm64" => [...]}).
+      # Returns nil when the registry does not include the `packages` field
+      # (e.g. the Terraform registry).
+      sig do
+        params(identifier: String, version: String)
+          .returns(T.nilable(T::Hash[String, T::Array[String]]))
+      end
+      def all_provider_package_hashes(identifier:, version:)
+        base_url = service_url_for_registry("providers.v1")
+        response = http_get!(URI.join(base_url, "#{identifier}/#{version}/download/linux/amd64"))
+        body = JSON.parse(response.body)
+
+        packages = body["packages"]
+        return nil unless packages.is_a?(Hash)
+
+        packages.each_with_object({}) do |(platform, info), result|
+          next unless info.is_a?(Hash)
+
+          hashes = Array(info["hashes"])
+          if hashes.empty?
+            Dependabot.logger.debug(
+              "No package hashes for #{identifier} v#{version} on platform #{platform}; " \
+              "registry returned hashes=#{info['hashes'].inspect}"
+            )
+          end
+          result[platform] = hashes
+        end
+      rescue Excon::Error, JSON::ParserError
+        raise error("Could not fetch provider package hashes for #{identifier} v#{version}")
       end
 
       # Fetch all the versions of a provider, and return a Version
