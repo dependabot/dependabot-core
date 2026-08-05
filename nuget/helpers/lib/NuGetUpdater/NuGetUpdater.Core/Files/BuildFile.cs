@@ -4,6 +4,10 @@ using DiffPlex;
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
 
+using NuGetUpdater.Core.Utilities;
+
+using static NuGetUpdater.Core.Utilities.EOLHandling;
+
 namespace NuGetUpdater.Core;
 
 internal abstract class BuildFile
@@ -13,6 +17,7 @@ internal abstract class BuildFile
     public string RelativePath => System.IO.Path.GetRelativePath(BasePath, Path);
     public bool IsOutsideBasePath => RelativePath.StartsWith("..");
     public bool FailedToParse { get; protected set; }
+    public bool HasFinalNewLine { get; protected set; }
 
     public BuildFile(string basePath, string path)
     {
@@ -46,6 +51,7 @@ internal abstract partial class BuildFile<T>
     {
         Contents = contents;
         _originalContentsText = GetContentsString(contents);
+        HasFinalNewLine = _originalContentsText.HasFinalNewLine();
     }
 
     public void Update(T contents)
@@ -61,6 +67,9 @@ internal abstract partial class BuildFile<T>
         {
             return false;
         }
+
+        // Ensure that the final new line is preserved (if present) when saving the file using the LF EOL type.
+        currentContentsText = currentContentsText.SetFinalNewLine(HasFinalNewLine, EOLType.LF);
 
         await File.WriteAllTextAsync(Path, currentContentsText);
         _originalContentsText = currentContentsText;
