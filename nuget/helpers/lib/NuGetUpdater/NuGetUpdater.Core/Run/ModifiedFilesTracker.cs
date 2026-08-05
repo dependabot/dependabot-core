@@ -15,6 +15,7 @@ public class ModifiedFilesTracker
     private readonly ILogger _logger;
 
     private readonly Dictionary<string, string> _originalDependencyFileContents = [];
+    private readonly Dictionary<string, bool> _originalDependencyFileFinalNewLines = [];
     private readonly Dictionary<string, EOLType> _originalDependencyFileEOFs = [];
     private readonly Dictionary<string, bool> _originalDependencyFileBOMs = [];
     private string[] _nonProjectFiles = [];
@@ -87,6 +88,7 @@ public class ModifiedFilesTracker
             var content = await File.ReadAllTextAsync(localFullPath);
             var rawContent = await File.ReadAllBytesAsync(localFullPath);
             _originalDependencyFileContents[repoFullPath] = content;
+            _originalDependencyFileFinalNewLines[repoFullPath] = content.HasFinalNewLine();
             _originalDependencyFileEOFs[repoFullPath] = content.GetPredominantEOL();
             _originalDependencyFileBOMs[repoFullPath] = rawContent.HasBOM();
         }
@@ -140,6 +142,7 @@ public class ModifiedFilesTracker
             var originalContent = _originalDependencyFileContents[repoFullPath];
             var updatedContent = await File.ReadAllTextAsync(localFullPath);
 
+            updatedContent = updatedContent.SetFinalNewLine(_originalDependencyFileFinalNewLines[repoFullPath], _originalDependencyFileEOFs[repoFullPath]);
             updatedContent = updatedContent.SetEOL(_originalDependencyFileEOFs[repoFullPath]);
             var updatedRawContent = updatedContent.SetBOM(_originalDependencyFileBOMs[repoFullPath]);
             await File.WriteAllBytesAsync(localFullPath, updatedRawContent);
@@ -165,6 +168,7 @@ public class ModifiedFilesTracker
                 if (restoreOriginalContents)
                 {
                     var originalRawContent = originalContent
+                        .SetFinalNewLine(_originalDependencyFileFinalNewLines[repoFullPath], _originalDependencyFileEOFs[repoFullPath])
                         .SetEOL(_originalDependencyFileEOFs[repoFullPath])
                         .SetBOM(_originalDependencyFileBOMs[repoFullPath]);
                     await File.WriteAllBytesAsync(localFullPath, originalRawContent);
