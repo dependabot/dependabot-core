@@ -194,10 +194,9 @@ module Dependabot
         @files = files
       end
 
-      # The canonical set of files handed across the fetch/update trust boundary.
-      # This is the single, explicit contract for "which files the
-      # update phase is allowed to see": the fetch phase serialises exactly this
-      # set, and nothing else (no working-tree clone, no `.git`) crosses.
+      # The canonical set of files intended to cross the fetch/update trust boundary.
+      # Callers that persist fetched files should serialize exactly this set.
+      # Ecosystems may override this method to narrow the default full fetched set.
       sig { overridable.returns(T::Array[DependencyFile]) }
       def files_to_persist
         files
