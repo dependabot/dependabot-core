@@ -25,23 +25,18 @@ module Dependabot
         require_relative "requirement_file_updater"
         require_relative "setup_file_sanitizer"
 
-        UNSAFE_PACKAGES = T.let(%w(setuptools distribute pip).freeze, T::Array[String])
-        INCOMPATIBLE_VERSIONS_REGEX = T.let(
-          Regexp.new(
-            "(?:not supported between instances of 'InstallationCandidate'" \
-            "|There are incompatible versions in the resolved dependencies).*\\z",
-            Regexp::MULTILINE
-          ),
-          Regexp
+        UNSAFE_PACKAGES = %w(setuptools distribute pip).freeze
+        INCOMPATIBLE_VERSIONS_REGEX = Regexp.new(
+          "(?:not supported between instances of 'InstallationCandidate'" \
+          "|There are incompatible versions in the resolved dependencies).*\\z",
+          Regexp::MULTILINE
         )
-        WARNINGS = T.let(/\s*# WARNING:.*\Z/m, Regexp)
-        UNSAFE_NOTE = T.let(/\s*# The following packages are considered to be unsafe.*\Z/m, Regexp)
-        RESOLVER_REGEX = T.let(/(?<=--resolver=)(\w+)/, Regexp)
-        UNSAFE_PACKAGE_OPTION_REGEX = T.let(/--unsafe-package(?:=|\s+)(?<name>[^\s\\]+)/, Regexp)
-        NATIVE_COMPILATION_ERROR = T.let(
-          "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1",
-          String
-        )
+        WARNINGS = /\s*# WARNING:.*\Z/m
+        UNSAFE_NOTE = /\s*# The following packages are considered to be unsafe.*\Z/m
+        RESOLVER_REGEX = /(?<=--resolver=)(\w+)/
+        UNSAFE_PACKAGE_OPTION_REGEX = /--unsafe-package(?:=|\s+)(?<name>[^\s\\]+)/
+        NATIVE_COMPILATION_ERROR =
+          "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1"
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
@@ -60,10 +55,10 @@ module Dependabot
             index_urls: T.nilable(T::Array[T.nilable(String)])
           ).void
         end
-        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil) # rubocop:disable Metrics/AbcSize
-          @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @index_urls = T.let(index_urls, T.nilable(T::Array[T.nilable(String)]))
+        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil)
+          @dependencies = dependencies
+          @dependency_files = dependency_files
+          @index_urls = index_urls
           @build_isolation = T.let(true, T::Boolean)
           @sanitized_setup_file_content = T.let({}, T::Hash[String, String])
           @requirement_map = T.let(nil, T.nilable(T::Hash[String, T::Array[String]]))
@@ -73,7 +68,7 @@ module Dependabot
           @setup_cfg_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
           @pip_compile_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
           @compiled_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
-          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @credentials = credentials
         end
 
         sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }

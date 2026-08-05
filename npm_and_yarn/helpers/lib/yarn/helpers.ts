@@ -65,6 +65,10 @@ class LightweightInstall extends (Install as any) {
   }
 }
 
-export const LOCKFILE_ENTRY_REGEX = /^(.*)@([^@]*?)$/;
+// Matches a yarn lockfile entry key, correctly handling:
+// - scoped packages:           @scope/name@requirement
+// - unscoped packages:         name@requirement
+// - git URLs with credentials: name@https://token@host/path (@ preserved in requirement)
+export const LOCKFILE_ENTRY_REGEX = /^(@[^@]+|[^@]+)@(.*)$/;
 
 export { LightweightAdd, LightweightInstall };

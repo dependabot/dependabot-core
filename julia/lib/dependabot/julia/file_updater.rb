@@ -17,7 +17,7 @@ module Dependabot
 
       # Matches a [compat] table header, tolerating indentation and a trailing
       # comment ("[compat]  # pins")
-      COMPAT_HEADER_PATTERN = T.let(/^\s*\[compat\]\s*(?:#.*)?$/, Regexp)
+      COMPAT_HEADER_PATTERN = /^\s*\[compat\]\s*(?:#.*)?$/
 
       sig { returns(T::Array[Regexp]) }
       def self.updated_files_regex

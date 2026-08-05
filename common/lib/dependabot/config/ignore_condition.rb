@@ -32,7 +32,7 @@ module Dependabot
         ).void
       end
       def initialize(dependency_name:, versions: nil, update_types: nil)
-        @dependency_name = T.let(dependency_name, String)
+        @dependency_name = dependency_name
         @versions = T.let(versions || [], T::Array[String])
         @update_types = T.let(update_types || [], T::Array[String])
       end

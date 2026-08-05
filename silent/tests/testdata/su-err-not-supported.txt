@@ -14,6 +14,8 @@ stdout '{"data":{"error-type":"dependency_file_not_supported","error-details":{"
 -- input.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   dependencies:
     - dependency-a
   source:

@@ -18,10 +18,7 @@ module Dependabot
 
         # Fixed regex for extracting the name+extras prefix from a PEP 508 entry.
         # Does not interpolate library input, avoiding polynomial backtracking.
-        PEP508_PREFIX = T.let(
-          /\A(?<prefix>(?<name>[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?)(?:\[[^\]]*\])?)/i,
-          Regexp
-        )
+        PEP508_PREFIX = /\A(?<prefix>(?<name>[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?)(?:\[[^\]]*\])?)/i
 
         # Pins a single PEP 508 dependency entry string to a specific version,
         # preserving extras and environment markers.
@@ -142,7 +139,7 @@ module Dependabot
             .gsub('#{', "{")
         end
 
-        UNSUPPORTED_SOURCE_TYPES = T.let(%w(directory file url).freeze, T::Array[String])
+        UNSUPPORTED_SOURCE_TYPES = %w(directory file url).freeze
 
         sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(String) }
         def freeze_top_level_dependencies_except(dependencies)

@@ -6,6 +6,7 @@ const stringify =
   require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
 
 import type { LockfileEntry } from "./lockfile-parser.js";
+import { LOCKFILE_ENTRY_REGEX } from "./helpers.js";
 
 // Get an array of a dependency's requested version ranges from a lockfile
 function getRequestedVersions(
@@ -13,9 +14,7 @@ function getRequestedVersions(
   lockfileJson: Record<string, LockfileEntry>
 ): string[] {
   const requestedVersions: string[] = [];
-  // Matching dependency name and version requirements which could be a full url:
-  // dep@version, @private-dep@version, private-dep@https:://token@gh.com...#ref
-  const re = /^(.[^@]*)@(.*?)$/;
+  const re = LOCKFILE_ENTRY_REGEX;
 
   Object.entries(lockfileJson).forEach(([name]) => {
     if (name.match(re)) {

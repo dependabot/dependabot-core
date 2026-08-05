@@ -20,8 +20,8 @@ module Dependabot
           ).void
         end
         def initialize(setup_file:, setup_cfg:)
-          @setup_file = T.let(setup_file, T.nilable(Dependabot::DependencyFile))
-          @setup_cfg = T.let(setup_cfg, T.nilable(Dependabot::DependencyFile))
+          @setup_file = setup_file
+          @setup_cfg = setup_cfg
           @install_requires_array = T.let(nil, T.nilable(T::Array[String]))
           @setup_requires_array = T.let(nil, T.nilable(T::Array[String]))
           @extras_require_hash = T.let(nil, T.nilable(T::Hash[String, T::Array[String]]))

@@ -22,7 +22,7 @@ module Dependabot
   class ApiClient # rubocop:disable Metrics/ClassLength
     extend T::Sig
 
-    ErrorDetails = T.type_alias { T::Hash[T.any(String, Symbol), T.anything] }
+    ErrorDetails = T.type_alias { Dependabot::ErrorDetails::Detail }
 
     MAX_REQUEST_RETRIES = 3
     INVALID_REQUEST_MSG = /The request contains invalid or unauthorized changes/
@@ -341,9 +341,10 @@ module Dependabot
     # rubocop:disable Metrics/MethodLength
     sig { params(job: T.nilable(Dependabot::Job)).void }
     def record_cooldown_meta(job)
-      return if job&.cooldown.nil?
+      # The CLI's local API does not implement this hosted-service telemetry endpoint.
+      return if job.nil? || job_id == "cli"
 
-      cooldown = T.must(job).cooldown
+      cooldown = job.cooldown
 
       begin
         ::Dependabot::OpenTelemetry.tracer.in_span("record_cooldown_meta", kind: :internal) do |_span|
@@ -353,13 +354,12 @@ module Dependabot
             data: [
               {
                 cooldown: {
-                  ecosystem_name: T.must(job).package_manager,
-                  config:
-                  {
-                    default_days: T.must(cooldown).default_days,
-                    semver_major_days: T.must(cooldown).semver_major_days,
-                    semver_minor_days: T.must(cooldown).semver_minor_days,
-                    semver_patch_days: T.must(cooldown).semver_patch_days
+                  ecosystem_name: job.package_manager,
+                  config: {
+                    default_days: cooldown.default_days,
+                    semver_major_days: cooldown.semver_major_days,
+                    semver_minor_days: cooldown.semver_minor_days,
+                    semver_patch_days: cooldown.semver_patch_days
                   }
                 }
               }
@@ -370,7 +370,13 @@ module Dependabot
 
           begin
             response = post(path: api_url, body: body.to_json)
-            raise ApiError, response.body if response.status >= 400
+
+            # Not every host implements this telemetry endpoint, so a client error won't clear on retry.
+            if response.status >= 500
+              raise ApiError, response.body
+            elsif response.status >= 400
+              Dependabot.logger.debug("Unable to record cooldown meta: #{response.status} #{response.body}")
+            end
           rescue Excon::Error::Socket, Excon::Error::Timeout, OpenSSL::SSL::SSLError, ApiError => e
             retry_count += 1
             if retry_count <= MAX_REQUEST_RETRIES

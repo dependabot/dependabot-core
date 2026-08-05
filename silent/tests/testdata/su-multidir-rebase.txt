@@ -74,3 +74,5 @@ job:
     repo: test/dependabot-testing
     branch: main
   package-manager: silent
+  cooldown:
+    default-days: 0

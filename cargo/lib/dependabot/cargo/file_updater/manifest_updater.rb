@@ -20,8 +20,8 @@ module Dependabot
           ).void
         end
         def initialize(dependencies:, manifest:)
-          @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
-          @manifest = T.let(manifest, Dependabot::DependencyFile)
+          @dependencies = dependencies
+          @manifest = manifest
         end
 
         sig { returns(String) }

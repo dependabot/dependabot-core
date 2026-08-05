@@ -385,6 +385,18 @@ RSpec.describe Dependabot::Updater::Operations::UpdateAllVersions do
       end
     end
 
+    context "when job is a version update without cooldown configured" do
+      it "passes the default cooldown to the UpdateChecker" do
+        update_all_versions.send(:update_checker_for, dependency, raise_on_ignored: false)
+
+        expect(stub_update_checker_class).to have_received(:new).with(
+          hash_including(
+            update_cooldown: having_attributes(default_days: Dependabot::Job::DEFAULT_COOLDOWN_DAYS)
+          )
+        )
+      end
+    end
+
     context "when job is a version update with cooldown configured" do
       let(:job_definition) do
         job_definition_fixture("bundler/version_updates/pull_request_simple").tap do |definition|

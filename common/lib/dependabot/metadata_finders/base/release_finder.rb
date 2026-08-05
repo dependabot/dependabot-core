@@ -398,12 +398,12 @@ module Dependabot
         sig { params(requirement: Dependabot::DependencyRequirement).returns(T.nilable(String)) }
         def requirement_ref(requirement)
           source = requirement.source
-          return unless source
+          return unless source.is_a?(Hash)
 
-          symbol_ref = T.cast(source[:ref], Object)
+          symbol_ref = source[:ref]
           return symbol_ref if symbol_ref.is_a?(String)
 
-          string_ref = T.cast(source["ref"], Object)
+          string_ref = source["ref"]
           string_ref if string_ref.is_a?(String)
         end
 

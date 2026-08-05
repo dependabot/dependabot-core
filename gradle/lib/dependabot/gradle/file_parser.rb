@@ -28,28 +28,22 @@ module Dependabot
       require_relative "file_parser/distributions_finder"
       require_relative "file_parser/property_value_finder"
 
-      SUPPORTED_BUILD_FILE_NAMES = T.let(
-        %w(build.gradle build.gradle.kts settings.gradle settings.gradle.kts).freeze,
-        T::Array[String]
-      )
+      SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts settings.gradle settings.gradle.kts).freeze
 
-      PROPERTY_REGEX = T.let(
-        /
+      PROPERTY_REGEX = /
           (?:\$\{property\((?<property_name>[^:\s]*?)\)\})|
           (?:\$\{(?<property_name>[^:\s]*?)\})|
           (?:\$(?<property_name>[^:\s"']*))
-        /x,
-        Regexp
-      )
+        /x
 
-      PART = T.let(%r{[^\s,@'":/\\]+}, Regexp)
-      VSN_PART = T.let(%r{[^\s,'":/\\]+}, Regexp)
-      DEPENDENCY_DECLARATION_REGEX = T.let(/(?:\(|\s)\s*['"](?<declaration>#{PART}:#{PART}:#{VSN_PART})['"]/o, Regexp)
+      PART = %r{[^\s,@'":/\\]+}
+      VSN_PART = %r{[^\s,'":/\\]+}
+      DEPENDENCY_DECLARATION_REGEX = /(?:\(|\s)\s*['"](?<declaration>#{PART}:#{PART}:#{VSN_PART})['"]/o
 
-      DEPENDENCY_SET_DECLARATION_REGEX = T.let(/(?:^|\s)dependencySet\((?<arguments>[^\)]+)\)\s*\{/, Regexp)
-      DEPENDENCY_SET_ENTRY_REGEX = T.let(/entry\s+['"](?<name>#{PART})['"]/o, Regexp)
-      PLUGIN_BLOCK_DECLARATION_REGEX = T.let(/(?:^|\s)plugins\s*\{/, Regexp)
-      PLUGIN_ID_REGEX = T.let(/['"](?<id>#{PART})['"]/o, Regexp)
+      DEPENDENCY_SET_DECLARATION_REGEX = /(?:^|\s)dependencySet\((?<arguments>[^\)]+)\)\s*\{/
+      DEPENDENCY_SET_ENTRY_REGEX = /entry\s+['"](?<name>#{PART})['"]/o
+      PLUGIN_BLOCK_DECLARATION_REGEX = /(?:^|\s)plugins\s*\{/
+      PLUGIN_ID_REGEX = /['"](?<id>#{PART})['"]/o
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
