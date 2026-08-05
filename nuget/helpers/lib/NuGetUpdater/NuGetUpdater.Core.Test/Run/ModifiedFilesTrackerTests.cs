@@ -430,6 +430,95 @@ public class ModifiedFilesTrackerTests
         Assert.Empty(updatedFiles);
     }
 
+    [Theory]
+    [InlineData("project.csproj",
+        "<Project Sdk=\"Microsoft.NET.Sdk\">\n  <PropertyGroup>\n    <TargetFramework>net9.0</TargetFramework>\n  </PropertyGroup>\n</Project>\n",
+        "<Project Sdk=\"Microsoft.NET.Sdk\">\n  <PropertyGroup>\n    <TargetFramework>net10.0</TargetFramework>\n  </PropertyGroup>\n</Project>",
+        "<Project Sdk=\"Microsoft.NET.Sdk\">\n  <PropertyGroup>\n    <TargetFramework>net10.0</TargetFramework>\n  </PropertyGroup>\n</Project>\n")]
+    [InlineData("project.csproj",
+        "<Project Sdk=\"Microsoft.NET.Sdk\">\n  <PropertyGroup>\n    <TargetFramework>net9.0</TargetFramework>\n  </PropertyGroup>\n</Project>",
+        "<Project Sdk=\"Microsoft.NET.Sdk\">\n  <PropertyGroup>\n    <TargetFramework>net10.0</TargetFramework>\n  </PropertyGroup>\n</Project>\n",
+        "<Project Sdk=\"Microsoft.NET.Sdk\">\n  <PropertyGroup>\n    <TargetFramework>net10.0</TargetFramework>\n  </PropertyGroup>\n</Project>")]
+    [InlineData("project.csproj",
+        "<Project Sdk=\"Microsoft.NET.Sdk\">\r\n  <PropertyGroup>\r\n    <TargetFramework>net9.0</TargetFramework>\r\n  </PropertyGroup>\r\n</Project>",
+        "<Project Sdk=\"Microsoft.NET.Sdk\">\r\n  <PropertyGroup>\r\n    <TargetFramework>net10.0</TargetFramework>\r\n  </PropertyGroup>\r\n</Project>\r\n",
+        "<Project Sdk=\"Microsoft.NET.Sdk\">\r\n  <PropertyGroup>\r\n    <TargetFramework>net10.0</TargetFramework>\r\n  </PropertyGroup>\r\n</Project>")]
+    [InlineData("packages.lock.json",
+        "{\"version\": 1, \"dependencies\": {\"Some.Package\": {\"version\": \"1.0.0\"}}}\n",
+        "{\"version\": 1, \"dependencies\": {\"Some.Package\": {\"version\": \"1.0.1\"}}}",
+        "{\"version\": 1, \"dependencies\": {\"Some.Package\": {\"version\": \"1.0.1\"}}}\n")]
+    [InlineData("packages.lock.json",
+        "{\"version\": 1, \"dependencies\": {\"Some.Package\": {\"version\": \"1.0.0\"}}}",
+        "{\"version\": 1, \"dependencies\": {\"Some.Package\": {\"version\": \"1.0.1\"}}}\n",
+        "{\"version\": 1, \"dependencies\": {\"Some.Package\": {\"version\": \"1.0.1\"}}}")]
+    [InlineData("packages.lock.json",
+        "{\"version\": 1, \"dependencies\": {\"Some.Package\": {\"version\": \"1.0.0\"}}}\r\n",
+        "{\"version\": 1, \"dependencies\": {\"Some.Package\": {\"version\": \"1.0.1\"}}}",
+        "{\"version\": 1, \"dependencies\": {\"Some.Package\": {\"version\": \"1.0.1\"}}}\r\n")]
+    [InlineData(".config/dotnet-tools.json",
+        "{\"version\": 1, \"tools\": {\"dotnet-ef\": {\"version\": \"9.0.100\"}}}\n",
+        "{\"version\": 1, \"tools\": {\"dotnet-ef\": {\"version\": \"9.0.200\"}}}",
+        "{\"version\": 1, \"tools\": {\"dotnet-ef\": {\"version\": \"9.0.200\"}}}\n")]
+    [InlineData(".config/dotnet-tools.json",
+        "{\"version\": 1, \"tools\": {\"dotnet-ef\": {\"version\": \"9.0.100\"}}}",
+        "{\"version\": 1, \"tools\": {\"dotnet-ef\": {\"version\": \"9.0.200\"}}}\n",
+        "{\"version\": 1, \"tools\": {\"dotnet-ef\": {\"version\": \"9.0.200\"}}}")]
+    [InlineData(".config/dotnet-tools.json",
+        "{\"version\": 1, \"tools\": {\"dotnet-ef\": {\"version\": \"9.0.100\"}}}\r\n",
+        "{\"version\": 1, \"tools\": {\"dotnet-ef\": {\"version\": \"9.0.200\"}}}",
+        "{\"version\": 1, \"tools\": {\"dotnet-ef\": {\"version\": \"9.0.200\"}}}\r\n")]
+    public async Task PreservesFinalNewLineStateInReportedContentAndRestore(
+        string relativePath,
+        string originalContent,
+        string modifiedContent,
+        string expectedReportedContent)
+    {
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("project.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net9.0</TargetFramework></PropertyGroup></Project>")
+        );
+
+        var repoContentsPath = new DirectoryInfo(tempDirectory.DirectoryPath);
+        var logger = new TestLogger();
+        var filePath = Path.Combine(tempDirectory.DirectoryPath, relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
+        File.WriteAllText(filePath, originalContent);
+        var initialFiles = ModifiedFilesTracker.GetInitiallyExistingFiles(repoContentsPath);
+
+        var discoveryResult = new WorkspaceDiscoveryResult()
+        {
+            Path = "/",
+            Projects = [
+                new ProjectDiscoveryResult()
+                {
+                    FilePath = "project.csproj",
+                    Dependencies = [],
+                    TargetFrameworks = ["net9.0"],
+                    ReferencedProjectPaths = [],
+                    ImportedFiles = [],
+                    AdditionalFiles = relativePath == "packages.lock.json" ? ["packages.lock.json"] : [],
+                }
+            ],
+            DotNetToolsJson = relativePath == ".config/dotnet-tools.json"
+                ? new DotNetToolsJsonDiscoveryResult()
+                {
+                    FilePath = ".config/dotnet-tools.json",
+                    Dependencies = [],
+                }
+                : null,
+        };
+
+        var tracker = new ModifiedFilesTracker(repoContentsPath, initialFiles, logger);
+        await tracker.StartTrackingAsync(discoveryResult);
+
+        File.WriteAllText(filePath, modifiedContent);
+
+        var updatedFiles = await tracker.StopTrackingAsync(restoreOriginalContents: true);
+
+        Assert.Single(updatedFiles);
+        Assert.Equal(expectedReportedContent, updatedFiles[0].Content);
+        Assert.Equal(originalContent, File.ReadAllText(filePath));
+    }
+
     [Fact]
     public async Task GetInitiallyExistingFiles_FindsAllEditableFileTypes()
     {
