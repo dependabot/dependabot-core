@@ -47,11 +47,11 @@ module Dependabot
           options:,
           repo_contents_path: nil
         )
-          @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @repo_contents_path = T.let(repo_contents_path, T.nilable(String))
-          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
-          @options = T.let(options, T::Hash[Symbol, T.untyped])
+          @dependencies = dependencies
+          @dependency_files = dependency_files
+          @repo_contents_path = repo_contents_path
+          @credentials = credentials
+          @options = options
           @updated_lockfile_content = T.let(nil, T.nilable(String))
           @gemfile = T.let(nil, T.nilable(Dependabot::DependencyFile))
           @lockfile = T.let(nil, T.nilable(Dependabot::DependencyFile))

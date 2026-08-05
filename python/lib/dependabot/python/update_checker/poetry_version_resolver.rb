@@ -78,10 +78,10 @@ module Dependabot
           ).void
         end
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
-          @dependency               = T.let(dependency, Dependabot::Dependency)
-          @dependency_files         = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials              = T.let(credentials, T::Array[Dependabot::Credential])
-          @repo_contents_path       = T.let(repo_contents_path, T.nilable(String))
+          @dependency               = dependency
+          @dependency_files         = dependency_files
+          @credentials              = credentials
+          @repo_contents_path       = repo_contents_path
           @error_handler = T.let(
             PoetryErrorHandler.new(dependencies: dependency, dependency_files: dependency_files),
             Dependabot::Python::PoetryErrorHandler
@@ -490,8 +490,8 @@ module Dependabot
         ).void
       end
       def initialize(dependencies:, dependency_files:)
-        @dependencies = T.let(dependencies, Dependabot::Dependency)
-        @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
+        @dependencies = dependencies
+        @dependency_files = dependency_files
       end
 
       private

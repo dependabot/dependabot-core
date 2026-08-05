@@ -36,9 +36,9 @@ module Dependabot
       ).void
     end
     def initialize(service:, job:, dependency_snapshot:)
-      @service = T.let(service, Dependabot::Service)
-      @job = T.let(job, Dependabot::Job)
-      @dependency_snapshot = T.let(dependency_snapshot, Dependabot::DependencySnapshot)
+      @service = service
+      @job = job
+      @dependency_snapshot = dependency_snapshot
     end
 
     sig { void }

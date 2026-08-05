@@ -19,8 +19,7 @@ module Dependabot
       class PbxprojUpdater
         extend T::Sig
 
-        PACKAGE_REF_BLOCK = T.let(
-          /
+        PACKAGE_REF_BLOCK = /
             (isa\s*=\s*XCRemoteSwiftPackageReference;\s*
             repositoryURL\s*=\s*")
             ([^"]+)
@@ -28,13 +27,11 @@ module Dependabot
             requirement\s*=\s*\{)
             ([^}]*)
             (\};)
-          /mx,
-          Regexp
-        )
+          /mx
 
-        KIND_PATTERN = T.let(/kind\s*=\s*(\w+);/, Regexp)
-        MIN_VERSION_PATTERN = T.let(/minimumVersion\s*=\s*[0-9A-Za-z.+-]+;/, Regexp)
-        VERSION_PATTERN = T.let(/\bversion\s*=\s*[0-9A-Za-z.+-]+;/, Regexp)
+        KIND_PATTERN = /kind\s*=\s*(\w+);/
+        MIN_VERSION_PATTERN = /minimumVersion\s*=\s*[0-9A-Za-z.+-]+;/
+        VERSION_PATTERN = /\bversion\s*=\s*[0-9A-Za-z.+-]+;/
 
         sig do
           params(

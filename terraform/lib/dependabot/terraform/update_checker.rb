@@ -18,10 +18,7 @@ module Dependabot
 
       require_relative "update_checker/latest_version_resolver"
 
-      ELIGIBLE_SOURCE_TYPES = T.let(
-        %w(git provider registry).freeze,
-        T::Array[String]
-      )
+      ELIGIBLE_SOURCE_TYPES = %w(git provider registry).freeze
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version

@@ -181,6 +181,25 @@ module T::Helpers
   def requires_ancestor(&block); end
 end
 
+# pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_type_patch.rb:28
+module T::Private::Casts
+  class << self
+    # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_type_patch.rb:34
+    def cast(value, type, cast_method); end
+  end
+end
+
+# pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_type_patch.rb:29
+module T::Private::Casts::TapiocaGenericTypeCastPatch
+  # https://github.com/sorbet/sorbet/commit/b8d64c7fd9a08e2b9159b5d592bc2de6d586b44a
+  # inlines the Module fast path in `T.let`, `T.cast`, `T.bind`, and
+  # `T.assert_type!`, so generic module clones can reach this cast path
+  # without going through `T::Utils::Private::TapiocaGenericTypeCoercePatch`.
+  #
+  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_type_patch.rb:34
+  def cast(value, type, cast_method); end
+end
+
 # pkg:gem/tapioca#lib/tapioca/sorbet_ext/proc_bind_patch.rb:28
 module T::Private::Methods
   class << self
@@ -235,17 +254,20 @@ module T::Types::Simple::NamePatch
   def name; end
 end
 
-# pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:87
+# pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_type_patch.rb:6
 module T::Utils::Private
   class << self
-    # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:89
+    # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_type_patch.rb:10
     def coerce_and_check_module_types(val, check_val, check_module_type); end
   end
 end
 
-# pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:88
-module T::Utils::Private::PrivateCoercePatch
-  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:89
+# Preserve Tapioca's generic type variables and instantiated generic
+# names when Sorbet coerces them into runtime types.
+#
+# pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_type_patch.rb:9
+module T::Utils::Private::TapiocaGenericTypeCoercePatch
+  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_type_patch.rb:10
   def coerce_and_check_module_types(val, check_val, check_module_type); end
 end
 
@@ -263,6 +285,9 @@ end
 # For example,
 # the package URL for this Ruby package at version 0.1.0 is
 # `pkg:ruby/mattt/packageurl-ruby@0.1.0`.
+# This code rewrites RBS comments back into Sorbet's signatures as the files are being loaded.
+# This will allow `sorbet-runtime` to wrap the methods as if they were originally written with the `sig{}` blocks.
+# This will in turn allow Tapioca to use this signatures to generate typed RBI files.
 #
 # pkg:gem/tapioca#lib/tapioca/runtime/trackers/autoload.rb:4
 module Tapioca; end
@@ -320,22 +345,22 @@ class Tapioca::Cli < ::Thor
   include ::Tapioca::ConfigHelper
   include ::Tapioca::EnvHelper
 
-  # pkg:gem/tapioca#lib/tapioca/cli.rb:373
+  # pkg:gem/tapioca#lib/tapioca/cli.rb:383
   def __print_version; end
 
-  # pkg:gem/tapioca#lib/tapioca/cli.rb:355
+  # pkg:gem/tapioca#lib/tapioca/cli.rb:365
   def annotations; end
 
-  # pkg:gem/tapioca#lib/tapioca/cli.rb:327
+  # pkg:gem/tapioca#lib/tapioca/cli.rb:337
   def check_shims; end
 
   # pkg:gem/tapioca#lib/tapioca/cli.rb:46
   def configure; end
 
-  # pkg:gem/tapioca#lib/tapioca/cli.rb:146
+  # pkg:gem/tapioca#lib/tapioca/cli.rb:150
   def dsl(*constant_or_paths); end
 
-  # pkg:gem/tapioca#lib/tapioca/cli.rb:269
+  # pkg:gem/tapioca#lib/tapioca/cli.rb:279
   def gem(*gems); end
 
   # pkg:gem/tapioca#lib/tapioca/cli.rb:27
@@ -349,20 +374,20 @@ class Tapioca::Cli < ::Thor
 
   private
 
-  # pkg:gem/tapioca#lib/tapioca/cli.rb:398
+  # pkg:gem/tapioca#lib/tapioca/cli.rb:408
   def print_init_next_steps; end
 
   class << self
     # Indicates that we are running from the LSP, set using the `addon_mode!` method
     #
-    # pkg:gem/tapioca#lib/tapioca/cli.rb:382
+    # pkg:gem/tapioca#lib/tapioca/cli.rb:392
     def addon_mode; end
 
-    # pkg:gem/tapioca#lib/tapioca/cli.rb:385
+    # pkg:gem/tapioca#lib/tapioca/cli.rb:395
     sig { void }
     def addon_mode!; end
 
-    # pkg:gem/tapioca#lib/tapioca/cli.rb:390
+    # pkg:gem/tapioca#lib/tapioca/cli.rb:400
     sig { returns(T::Boolean) }
     def exit_on_failure?; end
   end
@@ -427,15 +452,15 @@ class Tapioca::Commands::AbstractDsl < ::Tapioca::Commands::CommandWithoutTracke
 
   private
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:88
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:93
   sig { returns(T::Array[::String]) }
   def all_requested_constants; end
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:284
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:289
   sig { params(cause: ::Symbol, files: T::Array[::String]).returns(::String) }
   def build_error_for_files(cause, files); end
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:208
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:213
   sig do
     params(
       constant_name: ::String,
@@ -446,7 +471,7 @@ class Tapioca::Commands::AbstractDsl < ::Tapioca::Commands::CommandWithoutTracke
   end
   def compile_dsl_rbi(constant_name, rbi, outpath: T.unsafe(nil), quiet: T.unsafe(nil)); end
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:150
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:155
   sig do
     params(
       constant_names: T::Array[::String],
@@ -455,27 +480,27 @@ class Tapioca::Commands::AbstractDsl < ::Tapioca::Commands::CommandWithoutTracke
   end
   def constantize(constant_names, ignore_missing: T.unsafe(nil)); end
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:175
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:180
   sig { params(compiler_names: T::Array[::String]).returns(T::Array[T.class_of(Tapioca::Dsl::Compiler)]) }
   def constantize_compilers(compiler_names); end
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:344
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:349
   sig { returns(T::Array[::String]) }
   def constants_from_requested_paths; end
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:111
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:116
   sig { returns(::Tapioca::Dsl::Pipeline) }
   def create_pipeline; end
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:247
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:252
   sig { params(constant_name: ::String).returns(::Pathname) }
   def dsl_rbi_filename(constant_name); end
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:136
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:141
   sig { params(requested_constants: T::Array[::String], path: ::Pathname).returns(T::Set[::Pathname]) }
   def existing_rbi_filenames(requested_constants, path: T.unsafe(nil)); end
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:339
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:344
   sig { params(constant: ::String).returns(::String) }
   def generate_command_for(constant); end
 
@@ -483,43 +508,43 @@ class Tapioca::Commands::AbstractDsl < ::Tapioca::Commands::CommandWithoutTracke
   sig { params(outpath: ::Pathname, quiet: T::Boolean).returns(T::Set[::Pathname]) }
   def generate_dsl_rbi_files(outpath, quiet:); end
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:98
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:103
   sig { void }
   def load_application; end
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:226
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:231
   sig { params(dir: ::Pathname).void }
   def perform_dsl_verification(dir); end
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:93
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:98
   sig { returns(::Tapioca::Dsl::Pipeline) }
   def pipeline; end
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:235
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:240
   sig { params(files: T::Set[::Pathname]).void }
   def purge_stale_dsl_rbi_files(files); end
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:334
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:339
   sig { params(constant: ::String).returns(::String) }
   def rbi_filename_for(constant); end
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:315
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:320
   sig { params(path: ::Pathname).returns(T::Array[::Pathname]) }
   def rbi_files_in(path); end
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:293
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:298
   sig { params(diff: T::Hash[::String, ::Symbol], command: ::Symbol).void }
   def report_diff_and_exit_if_out_of_date(diff, command); end
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:195
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:200
   sig { params(name: ::String).returns(T.nilable(T.class_of(Tapioca::Dsl::Compiler))) }
   def resolve(name); end
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:322
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:327
   sig { params(class_name: ::String).returns(::String) }
   def underscore(class_name); end
 
-  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:252
+  # pkg:gem/tapioca#lib/tapioca/commands/abstract_dsl.rb:257
   sig { params(tmp_dir: ::Pathname).returns(T::Hash[::String, ::Symbol]) }
   def verify_dsl_rbi(tmp_dir:); end
 end
@@ -861,11 +886,15 @@ end
 
 # pkg:gem/tapioca#lib/tapioca/commands/dsl_generate.rb:6
 class Tapioca::Commands::DslGenerate < ::Tapioca::Commands::AbstractDsl
+  # pkg:gem/tapioca#lib/tapioca/commands/dsl_generate.rb:8
+  sig { params(only_bootsnap_rbs_cache: T::Boolean, kwargs: T.untyped).void }
+  def initialize(only_bootsnap_rbs_cache: T.unsafe(nil), **kwargs); end
+
   private
 
   # @override
   #
-  # pkg:gem/tapioca#lib/tapioca/commands/dsl_generate.rb:11
+  # pkg:gem/tapioca#lib/tapioca/commands/dsl_generate.rb:17
   sig { override.void }
   def execute; end
 end
@@ -1285,13 +1314,13 @@ class Tapioca::Dsl::Pipeline
 
   private
 
-  # pkg:gem/tapioca#lib/tapioca/dsl/pipeline.rb:197
+  # pkg:gem/tapioca#lib/tapioca/dsl/pipeline.rb:173
   sig { void }
   def abort_if_pending_migrations!; end
 
   # pkg:gem/tapioca#lib/tapioca/dsl/pipeline.rb:143
   sig { params(constants: T::Set[T::Module[T.anything]]).returns(T::Set[T::Module[T.anything]]) }
-  def filter_anonymous_and_reloaded_constants(constants); end
+  def filter_anonymous_constants(constants); end
 
   # pkg:gem/tapioca#lib/tapioca/dsl/pipeline.rb:113
   sig do
@@ -1312,11 +1341,11 @@ class Tapioca::Dsl::Pipeline
   end
   def gather_constants(requested_constants, requested_paths, skipped_constants); end
 
-  # pkg:gem/tapioca#lib/tapioca/dsl/pipeline.rb:172
+  # pkg:gem/tapioca#lib/tapioca/dsl/pipeline.rb:148
   sig { params(constant: T::Module[T.anything]).returns(T.nilable(::RBI::File)) }
   def rbi_for_constant(constant); end
 
-  # pkg:gem/tapioca#lib/tapioca/dsl/pipeline.rb:191
+  # pkg:gem/tapioca#lib/tapioca/dsl/pipeline.rb:167
   sig { params(error: ::String).void }
   def report_error(error); end
 end
@@ -2838,6 +2867,23 @@ end
 # pkg:gem/tapioca#lib/tapioca/helpers/rbi_helper.rb:97
 Tapioca::RBIHelper::TYPE_PARAMETER_MATCHER = T.let(T.unsafe(nil), Regexp)
 
+# pkg:gem/tapioca#lib/tapioca/rbs/rewriter.rb:9
+module Tapioca::RBS; end
+
+# Raises when the host calls `Bootsnap.setup` after tapioca's setup. Host's call
+# would overwrite tapioca's cache directory, so rewritten iseqs would end up in
+# the host's regular cache.
+#
+# pkg:gem/tapioca#lib/tapioca/rbs/rewriter.rb:15
+module Tapioca::RBS::BootsnapGuard
+  # pkg:gem/tapioca#lib/tapioca/rbs/rewriter.rb:19
+  sig { params(_kwargs: T.untyped).void }
+  def setup(**_kwargs); end
+end
+
+# pkg:gem/tapioca#lib/tapioca/rbs/rewriter.rb:10
+class Tapioca::RBS::HostBootsnapSetupError < ::StandardError; end
+
 # pkg:gem/tapioca#lib/tapioca/repo_index.rb:5
 class Tapioca::RepoIndex
   # pkg:gem/tapioca#lib/tapioca/repo_index.rb:21
@@ -2928,7 +2974,7 @@ end
 # This class is responsible for storing and looking up information related to generic types.
 #
 # The class stores 2 different kinds of data, in two separate lookup tables:
-#   1. a lookup of generic type instances by name: `@generic_instances`
+#   1. a lookup of generic type instances by constant and name: `@generic_instances`
 #   2. a lookup of type variable serializer by constant and type variable
 #      instance: `@type_variables`
 #
@@ -2946,25 +2992,26 @@ end
 # pkg:gem/tapioca#lib/tapioca/runtime/generic_type_registry.rb:23
 module Tapioca::Runtime::GenericTypeRegistry
   class << self
-    # pkg:gem/tapioca#lib/tapioca/runtime/generic_type_registry.rb:71
+    # pkg:gem/tapioca#lib/tapioca/runtime/generic_type_registry.rb:73
     def generic_type_instance?(instance); end
 
-    # pkg:gem/tapioca#lib/tapioca/runtime/generic_type_registry.rb:76
+    # pkg:gem/tapioca#lib/tapioca/runtime/generic_type_registry.rb:80
     def lookup_type_variables(constant); end
 
     # This method is responsible for building the name of the instantiated concrete type
     # and cloning the given constant so that we can return a type that is the same
     # as the current type but is a different instance and has a different name method.
     #
-    # We cache those cloned instances by their name in `@generic_instances`, so that
-    # we don't keep instantiating a new type every single time it is referenced.
+    # We cache those cloned instances by their original constant and their name in
+    # `@generic_instances`, so that we don't keep instantiating a new type every single
+    # time it is referenced.
     # For example, `[Foo[Integer], Foo[Integer], Foo[Integer], Foo[String]]` will only
     # result in 2 clones (1 for `Foo[Integer]` and another for `Foo[String]`) and
     # 2 hash lookups (for the other two `Foo[Integer]`s).
     #
     # This method returns the created or cached clone of the constant.
     #
-    # pkg:gem/tapioca#lib/tapioca/runtime/generic_type_registry.rb:56
+    # pkg:gem/tapioca#lib/tapioca/runtime/generic_type_registry.rb:57
     def register_type(constant, types); end
 
     # This method is called from intercepted calls to `type_member` and `type_template`.
@@ -2977,19 +3024,16 @@ module Tapioca::Runtime::GenericTypeRegistry
     # Finally, the original `type_variable` is returned from this method, so that the caller
     # can return it from the original methods as well.
     #
-    # pkg:gem/tapioca#lib/tapioca/runtime/generic_type_registry.rb:90
+    # pkg:gem/tapioca#lib/tapioca/runtime/generic_type_registry.rb:94
     def register_type_variable(constant, type_variable); end
 
     private
 
-    # pkg:gem/tapioca#lib/tapioca/runtime/generic_type_registry.rb:99
+    # pkg:gem/tapioca#lib/tapioca/runtime/generic_type_registry.rb:103
     def create_generic_type(constant, name); end
 
-    # pkg:gem/tapioca#lib/tapioca/runtime/generic_type_registry.rb:141
+    # pkg:gem/tapioca#lib/tapioca/runtime/generic_type_registry.rb:145
     def create_safe_subclass(constant); end
-
-    # pkg:gem/tapioca#lib/tapioca/runtime/generic_type_registry.rb:168
-    def lookup_or_initialize_type_variables(constant); end
   end
 end
 
@@ -3496,12 +3540,12 @@ Tapioca::TAPIOCA_CONFIG_FILE = T.let(T.unsafe(nil), String)
 # pkg:gem/tapioca#lib/tapioca.rb:15
 Tapioca::TAPIOCA_DIR = T.let(T.unsafe(nil), String)
 
-# pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:108
+# pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:88
 class Tapioca::TypeVariable < ::T::Types::TypeVariable
-  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:109
+  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:89
   def initialize(name, variance); end
 
-  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:114
+  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:94
   def name; end
 end
 
@@ -3511,36 +3555,36 @@ end
 # need to do any matching of constants to type variables to bind their names, Ruby will
 # do that automatically for us and we get the `name` method for free from `Module`.
 #
-# pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:122
+# pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:102
 class Tapioca::TypeVariableModule < ::Module
-  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:137
+  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:117
   def initialize(context, type, variance, bounds_proc); end
 
-  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:173
+  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:153
   def coerce_to_type_variable; end
 
-  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:153
+  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:133
   def fixed?; end
 
-  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:147
+  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:127
   def name; end
 
-  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:158
+  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:138
   def serialize; end
 
-  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:134
+  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:114
   def type; end
 
   private
 
-  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:180
+  # pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:160
   def bounds; end
 end
 
-# pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:131
+# pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:111
 Tapioca::TypeVariableModule::DEFAULT_BOUNDS_PROC = T.let(T.unsafe(nil), Proc)
 
-# pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:123
+# pkg:gem/tapioca#lib/tapioca/sorbet_ext/generic_name_patch.rb:103
 class Tapioca::TypeVariableModule::Type < ::T::Enum
   enums do
     HasAttachedClass = new

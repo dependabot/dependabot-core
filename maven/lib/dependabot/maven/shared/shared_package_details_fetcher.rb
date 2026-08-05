@@ -17,11 +17,11 @@ module Dependabot
 
         abstract!
 
-        MAVEN_METADATA_XML = T.let("maven-metadata.xml", String)
-        REPOSITORY_TYPE = T.let("maven_repository", String)
-        URL_KEY = T.let("url", String)
-        AUTH_HEADERS_KEY = T.let("auth_headers", String)
-        DEFAULT_CENTRAL_REPO_URL = T.let("https://repo.maven.apache.org/maven2", String)
+        MAVEN_METADATA_XML = "maven-metadata.xml"
+        REPOSITORY_TYPE = "maven_repository"
+        URL_KEY = "url"
+        AUTH_HEADERS_KEY = "auth_headers"
+        DEFAULT_CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
         RepositoryDetails = T.type_alias { T::Hash[String, T.any(String, T::Hash[String, String])] }
         VersionDetails = T.type_alias do
           {

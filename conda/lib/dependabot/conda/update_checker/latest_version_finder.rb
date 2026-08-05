@@ -36,8 +36,8 @@ module Dependabot
           security_advisories:,
           cooldown_options:
         )
-          @raise_on_ignored = T.let(raise_on_ignored, T::Boolean)
-          @cooldown_options = T.let(cooldown_options, T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+          @raise_on_ignored = raise_on_ignored
+          @cooldown_options = cooldown_options
           @conda_client = T.let(CondaRegistryClient.new, CondaRegistryClient)
 
           super

@@ -12,7 +12,7 @@ module Dependabot
       class DirectoryTreeFetcher
         extend T::Sig
 
-        SKIP_DIRECTORIES = T.let(%w(.git .bazel-* bazel-* node_modules .github).freeze, T::Array[String])
+        SKIP_DIRECTORIES = %w(.git .bazel-* bazel-* node_modules .github).freeze
 
         sig { params(fetcher: FileFetcher).void }
         def initialize(fetcher:)

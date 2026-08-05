@@ -180,7 +180,7 @@ module Dependabot
         content = go_env&.content
         return false unless content
 
-        keys.any? { |key| content.include?(key) }
+        keys.any? { |key| content.index(key) }
       end
 
       sig { void }
