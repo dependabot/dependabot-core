@@ -365,6 +365,46 @@ RSpec.describe Dependabot::Hex::FileParser do
       its(:length) { is_expected.to eq(2) }
     end
 
+    context "when the parser helper writes a result alongside stdout output" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .and_raise("legacy helper protocol invoked")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .and_call_original
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(array_including("mix", "run", "parse_deps.exs"), anything) do
+            File.write(
+              ".dependabot-result.json",
+              JSON.generate(
+                [{
+                  name: "plug",
+                  package_name: "plug",
+                  from: "mix.exs",
+                  version: "1.3.5",
+                  groups: [],
+                  checksum: "checksum",
+                  requirement: "~> 1.3.0",
+                  source: nil,
+                  top_level: true
+                }]
+              )
+            )
+            "warning from mix.exs"
+          end
+      end
+
+      it "reads dependencies from the filesystem using an isolated Hex home" do
+        expect(dependencies.map(&:name)).to eq(["plug"])
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          array_including("mix", "run", "parse_deps.exs"),
+          hash_including(
+            env: hash_including("HEX_HOME" => end_with("/.hex")),
+            fingerprint: "mix run parse_deps.exs"
+          )
+        )
+      end
+    end
+
     context "with an umbrella app" do
       let(:mixfile_fixture_name) { "umbrella" }
       let(:lockfile_fixture_name) { "umbrella" }
