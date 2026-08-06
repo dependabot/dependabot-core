@@ -3,11 +3,11 @@
 
 require "sorbet-runtime"
 
+require "dependabot/hex/credential_helpers"
 require "dependabot/hex/file_updater"
 require "dependabot/hex/file_updater/mixfile_updater"
 require "dependabot/hex/file_updater/mixfile_sanitizer"
 require "dependabot/hex/file_updater/mixfile_requirement_updater"
-require "dependabot/hex/credential_helpers"
 require "dependabot/hex/native_helpers"
 require "dependabot/hex/version"
 require "dependabot/shared_helpers"
@@ -40,16 +40,15 @@ module Dependabot
               FileUtils.cp(elixir_helper_do_update_path, "do_update.exs")
 
               SharedHelpers.with_git_configured(credentials: credentials) do
-                SharedHelpers.run_helper_subprocess(
-                  env: mix_env,
-                  command: "mix run #{elixir_helper_path}",
-                  function: "get_updated_lockfile",
-                  args: [Dir.pwd, dependency.name, CredentialHelpers.hex_credentials(credentials)]
+                CredentialHelpers.configure(credentials: credentials, env: mix_env)
+                run_mix_command(
+                  mix_run_command("do_update.exs", dependency.name),
+                  fingerprint: "mix run do_update.exs #{dependency.name}"
                 )
+                File.read("mix.lock")
               end
             end
-            content = T.cast(result, String)
-            @updated_lockfile_content = content
+            @updated_lockfile_content = result
           end
 
           post_process_lockfile(@updated_lockfile_content)
@@ -86,22 +85,29 @@ module Dependabot
 
         sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
         def handle_hex_errors(error)
-          match = error.message.match(/No authenticated organization found for (?<repo>[a-z_]+)\./)
-          match ||= error.message.match(/Public key fingerprint mismatch for repo "(?<repo>[a-z_]+)"/)
-          match ||= error.message.match(/Missing credentials for "(?<repo>[a-z_]+)"/)
-          match ||= error.message.match(/(?:Downloading|Failed to decode) public key for repo "(?<repo>[a-z_]+)"/)
-          match ||= error.message.match(/Failed to fetch record for (?<repo>[a-z_]+)(?::(?<org>[a-z_]+))?/)
-
-          if match
-            name = match.names.include?("org") && match[:org] ? match[:org] : match[:repo]
-            raise Dependabot::PrivateSourceAuthenticationFailure, name
-          end
-
-          if error.message.include?("JSON") || error.message.include?("parse")
-            raise Dependabot::DependencyFileNotResolvable, "Failed to parse response from Hex helper: #{error.message}"
-          end
+          source = CredentialHelpers.authentication_source(error)
+          raise Dependabot::PrivateSourceAuthenticationFailure, source if source
 
           raise Dependabot::DependencyFileNotResolvable, "Failed to update lockfile: #{error.message}"
+        end
+
+        sig do
+          params(
+            command: T::Array[String],
+            fingerprint: String,
+            env: T::Hash[String, String]
+          ).void
+        end
+        def run_mix_command(command, fingerprint:, env: {})
+          SharedHelpers.run_shell_command(command, env: mix_env.merge(env), fingerprint: fingerprint)
+        end
+
+        sig { params(script: String, args: String).returns(T::Array[String]) }
+        def mix_run_command(script, *args)
+          [
+            "mix", "run", "--no-deps-check", "--no-start", "--no-compile",
+            "--no-elixir-version-check", script, "--", *args
+          ]
         end
 
         sig { void }
@@ -165,14 +171,9 @@ module Dependabot
         sig { returns(T::Hash[String, String]) }
         def mix_env
           {
-            "MIX_EXS" => File.join(NativeHelpers.hex_helpers_dir, "mix.exs"),
+            "HEX_HOME" => File.join(Dir.pwd, ".hex"),
             "MIX_QUIET" => "1"
           }
-        end
-
-        sig { returns(String) }
-        def elixir_helper_path
-          File.join(NativeHelpers.hex_helpers_dir, "lib/run.exs")
         end
 
         sig { returns(String) }
