@@ -574,13 +574,12 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           )]
         end
 
-        # The Elixir process hangs waiting for input in this case. This spec
-        # passes as long as we're intelligently timing out.
-        it "raises a helpful error" do
-          error_class = Dependabot::PrivateSourceAuthenticationFailure
+        it "does not infer authentication from a qualified fetch failure alone" do
           expect { latest_resolvable_version }
-            .to raise_error(error_class) do |error|
-              expect(error.source).to eq("dependabot")
+            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
+              expect(error.message).to include(
+                "Failed to fetch record for hexpm:dependabot/example_package_a from registry"
+              )
             end
         end
       end
@@ -613,10 +612,16 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
 
         before do
-          # Mock successful version resolution from private registry
-          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "get_latest_resolvable_version"))
-            .and_return("1.1.0")
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .and_call_original
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with(array_including("lib/configure_credentials.exs"), anything)
+            .and_return("")
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with(array_including(end_with("/check_update.exs")), anything) do
+              File.write(".dependabot-result", "1.1.0")
+              ""
+            end
         end
 
         it "returns the expected version" do
@@ -637,9 +642,10 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
 
         before do
-          # Mock subprocess to raise authentication failure with bad credentials
-          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "get_latest_resolvable_version"))
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .and_call_original
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with(array_including("lib/configure_credentials.exs"), anything)
             .and_raise(
               Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                 message: "Downloading public key for repo \"dependabot\" failed: {:error, :econnrefused}",
@@ -672,10 +678,16 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
 
         before do
-          # Mock successful version resolution with correct fingerprint
-          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "get_latest_resolvable_version"))
-            .and_return("1.1.0")
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .and_call_original
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with(array_including("lib/configure_credentials.exs"), anything)
+            .and_return("")
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with(array_including(end_with("/check_update.exs")), anything) do
+              File.write(".dependabot-result", "1.1.0")
+              ""
+            end
         end
 
         it "returns the expected version" do
@@ -697,9 +709,10 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
 
         before do
-          # Mock subprocess to raise fingerprint mismatch error
-          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "get_latest_resolvable_version"))
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .and_call_original
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with(array_including("lib/configure_credentials.exs"), anything)
             .and_raise(
               Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                 message: "Public key fingerprint mismatch for repo \"dependabot\"",
@@ -731,12 +744,10 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
 
         before do
-          # Simulate the error produced by the Elixir helper when
-          # Hex.Repo.get_public_key/1 returns data in the wrong tuple order,
-          # causing `key` to be a headers map that :public_key.pem_decode/1
-          # cannot decode.
-          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "get_latest_resolvable_version"))
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .and_call_original
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with(array_including("lib/configure_credentials.exs"), anything)
             .and_raise(
               Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                 message: 'Failed to decode public key for repo "dependabot"',
@@ -772,10 +783,16 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         end
 
         before do
-          # Mock successful version resolution with both org and repo credentials
-          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "get_latest_resolvable_version"))
-            .and_return("1.1.0")
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .and_call_original
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with(array_including("lib/configure_credentials.exs"), anything)
+            .and_return("")
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+            .with(array_including(end_with("/check_update.exs")), anything) do
+              File.write(".dependabot-result", "1.1.0")
+              ""
+            end
         end
 
         it "returns the expected version" do
