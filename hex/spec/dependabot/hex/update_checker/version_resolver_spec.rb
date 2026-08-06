@@ -124,6 +124,31 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       end
     end
 
+    context "when the update helper writes a result alongside stdout output" do
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+          .and_raise("legacy helper protocol invoked")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .and_call_original
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(array_including("mix", "run", "check_update.exs", "plug"), anything) do
+            File.write(".dependabot-result", "1.3.6")
+            "warning from mix.exs"
+          end
+      end
+
+      it "reads the version from the filesystem using an isolated Hex home" do
+        expect(latest_resolvable_version).to eq(Dependabot::Hex::Version.new("1.3.6"))
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          array_including("mix", "run", "check_update.exs", "--", "plug"),
+          hash_including(
+            env: hash_including("HEX_HOME" => end_with("/.hex")),
+            fingerprint: "mix run check_update.exs plug"
+          )
+        )
+      end
+    end
+
     context "with a deps.update alias" do
       let(:mixfile_fixture_name) { "deps_update_alias" }
 
