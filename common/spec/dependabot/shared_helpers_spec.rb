@@ -739,16 +739,22 @@ RSpec.describe Dependabot::SharedHelpers do
       expect(sanitized["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/db-dependabot-local/")
     end
 
-    it "does not redact non-token keys" do
+    it "redacts keys ending in a KEY segment" do
       env = {
         "SHORT_KEY" => "short",
+        "hex_api_key" => "api-key",
+        "COREPACK_INTEGRITY_KEYS" => "integrity-config",
+        "KEY_PATH" => "/path/to/key",
         "LONG_VALUE" => "a" * 50,
         "SOME_TOKEN" => "should-be-redacted"
       }
 
       sanitized = described_class.sanitize_env_for_logging(env)
 
-      expect(sanitized["SHORT_KEY"]).to eq("short")
+      expect(sanitized["SHORT_KEY"]).to eq("<redacted>")
+      expect(sanitized["hex_api_key"]).to eq("<redacted>")
+      expect(sanitized["COREPACK_INTEGRITY_KEYS"]).to eq("integrity-config")
+      expect(sanitized["KEY_PATH"]).to eq("/path/to/key")
       expect(sanitized["LONG_VALUE"]).to eq("a" * 50)
       expect(sanitized["SOME_TOKEN"]).to eq("<redacted>")
     end
