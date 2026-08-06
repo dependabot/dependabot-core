@@ -269,7 +269,8 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
         "with a newline-terminated unauthenticated organization diagnostic" =>
           "** (Mix) No authenticated organization found for dependabot.\n",
         "with guidance after an unauthenticated organization diagnostic" =>
-          "No authenticated organization found for dependabot. Do you want to authenticate it now?"
+          "** (Mix) No authenticated organization found for dependabot. " \
+          "Do you want to authenticate it now? [Yn] "
       }.each do |description, diagnostic|
         context description do
           let(:error_message) { diagnostic }
@@ -280,6 +281,17 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
                 expect(error.source).to eq("dependabot")
               end
           end
+        end
+      end
+
+      context "with a slash-containing source in an exact missing-credentials diagnostic" do
+        let(:error_message) { 'Missing credentials for "acme/private"' }
+
+        it "raises a PrivateSourceAuthenticationFailure error" do
+          expect { updated_lockfile_content }
+            .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+              expect(error.source).to eq("acme/private")
+            end
         end
       end
 

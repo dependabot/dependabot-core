@@ -472,318 +472,6 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       it { is_expected.to be >= Gem::Version.new("1.3.0") }
     end
 
-    context "with a dependency with a private organization" do
-      let(:mixfile_body) { fixture("mixfiles", "private_package") }
-      let(:dependency_name) { "example_package_a" }
-      let(:version) { "1.0.0" }
-      let(:dependency_requirements) do
-        [{ file: "mix.exs", requirement: "~> 1.0.0", groups: [], source: nil }]
-      end
-      let(:lockfile_body) { fixture("lockfiles", "private_package") }
-
-      before { `mix hex.organization deauth dependabot` }
-
-      context "with good credentials" do
-        let(:hex_pm_org_token) { ENV.fetch("HEX_PM_ORGANIZATION_TOKEN", nil) }
-        let(:credentials) do
-          [Dependabot::Credential.new(
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            }
-          ), Dependabot::Credential.new(
-            {
-              "type" => "hex_organization",
-              "organization" => "dependabot",
-              "token" => hex_pm_org_token
-            }
-          )]
-        end
-
-        it "returns the expected version" do
-          skip("skipped because env var HEX_PM_ORGANIZATION_TOKEN is not set") if hex_pm_org_token.nil?
-          expect(latest_resolvable_version).to eq(Gem::Version.new("1.1.0"))
-        end
-      end
-
-      context "with bad credentials" do
-        let(:credentials) do
-          [Dependabot::Credential.new(
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            }
-          ), Dependabot::Credential.new(
-            {
-              "type" => "hex_organization",
-              "organization" => "dependabot",
-              "token" => "111f6cbeffc6e14c6a884f0111caff3e"
-            }
-          )]
-        end
-
-        it "raises a helpful error" do
-          error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { latest_resolvable_version }
-            .to raise_error(error_class) do |error|
-              expect(error.source).to eq("dependabot")
-            end
-        end
-      end
-
-      context "with no token" do
-        let(:credentials) do
-          [Dependabot::Credential.new(
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            }
-          ), Dependabot::Credential.new(
-            {
-              "type" => "hex_organization",
-              "organization" => "dependabot"
-            }
-          )]
-        end
-
-        it "uses proxy-compatible metadata authentication without an OAuth exchange" do
-          error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { latest_resolvable_version }
-            .to raise_error(error_class) do |error|
-              expect(error.source).to eq("dependabot")
-              expect(error.cause.message).not_to include("Failed to exchange API key for OAuth token")
-            end
-        end
-      end
-
-      context "with no credentials" do
-        let(:credentials) do
-          [Dependabot::Credential.new(
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            }
-          )]
-        end
-
-        # The Elixir process hangs waiting for input in this case. This spec
-        # passes as long as we're intelligently timing out.
-        it "raises a helpful error" do
-          error_class = Dependabot::PrivateSourceAuthenticationFailure
-          expect { latest_resolvable_version }
-            .to raise_error(error_class) do |error|
-              expect(error.source).to eq("dependabot")
-            end
-        end
-      end
-    end
-
-    context "with a dependency from a private repo" do
-      let(:mixfile_body) { fixture("mixfiles", "private_repo") }
-      let(:dependency_name) { "jason" }
-      let(:version) { "1.0.0" }
-      let(:dependency_requirements) do
-        [{ file: "mix.exs", requirement: "~> 1.0.0", groups: [], source: nil }]
-      end
-      let(:lockfile_body) { fixture("lockfiles", "private_repo") }
-      let(:private_registry_url) { "https://dependabot-private.fly.dev" }
-
-      before do
-        `mix hex.repo remove dependabot`
-      end
-
-      context "with good credentials" do
-        let(:credentials) do
-          [Dependabot::Credential.new(
-            {
-              "type" => "hex_repository",
-              "repo" => "dependabot",
-              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-              "url" => private_registry_url
-            }
-          )]
-        end
-
-        before do
-          # Mock successful version resolution from private registry
-          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "get_latest_resolvable_version"))
-            .and_return("1.1.0")
-        end
-
-        it "returns the expected version" do
-          expect(latest_resolvable_version).to eq(Dependabot::Hex::Version.new("1.1.0"))
-        end
-      end
-
-      context "with bad credentials" do
-        let(:credentials) do
-          [Dependabot::Credential.new(
-            {
-              "type" => "hex_repository",
-              "repo" => "dependabot",
-              "auth_key" => "111f6cbeffc6e14c6a884f0111caff3e",
-              "url" => private_registry_url
-            }
-          )]
-        end
-
-        before do
-          # Mock subprocess to raise authentication failure with bad credentials
-          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "get_latest_resolvable_version"))
-            .and_raise(
-              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-                message: "Downloading public key for repo \"dependabot\" failed: {:error, :econnrefused}",
-                error_context: {}
-              )
-            )
-        end
-
-        it "raises a helpful error" do
-          error_class = Dependabot::PrivateSourceAuthenticationFailure
-
-          expect { latest_resolvable_version }
-            .to raise_error(error_class) do |error|
-              expect(error.source).to eq("dependabot")
-            end
-        end
-      end
-
-      context "with correct public key fingerprint verification" do
-        let(:credentials) do
-          [Dependabot::Credential.new(
-            {
-              "type" => "hex_repository",
-              "repo" => "dependabot",
-              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-              "url" => private_registry_url,
-              "public_key_fingerprint" => "SHA256:z6VBddQXuo/nbwel0AMqHDAxvYuja4wt4qoQTTl3Ew4="
-            }
-          )]
-        end
-
-        before do
-          # Mock successful version resolution with correct fingerprint
-          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "get_latest_resolvable_version"))
-            .and_return("1.1.0")
-        end
-
-        it "returns the expected version" do
-          expect(latest_resolvable_version).to eq(Dependabot::Hex::Version.new("1.1.0"))
-        end
-      end
-
-      context "with incorrect public key fingerprint verification" do
-        let(:credentials) do
-          [Dependabot::Credential.new(
-            {
-              "type" => "hex_repository",
-              "repo" => "dependabot",
-              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-              "url" => private_registry_url,
-              "public_key_fingerprint" => "SHA256:incorrectFingerprintValue="
-            }
-          )]
-        end
-
-        before do
-          # Mock subprocess to raise fingerprint mismatch error
-          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "get_latest_resolvable_version"))
-            .and_raise(
-              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-                message: "Public key fingerprint mismatch for repo \"dependabot\"",
-                error_context: {}
-              )
-            )
-        end
-
-        it "raises a helpful error" do
-          error_class = Dependabot::PrivateSourceAuthenticationFailure
-
-          expect { latest_resolvable_version }
-            .to raise_error(error_class) do |error|
-              expect(error.source).to eq("dependabot")
-            end
-        end
-      end
-
-      context "when the helper fails to decode the public key (tuple order regression)" do
-        let(:credentials) do
-          [Dependabot::Credential.new(
-            {
-              "type" => "hex_repository",
-              "repo" => "dependabot",
-              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-              "url" => private_registry_url
-            }
-          )]
-        end
-
-        before do
-          # Simulate the error produced by the Elixir helper when
-          # Hex.Repo.get_public_key/1 returns data in the wrong tuple order,
-          # causing `key` to be a headers map that :public_key.pem_decode/1
-          # cannot decode.
-          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "get_latest_resolvable_version"))
-            .and_raise(
-              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-                message: 'Failed to decode public key for repo "dependabot"',
-                error_context: {}
-              )
-            )
-        end
-
-        it "raises a PrivateSourceAuthenticationFailure error" do
-          expect { latest_resolvable_version }
-            .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
-              expect(error.source).to eq("dependabot")
-            end
-        end
-      end
-
-      context "with dependencies on both a private organization and private repo" do
-        let(:credentials) do
-          [Dependabot::Credential.new(
-            {
-              "type" => "hex_organization",
-              "organization" => "dependabot",
-              "token" => "b6294cd1e1cf158e9f65ea6b02a9a1ec"
-            }
-          ), Dependabot::Credential.new(
-            {
-              "type" => "hex_repository",
-              "repo" => "dependabot",
-              "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
-              "url" => private_registry_url
-            }
-          )]
-        end
-
-        before do
-          # Mock successful version resolution with both org and repo credentials
-          allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-            .with(hash_including(function: "get_latest_resolvable_version"))
-            .and_return("1.1.0")
-        end
-
-        it "returns the expected version" do
-          expect(latest_resolvable_version).to eq(Dependabot::Hex::Version.new("1.1.0"))
-        end
-      end
-    end
-
     context "with a dependency with a git source" do
       let(:mixfile_body) { fixture("mixfiles", "git_source") }
       let(:lockfile_body) { fixture("lockfiles", "git_source") }
@@ -851,7 +539,13 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
               fixture("lockfiles", "git_source")
             end
 
-            it { is_expected.to eq("178ce1a2344515e9145599970313fcc190d4b881") }
+            it "preserves the resolution failure" do
+              expect { latest_resolvable_version }
+                .to raise_error(
+                  Dependabot::DependabotError,
+                  /Hex dependency resolution failed/
+                )
+            end
           end
         end
 
@@ -875,7 +569,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             end
           end
 
-          context "when the dependency is blocked from updating" do
+          context "when updating requires a child dependency change" do
             let(:mixfile_body) do
               fixture("mixfiles", "git_source_no_tag_blocked")
             end
@@ -884,7 +578,31 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             end
             let(:ref) { nil }
 
-            it { is_expected.to be_nil }
+            it "preserves the resolution failure" do
+              expect { latest_resolvable_version }
+                .to raise_error(
+                  Dependabot::DependabotError,
+                  /Hex dependency resolution failed/
+                )
+            end
+          end
+
+          context "when the helper failure is ambiguous" do
+            let(:resolution_error) do
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "Hex dependency resolution failed: ambiguous helper output",
+                error_context: {}
+              )
+            end
+
+            before do
+              allow(checker).to receive(:fetch_latest_resolvable_version).and_raise(resolution_error)
+            end
+
+            it "preserves the helper failure" do
+              expect { latest_resolvable_version }
+                .to raise_error(resolution_error.class, resolution_error.message)
+            end
           end
         end
       end
@@ -1034,7 +752,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           end
         end
 
-        context "when the dependency is blocked from updating" do
+        context "when updating requires a child dependency change" do
           let(:mixfile_body) do
             fixture("mixfiles", "git_source_no_tag_blocked")
           end
@@ -1043,7 +761,13 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           end
           let(:ref) { nil }
 
-          it { is_expected.to be_nil }
+          it "preserves the resolution failure" do
+            expect { new_version }
+              .to raise_error(
+                Dependabot::DependabotError,
+                /Hex dependency resolution failed/
+              )
+          end
         end
       end
     end

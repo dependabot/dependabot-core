@@ -101,13 +101,6 @@ module Dependabot
       sig { returns(T.any(String, T.nilable(Dependabot::Version))) }
       def latest_resolvable_commit_with_unchanged_git_source
         fetch_latest_resolvable_version(unlock_requirement: false)
-      rescue SharedHelpers::HelperSubprocessFailed,
-             Dependabot::DependencyFileNotResolvable => e
-        # Resolution may fail, as Elixir updates straight to the tip of the
-        # branch. Just return `nil` if it does (so no update).
-        return if e.message.include?("resolution failed")
-
-        raise e
       end
 
       sig { returns(T::Boolean) }
@@ -153,18 +146,11 @@ module Dependabot
         resolver_result = VersionResolver.new(
           dependency: dependency,
           prepared_dependency_files: prepared_files,
-          original_dependency_files: dependency_files,
           credentials: credentials
         ).latest_resolvable_version
 
-        @git_tag_resolvable = !resolver_result.nil?
-        @git_tag_resolvable
-      rescue SharedHelpers::HelperSubprocessFailed,
-             Dependabot::DependencyFileNotResolvable => e
-        raise e unless e.message.include?("resolution failed")
-
-        @git_tag_resolvable = T.let(false, T.nilable(T::Boolean))
-        false
+        @git_tag_resolvable = T.let(!resolver_result.nil?, T.nilable(T::Boolean))
+        T.must(@git_tag_resolvable)
       end
 
       sig { returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash)) }
@@ -236,7 +222,6 @@ module Dependabot
             VersionResolver.new(
               dependency: dependency,
               prepared_dependency_files: prepared_dependency_files,
-              original_dependency_files: dependency_files,
               credentials: credentials
             )
           end
