@@ -36,12 +36,8 @@ defmodule UpdateChecker do
   end
 
   defp do_resolution(dependency_name) do
-    # Fetch dependencies that needs updating
-    {dependency_lock, rest_lock} =
-      Map.split(Mix.Dep.Lock.read(), [String.to_atom(dependency_name)])
-
     try do
-      Mix.Dep.Fetcher.by_name([dependency_name], dependency_lock, rest_lock, [])
+      Mix.Task.get!("deps.update").run([dependency_name, "--no-archives-check"])
 
       {:ok, :resolution_successful}
     rescue
@@ -50,30 +46,21 @@ defmodule UpdateChecker do
   end
 end
 
-[dependency_name] = System.argv()
+[dependency_name] = Enum.drop_while(System.argv(), &(&1 == "--"))
 
-result =
-  case UpdateChecker.run(dependency_name) do
-    {:ok, version} ->
-      {:ok, version}
+case UpdateChecker.run(dependency_name) do
+  {:ok, version} ->
+    File.write!(".dependabot-result", version)
 
-    {:error, %Version.InvalidRequirementError{} = error}  ->
-      {:error, "Invalid requirement: #{error.requirement}"}
+  {:error, %Version.InvalidRequirementError{} = error} ->
+    Mix.raise("Invalid requirement: #{error.requirement}")
 
-    {:error, %Mix.Error{} = error} ->
-      {:error, "Dependency resolution failed: #{error.message}"}
+  {:error, %Mix.Error{} = error} ->
+    Mix.raise("Dependency resolution failed: #{error.message}")
 
-    {:error, :dependency_resolution_timed_out} ->
-      # We do nothing here because Hex is already printing out a message in stdout
-      nil
+  {:error, :dependency_resolution_timed_out} ->
+    Mix.raise("Dependency resolution timed out")
 
-    {:error, error} ->
-      {:error, "Unknown error in check_update: #{inspect(error)}"}
-  end
-
-if not is_nil(result) do
-  result
-  |> :erlang.term_to_binary()
-  |> Base.encode64()
-  |> IO.write()
+  {:error, error} ->
+    Mix.raise("Unknown error in check_update: #{inspect(error)}")
 end

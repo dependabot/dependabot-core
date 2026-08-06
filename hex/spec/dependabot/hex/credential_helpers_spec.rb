@@ -5,72 +5,198 @@ require "spec_helper"
 require "dependabot/hex/credential_helpers"
 
 RSpec.describe Dependabot::Hex::CredentialHelpers do
-  extend T::Sig
+  describe ".configure" do
+    subject(:configure) { described_class.configure(credentials: credentials, env: env) }
 
-  describe ".organization_credentials" do
-    subject(:organization_credentials) { described_class.organization_credentials(credentials) }
+    let(:env) { { "HEX_HOME" => "/tmp/dependabot-hex-home", "MIX_QUIET" => "1" } }
 
-    sig { returns(T::Array[Dependabot::Credential]) }
-    let(:credentials) do
-      [
-        Dependabot::Credential.new(
-          { "type" => "hex_organization", "organization" => "organization",
-            "token" => "token" }
-        )
-      ]
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("")
     end
 
-    it "populates the credentials with default properties" do
-      expect(organization_credentials).to eq(%w(hex_organization organization token))
+    context "with organization credentials" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "hex_organization",
+              "organization" => "organization",
+              "token" => "organization-secret-token"
+            }
+          )
+        ]
+      end
+
+      it "uses hex.organization without putting the token in argv or the fingerprint" do
+        configure
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          array_including("configure_credentials.exs", "--", "organization", "organization"),
+          hash_including(
+            env: env.merge("DEPENDABOT_HEX_CREDENTIAL_TOKEN" => "organization-secret-token"),
+            fingerprint: "mix run configure_credentials.exs organization organization"
+          )
+        ) do |command, options|
+          expect(command).not_to include("organization-secret-token")
+          expect(options.fetch(:fingerprint)).not_to include("organization-secret-token")
+        end
+      end
+    end
+
+    context "with repository credentials" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "private",
+              "url" => "https://repo.example.com",
+              "auth_key" => "repository-secret-key",
+              "public_key_fingerprint" => "SHA256:public-key-fingerprint"
+            }
+          )
+        ]
+      end
+
+      it "uses hex.repo without putting the auth key or URL in the fingerprint" do
+        configure
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          array_including(
+            "configure_credentials.exs",
+            "--",
+            "repository",
+            "private",
+            "https://repo.example.com",
+            "SHA256:public-key-fingerprint"
+          ),
+          hash_including(
+            env: env.merge(
+              "DEPENDABOT_HEX_CREDENTIAL_TOKEN" => "repository-secret-key",
+              "DEPENDABOT_HEX_PUBLIC_KEY" => ""
+            ),
+            fingerprint: "mix run configure_credentials.exs repository private"
+          )
+        ) do |command, options|
+          expect(command).not_to include("repository-secret-key")
+          expect(options.fetch(:fingerprint)).not_to include("repository-secret-key", "https://repo.example.com")
+        end
+      end
+    end
+
+    context "with a configured public key and dependabot.yml key names" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "private",
+              "url" => "https://repo.example.com",
+              "auth-key" => "repository-secret-key",
+              "public-key-fingerprint" => "SHA256:public-key-fingerprint",
+              "public-key" => "public-key"
+            }
+          )
+        ]
+      end
+
+      it "passes the public key through the isolated environment" do
+        configure
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+          anything,
+          hash_including(
+            env: env.merge(
+              "DEPENDABOT_HEX_CREDENTIAL_TOKEN" => "repository-secret-key",
+              "DEPENDABOT_HEX_PUBLIC_KEY" => "public-key"
+            )
+          )
+        )
+      end
+    end
+
+    context "with unrelated credentials" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }
+          )
+        ]
+      end
+
+      it "does not run a Hex credential task" do
+        configure
+
+        expect(Dependabot::SharedHelpers).not_to have_received(:run_shell_command)
+      end
+    end
+
+    context "with incomplete repository credentials" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "private"
+            }
+          )
+        ]
+      end
+
+      it "raises a helper error naming the repository" do
+        expect { configure }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, 'Missing credentials for "private"')
+      end
+    end
+
+    context "with incomplete organization credentials" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "hex_organization",
+              "organization" => "organization"
+            }
+          )
+        ]
+      end
+
+      it "raises a helper error naming the organization" do
+        expect { configure }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, 'Missing credentials for "organization"')
+      end
+    end
+
+    context "with a missing credential name" do
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "url" => "https://repo.example.com",
+              "auth_key" => "repository-secret-key"
+            }
+          )
+        ]
+      end
+
+      it "raises a helper error without exposing another credential value" do
+        expect { configure }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, 'Missing credentials for "hex_repository"')
+      end
     end
   end
 
-  describe ".repo_credentials" do
-    subject(:repo_credentials) { described_class.repo_credentials(credentials) }
-
-    sig { returns(T::Array[Dependabot::Credential]) }
-    let(:credentials) do
-      [
-        Dependabot::Credential.new(
-          { "type" => "hex_repository", "url" => "url", "auth_key" => "auth_key",
-            "public_key_fingerprint" => "public_key_fingerprint" }
-        )
-      ]
-    end
-
-    it "populates the credentials with default properties" do
-      expect(repo_credentials).to eq(["hex_repository", "url", "auth_key", "public_key_fingerprint", ""])
-    end
-
-    context "with a public key" do
-      sig { returns(T::Array[Dependabot::Credential]) }
-      let(:credentials) do
-        [
-          Dependabot::Credential.new(
-            { "type" => "hex_repository", "repo" => "repo", "url" => "url", "public_key" => "public_key" }
-          )
-        ]
-      end
-
-      it "includes the public key" do
-        expect(repo_credentials).to eq(%w(hex_repository repo url) + ["", "", "public_key"])
-      end
-    end
-
-    context "with keys spelled as in dependabot.yml" do
-      sig { returns(T::Array[Dependabot::Credential]) }
-      let(:credentials) do
-        [
-          Dependabot::Credential.new(
-            { "type" => "hex_repository", "repo" => "repo", "url" => "url", "auth-key" => "auth_key",
-              "public-key-fingerprint" => "public_key_fingerprint", "public-key" => "public_key" }
-          )
-        ]
-      end
-
-      it "reads them" do
-        expect(repo_credentials).to eq(%w(hex_repository repo url auth_key public_key_fingerprint public_key))
-      end
+  describe ".configure_credentials_path" do
+    it "returns the packaged public task helper" do
+      expect(described_class.configure_credentials_path).to eq(
+        File.join(Dependabot::Hex::NativeHelpers.hex_helpers_dir, "lib/configure_credentials.exs")
+      )
     end
   end
 end
