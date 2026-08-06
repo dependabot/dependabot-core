@@ -33,12 +33,10 @@ module Dependabot
         dependency_set = DependencySet.new
 
         dependency_details.each do |dep|
-          git_dependency = dep["source"]&.fetch("type") == "git"
-
           dependency_set <<
             Dependency.new(
               name: dep["name"],
-              version: git_dependency ? dep["checksum"] : dep["version"],
+              version: dep["version"],
               requirements: [{
                 requirement: dep["requirement"],
                 groups: dep["groups"],
@@ -178,26 +176,32 @@ module Dependabot
 
       sig { returns(String) }
       def hex_version
-        T.must(T.must(hex_info).fetch(:hex_version))
+        version_info.fetch("hex")
       end
 
       sig { returns(String) }
       def elixir_version
-        T.must(T.must(hex_info).fetch(:elixir_version))
+        version_info.fetch("elixir")
       end
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.nilable(String)])) }
-      def hex_info
-        @hex_info ||= T.let(
-          begin
-            version = SharedHelpers.run_shell_command("mix hex.info")
-            {
-              hex_version: version.match(/Hex: \s*(\d+\.\d+(.\d+)*)/)&.captures&.first,
-              elixir_version: version.match(/Elixir: \s*(\d+\.\d+(.\d+)*)/)&.captures&.first
-            }
-          end,
-          T.nilable(T::Hash[Symbol, T.nilable(String)])
+      sig { returns(T::Hash[String, String]) }
+      def version_info
+        @version_info ||= T.let(
+          JSON.parse(
+            SharedHelpers.run_shell_command(
+              [
+                "mix", "run", "--no-mix-exs", "--no-start", "--no-compile",
+                elixir_helper_package_manager_versions_path
+              ]
+            )
+          ),
+          T.nilable(T::Hash[String, String])
         )
+      end
+
+      sig { returns(String) }
+      def elixir_helper_package_manager_versions_path
+        File.join(NativeHelpers.hex_helpers_dir, "lib/package_manager_versions.exs")
       end
     end
   end
