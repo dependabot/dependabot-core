@@ -74,7 +74,8 @@ module Dependabot
 
           version_class.new(latest_resolvable_version)
         rescue SharedHelpers::HelperSubprocessFailed => e
-          handle_hex_errors(e)
+          sanitized_error = sanitize_update_check_error(e)
+          handle_hex_errors(sanitized_error, sanitized: !sanitized_error.equal?(e))
         end
 
         sig { returns(String) }
@@ -92,34 +93,15 @@ module Dependabot
         end
 
         sig do
-          params(error: Dependabot::SharedHelpers::HelperSubprocessFailed)
+          params(
+            error: Dependabot::SharedHelpers::HelperSubprocessFailed,
+            sanitized: T::Boolean
+          )
             .returns(T.nilable(T.any(Dependabot::Version, String, T::Boolean)))
         end
-        def handle_hex_errors(error)
-          if (match = error.message.match(/No authenticated organization found for (?<repo>[a-z_]+)\./))
-            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
-          end
-
-          if (match = error.message.match(/Public key fingerprint mismatch for repo "(?<repo>[a-z_]+)"/))
-            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
-          end
-
-          if (match = error.message.match(/Missing credentials for "(?<repo>[a-z_]+)"/))
-            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
-          end
-
-          if (match = error.message.match(/Downloading public key for repo "(?<repo>[a-z_]+)"/))
-            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
-          end
-
-          if (match = error.message.match(/Failed to decode public key for repo "(?<repo>[a-z_]+)"/))
-            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
-          end
-
-          if (match = error.message.match(/Failed to fetch record for (?<repo>[a-z_]+)(?::(?<org>[a-z_]+))?/))
-            name = match[:org] || match[:repo]
-            raise Dependabot::PrivateSourceAuthenticationFailure, name
-          end
+        def handle_hex_errors(error, sanitized:)
+          source = CredentialHelpers.authentication_source(error.message)
+          raise_authentication_failure(source) if source
 
           # TODO: Catch the warnings as part of the Elixir module. This happens
           # when elixir throws warnings from the manifest files that end up in
@@ -133,6 +115,23 @@ module Dependabot
           return if error.message.include?("Dependencies have diverged")
 
           check_original_requirements_resolvable
+          raise_helper_error(error, sanitized: sanitized)
+        end
+
+        sig { params(source: String).returns(T.noreturn) }
+        def raise_authentication_failure(source)
+          raise Dependabot::PrivateSourceAuthenticationFailure.new(source), cause: nil
+        end
+
+        sig do
+          params(
+            error: Dependabot::SharedHelpers::HelperSubprocessFailed,
+            sanitized: T::Boolean
+          ).returns(T.noreturn)
+        end
+        def raise_helper_error(error, sanitized:)
+          raise error, cause: nil if sanitized
+
           raise error
         end
 
@@ -181,13 +180,32 @@ module Dependabot
 
           true
         rescue SharedHelpers::HelperSubprocessFailed => e
+          sanitized_error = sanitize_update_check_error(e)
           # TODO: Catch the warnings as part of the Elixir module. This happens
           # when elixir throws warnings from the manifest files that end up in
           # stdout and cause run_helper_subprocess to fail parsing the result as
           # JSON.
-          return error_result(e) if includes_result?(e)
+          return error_result(sanitized_error) if includes_result?(sanitized_error)
 
-          raise Dependabot::DependencyFileNotResolvable, e.message
+          raise Dependabot::DependencyFileNotResolvable.new(sanitized_error.message), cause: nil
+        end
+
+        sig do
+          params(
+            error: Dependabot::SharedHelpers::HelperSubprocessFailed
+          ).returns(Dependabot::SharedHelpers::HelperSubprocessFailed)
+        end
+        def sanitize_update_check_error(error)
+          sanitized_error = CredentialHelpers.sanitize_error(error: error, credentials: credentials)
+          safe_error_context = sanitized_error.error_context.except(:args, :stderr_output)
+          return sanitized_error if safe_error_context == sanitized_error.error_context
+
+          SharedHelpers::HelperSubprocessFailed.new(
+            message: sanitized_error.message,
+            error_context: safe_error_context,
+            error_class: sanitized_error.error_class,
+            trace: sanitized_error.trace
+          )
         end
 
         sig { params(prepared: T::Boolean).void }
