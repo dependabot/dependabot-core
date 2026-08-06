@@ -170,12 +170,12 @@ module Dependabot
 
         sig { overridable.returns(String) }
         def maven_repo_url
-          source = dependency.requirements
-                             .find { |r| r.fetch(:source) }&.fetch(:source)
+          requirement = dependency.requirements.find(&:source)
+          return central_repo_url unless requirement
 
-          source&.fetch(:url, nil) ||
-            source&.fetch("url", nil) ||
-            central_repo_url
+          raise TypeError, "Maven repository source must be a hash" if requirement.source_hash.nil?
+
+          requirement.source_string("url") || central_repo_url
         end
 
         sig { overridable.returns(String) }

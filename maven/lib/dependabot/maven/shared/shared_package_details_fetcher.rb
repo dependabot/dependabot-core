@@ -83,8 +83,9 @@ module Dependabot
         def dependency_files_url(repository_url, version)
           _, artifact_id = dependency_parts
           base_url = dependency_base_url(repository_url)
-          type = dependency.requirements.first&.dig(:metadata, :packaging_type) || "jar"
-          classifier = dependency.requirements.first&.dig(:metadata, :classifier)
+          requirement = dependency.requirements.first
+          type = requirement&.metadata_string("packaging_type") || "jar"
+          classifier = requirement&.metadata_string("classifier")
           actual_classifier = classifier.nil? ? "" : "-#{classifier}"
 
           "#{base_url}/#{version}/#{artifact_id}-#{version}#{actual_classifier}.#{type}"
@@ -350,7 +351,7 @@ module Dependabot
               # the consumer POM omits <type>, causing the parser to default to "jar".
               # Only fall back when there's no classifier (classifier artifacts are specific).
               next false unless response.status == 404
-              next false if dependency.requirements.first&.dig(:metadata, :classifier)
+              next false if dependency.requirements.first&.metadata_string("classifier")
 
               pom_response = Dependabot::RegistryClient.head(
                 url: dependency_pom_url(url, version),
