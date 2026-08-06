@@ -752,6 +752,57 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       end
     end
 
+    context "with cooldown and missing listing dates for a non-plugin dependency" do
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 3,
+          semver_major_days: 3,
+          semver_minor_days: 3,
+          semver_patch_days: 3,
+          include: [],
+          exclude: []
+        )
+      end
+      let(:maven_central_html_url) do
+        "https://repo.maven.apache.org/maven2/com/google/guava/guava/"
+      end
+      let(:guava_pom_url) do
+        "https://repo.maven.apache.org/maven2/" \
+          "com/google/guava/guava/23.6-jre/guava-23.6-jre.pom"
+      end
+
+      before do
+        allow(Time).to receive(:now).and_return(Time.parse("2026-05-13T17:30:00.000Z"))
+        stub_request(:get, maven_central_html_url).to_return(status: 404)
+        stub_request(:head, guava_pom_url).to_return(
+          status: 200,
+          headers: { "Last-Modified" => "Mon, 11 May 2026 10:08:43 GMT" }
+        )
+      end
+
+      it "loads fallback release dates lazily during cooldown filtering" do
+        logger = instance_double(Logger, info: nil, debug: nil)
+        allow(Dependabot).to receive(:logger).and_return(logger)
+
+        release = Dependabot::Package::PackageRelease.new(
+          version: version_class.new("23.6-jre"),
+          url: "https://repo.maven.apache.org/maven2"
+        )
+
+        finder.send(:in_cooldown_period?, release)
+
+        expect(a_request(:head, guava_pom_url)).to have_been_made.once
+        expect(logger).to have_received(:info).with(
+          "Using POM Last-Modified fallback release dates for com.google.guava:guava " \
+          "from https://repo.maven.apache.org/maven2"
+        )
+        expect(logger).to have_received(:debug).with(
+          "Using POM Last-Modified fallback for com.google.guava:guava version 23.6-jre " \
+          "from https://repo.maven.apache.org/maven2: 2026-05-11 10:08:43 UTC"
+        )
+      end
+    end
+
     context "with a plugin" do
       let(:dependency_requirements) do
         [{

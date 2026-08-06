@@ -348,7 +348,19 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
     end
 
     context "with a non-plugin dependency" do
-      it "does not attempt pom last-modified fallback when release date is missing" do
+      let(:guava_pom_url) do
+        "https://repo.maven.apache.org/maven2/" \
+          "com/google/guava/guava/23.3-jre/guava-23.3-jre.pom"
+      end
+
+      it "uses pom last-modified fallback when release date is missing" do
+        stub_request(:get, "https://repo.maven.apache.org/maven2/com/google/guava/guava/")
+          .to_return(status: 200, body: "<html><body></body></html>")
+        stub_request(:head, guava_pom_url).to_return(
+          status: 200,
+          headers: { "Last-Modified" => "Tue, 03 Oct 2017 19:00:00 GMT" }
+        )
+
         release = Dependabot::Package::PackageRelease.new(
           version: version_class.new("23.3-jre"),
           url: "https://repo.maven.apache.org/maven2"
@@ -356,8 +368,8 @@ RSpec.describe Dependabot::Gradle::Package::PackageDetailsFetcher do
 
         hydrated_release = packagedetailsfetcher.fetch_release_metadata(release: release)
 
-        expect(hydrated_release.released_at).to be_nil
-        expect(WebMock).not_to have_requested(:head, /.*/)
+        expect(hydrated_release.released_at).to eq(Time.utc(2017, 10, 3, 19, 0, 0))
+        expect(a_request(:head, guava_pom_url)).to have_been_made.once
       end
     end
 

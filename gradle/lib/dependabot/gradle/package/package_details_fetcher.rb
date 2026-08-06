@@ -149,7 +149,7 @@ module Dependabot
           release_date = nil unless release_date.is_a?(Time)
           hydrated_release = build_release_with_date(release, release_date)
 
-          return hydrated_release if hydrated_release.released_at || !plugin?
+          return hydrated_release if hydrated_release.released_at
 
           build_release_with_date(hydrated_release, version_release_date_fallback(release.version.to_s))
         end
@@ -172,7 +172,7 @@ module Dependabot
         end
 
         sig { params(repository_url: String, version: String).returns(String) }
-        def plugin_version_pom_url(repository_url, version)
+        def version_pom_url(repository_url, version)
           group_id, artifact_id = group_and_artifact_ids
           group_id = "#{Dependabot::Gradle::MetadataFinder::KOTLIN_PLUGIN_REPO_PREFIX}.#{group_id}" if kotlin_plugin?
           pom_filename = "#{artifact_id}-#{version}.pom"
@@ -444,7 +444,7 @@ module Dependabot
             dependency_name: dependency.name,
             repositories: repositories,
             forbidden_urls: T.must(forbidden_urls),
-            pom_url_builder: ->(repository_url, version) { plugin_version_pom_url(repository_url, version) }
+            pom_url_builder: ->(repository_url, version) { version_pom_url(repository_url, version) }
           )
         end
 
