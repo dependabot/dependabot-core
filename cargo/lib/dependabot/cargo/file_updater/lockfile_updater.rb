@@ -86,12 +86,26 @@ module Dependabot
               @current_dependency = dependency_to_update
               next if previous_line_already_replaced?
 
-              run_cargo_command(
-                "cargo update -p #{dependency_spec}",
-                fingerprint: "cargo update -p <dependency_spec>"
-              )
+              run_cargo_update
             end
           end
+        end
+
+        sig { void }
+        def run_cargo_update
+          run_cargo_command(
+            "cargo update -p #{dependency_spec} --precise #{dependency.version}",
+            fingerprint: "cargo update -p <dependency_spec> --precise <version>"
+          )
+        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+          raise unless e.message.include?("failed to select a version")
+
+          # --precise cannot introduce a new direct version while retaining the selected old version for another edge.
+          run_cargo_command(
+            "cargo update -p #{dependency_spec}",
+            fingerprint: "cargo update -p <dependency_spec>"
+          )
+          raise e unless desired_version_present?(File.read("Cargo.lock"))
         end
 
         # An earlier command in this run may already have resolved this
@@ -420,7 +434,6 @@ module Dependabot
         sig { params(file: Dependabot::DependencyFile).returns(String) }
         def prepared_manifest_content(file)
           content = updated_manifest_content(file)
-          content = pin_version(content) unless git_dependency?
           content = replace_ssh_urls(content)
           content = remove_binary_specifications(content)
           content = remove_default_run_specification(content)
@@ -440,58 +453,6 @@ module Dependabot
             dependencies: dependencies,
             manifest: file
           ).updated_manifest_content
-        end
-
-        sig { params(content: String).returns(String) }
-        def pin_version(content)
-          parsed_manifest = TomlRB.parse(content)
-
-          Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
-            next unless (req = parsed_manifest.dig(type, dependency.name))
-
-            updated_req = "=#{dependency.version}"
-
-            if req.is_a?(Hash)
-              parsed_manifest[type][dependency.name]["version"] = updated_req
-            else
-              parsed_manifest[type][dependency.name] = updated_req
-            end
-          end
-
-          pin_target_specific_dependencies!(parsed_manifest)
-
-          TomlRB.dump(parsed_manifest)
-        end
-
-        sig { params(parsed_manifest: T::Hash[String, T.anything]).void }
-        def pin_target_specific_dependencies!(parsed_manifest)
-          toml_table_or_empty(parsed_manifest.fetch("target", {})).each do |target, t_details|
-            t_details = toml_table_or_empty(t_details)
-            Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
-              toml_table_or_empty(t_details.fetch(type, {})).each do |name, requirement|
-                next unless name == dependency.name
-
-                updated_req = "=#{dependency.version}"
-
-                if T.cast(requirement, T.nilable(Object)).is_a?(Hash)
-                  toml_table_or_empty(
-                    toml_table_or_empty(
-                      toml_table_or_empty(
-                        toml_table_or_empty(parsed_manifest["target"])[target]
-                      )[type]
-                    )[name]
-                  )["version"] =
-                    updated_req
-                else
-                  toml_table_or_empty(
-                    toml_table_or_empty(
-                      toml_table_or_empty(parsed_manifest["target"])[target]
-                    )[type]
-                  )[name] = updated_req
-                end
-              end
-            end
-          end
         end
 
         sig { params(content: String).returns(String) }
@@ -578,12 +539,6 @@ module Dependabot
             end
 
           lockfile_content
-        end
-
-        sig { params(value: T.anything).returns(T::Hash[String, T.anything]) }
-        def toml_table_or_empty(value)
-          obj = T.cast(value, T.nilable(Object))
-          obj.is_a?(Hash) ? obj : {}
         end
 
         sig { returns(String) }
