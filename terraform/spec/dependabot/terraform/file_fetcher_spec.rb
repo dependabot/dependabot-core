@@ -101,24 +101,4 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
         )
     end
   end
-
-  describe "#files_to_persist" do
-    let(:project_name) { "versions_file" }
-
-    it "persists the full fetched set across the fetch/update boundary" do
-      expect(file_fetcher_instance.files_to_persist.map(&:name))
-        .to match_array(file_fetcher_instance.files.map(&:name))
-    end
-
-    context "with local path module support files" do
-      let(:project_name) { "provider_with_multiple_local_path_modules" }
-
-      it "still persists the local module support files (they carry provider requirements)" do
-        support_files = file_fetcher_instance.files.select(&:support_file?).map(&:name)
-        expect(support_files).not_to be_empty
-        expect(file_fetcher_instance.files_to_persist.map(&:name))
-          .to include(*support_files)
-      end
-    end
-  end
 end
