@@ -556,7 +556,7 @@ module Dependabot
         allow_unsafe_shell_command: allow_unsafe_shell_command
       )
 
-      puts command_for_output if ENV["DEBUG_HELPERS"] == "true"
+      puts(fingerprint || command_for_output) if ENV["DEBUG_HELPERS"] == "true"
 
       opts = {}
       opts[:chdir] = cwd if cwd
@@ -564,7 +564,8 @@ module Dependabot
       env_cmd = [env || {}, *command_args, opts].compact
       kwargs = {
         stderr_to_stdout: stderr_to_stdout,
-        timeout: timeout
+        timeout: timeout,
+        fingerprint: fingerprint
       }
       kwargs[:output_observer] = output_observer if output_observer
 
@@ -580,7 +581,7 @@ module Dependabot
       return stdout || "" if process&.success?
 
       error_context = {
-        command: command_for_output,
+        command: fingerprint || command_for_output,
         fingerprint: fingerprint,
         time_taken: time_taken,
         process_exit_value: process.to_s
