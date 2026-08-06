@@ -62,12 +62,10 @@ defmodule Parser do
           name: name,
           package_name: opts[:hex] || name,
           from: from,
-          version: if(source, do: nil, else: locked_version),
+          version: locked_version,
           groups: parse_groups(opts[:only]),
-          checksum: if(source, do: locked_version),
           requirement: normalise_requirement(requirement),
-          source: source,
-          top_level: true
+          source: source
         }
       ]
     end
