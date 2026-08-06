@@ -21,6 +21,8 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
 
+      RESULT_FILE = ".dependabot-result.json"
+
       require "dependabot/file_parsers/base/dependency_set"
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
@@ -75,23 +77,23 @@ module Dependabot
           File.write("mix.lock", lockfile&.content) if lockfile
           FileUtils.cp(elixir_helper_parse_deps_path, "parse_deps.exs")
 
-          SharedHelpers.run_helper_subprocess(
+          SharedHelpers.run_shell_command(
+            mix_run_command("parse_deps.exs"),
             env: mix_env,
-            command: "mix run #{elixir_helper_path}",
-            function: "parse",
-            args: [Dir.pwd],
-            stderr_to_stdout: true
+            fingerprint: "mix run parse_deps.exs"
           )
+          JSON.parse(File.read(RESULT_FILE))
         end
       rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
-        result_json =
-          e.message.lines
-           .drop_while { |l| !l.start_with?('{"result":') }
-           .join
+        raise DependencyFileNotEvaluatable, e.message
+      end
 
-        raise DependencyFileNotEvaluatable, e.message if result_json.empty?
-
-        JSON.parse(result_json).fetch("result")
+      sig { params(script: String).returns(T::Array[String]) }
+      def mix_run_command(script)
+        [
+          "mix", "run", "--no-deps-check", "--no-start", "--no-compile",
+          "--no-elixir-version-check", script
+        ]
       end
 
       sig { void }
@@ -122,14 +124,9 @@ module Dependabot
       sig { returns(T::Hash[String, String]) }
       def mix_env
         {
-          "MIX_EXS" => File.join(NativeHelpers.hex_helpers_dir, "mix.exs"),
+          "HEX_HOME" => File.join(Dir.pwd, ".hex"),
           "MIX_QUIET" => "1"
         }
-      end
-
-      sig { returns(String) }
-      def elixir_helper_path
-        File.join(NativeHelpers.hex_helpers_dir, "lib/run.exs")
       end
 
       sig { returns(String) }
