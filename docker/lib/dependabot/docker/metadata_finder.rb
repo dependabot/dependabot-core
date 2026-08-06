@@ -27,8 +27,11 @@ module Dependabot
       def look_up_source
         return if dependency.requirements.empty?
 
-        new_source = dependency.requirements.first&.fetch(:source)
-        return unless new_source && new_source[:registry] && (new_source[:tag] || new_source[:digest])
+        requirement = dependency.requirements.first
+        return unless requirement
+
+        new_source = docker_source(requirement)
+        return unless new_source[:registry] && (new_source[:tag] || new_source[:digest])
 
         details = image_details(new_source)
         image_source = image_label(details, "org.opencontainers.image.source")
@@ -42,6 +45,17 @@ module Dependabot
       rescue StandardError => e
         Dependabot.logger.warn("Error looking up Docker source: #{e.message}")
         nil
+      end
+
+      sig { params(requirement: Dependabot::DependencyRequirement).returns(DockerSource) }
+      def docker_source(requirement)
+        raise TypeError, "Docker source must be a hash" if requirement.source_hash.nil?
+
+        {
+          registry: requirement.source_string("registry"),
+          tag: requirement.source_string("tag"),
+          digest: requirement.source_string("digest")
+        }
       end
 
       sig do
