@@ -281,7 +281,7 @@ module Dependabot
           File.write(path, file.content)
         end
 
-        File.write(T.must(lockfile).name, sanitized_lockfile_content) if lockfile
+        File.write(T.must(lockfile).name, T.must(T.must(lockfile).content)) if lockfile
       end
 
       sig { override.void }
@@ -350,7 +350,7 @@ module Dependabot
       sig { returns(::Bundler::LockfileParser) }
       def parsed_lockfile
         @parsed_lockfile ||= T.let(
-          CachedLockfileParser.parse(sanitized_lockfile_content),
+          CachedLockfileParser.parse(T.must(T.must(lockfile).content)),
           T.nilable(::Bundler::LockfileParser)
         )
       end
@@ -388,13 +388,6 @@ module Dependabot
         return true if groups.include?("default")
 
         groups.any? { |g| g.include?("prod") }
-      end
-
-      # TODO: Stop sanitizing the lockfile once we have bundler 2 installed
-      sig { returns(String) }
-      def sanitized_lockfile_content
-        regex = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
-        T.must(T.must(lockfile).content).gsub(regex, "")
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
