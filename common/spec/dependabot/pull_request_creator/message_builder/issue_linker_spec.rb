@@ -12,6 +12,19 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::IssueLinker do
   describe "#link_issues" do
     subject(:link_issues) { issue_linker.link_issues(text: text) }
 
+    context "with a GitLab source" do
+      subject(:issue_linker) do
+        described_class.new(source_url: "https://gitlab.com/a/b")
+      end
+
+      let(:text) { "This is a #19 link" }
+
+      it "uses the GitLab work item path" do
+        expect(link_issues)
+          .to eq("This is a [#19](https://gitlab.com/a/b/-/work_items/19) link")
+      end
+    end
+
     context "with an absolute link" do
       let(:text) { "This is just [#12](https://example.com) text" }
 
