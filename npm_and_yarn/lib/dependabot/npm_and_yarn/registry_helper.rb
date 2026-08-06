@@ -32,9 +32,14 @@ module Dependabot
       # Default npm registry - no need to set env vars for this
       DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org"
 
-      # Corepack signing-key endpoints
-      NPM_KEYS_URL = "https://registry.npmjs.org/-/npm/v1/keys"
+      # Corepack signing-key endpoints. `KEYS_ENDPOINT_PATH` is the standard npm
+      # registry API path (`registry-host.tld/-/npm/v1/keys`) served by any
+      # signature-supporting registry, so it is appended generically to a
+      # registry URL. `NPM_KEYS_URL` is simply that same path applied to the
+      # default public npm registry, built from the constants above so the host
+      # has a single source of truth.
       KEYS_ENDPOINT_PATH = "/-/npm/v1/keys"
+      NPM_KEYS_URL = T.let("#{DEFAULT_NPM_REGISTRY}#{KEYS_ENDPOINT_PATH}".freeze, String)
 
       # Sentinel recorded in the registry-info hash (whose values are strings) to
       # flag a replaces-base registry. Compared explicitly rather than by truthiness.
