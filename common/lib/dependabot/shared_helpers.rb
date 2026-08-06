@@ -464,7 +464,7 @@ module Dependabot
     # rubocop:disable Metrics/PerceivedComplexity
     sig do
       params(
-        command: String,
+        command: T.any(String, T::Array[String]),
         allow_unsafe_shell_command: T::Boolean,
         cwd: T.nilable(String),
         env: T.nilable(T::Hash[String, String]),
@@ -485,17 +485,22 @@ module Dependabot
       output_observer: nil
     )
       start = Time.now
-      cmd = allow_unsafe_shell_command ? command : escape_command(command)
+      cmd = if command.is_a?(Array) || allow_unsafe_shell_command
+              command
+            else
+              escape_command(command)
+            end
 
-      puts cmd if ENV["DEBUG_HELPERS"] == "true"
+      puts(fingerprint || Array(cmd).join(" ")) if ENV["DEBUG_HELPERS"] == "true"
 
       opts = {}
       opts[:chdir] = cwd if cwd
 
-      env_cmd = [env || {}, cmd, opts].compact
+      env_cmd = [env || {}, *Array(cmd), opts]
       kwargs = {
         stderr_to_stdout: stderr_to_stdout,
-        timeout: timeout
+        timeout: timeout,
+        fingerprint: fingerprint
       }
       kwargs[:output_observer] = output_observer if output_observer
 
@@ -511,7 +516,7 @@ module Dependabot
       return stdout || "" if process&.success?
 
       error_context = {
-        command: cmd,
+        command: fingerprint || (command.is_a?(Array) ? Shellwords.join(command) : cmd),
         fingerprint: fingerprint,
         time_taken: time_taken,
         process_exit_value: process.to_s

@@ -25,7 +25,7 @@ RSpec.describe Dependabot::CommandHelpers do
         expect(stdout).to eq("This is a successful command.\n")
         expect(stderr).to eq("")
         expect(status.exitstatus).to eq(0)
-        expect(elapsed_time).to be > 0
+        expect(elapsed_time).to be_positive
       end
     end
 
@@ -39,7 +39,7 @@ RSpec.describe Dependabot::CommandHelpers do
         expect(stdout).to eq("")
         expect(stderr).to eq("This is an error message.\n")
         expect(status.exitstatus).to eq(1)
-        expect(elapsed_time).to be > 0
+        expect(elapsed_time).to be_positive
       end
     end
 
@@ -82,7 +82,7 @@ RSpec.describe Dependabot::CommandHelpers do
         expect(stdout).to eq("")
         expect(stderr).to include("No such file or directory - non_existent_command") if stderr
         expect(status).to be_nil
-        expect(elapsed_time).to be > 0
+        expect(elapsed_time).to be_positive
       end
     end
 
@@ -179,6 +179,18 @@ RSpec.describe Dependabot::CommandHelpers do
         expect(logger).to have_received(:info).with(a_string_including("Started process PID"))
         expect(logger).to have_received(:info).with(a_string_including("Process PID"))
         expect(logger).to have_received(:info).with(a_string_including("Total execution time"))
+      end
+
+      it "uses the fingerprint without logging command arguments or environment" do
+        described_class.capture3_with_timeout(
+          [{ "HEX_API_KEY" => "secret-key" }, success_cmd, "secret-argument"],
+          timeout: timeout,
+          fingerprint: "safe-command <argument>"
+        )
+
+        expect(logger).to have_received(:info).with(a_string_including("safe-command <argument>"))
+        expect(logger).not_to have_received(:info).with(a_string_including("secret-key"))
+        expect(logger).not_to have_received(:info).with(a_string_including("secret-argument"))
       end
     end
 
