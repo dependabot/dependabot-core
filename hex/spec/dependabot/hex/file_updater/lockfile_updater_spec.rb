@@ -155,6 +155,71 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "with a project-defined deps.update alias" do
+      let(:mixfile_fixture_name) { "deps_update_alias" }
+      let(:lockfile_fixture_name) { "minor_version" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "phoenix",
+          version: "1.3.0",
+          requirements: [{
+            file: "mix.exs",
+            requirement: "~> 1.3.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "1.2.5",
+          previous_requirements: [{
+            file: "mix.exs",
+            requirement: "~> 1.2.1",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "hex"
+        )
+      end
+
+      it "updates the lockfile without invoking the alias" do
+        expect(updated_lockfile_content).to include %({:hex, :phoenix, "1.3)
+      end
+    end
+
+    context "when dependency resolution fails" do
+      let(:mixfile_fixture_name) { "unresolvable" }
+      let(:lockfile_fixture_name) { "minor_version" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "phoenix",
+          version: "1.3.0",
+          requirements: [{
+            file: "mix.exs",
+            requirement: "~> 1.3.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "1.2.5",
+          previous_requirements: [{
+            file: "mix.exs",
+            requirement: "~> 1.2.1",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "hex"
+        )
+      end
+
+      it "leaves the input files and temporary directory unchanged" do
+        original_contents = files.to_h { |file| [file.name, file.content.dup] }
+        original_tmp_entries = Dir.entries(tmp_path)
+
+        expect { updated_lockfile_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable)
+
+        expect(files.to_h { |file| [file.name, file.content] }).to eq(original_contents)
+        expect(Dir.entries(tmp_path)).to eq(original_tmp_entries)
+      end
+    end
+
     context "with upgrade to transitive dependencies" do
       let(:mixfile_fixture_name) { "deep_upgrade" }
       let(:lockfile_fixture_name) { "deep_upgrade" }

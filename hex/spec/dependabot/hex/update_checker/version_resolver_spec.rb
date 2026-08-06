@@ -124,6 +124,15 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       end
     end
 
+    context "with a project-defined deps.update alias" do
+      let(:mixfile_fixture_name) { "deps_update_alias" }
+
+      it "resolves without invoking the alias" do
+        expect(latest_resolvable_version).to be > Gem::Version.new("1.3.5")
+        expect(latest_resolvable_version).to be < Gem::Version.new("1.4.0")
+      end
+    end
+
     context "when the environments for another dependency diverge" do
       # In this example, updating `credo` would add its sub-dependency,
       # `poison`, to the `dev` environment, but the Mixfile explicitly specifies
