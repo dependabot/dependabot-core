@@ -76,6 +76,7 @@ module Dependabot
           write_sanitized_supporting_files
           File.write("mix.lock", lockfile&.content) if lockfile
           FileUtils.cp(elixir_helper_parse_deps_path, "parse_deps.exs")
+          FileUtils.cp(elixir_helper_lockfile_path, "lockfile.exs")
 
           SharedHelpers.run_shell_command(
             mix_run_command("parse_deps.exs"),
@@ -132,6 +133,11 @@ module Dependabot
       sig { returns(String) }
       def elixir_helper_parse_deps_path
         File.join(NativeHelpers.hex_helpers_dir, "lib/parse_deps.exs")
+      end
+
+      sig { returns(String) }
+      def elixir_helper_lockfile_path
+        File.join(NativeHelpers.hex_helpers_dir, "lib/lockfile.exs")
       end
 
       sig { override.void }
