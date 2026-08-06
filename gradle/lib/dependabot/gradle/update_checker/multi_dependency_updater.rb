@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -50,7 +50,7 @@ module Dependabot
           @dependencies_to_update = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
           @property_name = T.let(nil, T.nilable(String))
           @dependency_set = T.let(nil, T.nilable(T::Hash[Symbol, String]))
-          @updated_requirements = T.let({}, T::Hash[String, T::Array[T::Hash[Symbol, Object]]])
+          @updated_requirements = T.let({}, T::Hash[String, T::Array[Dependabot::DependencyRequirement]])
         end
         sig { returns(T::Boolean) }
         def update_possible?
@@ -128,8 +128,8 @@ module Dependabot
               source: nil
             ).parse.select do |dep|
               dep.requirements.any? do |r|
-                tmp_p_name = r.dig(:metadata, :property_name)
-                tmp_dep_set = r.dig(:metadata, :dependency_set)
+                tmp_p_name = r.metadata_string("property_name")
+                tmp_dep_set = r.metadata_string_hash("dependency_set")
                 next true if property_name && tmp_p_name == property_name
 
                 dependency_set && tmp_dep_set == dependency_set
@@ -140,18 +140,18 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def property_name
           @property_name ||= dependency.requirements
-                                       .find { |r| r.dig(:metadata, :property_name) }
-                                       &.dig(:metadata, :property_name)
+                                       .find { |r| r.metadata_string("property_name") }
+                                       &.metadata_string("property_name")
         end
 
         sig { returns(T.nilable(T::Hash[Symbol, String])) }
         def dependency_set
           @dependency_set ||= dependency.requirements
-                                        .find { |r| r.dig(:metadata, :dependency_set) }
-                                        &.dig(:metadata, :dependency_set)
+                                        .find { |r| r.metadata_string_hash("dependency_set") }
+                                        &.metadata_string_hash("dependency_set")
         end
 
-        sig { params(dep: Dependabot::Dependency).returns(T::Array[T::Hash[Symbol, Object]]) }
+        sig { params(dep: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_requirements(dep)
           @updated_requirements[dep.name] ||=
             RequirementsUpdater.new(
