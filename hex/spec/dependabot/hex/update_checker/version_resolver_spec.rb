@@ -204,6 +204,189 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       end
     end
 
+    context "when update-check diagnostics include repository query credentials" do
+      let(:repository_secret) { "secret%2Bvalue" }
+      let(:repository_url) { "https://repo.example.com?access_token=#{repository_secret}" }
+      let(:credentials) { [repository_credential(repository_url)] }
+      let(:secret_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "Request failed for #{repository_url}",
+          error_context: {
+            stderr_output: "Request failed for #{repository_url}",
+            args: [["hex_repository", "dependabot", repository_url]]
+          },
+          trace: ["Request failed for #{repository_url}"]
+        )
+      end
+
+      context "when checking the prepared requirements fails" do
+        before { stub_update_checks(secret_error, "1.3.6") }
+
+        it "redacts and detaches the helper failure" do
+          expect { latest_resolvable_version }
+            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
+              expect(error.message).to include("access_token=***")
+              expect(error.full_message).not_to include(repository_secret)
+              expect(error.error_context.inspect).not_to include(repository_secret)
+              expect(error.trace&.join).not_to include(repository_secret)
+              expect(error.cause).to be_nil
+            end
+        end
+      end
+
+      context "when a sanitized failure is translated to an authentication error" do
+        let(:authentication_error) do
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: "No authenticated organization found for hexpm:dependabot.\nRequest failed for #{repository_url}",
+            error_context: {}
+          )
+        end
+
+        before { stub_update_checks(authentication_error) }
+
+        it "redacts and detaches the authentication error" do
+          expect { latest_resolvable_version }
+            .to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+              expect(error.source).to eq("hexpm:dependabot")
+              expect(error.full_message).not_to include(repository_secret)
+              expect(error.cause).to be_nil
+            end
+        end
+      end
+
+      context "when the original requirements fail without needing redaction" do
+        let(:original_requirements_error) do
+          Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: "Original requirements failed",
+            error_context: {}
+          )
+        end
+
+        before { stub_update_checks(secret_error, original_requirements_error) }
+
+        it "detaches the not-resolvable error from the sanitized outer failure" do
+          expect { latest_resolvable_version }
+            .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              expect(error.message).to eq("Original requirements failed")
+              expect(error.full_message).not_to include(repository_secret)
+              expect(error.cause).to be_nil
+            end
+        end
+      end
+    end
+
+    context "when update-check error context contains the legacy credential payload" do
+      let(:organization_token) { "organization-secret-token" }
+      let(:repository_auth_key) { "repository-secret-auth-key" }
+      let(:repository_public_key) { "-----BEGIN PUBLIC KEY-----\nrepository-secret-pem\n-----END PUBLIC KEY-----" }
+      let(:truncated_query_pair) { "access_token=query-" }
+      let(:truncated_stderr) do
+        "#{'x' * (50_001 - truncated_query_pair.length)}#{truncated_query_pair}"
+      end
+      let(:repository_url) do
+        "https://url-user:url-password@repo.example.com/packages?access_token=query-secret"
+      end
+      let(:credentials) do
+        [
+          organization_credential("dependabot", token: organization_token),
+          Dependabot::Credential.new(
+            {
+              "type" => "hex_repository",
+              "repo" => "dependabot",
+              "url" => repository_url,
+              "auth-key" => repository_auth_key,
+              "public-key" => repository_public_key
+            }
+          )
+        ]
+      end
+      let(:credential_payload_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "Update check failed",
+          error_context: {
+            command: "mix run check_update.exs",
+            function: "get_latest_resolvable_version",
+            args: ["/tmp/project", dependency_name, Dependabot::Hex::CredentialHelpers.hex_credentials(credentials)],
+            stderr_output: truncated_stderr,
+            time_taken: 1.25,
+            process_exit_value: "exit 1"
+          }
+        )
+      end
+
+      before { stub_update_checks(credential_payload_error, "1.3.6") }
+
+      it "removes credential-bearing arguments and truncated stderr while retaining safe context" do
+        expect(truncated_stderr.length).to eq(50_001)
+        expect(truncated_stderr).to end_with(truncated_query_pair)
+
+        expect { latest_resolvable_version }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
+            expect(error.error_context).to include(
+              command: "mix run check_update.exs",
+              function: "get_latest_resolvable_version",
+              time_taken: 1.25,
+              process_exit_value: "exit 1"
+            )
+            expect(error.error_context).not_to include(:args, :stderr_output)
+            diagnostic_surface = [error.error_context, error.sentry_context].inspect
+            expect(diagnostic_surface).not_to include(
+              organization_token,
+              repository_auth_key,
+              repository_public_key,
+              "url-user",
+              "url-password",
+              "query-secret",
+              truncated_query_pair
+            )
+            expect(error.cause).to be_nil
+          end
+      end
+    end
+
+    context "when the helper reports ambiguous repository diagnostics" do
+      let(:diagnostics) do
+        [
+          'Public key fingerprint mismatch for repo "dependabot"',
+          'Downloading public key for repo "dependabot" failed: {:error, :econnrefused}',
+          'Failed to decode public key for repo "dependabot"',
+          "Failed to fetch record for dependabot"
+        ]
+      end
+
+      it "re-raises each original failure unchanged" do
+        diagnostics.each do |diagnostic|
+          ambiguous_error =
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: diagnostic,
+              error_context: {}
+            )
+          stub_update_checks(ambiguous_error, "1.3.6")
+
+          expect { latest_resolvable_version }.to raise_error do |error|
+            expect(error).to equal(ambiguous_error)
+          end
+        end
+      end
+    end
+
+    context "when an unknown update-check failure has no configured query credentials" do
+      let(:unknown_error) do
+        Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: "Unknown update-check failure",
+          error_context: {}
+        )
+      end
+
+      before { stub_update_checks(unknown_error, "1.3.6") }
+
+      it "re-raises the original failure unchanged" do
+        expect { latest_resolvable_version }.to raise_error do |error|
+          expect(error).to equal(unknown_error)
+        end
+      end
+    end
+
     context "without a lockfile" do
       let(:original_files) { [mixfile] }
       let(:prepared_files) { [sanitized_mixfile] }
@@ -224,6 +407,26 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
         it "resolves without issue" do
           expect(latest_resolvable_version).to be >= Gem::Version.new("1.1.0")
         end
+      end
+    end
+
+    def repository_credential(url)
+      Dependabot::Credential.new(
+        {
+          "type" => "hex_repository",
+          "repo" => "dependabot",
+          "url" => url,
+          "public-key-fingerprint" => "SHA256:fingerprint"
+        }
+      )
+    end
+
+    def stub_update_checks(*results)
+      allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess) do
+        result = results.shift
+        raise result if result.is_a?(StandardError)
+
+        result
       end
     end
 
