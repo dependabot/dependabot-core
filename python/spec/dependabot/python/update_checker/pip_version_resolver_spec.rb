@@ -349,11 +349,10 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
         ]
       end
 
-      it "uses the static fallback" do
-        expect(Dependabot::SharedHelpers)
-          .not_to receive(:run_shell_command).with(a_string_including("pip install"), any_args)
-
+      it "uses pip after sanitizing the referenced file" do
         expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_shell_command).with(a_string_including("pip install"), any_args)
       end
     end
 
@@ -640,7 +639,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
       let(:pip_config) do
         Dependabot::DependencyFile.new(
           name: "pip.conf",
-          content: "[global]\nindex-url = https://registry.example.com/simple\n",
+          content: "[global]\nindex-url = https://registry.example.com/simple\nrequire-hashes = true\n",
           support_file: true
         )
       end
@@ -653,6 +652,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
       it "points pip at the copied configuration file" do
         expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
         expect(resolver.send(:pip_environment).fetch("PIP_CONFIG_FILE")).to end_with("/pip.conf")
+        expect(resolver.send(:pip_environment)).to include("PIP_REQUIRE_HASHES" => "0")
       end
     end
 
@@ -660,17 +660,65 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
       let(:requirements_file) do
         Dependabot::DependencyFile.new(
           name: "requirements.txt",
-          content: "django==1.2.4 --hash=sha256:abc123\n"
+          content: <<~REQUIREMENTS
+            --only-binary=:all: --require-hashes # keep this comment
+            -r requirements/base.txt
+            -r requirements/dev.in
+            django==1.2.4 \\
+                --hash=sha256:django-wheel \\
+                --hash=sha256:django-sdist
+          REQUIREMENTS
         )
       end
+      let(:dependency_files) do
+        [requirements_file, base_requirements_file, development_requirements_file, python_version_file]
+      end
+      let(:base_requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/base.txt",
+          content: "urllib3==1.26.20 --hash sha256:urllib3-wheel\n"
+        )
+      end
+      let(:development_requirements_file) do
+        Dependabot::DependencyFile.new(
+          name: "requirements/dev.in",
+          content: "idna==3.10 \\\n    --hash sha256:idna-wheel\n"
+        )
+      end
+      let(:resolver_files) { [] }
 
-      before { allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original }
+      before do
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_shell_command) do |command, **_args|
+          next "" unless command.include?("pip install")
 
-      it "uses the policy candidate without invoking pip" do
-        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.4"))
-        expect(Dependabot::SharedHelpers)
-          .not_to have_received(:run_shell_command)
-          .with(a_string_matching(/pip install/), any_args)
+          resolver_files << {
+            requirements: File.read("requirements.txt"),
+            base: File.read("requirements/base.txt"),
+            development: File.read("requirements/dev.in")
+          }
+          File.write(
+            "dependabot-pip-report.json",
+            JSON.dump(
+              "install" => [{ "metadata" => { "name" => "Django", "version" => "3.2.3" } }]
+            )
+          )
+          ""
+        end
+      end
+
+      it "resolves with hash-free temporary requirement files" do
+        expect(latest_resolvable_version).to eq(Gem::Version.new("3.2.3"))
+        expect(resolver_files).to contain_exactly(
+          {
+            requirements: "--only-binary=:all: # keep this comment\n" \
+                          "-r requirements/base.txt\n" \
+                          "-r requirements/dev.in\n" \
+                          "django>=1.2.4,<=3.2.4,!=1.2.4\n",
+            base: "urllib3==1.26.20\n",
+            development: "idna==3.10\n"
+          }
+        )
       end
     end
 
