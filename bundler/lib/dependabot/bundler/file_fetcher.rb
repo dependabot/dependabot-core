@@ -209,7 +209,7 @@ module Dependabot
       sig { returns(T::Array[String]) }
       def fetch_path_gemspec_paths
         if lockfile
-          parsed_lockfile = CachedLockfileParser.parse(T.must(sanitized_lockfile_content))
+          parsed_lockfile = CachedLockfileParser.parse(T.must(T.must(lockfile).content))
           parsed_lockfile.specs
                          .select { |s| s.source.instance_of?(::Bundler::Source::Path) }
                          .map { |s| s.source.path }.uniq
@@ -235,14 +235,6 @@ module Dependabot
           fetch_child_gemfiles(file: T.must(gemfile), previously_fetched_files: []),
           T.nilable(T::Array[DependencyFile])
         )
-      end
-
-      # TODO: Stop sanitizing the lockfile once we have bundler 2 installed
-
-      sig { returns T.nilable(String) }
-      def sanitized_lockfile_content
-        regex = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
-        lockfile&.content&.gsub(regex, "")
       end
 
       sig do
