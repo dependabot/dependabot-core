@@ -11,4 +11,5 @@ Sorbet/ForbidTUnsafe:
     - lib/dependabot/update_graph_command.rb
     - lib/dependabot/updater/error_handler.rb
     - lib/dependabot/updater/group_dependency_selector.rb
+    - lib/dependabot/updater/group_update_creation.rb
     - lib/dependabot/updater/pattern_specificity_calculator.rb
