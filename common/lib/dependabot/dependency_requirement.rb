@@ -165,6 +165,16 @@ module Dependabot
       raise TypeError, "metadata #{key} must be a string or nil"
     end
 
+    # Reads a known symbol-valued metadata field such as Helm's "type".
+    sig { params(key: String).returns(T.nilable(Symbol)) }
+    def metadata_symbol(key)
+      value = metadata_value(key)
+      return if value.nil?
+      return value if value.is_a?(Symbol)
+
+      raise TypeError, "metadata #{key} must be a symbol or nil"
+    end
+
     # Reads a nested metadata hash whose values are all strings, such as
     # "dependency_set" (`{ group: "my.group", version: "1.4.0" }`). Keys are
     # symbolised so callers can read them with symbols regardless of how the

@@ -237,6 +237,31 @@ RSpec.describe Dependabot::DependencyRequirement do
         .to raise_error(TypeError, "metadata property_name must be a string or nil")
     end
 
+    it "reads a symbol metadata value" do
+      req = described_class.create(requirement_hash.merge(metadata: { type: :helm_chart }))
+
+      expect(req.metadata_symbol("type")).to eq(:helm_chart)
+    end
+
+    it "reads a symbol value from string-keyed metadata" do
+      req = described_class.create(requirement_hash.merge(metadata: { "type" => :docker_image }))
+
+      expect(req.metadata_symbol("type")).to eq(:docker_image)
+    end
+
+    it "returns nil for an absent symbol metadata value" do
+      req = described_class.create(requirement_hash)
+
+      expect(req.metadata_symbol("type")).to be_nil
+    end
+
+    it "rejects a non-symbol metadata value" do
+      req = described_class.create(requirement_hash.merge(metadata: { type: "helm_chart" }))
+
+      expect { req.metadata_symbol("type") }
+        .to raise_error(TypeError, "metadata type must be a symbol or nil")
+    end
+
     it "reads a metadata hash of strings" do
       req = described_class.create(
         requirement_hash.merge(metadata: { dependency_set: { group: "my.group", version: "1.4.0" } })
