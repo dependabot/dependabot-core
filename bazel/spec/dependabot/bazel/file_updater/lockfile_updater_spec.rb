@@ -208,6 +208,143 @@ RSpec.describe Dependabot::Bazel::FileUpdater::LockfileUpdater do
           .to eq(Dependabot::Bazel::DEFAULT_BAZEL_VERSION)
       end
     end
+
+    context "when .bazelversion file exists with a BuildBuddy multi-line wrapper" do
+      let(:dependency_files) do
+        files = bazel_project_dependency_files("simple_module_with_lockfile")
+        files << Dependabot::DependencyFile.new(
+          name: ".bazelversion",
+          content: "buildbuddy-io/5.0.321\n9.1.0\n",
+          directory: "/"
+        )
+        files
+      end
+
+      it "returns the actual Bazel version ignoring the BuildBuddy wrapper line" do
+        expect(lockfile_updater.determine_bazel_version).to eq("9.1.0")
+      end
+    end
+
+    context "when .bazelversion contains only a BuildBuddy wrapper entry" do
+      let(:dependency_files) do
+        files = bazel_project_dependency_files("simple_module_with_lockfile")
+        files << Dependabot::DependencyFile.new(
+          name: ".bazelversion",
+          content: "buildbuddy-io/5.0.321\n",
+          directory: "/"
+        )
+        files
+      end
+
+      it "falls back to DEFAULT_BAZEL_VERSION rather than the wrapper's version" do
+        expect(lockfile_updater.determine_bazel_version)
+          .to eq(Dependabot::Bazel::DEFAULT_BAZEL_VERSION)
+      end
+    end
+
+    context "when only a nested .bazelversion exists (e.g. from a local_path_override module)" do
+      let(:dependency_files) do
+        files = bazel_project_dependency_files("simple_module_with_lockfile")
+        files << Dependabot::DependencyFile.new(
+          name: "third_party/mod/.bazelversion",
+          content: "5.3.0\n",
+          directory: "/"
+        )
+        files
+      end
+
+      it "ignores the nested module's pin and falls back to DEFAULT_BAZEL_VERSION" do
+        expect(lockfile_updater.determine_bazel_version)
+          .to eq(Dependabot::Bazel::DEFAULT_BAZEL_VERSION)
+      end
+    end
+  end
+
+  describe "the temporary .bazelversion written for Bazelisk" do
+    def bazelversion_written_for_bazel
+      content = nil
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do
+        content = File.read(".bazelversion").strip
+      end
+
+      lockfile_updater.updated_lockfile
+      content
+    end
+
+    context "with a BuildBuddy multi-line wrapper .bazelversion" do
+      let(:dependency_files) do
+        files = bazel_project_dependency_files("simple_module_with_lockfile")
+        files << Dependabot::DependencyFile.new(
+          name: ".bazelversion",
+          content: "buildbuddy-io/5.0.321\n9.1.0\n",
+          directory: "/"
+        )
+        files
+      end
+
+      it "strips the wrapper line so Bazelisk runs Bazel directly" do
+        expect(bazelversion_written_for_bazel).to eq("9.1.0")
+      end
+    end
+
+    context "with a Bazelisk fork target .bazelversion" do
+      let(:dependency_files) do
+        files = bazel_project_dependency_files("simple_module_with_lockfile")
+        files << Dependabot::DependencyFile.new(
+          name: ".bazelversion",
+          content: "myorg/8.0.0\n",
+          directory: "/"
+        )
+        files
+      end
+
+      it "preserves the fork target so Bazelisk fetches the fork, not upstream Bazel" do
+        expect(bazelversion_written_for_bazel).to eq("myorg/8.0.0")
+      end
+    end
+
+    context "with a wrapper-only .bazelversion" do
+      let(:dependency_files) do
+        files = bazel_project_dependency_files("simple_module_with_lockfile")
+        files << Dependabot::DependencyFile.new(
+          name: ".bazelversion",
+          content: "buildbuddy-io/5.0.321\n",
+          directory: "/"
+        )
+        files
+      end
+
+      it "writes the default Bazel version" do
+        expect(bazelversion_written_for_bazel)
+          .to eq(Dependabot::Bazel::DEFAULT_BAZEL_VERSION)
+      end
+    end
+
+    context "with only a nested .bazelversion from a local_path_override module" do
+      let(:dependency_files) do
+        files = bazel_project_dependency_files("simple_module_with_lockfile")
+        files << Dependabot::DependencyFile.new(
+          name: "third_party/mod/.bazelversion",
+          content: "5.3.0\n",
+          directory: "/"
+        )
+        files
+      end
+
+      it "writes the default root .bazelversion and keeps the nested module's own pin" do
+        root_content = nil
+        nested_content = nil
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do
+          root_content = File.read(".bazelversion").strip
+          nested_content = File.read("third_party/mod/.bazelversion").strip
+        end
+
+        lockfile_updater.updated_lockfile
+
+        expect(root_content).to eq(Dependabot::Bazel::DEFAULT_BAZEL_VERSION)
+        expect(nested_content).to eq("5.3.0")
+      end
+    end
   end
 
   def updated_lockfile_content
