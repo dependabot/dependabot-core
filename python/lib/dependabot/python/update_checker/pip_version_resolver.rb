@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "json"
+require "fileutils"
 require "pathname"
 require "toml-rb"
 require "sorbet-runtime"
@@ -13,6 +14,9 @@ require "dependabot/python/package/package_registry_finder"
 require "dependabot/python/update_checker"
 require "dependabot/python/update_checker/latest_version_finder"
 require "dependabot/python/file_parser/python_requirement_parser"
+require "dependabot/python/file_updater/requirement_replacer"
+require "dependabot/python/authed_url_builder"
+require "dependabot/shared_helpers"
 
 module Dependabot
   module Python
@@ -22,6 +26,9 @@ module Dependabot
       # rubocop:disable Metrics/ClassLength
       class PipVersionResolver
         extend T::Sig
+
+        PIP_REPORT_FILENAME = "dependabot-pip-report.json"
+        RESOLUTION_ERROR_PATTERN = /ResolutionImpossible|No matching distribution found/
 
         require_relative "pip_version_resolver/marker_evaluator"
 
@@ -69,7 +76,7 @@ module Dependabot
         def latest_resolvable_version
           candidate = latest_version_finder.latest_version(language_version: language_version_manager.python_version)
           return candidate if candidate.nil?
-          return candidate if compatible_with_pinned_pyproject_dependencies?(candidate)
+          return candidate if compatible_with_pinned_pyproject_dependencies?(candidate) && pip_resolvable?(candidate)
 
           nil
         end
@@ -85,7 +92,7 @@ module Dependabot
           candidate = latest_version_finder
                       .lowest_security_fix_version(language_version: language_version_manager.python_version)
           return candidate if candidate.nil?
-          return candidate if compatible_with_pinned_pyproject_dependencies?(candidate)
+          return candidate if compatible_with_pinned_pyproject_dependencies?(candidate) && pip_resolvable?(candidate)
 
           nil
         end
@@ -140,6 +147,156 @@ module Dependabot
         sig { returns(MarkerEvaluator) }
         def marker_evaluator
           @marker_evaluator ||= MarkerEvaluator.new
+        end
+
+        sig { params(candidate: Dependabot::Version).returns(T::Boolean) }
+        def pip_resolvable?(candidate)
+          requirement = pip_requirement
+          return true unless requirement
+
+          SharedHelpers.in_a_temporary_directory do
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              write_dependency_files(candidate: candidate, requirement: requirement)
+              language_version_manager.install_required_python
+              SharedHelpers.run_shell_command(
+                pip_resolver_command,
+                fingerprint: pip_resolver_fingerprint,
+                stderr_to_stdout: true
+              )
+
+              pip_report_includes_candidate?(candidate)
+            end
+          end
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          return false if e.message.match?(RESOLUTION_ERROR_PATTERN)
+
+          Dependabot.logger.warn("Failed to validate #{dependency.name} #{candidate} with pip: #{e.message}")
+          true
+        end
+
+        sig { returns(T.nilable(Dependabot::DependencyRequirement)) }
+        def pip_requirement
+          return unless dependency.requirements.one?
+
+          requirement = T.must(dependency.requirements.first)
+          return unless requirement.file&.end_with?(".txt")
+          return unless requirement.source.nil? && requirement.requirement_string
+
+          file = dependency_files.find { |dependency_file| dependency_file.name == requirement.file }
+          return unless pip_compatible_requirement_file?(file, requirement)
+
+          requirement
+        end
+
+        sig do
+          params(
+            file: T.nilable(Dependabot::DependencyFile),
+            requirement: Dependabot::DependencyRequirement
+          ).returns(T::Boolean)
+        end
+        def pip_compatible_requirement_file?(file, requirement)
+          return false unless file&.content
+
+          content = T.must(file.content)
+          return false if content.include?("--hash=")
+
+          requirement_declaration_present?(file, requirement)
+        end
+
+        sig do
+          params(candidate: Dependabot::Version, requirement: Dependabot::DependencyRequirement).void
+        end
+        def write_dependency_files(candidate:, requirement:)
+          dependency_files.each do |file|
+            next unless file.content
+
+            FileUtils.mkdir_p(File.dirname(file.name))
+            content = if file.name == requirement.file
+                        updated_requirement_content(file, requirement, candidate)
+                      else
+                        file.content
+                      end
+            File.write(file.name, content)
+          end
+          File.write(".python-version", language_version_manager.python_major_minor)
+        end
+
+        sig do
+          params(
+            file: Dependabot::DependencyFile,
+            requirement: Dependabot::DependencyRequirement,
+            candidate: Dependabot::Version
+          ).returns(String)
+        end
+        def updated_requirement_content(file, requirement, candidate)
+          FileUpdater::RequirementReplacer.new(
+            content: T.must(file.content),
+            dependency_name: dependency.name,
+            old_requirement: requirement.requirement_string,
+            new_requirement: "==#{candidate}"
+          ).updated_content
+        end
+
+        sig do
+          params(
+            file: Dependabot::DependencyFile,
+            requirement: Dependabot::DependencyRequirement
+          ).returns(T::Boolean)
+        end
+        def requirement_declaration_present?(file, requirement)
+          expected_requirement = T.must(requirement.requirement_string).gsub(/\s/, "")
+          T.must(file.content).each_line.any? do |line|
+            parsed = RequirementParser.parse(line)
+            next false unless parsed
+
+            parsed[:normalised_name] == NameNormaliser.normalise(dependency.name) &&
+              parsed[:requirement]&.gsub(/\s/, "") == expected_requirement
+          end
+        end
+
+        sig { returns(String) }
+        def pip_resolver_command
+          requirements_file = T.must(T.must(pip_requirement).file)
+          options = ["--dry-run", "--ignore-installed", "--report #{PIP_REPORT_FILENAME}", *pip_index_options]
+          "pyenv exec pip install #{options.join(' ')} -r #{SharedHelpers.escape_command(requirements_file)}"
+        end
+
+        sig { returns(String) }
+        def pip_resolver_fingerprint
+          "pyenv exec pip install --dry-run --ignore-installed --report <report> <index_options> -r <requirements_file>"
+        end
+
+        sig { returns(T::Array[String]) }
+        def pip_index_options
+          credentials.filter_map do |credential|
+            next unless credential["type"] == "python_index"
+
+            option = credential.replaces_base? ? "--index-url" : "--extra-index-url"
+            "#{option}=#{AuthedUrlBuilder.authed_url(credential: credential)}"
+          end
+        end
+
+        sig { params(candidate: Dependabot::Version).returns(T::Boolean) }
+        def pip_report_includes_candidate?(candidate)
+          report = T.cast(JSON.parse(File.read(PIP_REPORT_FILENAME)), T::Hash[String, Object])
+          installs_obj = report["install"]
+          return false unless installs_obj.is_a?(Array)
+
+          installs_obj.any? do |entry|
+            install = T.cast(entry, T.nilable(Object))
+            next false unless install.is_a?(Hash)
+
+            metadata = T.cast(install["metadata"], T.nilable(Object))
+            next false unless metadata.is_a?(Hash)
+
+            name = T.cast(metadata["name"], T.nilable(Object))
+            version = T.cast(metadata["version"], T.nilable(Object))
+            name.is_a?(String) && version.is_a?(String) &&
+              NameNormaliser.normalise(name) == NameNormaliser.normalise(dependency.name) &&
+              Python::Version.new(version) == candidate
+          end
+        rescue JSON::ParserError, Errno::ENOENT
+          false
         end
 
         sig { params(candidate: Dependabot::Version).returns(T::Boolean) }
