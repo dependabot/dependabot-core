@@ -111,6 +111,11 @@ RSpec.describe Dependabot::DependencyGroup do
         )
       ).to eq("frontend")
     end
+
+    it "returns nil when the dependency suffix does not match" do
+      expect(described_class.parent_name_from_subgroup(subgroup_name: "frontend/react", dependency_name: "rails"))
+        .to be_nil
+    end
   end
 
   describe "#dependencies" do
