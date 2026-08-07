@@ -6,6 +6,8 @@ require "rexml/document"
 require "sorbet-runtime"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/experiments"
+require "dependabot/maven/distributions"
 
 module Dependabot
   module Maven
@@ -13,7 +15,9 @@ module Dependabot
       extend T::Sig
 
       require_relative "file_updater/declaration_finder"
+      require_relative "file_updater/dependency_requirement_scopes"
       require_relative "file_updater/property_value_updater"
+      require_relative "file_updater/wrapper_updater"
 
       IndentConfig = T.type_alias do
         { base: String, is_tabs: T::Boolean, levels: T::Hash[Symbol, String] }
@@ -21,28 +25,97 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
-        updated_files = T.let(dependency_files.dup, T::Array[Dependabot::DependencyFile])
+        all_updated = collect_wrapper_updates + collect_pom_updates
+        raise "No files changed!" if all_updated.none?
 
+        all_updated
+      end
+
+      private
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def collect_wrapper_updates
+        return [] unless Dependabot::Experiments.enabled?(:maven_wrapper_updater)
+
+        updated = T.let([], T::Array[Dependabot::DependencyFile])
+        # Group the distribution-type dependencies by the wrapper they belong to (its properties
+        # file). Each wrapper is regenerated exactly once, so a grouped distribution + wrapper-plugin
+        # update produces a single coherent set of files instead of duplicates, and module wrappers
+        # are updated in place rather than at the repo root.
+        dependency_requirement_scopes.wrapper_groups.each do |properties_name, group|
+          buildfile = build_file_for_wrapper(properties_name)
+          next unless buildfile
+
+          representative = group.find { |d| d.name == Distributions::MAVEN_DISTRIBUTION_PACKAGE } || T.must(group.first)
+          dist_version = resolve_group_version(group, Distributions::MAVEN_DISTRIBUTION_PACKAGE, :distribution_version)
+          wrap_version = resolve_group_version(group, Distributions::MAVEN_WRAPPER_PACKAGE, :wrapper_version)
+          wu = WrapperUpdater.new(
+            dependency_files: dependency_files,
+            dependency: representative,
+            credentials: credentials,
+            distribution_version: dist_version,
+            wrapper_version: wrap_version
+          )
+          updated += wu.update_files(buildfile)
+        end
+        updated
+      end
+
+      # Finds the pom.xml that owns a wrapper, so the native command runs in the wrapper's directory.
+      sig { params(properties_name: T.nilable(String)).returns(T.nilable(Dependabot::DependencyFile)) }
+      def build_file_for_wrapper(properties_name)
+        dir = File.dirname(properties_name.to_s).sub(%r{/?\.mvn/wrapper\z}, "")
+        pom_name = dir.empty? ? "pom.xml" : File.join(dir, "pom.xml")
+        dependency_files.find { |f| f.name == pom_name } ||
+          dependency_files.find { |f| f.name == "pom.xml" }
+      end
+
+      # Resolves the effective version for a group, preferring the dependency that actually owns the
+      # coordinate (so a grouped update uses each dependency's own new version) and falling back to the
+      # unchanged value carried on any group member.
+      sig do
+        params(group: T::Array[Dependabot::Dependency], package: String, metadata_key: Symbol)
+          .returns(T.nilable(String))
+      end
+      def resolve_group_version(group, package, metadata_key)
+        owner = group.find { |d| d.name == package }
+        version_from_metadata(owner, metadata_key) ||
+          group.filter_map { |d| version_from_metadata(d, metadata_key) }.first
+      end
+
+      sig { params(dep: T.nilable(Dependabot::Dependency), key: Symbol).returns(T.nilable(String)) }
+      def version_from_metadata(dep, key)
+        return nil unless dep
+
+        dep.requirements.find { |r| r.dig(:metadata, key) }&.dig(:metadata, key)
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def collect_pom_updates
         # Loop through each of the changed requirements, applying changes to
         # all Maven dependency files for that change. Note that the logic is
         # different here to other package managers because Maven has property
         # inheritance across files
+        updated_files = T.let(dependency_files.dup, T::Array[Dependabot::DependencyFile])
         dependencies.each do |dependency|
+          pom_dependency = dependency_requirement_scopes.pom_dependency(dependency)
+          next unless pom_dependency
+
           updated_files = update_files_for_dependency(
             original_files: updated_files,
-            dependency: dependency
+            dependency: pom_dependency
           )
         end
-
         updated_files.select! { |f| f.name.end_with?(".xml", ".target") }
         updated_files.reject! { |f| dependency_files.include?(f) }
-
-        raise "No files changed!" if updated_files.none?
 
         updated_files
       end
 
-      private
+      sig { returns(DependencyRequirementScopes) }
+      def dependency_requirement_scopes
+        DependencyRequirementScopes.new(dependencies: dependencies)
+      end
 
       sig { override.void }
       def check_required_files
