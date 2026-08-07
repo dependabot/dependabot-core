@@ -149,7 +149,7 @@ module Dependabot
           release_date = nil unless release_date.is_a?(Time)
           hydrated_release = build_release_with_date(release, release_date)
 
-          return hydrated_release if hydrated_release.released_at
+          return hydrated_release if hydrated_release.released_at || distribution?
 
           build_release_with_date(hydrated_release, version_release_date_fallback(release.version.to_s))
         end

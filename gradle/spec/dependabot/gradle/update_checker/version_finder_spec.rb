@@ -768,7 +768,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       end
       let(:guava_pom_url) do
         "https://repo.maven.apache.org/maven2/" \
-          "com/google/guava/guava/23.6-jre/guava-23.6-jre.pom"
+          "com/google/guava/guava/23.5-jre/guava-23.5-jre.pom"
       end
 
       before do
@@ -785,7 +785,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         allow(Dependabot).to receive(:logger).and_return(logger)
 
         release = Dependabot::Package::PackageRelease.new(
-          version: version_class.new("23.6-jre"),
+          version: version_class.new("23.5-jre"),
           url: "https://repo.maven.apache.org/maven2"
         )
 
@@ -797,7 +797,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
           "from https://repo.maven.apache.org/maven2"
         )
         expect(logger).to have_received(:debug).with(
-          "Using POM Last-Modified fallback for com.google.guava:guava version 23.6-jre " \
+          "Using POM Last-Modified fallback for com.google.guava:guava version 23.5-jre " \
           "from https://repo.maven.apache.org/maven2: 2026-05-11 10:08:43 UTC"
         )
       end
