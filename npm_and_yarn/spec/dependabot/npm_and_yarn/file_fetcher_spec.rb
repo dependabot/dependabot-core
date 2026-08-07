@@ -2230,8 +2230,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
   context "with both packageManager with version and valid engines fields (yarn)" do
     before do
-      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
-
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
       stub_request(:get, File.join(url, "package.json?ref=sha"))
@@ -2252,8 +2250,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
   context "with both packageManager with version and valid engines fields (pnpm)" do
     before do
-      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
-
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
       stub_request(:get, File.join(url, "package.json?ref=sha"))
@@ -2274,8 +2270,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
   context "with only packageManager and no engines fields (pnpm)" do
     before do
-      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
-
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
       stub_request(:get, File.join(url, "package.json?ref=sha"))
@@ -2299,8 +2293,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
   context "with only packageManager and no engines fields (yarn)" do
     before do
-      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
-
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
       stub_request(:get, File.join(url, "package.json?ref=sha"))
@@ -2324,8 +2316,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
   context "with packageManager and engines fields with engine field having non relevant version (pnpm)" do
     before do
-      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
-
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
       stub_request(:get, File.join(url, "package.json?ref=sha"))
@@ -2349,8 +2339,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
   context "with packageManager and engines fields with engine field having non relevant version (yarn)" do
     before do
-      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
-
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
       stub_request(:get, File.join(url, "package.json?ref=sha"))
@@ -2374,8 +2362,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
   context "with both packageManager and engines fields of same package-manager" do
     before do
-      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
-
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
       stub_request(:get, File.join(url, "package.json?ref=sha"))
@@ -2399,8 +2385,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
   context "with both packageManager and engines fields of same package-manager" do
     before do
-      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
-
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
       stub_request(:get, File.join(url, "package.json?ref=sha"))
@@ -2424,8 +2408,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
   context "with both packageManager and engines fields of same package-manager" do
     before do
-      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
-
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
       stub_request(:get, File.join(url, "package.json?ref=sha"))
@@ -2446,8 +2428,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
   context "with packageManager without version and engines fields missing" do
     before do
-      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
-
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
       stub_request(:get, File.join(url, "package.json?ref=sha"))
@@ -2468,8 +2448,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
   context "without packageManager and with engines fields" do
     before do
-      Dependabot::Experiments.register(:enable_pnpm_yarn_dynamic_engine, true)
-
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
       stub_request(:get, File.join(url, "package.json?ref=sha"))
