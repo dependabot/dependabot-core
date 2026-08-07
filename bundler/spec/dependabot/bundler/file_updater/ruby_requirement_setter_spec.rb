@@ -65,6 +65,24 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
         it { is_expected.to include(%(gem "statesman", "~> 1.2.0")) }
       end
 
+      context "with a required ruby version range multiple requirements" do
+        let(:gemspec) do
+          bundler_project_dependency_file(
+            "gemspec_required_ruby_version_multiple_requirements",
+            filename: "example.gemspec"
+          )
+        end
+        let(:content) do
+          bundler_project_dependency_file(
+            "gemspec_required_ruby_version_multiple_requirements",
+            filename: "Gemfile"
+          ).content
+        end
+
+        it { is_expected.to include("ruby '3.0.6'\n") }
+        it { is_expected.to include(%(gem "statesman", "~> 1.2.0")) }
+      end
+
       context "with a required ruby version requirement class" do
         let(:gemspec) do
           bundler_project_dependency_file(
