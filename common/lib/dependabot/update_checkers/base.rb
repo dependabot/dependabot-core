@@ -92,7 +92,19 @@ module Dependabot
       end
 
       sig { returns(T::Boolean) }
+      def all_versions_ignored?
+        ignore_requirements.include?(requirement_class.new(">= 0"))
+      end
+
+      sig { returns(T::Boolean) }
       def up_to_date?
+        # If all versions are ignored, treat the dependency as up-to-date
+        # to avoid making registry calls for dependencies that should be skipped entirely.
+        if all_versions_ignored?
+          Dependabot.logger.info("All versions of #{dependency.name} are being ignored")
+          return true
+        end
+
         if dependency.version
           version_up_to_date?
         else
@@ -103,7 +115,7 @@ module Dependabot
       sig { params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Boolean) }
       def can_update?(requirements_to_unlock:)
         # Can't update if all versions are being ignored
-        return false if ignore_requirements.include?(requirement_class.new(">= 0"))
+        return false if all_versions_ignored?
 
         if dependency.version
           version_can_update?(requirements_to_unlock: requirements_to_unlock)
