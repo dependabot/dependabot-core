@@ -135,6 +135,14 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LatestVersionFinder do
       it { is_expected.to eq(Gem::Version.new("2.4.0")) }
     end
 
+    context "when the PyPI response include linebreaks tags and filenames" do
+      let(:pypi_response) do
+        fixture("pypi", "pypi_simple_response_linebreak.html")
+      end
+
+      it { is_expected.to eq(Gem::Version.new("3.8.1")) }
+    end
+
     context "when the PyPI response includes multi-line links" do
       let(:pypi_response) do
         fixture("pypi", "pypi_simple_response_multiline.html")
