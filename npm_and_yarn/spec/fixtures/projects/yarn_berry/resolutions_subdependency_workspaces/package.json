@@ -1,0 +1,13 @@
+{
+  "name": "dependabot-yarn-resolution-workspaces-poc",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "yarn@4.15.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "resolutions": {
+    "tmp-promise/tmp": "0.2.x",
+    "tmp": "^0.2.4"
+  }
+}
