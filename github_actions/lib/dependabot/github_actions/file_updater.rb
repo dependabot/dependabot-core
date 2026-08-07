@@ -202,7 +202,7 @@ module Dependabot
         # Use the most specific (longest) matching version to avoid partial replacements.
         # Tags are sorted ascending, so ["v1", "v1.0", "v1.0.1"] maps to ["1", "1.0", "1.0.1"].
         # Without this, "1" could match the end of "v1.0.1", causing gsub("1", "1.1") => "v1.1.0.1.1".
-        previous_version = previous_version_tags.map { |tag| version_class.new(tag).to_s }
+        previous_version = previous_version_tags.filter_map { |tag| git_checker.version_string_for_tag(tag) }
                                                 .select { |version| comment.end_with?(version) }
                                                 .max_by(&:length)
         return unless previous_version
@@ -210,13 +210,10 @@ module Dependabot
         new_version_tag = git_checker.most_specific_version_tag_for_sha(new_ref)
         return unless new_version_tag
 
-        new_version = version_class.new(new_version_tag).to_s
-        comment.gsub(previous_version, new_version)
-      end
+        new_version = git_checker.version_string_for_tag(new_version_tag)
+        return unless new_version
 
-      sig { returns(T.class_of(Dependabot::GithubActions::Version)) }
-      def version_class
-        GithubActions::Version
+        comment.gsub(previous_version, new_version)
       end
     end
   end
