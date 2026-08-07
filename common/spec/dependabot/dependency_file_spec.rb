@@ -450,4 +450,36 @@ RSpec.describe Dependabot::DependencyFile do
       end
     end
   end
+
+  describe "#category" do
+    it "is PRIMARY by default" do
+      expect(file.category).to eq(described_class::Category::PRIMARY)
+    end
+
+    context "when the file is a support file" do
+      let(:file) { described_class.new(name: "Gemfile", content: "a", support_file: true) }
+
+      it "is SUPPORT" do
+        expect(file.category).to eq(described_class::Category::SUPPORT)
+      end
+    end
+
+    context "when the file is a vendored file" do
+      let(:file) { described_class.new(name: "Gemfile", content: "a", vendored_file: true) }
+
+      it "is VENDORED" do
+        expect(file.category).to eq(described_class::Category::VENDORED)
+      end
+    end
+
+    context "when the file is both vendored and a support file" do
+      let(:file) do
+        described_class.new(name: "Gemfile", content: "a", vendored_file: true, support_file: true)
+      end
+
+      it "prefers VENDORED" do
+        expect(file.category).to eq(described_class::Category::VENDORED)
+      end
+    end
+  end
 end

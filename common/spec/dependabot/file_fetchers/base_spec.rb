@@ -331,6 +331,51 @@ RSpec.describe Dependabot::FileFetchers::Base do
     end
   end
 
+  describe "#files_to_persist" do
+    before do
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+      stub_request(:get, "https://api.github.com/repos/#{repo}/contents/requirements.txt?ref=sha")
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 200,
+                   body: fixture("github", "gemfile_content.json"),
+                   headers: { "content-type" => "application/json" })
+    end
+
+    it "defaults to the full fetched file set" do
+      expect(file_fetcher_instance.files_to_persist).to eq(file_fetcher_instance.files)
+    end
+
+    context "when a subclass narrows the set that crosses the boundary" do
+      let(:child_class) do
+        Class.new(described_class) do
+          def self.required_files_in?(filenames)
+            filenames.include?("requirements.txt")
+          end
+
+          def self.required_files_message
+            "Repo must contain a requirements.txt."
+          end
+
+          def files_to_persist
+            files.reject(&:support_file?)
+          end
+
+          private
+
+          def fetch_files
+            support = fetch_file_from_host("requirements.txt")
+            support.support_file = true
+            [fetch_file_from_host("requirements.txt"), support]
+          end
+        end
+      end
+
+      it "returns only the subset chosen by the subclass" do
+        expect(file_fetcher_instance.files_to_persist.map(&:support_file?)).to all(be(false))
+      end
+    end
+  end
+
   describe "#files" do
     subject(:files) { file_fetcher_instance.files }
 
