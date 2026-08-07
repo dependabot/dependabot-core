@@ -87,6 +87,22 @@ module Dependabot
       }.to_yaml.delete_prefix("---\n")
     end
 
+    sig { params(parent_name: String, dependency_name: String).returns(String) }
+    def self.subgroup_name(parent_name:, dependency_name:)
+      "#{parent_name}/#{dependency_name}"
+    end
+
+    sig do
+      params(subgroup_name: String, dependency_name: String)
+        .returns(T.nilable(String))
+    end
+    def self.parent_name_from_subgroup(subgroup_name:, dependency_name:)
+      suffix = "/#{dependency_name}"
+      return unless subgroup_name.end_with?(suffix)
+
+      subgroup_name.delete_suffix(suffix)
+    end
+
     private
 
     sig { params(dependency_name: String).returns(T::Boolean) }
