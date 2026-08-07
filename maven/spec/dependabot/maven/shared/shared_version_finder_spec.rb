@@ -580,6 +580,13 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
           it { is_expected.to be true }
         end
 
+        context "when the version has a git commit with the g suffix (git describe style)" do
+          let(:dependency_version) { "1.2.3-123-gabcdef7" }
+          let(:comparison_version) { "1.2.3-124-gabcdef8" }
+
+          it { is_expected.to be true }
+        end
+
         context "when the version contains embedded git commit with a delimiter and leading character" do
           # Example: https://github.com/jenkinsci/bom/releases/tag/5723.v6f9c6b_d1218a_
           let(:dependency_version) { "5723.v6f9c6b_d1218a_" }
