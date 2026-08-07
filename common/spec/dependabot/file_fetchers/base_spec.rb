@@ -1528,9 +1528,39 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
           it { is_expected.to be_a(Dependabot::DependencyFile) }
           its(:type) { is_expected.to include("symlink") }
+          its(:content) { is_expected.to be_nil }
 
           its(:symlink_target) do
             is_expected.to include("symlinked/requirements.txt")
+          end
+        end
+      end
+
+      context "when the file is an absolute symlink" do
+        let(:fill_repo) do
+          File.symlink("/etc/passwd", "requirements.txt")
+        end
+
+        it "raises DependencyFileNotFound" do
+          expect { files }
+            .to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect(error.file_path).to eq("/requirements.txt")
+          end
+        end
+      end
+
+      context "when the file is a symlink that escapes the repo" do
+        after { FileUtils.rm_f(File.join(repo_path, "..", "secret")) }
+
+        let(:fill_repo) do
+          File.write("../secret", contents)
+          File.symlink("../secret", "requirements.txt")
+        end
+
+        it "raises DependencyFileNotFound" do
+          expect { files }
+            .to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect(error.file_path).to eq("/requirements.txt")
           end
         end
       end
