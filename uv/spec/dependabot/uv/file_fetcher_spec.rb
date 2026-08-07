@@ -162,6 +162,20 @@ RSpec.describe Dependabot::Uv::FileFetcher do
           .to eq(["requirements.txt"])
       end
 
+      context "when uv_excludes_pip experiment is enabled" do
+        before { Dependabot::Experiments.register(:uv_excludes_pip, true) }
+
+        it "raises DependencyFileNotFound pointing at pyproject.toml" do
+          expect { file_fetcher_instance.files }
+            .to raise_error(Dependabot::DependencyFileNotFound, /pyproject\.toml or uv\.lock/)
+        end
+
+        it "mentions the package-ecosystem: pip migration in the error" do
+          expect { file_fetcher_instance.files }
+            .to raise_error(Dependabot::DependencyFileNotFound, /package-ecosystem.*pip/)
+        end
+      end
+
       context "when including comments" do
         let(:requirements_fixture_name) { "requirements_with_comments.json" }
 
@@ -921,6 +935,15 @@ RSpec.describe Dependabot::Uv::FileFetcher do
       it "doesn't raise a path dependency error" do
         primary_files = file_fetcher_instance.files.reject(&:support_file?)
         expect(primary_files.map(&:name)).to contain_exactly("requirements-test.txt", "pyproject.toml")
+      end
+
+      context "when uv_excludes_pip experiment is enabled" do
+        before { Dependabot::Experiments.register(:uv_excludes_pip, true) }
+
+        it "filters out the requirements file and keeps pyproject.toml" do
+          primary_files = file_fetcher_instance.files.reject(&:support_file?)
+          expect(primary_files.map(&:name)).to contain_exactly("pyproject.toml")
+        end
       end
     end
 
