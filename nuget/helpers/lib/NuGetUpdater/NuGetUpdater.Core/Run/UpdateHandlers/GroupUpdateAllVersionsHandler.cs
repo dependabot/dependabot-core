@@ -149,6 +149,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     }
                 }
 
+                await LockFileUpdater.UpdateLockFilesAsync(repoContentsPath, discoveryResult, logger);
                 var updatedDependencyFiles = await tracker.StopTrackingAsync(restoreOriginalContents: true);
                 allUpdatedDependencyFiles = ModifiedFilesTracker.MergeUpdatedFileSet(allUpdatedDependencyFiles, updatedDependencyFiles);
             }
@@ -268,6 +269,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     }
                 }
 
+                await LockFileUpdater.UpdateLockFilesAsync(repoContentsPath, discoveryResult, logger);
                 var updatedDependencyFiles = await tracker.StopTrackingAsync(restoreOriginalContents: true);
                 if (updateOperationsPerformed.Count > 0)
                 {
