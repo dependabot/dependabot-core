@@ -54,7 +54,7 @@ module Dependabot
                      &.fetch("repo", nil)
 
               source = if repo
-                         "https://github.com/#{repo}"
+                         "#{qualified_reference_base_url}/#{repo}"
                        elsif source_url
                          source_url
                        end
@@ -75,6 +75,15 @@ module Dependabot
           URI.parse(source).host&.downcase == "gitlab.com" ? "/-/work_items" : "/issues"
         rescue URI::InvalidURIError
           "/issues"
+        end
+
+        sig { returns(String) }
+        def qualified_reference_base_url
+          return "https://github.com" unless source_url
+
+          URI.parse(T.must(source_url)).host&.downcase == "gitlab.com" ? "https://gitlab.com" : "https://github.com"
+        rescue URI::InvalidURIError
+          "https://github.com"
         end
       end
     end
