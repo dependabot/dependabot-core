@@ -905,9 +905,9 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         expect(resolved_dependencies.fetch("pkg:pypi/requests@2.32.5").dependencies).to eq(
           [
             "pkg:pypi/certifi@2024.2.2",
-            "pkg:pypi/charset-normalizer@3.3.2",
-            "pkg:pypi/idna@3.6",
-            "pkg:pypi/urllib3@2.2.1"
+            "pkg:pypi/charset-normalizer@3.4.4",
+            "pkg:pypi/idna@3.11",
+            "pkg:pypi/urllib3@2.6.3"
           ]
         )
       end
