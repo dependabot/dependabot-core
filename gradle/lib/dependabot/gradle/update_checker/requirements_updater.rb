@@ -61,13 +61,14 @@ module Dependabot
           # requirement at index `i` to correspond to the previous requirement
           # at the same index.
           requirements.map do |req|
-            next req if req.fetch(:requirement).nil?
-            next req if req.fetch(:requirement).include?(",")
+            requirement = req.requirement_string
+            next req if requirement.nil?
+            next req if requirement.include?(",")
 
-            property_name = req.dig(:metadata, :property_name)
+            property_name = req.metadata_string("property_name")
             next req if property_name && !properties_to_update.include?(property_name)
 
-            new_req = update_requirement(req[:requirement])
+            new_req = update_requirement(requirement)
             Dependabot::DependencyRequirement.create(req.merge(requirement: new_req, source: updated_source))
           end
         end
@@ -124,33 +125,52 @@ module Dependabot
           distribution_url = T.let(nil, T.nilable(String))
 
           requirements.map do |req|
-            source = req[:source]
+            source = req.source_hash
             next req unless source
 
-            case source[:property]
+            case req.source_string("property")
             when "distributionUrl"
-              requirement = req[:requirement]
+              requirement = T.must(req.requirement_string)
               version = update_exact_requirement(requirement)
-              distribution_url = source[:url].gsub(requirement, version)
+              distribution_url = T.must(req.source_string("url")).gsub(requirement, version)
+              updated_source = set_source_string(source.dup, "url", distribution_url)
 
               Dependabot::DependencyRequirement.create(
                 req.merge(
                   requirement: version,
-                  source: source.merge(url: distribution_url)
+                  source: updated_source
                 )
               )
             when "distributionSha256Sum"
               checksum_url, checksum = Gradle::Package::DistributionsFetcher.resolve_checksum(T.must(distribution_url))
+              updated_source = set_source_string(source.dup, "url", checksum_url)
               Dependabot::DependencyRequirement.create(
                 req.merge(
                   requirement: checksum,
-                  source: source.merge(url: checksum_url)
+                  source: updated_source
                 )
               )
             else
               next req
             end
           end
+        end
+
+        sig do
+          params(
+            source: Dependabot::DependencyRequirement::ObjectHash,
+            key: String,
+            value: T.nilable(String)
+          ).returns(Dependabot::DependencyRequirement::ObjectHash)
+        end
+        def set_source_string(source, key, value)
+          symbol_key = key.to_sym
+          if source.key?(key) && !source.key?(symbol_key)
+            source[key] = value
+          else
+            source[symbol_key] = value
+          end
+          source
         end
 
         sig { override.returns(T::Class[Version]) }
