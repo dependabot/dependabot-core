@@ -12,9 +12,9 @@ module Dependabot
 
       WORDS_WITH_BUILD = /(?:(?:-[a-z]+)+-[0-9]+)+/
       VERSION_REGEX = /v?(?<version>[0-9]+(?:[_.][0-9]+)*(?:\.[a-z0-9]+|#{WORDS_WITH_BUILD}|-(?:kb)?[0-9]+)*)/i
-      VERSION_WITH_SFX = /^(?<operator>[~^<>=]*)#{VERSION_REGEX}(?<suffix>-[a-z][a-z0-9.\-]*)?$/i
+      VERSION_WITH_SFX = /^(?<operator>[~^<>=]*)#{VERSION_REGEX}(?<suffix>-(?:[a-z][a-z0-9.\-]*|[0-9a-f]{9}))?$/i
       VERSION_WITH_PFX = /^(?<prefix>[a-z][a-z0-9.\-_]*-)?#{VERSION_REGEX}$/i
-      VERSION_WITH_PFX_AND_SFX = /^(?<prefix>[a-z\-_]+-)?#{VERSION_REGEX}(?<suffix>-[a-z\-]+)?$/i
+      VERSION_WITH_PFX_AND_SFX = /^(?<prefix>[a-z\-_]+-)#{VERSION_REGEX}(?<suffix>-[a-z0-9\-]+)?$/i
       NAME_WITH_VERSION =
         /
           #{VERSION_WITH_PFX}|
