@@ -117,8 +117,10 @@ module Dependabot
         # Use latest_version (which respects cooldown) for semantic comparison.
         # This ensures that when cooldown rejects all candidates, the dependency
         # is correctly treated as up-to-date.
+        # Use strict < so that equal versions (force-moved tags) fall through
+        # to SHA comparison below.
         lv = latest_version
-        return true if lv.is_a?(Dependabot::Version) && lv <= frozen_ver
+        return true if lv.is_a?(Dependabot::Version) && lv < frozen_ver
 
         resolved_sha = latest_commit_sha
         # If no SHA can be resolved (e.g., all candidate versions rejected by cooldown),
