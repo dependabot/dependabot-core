@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "uri"
 require "dependabot/pull_request_creator/message_builder"
 
 module Dependabot
@@ -59,12 +60,21 @@ module Dependabot
                        end
 
               if source
-                "[#{repo ? (repo + tag) : tag}](#{source}/issues/#{number})"
+                "[#{repo ? (repo + tag) : tag}](#{source}#{issue_path(source)}/#{number})"
               else
                 issue_link
               end
             end
           end
+        end
+
+        private
+
+        sig { params(source: String).returns(String) }
+        def issue_path(source)
+          URI.parse(source).host&.downcase == "gitlab.com" ? "/-/work_items" : "/issues"
+        rescue URI::InvalidURIError
+          "/issues"
         end
       end
     end
