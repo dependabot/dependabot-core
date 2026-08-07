@@ -21,13 +21,10 @@ module Dependabot
       # Lifecycle scripts that run automatically during package installation.
       # These are security-relevant because they execute with user privileges.
       # https://docs.npmjs.com/cli/v11/using-npm/scripts#npm-install
-      INSTALL_SCRIPTS = T.let(
-        %w(preinstall install postinstall prepublish preprepare prepare postprepare).freeze,
-        T::Array[String]
-      )
+      INSTALL_SCRIPTS = %w(preinstall install postinstall prepublish preprepare prepare postprepare).freeze
 
       # RFC 3986 unreserved ASCII characters; everything else needs percent-encoding.
-      CHARS_REQUIRING_ENCODING = T.let(/[^A-Za-z0-9._~-]/, Regexp)
+      CHARS_REQUIRING_ENCODING = /[^A-Za-z0-9._~-]/
       private_constant :CHARS_REQUIRING_ENCODING
 
       sig { override.returns(T.nilable(String)) }
@@ -208,11 +205,11 @@ module Dependabot
         nil
       end
 
-      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped])) }
+      sig { returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash)) }
       def new_source
         sources = dependency.requirements
-                            .map { |r| r.fetch(:source) }.uniq.compact
-                            .sort_by { |source| Package::RegistryFinder.central_registry?(source[:url]) ? 1 : 0 }
+                            .map(&:source_hash).uniq.compact
+                            .sort_by { |source| Package::RegistryFinder.central_registry?(T.cast(source[:url], String)) ? 1 : 0 }
 
         sources.first
       end
@@ -272,7 +269,7 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_git_url
         url = new_source&.[](:url) || new_source&.fetch("url")
-        Source.from_url(url)
+        Source.from_url(T.cast(url, T.nilable(String)))
       end
 
       sig { returns(T::Hash[String, T.untyped]) }
@@ -345,9 +342,10 @@ module Dependabot
 
       sig { returns(T::Hash[String, String]) }
       def registry_auth_headers
-        return {} unless auth_token
+        token = auth_token
+        return {} unless token
 
-        { "Authorization" => "Bearer #{auth_token}" }
+        auth_header_for(token)
       end
 
       sig { returns(String) }
@@ -357,17 +355,17 @@ module Dependabot
           return configured_registry.sub(%r{^https?://}, "")
         end
 
-        if new_source.nil? then "registry.npmjs.org"
-        else
-          new_source&.fetch(:url)&.gsub("https://", "")&.gsub("http://", "")
-        end
+        source = new_source
+        return "registry.npmjs.org" if source.nil?
+
+        T.cast(source.fetch(:url), String).gsub("https://", "").gsub("http://", "")
       end
 
       sig { returns(T.nilable(String)) }
       def auth_token
         credentials
           .select { |cred| cred["type"] == "npm_registry" }
-          .find { |cred| cred["registry"] == dependency_registry }
+          .find { |cred| cred["registry"]&.sub(%r{^https?://}, "")&.gsub(%r{/+$}, "") == dependency_registry }
           &.fetch("token", nil)
       end
 

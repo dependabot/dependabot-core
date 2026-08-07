@@ -86,7 +86,7 @@ module Dependabot
           @dependency_files = dependency_files
           @credentials = credentials
           @forbidden_urls = forbidden_urls
-          @cooldown_options = T.let(cooldown_options, T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+          @cooldown_options = cooldown_options
           @repositories = T.let(nil, T.nilable(T::Array[T::Hash[String, Object]]))
           @google_version_details = T.let(nil, T.nilable(Nokogiri::XML::Document))
           @dependency_repository_details = T.let(nil, T.nilable(T::Array[T::Hash[String, Object]]))

@@ -31,7 +31,7 @@ module Dependabot
       version_pattern = Dependabot::Python::Version::VERSION_PATTERN
 
       PATTERN_RAW = T.let("\\s*(?<op>#{quoted})?\\s*(?<version>#{version_pattern})\\s*".freeze, String)
-      PATTERN = T.let(/\A#{PATTERN_RAW}\z/, Regexp)
+      PATTERN = /\A#{PATTERN_RAW}\z/
 
       sig { params(obj: T.any(Gem::Version, String)).returns([String, Gem::Version]) }
       def self.parse(obj)

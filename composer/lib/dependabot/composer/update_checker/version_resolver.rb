@@ -28,29 +28,23 @@ module Dependabot
 
           sig { params(extensions: T::Array[T::Hash[Symbol, T.untyped]]).void }
           def initialize(extensions)
-            @extensions = T.let(extensions, T::Array[T::Hash[Symbol, T.untyped]])
+            @extensions = extensions
             super
           end
         end
 
-        MISSING_EXPLICIT_PLATFORM_REQ_REGEX = T.let(
-          %r{
+        MISSING_EXPLICIT_PLATFORM_REQ_REGEX = %r{
             (?<=PHP\sextension\s)ext\-[^\s\/]+\s.*?\s(?=is|but)|
             (?<=requires\s)php(?:\-[^\s\/]+)?\s.*?\s(?=but)
-          }x,
-          Regexp
-        )
-        MISSING_IMPLICIT_PLATFORM_REQ_REGEX = T.let(
-          %r{
+          }x
+        MISSING_IMPLICIT_PLATFORM_REQ_REGEX = %r{
             (?<!with|for|by)\sext\-[^\s\/]+\s.*?\s(?=->)|
             (?<=require\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->) # composer v2
-          }x,
-          Regexp
-        )
-        VERSION_REGEX = T.let(/[0-9]+(?:\.[A-Za-z0-9\-_]+)*/, Regexp)
+          }x
+        VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
 
         # Example Timeout error from Composer 2.7.7: "curl error 28 while downloading https://example.com:81/packages.json: Failed to connect to example.com port 81 after 9853 ms: Connection timed out" # rubocop:disable Layout/LineLength
-        SOURCE_TIMED_OUT_REGEX = T.let(%r{curl error 28 while downloading (?<url>https?://.+/packages\.json): }, Regexp)
+        SOURCE_TIMED_OUT_REGEX = %r{curl error 28 while downloading (?<url>https?://.+/packages\.json): }
 
         sig do
           params(
@@ -644,7 +638,7 @@ module Dependabot
       extend T::Sig
 
       # Private source errors
-      CURL_ERROR = T.let(/curl error 52 while downloading (?<url>.*): Empty reply from server/, Regexp)
+      CURL_ERROR = /curl error 52 while downloading (?<url>.*): Empty reply from server/
 
       PRIVATE_SOURCE_AUTH_FAIL = T.let(
         [
@@ -655,9 +649,9 @@ module Dependabot
         T::Array[Regexp]
       )
 
-      REQUIREMENT_ERROR = T.let(/^(?<req>.*) is invalid, it should not contain uppercase characters/, Regexp)
+      REQUIREMENT_ERROR = /^(?<req>.*) is invalid, it should not contain uppercase characters/
 
-      NO_URL = T.let("No URL specified", String)
+      NO_URL = "No URL specified"
 
       sig { params(url: String).returns(String) }
       def sanitize_uri(url)

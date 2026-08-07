@@ -20,8 +20,8 @@ module Dependabot
 
         sig { params(dependency: Dependabot::Dependency, new_pin: String).void }
         def initialize(dependency:, new_pin:)
-          @dependency = T.let(dependency, Dependabot::Dependency)
-          @new_pin = T.let(new_pin, String)
+          @dependency = dependency
+          @new_pin = new_pin
         end
 
         sig { params(content: String).returns(String) }
@@ -38,7 +38,7 @@ module Dependabot
         class Rewriter < Parser::TreeRewriter
           extend T::Sig
 
-          PIN_KEYS = T.let(%i(ref tag).freeze, T::Array[Symbol])
+          PIN_KEYS = %i(ref tag).freeze
 
           sig { returns(Dependabot::Dependency) }
           attr_reader :dependency
@@ -49,8 +49,8 @@ module Dependabot
           sig { params(dependency: Dependabot::Dependency, new_pin: String).void }
           def initialize(dependency:, new_pin:)
             super()
-            @dependency = T.let(dependency, Dependabot::Dependency)
-            @new_pin = T.let(new_pin, String)
+            @dependency = dependency
+            @new_pin = new_pin
           end
 
           sig { params(node: Parser::AST::Node).void }

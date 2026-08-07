@@ -26,10 +26,7 @@ module Dependabot
           @dependency = dependency
           @credentials = credentials
           @cooldown_options = cooldown_options
-          @git_commit_checker = T.let(
-            git_commit_checker,
-            Dependabot::GitCommitChecker
-          )
+          @git_commit_checker = git_commit_checker
         end
 
         sig { returns(Dependabot::Dependency) }

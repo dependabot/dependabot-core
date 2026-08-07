@@ -35,7 +35,7 @@ module Dependabot
             requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
             T::Array[Dependabot::DependencyRequirement]
           )
-          @updated_source = T.let(updated_source, T.nilable(T::Hash[Symbol, T.nilable(String)]))
+          @updated_source = updated_source
           @latest_resolvable_version = T.let(nil, T.nilable(Dependabot::Version))
 
           return unless latest_resolvable_version

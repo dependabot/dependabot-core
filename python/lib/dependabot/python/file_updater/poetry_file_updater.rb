@@ -45,7 +45,7 @@ module Dependabot
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
-          @cooldown = T.let(cooldown, T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+          @cooldown = cooldown
           @updated_dependency_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
           @prepared_pyproject = T.let(nil, T.nilable(String))
           @pyproject = T.let(nil, T.nilable(Dependabot::DependencyFile))

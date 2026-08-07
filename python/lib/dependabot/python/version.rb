@@ -30,7 +30,7 @@ module Dependabot
       sig { returns(T.nilable(T::Array[T.any(String, Integer)])) }
       attr_reader :local
 
-      INFINITY = T.let(1000, Integer)
+      INFINITY = 1000
       NEGATIVE_INFINITY = T.let(-INFINITY, Integer)
 
       # See https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions

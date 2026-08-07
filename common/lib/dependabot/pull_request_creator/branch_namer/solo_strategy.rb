@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "digest"
@@ -88,14 +88,14 @@ module Dependabot
         def updating_a_property?
           T.must(dependencies.first)
            .requirements
-           .any? { |r| r.dig(:metadata, :property_name) }
+           .any? { |r| r.metadata_string("property_name") }
         end
 
         sig { returns(T::Boolean) }
         def updating_a_dependency_set?
           T.must(dependencies.first)
            .requirements
-           .any? { |r| r.dig(:metadata, :dependency_set) }
+           .any? { |r| r.metadata_string_hash("dependency_set") }
         end
 
         sig { returns(String) }
@@ -103,8 +103,8 @@ module Dependabot
           @property_name ||=
             T.let(
               T.must(dependencies.first).requirements
-                                              .find { |r| r.dig(:metadata, :property_name) }
-                                              &.dig(:metadata, :property_name),
+                                              .find { |r| r.metadata_string("property_name") }
+                                              &.metadata_string("property_name"),
               T.nilable(String)
             )
 
@@ -118,9 +118,9 @@ module Dependabot
           @dependency_set ||=
             T.let(
               T.must(dependencies.first).requirements
-                                 .find { |r| r.dig(:metadata, :dependency_set) }
-                                 &.dig(:metadata, :dependency_set),
-              T.nilable(T::Hash[String, String])
+                                 .find { |r| r.metadata_string_hash("dependency_set") }
+                                 &.metadata_string_hash("dependency_set"),
+              T.nilable(T::Hash[Symbol, String])
             )
 
           raise "No dependency set!" unless @dependency_set
@@ -172,9 +172,11 @@ module Dependabot
             T.must(dependency.version)[0..6]
           elsif dependency.version == dependency.previous_version &&
                 package_manager == "docker"
-            dependency.requirements
-                      .filter_map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }
-                      .first.split(":").last[0..6]
+            T.must(
+              dependency.requirements
+                                    .filter_map { |r| r.source_string("digest") }
+                                    .first
+            ).split(":").last&.[](0..6)
           else
             dependency.version
           end
@@ -183,7 +185,7 @@ module Dependabot
         sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
         def previous_ref(dependency)
           previous_refs = T.must(dependency.previous_requirements).filter_map do |r|
-            r.dig(:source, "ref") || r.dig(:source, :ref)
+            r.source_string("ref")
           end.uniq
           previous_refs.first if previous_refs.one?
         end
@@ -191,7 +193,7 @@ module Dependabot
         sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
         def new_ref(dependency)
           new_refs = dependency.requirements.filter_map do |r|
-            r.dig(:source, "ref") || r.dig(:source, :ref)
+            r.source_string("ref")
           end.uniq
           new_refs.first if new_refs.one?
         end
@@ -208,10 +210,10 @@ module Dependabot
             dependency.requirements - T.must(dependency.previous_requirements)
 
           gemspec =
-            updated_reqs.find { |r| r[:file].match?(%r{^[^/]*\.gemspec$}) }
-          return gemspec[:requirement] if gemspec
+            updated_reqs.find { |r| T.must(r.file).match?(%r{^[^/]*\.gemspec$}) }
+          return gemspec.requirement_string if gemspec
 
-          updated_reqs.first&.fetch(:requirement)
+          updated_reqs.first&.requirement_string
         end
 
         # TODO: Bring this in line with existing library checks that we do in the

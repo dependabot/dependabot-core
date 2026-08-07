@@ -8,6 +8,7 @@ require "time"
 
 require "dependabot/errors"
 require "dependabot/git_tag_with_detail"
+require "dependabot/github_actions/containing_branch_finder"
 require "dependabot/github_actions/helpers"
 require "dependabot/github_actions/requirement"
 require "dependabot/github_actions/update_checker"
@@ -30,7 +31,8 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential],
             ignored_versions: T::Array[String],
             raise_on_ignored: T::Boolean,
-            security_advisories: T::Array[Dependabot::SecurityAdvisory]
+            security_advisories: T::Array[Dependabot::SecurityAdvisory],
+            git_metadata_fetcher: T.nilable(Dependabot::GitMetadataFetcher)
           ).void
         end
         def initialize(
@@ -38,13 +40,15 @@ module Dependabot
           credentials:,
           ignored_versions: [],
           raise_on_ignored: false,
-          security_advisories: []
+          security_advisories: [],
+          git_metadata_fetcher: nil
         )
           @dependency = dependency
           @credentials = credentials
           @raise_on_ignored = raise_on_ignored
           @ignored_versions = ignored_versions
           @security_advisories = security_advisories
+          @git_metadata_fetcher = git_metadata_fetcher
 
           @git_helper = T.let(git_helper, Dependabot::GithubActions::Helpers::Githelper)
         end
@@ -122,7 +126,10 @@ module Dependabot
               ref = git_commit_checker.local_ref_for_latest_version_matching_existing_precision
               return ref if ref && ref.fetch(:version) > current_version
 
-              git_commit_checker.local_ref_for_latest_version_lower_precision
+              lower_precision_ref = git_commit_checker.local_ref_for_latest_version_lower_precision
+              return ref if ref&.fetch(:version) == current_version
+
+              lower_precision_ref
             end,
             T.nilable(T::Hash[Symbol, T.untyped])
           )
@@ -224,7 +231,9 @@ module Dependabot
                   SharedHelpers.run_shell_command("git clone --no-recurse-submodules #{url} #{repo_contents_path}")
 
                   Dir.chdir(repo_contents_path) do
-                    ref_branch = find_container_branch(T.must(git_commit_checker.dependency_source_details&.ref))
+                    ref_branch = ContainingBranchFinder.find(
+                      T.must(git_commit_checker.dependency_source_details&.ref)
+                    )
                     git_commit_checker.head_commit_for_local_branch(ref_branch) if ref_branch
                   end
                 end
@@ -232,27 +241,6 @@ module Dependabot
             end,
             T.nilable(String)
           )
-        end
-
-        sig { params(sha: String).returns(T.nilable(String)) }
-        def find_container_branch(sha)
-          branches_including_ref = SharedHelpers.run_shell_command(
-            "git branch --remotes --contains #{sha}",
-            fingerprint: "git branch --remotes --contains <sha>"
-          ).split("\n").map { |branch| branch.strip.gsub("origin/", "") }
-          return if branches_including_ref.empty?
-
-          current_branch = branches_including_ref.find { |branch| branch.start_with?("HEAD -> ") }
-
-          if current_branch
-            current_branch.delete_prefix("HEAD -> ")
-          elsif branches_including_ref.size > 1
-            # If there are multiple non default branches including the pinned SHA,
-            # then it's unclear how we should proceed
-            raise "Multiple ambiguous branches (#{branches_including_ref.join(', ')}) include #{sha}!"
-          else
-            branches_including_ref.first
-          end
         end
 
         sig do
@@ -288,7 +276,8 @@ module Dependabot
             ignored_versions: ignored_versions,
             raise_on_ignored: raise_on_ignored,
             consider_version_branches_pinned: false,
-            dependency_source_details: nil
+            dependency_source_details: nil,
+            git_metadata_fetcher: @git_metadata_fetcher
           )
         end
       end

@@ -16,7 +16,7 @@ module Dependabot
     class FileFetcher < Dependabot::Python::SharedFileFetcher
       extend T::Sig
 
-      ECOSYSTEM_SPECIFIC_FILES = T.let(%w(uv.lock).freeze, T::Array[String])
+      ECOSYSTEM_SPECIFIC_FILES = %w(uv.lock).freeze
 
       REQUIREMENT_FILE_PATTERNS = T.let(
         {
@@ -27,7 +27,7 @@ module Dependabot
       )
 
       # Projects that use README files for metadata may use any of these common names
-      README_FILENAMES = T.let(%w(README.md README.rst README.txt README).freeze, T::Array[String])
+      README_FILENAMES = %w(README.md README.rst README.txt README).freeze
 
       # Type alias for path dependency hashes
       PathDependency = T.type_alias { T::Hash[Symbol, String] }
