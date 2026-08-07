@@ -65,9 +65,12 @@ module Dependabot
       # Corepack signature verification stays enabled and trusts both sources.
       #
       # The result is cached per registry for the duration of the update job.
-      # Returns nil if either key set cannot be fetched: we never disable
-      # verification, we simply leave COREPACK_INTEGRITY_KEYS unset so Corepack
-      # keeps verifying against its bundled npm keys.
+      # Returns nil if either key set cannot be fetched, leaving
+      # COREPACK_INTEGRITY_KEYS unset. For a re-signing registry that means a
+      # later signature failure is surfaced (fail closed). Note the separate
+      # signature-stripping retry in Helpers.retry_without_signature_verification?
+      # still applies when the key is absent, so leaving it unset does not by
+      # itself guarantee verification stays on for every registry type.
       sig { params(registry: String, auth_token: T.nilable(String)).returns(T.nilable(String)) }
       def self.corepack_integrity_keys(registry, auth_token)
         return @integrity_keys_cache[registry] if @integrity_keys_cache.key?(registry)
