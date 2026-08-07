@@ -55,7 +55,7 @@ module Dependabot
 
         dependency_set += pyproject_file_dependencies if pyproject
         dependency_set += uv_lock_file_dependencies
-        dependency_set += requirement_dependencies if requirement_files.any?
+        dependency_set += requirement_dependencies if requirement_files.any? && (pyproject.nil? || uv_lock_files.none?)
 
         dependency_set.dependencies
       end
