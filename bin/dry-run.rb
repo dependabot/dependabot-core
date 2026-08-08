@@ -38,6 +38,7 @@
 # - npm_and_yarn
 # - nuget
 # - pip (includes pipenv)
+# - powershell
 # - pre_commit
 # - pub
 # - rust_toolchain
@@ -394,6 +395,7 @@ valid_package_managers = %w(
   npm_and_yarn
   nuget
   pip
+  powershell
   pre_commit
   pub
   python

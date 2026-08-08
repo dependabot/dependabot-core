@@ -42,6 +42,14 @@ RSpec.describe "bin/dry-run" do # rubocop:disable RSpec/DescribeClass
     expect(status.exitstatus).to eq(1) # It should fail due to the fake repo
   end
 
+  it "accepts powershell as a valid package manager" do
+    stdout, stderr, = Open3.capture3(
+      "ruby", script_path, "--enable-beta-ecosystems", "powershell", "fake/repo"
+    )
+
+    expect(stdout + stderr).not_to include("Invalid package manager: powershell")
+  end
+
   # Test each command-line option
   describe "command-line options" do
     # Test single-value options
