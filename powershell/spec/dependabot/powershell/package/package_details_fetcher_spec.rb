@@ -105,7 +105,8 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
             status: 200,
             body: <<~HTML
               <html><body>
-                <span>GUID</span><span>=</span><span>'a699dea5-2c73-4616-a270-1f7abb777e71'</span>
+                <span>GUID</span>&nbsp;&nbsp;<span>=</span>&nbsp;
+                <span>'a699dea5-2c73-4616-a270-1f7abb777e71'</span>
               </body></html>
             HTML
           )
