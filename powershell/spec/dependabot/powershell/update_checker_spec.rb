@@ -174,6 +174,32 @@ RSpec.describe Dependabot::Powershell::UpdateChecker do
       end
     end
 
+    context "when a GUID-qualified RequiredVersion has the same selected release GUID" do
+      let(:requirements) do
+        [{
+          requirement: "= 5.3.3",
+          groups: [],
+          source: source,
+          file: "module.psd1",
+          metadata: {
+            version_key: "RequiredVersion",
+            guid: "11111111-1111-1111-1111-111111111111"
+          }
+        }]
+      end
+
+      before do
+        stub_request(:get, latest_manifest_url).to_return(
+          status: 200,
+          body: "@{ GUID = '11111111-1111-1111-1111-111111111111' }"
+        )
+      end
+
+      it "does not add a GUID update to the requirement metadata" do
+        expect(checker.updated_requirements.first.metadata).not_to have_key(:updated_guid)
+      end
+    end
+
     context "when the requirement is a MaximumVersion cap that excludes the latest version" do
       let(:requirements) do
         [{

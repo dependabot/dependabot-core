@@ -95,7 +95,7 @@ module Dependabot
           params(
             previous_requirements: T::Array[Dependabot::DependencyRequirement],
             current_requirements: T::Array[Dependabot::DependencyRequirement]
-          ).returns(T::Array[[Dependabot::DependencyRequirement, String]])
+          ).returns(T::Array[[Dependabot::DependencyRequirement, Dependabot::DependencyRequirement]])
         end
         def requirement_changes(previous_requirements, current_requirements)
           current_requirements.each_with_index.filter_map do |current, index|
@@ -103,10 +103,9 @@ module Dependabot
             next unless previous
             next if current.requirement == previous.requirement
 
-            new_requirement = current.requirement
-            next unless new_requirement.is_a?(String)
+            next unless current.requirement.is_a?(String)
 
-            [previous, new_requirement]
+            [previous, current]
           end
         end
 
@@ -122,7 +121,7 @@ module Dependabot
         sig do
           params(
             occurrence: DeclarationLocator::Occurrence,
-            changes: T::Array[[Dependabot::DependencyRequirement, String]],
+            changes: T::Array[[Dependabot::DependencyRequirement, Dependabot::DependencyRequirement]],
             content: String
           ).returns(T::Array[Edit])
         end
@@ -153,7 +152,10 @@ module Dependabot
           end
           return [] unless match
 
-          new_value = extract_version(match[1], version_key)
+          new_requirement = match[1].requirement
+          return [] unless new_requirement.is_a?(String)
+
+          new_value = extract_version(new_requirement, version_key)
           return [] unless new_value
 
           edits = [[value_span[0], value_span[1], new_value]]
