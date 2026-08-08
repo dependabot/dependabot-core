@@ -64,27 +64,17 @@ module Dependabot
         super
       end
 
-      # The base implementation compares `latest_version` against only the
-      # lower bound extracted from the dependency's requirements (see
-      # `version_from_requirements`), which incorrectly reports "not up to
-      # date" for a versionless bounded range like ">= 1.0.0, <= 5.0.0" as
-      # soon as `latest_version` exceeds the lower bound - even though that
-      # version is well within the declared range and RequirementsUpdater
-      # correctly leaves the requirement unchanged. Overriding here to check
-      # whether `latest_version` actually satisfies every declared
-      # requirement keeps `up_to_date?`/`can_update?` consistent with what
-      # RequirementsUpdater decides.
+      # PowerShell declaration styles have update semantics that differ from
+      # generic requirement satisfaction. For example, a ModuleVersion
+      # minimum tracks the latest release even when the current floor already
+      # permits it, while an unrewritable below-floor range is left unchanged.
+      # Use the updater's actual output as the freshness decision so
+      # `up_to_date?` and `updated_requirements` stay aligned.
       sig { override.returns(T::Boolean) }
       def requirements_up_to_date?
-        return false unless latest_version
-
-        latest = version_class.new(latest_version.to_s)
-
-        dependency.requirements.all? do |r|
-          requirement_string = T.cast(r.fetch(:requirement), T.nilable(String))
-
-          requirement_class.requirements_array(requirement_string)
-                           .all? { |requirement| requirement.satisfied_by?(latest) }
+        updated_requirements.each_with_index.all? do |updated, index|
+          original = dependency.requirements[index]
+          original && updated.requirement == original.requirement
         end
       end
 

@@ -242,15 +242,17 @@ RSpec.describe Dependabot::Powershell::UpdateChecker do
     end
 
     context "when the dependency has no version and a bounded range requirement" do
-      # No lockfile/installed version is known (`dependency.version` is nil),
-      # so `up_to_date?` falls through to `requirements_up_to_date?`. The
-      # base implementation would compare the latest version only against
-      # the lower bound (">= 1.0.0") and incorrectly report this as not up
-      # to date once the latest version (5.4.0) exceeds it - even though
-      # 5.4.0 is well within the declared range and RequirementsUpdater
-      # correctly leaves the requirement untouched.
       let(:dependency_version) { nil }
       let(:dependency_requirement) { ">= 1.0.0, <= 6.0.0" }
+      let(:requirements) do
+        [{
+          requirement: dependency_requirement,
+          groups: [],
+          source: source,
+          file: "module.psd1",
+          metadata: { version_key: "ModuleVersion+MaximumVersion" }
+        }]
+      end
 
       it "is up to date, since the latest version satisfies the declared range" do
         expect(checker.up_to_date?).to be(true)
@@ -260,8 +262,35 @@ RSpec.describe Dependabot::Powershell::UpdateChecker do
     context "when the dependency has no version and the latest version exceeds the declared range" do
       let(:dependency_version) { nil }
       let(:dependency_requirement) { ">= 1.0.0, <= 5.3.3" }
+      let(:requirements) do
+        [{
+          requirement: dependency_requirement,
+          groups: [],
+          source: source,
+          file: "module.psd1",
+          metadata: { version_key: "ModuleVersion+MaximumVersion" }
+        }]
+      end
 
       it "is not up to date" do
+        expect(checker.up_to_date?).to be(false)
+      end
+    end
+
+    context "when the dependency has no version and declares a ModuleVersion minimum" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirement) { ">= 5.0.0" }
+      let(:requirements) do
+        [{
+          requirement: dependency_requirement,
+          groups: [],
+          source: source,
+          file: "module.psd1",
+          metadata: { version_key: "ModuleVersion" }
+        }]
+      end
+
+      it "is not up to date, because the floor tracks the latest version" do
         expect(checker.up_to_date?).to be(false)
       end
     end
