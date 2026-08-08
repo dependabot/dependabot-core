@@ -35,6 +35,9 @@ module Dependabot
         # A single content replacement: replace content[start_index...end_index]
         # with replacement_text.
         Edit = T.type_alias { [Integer, Integer, String] }
+        RequirementChange = T.type_alias do
+          [Dependabot::DependencyRequirement, Dependabot::DependencyRequirement]
+        end
 
         sig { params(file: Dependabot::DependencyFile, dependencies: T::Array[Dependabot::Dependency]).void }
         def initialize(file:, dependencies:)
@@ -95,7 +98,7 @@ module Dependabot
           params(
             previous_requirements: T::Array[Dependabot::DependencyRequirement],
             current_requirements: T::Array[Dependabot::DependencyRequirement]
-          ).returns(T::Array[[Dependabot::DependencyRequirement, Dependabot::DependencyRequirement]])
+          ).returns(T::Array[RequirementChange])
         end
         def requirement_changes(previous_requirements, current_requirements)
           current_requirements.each_with_index.filter_map do |current, index|
@@ -121,59 +124,84 @@ module Dependabot
         sig do
           params(
             occurrence: DeclarationLocator::Occurrence,
-            changes: T::Array[[Dependabot::DependencyRequirement, Dependabot::DependencyRequirement]],
+            changes: T::Array[RequirementChange],
             content: String
           ).returns(T::Array[Edit])
         end
         def edits_for_matching_occurrence(occurrence, changes, content)
-          return [] unless occurrence.style == :hashtable
-
-          version_key = occurrence.version_key
-          return [] unless version_key
-
-          field = VERSION_FIELDS[version_key]
+          field = version_field_for(occurrence)
           return [] unless field
 
           value_span = value_span_for(content, occurrence, field)
           return [] unless value_span
 
           current_value = content[value_span[0]...value_span[1]]
+          change = matching_change(changes, occurrence.version_key, current_value)
+          return [] unless change
 
-          # Duplicate identical declarations collapse into a single
-          # requirement change upstream (see DependencySet#combined_dependency),
-          # so more than one occurrence can legitimately match the same
-          # change here - each still gets its own edit, keyed by whatever
-          # version is actually on disk for it rather than by position.
-          match = changes.find do |previous, _|
-            previous_requirement = previous.requirement
-            next false unless previous_requirement.is_a?(String)
-
-            extract_version(previous_requirement, version_key) == current_value
-          end
-          return [] unless match
-
-          new_requirement = match[1].requirement
-          return [] unless new_requirement.is_a?(String)
-
-          new_value = extract_version(new_requirement, version_key)
+          new_value = updated_version(change[1], occurrence.version_key)
           return [] unless new_value
 
-          edits = [[value_span[0], value_span[1], new_value]]
-          guid = updated_guid(match[1])
-          return edits unless guid
-
-          guid_span = value_span_for(content, occurrence, "GUID")
-          return edits unless guid_span
-          return edits if content[guid_span[0]...guid_span[1]] == guid
-
-          edits << [guid_span[0], guid_span[1], guid]
+          edits = T.let([[value_span[0], value_span[1], new_value]], T::Array[Edit])
+          guid_edit = guid_edit_for(content, occurrence, change[1])
+          edits << guid_edit if guid_edit
           edits
         end
 
-        sig { params(requirement: Dependabot::DependencyRequirement).returns(T.nilable(String)) }
-        def updated_guid(requirement)
+        sig { params(occurrence: DeclarationLocator::Occurrence).returns(T.nilable(String)) }
+        def version_field_for(occurrence)
+          return unless occurrence.style == :hashtable
+
+          version_key = occurrence.version_key
+          return unless version_key
+
+          VERSION_FIELDS[version_key]
+        end
+
+        # Duplicate identical declarations collapse into a single requirement
+        # change upstream, so every matching occurrence must be rewritten.
+        sig do
+          params(
+            changes: T::Array[RequirementChange],
+            version_key: T.nilable(String),
+            current_value: String
+          ).returns(T.nilable(RequirementChange))
+        end
+        def matching_change(changes, version_key, current_value)
+          changes.find do |previous, _|
+            previous_requirement = previous.requirement
+            previous_requirement.is_a?(String) &&
+              extract_version(previous_requirement, version_key) == current_value
+          end
+        end
+
+        sig do
+          params(requirement: Dependabot::DependencyRequirement, version_key: T.nilable(String))
+            .returns(T.nilable(String))
+        end
+        def updated_version(requirement, version_key)
+          requirement_string = requirement.requirement
+          return unless requirement_string.is_a?(String)
+
+          extract_version(requirement_string, version_key)
+        end
+
+        sig do
+          params(
+            content: String,
+            occurrence: DeclarationLocator::Occurrence,
+            requirement: Dependabot::DependencyRequirement
+          ).returns(T.nilable(Edit))
+        end
+        def guid_edit_for(content, occurrence, requirement)
           guid = requirement.metadata&.fetch(:updated_guid, nil)
-          guid if guid.is_a?(String)
+          return unless guid.is_a?(String)
+
+          guid_span = value_span_for(content, occurrence, "GUID")
+          return unless guid_span
+          return if content[guid_span[0]...guid_span[1]] == guid
+
+          [guid_span[0], guid_span[1], guid]
         end
 
         # Extracts the version literal that `version_key` binds to from a

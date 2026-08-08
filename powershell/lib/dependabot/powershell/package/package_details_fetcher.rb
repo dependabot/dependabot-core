@@ -67,7 +67,7 @@ module Dependabot
           response = Dependabot::RegistryClient.get(url: module_manifest_url(version))
           return unless response.status == 200
 
-          MANIFEST_GUID_PATTERN.match(response.body)&.[](:guid)
+          MANIFEST_GUID_PATTERN.match(Nokogiri::HTML(response.body).text)&.[](:guid)
         rescue StandardError => e
           Dependabot.logger.error(
             "Error while fetching PowerShell Gallery manifest for #{dependency.name} #{version}: #{e.message}"

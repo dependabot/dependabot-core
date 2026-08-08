@@ -103,7 +103,11 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
         it "extracts the GUID from the selected release's module manifest" do
           stub_request(:get, manifest_url).to_return(
             status: 200,
-            body: "@{ GUID = 'a699dea5-2c73-4616-a270-1f7abb777e71' }"
+            body: <<~HTML
+              <html><body>
+                <span>GUID</span><span>=</span><span>'a699dea5-2c73-4616-a270-1f7abb777e71'</span>
+              </body></html>
+            HTML
           )
 
           expect(fetcher.manifest_guid_for("5.4.0")).to eq("a699dea5-2c73-4616-a270-1f7abb777e71")
