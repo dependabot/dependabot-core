@@ -55,6 +55,13 @@ module Dependabot
 
       private
 
+      sig { override.returns(T::Boolean) }
+      def version_up_to_date?
+        return latest_version.to_s == T.must(dependency.version) if exact_pin?
+
+        super
+      end
+
       # The base implementation compares `latest_version` against only the
       # lower bound extracted from the dependency's requirements (see
       # `version_from_requirements`), which incorrectly reports "not up to
@@ -105,6 +112,13 @@ module Dependabot
           ),
           T.nilable(LatestVersionFinder)
         )
+      end
+
+      sig { returns(T::Boolean) }
+      def exact_pin?
+        dependency.requirements.any? do |requirement|
+          requirement.metadata&.fetch(:version_key, nil) == "RequiredVersion"
+        end
       end
     end
   end

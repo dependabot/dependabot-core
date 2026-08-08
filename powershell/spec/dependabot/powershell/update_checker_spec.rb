@@ -176,6 +176,19 @@ RSpec.describe Dependabot::Powershell::UpdateChecker do
       it { expect(checker.up_to_date?).to be(false) }
     end
 
+    context "when an exact pin differs from the latest version only by zero padding" do
+      let(:dependency_version) { "0.12" }
+      let(:dependency_requirement) { "= 0.12" }
+
+      before do
+        allow(checker).to receive(:latest_version).and_return(Dependabot::Powershell::Version.new("0.12.0"))
+      end
+
+      it "is not up to date" do
+        expect(checker.up_to_date?).to be(false)
+      end
+    end
+
     context "when the dependency has no version and a bounded range requirement" do
       # No lockfile/installed version is known (`dependency.version` is nil),
       # so `up_to_date?` falls through to `requirements_up_to_date?`. The
