@@ -1,0 +1,6 @@
+{
+  "name": "nub.lock",
+  "path": "nub.lock",
+  "content": "lockfileVersion: '9.0'\n\nimporters:\n\n  .:\n    dependencies:\n      etag:\n        specifier: ^1.0.0\n        version: 1.8.1\n\npackages:\n\n  etag@1.8.1:\n    resolution: {integrity: sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg==}\n    engines: {node: '>= 0.6'}\n\nsnapshots:\n\n  etag@1.8.1: {}\n",
+  "encoding": "utf-8"
+}

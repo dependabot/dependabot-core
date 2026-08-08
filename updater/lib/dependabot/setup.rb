@@ -47,6 +47,7 @@ Sentry.init do |config|
     maven|
     nix|
     npm_and_yarn|
+    nub|
     nuget|
     pre_commit|
     pub|
@@ -93,6 +94,7 @@ require "dependabot/julia"
 require "dependabot/maven"
 require "dependabot/nix"
 require "dependabot/npm_and_yarn"
+require "dependabot/nub"
 require "dependabot/nuget"
 require "dependabot/pre_commit"
 require "dependabot/pub"

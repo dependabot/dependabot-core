@@ -255,6 +255,12 @@ docker run --rm -ti \
   -v "$(pwd)/npm_and_yarn/lib:$CODE_DIR/npm_and_yarn/lib" \
   -v "$(pwd)/npm_and_yarn/script:$CODE_DIR/npm_and_yarn/script" \
   -v "$(pwd)/npm_and_yarn/spec:$CODE_DIR/npm_and_yarn/spec" \
+  -v "$(pwd)/nub/.rubocop.yml:$CODE_DIR/nub/.rubocop.yml" \
+  -v "$(pwd)/nub/dependabot-nub.gemspec:$CODE_DIR/nub/dependabot-nub.gemspec" \
+  -v "$(pwd)/nub/helpers:$CODE_DIR/nub/helpers" \
+  -v "$(pwd)/nub/lib:$CODE_DIR/nub/lib" \
+  -v "$(pwd)/nub/script:$CODE_DIR/nub/script" \
+  -v "$(pwd)/nub/spec:$CODE_DIR/nub/spec" \
   -v "$(pwd)/nuget/.rubocop.yml:$CODE_DIR/nuget/.rubocop.yml" \
   -v "$(pwd)/nuget/dependabot-nuget.gemspec:$CODE_DIR/nuget/dependabot-nuget.gemspec" \
   -v "$(pwd)/nuget/helpers:$CODE_DIR/nuget/helpers" \

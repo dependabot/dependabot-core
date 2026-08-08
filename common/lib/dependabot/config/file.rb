@@ -82,6 +82,7 @@ module Dependabot
           "mix" => "hex",
           "nix" => "nix",
           "npm" => "npm_and_yarn",
+          "nub" => "nub",
           "nuget" => "nuget",
           "opentofu" => "opentofu",
           "pip" => "pip",
