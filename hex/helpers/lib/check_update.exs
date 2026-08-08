@@ -1,3 +1,5 @@
+Code.require_file("lockfile.exs", __DIR__)
+
 # Log to stderr instead of stdout
 :logger.remove_handler(:default)
 :logger.add_handler(:to_stderr, :logger_std_h, %{config: %{type: :standard_error}})
@@ -13,14 +15,10 @@ defmodule UpdateChecker do
     case Task.yield(task, 30000) || Task.shutdown(task) do
       {:ok, {:ok, :resolution_successful}} ->
         # Read the new lock
-        {updated_lock, _updated_rest_lock} =
-          Map.split(Mix.Dep.Lock.read(), [String.to_atom(dependency_name)])
-
-        # Get the new dependency version
         version =
-          updated_lock
-          |> Map.get(String.to_atom(dependency_name))
-          |> elem(2)
+          Dependabot.Hex.Lockfile.read!()
+          |> Map.fetch!(dependency_name)
+          |> Dependabot.Hex.Lockfile.resolved_version!()
 
         {:ok, version}
 

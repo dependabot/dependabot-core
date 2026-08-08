@@ -179,6 +179,7 @@ module Dependabot
         def copy_elixir_helpers
           FileUtils.cp(CredentialHelpers.configure_credentials_path, "configure_credentials.exs")
           FileUtils.cp(elixir_helper_check_update_path, "check_update.exs")
+          FileUtils.cp(elixir_helper_lockfile_path, "lockfile.exs")
         end
 
         sig { params(script: String, args: String).returns(T::Array[String]) }
@@ -226,6 +227,11 @@ module Dependabot
         sig { returns(String) }
         def elixir_helper_check_update_path
           File.join(NativeHelpers.hex_helpers_dir, "lib/check_update.exs")
+        end
+
+        sig { returns(String) }
+        def elixir_helper_lockfile_path
+          File.join(NativeHelpers.hex_helpers_dir, "lib/lockfile.exs")
         end
       end
     end
