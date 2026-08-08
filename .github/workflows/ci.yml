@@ -45,6 +45,7 @@ jobs:
           - { path: npm_and_yarn, name: npm_and_yarn, ecosystem: npm }
           - { path: nuget, name: nuget, ecosystem: nuget }
           - { path: opentofu, name: opentofu, ecosystem: opentofu }
+          - { path: powershell, name: powershell, ecosystem: powershell }
           - { path: pre_commit, name: pre_commit, ecosystem: pre-commit }
           - { path: pub, name: pub, ecosystem: pub }
           - { path: python, name: python, ecosystem: pip }
