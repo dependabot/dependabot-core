@@ -47,13 +47,14 @@ module Dependabot
           return requirements unless latest_version
 
           requirements.map do |req|
-            next req if req.fetch(:requirement).nil?
-            next req if req.fetch(:requirement).include?(",")
+            requirement = req.requirement_string
+            next req if requirement.nil?
+            next req if requirement.include?(",")
 
-            property_name = req.dig(:metadata, :property_name)
+            property_name = req.metadata_string("property_name")
             next req if property_name && !properties_to_update.include?(property_name)
 
-            new_req = update_requirement(req[:requirement])
+            new_req = update_requirement(requirement)
             Dependabot::DependencyRequirement.create(req.merge(requirement: new_req, source: updated_source))
           end
         end
