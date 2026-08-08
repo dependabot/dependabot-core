@@ -23,6 +23,7 @@ RSpec.describe Dependabot::Powershell::UpdateChecker do
   let(:find_packages_by_id_url) do
     "https://www.powershellgallery.com/api/v2/FindPackagesById()?id=%27Pester%27"
   end
+  let(:available_versions) { %w(5.4.0 5.3.3) }
   let(:dependency_requirement) { "= 5.3.3" }
   let(:requirements) do
     [{
@@ -48,10 +49,7 @@ RSpec.describe Dependabot::Powershell::UpdateChecker do
 
   before do
     body = feed_xml(
-      entries: [
-        entry_xml(version: "5.4.0"),
-        entry_xml(version: "5.3.3")
-      ]
+      entries: available_versions.map { |version| entry_xml(version:) }
     )
 
     stub_request(:get, find_packages_by_id_url).to_return(status: 200, body: body)
@@ -177,12 +175,9 @@ RSpec.describe Dependabot::Powershell::UpdateChecker do
     end
 
     context "when an exact pin differs from the latest version only by zero padding" do
+      let(:available_versions) { ["0.12.0"] }
       let(:dependency_version) { "0.12" }
       let(:dependency_requirement) { "= 0.12" }
-
-      before do
-        allow(checker).to receive(:latest_version).and_return(Dependabot::Powershell::Version.new("0.12.0"))
-      end
 
       it "is not up to date" do
         expect(checker.up_to_date?).to be(false)
