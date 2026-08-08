@@ -45,11 +45,13 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
+        requirements = RequirementsUpdater.new(
+          requirements: dependency.requirements,
+          latest_resolvable_version: preferred_resolvable_version&.to_s
+        ).updated_requirements
+
         wrap_requirements(
-          RequirementsUpdater.new(
-            requirements: dependency.requirements,
-            latest_resolvable_version: preferred_resolvable_version&.to_s
-          ).updated_requirements
+          requirements_with_updated_guid(requirements)
         )
       end
 
@@ -112,6 +114,45 @@ module Dependabot
           ),
           T.nilable(LatestVersionFinder)
         )
+      end
+
+      sig do
+        params(requirements: T::Array[Dependabot::DependencyRequirement])
+          .returns(T::Array[Dependabot::DependencyRequirement])
+      end
+      def requirements_with_updated_guid(requirements)
+        return requirements unless requirements.any? { |requirement| guid_qualified_required_version?(requirement) }
+
+        target_guid = target_manifest_guid
+        return requirements unless target_guid
+
+        requirements.map do |requirement|
+          next requirement unless guid_qualified_required_version?(requirement)
+
+          metadata = T.must(requirement.metadata)
+          current_guid = metadata.fetch(:guid, nil)
+          next requirement unless current_guid.is_a?(String) && current_guid != target_guid
+
+          Dependabot::DependencyRequirement.create(
+            requirement.merge(metadata: metadata.merge(updated_guid: target_guid))
+          )
+        end
+      end
+
+      sig { returns(T.nilable(String)) }
+      def target_manifest_guid
+        target_version = preferred_resolvable_version
+        return unless target_version
+
+        latest_version_finder.manifest_guid_for(target_version.to_s)
+      end
+
+      sig { params(requirement: Dependabot::DependencyRequirement).returns(T::Boolean) }
+      def guid_qualified_required_version?(requirement)
+        metadata = requirement.metadata
+        return false unless metadata
+
+        metadata.fetch(:version_key, nil) == "RequiredVersion" && metadata.fetch(:guid, nil).is_a?(String)
       end
 
       sig { returns(T::Boolean) }

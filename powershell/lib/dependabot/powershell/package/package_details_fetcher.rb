@@ -39,6 +39,12 @@ module Dependabot
         # package versions that have been unlisted (delisted) by their owner,
         # following the same convention as the NuGet gallery it is built on.
         UNLISTED_PUBLISHED_DATE = "1900-01-01T00:00:00"
+        PSGALLERY_WEB_BASE = "https://www.powershellgallery.com"
+        MANIFEST_GUID_PATTERN = /
+          ['"]?GUID['"]?\s*\\?=\s*['"]
+          (?<guid>[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12})
+          ['"]
+        /ix
 
         sig { params(dependency: Dependabot::Dependency).void }
         def initialize(dependency:)
@@ -54,6 +60,19 @@ module Dependabot
             dependency: dependency,
             releases: fetch_package_releases
           )
+        end
+
+        sig { params(version: String).returns(T.nilable(String)) }
+        def manifest_guid_for(version)
+          response = Dependabot::RegistryClient.get(url: module_manifest_url(version))
+          return unless response.status == 200
+
+          MANIFEST_GUID_PATTERN.match(response.body)&.[](:guid)
+        rescue StandardError => e
+          Dependabot.logger.error(
+            "Error while fetching PowerShell Gallery manifest for #{dependency.name} #{version}: #{e.message}"
+          )
+          nil
         end
 
         sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
@@ -113,6 +132,12 @@ module Dependabot
         def find_packages_by_id_url
           escaped_id = CGI.escape("'#{dependency.name}'")
           "#{PSGALLERY_API_BASE}/FindPackagesById()?id=#{escaped_id}"
+        end
+
+        sig { params(version: String).returns(String) }
+        def module_manifest_url(version)
+          module_name = CGI.escape(dependency.name)
+          "#{PSGALLERY_WEB_BASE}/packages/#{module_name}/#{CGI.escape(version)}/Content/#{module_name}.psd1"
         end
 
         sig { params(document: Nokogiri::XML::Document).returns(T.nilable(String)) }

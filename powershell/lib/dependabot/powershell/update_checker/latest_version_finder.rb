@@ -23,6 +23,13 @@ module Dependabot
                                .fetch
         end
 
+        sig { params(version: String).returns(T.nilable(String)) }
+        def manifest_guid_for(version)
+          Dependabot::Powershell::Package::PackageDetailsFetcher
+            .new(dependency: dependency)
+            .manifest_guid_for(version)
+        end
+
         protected
 
         sig { override.returns(T::Boolean) }

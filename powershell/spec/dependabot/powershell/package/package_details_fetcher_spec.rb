@@ -25,6 +25,9 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
   let(:find_packages_by_id_url) do
     "https://www.powershellgallery.com/api/v2/FindPackagesById()?id=%27Pester%27"
   end
+  let(:manifest_url) do
+    "https://www.powershellgallery.com/packages/Pester/5.4.0/Content/Pester.psd1"
+  end
 
   def entry_xml(version:, published: "2023-05-01T12:00:00", prerelease: "false")
     <<~XML
@@ -94,6 +97,29 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
         package_details = fetcher.fetch
 
         expect(package_details.releases).to all(satisfy { |r| !r.yanked })
+      end
+
+      describe "#manifest_guid_for" do
+        it "extracts the GUID from the selected release's module manifest" do
+          stub_request(:get, manifest_url).to_return(
+            status: 200,
+            body: "@{ GUID = 'a699dea5-2c73-4616-a270-1f7abb777e71' }"
+          )
+
+          expect(fetcher.manifest_guid_for("5.4.0")).to eq("a699dea5-2c73-4616-a270-1f7abb777e71")
+        end
+
+        it "returns nil when the module manifest has no GUID" do
+          stub_request(:get, manifest_url).to_return(status: 200, body: "@{ ModuleVersion = '5.4.0' }")
+
+          expect(fetcher.manifest_guid_for("5.4.0")).to be_nil
+        end
+
+        it "returns nil when the module manifest cannot be fetched" do
+          stub_request(:get, manifest_url).to_return(status: 404, body: "")
+
+          expect(fetcher.manifest_guid_for("5.4.0")).to be_nil
+        end
       end
     end
 

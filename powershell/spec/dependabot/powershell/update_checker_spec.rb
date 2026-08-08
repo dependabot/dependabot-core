@@ -23,6 +23,9 @@ RSpec.describe Dependabot::Powershell::UpdateChecker do
   let(:find_packages_by_id_url) do
     "https://www.powershellgallery.com/api/v2/FindPackagesById()?id=%27Pester%27"
   end
+  let(:latest_manifest_url) do
+    "https://www.powershellgallery.com/packages/Pester/5.4.0/Content/Pester.psd1"
+  end
   let(:available_versions) { %w(5.4.0 5.3.3) }
   let(:dependency_requirement) { "= 5.3.3" }
   let(:requirements) do
@@ -140,6 +143,34 @@ RSpec.describe Dependabot::Powershell::UpdateChecker do
       it "bumps the minimum constraint to track the latest version" do
         updated = checker.updated_requirements.first
         expect(updated.requirement).to eq(">= 5.4.0")
+      end
+    end
+
+    context "when a GUID-qualified RequiredVersion has changed" do
+      let(:requirements) do
+        [{
+          requirement: "= 5.3.3",
+          groups: [],
+          source: source,
+          file: "module.psd1",
+          metadata: {
+            version_key: "RequiredVersion",
+            guid: "11111111-1111-1111-1111-111111111111"
+          }
+        }]
+      end
+
+      before do
+        stub_request(:get, latest_manifest_url).to_return(
+          status: 200,
+          body: "@{ GUID = '22222222-2222-2222-2222-222222222222' }"
+        )
+      end
+
+      it "includes the selected release GUID in the updated requirement metadata" do
+        expect(checker.updated_requirements.first.metadata).to include(
+          updated_guid: "22222222-2222-2222-2222-222222222222"
+        )
       end
     end
 

@@ -11,9 +11,8 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       # Rewrites the version-bearing key(s) of module declarations in a
       # single dependency file so its content reflects each dependency's
-      # updated requirement, while leaving everything else - GUID, unrelated
-      # keys, quote style, whitespace, bare string declarations with no
-      # version constraint - exactly as originally written.
+      # updated requirement. A GUID is changed only when the update checker
+      # supplies a different GUID for a GUID-qualified exact pin.
       class DeclarationRewriter
         extend T::Sig
 
@@ -85,7 +84,7 @@ module Dependabot
           changes = requirement_changes(previous_requirements, current_requirements)
           return [] if changes.empty?
 
-          occurrences.filter_map { |occurrence| edit_for_matching_occurrence(occurrence, changes, content) }
+          occurrences.flat_map { |occurrence| edits_for_matching_occurrence(occurrence, changes, content) }
         end
 
         # Pairs each previous requirement with its updated counterpart (both
@@ -125,19 +124,19 @@ module Dependabot
             occurrence: DeclarationLocator::Occurrence,
             changes: T::Array[[Dependabot::DependencyRequirement, String]],
             content: String
-          ).returns(T.nilable(Edit))
+          ).returns(T::Array[Edit])
         end
-        def edit_for_matching_occurrence(occurrence, changes, content)
-          return nil unless occurrence.style == :hashtable
+        def edits_for_matching_occurrence(occurrence, changes, content)
+          return [] unless occurrence.style == :hashtable
 
           version_key = occurrence.version_key
-          return nil unless version_key
+          return [] unless version_key
 
           field = VERSION_FIELDS[version_key]
-          return nil unless field
+          return [] unless field
 
           value_span = value_span_for(content, occurrence, field)
-          return nil unless value_span
+          return [] unless value_span
 
           current_value = content[value_span[0]...value_span[1]]
 
@@ -152,12 +151,27 @@ module Dependabot
 
             extract_version(previous_requirement, version_key) == current_value
           end
-          return nil unless match
+          return [] unless match
 
           new_value = extract_version(match[1], version_key)
-          return nil unless new_value
+          return [] unless new_value
 
-          [value_span[0], value_span[1], new_value]
+          edits = [[value_span[0], value_span[1], new_value]]
+          guid = updated_guid(match[1])
+          return edits unless guid
+
+          guid_span = value_span_for(content, occurrence, "GUID")
+          return edits unless guid_span
+          return edits if content[guid_span[0]...guid_span[1]] == guid
+
+          edits << [guid_span[0], guid_span[1], guid]
+          edits
+        end
+
+        sig { params(requirement: Dependabot::DependencyRequirement).returns(T.nilable(String)) }
+        def updated_guid(requirement)
+          guid = requirement.metadata&.fetch(:updated_guid, nil)
+          guid if guid.is_a?(String)
         end
 
         # Extracts the version literal that `version_key` binds to from a

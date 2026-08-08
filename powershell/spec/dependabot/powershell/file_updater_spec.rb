@@ -33,13 +33,23 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
     )
   end
 
-  def hashtable_requirement(requirement_string, file:, version_key:, guid: nil, declaration_type: :required_modules)
+  def hashtable_requirement(
+    requirement_string,
+    file:,
+    version_key:,
+    guid: nil,
+    updated_guid: nil,
+    declaration_type: :required_modules
+  )
+    metadata = { declaration_type: declaration_type, style: :hashtable, guid: guid, version_key: version_key }
+    metadata[:updated_guid] = updated_guid if updated_guid
+
     {
       requirement: requirement_string,
       groups: [],
       source: psgallery_source,
       file: file,
-      metadata: { declaration_type: declaration_type, style: :hashtable, guid: guid, version_key: version_key }
+      metadata: metadata
     }
   end
 
@@ -51,6 +61,55 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
       file: file,
       metadata: { declaration_type: declaration_type, style: :string }
     }
+  end
+
+  describe "updating a GUID-qualified RequiredVersion" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Guid.ps1",
+          content: <<~POWERSHELL
+            #Requires -Modules @{ ModuleName = 'Pester'; RequiredVersion = '5.0.0'; GUID = '11111111-1111-1111-1111-111111111111' }
+          POWERSHELL
+        )
+      ]
+    end
+
+    let(:dependencies) do
+      [
+        build_dependency(
+          name: "Pester",
+          version: "6.0.0",
+          previous_version: "5.0.0",
+          requirements: [
+            hashtable_requirement(
+              "= 6.0.0",
+              file: "Guid.ps1",
+              version_key: "RequiredVersion",
+              guid: "11111111-1111-1111-1111-111111111111",
+              updated_guid: "22222222-2222-2222-2222-222222222222",
+              declaration_type: :requires_directive
+            )
+          ],
+          previous_requirements: [
+            hashtable_requirement(
+              "= 5.0.0",
+              file: "Guid.ps1",
+              version_key: "RequiredVersion",
+              guid: "11111111-1111-1111-1111-111111111111",
+              declaration_type: :requires_directive
+            )
+          ]
+        )
+      ]
+    end
+
+    it "rewrites both the exact version and GUID" do
+      content = updater.updated_dependency_files.first.content
+
+      expect(content).to include("RequiredVersion = '6.0.0'")
+      expect(content).to include("GUID = '22222222-2222-2222-2222-222222222222'")
+    end
   end
 
   describe "updating a .psd1 module manifest" do
