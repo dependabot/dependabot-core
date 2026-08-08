@@ -62,16 +62,16 @@ module Dependabot
           latest_allowable_version: nil,
           lock_ruby_version: true
         )
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @dependency = T.let(dependency, Dependabot::Dependency)
-          @remove_git_source = T.let(remove_git_source, T::Boolean)
-          @unlock_requirement = T.let(unlock_requirement, T::Boolean)
-          @replacement_git_pin = T.let(replacement_git_pin, T.nilable(String))
+          @dependency_files = dependency_files
+          @dependency = dependency
+          @remove_git_source = remove_git_source
+          @unlock_requirement = unlock_requirement
+          @replacement_git_pin = replacement_git_pin
           @latest_allowable_version = T.let(
             latest_allowable_version&.to_s,
             T.nilable(String)
           )
-          @lock_ruby_version = T.let(lock_ruby_version, T::Boolean)
+          @lock_ruby_version = lock_ruby_version
         end
 
         # rubocop:disable Metrics/AbcSize
@@ -273,20 +273,20 @@ module Dependabot
         sig { params(filename: String).returns(String) }
         def updated_version_req_lower_bound(filename) # rubocop:disable Metrics/CyclomaticComplexity
           original_req = dependency.requirements
-                                   .find { |r| r.fetch(:file) == filename }
-                                   &.fetch(:requirement)
+                                   .find { |r| r.file == filename }
+                                   &.requirement_string
 
           if original_req && !unlock_requirement? then original_req
           elsif dependency.version&.match?(/^[0-9a-f]{40}$/) then ">= 0"
           elsif dependency.version then ">= #{dependency.version}"
           else
             version_for_requirement =
-              dependency.requirements.map { |r| r[:requirement] }
-                                     .reject { |req_string| req_string.start_with?("<") }
-                                     .select { |req_string| req_string.match?(VERSION_REGEX) }
-                                     .map { |req_string| req_string.match(VERSION_REGEX)&.to_s }
-                                     .select { |version| Bundler::Version.correct?(version) }
-                                     .max_by { |version| Bundler::Version.new(version) }
+              dependency.requirements.filter_map(&:requirement_string)
+                        .reject { |req_string| req_string.start_with?("<") }
+                        .select { |req_string| req_string.match?(VERSION_REGEX) }
+                        .map { |req_string| req_string.match(VERSION_REGEX)&.to_s }
+                        .select { |version| Bundler::Version.correct?(version) }
+                        .max_by { |version| Bundler::Version.new(version) }
 
             ">= #{version_for_requirement || 0}"
           end

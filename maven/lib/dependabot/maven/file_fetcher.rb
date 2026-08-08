@@ -92,18 +92,20 @@ module Dependabot
 
         doc.css(MODULE_SELECTOR).flat_map do |module_node|
           relative_path = module_node.content.strip
-          name_parts = [
-            base_path,
-            relative_path,
-            relative_path.end_with?(".xml") ? nil : "pom.xml"
-          ].compact.reject(&:empty?)
-          path = Pathname.new(File.join(name_parts)).cleanpath.to_path
+          module_path = Pathname.new(File.join(base_path, relative_path)).cleanpath.to_path
 
-          next [] if fetched_filenames.include?(path)
+          # Skip a module whose `pom.xml` was already collected via another path.
+          next [] if fetched_filenames.include?(File.join(module_path, "pom.xml"))
 
-          next [] if Dependabot::FileFiltering.should_exclude_path?(path, "file from final collection", @exclude_paths)
+          child_pom = fetch_child_pom(module_path)
+          next [] if child_pom.nil?
+          next [] if fetched_filenames.include?(child_pom.name)
+          next [] if Dependabot::FileFiltering.should_exclude_path?(
+            child_pom.name,
+            "file from final collection",
+            @exclude_paths
+          )
 
-          child_pom = fetch_file_from_host(path)
           fetched_files = [
             child_pom,
             recursively_fetch_child_poms(
@@ -113,10 +115,31 @@ module Dependabot
           ].flatten
           fetched_filenames += [child_pom.name] + fetched_files.map(&:name)
           fetched_files
-        rescue Dependabot::DependencyFileNotFound
-          fetch_file_from_host(T.must(path), fetch_submodules: true)
+        end
+      end
 
-          [] # Ignore any child submodules (since we can't update them)
+      # Resolves a `<module>` value to its pom, preferring the module as a directory
+      # (its `pom.xml`) and otherwise treating an `.xml` value as a pom file.
+      sig { params(module_path: String).returns(T.nilable(Dependabot::DependencyFile)) }
+      def fetch_child_pom(module_path)
+        fetch_file_from_host(File.join(module_path, "pom.xml"))
+      rescue Dependabot::DependencyFileNotFound
+        # A non-`.xml` module may be a git submodule, which we can't update.
+        unless module_path.end_with?(".xml")
+          fetch_file_from_host(File.join(module_path, "pom.xml"), fetch_submodules: true)
+          return nil
+        end
+
+        # An `.xml` value may be a custom-named pom file rather than a directory.
+        begin
+          fetch_file_from_host(module_path)
+        rescue Dependabot::DependencyFileNotFound
+          fetch_file_from_host(module_path, fetch_submodules: true)
+          nil
+        rescue Errno::EISDIR
+          # An `.xml` directory with no `pom.xml` inside it; re-raise so the
+          # error carries the full source-directory path.
+          fetch_file_from_host(File.join(module_path, "pom.xml"))
         end
       end
 

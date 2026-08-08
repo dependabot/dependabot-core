@@ -483,7 +483,7 @@ module Dependabot
 
     sig { params(error_type: String, message: T.any(T.nilable(String), MatchData)).void }
     def initialize(error_type, message = nil)
-      @error_type = T.let(error_type, String)
+      @error_type = error_type
 
       super(message || error_type)
     end

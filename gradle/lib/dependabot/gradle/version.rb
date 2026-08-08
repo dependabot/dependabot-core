@@ -15,7 +15,7 @@ module Dependabot
     class Version < Dependabot::Version
       extend T::Sig
 
-      NULL_VALUES = T.let(%w(0 final ga).freeze, T::Array[String])
+      NULL_VALUES = %w(0 final ga).freeze
       PREFIXED_TOKEN_HIERARCHY = T.let(
         {
           "." => { qualifier: 1, number: 4 },
@@ -39,13 +39,10 @@ module Dependabot
         }.freeze,
         T::Hash[String, Integer]
       )
-      VERSION_PATTERN = T.let(
-        "[0-9a-zA-Z]+" \
-        '(?>\.[0-9a-zA-Z]*)*' \
-        '([_\-\+][0-9A-Za-z_-]*(\.[0-9A-Za-z_-]*)*)?',
-        String
-      )
-      ANCHORED_VERSION_PATTERN = T.let(/\A\s*(#{VERSION_PATTERN})?\s*\z/, Regexp)
+      VERSION_PATTERN = "[0-9a-zA-Z]+" \
+                        '(?>\.[0-9a-zA-Z]*)*' \
+                        '([_\-\+][0-9A-Za-z_-]*(\.[0-9A-Za-z_-]*)*)?'
+      ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
       sig { override.params(version: Object).returns(T::Boolean) }
       def self.correct?(version)

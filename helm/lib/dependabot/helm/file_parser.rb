@@ -65,9 +65,8 @@ module Dependabot
       sig { params(dependency: Dependabot::Dependency, type: Symbol).void }
       def add_dependency_type_to_dependency(dependency, type)
         dependency.requirements.map! do |req|
-          req[:metadata] = {} unless req[:metadata]
-          req[:metadata][:type] = type
-          req
+          metadata = req.metadata || {}
+          Dependabot::DependencyRequirement.create(req.merge(metadata: metadata.merge(type: type)))
         end
       end
 

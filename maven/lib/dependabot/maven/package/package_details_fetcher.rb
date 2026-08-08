@@ -27,9 +27,9 @@ module Dependabot
           ).void
         end
         def initialize(dependency:, dependency_files:, credentials:)
-          @dependency = T.let(dependency, Dependabot::Dependency)
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @dependency = dependency
+          @dependency_files = dependency_files
+          @credentials = credentials
 
           @pom_repository_details = T.let(nil, T.nilable(T::Array[RepositoryDetails]))
           @repository_finder = T.let(nil, T.nilable(Maven::FileParser::RepositoriesFinder))
@@ -123,8 +123,8 @@ module Dependabot
         # Returns the POM file for the dependency, if it exists.
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pom
-          filename = dependency.requirements.first&.fetch(:file) ||
-                     dependency.requirements.first&.dig(:metadata, :pom_file)
+          requirement = dependency.requirements.first
+          filename = requirement&.file || requirement&.metadata_string("pom_file")
           dependency_files.find { |f| f.name == filename }
         end
       end

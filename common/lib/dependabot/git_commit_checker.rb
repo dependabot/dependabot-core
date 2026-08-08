@@ -48,7 +48,8 @@ module Dependabot
         ignored_versions: T::Array[String],
         raise_on_ignored: T::Boolean,
         consider_version_branches_pinned: T::Boolean,
-        dependency_source_details: T.nilable(T::Hash[Symbol, Object])
+        dependency_source_details: T.nilable(T::Hash[Symbol, Object]),
+        git_metadata_fetcher: T.nilable(Dependabot::GitMetadataFetcher)
       )
         .void
     end
@@ -58,7 +59,8 @@ module Dependabot
       ignored_versions: [],
       raise_on_ignored: false,
       consider_version_branches_pinned: false,
-      dependency_source_details: nil
+      dependency_source_details: nil,
+      git_metadata_fetcher: nil
     )
       @dependency = dependency
       @credentials = credentials
@@ -69,6 +71,7 @@ module Dependabot
         dependency_source_details && SourceDetails.from_hash(dependency_source_details),
         T.nilable(SourceDetails)
       )
+      @git_metadata_fetcher = git_metadata_fetcher
     end
 
     sig { returns(T::Boolean) }
@@ -918,7 +921,7 @@ module Dependabot
     def local_repo_git_metadata_fetcher
       @local_repo_git_metadata_fetcher ||=
         T.let(
-          GitMetadataFetcher.new(
+          @git_metadata_fetcher || GitMetadataFetcher.new(
             url: T.must(dependency_source_details&.url),
             credentials: credentials
           ),
@@ -930,10 +933,14 @@ module Dependabot
     def listing_repo_git_metadata_fetcher
       @listing_repo_git_metadata_fetcher ||=
         T.let(
-          GitMetadataFetcher.new(
-            url: T.must(listing_source_url),
-            credentials: credentials
-          ),
+          if @git_metadata_fetcher && listing_source_url == dependency_source_details&.url
+            @git_metadata_fetcher
+          else
+            GitMetadataFetcher.new(
+              url: T.must(listing_source_url),
+              credentials: credentials
+            )
+          end,
           T.nilable(Dependabot::GitMetadataFetcher)
         )
     end

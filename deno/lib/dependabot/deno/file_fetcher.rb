@@ -10,7 +10,7 @@ module Dependabot
     class FileFetcher < Dependabot::FileFetchers::Base
       extend T::Sig
 
-      MANIFEST_FILENAMES = T.let(%w(deno.json deno.jsonc).freeze, T::Array[String])
+      MANIFEST_FILENAMES = %w(deno.json deno.jsonc).freeze
 
       sig { override.returns(String) }
       def self.required_files_message
@@ -19,7 +19,7 @@ module Dependabot
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)
-        filenames.any? { |f| MANIFEST_FILENAMES.include?(f) }
+        filenames.intersect?(MANIFEST_FILENAMES)
       end
 
       sig { override.returns(T::Array[DependencyFile]) }

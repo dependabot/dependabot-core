@@ -11,10 +11,7 @@ module Dependabot
       extend T::Sig
 
       # TODO: Support pinning to specific revisions
-      REGEXP = T.let(
-        /(from.*|\.upToNextMajor.*|\.upToNextMinor.*|"[^"]*"\s*\.\.[\.<]\s*"[^"]*".*|exact.*|\.exact.*)/,
-        Regexp
-      )
+      REGEXP = /(from.*|\.upToNextMajor.*|\.upToNextMinor.*|"[^"]*"\s*\.\.[\.<]\s*"[^"]*".*|exact.*|\.exact.*)/
 
       sig { returns(String) }
       attr_reader :declaration

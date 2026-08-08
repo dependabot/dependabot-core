@@ -685,6 +685,90 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
     end
   end
 
+  describe "#compile_updates_for with multiple locked Cargo versions" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "getrandom",
+        version: "0.2.17",
+        requirements: [],
+        package_manager: "cargo",
+        metadata: { all_versions: locked_versions }
+      )
+    end
+    let(:dependencies) { [dependency] }
+    let(:locked_versions) do
+      ["0.2.17", "0.4.2"].map do |version|
+        Dependabot::Dependency.new(
+          name: "getrandom",
+          version: version,
+          requirements: [],
+          package_manager: "cargo",
+          metadata: { cargo_package_source: "registry+https://github.com/rust-lang/crates.io-index" }
+        )
+      end
+    end
+    let(:updated_dependency) do
+      Dependabot::Dependency.new(
+        name: "getrandom",
+        version: "0.4.3",
+        previous_version: "0.4.2",
+        requirements: [],
+        previous_requirements: [],
+        package_manager: "cargo"
+      )
+    end
+    let(:group) do
+      Dependabot::DependencyGroup.new(
+        name: "patch-updates",
+        rules: {
+          "patterns" => ["getrandom"],
+          "update-types" => ["patch"]
+        }
+      )
+    end
+
+    # The updater CI image only carries one ecosystem gem, so dependabot-cargo
+    # cannot be loaded here. Resolve the version class generically and supply
+    # a minimal Cargo::Version.update_type with cargo's pre-1.0 rule (a 0.x
+    # minor bump is a major update) so the classification stays meaningful.
+    let(:cargo_version_stub) do
+      Class.new do
+        def self.update_type(from_version, to_version)
+          from = Gem::Version.new(from_version.to_s).segments
+          to = Gem::Version.new(to_version.to_s).segments
+          return "major" if from[0] != to[0] || (from[0].to_i.zero? && from[1] != to[1])
+          return "minor" if from[1] != to[1]
+
+          "patch"
+        end
+      end
+    end
+
+    before do
+      stub_const("Dependabot::Cargo::Version", cargo_version_stub)
+      allow(Dependabot::Utils).to receive(:version_class_for_package_manager).and_return(Dependabot::Version)
+      allow(job).to receive(:package_manager).and_return("cargo")
+      allow(test_instance).to receive_messages(
+        update_checker_for: checker,
+        raise_on_ignored?: false,
+        log_checking_for_update: nil,
+        all_versions_ignored?: false,
+        log_up_to_date: nil,
+        requirements_to_unlock: :own,
+        log_requirements_for_update: nil
+      )
+      allow(checker).to receive_messages(
+        up_to_date?: false,
+        updated_dependencies: [updated_dependency]
+      )
+    end
+
+    it "classifies the actionable locked line instead of the collapsed dependency" do
+      expect(test_instance.compile_updates_for(dependency, dependency_files, group))
+        .to eq([updated_dependency])
+    end
+  end
+
   describe "feature flag behavior in compile_updates_for" do
     let(:dependency) { dependencies.first }
 

@@ -27,7 +27,7 @@ module Dependabot
 
       sig { params(pyproject_content: T.nilable(String)).void }
       def initialize(pyproject_content:)
-        @pyproject_content = T.let(pyproject_content, T.nilable(String))
+        @pyproject_content = pyproject_content
         @plugins_installed = T.let(false, T::Boolean)
       end
 

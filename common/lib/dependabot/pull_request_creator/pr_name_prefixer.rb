@@ -16,23 +16,16 @@ module Dependabot
     class PrNamePrefixer # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
-      ANGULAR_PREFIXES = T.let(
-        %w(build chore ci docs feat fix perf refactor style test).freeze,
-        T::Array[String]
-      )
-      ESLINT_PREFIXES = T.let(
-        %w(Breaking Build Chore Docs Fix New Update Upgrade).freeze,
-        T::Array[String]
-      )
-      GITMOJI_PREFIXES = T.let(
-        %w(alien ambulance apple arrow_down arrow_up art beers bento bookmark boom bug building_construction bulb
-           busts_in_silhouette camera_flash card_file_box chart_with_upwards_trend checkered_flag children_crossing
-           clown_face construction construction_worker egg fire globe_with_meridians green_apple green_heart hankey
-           heavy_minus_sign heavy_plus_sign iphone lipstick lock loud_sound memo mute ok_hand package page_facing_up
-           pencil2 penguin pushpin recycle rewind robot rocket rotating_light see_no_evil sparkles speech_balloon tada
-           truck twisted_rightwards_arrows whale wheelchair white_check_mark wrench zap).freeze,
-        T::Array[String]
-      )
+      ANGULAR_PREFIXES = %w(build chore ci docs feat fix perf refactor style test).freeze
+      ESLINT_PREFIXES = %w(Breaking Build Chore Docs Fix New Update Upgrade).freeze
+      GITMOJI_PREFIXES = %w(
+        alien ambulance apple arrow_down arrow_up art beers bento bookmark boom bug building_construction
+        bulb busts_in_silhouette camera_flash card_file_box chart_with_upwards_trend checkered_flag children_crossing
+        clown_face construction construction_worker egg fire globe_with_meridians green_apple green_heart hankey
+        heavy_minus_sign heavy_plus_sign iphone lipstick lock loud_sound memo mute ok_hand package page_facing_up
+        pencil2 penguin pushpin recycle rewind robot rocket rotating_light see_no_evil sparkles speech_balloon tada
+        truck twisted_rightwards_arrows whale wheelchair white_check_mark wrench zap
+      ).freeze
 
       sig do
         params(

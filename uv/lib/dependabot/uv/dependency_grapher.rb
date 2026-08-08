@@ -12,8 +12,8 @@ require "toml-rb"
 module Dependabot
   module Uv
     class DependencyGrapher < Dependabot::DependencyGraphers::Base
-      RUNTIME_GROUP = T.let("dependencies", String)
-      DEV_GROUP = T.let("dev-dependencies", String)
+      RUNTIME_GROUP = "dependencies"
+      DEV_GROUP = "dev-dependencies"
 
       sig { override.returns(Dependabot::DependencyFile) }
       def relevant_dependency_file

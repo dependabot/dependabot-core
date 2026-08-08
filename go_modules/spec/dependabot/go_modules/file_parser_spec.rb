@@ -508,7 +508,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
         expect { parser.parse }
           .to raise_error(Dependabot::DependencyFileNotParseable) do |error|
             expect(error.file_path).to eq("/go.mod")
-            expect(error.message).to match(/v0 or v1/)
+            expect(error.message).to include("v0 or v1")
           end
       end
     end

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -66,11 +66,12 @@ module Dependabot
 
       sig { override.returns(String) }
       def maven_repo_url
-        source = dependency.requirements
-                           .find { |r| r.fetch(:source) }&.fetch(:source)
+        requirement = dependency.requirements.find(&:source)
+        return Gradle::FileParser::RepositoriesFinder::CENTRAL_REPO_URL unless requirement
 
-        source&.fetch(:url, nil) ||
-          source&.fetch("url") ||
+        raise TypeError, "Gradle repository source must be a hash" if requirement.source_hash.nil?
+
+        requirement.source_string("url") ||
           Gradle::FileParser::RepositoriesFinder::CENTRAL_REPO_URL
       end
 
@@ -81,12 +82,12 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def plugin?
-        dependency.requirements.any? { |r| r.fetch(:groups).include? "plugins" }
+        dependency.requirements.any? { |r| r.groups&.include?("plugins") }
       end
 
       sig { returns(T::Boolean) }
       def kotlin_plugin?
-        plugin? && dependency.requirements.any? { |r| r.fetch(:groups).include? "kotlin" }
+        plugin? && dependency.requirements.any? { |r| r.groups&.include?("kotlin") }
       end
     end
   end

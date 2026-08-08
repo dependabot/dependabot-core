@@ -53,6 +53,32 @@ RSpec.describe Dependabot::Opentofu::FileFetcher do
     end
   end
 
+  context "when exclude-paths covers the whole directory" do
+    let(:project_name) { "lockfile_in_subdirectory" }
+    let(:directory) { "/frozen_project" }
+    let(:file_fetcher_instance) do
+      described_class.new(source: source, credentials: [], repo_contents_path: repo_contents_path).tap do |ff|
+        ff.exclude_paths = ["frozen_project/**"]
+      end
+    end
+
+    before do
+      Dependabot::Experiments.register(:enable_exclude_paths_subdirectory_manifest_files, true)
+    end
+
+    after do
+      Dependabot::Experiments.reset!
+    end
+
+    # The .tf files are dropped by the repo-contents filter, but the lockfile is fetched
+    # by path rather than from the listing, so it has to be caught by the final filter.
+    # If it survives, the directory reaches the parser holding a lockfile and no manifest.
+    it "excludes the lockfile as well as the manifests" do
+      expect { file_fetcher_instance.files }
+        .to raise_error(Dependabot::DependencyFileNotFound)
+    end
+  end
+
   context "with a directory that doesn't exist" do
     let(:directory) { "/nonexistent" }
 

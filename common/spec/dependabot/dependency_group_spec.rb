@@ -86,6 +86,38 @@ RSpec.describe Dependabot::DependencyGroup do
     end
   end
 
+  describe ".subgroup_name" do
+    it "builds a subgroup name for a normal dependency" do
+      expect(described_class.subgroup_name(parent_name: "frontend", dependency_name: "react")).to eq("frontend/react")
+    end
+
+    it "builds a subgroup name for a scoped dependency" do
+      expect(described_class.subgroup_name(parent_name: "frontend", dependency_name: "@scope/business"))
+        .to eq("frontend/@scope/business")
+    end
+  end
+
+  describe ".parent_name_from_subgroup" do
+    it "extracts the parent name for a normal dependency" do
+      expect(described_class.parent_name_from_subgroup(subgroup_name: "frontend/react", dependency_name: "react"))
+        .to eq("frontend")
+    end
+
+    it "extracts the parent name for a scoped dependency" do
+      expect(
+        described_class.parent_name_from_subgroup(
+          subgroup_name: "frontend/@scope/business",
+          dependency_name: "@scope/business"
+        )
+      ).to eq("frontend")
+    end
+
+    it "returns nil when the dependency suffix does not match" do
+      expect(described_class.parent_name_from_subgroup(subgroup_name: "frontend/react", dependency_name: "rails"))
+        .to be_nil
+    end
+  end
+
   describe "#dependencies" do
     context "when no dependencies are assigned to the group" do
       it "returns an empty list" do

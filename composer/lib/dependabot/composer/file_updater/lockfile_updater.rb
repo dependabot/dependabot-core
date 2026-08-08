@@ -29,7 +29,7 @@ module Dependabot
 
           sig { params(extensions: T::Array[T::Hash[Symbol, String]]).void }
           def initialize(extensions)
-            @extensions = T.let(extensions, T::Array[T::Hash[Symbol, String]])
+            @extensions = extensions
             super
           end
         end

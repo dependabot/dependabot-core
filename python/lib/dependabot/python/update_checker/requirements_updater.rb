@@ -16,9 +16,9 @@ module Dependabot
       class RequirementsUpdater
         extend T::Sig
 
-        PYPROJECT_OR_SEPARATOR = T.let(/(?<=[a-zA-Z0-9*])\s*\|+/, Regexp)
-        PYPROJECT_SEPARATOR = T.let(/#{PYPROJECT_OR_SEPARATOR}|,/, Regexp)
-        LOWER_BOUND_OPS = T.let(%w(> >=).freeze, T::Array[String])
+        PYPROJECT_OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
+        PYPROJECT_SEPARATOR = /#{PYPROJECT_OR_SEPARATOR}|,/
+        LOWER_BOUND_OPS = %w(> >=).freeze
 
         class UnfixableRequirement < StandardError; end
 
@@ -52,8 +52,8 @@ module Dependabot
             requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
             T::Array[Dependabot::DependencyRequirement]
           )
-          @update_strategy = T.let(update_strategy, Dependabot::RequirementsUpdateStrategy)
-          @has_lockfile = T.let(has_lockfile, T::Boolean)
+          @update_strategy = update_strategy
+          @has_lockfile = has_lockfile
           @latest_resolvable_version = T.let(nil, T.nilable(Dependabot::Python::Version))
 
           return unless latest_resolvable_version

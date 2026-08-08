@@ -10,6 +10,7 @@ FROM docker.io/gradle:9.6.1-jdk21-ubi@sha256:2a6880cf02ea7a0d8bdd93aa05b7adcfd86
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    openjdk-17-jdk-headless \
     openjdk-21-jdk-headless \
     ca-certificates-java \
     && chgrp dependabot /etc/ssl/certs/java /etc/ssl/certs/java/cacerts \

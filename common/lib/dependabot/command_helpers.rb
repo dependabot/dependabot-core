@@ -35,7 +35,7 @@ module Dependabot
 
       sig { params(process_status: T.nilable(Process::Status), custom_exitstatus: T.nilable(Integer)).void }
       def initialize(process_status, custom_exitstatus = nil)
-        @process_status = T.let(process_status, T.nilable(Process::Status))
+        @process_status = process_status
         @custom_exitstatus = custom_exitstatus
       end
 

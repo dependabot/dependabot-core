@@ -198,15 +198,9 @@ module Dependabot
         sig { params(releases: T::Array[ReleaseType], conservative: T::Boolean).returns(T::Array[ReleaseType]) }
         def filter_releases_using_previous_version(releases, conservative:)
           releases.reject do |release|
-            cleaned_tag = release.tag_name.gsub(/^[^0-9]*/, "")
-            cleaned_name = release.name&.gsub(/^[^0-9]*/, "")
-            dot_count = [cleaned_tag, cleaned_name].compact.reject(&:empty?)
-                                                   .map { |nm| nm.chars.count(".") }.max
+            next false if release_tag_matches_version?(release, new_version)
 
-            tag_version = [cleaned_tag, cleaned_name].compact.reject(&:empty?)
-                                                     .select { |nm| version_class.correct?(nm) }
-                                                     .select { |nm| nm.chars.count(".") == dot_count }
-                                                     .map { |nm| version_class.new(nm) }.max
+            tag_version = possible_versions(release).max
 
             next conservative unless tag_version
 
@@ -221,15 +215,9 @@ module Dependabot
           updated_version = version_class.new(new_version)
 
           releases.reject do |release|
-            cleaned_tag = release.tag_name.gsub(/^[^0-9]*/, "")
-            cleaned_name = release.name&.gsub(/^[^0-9]*/, "")
-            dot_count = [cleaned_tag, cleaned_name].compact.reject(&:empty?)
-                                                   .map { |nm| nm.chars.count(".") }.max
+            next false if release_tag_matches_version?(release, new_version)
 
-            tag_version = [cleaned_tag, cleaned_name].compact.reject(&:empty?)
-                                                     .select { |nm| version_class.correct?(nm) }
-                                                     .select { |nm| nm.chars.count(".") == dot_count }
-                                                     .map { |nm| version_class.new(nm) }.min
+            tag_version = possible_versions(release).min
 
             next conservative unless tag_version
 
@@ -237,6 +225,26 @@ module Dependabot
             # (e.g., if two major versions are being maintained)
             tag_version > updated_version
           end
+        end
+
+        sig { params(release: ReleaseType).returns(T::Array[Dependabot::Version]) }
+        def possible_versions(release)
+          candidates = [release.tag_name, release.name].compact
+                                                       .map { |name| name.gsub(/^[^0-9]*/, "") }
+                                                       .reject(&:empty?)
+                                                       .select { |name| version_class.correct?(name) }
+          dot_count = candidates.map { |name| name.chars.count(".") }.max
+          return [] unless dot_count
+
+          candidates.select { |name| name.chars.count(".") == dot_count }
+                    .map { |name| version_class.new(name) }
+        end
+
+        sig { params(release: ReleaseType, version: T.nilable(String)).returns(T::Boolean) }
+        def release_tag_matches_version?(release, version)
+          return false unless version
+
+          release.tag_name.gsub(/^[^0-9]*/, "") == version.gsub(/^[^0-9]*/, "")
         end
 
         sig { returns(T.nilable(ReleaseType)) }
@@ -398,7 +406,7 @@ module Dependabot
         sig { params(requirement: Dependabot::DependencyRequirement).returns(T.nilable(String)) }
         def requirement_ref(requirement)
           source = requirement.source
-          return unless source
+          return unless source.is_a?(Hash)
 
           symbol_ref = source[:ref]
           return symbol_ref if symbol_ref.is_a?(String)
