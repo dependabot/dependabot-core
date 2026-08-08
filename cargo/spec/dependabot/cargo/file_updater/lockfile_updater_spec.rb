@@ -233,6 +233,38 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           expect(updated_lockfile_content)
             .to include(%(name = "time"\nversion = "0.1.38"))
         end
+
+        context "when Cargo reports a split-graph conflict" do
+          let(:lockfile_body) do
+            super() + <<~LOCKFILE
+
+              [[package]]
+              name = "time"
+              version = "0.1.38"
+              source = "registry+https://github.com/rust-lang/crates.io-index"
+            LOCKFILE
+          end
+          let(:fallback_manifest_contents) { [] }
+
+          before do
+            allow(updater).to receive(:run_cargo_command) do |command, **|
+              if command.include?("--precise")
+                raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                  message: 'failed to select a version for the requirement `time = "<=0.1.12"`',
+                  error_context: {}
+                )
+              end
+
+              fallback_manifest_contents << File.read("Cargo.toml")
+            end
+          end
+
+          it "exact-pins the target-specific requirement before the fallback" do
+            updated_lockfile_content
+
+            expect(fallback_manifest_contents).to contain_exactly(a_string_including('time = "=0.1.38"'))
+          end
+        end
       end
 
       context "with a blank requirement" do
@@ -510,6 +542,48 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
               "cargo update -p windows-sys:0.52.0"
             ]
           )
+        end
+
+        context "when the desired version is already locked for another dependent" do
+          let(:requirements) do
+            [{ file: "Cargo.toml", requirement: "0.59", groups: ["dependencies"], source: nil }]
+          end
+          let(:lockfile_body) do
+            super() + <<~LOCKFILE
+
+              [[package]]
+              name = "windows-sys"
+              version = "0.59.0"
+              source = "registry+https://github.com/rust-lang/crates.io-index"
+              checksum = "1e38bc4d79ed67fd075bcc251a1c39b32f1776a048167c60a3a49e89265ef463"
+            LOCKFILE
+          end
+          let(:fallback_manifest_contents) { [] }
+
+          before do
+            allow(updater).to receive(:run_cargo_command) do |command, **|
+              commands << command
+              if command.include?("--precise")
+                raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                  message: 'failed to select a version for the requirement `windows-sys = "^0.52"`',
+                  error_context: {}
+                )
+              end
+
+              fallback_manifest_contents << File.read("Cargo.toml")
+            end
+          end
+
+          it "exact-pins the updated edge before allowing Cargo to split the graph" do
+            expect(updated_lockfile_content).to include(%(name = "windows-sys"\nversion = "0.59.0"))
+            expect(fallback_manifest_contents).to contain_exactly(a_string_including('windows-sys = "=0.59.0"'))
+            expect(commands).to eq(
+              [
+                "cargo update -p windows-sys:0.52.0 --precise 0.59.0",
+                "cargo update -p windows-sys:0.52.0"
+              ]
+            )
+          end
         end
       end
 

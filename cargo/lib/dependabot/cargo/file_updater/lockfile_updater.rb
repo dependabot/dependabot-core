@@ -98,7 +98,12 @@ module Dependabot
             fingerprint: "cargo update -p <dependency_spec> --precise <version>"
           )
         rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
-          raise unless e.message.include?("failed to select a version")
+          raise unless split_graph_conflict?(e)
+
+          fallback_files = split_graph_manifest_files
+          raise if fallback_files.empty?
+
+          pin_split_graph_manifest_requirements(fallback_files)
 
           # --precise cannot introduce a new direct version while retaining the selected old version for another edge.
           run_cargo_command(
@@ -106,6 +111,13 @@ module Dependabot
             fingerprint: "cargo update -p <dependency_spec>"
           )
           raise e unless desired_version_present?(File.read("Cargo.lock"))
+        end
+
+        sig { params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
+        def split_graph_conflict?(error)
+          !git_dependency? &&
+            error.message.include?("failed to select a version") &&
+            error.message.include?(dependency.name)
         end
 
         # An earlier command in this run may already have resolved this
@@ -455,6 +467,58 @@ module Dependabot
           ).updated_manifest_content
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def split_graph_manifest_files
+          manifest_files.select do |file|
+            dependency.requirements.any? { |requirement| requirement[:file] == file.name }
+          end
+        end
+
+        sig { params(files: T::Array[Dependabot::DependencyFile]).void }
+        def pin_split_graph_manifest_requirements(files)
+          files.each do |file|
+            File.write(file.name, pin_version(prepared_manifest_content(file)))
+          end
+        end
+
+        sig { params(content: String).returns(String) }
+        def pin_version(content)
+          parsed_manifest = TomlRB.parse(content)
+
+          Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
+            next unless (requirement = parsed_manifest.dig(type, dependency.name))
+
+            if requirement.is_a?(Hash)
+              parsed_manifest[type][dependency.name]["version"] = "=#{dependency.version}"
+            else
+              parsed_manifest[type][dependency.name] = "=#{dependency.version}"
+            end
+          end
+
+          pin_target_specific_dependencies!(parsed_manifest)
+          TomlRB.dump(parsed_manifest)
+        end
+
+        sig { params(parsed_manifest: T::Hash[String, T.anything]).void }
+        def pin_target_specific_dependencies!(parsed_manifest)
+          toml_table_or_empty(parsed_manifest.fetch("target", {})).each do |target, target_details|
+            target_details = toml_table_or_empty(target_details)
+            Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
+              toml_table_or_empty(target_details.fetch(type, {})).each do |name, requirement|
+                next unless name == dependency.name
+
+                dependencies = toml_table_or_empty(toml_table_or_empty(parsed_manifest["target"])[target])
+                if T.cast(requirement, T.nilable(Object)).is_a?(Hash)
+                  toml_table_or_empty(toml_table_or_empty(dependencies[type])[name])["version"] =
+                    "=#{dependency.version}"
+                else
+                  toml_table_or_empty(dependencies[type])[name] = "=#{dependency.version}"
+                end
+              end
+            end
+          end
+        end
+
         sig { params(content: String).returns(String) }
         def replace_ssh_urls(content)
           git_ssh_requirements_to_swap.each do |ssh_url, https_url|
@@ -539,6 +603,12 @@ module Dependabot
             end
 
           lockfile_content
+        end
+
+        sig { params(value: T.anything).returns(T::Hash[String, T.anything]) }
+        def toml_table_or_empty(value)
+          object = T.cast(value, T.nilable(Object))
+          object.is_a?(Hash) ? object : {}
         end
 
         sig { returns(String) }
