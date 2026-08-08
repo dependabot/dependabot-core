@@ -40,6 +40,9 @@ module Dependabot
       PLUGIN_ARTIFACT_ITEMS_SELECTOR = "plugins > plugin > executions > execution > " \
                                        "configuration > artifactItems > artifactItem"
 
+      # Packages that are virtual/IDE-only and do not exist in any Maven repository.
+      VIRTUAL_PACKAGES = T.let(["org.eclipse.m2e:lifecycle-mapping"].freeze, T::Array[String])
+
       # Regex to get the property name from a declaration that uses a property
       PROPERTY_REGEX = /\$\{(?<property>.*?)\}/
 
@@ -223,6 +226,7 @@ module Dependabot
       def dependency_from_plugin_node(pom, dependency_node)
         return unless (name = plugin_name(dependency_node, pom))
         return if internal_dependency_names.include?(name)
+        return if VIRTUAL_PACKAGES.include?(name)
 
         build_dependency(pom, dependency_node, name, is_plugin: true)
       end
