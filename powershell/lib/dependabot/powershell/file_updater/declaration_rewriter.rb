@@ -136,6 +136,8 @@ module Dependabot
           return [] unless value_span
 
           current_value = content[value_span[0]...value_span[1]]
+          return [] unless current_value
+
           change = matching_change(changes, occurrence.version_key, current_value)
           return [] unless change
 

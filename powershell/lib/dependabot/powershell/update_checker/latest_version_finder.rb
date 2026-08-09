@@ -25,12 +25,9 @@ module Dependabot
 
         sig { params(version: String).returns(T.nilable(String)) }
         def manifest_guid_for(version)
-          @manifest_guids ||= T.let({}, T::Hash[String, T.nilable(String)])
-          return @manifest_guids[version] if @manifest_guids.key?(version)
-
-          @manifest_guids[version] = Dependabot::Powershell::Package::PackageDetailsFetcher
-                                     .new(dependency: dependency)
-                                     .manifest_guid_for(version)
+          Dependabot::Powershell::Package::PackageDetailsFetcher
+            .new(dependency: dependency)
+            .manifest_guid_for(version)
         end
 
         protected
