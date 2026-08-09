@@ -32,8 +32,7 @@ module Dependabot
         # `RequiredModules` may also be written as a quoted hashtable key
         # (`'RequiredModules' = @(...)`), so an optional matching quote
         # around it is recognized too - mirroring Psd1ManifestParser.
-        REQUIRED_MODULES_ARRAY_KEY = /(?<![A-Za-z0-9_])(?:(['"])RequiredModules\1|RequiredModules)\s*=\s*@\(/i
-        REQUIRED_MODULES_HASHTABLE_KEY = /(?<![A-Za-z0-9_])(?:(['"])RequiredModules\1|RequiredModules)\s*=\s*@\{/i
+        REQUIRED_MODULES_KEY = /(?<![A-Za-z0-9_])(?:(['"])RequiredModules\1|RequiredModules)\s*=\s*/i
 
         sig { params(file: Dependabot::DependencyFile).void }
         def initialize(file:)
@@ -45,13 +44,6 @@ module Dependabot
           # match as a declaration. An active `#Requires -Modules` directive
           # is left untouched by ContentMasker.
           @content = T.let(ContentMasker.mask(T.must(file.content)), String)
-          # A further-masked copy, with quoted string interiors blanked too,
-          # used only to locate the `RequiredModules = @(`/`@{` key - so a
-          # value like `Description = 'See RequiredModules = @(Fake)'`
-          # can't be mistaken for the real assignment. Offsets found in this
-          # copy are still valid in `@content`, since masking never changes
-          # length.
-          @key_search_content = T.let(ContentMasker.mask_quoted_strings(@content), String)
         end
 
         sig { returns(T::Array[Occurrence]) }
@@ -79,21 +71,22 @@ module Dependabot
 
         sig { returns(T::Array[Occurrence]) }
         def locate_required_modules
-          array_match = REQUIRED_MODULES_ARRAY_KEY.match(@key_search_content)
-          return locate_required_modules_array(array_match) if array_match
+          assignment = ContentMasker.top_level_hashtable_assignment(@content, REQUIRED_MODULES_KEY)
+          return [] unless assignment
 
-          hashtable_match = REQUIRED_MODULES_HASHTABLE_KEY.match(@key_search_content)
-          return [] unless hashtable_match
+          value_start = assignment[1]
+          return locate_required_modules_array(value_start) if @content[value_start..].to_s.start_with?("@(")
+          return locate_required_modules_hashtable(value_start) if @content[value_start..].to_s.start_with?("@{")
 
-          locate_required_modules_hashtable(hashtable_match)
+          []
         end
 
         # Handles `RequiredModules = @( ... )`: each top-level entry inside
         # the array (bare string or `@{...}` hashtable) becomes its own
         # Occurrence.
-        sig { params(match: MatchData).returns(T::Array[Occurrence]) }
-        def locate_required_modules_array(match)
-          body_range = balanced_paren_range(@content, match.end(0) - 1)
+        sig { params(value_start: Integer).returns(T::Array[Occurrence]) }
+        def locate_required_modules_array(value_start)
+          body_range = balanced_paren_range(@content, value_start + 1)
           return [] unless body_range
 
           body_start, body_end = body_range
@@ -105,9 +98,9 @@ module Dependabot
         # The whole `@{...}` literal - including its `@` prefix and braces -
         # is treated as a single entry so its offsets can be used to locate
         # and rewrite its version field later.
-        sig { params(match: MatchData).returns(T::Array[Occurrence]) }
-        def locate_required_modules_hashtable(match)
-          open_brace_index = match.end(0) - 1
+        sig { params(value_start: Integer).returns(T::Array[Occurrence]) }
+        def locate_required_modules_hashtable(value_start)
+          open_brace_index = value_start + 1
           body_range = balanced_paren_range(@content, open_brace_index)
           return [] unless body_range
 

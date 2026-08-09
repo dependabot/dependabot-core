@@ -107,6 +107,41 @@ module Dependabot
         result
       end
 
+      # Finds an assignment at the outer module-manifest hashtable depth.
+      # Nested hashtables such as `PrivateData = @{ ... }` may legally contain
+      # a key named `RequiredModules`, but only the outer assignment controls
+      # the manifest's module dependencies.
+      sig { params(content: String, key_pattern: Regexp).returns(T.nilable([Integer, Integer])) }
+      def self.top_level_hashtable_assignment(content, key_pattern)
+        search_content = mask_quoted_strings(content)
+        outer_start = search_content.index("@{")
+        return unless outer_start
+
+        depth = 0
+        index = outer_start
+
+        while index < search_content.length
+          char = T.must(search_content[index])
+
+          case char
+          when "{"
+            depth += 1
+          when "}"
+            depth -= 1
+            return if depth.zero?
+          else
+            if depth == 1
+              match = key_pattern.match(search_content, index)
+              return [match.begin(0), match.end(0)] if match&.begin(0) == index
+            end
+          end
+
+          index += 1
+        end
+
+        nil
+      end
+
       # True when the quoted string starting at `index` is immediately
       # followed (ignoring intervening spaces/tabs) by a bare `=` - i.e. it
       # is being used as a quoted hashtable key (`'RequiredModules' =

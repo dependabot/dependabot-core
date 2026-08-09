@@ -25,17 +25,20 @@ RSpec.describe Dependabot::Powershell::UpdateChecker::LatestVersionFinder do
   let(:ignored_versions) { [] }
   let(:security_advisories) { [] }
   let(:cooldown_options) { nil }
+  let(:dependency_requirements) do
+    [{
+      requirement: nil,
+      groups: [],
+      source: { type: "registry", url: "https://www.powershellgallery.com/api/v2" },
+      file: "module.psd1"
+    }]
+  end
 
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "Pester",
       version: dependency_version,
-      requirements: [{
-        requirement: nil,
-        groups: [],
-        source: { type: "registry", url: "https://www.powershellgallery.com/api/v2" },
-        file: "module.psd1"
-      }],
+      requirements: dependency_requirements,
       package_manager: "powershell"
     )
   end
@@ -136,6 +139,43 @@ RSpec.describe Dependabot::Powershell::UpdateChecker::LatestVersionFinder do
 
     it "returns the lowest version that isn't vulnerable" do
       expect(finder.lowest_security_fix_version.to_s).to eq("5.4.0")
+    end
+
+    context "when a versionless range has a ModuleVersion floor" do
+      let(:dependency_version) { nil }
+      let(:dependency_requirements) do
+        [{
+          requirement: ">= 5.0.0, <= 5.3.3",
+          groups: [],
+          source: { type: "registry", url: "https://www.powershellgallery.com/api/v2" },
+          file: "module.psd1",
+          metadata: { version_key: "ModuleVersion+MaximumVersion" }
+        }]
+      end
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: "Pester",
+            package_manager: "powershell",
+            vulnerable_versions: [">= 5.0.0, < 5.4.0"]
+          )
+        ]
+      end
+
+      before do
+        body = feed_xml(
+          entries: [
+            entry_xml(version: "5.4.0"),
+            entry_xml(version: "5.3.3"),
+            entry_xml(version: "4.9.0")
+          ]
+        )
+        stub_request(:get, find_packages_by_id_url).to_return(status: 200, body: body)
+      end
+
+      it "selects the lowest safe release at or above the floor despite the maximum cap" do
+        expect(finder.lowest_security_fix_version.to_s).to eq("5.4.0")
+      end
     end
   end
 end

@@ -151,6 +151,28 @@ RSpec.describe Dependabot::Powershell::FileParser do
       end
     end
 
+    context "when PrivateData contains a nested RequiredModules key" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "Nested.psd1",
+          content: <<~POWERSHELL
+            @{
+              PrivateData = @{
+                RequiredModules = @('Fake.PrivateModule')
+              }
+              RequiredModules = @(
+                @{ ModuleName = 'Az.Real'; ModuleVersion = '1.0.0' }
+              )
+            }
+          POWERSHELL
+        )
+      end
+
+      it "parses only the outer manifest RequiredModules declaration" do
+        expect(parser.parse.map(&:name)).to contain_exactly("Az.Real")
+      end
+    end
+
     context "when RequiredModules contains a malformed hashtable entry" do
       let(:manifest_file) do
         Dependabot::DependencyFile.new(

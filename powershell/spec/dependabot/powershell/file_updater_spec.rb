@@ -642,6 +642,47 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
     end
   end
 
+  describe "updating the outer manifest RequiredModules declaration" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Nested.psd1",
+          content: <<~POWERSHELL
+            @{
+              PrivateData = @{
+                RequiredModules = @('Fake.PrivateModule')
+              }
+              RequiredModules = @(
+                @{ ModuleName = 'Az.Real'; ModuleVersion = '1.0.0' }
+              )
+            }
+          POWERSHELL
+        )
+      ]
+    end
+
+    let(:dependencies) do
+      [
+        build_dependency(
+          name: "Az.Real",
+          requirements: [
+            hashtable_requirement(">= 2.0.0", file: "Nested.psd1", version_key: "ModuleVersion")
+          ],
+          previous_requirements: [
+            hashtable_requirement(">= 1.0.0", file: "Nested.psd1", version_key: "ModuleVersion")
+          ]
+        )
+      ]
+    end
+
+    it "rewrites only the outer declaration" do
+      content = updater.updated_dependency_files.first.content
+
+      expect(content).to include("RequiredModules = @('Fake.PrivateModule')")
+      expect(content).to include("@{ ModuleName = 'Az.Real'; ModuleVersion = '2.0.0' }")
+    end
+  end
+
   describe "updating a RequiredModules declaration written as a quoted hashtable key" do
     let(:dependency_files) do
       [

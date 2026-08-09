@@ -42,15 +42,10 @@ module Dependabot
         def required_modules_entries
           content = ContentMasker.mask(T.must(@file.content))
 
-          # Search for the key in a further-masked copy with quoted string
-          # interiors blanked too, so e.g. a `Description = 'See
-          # RequiredModules = @(Fake) for details'` value can't be mistaken
-          # for the real assignment. `match.end(0)` is still a valid offset
-          # into `content` since masking never changes the string's length.
-          match = REQUIRED_MODULES_KEY.match(ContentMasker.mask_quoted_strings(content))
-          return [] unless match
+          assignment = ContentMasker.top_level_hashtable_assignment(content, REQUIRED_MODULES_KEY)
+          return [] unless assignment
 
-          value_start = match.end(0)
+          value_start = assignment[1]
           rest = T.must(content[value_start..])
 
           if rest.start_with?("@(")
