@@ -130,12 +130,8 @@ module Dependabot
             depth -= 1
             return if depth.zero?
           else
-            if depth == 1
-              match = key_pattern.match(search_content, index)
-              if match && match.begin(0) == index
-                return [match.begin(0), match.end(0)]
-              end
-            end
+            assignment = outer_hashtable_assignment_at(search_content, key_pattern, index, depth)
+            return assignment if assignment
           end
 
           index += 1
@@ -143,6 +139,20 @@ module Dependabot
 
         nil
       end
+
+      sig do
+        params(content: String, key_pattern: Regexp, index: Integer, depth: Integer)
+          .returns(T.nilable([Integer, Integer]))
+      end
+      def self.outer_hashtable_assignment_at(content, key_pattern, index, depth)
+        return unless depth == 1
+
+        match = key_pattern.match(content, index)
+        return unless match && match.begin(0) == index
+
+        [match.begin(0), match.end(0)]
+      end
+      private_class_method :outer_hashtable_assignment_at
 
       # True when the quoted string starting at `index` is immediately
       # followed (ignoring intervening spaces/tabs) by a bare `=` - i.e. it
