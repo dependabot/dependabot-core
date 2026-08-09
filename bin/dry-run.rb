@@ -38,6 +38,7 @@
 # - npm_and_yarn
 # - nuget
 # - pip (includes pipenv)
+# - powershell
 # - pre_commit
 # - pub
 # - rust_toolchain
@@ -82,6 +83,7 @@ $LOAD_PATH << "./maven/lib"
 $LOAD_PATH << "./nix/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
+$LOAD_PATH << "./powershell/lib"
 $LOAD_PATH << "./pre_commit/lib"
 $LOAD_PATH << "./pub/lib"
 $LOAD_PATH << "./python/lib"
@@ -140,6 +142,7 @@ require "dependabot/julia"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
+require "dependabot/powershell"
 require "dependabot/pre_commit"
 require "dependabot/pub"
 require "dependabot/python"
@@ -393,6 +396,7 @@ valid_package_managers = %w(
   npm_and_yarn
   nuget
   pip
+  powershell
   pre_commit
   pub
   python
