@@ -357,6 +357,29 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
           end
         end
       end
+
+      context "with the widen_ranges update strategy" do
+        let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+        let(:latest_resolvable_version) { "1.5.0" }
+
+        context "when the requirement is already satisfied" do
+          let(:setup_py_req_string) { ">=1.3.0,<1.6" }
+
+          it { is_expected.to eq(setup_py_req) }
+        end
+
+        context "when the upper bound needs to be widened" do
+          let(:setup_py_req_string) { ">=1.3.0,<1.5" }
+
+          its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
+        end
+
+        context "when lower bound is kept unchanged after widening" do
+          let(:setup_py_req_string) { ">=1.0.0,<1.5" }
+
+          its([:requirement]) { is_expected.to eq(">=1.0.0,<1.6") }
+        end
+      end
     end
 
     context "when dealing with a setup.cfg dependency" do
@@ -471,6 +494,29 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
 
             its([:requirement]) { is_expected.to eq("==1.5.0") }
           end
+        end
+      end
+
+      context "with the widen_ranges update strategy" do
+        let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+        let(:latest_resolvable_version) { "1.5.0" }
+
+        context "when the requirement is already satisfied" do
+          let(:setup_cfg_req_string) { ">=1.3.0,<1.6" }
+
+          it { is_expected.to eq(setup_cfg_req) }
+        end
+
+        context "when the upper bound needs to be widened" do
+          let(:setup_cfg_req_string) { ">=1.3.0,<1.5" }
+
+          its([:requirement]) { is_expected.to eq(">=1.3.0,<1.6") }
+        end
+
+        context "when lower bound is kept unchanged after widening" do
+          let(:setup_cfg_req_string) { ">=1.0.0,<1.5" }
+
+          its([:requirement]) { is_expected.to eq(">=1.0.0,<1.6") }
         end
       end
     end
