@@ -117,7 +117,7 @@ module Dependabot
         outer_start = search_content.index("@{")
         return unless outer_start
 
-        depth = 0
+        depth = T.let(0, Integer)
         index = outer_start
 
         while index < search_content.length

@@ -16,6 +16,8 @@ module Dependabot
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
 
+        MODULE_VERSION_KEYS = T.let(%w(ModuleVersion ModuleVersion+MaximumVersion).freeze, T::Array[String])
+
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def package_details
           @package_details ||= Dependabot::Powershell::Package::PackageDetailsFetcher
@@ -39,7 +41,7 @@ module Dependabot
 
         sig do
           override.params(releases: T::Array[Dependabot::Package::PackageRelease])
-            .returns(T::Array[Dependabot::Package::PackageRelease])
+                   .returns(T::Array[Dependabot::Package::PackageRelease])
         end
         def apply_post_fetch_lowest_security_fix_versions_filter(releases)
           floor = module_version_floor
@@ -55,7 +57,7 @@ module Dependabot
           dependency.requirements.filter_map do |requirement|
             metadata = requirement.metadata
             next unless metadata
-            next unless %w(ModuleVersion ModuleVersion+MaximumVersion).include?(metadata.fetch(:version_key, nil))
+            next unless MODULE_VERSION_KEYS.include?(metadata.fetch(:version_key, nil))
 
             minimum_version(requirement.requirement)
           end.max
