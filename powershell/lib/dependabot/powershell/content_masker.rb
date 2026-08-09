@@ -132,7 +132,9 @@ module Dependabot
           else
             if depth == 1
               match = key_pattern.match(search_content, index)
-              return [match.begin(0), match.end(0)] if match&.begin(0) == index
+              if match && match.begin(0) == index
+                return [match.begin(0), match.end(0)]
+              end
             end
           end
 

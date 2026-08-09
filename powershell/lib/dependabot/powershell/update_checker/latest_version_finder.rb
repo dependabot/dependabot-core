@@ -41,7 +41,7 @@ module Dependabot
 
         sig do
           override.params(releases: T::Array[Dependabot::Package::PackageRelease])
-                   .returns(T::Array[Dependabot::Package::PackageRelease])
+                  .returns(T::Array[Dependabot::Package::PackageRelease])
         end
         def apply_post_fetch_lowest_security_fix_versions_filter(releases)
           floor = module_version_floor
