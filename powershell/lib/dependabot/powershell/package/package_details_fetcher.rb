@@ -115,9 +115,11 @@ module Dependabot
             end
 
             if url && pages >= MAX_PAGES
-              Dependabot.logger.warn(
-                "Stopped paging PowerShell Gallery feed for #{dependency.name} after #{MAX_PAGES} pages"
+              Dependabot.logger.error(
+                "PowerShell Gallery feed for #{dependency.name} exceeded the #{MAX_PAGES}-page limit; " \
+                "discarding partial results"
               )
+              return []
             end
 
             releases

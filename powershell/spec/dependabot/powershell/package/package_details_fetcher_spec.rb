@@ -178,6 +178,22 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
       end
     end
 
+    context "when the page limit is reached with another page pending" do
+      before do
+        stub_const("#{described_class}::MAX_PAGES", 1)
+        page1 = feed_xml(
+          entries: [entry_xml(version: "5.4.0")],
+          next_link: "#{find_packages_by_id_url}&$skip=1"
+        )
+        stub_request(:get, find_packages_by_id_url)
+          .to_return(status: 200, body: page1)
+      end
+
+      it "discards partial releases" do
+        expect(fetcher.fetch.releases).to eq([])
+      end
+    end
+
     context "when an entry has an invalid version" do
       before do
         body = feed_xml(

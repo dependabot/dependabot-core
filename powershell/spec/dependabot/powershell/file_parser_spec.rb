@@ -260,6 +260,27 @@ RSpec.describe Dependabot::Powershell::FileParser do
       end
     end
 
+    context "when RequiredModules entries are separated by newlines and semicolons" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "Separated.psd1",
+          content: <<~POWERSHELL
+            @{
+              RequiredModules = @(
+                'Az.First'
+                @{ ModuleName = 'Az.Second'; ModuleVersion = '1.0.0' };
+                'Az.Third'
+              )
+            }
+          POWERSHELL
+        )
+      end
+
+      it "parses every top-level entry" do
+        expect(parser.parse.map(&:name)).to contain_exactly("Az.First", "Az.Second", "Az.Third")
+      end
+    end
+
     context "when RequiredModules is a single bare string" do
       let(:manifest_file) do
         Dependabot::DependencyFile.new(

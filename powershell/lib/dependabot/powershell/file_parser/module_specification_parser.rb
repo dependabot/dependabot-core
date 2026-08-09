@@ -32,22 +32,27 @@ module Dependabot
           }.freeze,
           T::Hash[String, String]
         )
+        ENTRY_SEPARATORS = T.let([",", ";", "\n", "\r"].freeze, T::Array[String])
 
-        # Splits a comma-separated list of entries at the top level, ignoring
-        # commas that appear inside quoted strings or nested `@{...}` /
-        # `@(...)` literals.
+        # Splits top-level PowerShell array entries on commas, semicolons, and
+        # newlines, ignoring separators inside quoted strings or nested
+        # `@{...}` / `@(...)` literals.
         sig { params(text: String).returns(T::Array[String]) }
         def self.split_entries(text)
-          split_on(text, ",")
+          split_on_any(text, ENTRY_SEPARATORS)
         end
 
         # Splits `text` on the top-level occurrences of `separator`, ignoring
         # occurrences that appear inside quoted strings or nested `@{...}` /
-        # `@(...)` literals. Used both to split a list of module entries
-        # (separator `,`) and the `Key = Value` pairs within a hashtable
-        # literal's body (separator `;`).
+        # `@(...)` literals. Used for `Key = Value` pairs within a hashtable
+        # literal's body.
         sig { params(text: String, separator: String).returns(T::Array[String]) }
         def self.split_on(text, separator)
+          split_on_any(text, [separator])
+        end
+
+        sig { params(text: String, separators: T::Array[String]).returns(T::Array[String]) }
+        def self.split_on_any(text, separators)
           entries = []
           buffer = +""
           depth = 0
@@ -70,15 +75,13 @@ module Dependabot
             when "}", ")"
               depth -= 1
               buffer << char
-            when separator
-              if depth.zero?
+            else
+              if depth.zero? && separators.include?(char)
                 entries << buffer
                 buffer = +""
               else
                 buffer << char
               end
-            else
-              buffer << char
             end
           end
           entries << buffer

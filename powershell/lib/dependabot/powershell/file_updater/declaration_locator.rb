@@ -167,9 +167,9 @@ module Dependabot
           end
         end
 
-        # Splits `text` on top-level commas (depth/quote aware, matching
-        # ModuleSpecificationParser.split_on) and returns the trimmed
-        # [start, end) span of each resulting entry.
+        # Splits `text` on top-level PowerShell entry separators (depth/quote
+        # aware, matching ModuleSpecificationParser.split_entries) and
+        # returns the trimmed [start, end) span of each resulting entry.
         sig { params(text: String).returns(T::Array[[Integer, Integer]]) }
         def entry_spans(text)
           spans = []
@@ -190,11 +190,12 @@ module Dependabot
               depth += 1
             when "}", ")"
               depth -= 1
-            when ","
-              if depth.zero?
-                spans << [segment_start, index]
-                segment_start = index + 1
-              end
+            else
+              next unless depth.zero? &&
+                          FileParser::ModuleSpecificationParser::ENTRY_SEPARATORS.include?(char)
+
+              spans << [segment_start, index]
+              segment_start = index + 1
             end
           end
           spans << [segment_start, text.length]
