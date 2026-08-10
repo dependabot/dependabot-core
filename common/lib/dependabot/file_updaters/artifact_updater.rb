@@ -78,7 +78,7 @@ module Dependabot
 
       private
 
-      TEXT_ENCODINGS = T.let(%w(us-ascii utf-8).freeze, T::Array[String])
+      TEXT_ENCODINGS = %w(us-ascii utf-8).freeze
 
       sig { returns(T.nilable(String)) }
       attr_reader :repo_contents_path

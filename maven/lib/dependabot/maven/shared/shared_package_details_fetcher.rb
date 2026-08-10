@@ -17,11 +17,11 @@ module Dependabot
 
         abstract!
 
-        MAVEN_METADATA_XML = T.let("maven-metadata.xml", String)
-        REPOSITORY_TYPE = T.let("maven_repository", String)
-        URL_KEY = T.let("url", String)
-        AUTH_HEADERS_KEY = T.let("auth_headers", String)
-        DEFAULT_CENTRAL_REPO_URL = T.let("https://repo.maven.apache.org/maven2", String)
+        MAVEN_METADATA_XML = "maven-metadata.xml"
+        REPOSITORY_TYPE = "maven_repository"
+        URL_KEY = "url"
+        AUTH_HEADERS_KEY = "auth_headers"
+        DEFAULT_CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
         RepositoryDetails = T.type_alias { T::Hash[String, T.any(String, T::Hash[String, String])] }
         VersionDetails = T.type_alias do
           {
@@ -83,8 +83,9 @@ module Dependabot
         def dependency_files_url(repository_url, version)
           _, artifact_id = dependency_parts
           base_url = dependency_base_url(repository_url)
-          type = dependency.requirements.first&.dig(:metadata, :packaging_type) || "jar"
-          classifier = dependency.requirements.first&.dig(:metadata, :classifier)
+          requirement = dependency.requirements.first
+          type = requirement&.metadata_string("packaging_type") || "jar"
+          classifier = requirement&.metadata_string("classifier")
           actual_classifier = classifier.nil? ? "" : "-#{classifier}"
 
           "#{base_url}/#{version}/#{artifact_id}-#{version}#{actual_classifier}.#{type}"
@@ -350,7 +351,7 @@ module Dependabot
               # the consumer POM omits <type>, causing the parser to default to "jar".
               # Only fall back when there's no classifier (classifier artifacts are specific).
               next false unless response.status == 404
-              next false if dependency.requirements.first&.dig(:metadata, :classifier)
+              next false if dependency.requirements.first&.metadata_string("classifier")
 
               pom_response = Dependabot::RegistryClient.head(
                 url: dependency_pom_url(url, version),

@@ -51,8 +51,8 @@ module Dependabot
             requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
             T::Array[Dependabot::DependencyRequirement]
           )
-          @updated_source = T.let(updated_source, T.nilable(T::Hash[T.any(String, Symbol), T.anything]))
-          @update_strategy = T.let(update_strategy, Dependabot::RequirementsUpdateStrategy)
+          @updated_source = updated_source
+          @update_strategy = update_strategy
 
           check_update_strategy
 

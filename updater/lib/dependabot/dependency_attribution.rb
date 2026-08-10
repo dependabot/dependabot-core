@@ -27,18 +27,15 @@ module Dependabot
       end
     end
 
-    SELECTION_REASONS = T.let(
-      %i(
-        direct
-        already_updated
-        dependency_drift
-        not_in_group
-        filtered_by_config
-        belongs_to_more_specific_group
-        unknown
-      ).freeze,
-      T::Array[Symbol]
-    )
+    SELECTION_REASONS = %i(
+      direct
+      already_updated
+      dependency_drift
+      not_in_group
+      filtered_by_config
+      belongs_to_more_specific_group
+      unknown
+    ).freeze
 
     class Attribution < T::ImmutableStruct
       extend T::Sig

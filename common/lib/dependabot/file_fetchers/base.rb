@@ -333,7 +333,7 @@ module Dependabot
 
       sig { params(path: String).returns(T::Boolean) }
       def in_submodule?(path)
-        subpaths(path.delete_prefix("/")).any? { |subpath| @submodules.include?(subpath) }
+        subpaths(path.delete_prefix("/")).intersect?(@submodules)
       end
 
       # Given a "foo/bar/baz" path, returns ["foo", "foo/bar", "foo/bar/baz"]

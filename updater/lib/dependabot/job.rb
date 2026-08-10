@@ -38,12 +38,12 @@ module Dependabot
   class Job # rubocop:disable Metrics/ClassLength
     extend T::Sig
 
-    TOP_LEVEL_DEPENDENCY_TYPES = T.let(%w(direct production development).freeze, T::Array[String])
+    TOP_LEVEL_DEPENDENCY_TYPES = %w(direct production development).freeze
     # Default cooldown period (in days) applied when `default-days` is not configured.
     DEFAULT_COOLDOWN_DAYS = 3
     # Ecosystems whose update phase can run without a repo clone. Only list ones
     # verified to resolve updates from the persisted dependency files alone.
-    CLONELESS_UPDATE_ECOSYSTEMS = T.let(%w(bundler).freeze, T::Array[String])
+    CLONELESS_UPDATE_ECOSYSTEMS = %w(bundler).freeze
     PERMITTED_KEYS = T.let(
       %i(
         allowed_updates
@@ -541,7 +541,7 @@ module Dependabot
           next if req.empty?
 
           reason = bv.reason&.strip
-          [req, reason&.empty? ? nil : reason]
+          [req, reason && reason.empty? ? nil : reason]
         end,
         T::Array[[String, T.nilable(String)]]
       )

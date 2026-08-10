@@ -25,6 +25,27 @@ module Dependabot
       BUNDLER_GEM_NAME = "bundler"
       LANGUAGE = "ruby"
 
+      # Filename patterns for the files a Bundler update actually needs. These are
+      # the only files that should cross the fetch/update trust boundary: manifests
+      # (Gemfile/gems.rb and any evaluated child gemfiles), lockfiles, gemspecs,
+      # the Ruby/tool version files Bundler honours, and the Ruby support files
+      # (e.g. version files) that a Gemfile or gemspec loads at evaluation time.
+      # Anything else the fetcher happens to collect is dropped at the handoff.
+      PERSISTED_FILE_PATTERNS = T.let(
+        [
+          %r{(?:\A|/)Gemfile\z},
+          %r{(?:\A|/)gems\.rb\z},
+          %r{(?:\A|/)Gemfile\.lock\z},
+          %r{(?:\A|/)gems\.locked\z},
+          /\.gemspec\z/,
+          /\.specification\z/,
+          %r{(?:\A|/)\.ruby-version\z},
+          %r{(?:\A|/)\.tool-versions\z},
+          /\.rb\z/
+        ].freeze,
+        T::Array[Regexp]
+      )
+
       sig { params(lockfile: T.nilable(Dependabot::DependencyFile)).returns(String) }
       def self.bundler_version(lockfile)
         return DEFAULT unless lockfile

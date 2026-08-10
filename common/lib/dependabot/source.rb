@@ -63,10 +63,7 @@ module Dependabot
       (?:#{CODECOMMIT_SOURCE})
     /x
 
-    IGNORED_PROVIDER_HOSTS = T.let(
-      %w(gitbox.apache.org svn.apache.org fuchsia.googlesource.com).freeze,
-      T::Array[String]
-    )
+    IGNORED_PROVIDER_HOSTS = %w(gitbox.apache.org svn.apache.org fuchsia.googlesource.com).freeze
 
     sig { returns(String) }
     attr_accessor :provider
