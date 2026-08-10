@@ -7,7 +7,6 @@ require "dependabot/file_fetchers/base"
 require "dependabot/file_filtering"
 require "dependabot/bundler/file_updater/lockfile_updater"
 require "dependabot/bundler/cached_lockfile_parser"
-require "dependabot/bundler/helpers"
 require "dependabot/errors"
 
 module Dependabot
@@ -61,15 +60,6 @@ module Dependabot
         end
 
         filtered_files
-      end
-
-      # Narrow the fetched set to only the files a Bundler update needs before they
-      # cross the fetch/update trust boundary. See Helpers::PERSISTED_FILE_PATTERNS.
-      sig { override.returns(T::Array[DependencyFile]) }
-      def files_to_persist
-        files.select do |file|
-          Helpers::PERSISTED_FILE_PATTERNS.any? { |pattern| file.name.match?(pattern) }
-        end
       end
 
       private
