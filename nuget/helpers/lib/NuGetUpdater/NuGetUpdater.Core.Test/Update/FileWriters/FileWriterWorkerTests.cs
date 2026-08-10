@@ -60,6 +60,48 @@ public class FileWriterWorkerTests : TestBase
     }
 
     [Fact]
+    public async Task EndToEnd_ProjectReference_IncompatiblePackageWithCompileAndRuntimeAssetsExcluded()
+    {
+        await TestAsync(
+            dependencyName: "Build.Only.Package",
+            oldDependencyVersion: "1.0.0",
+            newDependencyVersion: "2.0.0",
+            projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Build.Only.Package" Version="1.0.0" ExcludeAssets="compile;runtime" />
+                  </ItemGroup>
+                </Project>
+                """,
+            additionalFiles: [],
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Build.Only.Package", "1.0.0", "net45"),
+                MockNuGetPackage.CreateSimplePackage("Build.Only.Package", "2.0.0", "net45"),
+            ],
+            discoveryWorker: null,
+            dependencySolver: null,
+            fileWriter: null,
+            expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Build.Only.Package" Version="2.0.0" ExcludeAssets="compile;runtime" />
+                  </ItemGroup>
+                </Project>
+                """,
+            expectedAdditionalFiles: [],
+            expectedOperations: [
+                new DirectUpdate() { DependencyName = "Build.Only.Package", NewVersion = NuGetVersion.Parse("2.0.0"), UpdatedFiles = ["/project.csproj"] }
+            ]
+        );
+    }
+
+    [Fact]
     public async Task EndToEnd_ProjectReference_ThroughProjectReferences()
     {
         // project is directly changed
@@ -267,6 +309,125 @@ public class FileWriterWorkerTests : TestBase
                   <ItemGroup>
                     <PackageReference Include="Some.Dependency" Version="1.0.0" />
                     <PackageReference Include="Transitive.Dependency" Version="3.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            expectedAdditionalFiles: [],
+            expectedOperations: [
+                new PinnedUpdate() { DependencyName = "Transitive.Dependency", NewVersion = NuGetVersion.Parse("3.0.0"), UpdatedFiles = ["/project.csproj"] }
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task EndToEnd_ProjectReference_PinnedTransitiveDependency_PreservesInheritedAssetFlags()
+    {
+        await TestAsync(
+            dependencyName: "Transitive.Dependency",
+            oldDependencyVersion: "2.0.0",
+            newDependencyVersion: "3.0.0",
+            projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Build.Only.Package" Version="1.0.0" IncludeAssets="build;analyzers" />
+                  </ItemGroup>
+                </Project>
+                """,
+            additionalFiles: [],
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Build.Only.Package", "1.0.0", "net45", [(null, [("Transitive.Dependency", "2.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "2.0.0", "net45"),
+                MockNuGetPackage.CreateSimplePackage("Transitive.Dependency", "3.0.0", "net45"),
+            ],
+            discoveryWorker: null,
+            dependencySolver: null,
+            fileWriter: null,
+            expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net8.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Build.Only.Package" Version="1.0.0" IncludeAssets="build;analyzers" />
+                    <PackageReference Include="Transitive.Dependency" IncludeAssets="build;analyzers" Version="3.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            expectedAdditionalFiles: [],
+            expectedOperations: [
+                new PinnedUpdate() { DependencyName = "Transitive.Dependency", NewVersion = NuGetVersion.Parse("3.0.0"), UpdatedFiles = ["/project.csproj"] }
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task EndToEnd_ProjectReference_PinnedTransitiveDependency_PreservesPerFrameworkAssetFlags()
+    {
+        await TestAsync(
+            dependencyName: "Transitive.Dependency",
+            oldDependencyVersion: "2.0.0",
+            newDependencyVersion: "3.0.0",
+            projectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+                  </PropertyGroup>
+                  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+                    <PackageReference Include="Parent.Package" Version="1.0.0" IncludeAssets="build;analyzers" />
+                  </ItemGroup>
+                  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+                    <PackageReference Include="Parent.Package" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """,
+            additionalFiles: [],
+            packages: [
+                new MockNuGetPackage(
+                    "Parent.Package",
+                    "1.0.0",
+                    DependencyGroups: [(null, [("Transitive.Dependency", "2.0.0")])],
+                    Files:
+                    [
+                        ("lib/net8.0/Parent.Package.dll", []),
+                        ("lib/net9.0/Parent.Package.dll", []),
+                    ]),
+                new MockNuGetPackage(
+                    "Transitive.Dependency",
+                    "2.0.0",
+                    Files:
+                    [
+                        ("lib/net8.0/Transitive.Dependency.dll", []),
+                        ("lib/net9.0/Transitive.Dependency.dll", []),
+                    ]),
+                new MockNuGetPackage(
+                    "Transitive.Dependency",
+                    "3.0.0",
+                    Files:
+                    [
+                        ("lib/net8.0/Transitive.Dependency.dll", []),
+                        ("lib/net9.0/Transitive.Dependency.dll", []),
+                    ]),
+            ],
+            discoveryWorker: null,
+            dependencySolver: null,
+            fileWriter: null,
+            expectedProjectContents: """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+                  </PropertyGroup>
+                  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+                    <PackageReference Include="Parent.Package" Version="1.0.0" IncludeAssets="build;analyzers" />
+                  </ItemGroup>
+                  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+                    <PackageReference Include="Parent.Package" Version="1.0.0" />
+                  </ItemGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Transitive.Dependency" IncludeAssets="build;analyzers" Condition="'$(TargetFramework)' == 'net8.0'" Version="3.0.0" />
+                    <PackageReference Include="Transitive.Dependency" Condition="'$(TargetFramework)' == 'net9.0'" Version="3.0.0" />
                   </ItemGroup>
                 </Project>
                 """,
