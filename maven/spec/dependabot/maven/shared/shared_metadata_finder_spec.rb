@@ -131,6 +131,14 @@ RSpec.describe Dependabot::Maven::Shared::SharedMetadataFinder do
       let(:maven_response) { fixture("poms", "mockito-core-2.11.0.xml") }
 
       it { is_expected.to eq("https://github.com/mockito/mockito") }
+
+      context "when the source has string keys" do
+        let(:dependency_source) do
+          { "type" => "maven_repo", "url" => "https://custom.registry.org/maven2" }
+        end
+
+        it { is_expected.to eq("https://github.com/mockito/mockito") }
+      end
     end
 
     context "when the Maven link resolves to a redirect" do

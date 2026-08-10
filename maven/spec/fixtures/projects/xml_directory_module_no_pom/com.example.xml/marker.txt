@@ -1,0 +1,2 @@
+This directory is named like an XML file but contains no pom.xml.
+It exists so git tracks the directory for the cloned-mode regression test.

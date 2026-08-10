@@ -7,7 +7,7 @@ require "dependabot/maven/update_checker/requirements_updater"
 RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
-      requirements: requirements,
+      requirements: requirements.map { |requirement| Dependabot::DependencyRequirement.create(requirement) },
       latest_version: latest_version,
       source_url: "new_url",
       properties_to_update: []

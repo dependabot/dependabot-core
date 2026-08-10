@@ -441,6 +441,52 @@ RSpec.describe Dependabot::Maven::FileFetcher do
     end
   end
 
+  context "with a module that is a directory whose name ends in .xml" do
+    before do
+      stub_request(:get, File.join(url, "pom.xml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_java_multimodule_xml_directory.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "submodule-one/pom.xml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_java_basic_pom.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      # A directory whose name ends in `.xml` (or even `pom.xml`) must not be
+      # mistaken for a pom file. The fetcher tries the inner pom.xml first, so a
+      # directory-named module resolves straight to its `pom.xml`.
+      ["com.example.xml", "com.example.pom.xml"].each do |dir|
+        stub_request(:get, File.join(url, "#{dir}/pom.xml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_java_basic_pom.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      stub_request(:get, File.join(url, ".mvn/extensions.xml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 404
+        )
+    end
+
+    it "fetches the pom from inside each xml-suffixed directory" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(
+          %w(pom.xml submodule-one/pom.xml com.example.xml/pom.xml com.example.pom.xml/pom.xml)
+        )
+    end
+  end
+
   context "with a parent pom with custom name" do
     before do
       stub_request(:get, File.join(url, "pom.xml?ref=sha"))
@@ -758,6 +804,39 @@ RSpec.describe Dependabot::Maven::FileFetcher do
           expect(files.find { |file| file.name == ".mvn/wrapper/maven-wrapper.jar" }&.content_encoding)
             .to eq(Dependabot::DependencyFile::ContentEncoding::BASE64)
         end
+      end
+    end
+  end
+
+  describe "#files (cloned repo)" do
+    subject(:fetched_files) { file_fetcher_instance.files }
+
+    let(:file_fetcher_instance) do
+      described_class.new(source: source, credentials: credentials, repo_contents_path: repo_contents_path)
+    end
+    let(:repo_contents_path) { build_tmp_repo("xml_directory_module") }
+
+    before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+
+    context "with a module that is a directory whose name ends in .xml" do
+      # Reading the directory would raise Errno::EISDIR if it were mistaken for
+      # a pom file - this exercises the cloned-mode recovery path.
+      it "reads the pom from inside the .xml-suffixed directory" do
+        expect(fetched_files.map(&:name))
+          .to match_array(%w(pom.xml com.example.xml/pom.xml))
+      end
+    end
+
+    context "with an .xml-named directory that has no pom.xml inside it" do
+      let(:repo_contents_path) { build_tmp_repo("xml_directory_module_no_pom") }
+
+      # Reading the directory raises Errno::EISDIR, which must surface as a
+      # clean DependencyFileNotFound rather than crash the job.
+      it "raises a Dependabot::DependencyFileNotFound error" do
+        expect { fetched_files }
+          .to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect(error.file_path).to eq("/com.example.xml/pom.xml")
+          end
       end
     end
   end

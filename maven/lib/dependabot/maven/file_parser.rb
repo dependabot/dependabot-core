@@ -541,9 +541,9 @@ module Dependabot
         merged = []
         used_indices = Set.new
         requirements.each_with_index do |dep_scan_req, i|
+          pom_file = dep_scan_req.metadata_string("pom_file")
           next if used_indices.include?(i)
-
-          if dep_scan_req.dig(:metadata, :pom_file).nil?
+          if pom_file.nil?
             merged << dep_scan_req
             next
           end
@@ -552,7 +552,7 @@ module Dependabot
           match_index = requirements.find_index.with_index do |parsing_req, j|
             j > i &&
               !used_indices.include?(j) &&
-              dep_scan_req.dig(:metadata, :pom_file) == parsing_req.fetch(:file)
+              pom_file == parsing_req.file
           end
 
           if match_index
@@ -562,11 +562,11 @@ module Dependabot
             # We prefer file and requirement properties from parsed requirements,
             # because they include correct file and not evaluated property value.
             merged_req = {
-              requirement: parsing_req[:requirement],
-              file: parsing_req[:file],
-              groups: [*dep_scan_req[:groups], *parsing_req[:groups]].uniq.compact,
-              source: dep_scan_req[:source],
-              metadata: merge_metadata(dep_scan_req[:metadata], parsing_req[:metadata])
+              requirement: parsing_req.requirement,
+              file: parsing_req.file,
+              groups: [*dep_scan_req.groups, *parsing_req.groups].uniq.compact,
+              source: dep_scan_req.source,
+              metadata: merge_metadata(T.must(dep_scan_req.metadata), T.must(parsing_req.metadata))
             }
 
             merged << Dependabot::DependencyRequirement.create(merged_req)
@@ -585,9 +585,9 @@ module Dependabot
       # Merge metadata from two requirements, combining all keys
       sig do
         params(
-          metadata1: T::Hash[Symbol, Object],
-          metadata2: T::Hash[Symbol, Object]
-        ).returns(T::Hash[Symbol, Object])
+          metadata1: Dependabot::DependencyRequirement::ObjectHash,
+          metadata2: Dependabot::DependencyRequirement::ObjectHash
+        ).returns(Dependabot::DependencyRequirement::ObjectHash)
       end
       def merge_metadata(metadata1, metadata2)
         metadata1.merge(metadata2) do |_key, old_value, new_value|

@@ -8,7 +8,7 @@ require "dependabot/gradle/version"
 RSpec.describe Dependabot::Gradle::FileUpdater::Wrapper::CommandBuilder do
   subject(:args) do
     described_class.new(
-      requirements: requirements,
+      requirements: requirements.map { |requirement| Dependabot::DependencyRequirement.create(requirement) },
       original_properties: original_properties,
       gradle_version: gradle_version
     ).build

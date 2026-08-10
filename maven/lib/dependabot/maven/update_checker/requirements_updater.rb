@@ -63,18 +63,19 @@ module Dependabot
             # They must not go through POM XML update logic; instead we bump the
             # requirement and keep the version metadata / artifact URL the
             # FileUpdater reads in sync with it.
-            if req.dig(:source, :type) == Distributions::DISTRIBUTION_DEPENDENCY_TYPE
+            if req.source_string("type") == Distributions::DISTRIBUTION_DEPENDENCY_TYPE
               next bump_distribution_requirement(req)
             end
 
-            next req if req.fetch(:requirement).nil?
-            next req if req.fetch(:requirement).include?(",")
+            requirement = req.requirement_string
+            next req if requirement.nil?
+            next req if requirement.include?(",")
 
-            property_name = req.dig(:metadata, :property_name)
+            property_name = req.metadata_string("property_name")
             next req if property_name && !properties_to_update.include?(property_name)
 
-            new_req = update_requirement(req[:requirement])
-            next req if new_req == req[:requirement]
+            new_req = update_requirement(requirement)
+            next req if new_req == requirement
 
             Dependabot::DependencyRequirement.create(req.merge(requirement: new_req, source: updated_source))
           end

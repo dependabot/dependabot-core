@@ -140,11 +140,11 @@ module Dependabot
 
         # Loop through each changed requirement and update the files
         reqs.each do |new_req, old_req|
-          raise "Bad req match" unless new_req[:file] == T.must(old_req)[:file]
-          next if new_req[:requirement] == T.must(old_req)[:requirement]
+          raise "Bad req match" unless new_req.file == T.must(old_req).file
+          next if new_req.requirement == T.must(old_req).requirement
 
-          file_name = T.let(new_req.fetch(:file) || new_req.dig(:metadata, :pom_file), String)
-          if new_req.dig(:metadata, :property_name)
+          file_name = T.must(new_req.file || new_req.metadata_string("pom_file"))
+          if new_req.metadata_string("property_name")
             files = update_pomfiles_for_property_change(files, new_req)
             pom = files.find { |f| f.name == file_name }
             files[T.must(files.index(pom))] =
@@ -168,13 +168,13 @@ module Dependabot
           .returns(T::Array[Dependabot::DependencyFile])
       end
       def update_pomfiles_for_property_change(pomfiles, req)
-        property_name = req.fetch(:metadata).fetch(:property_name)
+        property_name = T.must(req.metadata_string("property_name"))
 
         PropertyValueUpdater.new(dependency_files: pomfiles)
                             .update_pomfiles_for_property_change(
                               property_name: property_name,
-                              callsite_pom: T.must(pomfiles.find { |f| f.name == req.fetch(:file) }),
-                              updated_value: req.fetch(:requirement)
+                              callsite_pom: T.must(pomfiles.find { |f| f.name == req.file }),
+                              updated_value: T.must(req.requirement_string)
                             )
       end
 
@@ -327,11 +327,11 @@ module Dependabot
           .returns(String)
       end
       def updated_file_declaration(old_declaration, previous_req, requirement)
-        original_req_string = previous_req.fetch(:requirement)
+        original_req_string = T.must(previous_req.requirement_string)
 
         old_declaration.gsub(
           /(?<=\s|>)#{Regexp.quote(original_req_string)}(?=\s|<)/,
-          requirement.fetch(:requirement)
+          T.must(requirement.requirement_string)
         )
       end
 
@@ -406,7 +406,7 @@ module Dependabot
         artifact_id.text = dependency.name.split(":").last
         dependency_node.add_text("\n#{current_indentation_level}")
         version = REXML::Element.new("version", dependency_node)
-        version.text = requirement.fetch(:requirement)
+        version.text = T.must(requirement.requirement_string)
         dependency_node.add_text("\n#{parent_indentation_level}")
       end
 
