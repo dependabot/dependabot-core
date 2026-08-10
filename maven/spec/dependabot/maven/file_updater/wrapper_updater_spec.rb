@@ -544,7 +544,7 @@ RSpec.describe Dependabot::Maven::FileUpdater::WrapperUpdater do
       it "does not add any checksum properties" do
         props = updater.update_files(buildfile)
                        .find { |f| f.name == ".mvn/wrapper/maven-wrapper.properties" }
-        expect(props&.content).not_to match(/Sha256Sum/)
+        expect(props&.content).not_to include("Sha256Sum")
       end
 
       it "never downloads an artifact to compute a checksum" do
