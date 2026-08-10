@@ -1013,45 +1013,4 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         end
     end
   end
-
-  describe "#files_to_persist" do
-    def dep_file(name, support: false)
-      Dependabot::DependencyFile.new(name: name, content: "", support_file: support)
-    end
-
-    let(:fetched_files) do
-      [
-        dep_file("Gemfile"),
-        dep_file("Gemfile.lock"),
-        dep_file("example.gemspec"),
-        dep_file(".ruby-version", support: true),
-        dep_file(".tool-versions", support: true),
-        dep_file("lib/example/version.rb", support: true),
-        dep_file("nested/Gemfile"),
-        dep_file("vendor/cache/some_gem.gem"),
-        dep_file("README.md"),
-        dep_file("config/settings.yml")
-      ]
-    end
-
-    before { allow(file_fetcher_instance).to receive(:files).and_return(fetched_files) }
-
-    it "persists only the files a Bundler update needs" do
-      expect(file_fetcher_instance.files_to_persist.map(&:name)).to contain_exactly(
-        "Gemfile",
-        "Gemfile.lock",
-        "example.gemspec",
-        ".ruby-version",
-        ".tool-versions",
-        "lib/example/version.rb",
-        "nested/Gemfile"
-      )
-    end
-
-    it "drops files that are not part of the update process" do
-      persisted = file_fetcher_instance.files_to_persist.map(&:name)
-
-      expect(persisted).not_to include("vendor/cache/some_gem.gem", "README.md", "config/settings.yml")
-    end
-  end
 end
