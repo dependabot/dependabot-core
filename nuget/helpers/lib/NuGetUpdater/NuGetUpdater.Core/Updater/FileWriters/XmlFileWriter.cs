@@ -162,13 +162,28 @@ public class XmlFileWriter : IFileWriter
                 Action addItemGroup = () => { }; // adding an ItemGroup to the project isn't always necessary, but it's much easier to prepare for it here
                 var projectDocument = filesAndContents[projectRelativePath];
                 var indentation = GetDocumentIndentationCharacters(projectDocument);
+                var assetFlagTargetFrameworks = requiredPackageVersion.TargetFrameworks is { Length: > 0 }
+                    ? requiredPackageVersion.TargetFrameworks.Value
+                    : requiredPackageVersion.AssetFlags?.Keys.ToImmutableArray() ?? [];
+                var assetFlagsByFramework = assetFlagTargetFrameworks
+                    .OrderBy(targetFramework => targetFramework, StringComparer.OrdinalIgnoreCase)
+                    .Select(targetFramework => (TargetFramework: targetFramework, IncludeAssets: requiredPackageVersion.GetIncludeAssetsValue(targetFramework)))
+                    .ToArray();
+                var distinctIncludeAssets = assetFlagsByFramework
+                    .Select(item => item.IncludeAssets)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+                var requiresConditionalAssetFlags = distinctIncludeAssets.Length > 1;
                 var itemGroups = projectDocument.RootSyntax.Elements
                     .Where(e => e.Name.Equals(ItemGroupElementName, StringComparison.OrdinalIgnoreCase))
                     .ToArray();
                 var itemGroupsWithPackageReferences = itemGroups
-                    .Where(e => e.Elements.Any(c => c.Name.Equals(PackageReferenceElementName, StringComparison.OrdinalIgnoreCase)))
+                    .Where(e =>
+                        e.Elements.Any(c => c.Name.Equals(PackageReferenceElementName, StringComparison.OrdinalIgnoreCase)) &&
+                        string.IsNullOrWhiteSpace(e.GetAttributeValue("Condition")))
                     .ToArray();
-                var itemGroupForInsertion = itemGroupsWithPackageReferences.LastOrDefault() ?? itemGroups.LastOrDefault();
+                var itemGroupForInsertion = itemGroupsWithPackageReferences.LastOrDefault()
+                    ?? itemGroups.LastOrDefault(e => string.IsNullOrWhiteSpace(e.GetAttributeValue("Condition")));
                 if (itemGroupForInsertion is null)
                 {
                     _logger.Info($"No `<{ItemGroupElementName}>` element found in project; adding one.");
@@ -194,6 +209,17 @@ public class XmlFileWriter : IFileWriter
                 // ...prepare a new `<PackageReference>` element...
                 var newElement = XmlExtensions.CreateSingleLineXmlElementSyntax(PackageReferenceElementName, leadingTrivia: new SyntaxList<SyntaxNode>())
                     .WithAttribute(IncludeAttributeName, requiredPackageVersion.Name);
+                var remainingConditionalAssetFlags = Array.Empty<(string TargetFramework, string? IncludeAssets)>();
+                if (!requiresConditionalAssetFlags && distinctIncludeAssets.Length == 1 && distinctIncludeAssets[0] is not null)
+                {
+                    newElement = newElement.WithAttribute("IncludeAssets", distinctIncludeAssets[0]!);
+                }
+                else if (requiresConditionalAssetFlags)
+                {
+                    var firstAssetFlags = assetFlagsByFramework[0];
+                    newElement = AddAssetFlagsAndCondition(newElement, firstAssetFlags);
+                    remainingConditionalAssetFlags = assetFlagsByFramework[1..];
+                }
 
                 // ...add the `<PackageReference>` element if and where appropriate...
                 var addPackageReferenceElementForPinnedPackages =
@@ -311,7 +337,7 @@ public class XmlFileWriter : IFileWriter
                     if (isVersionOverrideNeeded)
                     {
                         _logger.Info($"Dependency {requiredPackageVersion.Name} set to {requiredVersion} using `{VersionOverrideMetadataName}` attribute on new element in file {projectRelativePath}.");
-                        ReplaceNode(
+                        newElement = (IXmlElementSyntax)ReplaceNode(
                             projectRelativePath,
                             newElement.AsNode,
                             newElement.WithAttribute(VersionOverrideMetadataName, requiredVersion.ToString()).AsNode
@@ -603,6 +629,54 @@ public class XmlFileWriter : IFileWriter
                             newElement = (IXmlElementSyntax)ReplaceNode(projectRelativePath, newElement.AsNode, newElementWithVersion.AsNode);
                         }
                     }
+                }
+
+                if (addPackageReferenceElementForPinnedPackages &&
+                    remainingConditionalAssetFlags.Length > 0 &&
+                    updatesPerformed[requiredPackageVersion.Name])
+                {
+                    var version = newElement.GetAttributeValue(VersionMetadataName);
+                    var versionOverride = newElement.GetAttributeValue(VersionOverrideMetadataName);
+                    var additionalElements = remainingConditionalAssetFlags
+                        .Select(assetFlags =>
+                        {
+                            var element = (IXmlElementSyntax)XmlExtensions.CreateSingleLineXmlElementSyntax(
+                                PackageReferenceElementName,
+                                new SyntaxList<SyntaxNode>(),
+                                new SyntaxList<SyntaxNode>());
+                            element = (IXmlElementSyntax)element.AsNode.WithLeadingTrivia(newElement.AsNode.GetLeadingTrivia());
+                            element = element
+                                .WithAttribute(IncludeAttributeName, requiredPackageVersion.Name);
+                            element = AddAssetFlagsAndCondition(element, assetFlags);
+                            if (version is not null)
+                            {
+                                element = element.WithAttribute(VersionMetadataName, version);
+                            }
+
+                            if (versionOverride is not null)
+                            {
+                                element = element.WithAttribute(VersionOverrideMetadataName, versionOverride);
+                            }
+
+                            return element;
+                        })
+                        .ToArray();
+                    var replacementParent = newElement.Parent.AsNode.InsertNodesAfter(
+                        newElement.AsNode,
+                        additionalElements.Select(element => element.AsNode));
+                    ReplaceNode(projectRelativePath, newElement.Parent.AsNode, replacementParent);
+                }
+
+                static IXmlElementSyntax AddAssetFlagsAndCondition(
+                    IXmlElementSyntax element,
+                    (string TargetFramework, string? IncludeAssets) assetFlags)
+                {
+                    if (assetFlags.IncludeAssets is not null)
+                    {
+                        element = element.WithAttribute("IncludeAssets", assetFlags.IncludeAssets);
+                    }
+
+                    return element.WithAttribute("Condition", $"'$(TargetFramework)' == '{assetFlags.TargetFramework}'");
                 }
             }
             else

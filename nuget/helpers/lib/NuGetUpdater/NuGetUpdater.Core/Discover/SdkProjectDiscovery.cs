@@ -5,6 +5,8 @@ using System.Xml.Linq;
 using Microsoft.Build.Logging.StructuredLogger;
 
 using NuGet.Frameworks;
+using NuGet.LibraryModel;
+using NuGet.ProjectModel;
 
 using NuGetUpdater.Core.Utilities;
 
@@ -97,6 +99,9 @@ internal static class SdkProjectDiscovery
 
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> explicitPackageVersionsPerProject = new(PathComparer.Instance);
         //    projectPath,               tfm,       packageName, packageVersion
+
+        Dictionary<string, Dictionary<string, Dictionary<string, LibraryIncludeFlags>>> packageAssetFlagsPerProject = new(PathComparer.Instance);
+        //    projectPath,               tfm,       packageName, effective asset flags
 
         Dictionary<string, int> packageReferenceElementCounts = new(PathComparer.Instance);
         //    projectPath, count of `<PackageReference>` elements
@@ -276,7 +281,13 @@ internal static class SdkProjectDiscovery
                             }
                             break;
                         case NamedNode namedNode when namedNode is AddItem or RemoveItem:
-                            ProcessResolvedPackageReference(namedNode, packagesPerProject, implicitlyIgnoredPackages, explicitPackageVersionsPerProject, packageReferenceElementCounts);
+                            ProcessResolvedPackageReference(
+                                namedNode,
+                                packagesPerProject,
+                                implicitlyIgnoredPackages,
+                                explicitPackageVersionsPerProject,
+                                packageAssetFlagsPerProject,
+                                packageReferenceElementCounts);
 
                             if (namedNode is AddItem addItem)
                             {
@@ -466,6 +477,7 @@ internal static class SdkProjectDiscovery
             workspacePath,
             packagesPerProject,
             explicitPackageVersionsPerProject,
+            packageAssetFlagsPerProject,
             packagesReplacedBySdkPerProject,
             implicitlyIgnoredPackages,
             resolvedProperties,
@@ -483,6 +495,7 @@ internal static class SdkProjectDiscovery
         string workspacePath,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesPerProject,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packageVersionsPerProject,
+        Dictionary<string, Dictionary<string, Dictionary<string, LibraryIncludeFlags>>> packageAssetFlagsPerProject,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesReplacedBySdkPerProject,
         Dictionary<string, Dictionary<string, HashSet<string>>> implicitlyIgnoredPackagesPerProject,
         Dictionary<string, Dictionary<string, string>> resolvedProperties,
@@ -498,6 +511,7 @@ internal static class SdkProjectDiscovery
         {
             // gather some project-level information
             var implicitlyIgnoredPackagesByTfm = implicitlyIgnoredPackagesPerProject.GetValueOrDefault(projectPath, new(StringComparer.OrdinalIgnoreCase));
+            var packageAssetFlagsByTfm = packageAssetFlagsPerProject.GetValueOrDefault(projectPath, new(StringComparer.OrdinalIgnoreCase));
             var packagesByTfm = packagesPerProject[projectPath];
             if (packagesReplacedBySdkPerProject.TryGetValue(projectPath, out var packagesReplacedBySdk))
             {
@@ -528,6 +542,7 @@ internal static class SdkProjectDiscovery
 
             var projectFullDirectory = Path.GetDirectoryName(projectPath)!;
             var projectRelativePath = Path.GetRelativePath(workspacePath, projectPath);
+            var tfms = packagesByTfm.Keys.OrderBy(tfm => tfm).ToImmutableArray();
 
             var propertiesForProject = resolvedProperties.GetOrAdd(projectPath, () => new(StringComparer.OrdinalIgnoreCase));
             var assetsJson = new Lazy<JsonElement?>(() =>
@@ -542,6 +557,16 @@ internal static class SdkProjectDiscovery
                     var assetsContent = File.ReadAllText(assetsFilePath);
                     var assets = JsonDocument.Parse(assetsContent).RootElement;
                     return assets;
+                }
+
+                return null;
+            });
+            var lockFile = new Lazy<LockFile?>(() =>
+            {
+                if (propertiesForProject.TryGetValue("ProjectAssetsFile", out var assetsFilePath) &&
+                    File.Exists(assetsFilePath))
+                {
+                    return new LockFileFormat().Read(assetsFilePath);
                 }
 
                 return null;
@@ -575,11 +600,26 @@ internal static class SdkProjectDiscovery
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             // create dependencies
-            var tfms = packagesByTfm.Keys.OrderBy(tfm => tfm).ToImmutableArray();
             var groupedDependencies = new Dictionary<string, Dependency>(StringComparer.OrdinalIgnoreCase);
             foreach (var tfm in tfms)
             {
                 var parsedTfm = NuGetFramework.Parse(tfm);
+                var directAssetFlags = packageAssetFlagsByTfm.GetValueOrDefault(tfm, new(StringComparer.OrdinalIgnoreCase));
+                Dictionary<string, LibraryIncludeFlags> effectiveAssetFlags;
+                try
+                {
+                    effectiveAssetFlags = lockFile.Value is null
+                        ? new Dictionary<string, LibraryIncludeFlags>(StringComparer.OrdinalIgnoreCase)
+                        : GetEffectiveAssetFlags(
+                            lockFile.Value,
+                            parsedTfm,
+                            directAssetFlags);
+                }
+                catch (Exception ex)
+                {
+                    logger.Warn($"Unable to determine package asset flags for project [{projectRelativePath}] and target framework [{tfm}]: {ex.Message}");
+                    effectiveAssetFlags = new Dictionary<string, LibraryIncludeFlags>(StringComparer.OrdinalIgnoreCase);
+                }
                 var packages = packagesByTfm[tfm];
                 var implicitlyIgnoredPackages = implicitlyIgnoredPackagesByTfm.GetValueOrDefault(tfm, new(StringComparer.OrdinalIgnoreCase));
 
@@ -637,6 +677,7 @@ internal static class SdkProjectDiscovery
                     var isTopLevel = directlyReferencedPackages.Contains(packageName) && !implicitlyIgnoredPackages.Contains(packageName);
                     var dependencyType = isTopLevel ? DependencyType.PackageReference : DependencyType.Unknown;
                     var combinedTfms = new HashSet<string>([tfm], StringComparer.OrdinalIgnoreCase);
+                    var combinedAssetFlags = ImmutableDictionary.CreateBuilder<string, LibraryIncludeFlags>(StringComparer.OrdinalIgnoreCase);
                     if (groupedDependencies.TryGetValue(packageName, out var existingDependency) &&
                         existingDependency.Version == packageVersion &&
                         existingDependency.Type == dependencyType &&
@@ -644,10 +685,34 @@ internal static class SdkProjectDiscovery
                     {
                         // same dependency, combine tfms
                         combinedTfms.AddRange(existingDependency.TargetFrameworks);
+                        combinedAssetFlags.AddRange(existingDependency.AssetFlags ?? []);
+                    }
+
+                    var assetFlags = effectiveAssetFlags.GetValueOrDefault(
+                        packageName,
+                        LibraryIncludeFlags.All);
+                    if (assetFlags != LibraryIncludeFlags.All)
+                    {
+                        foreach (var existingTfm in combinedTfms)
+                        {
+                            combinedAssetFlags.TryAdd(existingTfm, LibraryIncludeFlags.All);
+                        }
+
+                        combinedAssetFlags[tfm] = assetFlags;
+                    }
+                    else if (combinedAssetFlags.Count > 0)
+                    {
+                        combinedAssetFlags[tfm] = assetFlags;
                     }
 
                     var normalizedTfms = combinedTfms.OrderBy(t => t).ToImmutableArray();
-                    groupedDependencies[package.Key] = new Dependency(packageName, packageVersion, dependencyType, TargetFrameworks: normalizedTfms, IsTopLevel: isTopLevel);
+                    groupedDependencies[package.Key] = new Dependency(
+                        packageName,
+                        packageVersion,
+                        dependencyType,
+                        TargetFrameworks: normalizedTfms,
+                        IsTopLevel: isTopLevel,
+                        AssetFlags: combinedAssetFlags.Count == 0 ? null : combinedAssetFlags.ToImmutable());
                 }
             }
 
@@ -788,6 +853,81 @@ internal static class SdkProjectDiscovery
         return projectDiscoveryResults.ToImmutableArray();
     }
 
+    private static Dictionary<string, LibraryIncludeFlags> GetEffectiveAssetFlags(
+        LockFile lockFile,
+        NuGetFramework targetFramework,
+        IReadOnlyDictionary<string, LibraryIncludeFlags> directAssetFlags)
+    {
+        var results = new Dictionary<string, LibraryIncludeFlags>(StringComparer.OrdinalIgnoreCase);
+        var frameworkInfo = lockFile.PackageSpec?.GetTargetFramework(targetFramework);
+        if (frameworkInfo is null && directAssetFlags.Count == 0)
+        {
+            return results;
+        }
+
+        foreach (var target in lockFile.Targets.Where(t => t.TargetFramework.Equals(targetFramework)))
+        {
+            var targetResults = new Dictionary<string, LibraryIncludeFlags>(StringComparer.OrdinalIgnoreCase);
+            var libraries = target.Libraries
+                .Where(library => library.Name is not null)
+                .ToDictionary(library => library.Name!, StringComparer.OrdinalIgnoreCase);
+            var pending = new Queue<(string PackageName, LibraryIncludeFlags Flags)>();
+            foreach (var dependency in directAssetFlags)
+            {
+                pending.Enqueue((dependency.Key, dependency.Value));
+            }
+
+            foreach (var dependency in frameworkInfo?.Dependencies ?? [])
+            {
+                if (!directAssetFlags.ContainsKey(dependency.Name))
+                {
+                    pending.Enqueue((dependency.Name, dependency.IncludeType));
+                }
+            }
+
+            while (pending.TryDequeue(out var item))
+            {
+                if (targetResults.TryGetValue(item.PackageName, out var existingFlags))
+                {
+                    var combinedFlags = existingFlags | item.Flags;
+                    if (combinedFlags == existingFlags)
+                    {
+                        continue;
+                    }
+
+                    targetResults[item.PackageName] = combinedFlags;
+                }
+                else
+                {
+                    targetResults[item.PackageName] = item.Flags;
+                }
+
+                if (!libraries.TryGetValue(item.PackageName, out var library))
+                {
+                    continue;
+                }
+
+                foreach (var dependency in library.Dependencies)
+                {
+                    var includeFlags = dependency.Include.Count == 0
+                        ? LibraryIncludeFlags.All
+                        : LibraryIncludeFlagUtils.GetFlags(dependency.Include);
+                    var excludeFlags = dependency.Exclude.Count == 0
+                        ? LibraryIncludeFlags.None
+                        : LibraryIncludeFlagUtils.GetFlags(dependency.Exclude);
+                    pending.Enqueue((dependency.Id, item.Flags & includeFlags & ~excludeFlags));
+                }
+            }
+
+            foreach (var (packageName, flags) in targetResults)
+            {
+                results[packageName] = results.GetValueOrDefault(packageName) | flags;
+            }
+        }
+
+        return results;
+    }
+
     private static async Task<HashSet<string>> DirectlyReferencedPackagesFromFilePath(string fullFilePath, ILogger logger)
     {
         try
@@ -879,6 +1019,7 @@ internal static class SdkProjectDiscovery
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesPerProject, // projectPath -> tfm -> (packageName, packageVersion)
         Dictionary<string, Dictionary<string, HashSet<string>>> implicitlyIgnoredPackagesPerProject, // projectPath -> tfm -> packageNames
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packageVersionsPerProject, // projectPath -> tfm -> (packageName, packageVersion)
+        Dictionary<string, Dictionary<string, Dictionary<string, LibraryIncludeFlags>>> packageAssetFlagsPerProject, // projectPath -> tfm -> (packageName, effective asset flags)
         Dictionary<string, int> packageReferenceElementCounts // projectPath -> count of `<PackageReference>` elements
     )
     {
@@ -921,6 +1062,22 @@ internal static class SdkProjectDiscovery
                                 var packageVersions = packagesPerTfm.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
                                 packageVersions[packageName] = packageVersion;
                             }
+
+                            var includeAssets = GetChildMetadataValue(child, "IncludeAssets");
+                            var excludeAssets = GetChildMetadataValue(child, "ExcludeAssets");
+                            var includeFlags = string.IsNullOrWhiteSpace(includeAssets)
+                                ? LibraryIncludeFlags.All
+                                : LibraryIncludeFlagUtils.GetFlags(includeAssets.Split(
+                                    [';', ','],
+                                    StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+                            var excludeFlags = string.IsNullOrWhiteSpace(excludeAssets)
+                                ? LibraryIncludeFlags.None
+                                : LibraryIncludeFlagUtils.GetFlags(excludeAssets.Split(
+                                    [';', ','],
+                                    StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+                            var assetFlagsPerTfm = packageAssetFlagsPerProject.GetOrAdd(projectEvaluation.ProjectFile, () => new(StringComparer.OrdinalIgnoreCase));
+                            var assetFlags = assetFlagsPerTfm.GetOrAdd(tfm, () => new(StringComparer.OrdinalIgnoreCase));
+                            assetFlags[packageName] = includeFlags & ~excludeFlags;
                         }
                     }
                 }

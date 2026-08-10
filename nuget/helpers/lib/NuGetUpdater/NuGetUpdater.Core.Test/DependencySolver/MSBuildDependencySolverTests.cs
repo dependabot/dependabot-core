@@ -1,5 +1,7 @@
 using System.Collections.Immutable;
 
+using NuGet.LibraryModel;
+
 using NuGetUpdater.Core.DependencySolver;
 using NuGetUpdater.Core.Test.Utilities;
 
@@ -9,6 +11,43 @@ namespace NuGetUpdater.Core.Test.DependencySolver;
 
 public class MSBuildDependencySolverTests : TestBase
 {
+    [Fact]
+    public async Task CompatiblePackageCanUpdateWhenAnotherTopLevelPackageOmitsCompileAndRuntimeAssets()
+    {
+        await TestAsync(
+            packages: [
+                MockNuGetPackage.CreateSimplePackage("Package.To.Update", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Package.To.Update", "2.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage(
+                    "Build.Only.Package",
+                    "1.0.0",
+                    "net45",
+                    [(null, [("Incompatible.Transitive.Package", "1.0.0")])]),
+                MockNuGetPackage.CreateSimplePackage("Incompatible.Transitive.Package", "1.0.0", "net45"),
+            ],
+            existingTopLevelDependencies: [
+                "Package.To.Update/1.0.0",
+                "Build.Only.Package/1.0.0",
+            ],
+            desiredDependencies: [
+                "Package.To.Update/2.0.0",
+            ],
+            targetFramework: "net8.0",
+            packageReferenceAttributes: new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Build.Only.Package"] = "IncludeAssets=\"build;analyzers\"",
+            },
+            packageReferenceAssetFlags: new Dictionary<string, LibraryIncludeFlags>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Build.Only.Package"] = LibraryIncludeFlags.Build | LibraryIncludeFlags.Analyzers,
+            },
+            expectedResolvedDependencies: [
+                "Package.To.Update/2.0.0",
+                "Build.Only.Package/1.0.0",
+            ]
+        );
+    }
+
     [Fact]
     public async Task DependencyConflictsCanBeResolvedNewUpdatingTopLevelPackage()
     {
@@ -383,6 +422,7 @@ public class MSBuildDependencySolverTests : TestBase
                 // available packages
                 MockNuGetPackage.CreateSimplePackage("Microsoft.EntityFrameworkCore", "8.0.0", "net8.0", [(null, [("Microsoft.EntityFrameworkCore.Analyzers", "8.0.0"), ("Microsoft.Extensions.Caching.Memory", "[8.0.0]")])]),
                 MockNuGetPackage.CreateSimplePackage("Microsoft.EntityFrameworkCore.Analyzers", "8.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Microsoft.Extensions.Caching.Memory", "8.0.0", "net8.0"),
             ],
             existingTopLevelDependencies: [
                 "Microsoft.EntityFrameworkCore/7.0.11",
@@ -594,7 +634,9 @@ public class MSBuildDependencySolverTests : TestBase
         ImmutableArray<string> desiredDependencies,
         string targetFramework,
         ImmutableArray<string> expectedResolvedDependencies,
-        MockNuGetPackage[]? packages = null
+        MockNuGetPackage[]? packages = null,
+        IReadOnlyDictionary<string, string>? packageReferenceAttributes = null,
+        IReadOnlyDictionary<string, LibraryIncludeFlags>? packageReferenceAssetFlags = null
     )
     {
         // arrange
@@ -606,7 +648,7 @@ public class MSBuildDependencySolverTests : TestBase
                     <TargetFramework>{targetFramework}</TargetFramework>
                   </PropertyGroup>
                   <ItemGroup>
-                    {string.Join("\n    ", existingTopLevelDependencies.Select(d => $@"<PackageReference Include=""{d.Split('/')[0]}"" Version=""{d.Split('/')[1]}"" />"))}
+                    {string.Join("\n    ", existingTopLevelDependencies.Select(CreatePackageReference))}
                   </ItemGroup>
                 </Project>
                 """)
@@ -619,8 +661,8 @@ public class MSBuildDependencySolverTests : TestBase
 
         // act
         var resolvedDependencies = await msbuildDepSolver.SolveAsync(
-            [.. existingTopLevelDependencies.Select(d => new Dependency(d.Split('/')[0], d.Split('/')[1], DependencyType.PackageReference))],
-            [.. desiredDependencies.Select(d => new Dependency(d.Split('/')[0], d.Split('/')[1], DependencyType.PackageReference))],
+            [.. existingTopLevelDependencies.Select(CreateDependency)],
+            [.. desiredDependencies.Select(CreateDependency)],
             targetFramework
         );
 
@@ -628,5 +670,28 @@ public class MSBuildDependencySolverTests : TestBase
         Assert.NotNull(resolvedDependencies);
         var actualResolvedDependencyStrings = resolvedDependencies.Value.Select(d => $"{d.Name}/{d.Version}");
         AssertEx.Equal(expectedResolvedDependencies, actualResolvedDependencyStrings);
+
+        string CreatePackageReference(string dependency)
+        {
+            var parts = dependency.Split('/');
+            var attributes = packageReferenceAttributes is not null &&
+                packageReferenceAttributes.TryGetValue(parts[0], out var configuredAttributes)
+                ? configuredAttributes
+                : null;
+            return $"""<PackageReference Include="{parts[0]}" Version="{parts[1]}"{(attributes is null ? string.Empty : $" {attributes}")} />""";
+        }
+
+        Dependency CreateDependency(string dependency)
+        {
+            var parts = dependency.Split('/');
+            var assetFlags = packageReferenceAssetFlags is not null &&
+                packageReferenceAssetFlags.TryGetValue(parts[0], out var configuredAssetFlags)
+                ? new Dictionary<string, LibraryIncludeFlags>(StringComparer.OrdinalIgnoreCase)
+                {
+                    [targetFramework] = configuredAssetFlags,
+                }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase)
+                : null;
+            return new Dependency(parts[0], parts[1], DependencyType.PackageReference, AssetFlags: assetFlags);
+        }
     }
 }

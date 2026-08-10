@@ -95,9 +95,6 @@ internal static partial class MSBuildHelper
 
         try
         {
-            string tempProjectPath = await CreateTempProjectAsync(tempDirectory, repoRoot, projectPath, targetFramework, packages, logger);
-            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["restore", tempProjectPath], tempDirectory.FullName);
-
             // Add Dependency[] packages to List<PackageToUpdate> existingPackages
             List<PackageToUpdate> existingPackages = packages
             .Select(existingPackage => new PackageToUpdate
@@ -191,56 +188,39 @@ internal static partial class MSBuildHelper
 
             // Convert back to Dependency [], use NewVersion if available, otherwise use CurrentVersion
             List<Dependency> candidatePackages = existingPackages
-            .Select(package => new Dependency(
-                package.PackageName,
-                package.NewVersion ?? package.CurrentVersion,
-                DependencyType.Unknown,
-                null,
-                null,
-                true,
-                false
-            ))
+            .Select(package =>
+            {
+                var template = update.FirstOrDefault(d =>
+                        d.Name.Equals(package.PackageName, StringComparison.OrdinalIgnoreCase))
+                    ?? packages.FirstOrDefault(d =>
+                        d.Name.Equals(package.PackageName, StringComparison.OrdinalIgnoreCase));
+                return new Dependency(
+                    package.PackageName,
+                    package.NewVersion ?? package.CurrentVersion,
+                    DependencyType.Unknown,
+                    IsTopLevel: true,
+                    AssetFlags: template?.AssetFlags);
+            })
             .ToList();
 
             // Return as array
             var candidatePackagesArray = candidatePackages.ToImmutableArray();
 
-            var targetFrameworks = ImmutableArray.Create<NuGetFramework>(NuGetFramework.Parse(targetFramework));
-
-            var resolveProjectPath = projectPath;
-
-            if (!Path.IsPathRooted(resolveProjectPath) || !File.Exists(resolveProjectPath))
+            var tempProjectPath = await CreateTempProjectAsync(
+                tempDirectory,
+                repoRoot,
+                projectPath,
+                targetFramework,
+                candidatePackagesArray,
+                logger,
+                importDependencyTargets: false);
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(
+                ["restore", tempProjectPath],
+                tempDirectory.FullName);
+            if (exitCode != 0)
             {
-                resolveProjectPath = Path.GetFullPath(Path.Join(repoRoot, resolveProjectPath));
-            }
-
-            NuGetContext nugetContext = new NuGetContext(Path.GetDirectoryName(resolveProjectPath));
-
-            // Target framework compatibility check
-            foreach (var package in candidatePackages)
-            {
-                if (package.Version is null ||
-                    !VersionRange.TryParse(package.Version, out var nuGetVersionRange))
-                {
-                    // If version is not valid, return original packages and revert
-                    return packages;
-                }
-
-                if (nuGetVersionRange.IsFloating)
-                {
-                    // If a wildcard version, the original project specified it this way and we can count on restore to do the appropriate thing
-                    continue;
-                }
-
-                var nuGetVersion = nuGetVersionRange.MinVersion; // not a wildcard, so `MinVersion` is just the version itself
-                var packageIdentity = new NuGet.Packaging.Core.PackageIdentity(package.Name, nuGetVersion);
-
-                bool isNewPackageCompatible = await CompatibilityChecker.CheckAsync(packageIdentity, targetFrameworks, nugetContext, logger, CancellationToken.None);
-                if (!isNewPackageCompatible)
-                {
-                    // If the package target framework is not compatible, return original packages and revert
-                    return packages;
-                }
+                logger.Warn($"Unable to restore resolved dependency set for {targetFramework}:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
+                return packages;
             }
 
             return candidatePackagesArray;
@@ -279,7 +259,7 @@ internal static partial class MSBuildHelper
         ILogger logger,
         bool usePackageDownload = false,
         bool importDependencyTargets = true
-    ) => CreateTempProjectAsync(tempDir, repoRoot, projectPath, new XElement("TargetFramework", targetFramework), packages, logger, usePackageDownload, importDependencyTargets);
+    ) => CreateTempProjectAsync(tempDir, repoRoot, projectPath, new XElement("TargetFramework", targetFramework), [targetFramework], packages, logger, usePackageDownload, importDependencyTargets);
 
     internal static Task<string> CreateTempProjectAsync(
         DirectoryInfo tempDir,
@@ -290,13 +270,14 @@ internal static partial class MSBuildHelper
         ILogger logger,
         bool usePackageDownload = false,
         bool importDependencyTargets = true
-    ) => CreateTempProjectAsync(tempDir, repoRoot, projectPath, new XElement("TargetFrameworks", string.Join(";", targetFrameworks)), packages, logger, usePackageDownload, importDependencyTargets);
+    ) => CreateTempProjectAsync(tempDir, repoRoot, projectPath, new XElement("TargetFrameworks", string.Join(";", targetFrameworks)), targetFrameworks, packages, logger, usePackageDownload, importDependencyTargets);
 
     private static async Task<string> CreateTempProjectAsync(
         DirectoryInfo tempDir,
         string repoRoot,
         string projectPath,
         XElement targetFrameworkElement,
+        IReadOnlyCollection<string> targetFrameworks,
         IReadOnlyCollection<Dependency> packages,
         ILogger logger,
         bool usePackageDownload,
@@ -346,7 +327,47 @@ internal static partial class MSBuildHelper
                 // empty `Version` attributes will cause the temporary project to not build
                 .Where(p => (p.EvaluationResult is null || p.EvaluationResult.ResultType == EvaluationResultType.Success) && !string.IsNullOrWhiteSpace(p.Version))
                 // If all PackageReferences for a package are update-only mark it as such, otherwise it can cause package incoherence errors which do not exist in the repo.
-                .Select(p => $"<{(usePackageDownload ? "PackageDownload" : "PackageReference")} {(p.IsUpdate ? "Update" : "Include")}=\"{p.Name}\" Version=\"{GetExactVersionConstraint(p.Version!)}\" />"));
+                .SelectMany(CreatePackageReferences));
+
+        IEnumerable<string> CreatePackageReferences(Dependency dependency)
+        {
+            var elementName = usePackageDownload ? "PackageDownload" : "PackageReference";
+            var identityAttribute = dependency.IsUpdate ? "Update" : "Include";
+            var baseAttributes = $"{identityAttribute}=\"{dependency.Name}\" Version=\"{GetExactVersionConstraint(dependency.Version!)}\"";
+            var dependencyTargetFrameworks = dependency.TargetFrameworks is { Length: > 0 }
+                ? dependency.TargetFrameworks.ToImmutableHashSet(StringComparer.OrdinalIgnoreCase)
+                : null;
+            var applicableTargetFrameworks = dependencyTargetFrameworks is null
+                ? targetFrameworks
+                : targetFrameworks.Where(dependencyTargetFrameworks.Contains).ToArray();
+            if (targetFrameworks.Count > 0 && applicableTargetFrameworks.Count == 0)
+            {
+                return [];
+            }
+
+            if (usePackageDownload || targetFrameworks.Count == 0)
+            {
+                return [$"<{elementName} {baseAttributes} />"];
+            }
+
+            var valuesByFramework = applicableTargetFrameworks.ToDictionary(
+                targetFramework => targetFramework,
+                dependency.GetIncludeAssetsValue,
+                StringComparer.OrdinalIgnoreCase);
+            if (applicableTargetFrameworks.Count == targetFrameworks.Count &&
+                valuesByFramework.Values.Distinct(StringComparer.OrdinalIgnoreCase).Count() == 1)
+            {
+                var includeAssets = valuesByFramework.Values.First();
+                var assetAttribute = includeAssets is null ? string.Empty : $" IncludeAssets=\"{includeAssets}\"";
+                return [$"<{elementName} {baseAttributes}{assetAttribute} />"];
+            }
+
+            return valuesByFramework.Select(kvp =>
+            {
+                var assetAttribute = kvp.Value is null ? string.Empty : $" IncludeAssets=\"{kvp.Value}\"";
+                return $"<{elementName} {baseAttributes}{assetAttribute} Condition=\"'$(TargetFramework)' == '{kvp.Key}'\" />";
+            });
+        }
 
         var dependencyTargetsImport = importDependencyTargets
             ? $"""<Import Project="{GetFileFromRuntimeDirectory("DependencyDiscovery.targets")}" />"""

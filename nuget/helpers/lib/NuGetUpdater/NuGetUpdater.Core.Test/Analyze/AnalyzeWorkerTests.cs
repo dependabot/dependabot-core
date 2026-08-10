@@ -1,7 +1,9 @@
+using System.Collections.Immutable;
 using System.Text;
 using System.Text.Json;
 
 using NuGet;
+using NuGet.LibraryModel;
 
 using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Run.ApiModel;
@@ -12,6 +14,136 @@ namespace NuGetUpdater.Core.Test.Analyze;
 
 public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
 {
+    [Fact]
+    public async Task FindsUpdatedVersionWhenIncompatiblePackageCompileAndRuntimeAssetsAreExcluded()
+    {
+        await TestAnalyzeAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net45"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net45"),
+            ],
+            extraFiles:
+            [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net8.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Package" Version="1.0.0" ExcludeAssets="compile;runtime" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0"],
+                        Dependencies = [
+                            new(
+                                "Some.Package",
+                                "1.0.0",
+                                DependencyType.PackageReference,
+                                AssetFlags: new Dictionary<string, LibraryIncludeFlags>(StringComparer.OrdinalIgnoreCase)
+                                {
+                                    ["net8.0"] = LibraryIncludeFlags.All &
+                                        ~(LibraryIncludeFlags.Compile | LibraryIncludeFlags.Runtime),
+                                }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase)),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "2.0.0",
+                CanUpdate = true,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [
+                    new("Some.Package", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                ],
+            }
+        );
+    }
+
+    [Fact]
+    public async Task FindsUpdatedVersionWhenPackageIsOnlyReferencedByCompatibleTargetFramework()
+    {
+        await TestAnalyzeAsync(
+            packages:
+            [
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net8.0"),
+                MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net8.0"),
+            ],
+            extraFiles:
+            [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+                      </PropertyGroup>
+                      <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+                        <PackageReference Include="Some.Package" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+            ],
+            discovery: new()
+            {
+                Path = "/",
+                Projects = [
+                    new()
+                    {
+                        FilePath = "./project.csproj",
+                        TargetFrameworks = ["net8.0", "net9.0"],
+                        Dependencies = [
+                            new(
+                                "Some.Package",
+                                "1.0.0",
+                                DependencyType.PackageReference,
+                                TargetFrameworks: ["net8.0"]),
+                        ],
+                        ReferencedProjectPaths = [],
+                        ImportedFiles = [],
+                        AdditionalFiles = [],
+                    },
+                ],
+            },
+            dependencyInfo: new()
+            {
+                Name = "Some.Package",
+                Version = "1.0.0",
+                IgnoredVersions = [],
+                IsVulnerable = false,
+                Vulnerabilities = [],
+            },
+            expectedResult: new()
+            {
+                UpdatedVersion = "2.0.0",
+                CanUpdate = true,
+                VersionComesFromMultiDependencyProperty = false,
+                UpdatedDependencies = [
+                    new("Some.Package", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                ],
+            }
+        );
+    }
+
     [Fact]
     public async Task FindsUpdatedVersion()
     {
