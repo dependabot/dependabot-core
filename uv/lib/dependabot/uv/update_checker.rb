@@ -98,10 +98,9 @@ module Dependabot
         raise "Claimed to be a sub-dependency, but no lockfile exists!"
       end
 
-      sig { override.params(reqs: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Boolean) }
+      sig { override.params(reqs: T::Array[Dependabot::DependencyRequirement]).returns(T::Boolean) }
       def exact_requirement?(reqs)
-        reqs = reqs.map { |r| r.fetch(:requirement) }
-        reqs = reqs.compact
+        reqs = reqs.filter_map(&:requirement_string)
         reqs = reqs.flat_map { |r| r.split(",").map(&:strip) }
         reqs.any? { |r| Uv::Requirement.new(r).exact? }
       end
