@@ -17,8 +17,10 @@ module Dependabot
     #
     # NOTE: this class is intentionally NOT registered as the requirement class
     # for "helm" (that remains Docker::Requirement, used by the docker-image
-    # path and ignore conditions). It is used explicitly by the range-preserving
-    # requirements updater.
+    # path). It is used explicitly by the range-preserving requirements updater
+    # and by UpdateChecker#ignore_requirements, which cannot use the registered
+    # class because Docker::Requirement#satisfied_by? is typed for
+    # Docker::Version and raises on a Helm::Version.
     class Requirement < Dependabot::Requirement
       extend T::Sig
 
