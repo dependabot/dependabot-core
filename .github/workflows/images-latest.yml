@@ -131,10 +131,12 @@ jobs:
           create-storage-record: true
 
       - name: Pull images through backup registry
+        env:
+          DATE_VERSION: ${{ needs.date-version.outputs.date }}
         run: |
           docker pull "${BACKUP_REGISTRY}/${UPDATER_IMAGE}:$COMMIT_SHA"
           docker pull "${BACKUP_REGISTRY}/${UPDATER_IMAGE}:latest"
-          docker pull "${BACKUP_REGISTRY}/${UPDATER_IMAGE}:${{ needs.date-version.outputs.date }}"
+          docker pull "${BACKUP_REGISTRY}/${UPDATER_IMAGE}:$DATE_VERSION"
 
       - name: Set summary
         run: |
