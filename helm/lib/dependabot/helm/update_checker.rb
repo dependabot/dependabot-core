@@ -245,14 +245,24 @@ module Dependabot
 
       sig { params(releases: T::Array[T::Hash[String, Object]]).returns(T::Array[T::Hash[String, Object]]) }
       def filter_valid_releases(releases)
-        releases.reject do |release|
-          release_version = version_class.new(T.cast(release["version"], String))
-          # Compare against current_version (the anchored floor) rather than
-          # dependency.version: for a range constraint (">=1.0.0 <2.0.0") the raw
-          # version string isn't a single parseable version.
-          release_version <= current_version ||
-            ignore_requirements.any? { |r| r.satisfied_by?(release_version) }
+        # Compare against current_version (the anchored floor) rather than
+        # dependency.version: for a range constraint (">=1.0.0 <2.0.0") the raw
+        # version string isn't a single parseable version.
+        # The "too old" and "ignored" rejections are kept apart so we can tell
+        # "everything newer was ignored" from "nothing newer exists"; the updater
+        # needs AllVersionsIgnored for the former, and an empty list collapses
+        # the two.
+        newer = releases.reject do |release|
+          version_class.new(T.cast(release["version"], String)) <= current_version
         end
+        filtered = newer.reject do |release|
+          release_version = version_class.new(T.cast(release["version"], String))
+          ignore_requirements.any? { |r| r.satisfied_by?(release_version) }
+        end
+
+        raise Dependabot::AllVersionsIgnored if raise_on_ignored && filtered.empty? && newer.any?
+
+        filtered
       end
 
       sig { params(repo_url: String).returns(String) }
@@ -451,10 +461,14 @@ module Dependabot
 
       sig { params(all_versions: T::Array[String]).returns(T::Array[String]) }
       def filter_valid_versions(all_versions)
-        all_versions.reject do |version|
-          version_class.new(version) <= current_version ||
-            ignore_requirements.any? { |r| r.satisfied_by?(version_class.new(version)) }
+        newer = all_versions.reject { |version| version_class.new(version) <= current_version }
+        filtered = newer.reject do |version|
+          ignore_requirements.any? { |r| r.satisfied_by?(version_class.new(version)) }
         end
+
+        raise Dependabot::AllVersionsIgnored if raise_on_ignored && filtered.empty? && newer.any?
+
+        filtered
       end
 
       sig { returns(T.nilable(Gem::Version)) }

@@ -88,6 +88,15 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       it { is_expected.to eq(Dependabot::Helm::Version.new("18.19.4")) }
     end
 
+    context "when every newer version is ignored and raise_on_ignored is set" do
+      let(:ignored_versions) { [">= 0"] }
+      let(:raise_on_ignored) { true }
+
+      it "raises AllVersionsIgnored" do
+        expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
+      end
+    end
+
     context "when dependency is a docker image" do
       let(:dependency_type) { { type: :docker_image } }
       let(:repo_fixture_name) { "ubuntu_no_latest.json" }
@@ -626,6 +635,37 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
           result = checker.send(:filter_valid_versions, all_versions)
 
           expect(result).to contain_exactly("18.0.0", "19.0.0", "20.0.0")
+        end
+      end
+    end
+
+    context "when raise_on_ignored is set" do
+      let(:raise_on_ignored) { true }
+
+      context "when every newer version is ignored" do
+        let(:ignored_versions) { [">= 18.0.0"] }
+
+        # The updater needs this to tell "all newer releases were ignored" from
+        # "no newer release exists"; an empty list collapses the two.
+        it "raises AllVersionsIgnored" do
+          expect { checker.send(:filter_valid_versions, all_versions) }
+            .to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+
+      context "when no newer version exists to begin with" do
+        it "returns an empty list without raising" do
+          result = checker.send(:filter_valid_versions, ["17.0.0", "17.7.1"])
+
+          expect(result).to be_empty
+        end
+      end
+
+      context "when some newer version survives" do
+        let(:ignored_versions) { [">= 19.0.0"] }
+
+        it "does not raise" do
+          expect(checker.send(:filter_valid_versions, all_versions)).to contain_exactly("18.0.0")
         end
       end
     end
