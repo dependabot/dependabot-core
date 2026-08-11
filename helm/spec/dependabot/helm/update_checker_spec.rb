@@ -94,13 +94,14 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       it { is_expected.to eq(Dependabot::Helm::Version.new("20.11.2")) }
     end
 
-    context "when an update-types comma-AND range covers everything newer" do
+    context "when an update-types comma-AND range covers the newer majors" do
       # ignored_minor_versions and ignored_patch_versions generate comma-AND
       # ranges, so Helm::Requirement has to split on the comma rather than choke
-      # on it.
+      # on it. Both bounds have to bite: 18 through 20 go, and the 17.x releases
+      # above the current version stay.
       let(:ignored_versions) { [">= 18.a, < 21"] }
 
-      it { is_expected.to be_nil }
+      it { is_expected.to eq(Dependabot::Helm::Version.new("17.17.1")) }
     end
 
     context "when an update-types comma-AND range covers nothing present" do
@@ -147,6 +148,12 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       let(:credentials) { [] }
 
       before do
+        # A registry in the source makes the CLI search repo-qualified, so the
+        # outer stub's exact chart-name match no longer applies.
+        allow(Dependabot::Helm::Helpers).to receive(:search_releases)
+          .with(anything)
+          .and_return(repo_tags)
+
         stub_request(:get, "#{repo_url}/index.yaml")
           .to_return(status: 200, body: fixture("helm", "registry", "bitnami.yaml"))
       end
