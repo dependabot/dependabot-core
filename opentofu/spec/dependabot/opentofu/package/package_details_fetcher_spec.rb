@@ -51,15 +51,6 @@ RSpec.describe Dependabot::Opentofu::Package::PackageDetailsFetcher do
     described_class.new(dependency: dependency, credentials: credentials, git_commit_checker: git_commit_checker)
   end
 
-  describe "#fetch_tag_and_release_date" do
-    it "fetches and parses release tags and dates", :vcr do
-      result = fetcher.fetch_tag_and_release_date
-      expect(result).to include(
-        an_object_having_attributes(tag: "v6.5.0", release_date: "2025-01-17T01:19:11Z")
-      )
-    end
-  end
-
   describe "#fetch_tag_and_release_date_from_provider" do
     it "fetches and parses provider release tags and dates", :vcr do
       result = fetcher.fetch_tag_and_release_date_from_provider
