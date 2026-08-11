@@ -17,6 +17,7 @@ shellcheck \
   ./script/generate-coverage-report \
   ./script/setup \
   ./script/updater-e2e \
+  ./script/validate-image \
   ./updater/bin/run \
   "$@"
 

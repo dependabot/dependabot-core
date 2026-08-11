@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+if [[ $# -ne 1 ]]; then
+  echo "Usage: $0 <image>"
+  exit 1
+fi
+
+set -e
+cd "$(dirname "$0")/.."
+source script/_common
+
+validate_docker_image "$1"

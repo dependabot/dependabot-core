@@ -99,6 +99,8 @@ jobs:
       contents: read
       id-token: write
       packages: write
+      attestations: write
+      artifact-metadata: write
     env:
       DEPENDABOT_UPDATER_VERSION: ${{ github.sha }}
     steps:
@@ -108,13 +110,8 @@ jobs:
           submodules: recursive
           persist-credentials: false
 
-      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
-
-      - name: Expose GitHub Actions cache to Buildx
-        uses: crazy-max/ghaction-github-runtime@04d248b84655b509d8c44dc1d6f990c879747487 # v4.0.0
 
       - name: Prepare tag
         run: echo "DEPENDABOT_UPDATER_VERSION=${{ github.sha }}" >> $GITHUB_ENV
@@ -141,16 +138,118 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build ecosystem image
+      - name: Resolve image metadata
+        id: image
         env:
-          BUILDX_GHA_CACHE: "1"
-        run: script/build ${{ matrix.suite.name }}
-
-      - name: Push branch image
+          ECOSYSTEM: ${{ matrix.suite.ecosystem }}
+          NAME: ${{ matrix.suite.name }}
         run: |
-          docker tag "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}" "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$DEPENDABOT_UPDATER_VERSION"
-          docker push "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$DEPENDABOT_UPDATER_VERSION"
-          cosign sign --yes $(cosign triangulate --type=digest "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$DEPENDABOT_UPDATER_VERSION")
+          DOCKERFILE="$NAME/Dockerfile"
+          if [[ "$NAME" == "docker_compose" ]]; then
+            DOCKERFILE="docker/Dockerfile"
+          fi
+
+          IMAGE="ghcr.io/dependabot/dependabot-updater-$ECOSYSTEM"
+          echo "dockerfile=$DOCKERFILE" >> "$GITHUB_OUTPUT"
+          echo "name=$IMAGE" >> "$GITHUB_OUTPUT"
+          echo "version=$DEPENDABOT_UPDATER_VERSION" >> "$GITHUB_OUTPUT"
+          echo "reference=$IMAGE:$DEPENDABOT_UPDATER_VERSION" >> "$GITHUB_OUTPUT"
+          echo "validation-reference=$IMAGE:validation-$GITHUB_RUN_ID" >> "$GITHUB_OUTPUT"
+          {
+            echo "build-contexts<<EOF"
+            echo "ghcr.io/dependabot/dependabot-updater-core=oci-layout://$RUNNER_TEMP/updater-core"
+            if [[ "$NAME" == "pre_commit" ]]; then
+              echo "ghcr.io/dependabot/dependabot-updater-gomod:latest=oci-layout://$RUNNER_TEMP/go-modules"
+              echo "ghcr.io/dependabot/dependabot-updater-bundler:latest=oci-layout://$RUNNER_TEMP/bundler"
+            fi
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build updater-core image
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: Dockerfile.updater-core
+          outputs: type=oci,dest=${{ runner.temp }}/updater-core,tar=false
+          provenance: false
+          build-args: |
+            USER_UID=1000
+            USER_GID=1000
+            DEPENDABOT_UPDATER_VERSION=${{ steps.image.outputs.version }}
+          cache-from: |
+            type=gha,scope=updater-core
+            type=registry,ref=ghcr.io/dependabot/dependabot-updater-core:latest
+          cache-to: type=gha,mode=max,scope=updater-core
+
+      - name: Build pre-commit go_modules image
+        if: matrix.suite.name == 'pre_commit'
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: go_modules/Dockerfile
+          outputs: type=oci,dest=${{ runner.temp }}/go-modules,tar=false
+          provenance: false
+          build-contexts: |
+            ghcr.io/dependabot/dependabot-updater-core=oci-layout://${{ runner.temp }}/updater-core
+          cache-from: |
+            type=gha,scope=go_modules
+            type=registry,ref=ghcr.io/dependabot/dependabot-updater-gomod:latest
+          cache-to: type=gha,mode=max,scope=go_modules
+
+      - name: Build pre-commit bundler image
+        if: matrix.suite.name == 'pre_commit'
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: bundler/Dockerfile
+          outputs: type=oci,dest=${{ runner.temp }}/bundler,tar=false
+          provenance: false
+          build-contexts: |
+            ghcr.io/dependabot/dependabot-updater-core=oci-layout://${{ runner.temp }}/updater-core
+          cache-from: |
+            type=gha,scope=bundler
+            type=registry,ref=ghcr.io/dependabot/dependabot-updater-bundler:latest
+          cache-to: type=gha,mode=max,scope=bundler
+
+      - name: Build ecosystem image for validation
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: ${{ steps.image.outputs.dockerfile }}
+          load: true
+          tags: ${{ steps.image.outputs.validation-reference }}
+          provenance: false
+          build-contexts: ${{ steps.image.outputs.build-contexts }}
+          cache-from: |
+            type=gha,scope=${{ matrix.suite.name }}
+            type=registry,ref=${{ steps.image.outputs.name }}:latest
+          cache-to: type=gha,mode=max,scope=${{ matrix.suite.name }}
+
+      - name: Validate ecosystem image
+        run: script/validate-image "${{ steps.image.outputs.validation-reference }}"
+
+      - name: Build and push branch image
+        id: build
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: ${{ steps.image.outputs.dockerfile }}
+          push: true
+          tags: ${{ steps.image.outputs.reference }}
+          provenance: false
+          build-contexts: ${{ steps.image.outputs.build-contexts }}
+          cache-from: |
+            type=gha,scope=${{ matrix.suite.name }}
+            type=registry,ref=${{ steps.image.outputs.name }}:latest
+          cache-to: type=gha,mode=max,scope=${{ matrix.suite.name }}
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f # v3.2.0
+        with:
+          subject-name: ${{ steps.image.outputs.name }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+          create-storage-record: true
 
       - name: Set summary
         run: |
