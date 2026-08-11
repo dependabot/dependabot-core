@@ -73,6 +73,21 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
 
     it { is_expected.to eq(Dependabot::Helm::Version.new("20.11.3")) }
 
+    context "when an ignore condition excludes the latest versions" do
+      let(:ignored_versions) { [">= 20.0.0"] }
+
+      it { is_expected.to eq(Dependabot::Helm::Version.new("19.6.4")) }
+    end
+
+    context "when the ignore condition is an update-types major bound" do
+      # ignored_major_versions generates the "a" pre-release floor, so this is
+      # the form a user gets from `update-types: [version-update:semver-major]`
+      # rather than one they write by hand.
+      let(:ignored_versions) { [">= 19.a"] }
+
+      it { is_expected.to eq(Dependabot::Helm::Version.new("18.19.4")) }
+    end
+
     context "when dependency is a docker image" do
       let(:dependency_type) { { type: :docker_image } }
       let(:repo_fixture_name) { "ubuntu_no_latest.json" }
@@ -188,10 +203,12 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
 
     context "when a bare dependency-name ignore rule covers everything" do
       # IgnoreCondition expands `dependency-name:` with no versions or
-      # update-types to ALL_VERSIONS. Base short-circuits on
-      # `ignore_requirements.include?(requirement_class.new(">= 0"))`, which
-      # compares our Helm::Requirement against a Docker::Requirement, so this
-      # also guards that cross-class comparison.
+      # update-types to ALL_VERSIONS, and Base short-circuits on
+      # `ignore_requirements.include?(requirement_class.new(">= 0"))`. That
+      # compares a Helm::Requirement against a Docker::Requirement, which holds
+      # only because Gem::Version comparison is not class-sensitive; this pins
+      # that. Note it does not exercise the filtering itself, which the
+      # #latest_version examples cover.
       let(:version) { "17.04" }
       let(:ignored_versions) { [">= 0"] }
 
