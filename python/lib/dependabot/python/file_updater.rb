@@ -46,7 +46,7 @@ module Dependabot
         changed_reqs = reqs.zip(dependencies.flat_map(&:previous_requirements))
                            .reject { |(new_req, old_req)| new_req == old_req }
                            .map(&:first)
-        changed_req_files = changed_reqs.map { |r| r.fetch(:file) }
+        changed_req_files = changed_reqs.filter_map(&:file)
 
         # If there are no requirements then this is a sub-dependency. It
         # must come from one of Pipenv, Poetry or pip-tools, and can't come
