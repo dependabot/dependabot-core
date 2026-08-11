@@ -166,7 +166,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Build updater-core image
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
           file: Dockerfile.updater-core
@@ -183,7 +183,7 @@ jobs:
 
       - name: Build pre-commit go_modules image
         if: matrix.suite.name == 'pre_commit'
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
           file: go_modules/Dockerfile
@@ -198,7 +198,7 @@ jobs:
 
       - name: Build pre-commit bundler image
         if: matrix.suite.name == 'pre_commit'
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
           file: bundler/Dockerfile
@@ -212,7 +212,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=bundler
 
       - name: Build ecosystem image for validation
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
           file: ${{ steps.image.outputs.dockerfile }}
@@ -238,7 +238,7 @@ jobs:
 
       - name: Build and push branch image
         id: build
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
           file: ${{ steps.image.outputs.dockerfile }}
@@ -252,7 +252,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.suite.name }}
 
       - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f # v3.2.0
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ${{ steps.image.outputs.name }}
           subject-digest: ${{ steps.build.outputs.digest }}
