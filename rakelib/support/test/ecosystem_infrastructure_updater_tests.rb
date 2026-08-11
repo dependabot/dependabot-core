@@ -4,6 +4,7 @@
 require "tmpdir"
 require "fileutils"
 require_relative "helpers"
+require_relative "../infrastructure_updaters/github_workflow_updater"
 
 # Tests for ecosystem infrastructure update rake task
 module EcosystemInfrastructureUpdaterTests
@@ -47,8 +48,8 @@ module EcosystemInfrastructureUpdaterTests
         ".github/smoke-filters.yml" => "test_infra_eco",
         ".github/smoke-matrix.json" => "test_infra_eco",
         ".github/workflows/ci.yml" => "test_infra_eco",
-        ".github/workflows/images-branch.yml" => "test_infra_eco",
-        ".github/workflows/images-latest.yml" => "test_infra_eco",
+        "docker-bake.hcl" => '{ name = "test_infra_eco", image = "test-infra-eco", ' \
+                             'dockerfile = "test_infra_eco/Dockerfile" },',
         ".github/issue-labeler.yml" => "test_infra_eco",
         "bin/dry-run.rb" => "test_infra_eco",
         "script/dependabot" => "test_infra_eco",
@@ -90,7 +91,10 @@ module EcosystemInfrastructureUpdaterTests
 
       # Clean up
       puts "  Cleaning up test artifacts..."
-      run_command("cd #{original_dir} && git checkout -- .github bin script omnibus updater rakelib/support/helpers.rb")
+      run_command(
+        "cd #{original_dir} && " \
+        "git checkout -- docker-bake.hcl .github bin script omnibus updater rakelib/support/helpers.rb"
+      )
       FileUtils.rm_rf("#{original_dir}/test_infra_eco")
 
       all_updated
@@ -100,6 +104,31 @@ module EcosystemInfrastructureUpdaterTests
     end
   end
   # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
+
+  def test_ecosystem_update_infrastructure_rejects_duplicate_image?
+    puts "\n=== Testing ecosystem:update_infrastructure image collision ==="
+
+    original_dir = Dir.pwd
+    test_dir = Dir.mktmpdir
+    FileUtils.cp("#{original_dir}/docker-bake.hcl", test_dir)
+
+    Dir.chdir(test_dir) do
+      original_content = File.read("docker-bake.hcl")
+      updater = GitHubWorkflowUpdater.new("pip")
+      updater.update_all
+
+      if File.read("docker-bake.hcl") == original_content && updater.changes_made.empty?
+        puts "✓ Duplicate published image names are rejected"
+        true
+      else
+        puts "✗ Duplicate published image name was added"
+        false
+      end
+    end
+  ensure
+    FileUtils.rm_rf(test_dir) if test_dir
+    Dir.chdir(original_dir) if original_dir && Dir.exist?(original_dir)
+  end
 
   def test_ecosystem_update_infrastructure_validates_name?
     puts "\n=== Testing ecosystem:update_infrastructure name validation ==="
@@ -188,6 +217,7 @@ module EcosystemInfrastructureUpdaterTests
       infra_files = {
         ".github/ci-filters.yml" => "test_create_eco",
         ".github/issue-labeler.yml" => "test_create_eco",
+        "docker-bake.hcl" => "test_create_eco",
         "bin/dry-run.rb" => "test_create_eco",
         "omnibus/lib/dependabot/omnibus.rb" => "test_create_eco"
       }
@@ -209,7 +239,10 @@ module EcosystemInfrastructureUpdaterTests
 
       # Clean up
       puts "  Cleaning up test artifacts..."
-      run_command("cd #{original_dir} && git checkout -- .github bin script omnibus updater rakelib/support/helpers.rb")
+      run_command(
+        "cd #{original_dir} && " \
+        "git checkout -- docker-bake.hcl .github bin script omnibus updater rakelib/support/helpers.rb"
+      )
       FileUtils.rm_rf("#{original_dir}/test_create_eco")
 
       all_created
@@ -225,6 +258,7 @@ module EcosystemInfrastructureUpdaterTests
 
     results << test_ecosystem_update_infrastructure_validates_name?
     results << test_ecosystem_update_infrastructure_requires_name?
+    results << test_ecosystem_update_infrastructure_rejects_duplicate_image?
     results << test_ecosystem_update_infrastructure?
     results << test_ecosystem_create?
 
