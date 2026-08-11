@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -273,7 +273,7 @@ module Dependabot
         packages = client.all_provider_package_hashes(identifier: identifier, version: old_version)
         return nil unless packages
 
-        h1_to_platform = {}
+        h1_to_platform = T.let({}, T::Hash[String, String])
         packages.each do |platform, hashes|
           hashes.each do |h|
             h1_to_platform[h] = platform if h.start_with?("h1:")
