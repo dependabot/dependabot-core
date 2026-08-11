@@ -231,9 +231,7 @@ module Dependabot
       def get_requirement_for_dependency(dependency, context)
         # Look for a requirement in the dependency's requirements array
         requirements = dependency.requirements
-        requirement = nil
-
-        requirement = requirements.first&.dig(:requirement) unless requirements.empty?
+        requirement = requirements.first&.requirement_string unless requirements.empty?
 
         return requirement if requirement && !requirement.empty?
 
