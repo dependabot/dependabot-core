@@ -1634,7 +1634,15 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
   end
 
   describe "#replace_dep" do
-    subject(:replace_dep) { updater.send(:replace_dep, dependency, content, new_req, old_req) }
+    subject(:replace_dep) do
+      updater.send(
+        :replace_dep,
+        dependency,
+        content,
+        Dependabot::DependencyRequirement.create(new_req),
+        Dependabot::DependencyRequirement.create(old_req)
+      )
+    end
 
     let(:content) do
       <<~TOML

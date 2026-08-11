@@ -156,12 +156,13 @@ module Dependabot
         return if reqs.none?
 
         requirement = reqs.find do |r|
-          file = r[:file]
+          file = r.file
+          next false unless file
 
           file == "uv.lock" || file.end_with?("pyproject.toml") || file.end_with?(".in") || file.end_with?(".txt")
         end
 
-        requirement&.fetch(:requirement)
+        requirement&.requirement_string
       end
 
       sig { override.returns(String) }
@@ -186,7 +187,7 @@ module Dependabot
         return ">=#{dependency.version}" if dependency.version
 
         version_for_requirement =
-          requirements.filter_map { |r| r[:requirement] }
+          requirements.filter_map(&:requirement_string)
                       .reject { |req_string| req_string.start_with?("<") }
                       .select { |req_string| req_string.match?(VERSION_REGEX) }
                       .map { |req_string| req_string.match(VERSION_REGEX).to_s }
