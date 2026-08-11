@@ -37,17 +37,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Determine version tag
-        id: version
         if: contains(github.ref, 'refs/tags')
         run: |
           VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot.rb)"
-          echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "UPDATER_CORE_VERSION_TAG=$VERSION" >> "$GITHUB_ENV"
 
       - name: Build and push updater-core image
         id: build
         uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
-        env:
-          UPDATER_CORE_VERSION_TAG: ${{ steps.version.outputs.tag }}
         with:
           source: .
           targets: updater-core-publish

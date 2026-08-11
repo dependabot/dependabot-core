@@ -69,9 +69,10 @@ jobs:
         include: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     env:
       COMMIT_SHA: ${{ github.sha }}
+      DATE_VERSION: ${{ needs.date-version.outputs.date }}
       DEPENDABOT_UPDATER_VERSION: ""
-      ECOSYSTEM: ${{ matrix.target }}
       UPDATER_IMAGE: ghcr.io/dependabot/dependabot-updater-${{ matrix.target }}
+      VALIDATION_IMAGE: ghcr.io/dependabot/dependabot-updater-${{ matrix.target }}:validation-${{ github.run_id }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -96,11 +97,11 @@ jobs:
           provenance: false
           set: |
             ${{ matrix.target }}.output=type=docker
-            ${{ matrix.target }}.tags=${{ env.UPDATER_IMAGE }}:validation-${{ github.run_id }}
+            ${{ matrix.target }}.tags=${{ env.VALIDATION_IMAGE }}
 
       - name: Validate ecosystem image
         env:
-          IMAGE: ${{ env.UPDATER_IMAGE }}:validation-${{ github.run_id }}
+          IMAGE: ${{ env.VALIDATION_IMAGE }}
         run: |
           docker run --rm "$IMAGE" \
             bash -lc "cd /home/dependabot/dependabot-updater && bundle check"
@@ -120,7 +121,7 @@ jobs:
             ${{ matrix.target }}.output=type=registry
             ${{ matrix.target }}.tags=${{ env.UPDATER_IMAGE }}:${{ env.COMMIT_SHA }}
             ${{ matrix.target }}.tags+=${{ env.UPDATER_IMAGE }}:latest
-            ${{ matrix.target }}.tags+=${{ env.UPDATER_IMAGE }}:${{ needs.date-version.outputs.date }}
+            ${{ matrix.target }}.tags+=${{ env.UPDATER_IMAGE }}:${{ env.DATE_VERSION }}
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
@@ -131,8 +132,6 @@ jobs:
           create-storage-record: true
 
       - name: Pull images through backup registry
-        env:
-          DATE_VERSION: ${{ needs.date-version.outputs.date }}
         run: |
           docker pull "${BACKUP_REGISTRY}/${UPDATER_IMAGE}:$COMMIT_SHA"
           docker pull "${BACKUP_REGISTRY}/${UPDATER_IMAGE}:latest"
