@@ -1,6 +1,5 @@
 name: Latest images
 env:
-  UPDATER_IMAGE: "ghcr.io/dependabot/dependabot-updater-"
   BACKUP_REGISTRY: "dependabot-acr-apim-production.azure-api.net"
 on: # yamllint disable-line rule:truthy
   push:
@@ -20,59 +19,59 @@ jobs:
       - id: date
         name: Set date based version
         # The v2 tag is the Updater image tag, not related to the core version.
-        # This env var has to be set here so all versions are the same.
+        # This value has to be set here so all versions are the same.
         run: |
-          export DATE_BASED_VERSION=v2.0.$(date +%Y%m%d%H%M%S)
-          echo "DATE_BASED_VERSION=$DATE_BASED_VERSION" >> $GITHUB_OUTPUT
+          DATE_BASED_VERSION="v2.0.$(date +%Y%m%d%H%M%S)"
+          echo "DATE_BASED_VERSION=$DATE_BASED_VERSION" >> "$GITHUB_OUTPUT"
+
+  prepare:
+    runs-on: ubuntu-latest
+    if: github.repository == 'dependabot/dependabot-core'
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Generate ecosystem matrix
+        id: bake-matrix
+        uses: docker/bake-action/subaction/matrix@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
+        with:
+          target: ecosystem
+
+      - name: Remove internal targets
+        id: matrix
+        env:
+          BAKE_MATRIX: ${{ steps.bake-matrix.outputs.matrix }}
+        run: |
+          MATRIX=$(jq -c '[.[] | select(.target != "updater-core")]' <<< "$BAKE_MATRIX")
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
   push-updater-image:
     name: Deploy
     runs-on: ubuntu-latest
-    needs: date-version
+    needs:
+      - date-version
+      - prepare
     permissions:
       contents: read
       id-token: write
       packages: write
+      attestations: write
+      artifact-metadata: write
     strategy:
       fail-fast: false
       matrix:
-        suite:
-          - { name: bazel, ecosystem: bazel }
-          - { name: bun, ecosystem: bun }
-          - { name: bundler, ecosystem: bundler }
-          - { name: cargo, ecosystem: cargo }
-          - { name: composer, ecosystem: composer }
-          - { name: conda, ecosystem: conda }
-          - { name: deno, ecosystem: deno }
-          - { name: devcontainers, ecosystem: devcontainers }
-          - { name: docker_compose, ecosystem: docker-compose }
-          - { name: docker, ecosystem: docker }
-          - { name: dotnet_sdk, ecosystem: dotnet-sdk }
-          - { name: elm, ecosystem: elm }
-          - { name: git_submodules, ecosystem: gitsubmodule }
-          - { name: github_actions, ecosystem: github-actions }
-          - { name: go_modules, ecosystem: gomod }
-          - { name: gradle, ecosystem: gradle }
-          - { name: helm, ecosystem: helm }
-          - { name: hex, ecosystem: mix }
-          - { name: julia, ecosystem: julia }
-          - { name: maven, ecosystem: maven }
-          - { name: nix, ecosystem: nix }
-          - { name: npm_and_yarn, ecosystem: npm }
-          - { name: nuget, ecosystem: nuget }
-          - { name: pre_commit, ecosystem: pre-commit }
-          - { name: pub, ecosystem: pub }
-          - { name: python, ecosystem: pip }
-          - { name: rust_toolchain, ecosystem: rust-toolchain }
-          - { name: sbt, ecosystem: sbt }
-          - { name: swift, ecosystem: swift }
-          - { name: terraform, ecosystem: terraform }
-          - { name: opentofu, ecosystem: opentofu }
-          - { name: uv, ecosystem: uv }
-          - { name: vcpkg, ecosystem: vcpkg }
+        include: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     env:
       COMMIT_SHA: ${{ github.sha }}
-      NAME: ${{ matrix.suite.name }}
-      ECOSYSTEM: ${{ matrix.suite.ecosystem }}
+      DEPENDABOT_UPDATER_VERSION: ""
+      ECOSYSTEM: ${{ matrix.target }}
+      UPDATER_IMAGE: ghcr.io/dependabot/dependabot-updater-${{ matrix.target }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -80,25 +79,8 @@ jobs:
           submodules: recursive
           persist-credentials: false
 
-      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
-
-      - name: Expose GitHub Actions cache to Buildx
-        uses: crazy-max/ghaction-github-runtime@04d248b84655b509d8c44dc1d6f990c879747487 # v4.0.0
-
-      - name: Build the dependabot-updater-<ecosystem> image
-        # despite the script input being $NAME, the resulting image is dependabot-updater-${ECOSYSTEM}
-        env:
-          BUILDX_GHA_CACHE: "1"
-        run: script/build ${NAME}
-
-      - name: Tag the images with the SHA, `latest`, and the date version
-        run: |
-          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}" "${UPDATER_IMAGE}${ECOSYSTEM}:$COMMIT_SHA"
-          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}" "${UPDATER_IMAGE}${ECOSYSTEM}:latest"
-          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}" "${UPDATER_IMAGE}${ECOSYSTEM}:${{ needs.date-version.outputs.date }}"
 
       - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
@@ -106,21 +88,59 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push the images to GHCR
+      - name: Build ecosystem image for validation
+        uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
+        with:
+          source: .
+          targets: ${{ matrix.target }}
+          provenance: false
+          set: |
+            ${{ matrix.target }}.output=type=docker
+            ${{ matrix.target }}.tags=${{ env.UPDATER_IMAGE }}:validation-${{ github.run_id }}
+
+      - name: Validate ecosystem image
+        env:
+          IMAGE: ${{ env.UPDATER_IMAGE }}:validation-${{ github.run_id }}
         run: |
-          docker push --all-tags "${UPDATER_IMAGE}${ECOSYSTEM}"
-          # All tags should resolve to the same digest so we only need to look up one of them
-          cosign sign --yes $(cosign triangulate --type=digest "${UPDATER_IMAGE}${ECOSYSTEM}:latest")
+          docker run --rm "$IMAGE" \
+            bash -lc "cd /home/dependabot/dependabot-updater && bundle check"
+
+          IMAGE_LAYERS=$(docker history -q "$IMAGE" | wc -l | sed -e 's/ //g')
+          echo "$IMAGE contains $IMAGE_LAYERS layers"
+          [[ $IMAGE_LAYERS -lt 126 ]]
+
+      - name: Build and push ecosystem image
+        id: build
+        uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
+        with:
+          source: .
+          targets: ${{ matrix.target }}
+          provenance: false
+          set: |
+            ${{ matrix.target }}.output=type=registry
+            ${{ matrix.target }}.tags=${{ env.UPDATER_IMAGE }}:${{ env.COMMIT_SHA }}
+            ${{ matrix.target }}.tags+=${{ env.UPDATER_IMAGE }}:latest
+            ${{ matrix.target }}.tags+=${{ env.UPDATER_IMAGE }}:${{ needs.date-version.outputs.date }}
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ env.UPDATER_IMAGE }}
+          subject-digest: ${{ fromJSON(steps.build.outputs.metadata)[matrix.target]['containerimage.digest'] }}
+          push-to-registry: true
+          create-storage-record: true
 
       - name: Pull images through backup registry
         run: |
-          docker pull "${BACKUP_REGISTRY}/${UPDATER_IMAGE}${ECOSYSTEM}:$COMMIT_SHA"
-          docker pull "${BACKUP_REGISTRY}/${UPDATER_IMAGE}${ECOSYSTEM}:latest"
-          docker pull "${BACKUP_REGISTRY}/${UPDATER_IMAGE}${ECOSYSTEM}:${{ needs.date-version.outputs.date }}"
+          docker pull "${BACKUP_REGISTRY}/${UPDATER_IMAGE}:$COMMIT_SHA"
+          docker pull "${BACKUP_REGISTRY}/${UPDATER_IMAGE}:latest"
+          docker pull "${BACKUP_REGISTRY}/${UPDATER_IMAGE}:${{ needs.date-version.outputs.date }}"
 
       - name: Set summary
         run: |
-          echo "updater uploaded with tag \`$COMMIT_SHA\`" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "${UPDATER_IMAGE}${ECOSYSTEM}:$COMMIT_SHA" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "updater uploaded with tag \`$COMMIT_SHA\`"
+            echo "\`\`\`"
+            echo "$UPDATER_IMAGE:$COMMIT_SHA"
+            echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"

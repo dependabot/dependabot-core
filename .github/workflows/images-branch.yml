@@ -54,47 +54,44 @@ jobs:
           DECISION=$(gh pr view "$PR" --json reviewDecision,state,commits --jq '"\(.reviewDecision):\(.state):\(.commits | last .oid)"')
           echo "decision=$DECISION" >> "$GITHUB_OUTPUT"
 
-  push-updater-images:
+  prepare:
     runs-on: ubuntu-latest
     needs: approval
+    if: startsWith(needs.approval.outputs.decision, 'APPROVED:OPEN')
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Generate ecosystem matrix
+        id: bake-matrix
+        uses: docker/bake-action/subaction/matrix@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
+        with:
+          target: ecosystem
+
+      - name: Remove internal targets
+        id: matrix
+        env:
+          BAKE_MATRIX: ${{ steps.bake-matrix.outputs.matrix }}
+        run: |
+          MATRIX=$(jq -c '[.[] | select(.target != "updater-core")]' <<< "$BAKE_MATRIX")
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
+  push-updater-images:
+    runs-on: ubuntu-latest
+    needs:
+      - approval
+      - prepare
     if: startsWith(needs.approval.outputs.decision, 'APPROVED:OPEN')
     strategy:
       fail-fast: false
       matrix:
-        suite:
-          - { name: bazel, ecosystem: bazel }
-          - { name: bun, ecosystem: bun }
-          - { name: bundler, ecosystem: bundler }
-          - { name: cargo, ecosystem: cargo }
-          - { name: conda, ecosystem: conda }
-          - { name: composer, ecosystem: composer }
-          - { name: deno, ecosystem: deno }
-          - { name: devcontainers, ecosystem: devcontainers }
-          - { name: docker_compose, ecosystem: docker-compose }
-          - { name: docker, ecosystem: docker }
-          - { name: dotnet_sdk, ecosystem: dotnet-sdk }
-          - { name: elm, ecosystem: elm }
-          - { name: git_submodules, ecosystem: gitsubmodule }
-          - { name: github_actions, ecosystem: github-actions }
-          - { name: go_modules, ecosystem: gomod }
-          - { name: gradle, ecosystem: gradle }
-          - { name: helm, ecosystem: helm }
-          - { name: hex, ecosystem: mix }
-          - { name: julia, ecosystem: julia }
-          - { name: maven, ecosystem: maven }
-          - { name: nix, ecosystem: nix }
-          - { name: npm_and_yarn, ecosystem: npm }
-          - { name: nuget, ecosystem: nuget }
-          - { name: pre_commit, ecosystem: pre-commit }
-          - { name: pub, ecosystem: pub }
-          - { name: python, ecosystem: pip }
-          - { name: rust_toolchain, ecosystem: rust-toolchain }
-          - { name: sbt, ecosystem: sbt }
-          - { name: swift, ecosystem: swift }
-          - { name: terraform, ecosystem: terraform }
-          - { name: opentofu, ecosystem: opentofu }
-          - { name: uv, ecosystem: uv }
-          - { name: vcpkg, ecosystem: vcpkg }
+        include: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     permissions:
       contents: read
       id-token: write
@@ -103,15 +100,17 @@ jobs:
       artifact-metadata: write
     env:
       DEPENDABOT_UPDATER_VERSION: ${{ github.sha }}
-      ECOSYSTEM: ${{ matrix.suite.ecosystem }}
-      NAME: ${{ matrix.suite.name }}
-      UPDATER_IMAGE: ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}
+      ECOSYSTEM: ${{ matrix.target }}
+      UPDATER_IMAGE: ghcr.io/dependabot/dependabot-updater-${{ matrix.target }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           persist-credentials: false
+
+      - name: Preserve build definition
+        run: cp docker-bake.hcl "$RUNNER_TEMP/docker-bake.hcl"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
@@ -141,85 +140,18 @@ jobs:
 
       - name: Resolve build metadata
         id: metadata
-        run: |
-          DOCKERFILE="$NAME/Dockerfile"
-          if [[ "$NAME" == "docker_compose" ]]; then
-            DOCKERFILE="docker/Dockerfile"
-          fi
-
-          {
-            echo "dockerfile=$DOCKERFILE"
-            echo "version=$DEPENDABOT_UPDATER_VERSION"
-            echo "build-contexts<<EOF"
-            echo "ghcr.io/dependabot/dependabot-updater-core=oci-layout://$RUNNER_TEMP/updater-core"
-            if [[ "$NAME" == "pre_commit" ]]; then
-              echo "ghcr.io/dependabot/dependabot-updater-gomod:latest=oci-layout://$RUNNER_TEMP/go-modules"
-              echo "ghcr.io/dependabot/dependabot-updater-bundler:latest=oci-layout://$RUNNER_TEMP/bundler"
-            fi
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Build updater-core image
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
-        with:
-          context: .
-          file: Dockerfile.updater-core
-          outputs: type=oci,dest=${{ runner.temp }}/updater-core,tar=false
-          provenance: false
-          build-args: |
-            USER_UID=1000
-            USER_GID=1000
-            DEPENDABOT_UPDATER_VERSION=${{ steps.metadata.outputs.version }}
-          cache-from: |
-            type=gha,scope=updater-core
-            type=registry,ref=ghcr.io/dependabot/dependabot-updater-core:latest
-          cache-to: type=gha,mode=max,scope=updater-core
-
-      # script/build previously built these recursively for pre_commit. Keep using the reviewed
-      # commit instead of pulling the published gomod and bundler images.
-      - name: Build pre-commit go_modules image
-        if: matrix.suite.name == 'pre_commit'
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
-        with:
-          context: .
-          file: go_modules/Dockerfile
-          outputs: type=oci,dest=${{ runner.temp }}/go-modules,tar=false
-          provenance: false
-          build-contexts: |
-            ghcr.io/dependabot/dependabot-updater-core=oci-layout://${{ runner.temp }}/updater-core
-          cache-from: |
-            type=gha,scope=go_modules
-            type=registry,ref=ghcr.io/dependabot/dependabot-updater-gomod:latest
-          cache-to: type=gha,mode=max,scope=go_modules
-
-      - name: Build pre-commit bundler image
-        if: matrix.suite.name == 'pre_commit'
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
-        with:
-          context: .
-          file: bundler/Dockerfile
-          outputs: type=oci,dest=${{ runner.temp }}/bundler,tar=false
-          provenance: false
-          build-contexts: |
-            ghcr.io/dependabot/dependabot-updater-core=oci-layout://${{ runner.temp }}/updater-core
-          cache-from: |
-            type=gha,scope=bundler
-            type=registry,ref=ghcr.io/dependabot/dependabot-updater-bundler:latest
-          cache-to: type=gha,mode=max,scope=bundler
+        run: echo "version=$DEPENDABOT_UPDATER_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Build ecosystem image for validation
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
         with:
-          context: .
-          file: ${{ steps.metadata.outputs.dockerfile }}
-          load: true
-          tags: ${{ env.UPDATER_IMAGE }}:validation-${{ github.run_id }}
+          source: .
+          files: ${{ runner.temp }}/docker-bake.hcl
+          targets: ${{ matrix.target }}
           provenance: false
-          build-contexts: ${{ steps.metadata.outputs.build-contexts }}
-          cache-from: |
-            type=gha,scope=${{ matrix.suite.name }}
-            type=registry,ref=${{ env.UPDATER_IMAGE }}:latest
-          cache-to: type=gha,mode=max,scope=${{ matrix.suite.name }}
+          set: |
+            ${{ matrix.target }}.output=type=docker
+            ${{ matrix.target }}.tags=${{ env.UPDATER_IMAGE }}:validation-${{ github.run_id }}
 
       - name: Validate ecosystem image
         env:
@@ -234,24 +166,21 @@ jobs:
 
       - name: Build and push branch image
         id: build
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
         with:
-          context: .
-          file: ${{ steps.metadata.outputs.dockerfile }}
-          push: true
-          tags: ${{ env.UPDATER_IMAGE }}:${{ steps.metadata.outputs.version }}
+          source: .
+          files: ${{ runner.temp }}/docker-bake.hcl
+          targets: ${{ matrix.target }}
           provenance: false
-          build-contexts: ${{ steps.metadata.outputs.build-contexts }}
-          cache-from: |
-            type=gha,scope=${{ matrix.suite.name }}
-            type=registry,ref=${{ env.UPDATER_IMAGE }}:latest
-          cache-to: type=gha,mode=max,scope=${{ matrix.suite.name }}
+          set: |
+            ${{ matrix.target }}.output=type=registry
+            ${{ matrix.target }}.tags=${{ env.UPDATER_IMAGE }}:${{ steps.metadata.outputs.version }}
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ${{ env.UPDATER_IMAGE }}
-          subject-digest: ${{ steps.build.outputs.digest }}
+          subject-digest: ${{ fromJSON(steps.build.outputs.metadata)[matrix.target]['containerimage.digest'] }}
           push-to-registry: true
           create-storage-record: true
 
