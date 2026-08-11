@@ -1309,6 +1309,14 @@ public class EndToEndTests
             MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net9.0"),
             MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.1.0", "net9.0"),
         ], repoContentsPath);
+        await GitTestHelper.InitializeRepositoryAsync(
+            repoContentsPath,
+            [
+                "src/client/client.csproj",
+                "src/client/packages.lock.json",
+                "src/library/library.csproj",
+                "src/library/packages.lock.json",
+            ]);
         var jobId = "TEST-JOB-ID";
         var experimentsManager = new ExperimentsManager();
         var logger = new TestLogger();
@@ -1632,6 +1640,7 @@ public class EndToEndTests
             Directory.CreateDirectory(directory);
             await File.WriteAllBytesAsync(fullPath, content);
         }
+        await GitTestHelper.InitializeRepositoryAsync(repoContentsPath, rawFiles.Select(file => file.Path));
 
         // act
         experimentsManager ??= new ExperimentsManager();
