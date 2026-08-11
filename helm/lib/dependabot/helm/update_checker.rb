@@ -43,6 +43,16 @@ module Dependabot
         dependency.version
       end
 
+      # The requirement class registered for helm is Docker::Requirement, whose
+      # #satisfied_by? is typed to accept a Docker::Version. Candidates here are
+      # Helm::Version, so the base implementation builds requirements that raise
+      # when applied. Parse ignore conditions with Helm::Requirement instead, so
+      # the comparison is Helm::Version against Helm::Version.
+      sig { override.returns(T::Array[Dependabot::Requirement]) }
+      def ignore_requirements
+        ignored_versions.flat_map { |req| Helm::Requirement.requirements_array(req) }
+      end
+
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         return dependency.requirements unless latest_version
@@ -241,9 +251,7 @@ module Dependabot
           # dependency.version: for a range constraint (">=1.0.0 <2.0.0") the raw
           # version string isn't a single parseable version.
           release_version <= current_version ||
-            ignore_requirements.any? do |r|
-              r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(release_version)
-            end
+            ignore_requirements.any? { |r| r.satisfied_by?(release_version) }
         end
       end
 
@@ -445,9 +453,7 @@ module Dependabot
       def filter_valid_versions(all_versions)
         all_versions.reject do |version|
           version_class.new(version) <= current_version ||
-            ignore_requirements.any? do |r|
-              r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(version_class.new(version))
-            end
+            ignore_requirements.any? { |r| r.satisfied_by?(version_class.new(version)) }
         end
       end
 
