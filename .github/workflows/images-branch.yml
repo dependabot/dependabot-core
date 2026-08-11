@@ -226,7 +226,15 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.suite.name }}
 
       - name: Validate ecosystem image
-        run: script/validate-image "${{ steps.image.outputs.validation-reference }}"
+        env:
+          IMAGE: ${{ steps.image.outputs.validation-reference }}
+        run: |
+          docker run --rm "$IMAGE" \
+            bash -lc "cd /home/dependabot/dependabot-updater && bundle check"
+
+          IMAGE_LAYERS=$(docker history -q "$IMAGE" | wc -l | sed -e 's/ //g')
+          echo "$IMAGE contains $IMAGE_LAYERS layers"
+          [[ $IMAGE_LAYERS -lt 126 ]]
 
       - name: Build and push branch image
         id: build
