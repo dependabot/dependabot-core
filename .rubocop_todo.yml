@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 943
+# Offense count: 929
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bun/lib/dependabot/bun.rb"
@@ -353,10 +353,8 @@ Sorbet/ForbidTUntyped:
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/vulnerability_auditor.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/version_selector.rb"
     - "opentofu/lib/dependabot/opentofu/file_parser.rb"
-    - "opentofu/lib/dependabot/opentofu/file_updater.rb"
     - "opentofu/lib/dependabot/opentofu/package/package_details_fetcher.rb"
     - "opentofu/lib/dependabot/opentofu/registry_client.rb"
-    - "opentofu/lib/dependabot/opentofu/update_checker.rb"
     - "opentofu/lib/dependabot/opentofu/update_checker/latest_version_resolver.rb"
     - "pub/lib/dependabot/pub/helpers.rb"
     - "pub/lib/dependabot/pub/metadata_finder.rb"

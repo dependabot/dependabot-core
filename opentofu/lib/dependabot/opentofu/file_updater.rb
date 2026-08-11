@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/dependency_requirement"
 require "dependabot/errors"
 require "dependabot/opentofu/file_selector"
 require "dependabot/opentofu/registry_client"
@@ -73,7 +74,7 @@ module Dependabot
           (dependency.requirements - T.must(dependency.previous_requirements)) |
           (T.must(dependency.previous_requirements) - dependency.requirements)
 
-        changed_requirements.any? { |f| f[:file] == file.name }
+        changed_requirements.any? { |requirement| requirement.file == file.name }
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(String) }
@@ -85,14 +86,15 @@ module Dependabot
 
         # Loop through each changed requirement and update the files and lockfile
         reqs.each do |new_req, old_req|
-          raise "Bad req match" unless new_req[:file] == old_req&.fetch(:file)
-          next unless new_req.fetch(:file) == file.name
+          raise "Bad req match" unless new_req.file == old_req&.file
+          next unless new_req.file == file.name
 
-          case new_req[:source][:type]
+          source_type = T.must(new_req.source_string("type"))
+          case source_type
           when "git"
             update_git_declaration(new_req, old_req, content, file.name)
           when "registry", "provider"
-            if new_req[:source][:local_variable]
+            if new_req.source_string("local_variable")
               update_local_variable_declaration(new_req, old_req, content)
             else
               update_registry_declaration(new_req, old_req, content)
@@ -100,8 +102,7 @@ module Dependabot
           when "oci"
             update_oci_declaration(new_req, old_req, content)
           else
-            raise "Don't know how to update a #{new_req[:source][:type]} " \
-                  "declaration!"
+            raise "Don't know how to update a #{source_type} declaration!"
           end
         end
 
@@ -110,39 +111,41 @@ module Dependabot
 
       sig do
         params(
-          new_req: T::Hash[Symbol, T.untyped],
-          old_req: T.nilable(T::Hash[Symbol, T.untyped]),
+          new_req: Dependabot::DependencyRequirement,
+          old_req: T.nilable(Dependabot::DependencyRequirement),
           updated_content: String,
           filename: String
         )
           .void
       end
       def update_git_declaration(new_req, old_req, updated_content, filename)
-        url = old_req&.dig(:source, :url)&.gsub(%r{^https://}, "")
-        tag = old_req&.dig(:source, :ref)
+        url = T.must(old_req&.source_string("url")).gsub(%r{^https://}, "")
+        old_ref = T.must(old_req&.source_string("ref"))
+        new_ref = T.must(new_req.source_string("ref"))
+        tag = old_ref
         url_regex = /#{Regexp.quote(url)}.*ref=#{Regexp.quote(tag)}/
 
         declaration_regex = git_declaration_regex(filename)
 
         updated_content.sub!(declaration_regex) do |regex_match|
           regex_match.sub(url_regex) do |url_match|
-            url_match.sub(old_req&.dig(:source, :ref), new_req[:source][:ref])
+            url_match.sub(old_ref, new_ref)
           end
         end
       end
 
       sig do
         params(
-          new_req: T::Hash[Symbol, T.untyped],
-          old_req: T.nilable(T::Hash[Symbol, T.untyped]),
+          new_req: Dependabot::DependencyRequirement,
+          old_req: T.nilable(Dependabot::DependencyRequirement),
           updated_content: String
         )
           .void
       end
       def update_oci_declaration(new_req, old_req, updated_content)
-        old_tag = old_req&.dig(:source, :tag)
-        new_tag = new_req[:source][:tag]
-        artifact = old_req&.dig(:source, :artifact_identifier)
+        old_tag = old_req&.source_string("tag")
+        new_tag = new_req.source_string("tag")
+        artifact = old_req&.source_string("artifact_identifier")
         return if old_tag.nil? || new_tag.nil? || artifact.nil? || old_tag == new_tag
 
         # Scoped to this artifact's source string so unrelated modules with
@@ -156,43 +159,46 @@ module Dependabot
 
       sig do
         params(
-          new_req: T::Hash[Symbol, T.untyped],
-          old_req: T.nilable(T::Hash[Symbol, T.untyped]),
+          new_req: Dependabot::DependencyRequirement,
+          old_req: T.nilable(Dependabot::DependencyRequirement),
           updated_content: String
         )
           .void
       end
       def update_registry_declaration(new_req, old_req, updated_content)
-        regex = if new_req[:source][:type] == "provider"
+        regex = if new_req.source_string("type") == "provider"
                   provider_declaration_regex(updated_content)
                 else
                   registry_declaration_regex
                 end
 
+        old_requirement = T.must(old_req&.requirement_string)
+        new_requirement = T.must(new_req.requirement_string)
+
         # Define and break down the version regex for better clarity
         version_key_pattern = /^\s*version\s*=\s*/
-        version_value_pattern = /["'].*#{Regexp.escape(old_req&.fetch(:requirement))}.*['"]/
+        version_value_pattern = /["'].*#{Regexp.escape(old_requirement)}.*['"]/
         version_regex = /#{version_key_pattern}#{version_value_pattern}/
 
         updated_content.gsub!(regex) do |regex_match|
           regex_match.sub(version_regex) do |req_line_match|
-            req_line_match.sub!(old_req&.fetch(:requirement), new_req[:requirement])
+            req_line_match.sub!(old_requirement, new_requirement)
           end
         end
       end
 
       sig do
         params(
-          new_req: T::Hash[Symbol, T.untyped],
-          old_req: T.nilable(T::Hash[Symbol, T.untyped]),
+          new_req: Dependabot::DependencyRequirement,
+          old_req: T.nilable(Dependabot::DependencyRequirement),
           updated_content: String
         )
           .void
       end
       def update_local_variable_declaration(new_req, old_req, updated_content)
-        var_name = new_req[:source][:local_variable]
-        old_version = old_req&.fetch(:requirement)
-        new_version = new_req[:requirement]
+        var_name = T.must(new_req.source_string("local_variable"))
+        old_version = old_req&.requirement_string
+        new_version = new_req.requirement_string
         return if old_version.nil? || new_version.nil? || old_version == new_version
 
         local_var_regex = /
@@ -222,13 +228,15 @@ module Dependabot
 
       sig do
         params(
-          new_req: T::Hash[Symbol, T.untyped]
+          new_req: Dependabot::DependencyRequirement
         )
           .returns([String, String, Regexp])
       end
       def lockfile_details(new_req)
         content = T.must(lockfile).content.dup
-        provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
+        registry_hostname = T.must(new_req.source_string("registry_hostname"))
+        module_identifier = T.must(new_req.source_string("module_identifier"))
+        provider_source = "#{registry_hostname}/#{module_identifier}"
         declaration_regex = lockfile_declaration_regex(provider_source)
 
         [T.must(content), provider_source, declaration_regex]
@@ -239,7 +247,7 @@ module Dependabot
         new_req = T.must(dependency.requirements.first)
 
         # NOTE: Only providers are included in the lockfile, modules are not
-        return unless new_req[:source][:type] == "provider"
+        return unless new_req.source_string("type") == "provider"
 
         result = lookup_hash_architecture_from_registry(new_req)
         return result if result
@@ -247,17 +255,20 @@ module Dependabot
         lookup_hash_architecture_from_cli(new_req)
       end
 
-      sig { params(new_req: T::Hash[Symbol, T.untyped]).returns(T.nilable(T::Array[Symbol])) }
+      sig do
+        params(new_req: Dependabot::DependencyRequirement)
+          .returns(T.nilable(T::Array[Symbol]))
+      end
       def lookup_hash_architecture_from_registry(new_req) # rubocop:disable Metrics/PerceivedComplexity
         content, _provider_source, declaration_regex = lockfile_details(new_req)
         existing_h1 = extract_provider_h1_hashes(content, declaration_regex)
         return nil if existing_h1.empty?
 
-        identifier = new_req[:source][:module_identifier]
+        identifier = T.must(new_req.source_string("module_identifier"))
         old_version = dependency.previous_version
         return nil unless old_version
 
-        hostname = new_req[:source][:registry_hostname] || RegistryClient::PUBLIC_HOSTNAME
+        hostname = new_req.source_string("registry_hostname") || RegistryClient::PUBLIC_HOSTNAME
         client = RegistryClient.new(hostname: hostname, credentials: credentials)
         packages = client.all_provider_package_hashes(identifier: identifier, version: old_version)
         return nil unless packages
@@ -275,7 +286,7 @@ module Dependabot
         nil
       end
 
-      sig { params(new_req: T::Hash[Symbol, T.untyped]).returns(T::Array[Symbol]) }
+      sig { params(new_req: Dependabot::DependencyRequirement).returns(T::Array[Symbol]) }
       def lookup_hash_architecture_from_cli(new_req) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
         architectures = []
         content, provider_source, declaration_regex = lockfile_details(new_req)
@@ -346,7 +357,7 @@ module Dependabot
         return if lockfile.nil?
 
         new_req = T.must(dependency.requirements.first)
-        return unless new_req[:source][:type] == "provider"
+        return unless new_req.source_string("type") == "provider"
 
         result = update_lockfile_from_registry(new_req)
         return result if result
@@ -354,17 +365,17 @@ module Dependabot
         update_lockfile_from_cli(new_req, updated_manifest_files)
       end
 
-      sig { params(new_req: T::Hash[Symbol, T.untyped]).returns(T.nilable(String)) }
+      sig { params(new_req: Dependabot::DependencyRequirement).returns(T.nilable(String)) }
       def update_lockfile_from_registry(new_req) # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
         content, provider_source, declaration_regex = lockfile_details(new_req)
         platforms = architecture_type
         return nil if platforms.empty?
 
-        identifier = new_req[:source][:module_identifier]
+        identifier = T.must(new_req.source_string("module_identifier"))
         new_version = dependency.version
         return nil unless new_version
 
-        hostname = new_req[:source][:registry_hostname] || RegistryClient::PUBLIC_HOSTNAME
+        hostname = new_req.source_string("registry_hostname") || RegistryClient::PUBLIC_HOSTNAME
         client = RegistryClient.new(hostname: hostname, credentials: credentials)
         packages = client.all_provider_package_hashes(identifier: identifier, version: new_version)
         return nil unless packages
@@ -432,7 +443,7 @@ module Dependabot
 
       sig do
         params(
-          new_req: T::Hash[Symbol, T.untyped],
+          new_req: Dependabot::DependencyRequirement,
           updated_manifest_files: T::Array[Dependabot::DependencyFile]
         ).returns(T.nilable(String))
       end
@@ -509,7 +520,7 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def files_with_requirement
-        filenames = dependency.requirements.map { |r| r[:file] }
+        filenames = dependency.requirements.map(&:file)
         dependency_files.select { |file| filenames.include?(file.name) }
       end
 
@@ -581,8 +592,7 @@ module Dependabot
 
       sig { params(dependency: Dependabot::Dependency).returns(String) }
       def registry_host_for(dependency)
-        source = dependency.requirements.filter_map { |r| r[:source] }.first
-        source[:registry_hostname] || source["registry_hostname"] || "registry.opentofu.org"
+        dependency.requirements.first&.source_string("registry_hostname") || "registry.opentofu.org"
       end
 
       sig { params(provider_source: String).returns(Regexp) }
