@@ -88,6 +88,29 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       it { is_expected.to eq(Dependabot::Helm::Version.new("18.19.4")) }
     end
 
+    context "when the ignore condition is an exact version" do
+      let(:ignored_versions) { ["20.11.3"] }
+
+      it { is_expected.to eq(Dependabot::Helm::Version.new("20.11.2")) }
+    end
+
+    context "when an update-types comma-AND range covers everything newer" do
+      # ignored_minor_versions and ignored_patch_versions generate comma-AND
+      # ranges, so Helm::Requirement has to split on the comma rather than choke
+      # on it.
+      let(:ignored_versions) { [">= 18.a, < 21"] }
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when an update-types comma-AND range covers nothing present" do
+      let(:ignored_versions) { ["> 17.11.3, < 17.12"] }
+
+      # Guards against the range over-matching: a parse failure or a dropped
+      # upper bound would take the later majors with it.
+      it { is_expected.to eq(Dependabot::Helm::Version.new("20.11.3")) }
+    end
+
     context "when every newer version is ignored and raise_on_ignored is set" do
       let(:ignored_versions) { [">= 0"] }
       let(:raise_on_ignored) { true }
@@ -95,6 +118,40 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       it "raises AllVersionsIgnored" do
         expect { latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
       end
+    end
+
+    context "when a newer version survives and raise_on_ignored is set" do
+      let(:ignored_versions) { [">= 20.0.0"] }
+      let(:raise_on_ignored) { true }
+
+      it { is_expected.to eq(Dependabot::Helm::Version.new("19.6.4")) }
+    end
+
+    context "when nothing newer exists and raise_on_ignored is set" do
+      let(:version) { "20.11.3" }
+      let(:raise_on_ignored) { true }
+
+      # "up to date" must stay distinguishable from "everything was ignored".
+      it { is_expected.to be_nil }
+    end
+
+    context "when a later source still has a version the first one ignored" do
+      # The helm CLI search runs first and falls through to index.yaml when it
+      # comes up empty. Its list can be narrower than the index's, so an ignore
+      # rule wiping out everything it saw must not end the search: index.yaml
+      # still has 20.11.3, which no rule here excludes.
+      let(:repo_tags) { [{ "name" => "redis", "version" => "18.0.0", "app_version" => "7.2.0" }].to_json }
+      let(:source) { { registry: repo_url, tag: version } }
+      let(:ignored_versions) { [">= 18.0.0, < 19.0.0"] }
+      let(:raise_on_ignored) { true }
+      let(:credentials) { [] }
+
+      before do
+        stub_request(:get, "#{repo_url}/index.yaml")
+          .to_return(status: 200, body: fixture("helm", "registry", "bitnami.yaml"))
+      end
+
+      it { is_expected.to eq(Dependabot::Helm::Version.new("20.11.3")) }
     end
 
     context "when dependency is a docker image" do
@@ -213,11 +270,11 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
     context "when a bare dependency-name ignore rule covers everything" do
       # IgnoreCondition expands `dependency-name:` with no versions or
       # update-types to ALL_VERSIONS, and Base short-circuits on
-      # `ignore_requirements.include?(requirement_class.new(">= 0"))`. That
-      # compares a Helm::Requirement against a Docker::Requirement, which holds
-      # only because Gem::Version comparison is not class-sensitive; this pins
-      # that. Note it does not exercise the filtering itself, which the
-      # #latest_version examples cover.
+      # `ignore_requirements.include?(requirement_class.new(">= 0"))`. Building
+      # that list from Helm::Requirement instead puts a Helm::Version up against
+      # a plain Gem::Version there, which Helm::Version#<=>'s sig rejects, so
+      # this guards that #ignore_requirements keeps returning the registered
+      # class. The filtering itself is covered under #latest_version.
       let(:version) { "17.04" }
       let(:ignored_versions) { [">= 0"] }
 
@@ -486,41 +543,6 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       ]
     end
 
-    context "when an ignore condition covers every candidate" do
-      let(:ignored_versions) { [">= 18.0.0"] }
-
-      it "filters out the ignored versions" do
-        result = checker.send(:filter_valid_releases, releases)
-
-        # 17.0.0 and 17.7.1 are <= current version (17.11.3); the rest are ignored.
-        expect(result).to be_empty
-      end
-    end
-
-    context "when an ignore condition covers only some candidates" do
-      let(:ignored_versions) { [">= 19.0.0"] }
-
-      it "keeps the versions outside the ignore condition" do
-        result = checker.send(:filter_valid_releases, releases)
-
-        expect(result.map { |r| r["version"] }).to contain_exactly("18.0.0")
-      end
-    end
-
-    context "when ignore conditions are parsed" do
-      let(:ignored_versions) { [">= 18.0.0"] }
-
-      # Docker::Requirement is the requirement class registered for helm, but its
-      # #satisfied_by? is typed for Docker::Version and raises on Helm::Version.
-      it "uses Helm::Requirement so Helm versions can be compared" do
-        expect(checker.ignore_requirements).to all(be_a(Dependabot::Helm::Requirement))
-      end
-
-      it "does not raise when applying them to Helm versions" do
-        expect { checker.send(:filter_valid_releases, releases) }.not_to raise_error
-      end
-    end
-
     context "when the constraint is a range" do
       let(:releases) { [{ "version" => "0.5.0" }, { "version" => "1.5.0" }, { "version" => "2.5.0" }] }
 
@@ -555,117 +577,6 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
         it "anchors on the lowest pinned version" do
           result = checker.send(:filter_valid_releases, releases)
           expect(result.map { |r| r["version"] }).to contain_exactly("1.5.0", "2.5.0")
-        end
-      end
-    end
-  end
-
-  describe "#filter_valid_versions" do
-    let(:all_versions) { ["17.0.0", "17.7.1", "18.0.0", "19.0.0", "20.0.0"] }
-
-    context "when an ignore condition covers every candidate" do
-      let(:ignored_versions) { [">= 18.0.0"] }
-
-      it "filters out the ignored versions" do
-        result = checker.send(:filter_valid_versions, all_versions)
-
-        # 17.0.0 and 17.7.1 are <= current version (17.11.3); the rest are ignored.
-        expect(result).to be_empty
-      end
-    end
-
-    context "when an ignore condition covers only some candidates" do
-      let(:ignored_versions) { [">= 19.0.0"] }
-
-      it "keeps the versions outside the ignore condition" do
-        result = checker.send(:filter_valid_versions, all_versions)
-
-        expect(result).to contain_exactly("18.0.0")
-      end
-    end
-
-    context "when an ignore condition is an exact version" do
-      let(:ignored_versions) { ["19.0.0"] }
-
-      it "filters out only that version" do
-        result = checker.send(:filter_valid_versions, all_versions)
-
-        expect(result).to contain_exactly("18.0.0", "20.0.0")
-      end
-    end
-
-    context "when applying ignore conditions to Helm versions" do
-      let(:version) { "17.7.1" }
-      let(:ignored_versions) { [">= 17.7.0"] }
-
-      # Regression: Helm::Version "17.7.1" reaching a requirement typed for
-      # Docker::Version used to raise a Sorbet parameter error.
-      it "does not raise" do
-        expect { checker.send(:filter_valid_versions, ["17.7.1", "18.0.0"]) }.not_to raise_error
-      end
-    end
-
-    # update-types conditions are generated by Dependabot::Version, not written
-    # by hand, so Helm::Requirement has to accept the "a" pre-release floor from
-    # ignored_major_versions and the comma-AND ranges from the minor and patch
-    # variants.
-    context "when the ignore condition comes from update-types" do
-      context "with a major bound" do
-        let(:ignored_versions) { [">= 18.a"] }
-
-        it "filters out the major and everything above it" do
-          expect(checker.send(:filter_valid_versions, all_versions)).to be_empty
-        end
-      end
-
-      context "with a comma-AND minor range" do
-        let(:ignored_versions) { [">= 17.12.a, < 18"] }
-
-        it "applies both bounds and leaves later majors alone" do
-          result = checker.send(:filter_valid_versions, all_versions)
-
-          expect(result).to contain_exactly("18.0.0", "19.0.0", "20.0.0")
-        end
-      end
-
-      context "with a comma-AND patch range" do
-        let(:ignored_versions) { ["> 17.11.3, < 17.12"] }
-
-        it "applies both bounds" do
-          result = checker.send(:filter_valid_versions, all_versions)
-
-          expect(result).to contain_exactly("18.0.0", "19.0.0", "20.0.0")
-        end
-      end
-    end
-
-    context "when raise_on_ignored is set" do
-      let(:raise_on_ignored) { true }
-
-      context "when every newer version is ignored" do
-        let(:ignored_versions) { [">= 18.0.0"] }
-
-        # The updater needs this to tell "all newer releases were ignored" from
-        # "no newer release exists"; an empty list collapses the two.
-        it "raises AllVersionsIgnored" do
-          expect { checker.send(:filter_valid_versions, all_versions) }
-            .to raise_error(Dependabot::AllVersionsIgnored)
-        end
-      end
-
-      context "when no newer version exists to begin with" do
-        it "returns an empty list without raising" do
-          result = checker.send(:filter_valid_versions, ["17.0.0", "17.7.1"])
-
-          expect(result).to be_empty
-        end
-      end
-
-      context "when some newer version survives" do
-        let(:ignored_versions) { [">= 19.0.0"] }
-
-        it "does not raise" do
-          expect(checker.send(:filter_valid_versions, all_versions)).to contain_exactly("18.0.0")
         end
       end
     end

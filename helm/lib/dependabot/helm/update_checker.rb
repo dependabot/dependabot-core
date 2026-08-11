@@ -43,16 +43,6 @@ module Dependabot
         dependency.version
       end
 
-      # The requirement class registered for helm is Docker::Requirement, whose
-      # #satisfied_by? is typed to accept a Docker::Version. Candidates here are
-      # Helm::Version, so the base implementation builds requirements that raise
-      # when applied. Parse ignore conditions with Helm::Requirement instead, so
-      # the comparison is Helm::Version against Helm::Version.
-      sig { override.returns(T::Array[Dependabot::Requirement]) }
-      def ignore_requirements
-        ignored_versions.flat_map { |req| Helm::Requirement.requirements_array(req) }
-      end
-
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         return dependency.requirements unless latest_version
@@ -248,21 +238,54 @@ module Dependabot
         # Compare against current_version (the anchored floor) rather than
         # dependency.version: for a range constraint (">=1.0.0 <2.0.0") the raw
         # version string isn't a single parseable version.
-        # The "too old" and "ignored" rejections are kept apart so we can tell
-        # "everything newer was ignored" from "nothing newer exists"; the updater
-        # needs AllVersionsIgnored for the former, and an empty list collapses
-        # the two.
         newer = releases.reject do |release|
           version_class.new(T.cast(release["version"], String)) <= current_version
         end
         filtered = newer.reject do |release|
           release_version = version_class.new(T.cast(release["version"], String))
-          ignore_requirements.any? { |r| r.satisfied_by?(release_version) }
+          helm_ignore_requirements.any? { |r| r.satisfied_by?(release_version) }
         end
 
-        raise Dependabot::AllVersionsIgnored if raise_on_ignored && filtered.empty? && newer.any?
-
+        record_ignore_outcome(newer: newer.any?, surviving: filtered.any?)
         filtered
+      end
+
+      # Ignore conditions have to be parsed by Helm::Requirement here, not by the
+      # requirement class registered for helm: that is Docker::Requirement, whose
+      # #satisfied_by? is typed for Docker::Version and raises on the
+      # Helm::Version candidates below.
+      #
+      # This deliberately does not override the public #ignore_requirements.
+      # Base#can_update? compares that list against
+      # requirement_class.new(">= 0"), and a Helm::Requirement there puts a
+      # Helm::Version up against a plain Gem::Version, which Helm::Version#<=>'s
+      # sig rejects. So the registered class keeps serving Base, and only the
+      # filtering below uses the Helm parser.
+      sig { returns(T::Array[Dependabot::Requirement]) }
+      def helm_ignore_requirements
+        @helm_ignore_requirements ||= T.let(
+          ignored_versions.flat_map { |req| Helm::Requirement.requirements_array(req) },
+          T.nilable(T::Array[Dependabot::Requirement])
+        )
+      end
+
+      # The updater needs AllVersionsIgnored to tell "everything newer was
+      # ignored" from "nothing newer exists", but the decision cannot be made
+      # in the filters: a source that filters everything out returns nil so the
+      # next source gets a turn, and its list may well contain a version this
+      # one never saw. So each source only records what it saw, and
+      # fetch_latest_chart_version raises once the sources are exhausted.
+      sig { params(newer: T::Boolean, surviving: T::Boolean).void }
+      def record_ignore_outcome(newer:, surviving:)
+        @all_newer_ignored = T.let(
+          (@all_newer_ignored || false) || (newer && !surviving),
+          T.nilable(T::Boolean)
+        )
+      end
+
+      sig { returns(T::Boolean) }
+      def all_newer_ignored?
+        @all_newer_ignored == true
       end
 
       sig { params(repo_url: String).returns(String) }
@@ -378,7 +401,15 @@ module Dependabot
         tag = fetch_latest_oci_tag(chart_name, repo_url) if repo_url&.start_with?("oci://")
         return tag if tag
 
-        fetch_releases_from_index(chart_name, repo_url)
+        from_index = fetch_releases_from_index(chart_name, repo_url)
+        return from_index if from_index
+
+        # Every source came up empty. If at least one of them had newer versions
+        # that an ignore rule removed, that is a different answer than "there is
+        # nothing newer", and the updater handles the two differently.
+        raise Dependabot::AllVersionsIgnored if raise_on_ignored && all_newer_ignored?
+
+        nil
       end
 
       sig { params(chart_name: String, repo_url: String).returns(T.nilable(Gem::Version)) }
@@ -463,11 +494,10 @@ module Dependabot
       def filter_valid_versions(all_versions)
         newer = all_versions.reject { |version| version_class.new(version) <= current_version }
         filtered = newer.reject do |version|
-          ignore_requirements.any? { |r| r.satisfied_by?(version_class.new(version)) }
+          helm_ignore_requirements.any? { |r| r.satisfied_by?(version_class.new(version)) }
         end
 
-        raise Dependabot::AllVersionsIgnored if raise_on_ignored && filtered.empty? && newer.any?
-
+        record_ignore_outcome(newer: newer.any?, surviving: filtered.any?)
         filtered
       end
 
