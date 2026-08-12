@@ -85,11 +85,20 @@ jobs:
           COSIGN_VERSION: v3.1.3
           COSIGN_SHA256: 4629c757b7618056f8ddd7e2625ae9fdd94c0372a65049520bc7d9df9efc7f71
         run: |
+          success=false
           for i in 1 2 3; do
-            curl --retry 5 -fsSL \
+            if curl --retry 5 -fsSL \
               "https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64" \
-              -o /tmp/cosign && break || sleep 15
+              -o /tmp/cosign; then
+              success=true
+              break
+            fi
+            sleep 15
           done
+          if [ "$success" != "true" ]; then
+            echo "Failed to download cosign after 3 attempts" >&2
+            exit 1
+          fi
           echo "${COSIGN_SHA256}  /tmp/cosign" | sha256sum -c -
           sudo install -m 0755 /tmp/cosign /usr/local/bin/cosign
           cosign version
