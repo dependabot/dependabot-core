@@ -83,7 +83,8 @@ module Dependabot
         stdin_data: T.nilable(String),
         stderr_to_stdout: T::Boolean,
         timeout: Integer,
-        output_observer: OutputObserver
+        output_observer: OutputObserver,
+        fingerprint: T.nilable(String)
       ).returns([T.nilable(String), T.nilable(String), T.nilable(ProcessStatus), Float])
     end
     def self.capture3_with_timeout(
@@ -91,7 +92,8 @@ module Dependabot
       stdin_data: nil,
       stderr_to_stdout: false,
       timeout: TIMEOUTS::DEFAULT,
-      output_observer: nil
+      output_observer: nil,
+      fingerprint: nil
     )
       stdout = T.let("", String)
       stderr = T.let("", String)
@@ -102,14 +104,15 @@ module Dependabot
       begin
         T.unsafe(Open3).popen3(*env_cmd) do |stdin, stdout_io, stderr_io, wait_thr| # rubocop:disable Metrics/BlockLength
           pid = wait_thr.pid
-          command_string = command_string_for_logging(env_cmd)
+          command_string = fingerprint || command_string_for_logging(env_cmd)
           log_level = short_git_config_command?(command_string) ? :debug : :info
-          sanitized_env_cmd = if env_cmd.first.is_a?(Hash)
-                                [SharedHelpers.send(:sanitize_env_for_logging, env_cmd.first), *env_cmd[1..]]
-                              else
-                                env_cmd
-                              end
-          command_for_log = sanitized_env_cmd.join(" ")
+          command_for_log = if fingerprint
+                              fingerprint
+                            elsif env_cmd.first.is_a?(Hash)
+                              [SharedHelpers.send(:sanitize_env_for_logging, env_cmd.first), *env_cmd[1..]].join(" ")
+                            else
+                              env_cmd.join(" ")
+                            end
           Dependabot.logger.public_send(log_level, "Started process PID: #{pid} with command: #{command_for_log}")
 
           # Write to stdin if input data is provided
@@ -205,7 +208,7 @@ module Dependabot
       end
 
       elapsed_time = Time.now - start_time
-      log_level = short_git_config_command?(command_string_for_logging(env_cmd)) ? :debug : :info
+      log_level = short_git_config_command?(fingerprint || command_string_for_logging(env_cmd)) ? :debug : :info
       Dependabot.logger.public_send(log_level, "Total execution time: #{elapsed_time.round(2)} seconds")
       [stdout, stderr, status, elapsed_time]
     end

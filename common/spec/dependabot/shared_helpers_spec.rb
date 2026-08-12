@@ -276,6 +276,29 @@ RSpec.describe Dependabot::SharedHelpers do
       end
     end
 
+    context "with an argument array" do
+      let(:arguments) { [RbConfig.ruby, "-e", "puts ARGV", "argument with spaces", "$(echo unsafe)"] }
+
+      it "preserves argument boundaries without shell expansion" do
+        expect(described_class.run_shell_command(arguments)).to eq("argument with spaces\n$(echo unsafe)\n")
+      end
+    end
+
+    context "with a fingerprint" do
+      let(:arguments) { [RbConfig.ruby, "-e", "abort ARGV.fetch(0)", "secret-key"] }
+
+      it "uses the fingerprint instead of command arguments in error context" do
+        run_command = lambda do
+          described_class.run_shell_command(arguments, fingerprint: "mix hex.repo add <credentials>")
+        end
+
+        expect(&run_command).to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
+          expect(error.error_context[:command]).to eq("mix hex.repo add <credentials>")
+          expect(error.error_context.to_s).not_to include("secret-key")
+        end
+      end
+    end
+
     context "when the subprocess exits" do
       let(:command) { File.join(spec_root, "helpers/test/error_bash") }
 
