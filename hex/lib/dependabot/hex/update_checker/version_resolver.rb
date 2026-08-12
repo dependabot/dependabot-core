@@ -17,6 +17,8 @@ module Dependabot
       class VersionResolver
         extend T::Sig
 
+        RESULT_FILE = ".dependabot-result"
+
         sig do
           params(
             dependency: Dependabot::Dependency,
@@ -62,9 +64,10 @@ module Dependabot
           latest_resolvable_version =
             SharedHelpers.in_a_temporary_directory do
               write_temporary_sanitized_dependency_files
-              FileUtils.cp(elixir_helper_check_update_path, "check_update.exs")
+              copy_elixir_helpers
 
               SharedHelpers.with_git_configured(credentials: credentials) do
+                CredentialHelpers.configure(credentials: credentials, env: mix_env)
                 run_elixir_update_checker
               end
             end
@@ -79,13 +82,12 @@ module Dependabot
 
         sig { returns(String) }
         def run_elixir_update_checker
-          SharedHelpers.run_helper_subprocess(
+          SharedHelpers.run_shell_command(
+            mix_run_command("check_update.exs", dependency.name),
             env: mix_env,
-            command: "mix run #{elixir_helper_path}",
-            function: "get_latest_resolvable_version",
-            args: [Dir.pwd, dependency.name, CredentialHelpers.hex_credentials(credentials)],
-            stderr_to_stdout: true
+            fingerprint: "mix run check_update.exs #{dependency.name}"
           )
+          File.read(RESULT_FILE)
         end
 
         sig do
@@ -120,12 +122,6 @@ module Dependabot
             raise Dependabot::PrivateSourceAuthenticationFailure, name
           end
 
-          # TODO: Catch the warnings as part of the Elixir module. This happens
-          # when elixir throws warnings from the manifest files that end up in
-          # stdout and cause run_helper_subprocess to fail parsing the result as
-          # JSON.
-          return error_result(error) if includes_result?(error)
-
           # Ignore dependencies which don't resolve due to mis-matching
           # environment specifications.
           # TODO: Update the environment specifications instead
@@ -146,7 +142,8 @@ module Dependabot
         sig { params(message: String).returns(T::Boolean) }
         def new_private_organization_authentication_error?(message)
           message.include?("Failed to exchange API key for OAuth token") ||
-            message.include?("No authenticated user found. Do you want to authenticate now?")
+            message.include?("No authenticated user found. Do you want to authenticate now?") ||
+            message.include?("Failed to authenticate against organization repository")
         end
 
         sig { returns(T.nilable(String)) }
@@ -161,58 +158,35 @@ module Dependabot
           )&.named_captures&.fetch("organization", nil)
         end
 
-        sig do
-          params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(
-            T.any(
-              Dependabot::Version,
-              String,
-              T::Boolean
-            )
-          )
-        end
-        def error_result(error)
-          return false unless includes_result?(error)
-
-          result_json = error.message.split("\n").last
-          result = JSON.parse(T.must(result_json))["result"]
-          return version_class.new(result) if version_class.correct?(result)
-
-          result
-        end
-
-        sig { params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
-        def includes_result?(error)
-          result = error.message.split("\n").last
-          return false unless result
-
-          JSON.parse(result).key?("result")
-        rescue JSON::ParserError
-          false
-        end
-
         sig { returns(T.any(T::Boolean, Dependabot::Version, String)) }
         def check_original_requirements_resolvable
           SharedHelpers.in_a_temporary_directory do
             write_temporary_sanitized_dependency_files(prepared: false)
-            FileUtils.cp(
-              elixir_helper_check_update_path,
-              "check_update.exs"
-            )
+            copy_elixir_helpers
 
             SharedHelpers.with_git_configured(credentials: credentials) do
+              CredentialHelpers.configure(credentials: credentials, env: mix_env)
               run_elixir_update_checker
             end
           end
 
           true
         rescue SharedHelpers::HelperSubprocessFailed => e
-          # TODO: Catch the warnings as part of the Elixir module. This happens
-          # when elixir throws warnings from the manifest files that end up in
-          # stdout and cause run_helper_subprocess to fail parsing the result as
-          # JSON.
-          return error_result(e) if includes_result?(e)
-
           raise Dependabot::DependencyFileNotResolvable, e.message
+        end
+
+        sig { void }
+        def copy_elixir_helpers
+          FileUtils.cp(CredentialHelpers.configure_credentials_path, "configure_credentials.exs")
+          FileUtils.cp(elixir_helper_check_update_path, "check_update.exs")
+        end
+
+        sig { params(script: String, args: String).returns(T::Array[String]) }
+        def mix_run_command(script, *args)
+          [
+            "mix", "run", "--no-deps-check", "--no-start", "--no-compile",
+            "--no-elixir-version-check", script, "--", *args
+          ]
         end
 
         sig { params(prepared: T::Boolean).void }
@@ -244,14 +218,9 @@ module Dependabot
         sig { returns(T::Hash[String, String]) }
         def mix_env
           {
-            "MIX_EXS" => File.join(NativeHelpers.hex_helpers_dir, "mix.exs"),
+            "HEX_HOME" => File.join(Dir.pwd, ".hex"),
             "MIX_QUIET" => "1"
           }
-        end
-
-        sig { returns(String) }
-        def elixir_helper_path
-          File.join(NativeHelpers.hex_helpers_dir, "lib/run.exs")
         end
 
         sig { returns(String) }
