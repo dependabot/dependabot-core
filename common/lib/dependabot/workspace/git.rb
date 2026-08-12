@@ -133,7 +133,7 @@ module Dependabot
 
       sig { params(memo: T.nilable(String)).returns([String, String]) }
       def commit(memo = nil)
-        run_shell_command(%(git add "#{path}"), allow_unsafe_shell_command: true)
+        run_shell_command(["git", "add", "--", path.to_s])
         diff = run_shell_command("git diff --cached .")
 
         msg = memo || "workspace change"
@@ -159,7 +159,7 @@ module Dependabot
         run_shell_command("git clean -fx .")
       end
 
-      sig { params(args: String, kwargs: T.any(T::Boolean, String)).returns(String) }
+      sig { params(args: SharedHelpers::Command, kwargs: T.any(T::Boolean, String)).returns(String) }
       def run_shell_command(*args, **kwargs)
         Dir.chdir(path) { T.unsafe(SharedHelpers).run_shell_command(*args, **kwargs) }
       end

@@ -19,8 +19,11 @@ require "dependabot/workspace"
 require "dependabot"
 
 module Dependabot
-  module SharedHelpers
+  module SharedHelpers # rubocop:disable Metrics/ModuleLength
     extend T::Sig
+
+    Command = T.type_alias { T.any(String, T::Array[String]) }
+    CommandArguments = T.type_alias { T::Array[T.any(String, T::Array[String])] }
 
     GIT_CONFIG_GLOBAL_PATH = T.let(File.expand_path(".gitconfig", Utils::BUMP_TMP_DIR_PATH), String)
     USER_AGENT = T.let(
@@ -124,6 +127,26 @@ module Dependabot
       command_parts = command.split.map(&:strip).reject(&:empty?)
       Shellwords.join(command_parts)
     end
+
+    sig do
+      params(command: Command, allow_unsafe_shell_command: T::Boolean)
+        .returns([CommandArguments, String])
+    end
+    def self.prepare_command(command, allow_unsafe_shell_command:)
+      unless command.is_a?(Array)
+        prepared_command = allow_unsafe_shell_command ? command : escape_command(command)
+        return [[prepared_command], prepared_command]
+      end
+
+      raise ArgumentError, "command must not be empty" if command.empty?
+      if allow_unsafe_shell_command
+        raise ArgumentError, "allow_unsafe_shell_command cannot be used with an argument vector"
+      end
+
+      executable = T.must(command.first)
+      [[[executable, executable], *command.drop(1)], Shellwords.join(command)]
+    end
+    private_class_method :prepare_command
 
     # rubocop:disable Metrics/MethodLength
     # rubocop:disable Metrics/AbcSize
@@ -417,7 +440,7 @@ module Dependabot
 
     sig do
       params(
-        command: String,
+        command: Command,
         allow_unsafe_shell_command: T::Boolean,
         cwd: T.nilable(String),
         env: T.nilable(T::Hash[String, String]),
@@ -432,17 +455,20 @@ module Dependabot
                                fingerprint: nil,
                                stderr_to_stdout: true)
       start = Time.now
-      cmd = allow_unsafe_shell_command ? command : escape_command(command)
+      command_args, command_for_output = prepare_command(
+        command,
+        allow_unsafe_shell_command: allow_unsafe_shell_command
+      )
 
-      puts cmd if ENV["DEBUG_HELPERS"] == "true"
+      puts command_for_output if ENV["DEBUG_HELPERS"] == "true"
 
       opts = {}
       opts[:chdir] = cwd if cwd
 
       if stderr_to_stdout
-        stdout, process = Open3.capture2e(env || {}, cmd, opts)
+        stdout, process = T.unsafe(Open3).capture2e(env || {}, *command_args, opts)
       else
-        stdout, stderr, process = Open3.capture3(env || {}, cmd, opts)
+        stdout, stderr, process = T.unsafe(Open3).capture3(env || {}, *command_args, opts)
       end
 
       time_taken = Time.now - start
@@ -452,7 +478,7 @@ module Dependabot
       return stdout if process.success?
 
       error_context = {
-        command: cmd,
+        command: command_for_output,
         fingerprint: fingerprint,
         time_taken: time_taken,
         process_exit_value: process.to_s

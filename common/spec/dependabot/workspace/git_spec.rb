@@ -210,6 +210,41 @@ RSpec.describe Dependabot::Workspace::Git do
       end
     end
 
+    context "when the workspace path contains spaces and shell syntax" do
+      subject(:workspace) { described_class.new(workspace_path) }
+
+      let(:workspace_path) { Pathname.new(repo_contents_path).join("with space $(touch injected)") }
+
+      before do
+        FileUtils.mkdir_p(workspace_path)
+        File.write(workspace_path.join("tracked-file.txt"), "old content")
+        File.write(workspace_path.join("ignored-file.txt"), "old ignored content")
+        File.write(Pathname.new(repo_contents_path).join(".gitignore"), "ignored-file.txt\n")
+        `git add --all -- .`
+        `git commit -m workspace-setup`
+      end
+
+      it "stores additions and deletions without executing the path" do
+        workspace.change do |path|
+          FileUtils.rm(Pathname.new(path).join("tracked-file.txt"))
+          File.write(Pathname.new(path).join("new-file.txt"), "new content")
+          File.write(Pathname.new(path).join("ignored-file.txt"), "new ignored content")
+          File.write(Pathname.new(repo_contents_path).join("outside-file.txt"), "outside content")
+        end
+
+        workspace.store_change("Update files")
+
+        changed_files = `git show --format= --name-status HEAD`.lines.map(&:strip)
+        expect(changed_files).to contain_exactly(
+          "D\twith space $(touch injected)/tracked-file.txt",
+          "A\twith space $(touch injected)/new-file.txt"
+        )
+        expect(File).not_to exist(workspace_path.join("injected"))
+        expect(File.read(workspace_path.join("ignored-file.txt"))).to eq("new ignored content")
+        expect(`git status --short -- outside-file.txt`).to eq("?? outside-file.txt\n")
+      end
+    end
+
     context "when there are changes to ignored files" do
       # See: common/spec/fixtures/projects/simple/.gitignore
 
