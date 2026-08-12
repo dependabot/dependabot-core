@@ -124,6 +124,15 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       end
     end
 
+    context "with a deps.update alias" do
+      let(:mixfile_fixture_name) { "deps_update_alias" }
+
+      it "resolves without invoking the project alias" do
+        expect(latest_resolvable_version).to be > Gem::Version.new("1.3.5")
+        expect(latest_resolvable_version).to be < Gem::Version.new("1.4.0")
+      end
+    end
+
     context "when the environments for another dependency diverge" do
       # In this example, updating `credo` would add its sub-dependency,
       # `poison`, to the `dev` environment, but the Mixfile explicitly specifies
@@ -151,13 +160,15 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
     end
 
     context "without a lockfile" do
+      let(:original_files) { [mixfile] }
+      let(:prepared_files) { [sanitized_mixfile] }
+
       it "respects the resolvability of the mix.exs" do
         expect(latest_resolvable_version).to be > Gem::Version.new("1.3.5")
         expect(latest_resolvable_version).to be < Gem::Version.new("1.4.0")
       end
 
       context "with a mix.exs that has caused trouble in the past" do
-        let(:files) { [mixfile] }
         let(:mixfile_fixture_name) { "coxir" }
         let(:dependency_name) { "kcl" }
         let(:version) { nil }
