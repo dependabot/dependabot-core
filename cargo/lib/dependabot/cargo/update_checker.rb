@@ -353,7 +353,7 @@ module Dependabot
         latest_resolvable_version
       end
 
-      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.anything])) }
+      sig { returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash)) }
       def updated_source
         # Never need to update source, unless a git_dependency
         return dependency_source_details unless git_dependency?
@@ -362,16 +362,37 @@ module Dependabot
         if git_commit_checker.pinned_ref_looks_like_version? &&
            latest_git_tag_is_resolvable?
           new_tag = T.must(git_commit_checker.local_tag_for_latest_version(update_cooldown))
-          return T.must(dependency_source_details).merge(ref: new_tag.fetch(:tag))
+          return source_with_ref(T.must(dependency_source_details), new_tag.fetch(:tag))
         end
 
         # Otherwise return the original source
         dependency_source_details
       end
 
-      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.anything])) }
+      sig { returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash)) }
       def dependency_source_details
         dependency.source_details
+      end
+
+      sig do
+        params(
+          source: Dependabot::DependencyRequirement::ObjectHash,
+          ref: String
+        ).returns(Dependabot::DependencyRequirement::ObjectHash)
+      end
+      def source_with_ref(source, ref)
+        updated_source = source.dup
+        key = if source.key?(:ref)
+                :ref
+              elsif source.key?("ref")
+                "ref"
+              elsif source.keys.any?(Symbol)
+                :ref
+              else
+                "ref"
+              end
+        updated_source[key] = ref
+        updated_source
       end
 
       sig { returns(T::Boolean) }
