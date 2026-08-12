@@ -84,12 +84,12 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def new_source_ref
-        dependency.requirements.first&.dig(:source, :ref)
+        dependency.requirements.first&.source_string("ref")
       end
 
       sig { returns(T.nilable(String)) }
       def old_source_ref
-        dependency.previous_requirements&.first&.dig(:source, :ref)
+        dependency.previous_requirements&.first&.source_string("ref")
       end
 
       sig { override.void }
