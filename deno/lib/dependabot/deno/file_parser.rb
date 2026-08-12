@@ -38,7 +38,7 @@ module Dependabot
             dep = parse_specifier(specifier.to_s, file)
             next unless dep
 
-            key = [dep.name, T.must(dep.requirements.first)[:source][:type]]
+            key = [dep.name, T.must(T.must(dep.requirements.first).source_string("type"))]
             existing = deps_by_key[key]
             deps_by_key[key] = if existing
                                  Dependabot::Dependency.new(

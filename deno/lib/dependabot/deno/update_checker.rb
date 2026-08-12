@@ -33,9 +33,11 @@ module Dependabot
         return dependency.requirements unless latest_version
 
         updated = dependency.requirements.map do |req|
-          req.merge(requirement: updated_constraint(req[:requirement]))
+          Dependabot::DependencyRequirement.create(
+            req.merge(requirement: updated_constraint(req.requirement_string))
+          )
         end
-        wrap_requirements(updated)
+        updated
       end
 
       private
