@@ -136,6 +136,31 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Python do
         expect(updated.first[:requirement]).to eq("==2.31.0.10")
         expect(updated.first[:source][:original_string]).to eq("types-requests==2.31.0.10")
       end
+
+      context "with string-keyed source details" do
+        let(:source) do
+          {
+            "type" => "additional_dependency",
+            "language" => "python",
+            "hook_id" => "mypy",
+            "repo_url" => "https://github.com/pre-commit/mirrors-mypy",
+            "package_name" => "types-requests",
+            "original_name" => "types-requests",
+            "original_string" => "types-requests==2.31.0.1",
+            "custom" => "preserved"
+          }
+        end
+
+        it "preserves the source payload and key style" do
+          updated_source = checker.updated_requirements(latest_version).first.source_hash
+
+          expect(updated_source).to include(
+            "original_string" => "types-requests==2.31.0.10",
+            "custom" => "preserved"
+          )
+          expect(updated_source).not_to have_key(:original_string)
+        end
+      end
     end
 
     context "with minimum version constraint (>=)" do

@@ -253,6 +253,26 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
       it "updates the ref in the source" do
         expect(updated_requirements.first[:source][:ref]).not_to eq(reference)
       end
+
+      context "with string-keyed source details" do
+        let(:dependency_source) do
+          {
+            "type" => "git",
+            "url" => "https://github.com/#{dependency_name}",
+            "ref" => reference,
+            "branch" => nil,
+            "custom" => "preserved"
+          }
+        end
+
+        it "preserves the source payload and key style" do
+          source = updated_requirements.first.source_hash
+
+          expect(source).to include("custom" => "preserved")
+          expect(source).to have_key("ref")
+          expect(source).not_to have_key(:ref)
+        end
+      end
     end
 
     context "when dependency is pinned to commit SHA without version tags" do
