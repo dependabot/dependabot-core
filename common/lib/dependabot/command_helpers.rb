@@ -264,10 +264,14 @@ module Dependabot
 
     sig { params(env_cmd: T::Array[EnvCmdItem]).returns(T.nilable(String)) }
     def self.command_string_for_logging(env_cmd)
-      command = env_cmd.find { |item| item.is_a?(String) || item.is_a?(Array) }
-      return command.first if command.is_a?(Array)
+      command_parts = env_cmd.filter_map do |item|
+        case item
+        when Array then item.first
+        when String then item
+        end
+      end
 
-      T.cast(command, T.nilable(String))
+      command_parts.join(" ") unless command_parts.empty?
     end
     private_class_method :command_string_for_logging
 

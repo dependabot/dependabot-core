@@ -174,7 +174,7 @@ RSpec.describe Dependabot::CommandHelpers do
         stub_popen3_with_success
 
         described_class.capture3_with_timeout(
-          [["git", "git"], "config", "--global", "--list"],
+          [%w(git git), "config", "--global", "--list"],
           timeout: timeout
         )
 

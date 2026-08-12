@@ -483,7 +483,6 @@ module Dependabot
       safe_directories
     end
 
-    # rubocop:disable Metrics/PerceivedComplexity
     sig do
       params(
         command: Command,
@@ -549,7 +548,6 @@ module Dependabot
         error_context: error_context
       )
     end
-    # rubocop:enable Metrics/PerceivedComplexity
 
     sig { params(stderr: T.nilable(String), error_context: T::Hash[Symbol, String]).void }
     def self.check_out_of_disk_memory_error(stderr, error_context)
