@@ -58,7 +58,7 @@ module Dependabot
         ).returns(Dependabot::DependencyRequirement)
       end
       def update_requirement(requirement, target_version)
-        current_requirement = requirement[:requirement]
+        current_requirement = requirement.requirement_string
 
         # If requirement is nil (no compat entry), use target version
         new_requirement = if current_requirement.nil?
