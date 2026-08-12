@@ -40,7 +40,7 @@ module Dependabot
           Dependabot::DependencyRequirement.create(
             requirement.merge(
               requirement: new_requirement.to_s,
-              metadata: hash_with_value(metadata, "requirement_string", new_declaration)
+              metadata: requirement_string_metadata(metadata, new_declaration)
             )
           )
         end
@@ -48,26 +48,15 @@ module Dependabot
 
       sig do
         params(
-          hash: Dependabot::DependencyRequirement::ObjectHash,
-          key: String,
-          value: Object
+          metadata: Dependabot::DependencyRequirement::ObjectHash,
+          requirement_string: String
         ).returns(Dependabot::DependencyRequirement::ObjectHash)
       end
-      def self.hash_with_value(hash, key, value)
-        updated = hash.dup
-        actual_key = if hash.key?(key.to_sym)
-                       key.to_sym
-                     elsif hash.key?(key)
-                       key
-                     elsif hash.keys.any?(Symbol)
-                       key.to_sym
-                     else
-                       key
-                     end
-        updated[actual_key] = value
-        updated
+      def self.requirement_string_metadata(metadata, requirement_string)
+        key = metadata.key?("requirement_string") ? "requirement_string" : :requirement_string
+        { key => requirement_string }
       end
-      private_class_method :hash_with_value
+      private_class_method :requirement_string_metadata
 
       sig { params(declaration: String).void }
       def initialize(declaration)
