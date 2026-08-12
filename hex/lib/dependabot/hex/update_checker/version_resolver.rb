@@ -93,6 +93,8 @@ module Dependabot
             .returns(T.nilable(T.any(Dependabot::Version, String, T::Boolean)))
         end
         def handle_hex_errors(error)
+          handle_new_private_organization_authentication_error(error.message)
+
           if (match = error.message.match(/No authenticated organization found for (?<repo>[a-z_]+)\./))
             raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
           end
@@ -131,6 +133,32 @@ module Dependabot
 
           check_original_requirements_resolvable
           raise error
+        end
+
+        sig { params(message: String).void }
+        def handle_new_private_organization_authentication_error(message)
+          return unless new_private_organization_authentication_error?(message)
+
+          organization = private_organization
+          raise Dependabot::PrivateSourceAuthenticationFailure, organization if organization
+        end
+
+        sig { params(message: String).returns(T::Boolean) }
+        def new_private_organization_authentication_error?(message)
+          message.include?("Failed to exchange API key for OAuth token") ||
+            message.include?("No authenticated user found. Do you want to authenticate now?")
+        end
+
+        sig { returns(T.nilable(String)) }
+        def private_organization
+          credential = credentials.find { |item| item["type"] == "hex_organization" }
+          organization = credential&.fetch("organization", nil)
+          return organization unless organization.to_s.empty?
+
+          lockfile = original_dependency_files.find { |file| file.name == "mix.lock" }
+          lockfile&.content&.match(
+            /"#{Regexp.escape(dependency.name)}".*?"hexpm:(?<organization>[a-z_]+)"/m
+          )&.named_captures&.fetch("organization", nil)
         end
 
         sig do
