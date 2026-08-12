@@ -70,7 +70,7 @@ module Dependabot
       def latest_version_finder_elm19
         @latest_version_finder_elm19 ||= T.let(
           begin
-            unless dependency.requirements.any? { |r| r.fetch(:file) == MANIFEST_FILE }
+            unless dependency.requirements.any? { |r| r.file == MANIFEST_FILE }
               raise Dependabot::DependencyFileNotResolvable, "No #{MANIFEST_FILE} found"
             end
 
@@ -120,7 +120,7 @@ module Dependabot
         return false unless latest_version
 
         dependency.requirements
-                  .map { |r| r.fetch(:requirement) }
+                  .filter_map(&:requirement_string)
                   .map { |r| requirement_class.new(r) }
                   .all? { |r| r.satisfied_by?(latest_version) }
       end
