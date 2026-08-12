@@ -69,9 +69,9 @@ RSpec.describe Dependabot::Opentofu::MetadataFinder do
             groups: [],
             file: "main.tf",
             source: {
-              type: "registry",
-              registry_hostname: "registry.opentofu.org",
-              module_identifier: "hashicorp/consul/aws"
+              "type" => "registry",
+              "registry_hostname" => "registry.opentofu.org",
+              "module_identifier" => "hashicorp/consul/aws"
             }
           }],
           previous_requirements: [{
@@ -79,9 +79,9 @@ RSpec.describe Dependabot::Opentofu::MetadataFinder do
             groups: [],
             file: "main.tf",
             source: {
-              type: "registry",
-              registry_hostname: "registry.opentofu.org",
-              module_identifier: "hashicorp/consul/aws"
+              "type" => "registry",
+              "registry_hostname" => "registry.opentofu.org",
+              "module_identifier" => "hashicorp/consul/aws"
             }
           }],
           package_manager: "opentofu"
