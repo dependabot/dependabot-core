@@ -23,8 +23,8 @@ module Dependabot
             dependencies.reduce(manifest.content.dup) do |content, dep|
               updated_content = content
               updated_requirements(dep).each do |new_req|
-                old_req = old_requirement(dep, new_req)&.fetch(:requirement)
-                updated_req = new_req.fetch(:requirement)
+                old_req = T.must(old_requirement(dep, new_req)&.requirement_string)
+                updated_req = T.must(new_req.requirement_string)
 
                 regex =
                   /
@@ -54,20 +54,20 @@ module Dependabot
 
         sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyRequirement]) }
         def new_requirements(dependency)
-          dependency.requirements.select { |r| r[:file] == manifest.name }
+          dependency.requirements.select { |r| r.file == manifest.name }
         end
 
         sig do
           params(
             dependency: Dependabot::Dependency,
-            new_requirement: T::Hash[Symbol, T.untyped]
+            new_requirement: Dependabot::DependencyRequirement
           )
-            .returns(T.nilable(T::Hash[Symbol, T.untyped]))
+            .returns(T.nilable(Dependabot::DependencyRequirement))
         end
         def old_requirement(dependency, new_requirement)
           T.must(dependency.previous_requirements)
-           .select { |r| r[:file] == manifest.name }
-           .find { |r| r[:groups] == new_requirement[:groups] }
+           .select { |r| r.file == manifest.name }
+           .find { |r| r.groups == new_requirement.groups }
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyRequirement]) }
@@ -81,7 +81,7 @@ module Dependabot
           changed_requirements =
             dependency.requirements - T.must(dependency.previous_requirements)
 
-          changed_requirements.any? { |f| f[:file] == file.name }
+          changed_requirements.any? { |requirement| requirement.file == file.name }
         end
       end
     end
