@@ -15,7 +15,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
-        url = dependency.requirements.first&.source_string("url") ||
+        requirement = dependency.requirements.find(&:source_hash)
+        url = requirement&.source_string("url") ||
               "https://#{source_hostname}/#{dependency.name}"
         Source.from_url(url)
       end

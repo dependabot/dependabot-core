@@ -69,16 +69,6 @@ module Dependabot
           updated = updated_ref(source, onboarded: onboarded_requirement?(req))
           next req unless updated
 
-          current = req.source_string("ref")
-
-          # Maintain a short git hash only if it matches the latest
-          if req.source_string("type") == "git" &&
-             git_commit_checker.ref_looks_like_commit_sha?(updated) &&
-             git_commit_checker.ref_looks_like_commit_sha?(T.must(current)) &&
-             updated.start_with?(T.must(current))
-            next req
-          end
-
           new_source = source_with_ref(T.must(source), updated)
           Dependabot::DependencyRequirement.create(req.merge(source: new_source))
         end
