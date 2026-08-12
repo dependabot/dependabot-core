@@ -363,7 +363,17 @@ module Dependabot
           content = replace_header_with_original(updated_content, T.must(file.content))
           content = remove_new_warnings(content, T.must(file.content))
           content = update_hashes_if_required(content, T.must(file.content))
+          content = scrub_index_url_credentials(content)
           replace_absolute_file_paths(content, T.must(file.content))
+        end
+
+        # Index URLs are passed to pip-compile with credentials embedded so the
+        # private index can be fetched, and pip-tools emits those URLs verbatim
+        # into the compiled file when index-url emission is active. Strip any
+        # userinfo so tokens are never written into the regenerated file.
+        sig { params(content: String).returns(String) }
+        def scrub_index_url_credentials(content)
+          content.gsub(%r{^(--(?:extra-)?index-url[= ]https?://)[^@\s/]+@}, "\\1")
         end
 
         sig { params(updated_content: String, original_content: String).returns(String) }
