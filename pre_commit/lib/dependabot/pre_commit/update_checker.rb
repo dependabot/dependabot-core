@@ -54,16 +54,6 @@ module Dependabot
           updated = updated_ref(source)
           next req unless updated
 
-          current = req.source_string("ref")
-
-          # Maintain short git hash when the updated SHA starts with the current SHA
-          if req.source_string("type") == "git" &&
-             git_commit_checker.ref_looks_like_commit_sha?(updated) &&
-             current && git_commit_checker.ref_looks_like_commit_sha?(current) &&
-             updated.start_with?(current)
-            next req
-          end
-
           new_source = hash_with_value(T.must(source), "ref", updated)
           new_metadata = updated_comment_version_metadata(req, updated)
           Dependabot::DependencyRequirement.create(
