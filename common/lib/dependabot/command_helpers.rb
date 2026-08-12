@@ -26,6 +26,7 @@ module Dependabot
     EnvCmdItem = T.type_alias do
       T.any(
         String,
+        T::Array[String],
         T::Hash[T.any(String, Symbol), T.anything]
       )
     end
@@ -109,7 +110,7 @@ module Dependabot
                               else
                                 env_cmd
                               end
-          command_for_log = sanitized_env_cmd.join(" ")
+          command_for_log = sanitized_env_cmd.map { |item| item.is_a?(Array) ? item.first : item }.join(" ")
           Dependabot.logger.public_send(log_level, "Started process PID: #{pid} with command: #{command_for_log}")
 
           # Write to stdin if input data is provided
@@ -263,7 +264,10 @@ module Dependabot
 
     sig { params(env_cmd: T::Array[EnvCmdItem]).returns(T.nilable(String)) }
     def self.command_string_for_logging(env_cmd)
-      T.cast(env_cmd.find { |item| item.is_a?(String) }, T.nilable(String))
+      command = env_cmd.find { |item| item.is_a?(String) || item.is_a?(Array) }
+      return command.first if command.is_a?(Array)
+
+      T.cast(command, T.nilable(String))
     end
     private_class_method :command_string_for_logging
 

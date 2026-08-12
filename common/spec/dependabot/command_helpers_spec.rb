@@ -170,6 +170,18 @@ RSpec.describe Dependabot::CommandHelpers do
         expect(logger).to have_received(:debug).with(a_string_including("Total execution time"))
       end
 
+      it "logs direct-exec git config commands at debug level" do
+        stub_popen3_with_success
+
+        described_class.capture3_with_timeout(
+          [["git", "git"], "config", "--global", "--list"],
+          timeout: timeout
+        )
+
+        expect(logger).to have_received(:debug)
+          .with(a_string_including("command: git config --global --list"))
+      end
+
       it "logs non-git-config commands at info level" do
         described_class.capture3_with_timeout(
           [success_cmd],
