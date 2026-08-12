@@ -578,6 +578,17 @@ begin
     []
   end
 
+  # Ecosystems whose update phase is verified to resolve from the persisted
+  # dependency files alone. Lives here rather than on Job because
+  # the real production drop happens at the fetch/update container split, not
+  # in-process; this only gates the dry-run demonstration.
+  CLONELESS_UPDATE_ECOSYSTEMS = %w(bundler).freeze
+
+  def isolate_fetch_update?
+    Dependabot::Experiments.enabled?(:isolate_fetch_update) &&
+      CLONELESS_UPDATE_ECOSYSTEMS.include?($package_manager)
+  end
+
   # Returns the exact set of files that crosses the fetch/update trust boundary.
   #
   # With the :isolate_fetch_update experiment enabled this mirrors the
@@ -588,7 +599,7 @@ begin
   # update tools once the clone is gone.
   def files_for_update(fetcher)
     all_files = fetcher.files
-    return all_files unless Dependabot::Experiments.enabled?(:isolate_fetch_update)
+    return all_files unless isolate_fetch_update?
 
     persisted = fetcher.files_to_persist
     persisted_keys = persisted.map { |f| [f.directory, f.name] }
@@ -691,7 +702,7 @@ begin
   # runs with no clone (only $files, the persisted set, exist for update tools),
   # mirroring the fetch/update container split. Otherwise it shares the clone.
   $update_repo_contents_path =
-    if Dependabot::Experiments.enabled?(:isolate_fetch_update)
+    if isolate_fetch_update?
       puts "=> [isolate_fetch_update] update phase running without repo_contents_path (clone dropped)"
       nil
     else

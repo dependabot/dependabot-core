@@ -41,9 +41,6 @@ module Dependabot
     TOP_LEVEL_DEPENDENCY_TYPES = %w(direct production development).freeze
     # Default cooldown period (in days) applied when `default-days` is not configured.
     DEFAULT_COOLDOWN_DAYS = 3
-    # Ecosystems whose update phase can run without a repo clone. Only list ones
-    # verified to resolve updates from the persisted dependency files alone.
-    CLONELESS_UPDATE_ECOSYSTEMS = %w(bundler).freeze
     PERMITTED_KEYS = T.let(
       %i(
         allowed_updates
@@ -278,18 +275,8 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     def repo_contents_path
       return nil unless clone?
-      return nil if isolate_fetch_update?
 
       @repo_contents_path
-    end
-
-    # When enabled, the update phase runs with no repo clone so untrusted update
-    # code cannot read the checked-out source. Limited to ecosystems that resolve
-    # updates from the persisted dependency files alone.
-    sig { returns(T::Boolean) }
-    def isolate_fetch_update?
-      Dependabot::Experiments.enabled?(:isolate_fetch_update) &&
-        CLONELESS_UPDATE_ECOSYSTEMS.include?(package_manager)
     end
 
     sig { returns(T.nilable(T::Boolean)) }

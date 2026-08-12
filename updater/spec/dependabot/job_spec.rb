@@ -595,41 +595,6 @@ RSpec.describe Dependabot::Job do
     end
   end
 
-  describe "#repo_contents_path" do
-    let(:attributes) { super().merge(repo_contents_path: "repo") }
-
-    after { Dependabot::Experiments.reset! }
-
-    context "when the isolate_fetch_update experiment is disabled" do
-      it "returns the clone path" do
-        expect(job.repo_contents_path).to eq("repo")
-        expect(job.isolate_fetch_update?).to be(false)
-      end
-    end
-
-    context "when the isolate_fetch_update experiment is enabled" do
-      let(:experiments) { { "isolate_fetch_update" => true } }
-
-      context "when the ecosystem can update without a clone" do
-        let(:package_manager) { "bundler" }
-
-        it "presents repo_contents_path as nil" do
-          expect(job.repo_contents_path).to be_nil
-          expect(job.isolate_fetch_update?).to be(true)
-        end
-      end
-
-      context "when the ecosystem still needs a clone" do
-        let(:package_manager) { "npm_and_yarn" }
-
-        it "keeps the clone path" do
-          expect(job.repo_contents_path).to eq("repo")
-          expect(job.isolate_fetch_update?).to be(false)
-        end
-      end
-    end
-  end
-
   describe "#commit_message_options" do
     it "handles nil values" do
       expect(job.commit_message_options).to eq({})
