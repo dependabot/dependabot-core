@@ -35,6 +35,14 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
 
     specify { expect(updater.updated_requirements.count).to eq(1) }
 
+    context "when the source type is malformed" do
+      let(:source) { { type: 123 } }
+
+      it "raises a type error" do
+        expect { updater.updated_requirements }.to raise_error(TypeError, "source type must be a string or nil")
+      end
+    end
+
     context "when there is no latest version" do
       let(:latest_version) { nil }
 
@@ -227,6 +235,32 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
 
       it "does not touch the requirement" do
         expect(updated_requirements[:requirement]).to be_nil
+      end
+
+      context "with string-keyed source details" do
+        let(:requirements) do
+          [
+            {
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                "type" => "git",
+                "url" => "https://github.com/cloudposse/terraform-null-label.git",
+                "branch" => nil,
+                "ref" => "tags/0.3.7",
+                "custom" => "preserved"
+              }
+            }
+          ]
+        end
+
+        it "preserves the source payload and key style" do
+          source = updated_requirements.source_hash
+
+          expect(source).to include("ref" => "tags/0.4.1", "custom" => "preserved")
+          expect(source).not_to have_key(:ref)
+        end
       end
     end
   end
