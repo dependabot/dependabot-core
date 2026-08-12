@@ -7,7 +7,6 @@ require "dependabot/hex/file_updater"
 require "dependabot/hex/file_updater/mixfile_updater"
 require "dependabot/hex/file_updater/mixfile_sanitizer"
 require "dependabot/hex/file_updater/mixfile_requirement_updater"
-require "dependabot/hex/credential_helpers"
 require "dependabot/hex/native_helpers"
 require "dependabot/hex/version"
 require "dependabot/shared_helpers"
@@ -17,6 +16,8 @@ module Dependabot
     class FileUpdater
       class LockfileUpdater
         extend T::Sig
+
+        CREDENTIAL_TOKEN_ENV = "DEPENDABOT_HEX_CREDENTIAL_TOKEN"
 
         sig do
           params(
@@ -37,15 +38,16 @@ module Dependabot
           @updated_lockfile_content ||=
             SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
+              FileUtils.cp(elixir_helper_configure_credentials_path, "configure_credentials.exs")
               FileUtils.cp(elixir_helper_do_update_path, "do_update.exs")
 
               SharedHelpers.with_git_configured(credentials: credentials) do
-                SharedHelpers.run_helper_subprocess(
-                  env: mix_env,
-                  command: "mix run #{elixir_helper_path}",
-                  function: "get_updated_lockfile",
-                  args: [Dir.pwd, dependency.name, CredentialHelpers.hex_credentials(credentials)]
+                configure_hex_credentials
+                run_mix_command(
+                  mix_run_command("do_update.exs", dependency.name),
+                  fingerprint: "mix run do_update.exs #{dependency.name}"
                 )
+                File.read("mix.lock")
               end
             end
 
@@ -94,11 +96,80 @@ module Dependabot
             raise Dependabot::PrivateSourceAuthenticationFailure, name
           end
 
-          if error.message.include?("JSON") || error.message.include?("parse")
-            raise Dependabot::DependencyFileNotResolvable, "Failed to parse response from Hex helper: #{error.message}"
-          end
-
           raise Dependabot::DependencyFileNotResolvable, "Failed to update lockfile: #{error.message}"
+        end
+
+        sig { void }
+        def configure_hex_credentials
+          credentials.each do |credential|
+            case credential["type"]
+            when "hex_organization"
+              configure_hex_organization(credential)
+            when "hex_repository"
+              configure_hex_repository(credential)
+            end
+          end
+        end
+
+        sig { params(credential: Dependabot::Credential).void }
+        def configure_hex_organization(credential)
+          organization = required_credential_value(credential, "organization")
+          token = required_credential_value(credential, "token", source: organization)
+          run_mix_command(
+            mix_run_command("configure_credentials.exs", "organization", organization),
+            fingerprint: "mix run configure_credentials.exs organization #{organization}",
+            env: { CREDENTIAL_TOKEN_ENV => token }
+          )
+        end
+
+        sig { params(credential: Dependabot::Credential).void }
+        def configure_hex_repository(credential)
+          repo = required_credential_value(credential, "repo")
+          url = required_credential_value(credential, "url", source: repo)
+          auth_key = required_credential_value(credential, "auth_key", source: repo)
+          public_key_fingerprint = credential["public_key_fingerprint"] || ""
+
+          run_mix_command(
+            mix_run_command("configure_credentials.exs", "repository", repo, url, public_key_fingerprint),
+            fingerprint: "mix run configure_credentials.exs repository #{repo}",
+            env: { CREDENTIAL_TOKEN_ENV => auth_key }
+          )
+        end
+
+        sig do
+          params(
+            credential: Dependabot::Credential,
+            key: String,
+            source: T.nilable(String)
+          ).returns(String)
+        end
+        def required_credential_value(credential, key, source: nil)
+          value = credential[key]
+          return value if value.is_a?(String) && !value.empty?
+
+          raise SharedHelpers::HelperSubprocessFailed.new(
+            message: "Missing credentials for \"#{source || value}\"",
+            error_context: {}
+          )
+        end
+
+        sig do
+          params(
+            command: T::Array[String],
+            fingerprint: String,
+            env: T::Hash[String, String]
+          ).void
+        end
+        def run_mix_command(command, fingerprint:, env: {})
+          SharedHelpers.run_shell_command(command, env: mix_env.merge(env), fingerprint: fingerprint)
+        end
+
+        sig { params(script: String, args: String).returns(T::Array[String]) }
+        def mix_run_command(script, *args)
+          [
+            "mix", "run", "--no-deps-check", "--no-start", "--no-compile",
+            "--no-elixir-version-check", script, "--", *args
+          ]
         end
 
         sig { void }
@@ -162,19 +233,19 @@ module Dependabot
         sig { returns(T::Hash[String, String]) }
         def mix_env
           {
-            "MIX_EXS" => File.join(NativeHelpers.hex_helpers_dir, "mix.exs"),
+            "HEX_HOME" => File.join(Dir.pwd, ".hex"),
             "MIX_QUIET" => "1"
           }
         end
 
         sig { returns(String) }
-        def elixir_helper_path
-          File.join(NativeHelpers.hex_helpers_dir, "lib/run.exs")
+        def elixir_helper_do_update_path
+          File.join(NativeHelpers.hex_helpers_dir, "lib/do_update.exs")
         end
 
         sig { returns(String) }
-        def elixir_helper_do_update_path
-          File.join(NativeHelpers.hex_helpers_dir, "lib/do_update.exs")
+        def elixir_helper_configure_credentials_path
+          File.join(NativeHelpers.hex_helpers_dir, "lib/configure_credentials.exs")
         end
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
