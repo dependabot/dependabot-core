@@ -15,14 +15,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
-        info = dependency.requirements.filter_map { |r| r[:source] }.first
-
-        url =
-          if info.nil?
-            "https://#{source_hostname}/#{dependency.name}"
-          else
-            info[:url] || info.fetch("url")
-          end
+        url = dependency.requirements.first&.source_string("url") ||
+              "https://#{source_hostname}/#{dependency.name}"
         Source.from_url(url)
       end
 

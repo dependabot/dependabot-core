@@ -57,6 +57,19 @@ RSpec.describe Dependabot::GithubActions::MetadataFinder do
       end
 
       it { is_expected.to eq("https://github.com/actions/checkout") }
+
+      context "with string-keyed source details" do
+        let(:dependency_source) do
+          {
+            "type" => "git",
+            "url" => "https://github.com/actions/checkout",
+            "ref" => "master",
+            "branch" => nil
+          }
+        end
+
+        it { is_expected.to eq("https://github.com/actions/checkout") }
+      end
     end
 
     context "when dealing with a subdependency" do

@@ -144,21 +144,21 @@ module Dependabot
         updated_requirement_pairs =
           dependency.requirements.zip(T.must(dependency.previous_requirements))
                     .reject do |new_req, old_req|
-            next true if new_req[:file] != file.name
+            next true if new_req.file != file.name
 
-            new_req[:source] == T.must(old_req)[:source]
+            new_req.source == T.must(old_req).source
           end
 
         updated_content = T.must(file.content)
 
         updated_requirement_pairs.each do |new_req, old_req|
           # TODO: Support updating Docker sources
-          next unless new_req.fetch(:source).fetch(:type) == "git"
+          next unless new_req.source_string("type") == "git"
 
-          old_ref = T.must(old_req).fetch(:source).fetch(:ref)
-          new_ref = new_req.fetch(:source).fetch(:ref)
+          old_ref = T.must(T.must(old_req).source_string("ref"))
+          new_ref = T.must(new_req.source_string("ref"))
 
-          old_declaration = T.must(old_req).fetch(:metadata).fetch(:declaration_string)
+          old_declaration = T.must(T.must(old_req).metadata_string("declaration_string"))
           new_declaration =
             old_declaration
             .gsub(/@.*+/, "@#{new_ref}")
