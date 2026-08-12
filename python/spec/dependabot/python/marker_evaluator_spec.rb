@@ -2,9 +2,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/python/update_checker/pip_version_resolver/marker_evaluator"
+require "dependabot/python/marker_evaluator"
 
-RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver::MarkerEvaluator do
+RSpec.describe Dependabot::Python::MarkerEvaluator do
   subject(:marker_evaluator) { described_class.new }
 
   describe "#split_requirement_and_marker" do

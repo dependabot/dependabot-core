@@ -13,6 +13,7 @@ require "dependabot/python/package/package_registry_finder"
 require "dependabot/python/update_checker"
 require "dependabot/python/update_checker/latest_version_finder"
 require "dependabot/python/file_parser/python_requirement_parser"
+require "dependabot/python/marker_evaluator"
 
 module Dependabot
   module Python
@@ -22,8 +23,6 @@ module Dependabot
       # rubocop:disable Metrics/ClassLength
       class PipVersionResolver
         extend T::Sig
-
-        require_relative "pip_version_resolver/marker_evaluator"
 
         sig do
           params(
@@ -55,7 +54,7 @@ module Dependabot
           @latest_version_finder = T.let(nil, T.nilable(LatestVersionFinder))
           @python_requirement_parser = T.let(nil, T.nilable(FileParser::PythonRequirementParser))
           @language_version_manager = T.let(nil, T.nilable(LanguageVersionManager))
-          @marker_evaluator = T.let(nil, T.nilable(MarkerEvaluator))
+          @marker_evaluator = T.let(nil, T.nilable(Dependabot::Python::MarkerEvaluator))
           @registry_json_urls = T.let(nil, T.nilable(T::Array[String]))
           @transitive_requirements_cache = T.let({}, T::Hash[String, T::Array[String]])
           @transitive_requirement_available_cache = T.let({}, T::Hash[String, T::Boolean])
@@ -137,9 +136,9 @@ module Dependabot
             )
         end
 
-        sig { returns(MarkerEvaluator) }
+        sig { returns(Dependabot::Python::MarkerEvaluator) }
         def marker_evaluator
-          @marker_evaluator ||= MarkerEvaluator.new
+          @marker_evaluator ||= Dependabot::Python::MarkerEvaluator.new
         end
 
         sig { params(candidate: Dependabot::Version).returns(T::Boolean) }
