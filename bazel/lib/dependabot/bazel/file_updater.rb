@@ -87,13 +87,13 @@ module Dependabot
 
       sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
       def bzlmod_dependency?(dependency)
-        dependency.requirements.any? { |req| req[:file]&.end_with?("MODULE.bazel") }
+        dependency.requirements.any? { |req| req.file&.end_with?("MODULE.bazel") }
       end
 
       sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
       def workspace_dependency?(dependency)
         dependency.requirements.any? do |req|
-          req[:file] == "WORKSPACE" || req[:file]&.end_with?("WORKSPACE.bazel")
+          req.file == "WORKSPACE" || req.file&.end_with?("WORKSPACE.bazel")
         end
       end
 
@@ -121,7 +121,7 @@ module Dependabot
       def relevant_dependencies_for_file(file)
         dependencies.select do |dependency|
           dependency.package_manager == "bazel" &&
-            dependency.requirements.any? { |req| req[:file] == file.name }
+            dependency.requirements.any? { |req| req.file == file.name }
         end
       end
     end
