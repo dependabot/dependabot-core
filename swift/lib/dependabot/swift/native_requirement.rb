@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/utils"
+require "dependabot/dependency_requirement"
 require "dependabot/swift/requirement"
 require "sorbet-runtime"
 
@@ -17,32 +18,56 @@ module Dependabot
       attr_reader :declaration
 
       sig do
-        type_parameters(:T)
-          .params(
-            requirements: T::Array[T::Hash[Symbol, Object]],
-            _blk: T.proc.params(declaration: NativeRequirement).returns(String)
-          )
-          .returns(T::Array[T::Hash[Symbol, Object]])
+        params(
+          requirements: T::Array[Dependabot::DependencyRequirement],
+          _blk: T.proc.params(declaration: NativeRequirement).returns(String)
+        )
+          .returns(T::Array[Dependabot::DependencyRequirement])
       end
       def self.map_requirements(requirements, &_blk)
         requirements.map do |requirement|
-          metadata = requirement[:metadata]
-          next requirement unless metadata.is_a?(Hash)
+          metadata = requirement.metadata
+          next requirement unless metadata
 
-          requirement_string = metadata[:requirement_string]
-          next requirement unless requirement_string.is_a?(String)
+          requirement_string = requirement.metadata_string("requirement_string")
+          next requirement unless requirement_string
 
           declaration = new(requirement_string)
 
           new_declaration = yield(declaration)
           new_requirement = new(new_declaration)
 
-          requirement.merge(
-            requirement: new_requirement.to_s,
-            metadata: { requirement_string: new_declaration }
+          Dependabot::DependencyRequirement.create(
+            requirement.merge(
+              requirement: new_requirement.to_s,
+              metadata: hash_with_value(metadata, "requirement_string", new_declaration)
+            )
           )
         end
       end
+
+      sig do
+        params(
+          hash: Dependabot::DependencyRequirement::ObjectHash,
+          key: String,
+          value: Object
+        ).returns(Dependabot::DependencyRequirement::ObjectHash)
+      end
+      def self.hash_with_value(hash, key, value)
+        updated = hash.dup
+        actual_key = if hash.key?(key.to_sym)
+                       key.to_sym
+                     elsif hash.key?(key)
+                       key
+                     elsif hash.keys.any?(Symbol)
+                       key.to_sym
+                     else
+                       key
+                     end
+        updated[actual_key] = value
+        updated
+      end
+      private_class_method :hash_with_value
 
       sig { params(declaration: String).void }
       def initialize(declaration)

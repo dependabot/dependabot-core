@@ -70,23 +70,22 @@ module Dependabot
 
         sig { params(requirement: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_xcode_requirement(requirement)
-          metadata = requirement[:metadata] || {}
-          requirement_string = metadata[:requirement_string]
-          kind = metadata[:kind]
+          metadata = requirement.metadata || {}
+          requirement_string = requirement.metadata_string("requirement_string")
+          kind = requirement.metadata_string("kind")
 
           new_requirement_string = build_xcode_requirement_string(requirement_string, kind)
           new_requirement = build_xcode_requirement(requirement_string, kind)
 
           # Update source ref to target version
-          updated_source = update_source_ref(requirement[:source])
+          updated_source = update_source_ref(requirement.source_hash)
+          updated_metadata = hash_with_value(metadata, "requirement_string", new_requirement_string)
 
           Dependabot::DependencyRequirement.create(
             requirement.merge(
               requirement: new_requirement,
               source: updated_source,
-              metadata: metadata.merge(
-                requirement_string: new_requirement_string
-              ).compact
+              metadata: updated_metadata
             )
           )
         end
@@ -103,10 +102,33 @@ module Dependabot
           # otherwise fall back to version string
           ref = target_commit_sha || target_version.to_s
 
-          updated_source = source.dup
-          updated_source[:ref] = ref
-          updated_source["ref"] = ref
-          updated_source
+          hash_with_value(source, "ref", ref)
+        end
+
+        sig do
+          params(
+            hash: Dependabot::DependencyRequirement::ObjectHash,
+            key: String,
+            value: T.nilable(Object)
+          ).returns(Dependabot::DependencyRequirement::ObjectHash)
+        end
+        def hash_with_value(hash, key, value)
+          updated = hash.dup
+          actual_key = if hash.key?(key.to_sym)
+                         key.to_sym
+                       elsif hash.key?(key)
+                         key
+                       elsif hash.keys.any?(Symbol)
+                         key.to_sym
+                       else
+                         key
+                       end
+          if value.nil?
+            updated.delete(actual_key)
+          else
+            updated[actual_key] = value
+          end
+          updated
         end
 
         sig do
