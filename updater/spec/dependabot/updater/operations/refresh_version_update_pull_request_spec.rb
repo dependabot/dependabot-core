@@ -187,7 +187,12 @@ RSpec.describe Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest 
 
     context "when the refresh job carries more than one directory" do
       let(:job_definition) do
-        job_definition_fixture("bundler/version_updates/pull_request_multidir_refresh")
+        definition = job_definition_fixture("bundler/version_updates/pull_request_simple")
+        definition["job"]["dependencies"] = ["dummy-pkg-a"]
+        definition["job"]["updating-a-pull-request"] = true
+        definition["job"]["source"].delete("directory")
+        definition["job"]["source"]["directories"] = %w(/foo /bar)
+        definition
       end
 
       let(:dependency_files) do
