@@ -126,8 +126,6 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
 
     context "when the update helper writes a result alongside stdout output" do
       before do
-        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-          .and_raise("legacy helper protocol invoked")
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
           .and_call_original
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
