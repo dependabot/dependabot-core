@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -221,7 +221,8 @@ module Dependabot
         # of the latest tag that looks like a version.
         if git_commit_checker.pinned_ref_looks_like_version?
           latest_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
-          return latest_tag&.fetch(:commit_sha) || dependency.version
+          commit_sha = T.cast(latest_tag&.fetch(:commit_sha), T.nilable(String))
+          return commit_sha || dependency.version
         end
 
         # If the dependency is pinned to a tag that doesn't look like a
@@ -241,7 +242,7 @@ module Dependabot
         if git_commit_checker.pinned_ref_looks_like_version? &&
            latest_git_tag_is_resolvable?
           new_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
-          return T.must(new_tag).fetch(:commit_sha)
+          return T.cast(T.must(new_tag).fetch(:commit_sha), String)
         end
 
         # If the dependency is pinned then there's nothing we can do.
@@ -270,7 +271,7 @@ module Dependabot
           dependency_files: dependency_files,
           dependency: dependency,
           unlock_requirement: true,
-          replacement_git_pin: replacement_tag.fetch(:tag)
+          replacement_git_pin: T.cast(replacement_tag.fetch(:tag), String)
         ).prepared_dependency_files
 
         VersionResolver.new(
@@ -362,7 +363,7 @@ module Dependabot
         if git_commit_checker.pinned_ref_looks_like_version? &&
            latest_git_tag_is_resolvable?
           new_tag = T.must(git_commit_checker.local_tag_for_latest_version(update_cooldown))
-          return source_with_ref(T.must(dependency_source_details), new_tag.fetch(:tag))
+          return source_with_ref(T.must(dependency_source_details), T.cast(new_tag.fetch(:tag), String))
         end
 
         # Otherwise return the original source
