@@ -156,13 +156,13 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def path_dependency?
-        dependency.requirements.any? { |r| r.dig(:source, :type) == "path" }
+        dependency.requirements.any? { |r| r.source_string("type") == "path" }
       end
 
       # To be a true git dependency, it must have a branch.
       sig { returns(T::Boolean) }
       def git_dependency?
-        dependency.requirements.any? { |r| r.dig(:source, :branch) }
+        dependency.requirements.any? { |r| r.source_string("branch") }
       end
 
       sig { returns(Dependabot::DependencyFile) }
