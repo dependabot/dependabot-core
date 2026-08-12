@@ -214,8 +214,25 @@ RSpec.describe Dependabot::Python::FileParser do
 
         let(:requirements_fixture_name) { "malformed_markers.txt" }
 
-        it "does not return any dependencies" do
-          expect(dependencies).to be_empty
+        # The marker's `~=` operator can't be parsed, so it can't be confidently evaluated.
+        # Rather than silently dropping the dependency, an unparseable python_version clause
+        # now defaults to "satisfied" (see Dependabot::Python::MarkerEvaluator).
+        it "keeps the dependency, since an unparseable python_version clause defaults to satisfied" do
+          expect(dependencies.length).to eq(1)
+
+          dependency = dependencies.first
+
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("arrow")
+          expect(dependency.version).to eq("1.3.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "==1.3.0",
+              file: "requirements.txt",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
         end
       end
     end
