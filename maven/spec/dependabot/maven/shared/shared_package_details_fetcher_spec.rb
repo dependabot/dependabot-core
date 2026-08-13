@@ -128,6 +128,29 @@ RSpec.describe Dependabot::Maven::Shared::SharedPackageDetailsFetcher do
       end
     end
 
+    context "with string-keyed metadata" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: dependency_version,
+          requirements: [{
+            requirement: "23.3-jre",
+            file: "pom.xml",
+            groups: ["dependencies"],
+            source: nil,
+            metadata: { "packaging_type" => "aar", "classifier" => "sources" }
+          }],
+          package_manager: "maven"
+        )
+      end
+
+      it "uses the packaging type and classifier" do
+        url = client.dependency_files_url(maven_central, version)
+
+        expect(url).to eq("#{maven_central}/com/google/guava/guava/23.6-jre/guava-23.6-jre-sources.aar")
+      end
+    end
+
     context "without packaging_type metadata" do
       let(:dependency) do
         Dependabot::Dependency.new(

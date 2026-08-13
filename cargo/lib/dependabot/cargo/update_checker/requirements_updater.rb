@@ -36,7 +36,7 @@ module Dependabot
         sig do
           params(
             requirements: T::Array[Dependabot::DependencyRequirement],
-            updated_source: T.nilable(T::Hash[T.any(String, Symbol), T.anything]),
+            updated_source: T.nilable(Dependabot::DependencyRequirement::ObjectHash),
             update_strategy: Dependabot::RequirementsUpdateStrategy,
             target_version: T.nilable(T.any(String, Gem::Version))
           ).void
@@ -71,7 +71,7 @@ module Dependabot
           requirements.map do |req|
             req = Dependabot::DependencyRequirement.create(req.merge(source: updated_source))
             next req unless target_version
-            next req if req[:requirement].nil?
+            next req if req.requirement.nil?
 
             # TODO: Add a RequirementsUpdateStrategy::WidenRanges options
             if update_strategy == Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary
@@ -87,7 +87,7 @@ module Dependabot
         sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :requirements
 
-        sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.anything])) }
+        sig { returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash)) }
         attr_reader :updated_source
 
         sig { returns(Dependabot::RequirementsUpdateStrategy) }
@@ -105,7 +105,7 @@ module Dependabot
 
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_version_requirement(req)
-          string_reqs = req[:requirement].split(",").map(&:strip)
+          string_reqs = T.must(req.requirement_string).split(",").map(&:strip)
 
           new_requirement =
             if (exact_req = exact_req(string_reqs))
@@ -128,7 +128,7 @@ module Dependabot
 
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_version_requirement_if_needed(req)
-          string_reqs = req[:requirement].split(",").map(&:strip)
+          string_reqs = T.must(req.requirement_string).split(",").map(&:strip)
           ruby_reqs = string_reqs.map { |r| Dependabot::Cargo::Requirement.new(r) }
 
           return req if ruby_reqs.all? { |r| r.satisfied_by?(target_version) }

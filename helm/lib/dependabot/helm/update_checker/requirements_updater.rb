@@ -71,9 +71,11 @@ module Dependabot
 
           requirements.map do |req|
             next req unless latest_resolvable_version
-            next req unless req[:requirement]
+
+            requirement = req.requirement_string
+            next req unless requirement
             # Leave dist-tags / non-numeric leading tokens untouched.
-            next req if req[:requirement].match?(/^([A-Za-uw-z]|v[^\d])/)
+            next req if requirement.match?(/^([A-Za-uw-z]|v[^\d])/)
 
             case update_strategy
             when RequirementsUpdateStrategy::WidenRanges then widen_requirement(req)
@@ -105,7 +107,7 @@ module Dependabot
 
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_version_requirement(req)
-          current_requirement = req[:requirement]
+          current_requirement = T.must(req.requirement_string)
           return req if current_requirement.strip == ""
 
           if current_requirement.match?(/(<|-\s)/i)
@@ -114,7 +116,7 @@ module Dependabot
             return req if ruby_requirements(current_requirement).any? { |r| r.satisfied_by?(latest_resolvable_version) }
 
             updated_req = update_range_requirement(current_requirement)
-            return T.cast(req.merge(requirement: updated_req), Dependabot::DependencyRequirement)
+            return Dependabot::DependencyRequirement.create(req.merge(requirement: updated_req))
           end
 
           # Strict lower-bound (`>`) and not-equal (`!=`) constraints are already
@@ -128,13 +130,15 @@ module Dependabot
           end
 
           reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
-          T.cast(req.merge(requirement: update_version_string(reqs.first)), Dependabot::DependencyRequirement)
+          Dependabot::DependencyRequirement.create(
+            req.merge(requirement: update_version_string(T.must(reqs.first)))
+          )
         end
 
         # Blank, or already permitted by the resolved version, under any strategy.
         sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
         def already_satisfied?(req)
-          current_requirement = req[:requirement]
+          current_requirement = T.must(req.requirement_string)
           return true if current_requirement.strip == ""
 
           ruby_requirements(current_requirement).any? { |r| r.satisfied_by?(latest_resolvable_version) }
@@ -151,7 +155,7 @@ module Dependabot
         def widen_requirement(req)
           return req if already_satisfied?(req)
 
-          current_requirement = req[:requirement]
+          current_requirement = T.must(req.requirement_string)
           reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
 
           updated_requirement =
@@ -166,7 +170,7 @@ module Dependabot
               "#{current_requirement} || ^#{latest_resolvable_version}"
             end
 
-          T.cast(req.merge(requirement: updated_requirement), Dependabot::DependencyRequirement)
+          Dependabot::DependencyRequirement.create(req.merge(requirement: updated_requirement))
         end
 
         sig { params(requirement_string: String).returns(T::Array[Helm::Requirement]) }

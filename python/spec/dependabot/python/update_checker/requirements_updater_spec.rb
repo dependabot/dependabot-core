@@ -17,7 +17,11 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
   end
 
   let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
-  let(:requirements) { [requirement_txt_req, setup_py_req, setup_cfg_req].compact }
+  let(:requirements) do
+    [requirement_txt_req, setup_py_req, setup_cfg_req]
+      .compact
+      .map { |requirement| Dependabot::DependencyRequirement.create(requirement) }
+  end
   let(:requirement_txt_req) do
     {
       file: "requirements.txt",

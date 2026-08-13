@@ -253,10 +253,9 @@ module Dependabot
         :requirements
       end
 
-      sig { params(reqs: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Boolean) }
+      sig { params(reqs: T::Array[Dependabot::DependencyRequirement]).returns(T::Boolean) }
       def exact_requirement?(reqs)
-        reqs = reqs.map { |r| r.fetch(:requirement) }
-        reqs = reqs.compact
+        reqs = reqs.filter_map(&:requirement_string)
         reqs = reqs.flat_map { |r| r.split(",").map(&:strip) }
         reqs.any? { |r| Python::Requirement.new(r).exact? }
       end
@@ -332,12 +331,13 @@ module Dependabot
         return if reqs.none?
 
         requirement = reqs.find do |r|
-          file = r[:file]
+          file = r.file
+          next false unless file
 
           file == "Pipfile" || file == "pyproject.toml" || file.end_with?(".in") || file.end_with?(".txt")
         end
 
-        requirement&.fetch(:requirement)
+        requirement&.requirement_string
       end
 
       sig { returns(String) }
@@ -361,13 +361,13 @@ module Dependabot
       def updated_version_req_lower_bound
         return ">=#{dependency.version}" if dependency.version
 
-        version_for_requirement =
-          requirements.filter_map { |r| r[:requirement] }
-                      .reject { |req_string| req_string.start_with?("<") }
-                      .select { |req_string| req_string.match?(VERSION_REGEX) }
-                      .map { |req_string| req_string.match(VERSION_REGEX).to_s }
-                      .select { |version| Python::Version.correct?(version) }
-                      .max_by { |version| Python::Version.new(version) }
+        version_for_requirement = requirements
+                                  .filter_map(&:requirement_string)
+                                  .reject { |req_string| req_string.start_with?("<") }
+                                  .select { |req_string| req_string.match?(VERSION_REGEX) }
+                                  .map { |req_string| req_string.match(VERSION_REGEX).to_s }
+                                  .select { |version| Python::Version.correct?(version) }
+                                  .max_by { |version| Python::Version.new(version) }
 
         ">=#{version_for_requirement || 0}"
       end
@@ -450,7 +450,7 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def requirement_files
-        requirements.map { |r| r.fetch(:file) }
+        requirements.filter_map(&:file)
       end
 
       sig { returns(T::Array[Dependabot::DependencyRequirement]) }
