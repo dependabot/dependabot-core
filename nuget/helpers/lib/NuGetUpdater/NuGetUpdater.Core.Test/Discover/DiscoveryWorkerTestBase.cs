@@ -146,7 +146,11 @@ public class DiscoveryWorkerTestBase : TestBase
                     && d.Type == expectedDependency.Type
                     && d.Version == expectedDependency.Version
                     && d.IsTopLevel == expectedDependency.IsTopLevel
-                    && d.TargetFrameworks.SequenceEqual(expectedDependency.TargetFrameworks);
+                    && d.TargetFrameworks.SequenceEqual(expectedDependency.TargetFrameworks)
+                    && (expectedDependency.AssetFlags is null ||
+                        expectedDependency.AssetFlags.All(kvp =>
+                            d.AssetFlags?.TryGetValue(kvp.Key, out var actualFlags) == true &&
+                            actualFlags == kvp.Value));
             }).ToArray();
             Assert.True(matchingDependencies.Length == 1, $"""
                 Unable to find 1 dependency matching; found {matchingDependencies.Length}:
@@ -155,8 +159,16 @@ public class DiscoveryWorkerTestBase : TestBase
                     Version: {expectedDependency.Version}
                     IsTopLevel: {expectedDependency.IsTopLevel}
                     TargetFrameworks: {string.Join(", ", expectedDependency.TargetFrameworks ?? [])}
-                Found:{"\n\t"}{string.Join("\n\t", actualDependencies)}
+                    AssetFlags: {FormatAssetFlags(expectedDependency)}
+                Found:{"\n\t"}{string.Join("\n\t", actualDependencies.Select(dependency => $"{dependency}; AssetFlags: {FormatAssetFlags(dependency)}"))}
                 """);
+        }
+
+        static string FormatAssetFlags(Dependency dependency)
+        {
+            return dependency.AssetFlags is null
+                ? string.Empty
+                : string.Join(", ", dependency.AssetFlags.OrderBy(kvp => kvp.Key).Select(kvp => $"{kvp.Key}={kvp.Value}"));
         }
     }
 

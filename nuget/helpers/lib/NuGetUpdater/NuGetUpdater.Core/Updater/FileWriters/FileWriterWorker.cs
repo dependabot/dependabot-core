@@ -169,7 +169,12 @@ public class FileWriterWorker
         var initialTopLevelDependencies = initialProjectDiscovery.Dependencies
             .Where(d => d.IsTopLevel)
             .ToImmutableArray();
-        var newDependency = new Dependency(dependencyName, newDependencyVersion.ToString(), DependencyType.Unknown);
+        var newDependency = initialRequestedDependency with
+        {
+            Version = newDependencyVersion.ToString(),
+            Type = DependencyType.Unknown,
+            IsTopLevel = true,
+        };
         var desiredDependencies = initialTopLevelDependencies.Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
             ? initialTopLevelDependencies.Select(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) ? newDependency : d).ToImmutableArray()
             : initialTopLevelDependencies.Concat([newDependency]).ToImmutableArray();
@@ -183,6 +188,7 @@ public class FileWriterWorker
                 _logger.Warn($"Unable to solve dependency conflicts for target framework {targetFramework}.");
                 continue;
             }
+            resolvedDependencies = MergeAssetFlags(resolvedDependencies.Value, initialProjectDiscovery.Dependencies);
 
             var resolvedRequestedDependency = resolvedDependencies.Value
                 .SingleOrDefault(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase));
@@ -245,15 +251,24 @@ public class FileWriterWorker
                 var rerunTopLevelDependencies = rerunProjectDiscovery.Dependencies
                     .Where(d => d.IsTopLevel)
                     .ToImmutableArray();
+                var rerunNewDependency = candidateDependencyToUpdate with
+                {
+                    Version = newDependencyVersion.ToString(),
+                    Type = DependencyType.Unknown,
+                    IsTopLevel = true,
+                };
                 var rerunDesiredDependencies = rerunTopLevelDependencies.Any(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase))
-                    ? rerunTopLevelDependencies.Select(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) ? newDependency : d).ToImmutableArray()
-                    : rerunTopLevelDependencies.Concat([newDependency]).ToImmutableArray();
+                    ? rerunTopLevelDependencies.Select(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase) ? rerunNewDependency : d).ToImmutableArray()
+                    : rerunTopLevelDependencies.Concat([rerunNewDependency]).ToImmutableArray();
                 var resolvedDependenciesInThisproject = await _dependencySolver.SolveAsync(rerunTopLevelDependencies, rerunDesiredDependencies, targetFramework);
                 if (resolvedDependenciesInThisproject is null)
                 {
                     _logger.Warn($"  Unable to solve dependency conflicts for {projectRelativePath}/{targetFramework}.");
                     continue;
                 }
+                resolvedDependenciesInThisproject = MergeAssetFlags(
+                    resolvedDependenciesInThisproject.Value,
+                    rerunProjectDiscovery.Dependencies);
 
                 var updatedFiles = await TryPerformFileWritesAsync(_fileWriter, repoContentsPath, projectDirectory, rerunProjectDiscovery!, resolvedDependenciesInThisproject.Value);
                 if (updatedFiles.Length == 0)
@@ -324,6 +339,24 @@ public class FileWriterWorker
         }
 
         return [.. updateOperations];
+    }
+
+    private static ImmutableArray<Dependency> MergeAssetFlags(
+        ImmutableArray<Dependency> resolvedDependencies,
+        ImmutableArray<Dependency> discoveredDependencies)
+    {
+        var discoveredByName = discoveredDependencies.ToDictionary(
+            dependency => dependency.Name,
+            StringComparer.OrdinalIgnoreCase);
+        return resolvedDependencies
+            .Select(dependency => discoveredByName.TryGetValue(dependency.Name, out var discoveredDependency)
+                ? dependency with
+                {
+                    TargetFrameworks = discoveredDependency.TargetFrameworks,
+                    AssetFlags = discoveredDependency.AssetFlags,
+                }
+                : dependency)
+            .ToImmutableArray();
     }
 
     internal static async Task<Dictionary<string, string>> GetOriginalFileContentsAsync(DirectoryInfo repoContentsPath, DirectoryInfo initialStartingDirectory, IEnumerable<ProjectDiscoveryResult> projectDiscoveryResults)

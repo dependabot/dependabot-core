@@ -10,15 +10,20 @@ internal static class DependencyFinder
         string repoRoot,
         string projectPath,
         IEnumerable<string> frameworks,
-        ImmutableHashSet<string> packageIds,
+        ImmutableArray<Dependency> packageTemplates,
         NuGetVersion version,
         NuGetContext nugetContext,
         ILogger logger,
         CancellationToken cancellationToken)
     {
         var versionString = version.ToNormalizedString();
-        var packages = packageIds
-            .Select(id => new Dependency(id, versionString, DependencyType.Unknown))
+        var packages = packageTemplates
+            .Select(dependency => dependency with
+            {
+                Version = versionString,
+                Type = DependencyType.Unknown,
+                IsTopLevel = true,
+            })
             .ToImmutableArray();
 
         var result = ImmutableDictionary.CreateBuilder<string, ImmutableArray<Dependency>>();
