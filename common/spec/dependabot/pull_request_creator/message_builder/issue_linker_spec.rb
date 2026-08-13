@@ -17,11 +17,37 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::IssueLinker do
         described_class.new(source_url: "https://gitlab.com/a/b")
       end
 
-      let(:text) { "This is a #19 link" }
+      context "with an unqualified reference" do
+        let(:text) { "This is a #19 link" }
 
-      it "uses the GitLab work item path" do
-        expect(link_issues)
-          .to eq("This is a [#19](https://gitlab.com/a/b/-/work_items/19) link")
+        it "uses the GitLab work item path" do
+          expect(link_issues)
+            .to eq("This is a [#19](https://gitlab.com/a/b/-/work_items/19) link")
+        end
+      end
+
+      context "with a qualified reference" do
+        let(:text) { "This is an other/repo#19 link" }
+
+        it "uses the metadata source provider" do
+          expect(link_issues).to eq(
+            "This is an [other/repo#19](https://gitlab.com/other/repo/-/work_items/19) link"
+          )
+        end
+      end
+    end
+
+    context "with an unsupported source" do
+      subject(:issue_linker) do
+        described_class.new(source_url: "https://registry.example.com/a/b")
+      end
+
+      let(:text) { "This is an other/repo#19 link" }
+
+      it "falls back to GitHub for qualified references" do
+        expect(link_issues).to eq(
+          "This is an [other/repo#19](https://github.com/other/repo/issues/19) link"
+        )
       end
     end
 
