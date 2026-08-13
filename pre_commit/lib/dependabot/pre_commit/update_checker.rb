@@ -51,10 +51,12 @@ module Dependabot
 
         updated_reqs = dependency.requirements.map do |req|
           source = req.source_hash
+          next req unless source
+
           updated = updated_ref(source)
           next req unless updated
 
-          new_source = hash_with_value(T.must(source), "ref", updated)
+          new_source = hash_with_value(source, "ref", updated)
           new_metadata = updated_comment_version_metadata(req, updated)
           Dependabot::DependencyRequirement.create(
             req.merge(source: new_source, metadata: new_metadata)

@@ -254,6 +254,35 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
         expect(updated_requirements.first[:source][:ref]).not_to eq(reference)
       end
 
+      context "when an earlier requirement has no source" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "https://github.com/#{dependency_name}",
+            version: dependency_version,
+            requirements: [
+              {
+                requirement: nil,
+                groups: [],
+                file: ".pre-commit-config.yaml",
+                source: nil
+              },
+              {
+                requirement: nil,
+                groups: [],
+                file: ".pre-commit-config.yaml",
+                source: dependency_source
+              }
+            ],
+            package_manager: "pre_commit"
+          )
+        end
+
+        it "leaves the source-less requirement unchanged" do
+          expect(updated_requirements.first).to eq(dependency.requirements.first)
+          expect(updated_requirements.last.source_string("ref")).not_to eq(reference)
+        end
+      end
+
       context "with string-keyed source details" do
         let(:dependency_source) do
           {
