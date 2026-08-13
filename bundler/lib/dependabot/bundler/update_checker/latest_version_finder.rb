@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "excon"
@@ -128,7 +128,7 @@ module Dependabot
             begin
               current_version = dependency.numeric_version
               current_version&.prerelease? || dependency.requirements.any? do |req|
-                req[:requirement].match?(/[a-z]/i)
+                T.must(req.requirement_string).match?(/[a-z]/i)
               end
             end,
             T.nilable(T::Boolean)

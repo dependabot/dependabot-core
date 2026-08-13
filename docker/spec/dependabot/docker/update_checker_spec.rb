@@ -3296,6 +3296,15 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
+    context "when the source has string keys and extra fields" do
+      let(:source) { { "tag" => version, "path" => "services.web.image" } }
+
+      it "updates the existing tag key and preserves the other fields" do
+        expect(checker.updated_requirements.first&.source)
+          .to eq("tag" => "17.10", "path" => "services.web.image")
+      end
+    end
+
     context "when specified with a digest" do
       let(:source) { { digest: "old_digest" } }
 
@@ -3354,12 +3363,12 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:source) { { tag: "trusty-20170728" } }
 
       before do
-        dependency.requirements << {
+        dependency.requirements << Dependabot::DependencyRequirement.create(
           requirement: nil,
           groups: [],
           file: "Dockerfile.other",
           source: { tag: "xenial-20170802" }
-        }
+        )
       end
 
       it "updates the tags" do

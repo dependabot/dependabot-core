@@ -153,7 +153,60 @@ module Dependabot
       raise TypeError, "requirement must be a string or nil"
     end
 
+    # Reads a known metadata field such as "property_name". Accepts either key
+    # style for the same reason as `source_string`. Returns nil when the
+    # requirement carries no metadata or the key is absent.
+    sig { params(key: String).returns(T.nilable(String)) }
+    def metadata_string(key)
+      value = metadata_value(key)
+      return if value.nil?
+      return value if value.is_a?(String)
+
+      raise TypeError, "metadata #{key} must be a string or nil"
+    end
+
+    # Reads a known symbol-valued metadata field such as Helm's "type".
+    sig { params(key: String).returns(T.nilable(Symbol)) }
+    def metadata_symbol(key)
+      value = metadata_value(key)
+      return if value.nil?
+      return value if value.is_a?(Symbol)
+
+      raise TypeError, "metadata #{key} must be a symbol or nil"
+    end
+
+    # Reads a nested metadata hash whose values are all strings, such as
+    # "dependency_set" (`{ group: "my.group", version: "1.4.0" }`). Keys are
+    # symbolised so callers can read them with symbols regardless of how the
+    # requirement was built.
+    sig { params(key: String).returns(T.nilable(T::Hash[Symbol, String])) }
+    def metadata_string_hash(key)
+      value = metadata_value(key)
+      return if value.nil?
+      raise TypeError, "metadata #{key} must be a hash of strings or nil" unless value.is_a?(Hash)
+
+      value.to_h do |raw_entry_key, raw_entry_value|
+        entry_key = T.cast(raw_entry_key, Object)
+        entry_value = T.cast(raw_entry_value, Object)
+        unless (entry_key.is_a?(Symbol) || entry_key.is_a?(String)) && entry_value.is_a?(String)
+          raise TypeError, "metadata #{key} must be a hash of strings or nil"
+        end
+
+        [entry_key.to_sym, entry_value]
+      end
+    end
+
     private
+
+    # Reads a raw metadata field, accepting either key style. Nil when the
+    # requirement carries no metadata or the key is absent.
+    sig { params(key: String).returns(T.nilable(Object)) }
+    def metadata_value(key)
+      details = metadata
+      return if details.nil?
+
+      details[key.to_sym] || details[key]
+    end
 
     sig { params(key: Symbol).returns(T.nilable(String)) }
     def optional_string(key)

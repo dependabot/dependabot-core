@@ -15,7 +15,7 @@ module Dependabot
     class FileFetcher < Dependabot::Python::SharedFileFetcher
       extend T::Sig
 
-      ECOSYSTEM_SPECIFIC_FILES = T.let(%w(Pipfile setup.py setup.cfg).freeze, T::Array[String])
+      ECOSYSTEM_SPECIFIC_FILES = %w(Pipfile setup.py setup.cfg).freeze
 
       sig { override.returns(T::Array[String]) }
       def self.ecosystem_specific_required_files

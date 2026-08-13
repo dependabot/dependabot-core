@@ -473,7 +473,7 @@ module Dependabot
       private
 
       sig { params(blk: T.proc.void).void }
-      def retry_connection_failures(&blk) # rubocop:disable Lint/UnusedMethodArgument
+      def retry_connection_failures(&blk)
         retry_attempt = 0
 
         begin

@@ -21,16 +21,16 @@ module Dependabot
         ParsedObject = T.type_alias { T::Hash[String, Object] }
 
         # Every commit must carry an explicit hash-algorithm prefix.
-        ALGO_PREFIXES = T.let(%w(sha1- sha256-).freeze, T::Array[String])
+        ALGO_PREFIXES = %w(sha1- sha256-).freeze
 
         # Keys gh-actions-lock requires on every `dependencies` entry. A missing key
         # makes the engine silently discard the whole lockfile in memory and report
         # every workflow as un-onboarded.
-        REQUIRED_DEPENDENCY_KEYS = T.let(%w(ref commit owner_id repo_id).freeze, T::Array[String])
+        REQUIRED_DEPENDENCY_KEYS = %w(ref commit owner_id repo_id).freeze
 
         sig { params(content: String).void }
         def initialize(content)
-          @content = T.let(content, String)
+          @content = content
           @data = T.let(parse, ParsedObject)
         end
 

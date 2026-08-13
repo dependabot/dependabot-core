@@ -31,10 +31,10 @@ module Dependabot
           original_dependency_files:,
           prepared_dependency_files:
         )
-          @dependency = T.let(dependency, Dependabot::Dependency)
-          @original_dependency_files = T.let(original_dependency_files, T::Array[Dependabot::DependencyFile])
-          @prepared_dependency_files = T.let(prepared_dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @dependency = dependency
+          @original_dependency_files = original_dependency_files
+          @prepared_dependency_files = prepared_dependency_files
+          @credentials = credentials
           @latest_resolvable_version = T.let(nil, T.nilable(T.any(Dependabot::Version, String, T::Boolean)))
         end
 

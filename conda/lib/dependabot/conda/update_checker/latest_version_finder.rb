@@ -36,8 +36,8 @@ module Dependabot
           security_advisories:,
           cooldown_options:
         )
-          @raise_on_ignored = T.let(raise_on_ignored, T::Boolean)
-          @cooldown_options = T.let(cooldown_options, T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+          @raise_on_ignored = raise_on_ignored
+          @cooldown_options = cooldown_options
           @conda_client = T.let(CondaRegistryClient.new, CondaRegistryClient)
 
           super
@@ -61,7 +61,7 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def pip_dependency?
-          dependency.requirements.any? { |req| req[:groups]&.include?("pip") }
+          dependency.requirements.any? { |req| req.groups&.include?("pip") }
         end
 
         sig { returns(T.nilable(Dependabot::Package::PackageDetails)) }
@@ -115,13 +115,11 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def extract_channel_from_source
-          return nil unless dependency.requirements.first
+          requirement = dependency.requirements.first
+          return nil unless requirement
 
-          source = T.let(T.must(dependency.requirements.first)[:source], T.nilable(T::Hash[Symbol, Object]))
-          return nil unless source
-
-          channel = source[:channel]
-          return nil unless channel.is_a?(String)
+          channel = requirement.source_string("channel")
+          return nil unless channel
           return nil unless CondaRegistryClient::SUPPORTED_CHANNELS.include?(channel)
 
           channel
@@ -130,7 +128,7 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def extract_channel_from_requirement
           dependency.requirements.each do |req|
-            requirement_string = req[:requirement]
+            requirement_string = req.requirement_string
             next unless requirement_string&.include?("::")
 
             channel = requirement_string.split("::").first
@@ -185,11 +183,11 @@ module Dependabot
           )
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.anything]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         def python_compatible_requirements
           dependency.requirements.map do |req|
-            req.merge(
-              requirement: convert_conda_requirement_to_pip(req[:requirement])
+            Dependabot::DependencyRequirement.create(
+              req.merge(requirement: convert_conda_requirement_to_pip(req.requirement_string))
             )
           end
         end

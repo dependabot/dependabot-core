@@ -18,8 +18,8 @@ module Dependabot
 
       quoted = OPS.keys.map { |k| Regexp.quote k }.join("|")
       PATTERN_RAW = T.let("\\s*(#{quoted})?\\s*(#{Sbt::Version::VERSION_PATTERN})\\s*".freeze, String)
-      PATTERN = T.let(/\A#{PATTERN_RAW}\z/, Regexp)
-      RUBY_STYLE_PATTERN = T.let(/\A\s*(#{quoted})\s*(#{Sbt::Version::VERSION_PATTERN})\s*\z/, Regexp)
+      PATTERN = /\A#{PATTERN_RAW}\z/
+      RUBY_STYLE_PATTERN = /\A\s*(#{quoted})\s*(#{Sbt::Version::VERSION_PATTERN})\s*\z/
 
       sig { override.returns(Regexp) }
       def self.pattern

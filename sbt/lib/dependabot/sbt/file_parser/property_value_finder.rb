@@ -17,14 +17,11 @@ module Dependabot
         # Matches: val someVersion = "1.2.3"
         # Also:   val someVersion: String = "1.2.3"
         # Also:   lazy val someVersion = "1.2.3"
-        VAL_DECLARATION_REGEX = T.let(
-          /(?:^|\s)(?:lazy\s+)?val\s+(?<name>\w+)(?:\s*:\s*String)?\s*=\s*"(?<value>[^"]+)"/,
-          Regexp
-        )
+        VAL_DECLARATION_REGEX = /(?:^|\s)(?:lazy\s+)?val\s+(?<name>\w+)(?:\s*:\s*String)?\s*=\s*"(?<value>[^"]+)"/
 
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
         def initialize(dependency_files:)
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
+          @dependency_files = dependency_files
           @properties = T.let({}, T::Hash[String, T::Hash[String, T::Hash[Symbol, String]]])
         end
 

@@ -19,7 +19,7 @@ module Dependabot
       attr_reader :build_info
 
       VERSION_PATTERN = T.let(Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.]+)?', String)
-      ANCHORED_VERSION_PATTERN = T.let(/\A\s*(#{VERSION_PATTERN})?\s*\z/, Regexp)
+      ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
       sig { override.params(version: VersionParameter).returns(T::Boolean) }
       def self.correct?(version)

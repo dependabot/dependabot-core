@@ -15,13 +15,10 @@ module Dependabot
       class NpmrcBuilder # rubocop:disable Metrics/ClassLength
         extend T::Sig
 
-        CENTRAL_REGISTRIES = T.let(
-          %w(
-            registry.npmjs.org
-            registry.yarnpkg.com
-          ).freeze,
-          T::Array[String]
-        )
+        CENTRAL_REGISTRIES = %w(
+          registry.npmjs.org
+          registry.yarnpkg.com
+        ).freeze
 
         SCOPED_REGISTRY = /^\s*@(?<scope>\S+):registry\s*=\s*(?<registry>\S+)/
 

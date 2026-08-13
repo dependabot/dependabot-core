@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -11,8 +11,8 @@ module Dependabot
       class RepositoriesFinder
         extend T::Sig
 
-        SUPPORTED_BUILD_FILE_NAMES = T.let(%w(build.gradle build.gradle.kts).freeze, T::Array[String])
-        SUPPORTED_SETTINGS_FILE_NAMES = T.let(%w(settings.gradle settings.gradle.kts).freeze, T::Array[String])
+        SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
+        SUPPORTED_SETTINGS_FILE_NAMES = %w(settings.gradle settings.gradle.kts).freeze
 
         # The Central Repo doesn't have special status for Gradle, but until
         # we're confident we're selecting repos correctly it's wise to include
@@ -37,8 +37,8 @@ module Dependabot
           ).void
         end
         def initialize(dependency_files:, target_dependency_file:, credentials: [])
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @dependency_files = dependency_files
+          @credentials = credentials
           raise "No target file!" unless target_dependency_file
 
           @target_dependency_file = T.let(target_dependency_file, Dependabot::DependencyFile)

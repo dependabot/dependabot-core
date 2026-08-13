@@ -441,6 +441,52 @@ RSpec.describe Dependabot::Maven::FileFetcher do
     end
   end
 
+  context "with a module that is a directory whose name ends in .xml" do
+    before do
+      stub_request(:get, File.join(url, "pom.xml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_java_multimodule_xml_directory.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "submodule-one/pom.xml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_java_basic_pom.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      # A directory whose name ends in `.xml` (or even `pom.xml`) must not be
+      # mistaken for a pom file. The fetcher tries the inner pom.xml first, so a
+      # directory-named module resolves straight to its `pom.xml`.
+      ["com.example.xml", "com.example.pom.xml"].each do |dir|
+        stub_request(:get, File.join(url, "#{dir}/pom.xml?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_java_basic_pom.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      stub_request(:get, File.join(url, ".mvn/extensions.xml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 404
+        )
+    end
+
+    it "fetches the pom from inside each xml-suffixed directory" do
+      expect(file_fetcher_instance.files.map(&:name))
+        .to match_array(
+          %w(pom.xml submodule-one/pom.xml com.example.xml/pom.xml com.example.pom.xml/pom.xml)
+        )
+    end
+  end
+
   context "with a parent pom with custom name" do
     before do
       stub_request(:get, File.join(url, "pom.xml?ref=sha"))
@@ -636,6 +682,161 @@ RSpec.describe Dependabot::Maven::FileFetcher do
 
       it "fetches only this pom" do
         expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
+      end
+    end
+  end
+
+  context "with a maven wrapper" do
+    before do
+      stub_request(:get, File.join(url, "pom.xml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(
+          status: 200,
+          body: fixture("github", "contents_java_basic_pom.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, ".mvn/extensions.xml?ref=sha"))
+        .with(headers: { "Authorization" => "token token" })
+        .to_return(status: 404)
+    end
+
+    context "when the maven_wrapper_updater experiment is disabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:maven_wrapper_updater).and_return(false)
+
+        stub_request(:get, File.join(url, ".mvn/wrapper/maven-wrapper.properties?ref=sha"))
+          .with(headers: { "Authorization" => "token token" })
+          .to_return(
+            status: 200,
+            body: fixture("github", "maven-wrapper.properties.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "does not fetch wrapper files" do
+        expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
+      end
+    end
+
+    context "when the maven_wrapper_updater experiment is enabled" do
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:maven_wrapper_updater).and_return(true)
+      end
+
+      context "when maven-wrapper.properties is absent" do
+        it "fetches only pom.xml" do
+          expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
+        end
+      end
+
+      context "when a bin wrapper is present" do
+        before do
+          root_contents = %w(mvnw mvnw.cmd mvnwDebug mvnwDebug.cmd).map do |script|
+            JSON.parse(fixture("github", "#{script}.json"))
+          end
+          stub_request(:get, url + "?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: root_contents.to_json,
+              headers: { "content-type" => "application/json" }
+            )
+
+          properties_response = JSON.parse(fixture("github", "maven-wrapper.properties.json"))
+          properties_response["content"] = Base64.encode64(
+            fixture("wrapper_files", "maven-wrapper-3.9.6-bin.properties")
+          )
+          wrapper_contents = [
+            JSON.parse(fixture("github", "maven-wrapper.properties.json")),
+            JSON.parse(fixture("github", "maven-wrapper.jar.json"))
+          ]
+          stub_request(:get, File.join(url, ".mvn/wrapper?ref=sha"))
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: wrapper_contents.to_json,
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, File.join(url, ".mvn/wrapper/maven-wrapper.properties?ref=sha"))
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: properties_response.to_json,
+              headers: { "content-type" => "application/json" }
+            )
+
+          %w(mvnw mvnw.cmd mvnwDebug mvnwDebug.cmd).each do |script|
+            stub_request(:get, File.join(url, "#{script}?ref=sha"))
+              .with(headers: { "Authorization" => "token token" })
+              .to_return(
+                status: 200,
+                body: fixture("github", "#{script}.json"),
+                headers: { "content-type" => "application/json" }
+              )
+          end
+          stub_request(:get, File.join(url, ".mvn/wrapper/maven-wrapper.jar?ref=sha"))
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "maven-wrapper.jar.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "fetches properties, scripts, and the base64-encoded wrapper JAR" do
+          files = file_fetcher_instance.files
+          expect(files.map(&:name)).to contain_exactly(
+            "pom.xml",
+            ".mvn/wrapper/maven-wrapper.properties",
+            "mvnw",
+            "mvnw.cmd",
+            "mvnwDebug",
+            "mvnwDebug.cmd",
+            ".mvn/wrapper/maven-wrapper.jar"
+          )
+          expect(files.find { |file| file.name == "mvnw" }&.mode)
+            .to eq(Dependabot::DependencyFile::Mode::EXECUTABLE)
+          expect(files.find { |file| file.name == ".mvn/wrapper/maven-wrapper.jar" }&.content_encoding)
+            .to eq(Dependabot::DependencyFile::ContentEncoding::BASE64)
+        end
+      end
+    end
+  end
+
+  describe "#files (cloned repo)" do
+    subject(:fetched_files) { file_fetcher_instance.files }
+
+    let(:file_fetcher_instance) do
+      described_class.new(source: source, credentials: credentials, repo_contents_path: repo_contents_path)
+    end
+    let(:repo_contents_path) { build_tmp_repo("xml_directory_module") }
+
+    before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+
+    context "with a module that is a directory whose name ends in .xml" do
+      # Reading the directory would raise Errno::EISDIR if it were mistaken for
+      # a pom file - this exercises the cloned-mode recovery path.
+      it "reads the pom from inside the .xml-suffixed directory" do
+        expect(fetched_files.map(&:name))
+          .to match_array(%w(pom.xml com.example.xml/pom.xml))
+      end
+    end
+
+    context "with an .xml-named directory that has no pom.xml inside it" do
+      let(:repo_contents_path) { build_tmp_repo("xml_directory_module_no_pom") }
+
+      # Reading the directory raises Errno::EISDIR, which must surface as a
+      # clean DependencyFileNotFound rather than crash the job.
+      it "raises a Dependabot::DependencyFileNotFound error" do
+        expect { fetched_files }
+          .to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect(error.file_path).to eq("/com.example.xml/pom.xml")
+          end
       end
     end
   end

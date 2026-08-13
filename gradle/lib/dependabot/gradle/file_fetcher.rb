@@ -16,13 +16,13 @@ module Dependabot
       require_relative "file_parser"
       require_relative "file_fetcher/settings_file_parser"
 
-      SUPPORTED_LOCK_FILE_NAMES = T.let(%w(gradle.lockfile).freeze, T::Array[String])
+      SUPPORTED_LOCK_FILE_NAMES = %w(gradle.lockfile).freeze
 
       SUPPORTED_BUILD_FILE_NAMES =
-        T.let(%w(build.gradle build.gradle.kts).freeze, T::Array[String])
+        %w(build.gradle build.gradle.kts).freeze
 
       SUPPORTED_SETTINGS_FILE_NAMES =
-        T.let(%w(settings.gradle settings.gradle.kts).freeze, T::Array[String])
+        %w(settings.gradle settings.gradle.kts).freeze
 
       SUPPORTED_WRAPPER_FILES_PATH = %w(
         gradlew
@@ -33,10 +33,10 @@ module Dependabot
 
       # For now Gradle only supports library .toml files in the main gradle folder
       SUPPORTED_VERSION_CATALOG_FILE_PATH =
-        T.let(%w(/gradle/libs.versions.toml).freeze, T::Array[String])
+        %w(/gradle/libs.versions.toml).freeze
 
       PLUGIN_SOURCE_SET_DIRS =
-        T.let(%w(src/main/java src/main/kotlin src/main/groovy src/main/resources).freeze, T::Array[String])
+        %w(src/main/java src/main/kotlin src/main/groovy src/main/resources).freeze
 
       sig do
         override
@@ -52,7 +52,7 @@ module Dependabot
       def initialize(source:, credentials:, repo_contents_path: nil, options: {}, update_config: nil)
         super
 
-        @lockfile_name = T.let(T.must(SUPPORTED_LOCK_FILE_NAMES.first), String)
+        @lockfile_name = T.let(SUPPORTED_LOCK_FILE_NAMES.first, String)
         @buildfile_name = T.let(nil, T.nilable(String))
       end
 

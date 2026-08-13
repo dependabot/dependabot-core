@@ -114,7 +114,7 @@ module Dependabot
           end.reject(&:empty?)
 
           file_version = content_lines.first
-          return if file_version&.empty?
+          return if file_version && file_version.empty?
           return unless T.must(pyenv_versions).include?("#{file_version}\n")
 
           file_version
@@ -126,7 +126,7 @@ module Dependabot
 
           file_version = T.must(T.must(runtime_file).content)
                           .match(/(?<=python-).*/)&.to_s&.strip
-          return if file_version&.empty?
+          return if file_version && file_version.empty?
           return unless T.must(pyenv_versions).include?("#{file_version}\n")
 
           file_version

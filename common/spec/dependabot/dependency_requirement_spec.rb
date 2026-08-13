@@ -202,6 +202,98 @@ RSpec.describe Dependabot::DependencyRequirement do
     end
   end
 
+  describe "metadata helpers" do
+    it "reads a symbol-keyed metadata string" do
+      req = described_class.create(requirement_hash)
+
+      expect(req.metadata_string("property_name")).to eq("rails.version")
+    end
+
+    it "reads a string-keyed metadata string" do
+      req = described_class.create(
+        requirement_hash.merge(metadata: { "property_name" => "rails.version" })
+      )
+
+      expect(req.metadata_string("property_name")).to eq("rails.version")
+    end
+
+    it "returns nil when the metadata key is absent" do
+      req = described_class.create(requirement_hash)
+
+      expect(req.metadata_string("dependency_set")).to be_nil
+    end
+
+    it "returns nil when the requirement has no metadata" do
+      req = described_class.create(requirement_hash.merge(metadata: nil))
+
+      expect(req.metadata_string("property_name")).to be_nil
+      expect(req.metadata_string_hash("dependency_set")).to be_nil
+    end
+
+    it "rejects a non-string metadata value" do
+      req = described_class.create(requirement_hash.merge(metadata: { property_name: 1 }))
+
+      expect { req.metadata_string("property_name") }
+        .to raise_error(TypeError, "metadata property_name must be a string or nil")
+    end
+
+    it "reads a symbol metadata value" do
+      req = described_class.create(requirement_hash.merge(metadata: { type: :helm_chart }))
+
+      expect(req.metadata_symbol("type")).to eq(:helm_chart)
+    end
+
+    it "reads a symbol value from string-keyed metadata" do
+      req = described_class.create(requirement_hash.merge(metadata: { "type" => :docker_image }))
+
+      expect(req.metadata_symbol("type")).to eq(:docker_image)
+    end
+
+    it "returns nil for an absent symbol metadata value" do
+      req = described_class.create(requirement_hash)
+
+      expect(req.metadata_symbol("type")).to be_nil
+    end
+
+    it "rejects a non-symbol metadata value" do
+      req = described_class.create(requirement_hash.merge(metadata: { type: "helm_chart" }))
+
+      expect { req.metadata_symbol("type") }
+        .to raise_error(TypeError, "metadata type must be a symbol or nil")
+    end
+
+    it "reads a metadata hash of strings" do
+      req = described_class.create(
+        requirement_hash.merge(metadata: { dependency_set: { group: "my.group", version: "1.4.0" } })
+      )
+
+      expect(req.metadata_string_hash("dependency_set"))
+        .to eq(group: "my.group", version: "1.4.0")
+    end
+
+    it "symbolises string keys in a metadata hash" do
+      req = described_class.create(
+        requirement_hash.merge(metadata: { dependency_set: { "group" => "my.group" } })
+      )
+
+      expect(req.metadata_string_hash("dependency_set")).to eq(group: "my.group")
+    end
+
+    it "rejects a metadata hash that is not a hash" do
+      req = described_class.create(requirement_hash.merge(metadata: { dependency_set: "nope" }))
+
+      expect { req.metadata_string_hash("dependency_set") }
+        .to raise_error(TypeError, "metadata dependency_set must be a hash of strings or nil")
+    end
+
+    it "rejects a non-string value inside a metadata hash" do
+      req = described_class.create(requirement_hash.merge(metadata: { dependency_set: { group: 1 } }))
+
+      expect { req.metadata_string_hash("dependency_set") }
+        .to raise_error(TypeError, "metadata dependency_set must be a hash of strings or nil")
+    end
+  end
+
   describe "hash compatibility" do
     subject(:requirement) { described_class.create(requirement_hash) }
 

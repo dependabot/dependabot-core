@@ -44,7 +44,7 @@ module Dependabot
 
           sig { params(dependency: Dependabot::Dependency).void }
           def initialize(dependency:)
-            @dependency = T.let(dependency, Dependabot::Dependency)
+            @dependency = dependency
           end
 
           sig { params(node: Parser::AST::Node).void }
@@ -57,10 +57,10 @@ module Dependabot
               key_from_hash_pair(hash_pair)
             end
 
-            if keys.none? { |key| GOOD_KEYS.include?(key) }
-              remove_all_kwargs(node)
-            else
+            if keys.intersect?(GOOD_KEYS)
               remove_git_related_kwargs(kwargs_node)
+            else
+              remove_all_kwargs(node)
             end
           end
 

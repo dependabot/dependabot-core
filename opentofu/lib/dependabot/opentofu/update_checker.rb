@@ -18,10 +18,7 @@ module Dependabot
 
       require_relative "update_checker/latest_version_resolver"
 
-      ELIGIBLE_SOURCE_TYPES = T.let(
-        %w(git provider registry oci).freeze,
-        T::Array[String]
-      )
+      ELIGIBLE_SOURCE_TYPES = %w(git provider registry oci).freeze
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
@@ -96,13 +93,13 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::Opentofu::Version]) }
       def all_module_versions
-        identifier = dependency_source_details&.fetch(:module_identifier)
+        identifier = T.must(dependency.source_string("module_identifier", allowed_types: ELIGIBLE_SOURCE_TYPES))
         registry_client.all_module_versions(identifier: identifier)
       end
 
       sig { returns(T::Array[Dependabot::Opentofu::Version]) }
       def all_provider_versions
-        identifier = dependency_source_details&.fetch(:module_identifier)
+        identifier = T.must(dependency.source_string("module_identifier", allowed_types: ELIGIBLE_SOURCE_TYPES))
         registry_client.all_provider_versions(identifier: identifier)
       end
 
@@ -110,7 +107,10 @@ module Dependabot
       def registry_client
         @registry_client ||= T.let(
           begin
-            hostname = dependency_source_details&.fetch(:registry_hostname)
+            hostname = dependency.source_string(
+              "registry_hostname",
+              allowed_types: ELIGIBLE_SOURCE_TYPES
+            ) || RegistryClient::PUBLIC_HOSTNAME
             RegistryClient.new(hostname: hostname, credentials: credentials)
           end,
           T.nilable(Dependabot::Opentofu::RegistryClient)
@@ -147,7 +147,7 @@ module Dependabot
         end
 
         dependency.requirements.any? do |req|
-          req[:requirement]&.match?(/\d-[A-Za-z0-9]/)
+          req.requirement_string&.match?(/\d-[A-Za-z0-9]/)
         end
       end
 
@@ -195,42 +195,36 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def proxy_requirement?
-        dependency.requirements.any? do |req|
-          req.fetch(:source)&.fetch(:proxy_url, nil)
-        end
+        dependency.requirements.any? { |req| req.source_string("proxy_url") }
       end
 
       sig { returns(T::Boolean) }
       def registry_dependency?
-        return false if dependency_source_details.nil?
-
-        dependency_source_details&.fetch(:type) == "registry"
+        dependency.source_string("type", allowed_types: ELIGIBLE_SOURCE_TYPES) == "registry"
       end
 
       sig { returns(T::Boolean) }
       def provider_dependency?
-        return false if dependency_source_details.nil?
-
-        dependency_source_details&.fetch(:type) == "provider"
+        dependency.source_string("type", allowed_types: ELIGIBLE_SOURCE_TYPES) == "provider"
       end
 
       sig { returns(T::Boolean) }
       def oci_dependency?
-        return false if dependency_source_details.nil?
-
-        dependency_source_details&.fetch(:type) == "oci"
+        dependency.source_string("type", allowed_types: ELIGIBLE_SOURCE_TYPES) == "oci"
       end
 
       sig { returns(T.nilable(Dependabot::Opentofu::Version)) }
       def latest_version_for_oci_dependency
         return unless oci_dependency?
         # Digest pins are immutable; nothing to update to without a tag.
-        return if dependency_source_details&.fetch(:digest)
+        return if dependency.source_string("digest", allowed_types: ELIGIBLE_SOURCE_TYPES)
 
         @latest_oci_version = T.let(@latest_oci_version, T.nilable(Dependabot::Opentofu::Version))
         return @latest_oci_version if @latest_oci_version
 
-        identifier = T.must(dependency_source_details).fetch(:artifact_identifier)
+        identifier = T.must(
+          dependency.source_string("artifact_identifier", allowed_types: ELIGIBLE_SOURCE_TYPES)
+        )
         versions = RegistryClient.all_oci_tags(
           artifact_identifier: identifier,
           credentials: credentials
@@ -238,11 +232,6 @@ module Dependabot
         versions.reject!(&:prerelease?) unless wants_prerelease?
         versions.reject! { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
         @latest_oci_version = versions.max
-      end
-
-      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped])) }
-      def dependency_source_details
-        dependency.source_details(allowed_types: ELIGIBLE_SOURCE_TYPES)
       end
 
       sig { returns(T::Boolean) }

@@ -10,4 +10,4 @@ pytest==9.1.1
 tomli==2.4.1
 
 # Some dependencies will only install if Cython is present
-Cython==3.2.4
+Cython==3.2.9
