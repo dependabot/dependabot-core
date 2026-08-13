@@ -268,6 +268,102 @@ RSpec.describe Dependabot::SharedHelpers do
       end
     end
 
+    context "with an argument vector" do
+      let(:command) do
+        [
+          Gem.ruby,
+          "-e",
+          'require "json"; puts JSON.generate(ARGV)',
+          "argument with spaces",
+          '$(printf "injected")',
+          "`printf injected`"
+        ]
+      end
+
+      it "preserves argument boundaries without evaluating shell syntax" do
+        expect(JSON.parse(run_shell_command)).to eq(
+          ["argument with spaces", '$(printf "injected")', "`printf injected`"]
+        )
+      end
+
+      context "with only an executable" do
+        let(:command) { [File.join(spec_root, "helpers/test/run_bash")] }
+
+        it "executes it directly" do
+          expect(run_shell_command).to eq("\n")
+        end
+      end
+
+      context "when the executable contains shell syntax" do
+        let(:injected_path) { File.join(Dir.tmpdir, "dependabot-argv-injected-#{Process.pid}") }
+        let(:command) { ["missing-command; touch #{injected_path}"] }
+
+        before { FileUtils.rm_f(injected_path) }
+        after { FileUtils.rm_f(injected_path) }
+
+        it "does not evaluate the executable as a shell command" do
+          expect { run_shell_command }
+            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, /No such file or directory/)
+          expect(File).not_to exist(injected_path)
+        end
+      end
+
+      context "with an environment variable" do
+        let(:command) { [File.join(spec_root, "helpers/test/run_bash"), "output"] }
+        let(:env) { { "TEST_ENV" => "prefix:" } }
+
+        it "is available to the command" do
+          expect(run_shell_command).to eq("prefix:output\n")
+        end
+      end
+
+      context "without redirecting stderr" do
+        subject(:run_shell_command) do
+          described_class.run_shell_command(command, stderr_to_stdout: false)
+        end
+
+        let(:command) { [File.join(spec_root, "helpers/test/run_bash"), "output"] }
+
+        it "returns stdout" do
+          expect(run_shell_command).to eq("output\n")
+        end
+      end
+
+      context "when the subprocess exits" do
+        let(:command) { [File.join(spec_root, "helpers/test/error_bash"), "disk"] }
+
+        it "raises a HelperSubprocessFailed error with a readable command" do
+          expect { run_shell_command }
+            .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
+              expect(error.message).to include("No space left on device")
+              expect(error.error_context[:command]).to eq(Shellwords.join(command))
+            end
+        end
+      end
+
+      context "when the argument vector is empty" do
+        let(:command) { [] }
+
+        it "raises an argument error" do
+          expect { run_shell_command }.to raise_error(ArgumentError, "command must not be empty")
+        end
+      end
+
+      context "when allowing an unsafe shell command" do
+        subject(:run_shell_command) do
+          described_class.run_shell_command(command, allow_unsafe_shell_command: true)
+        end
+
+        it "raises an argument error" do
+          expect { run_shell_command }
+            .to raise_error(
+              ArgumentError,
+              "allow_unsafe_shell_command cannot be used with an argument vector"
+            )
+        end
+      end
+    end
+
     context "with an environment variable" do
       let(:env) { { "TEST_ENV" => "prefix:" } }
 
