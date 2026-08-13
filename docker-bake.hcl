@@ -111,6 +111,7 @@ target "ecosystem" {
     item.name == "pre_commit" ? {
       "${UPDATER_IMAGE_PREFIX}gomod:latest"   = "target:gomod"
       "${UPDATER_IMAGE_PREFIX}bundler:latest" = "target:bundler"
+      "${UPDATER_IMAGE_PREFIX}pub:latest"     = "target:pub"
     } : {}
   )
   cache-from = [
