@@ -120,7 +120,7 @@ module Dependabot
         return false unless latest_version
 
         dependency.requirements
-                  .filter_map(&:requirement_string)
+                  .map(&:requirement_string)
                   .map { |r| requirement_class.new(r) }
                   .all? { |r| r.satisfied_by?(latest_version) }
       end
