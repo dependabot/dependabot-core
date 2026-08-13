@@ -1384,8 +1384,8 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         before do
-          github_release = Struct.new(:tag_name, :published_at)
-                                 .new("v1.13.0", Time.now)
+          github_release = Struct.new(:tag_name, :published_at, :draft)
+                                 .new("v1.13.0", Time.now, false)
           allow(checker).to receive(:cached_github_releases).and_return([github_release])
         end
 
