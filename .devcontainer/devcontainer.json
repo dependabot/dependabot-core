@@ -28,7 +28,7 @@
     "ghcr.io/devcontainers/features/dotnet:2": {
       // these versions should be kept in sync with the files `nuget/Dockerfile` and `nuget/helpers/lib/NuGetUpdater/global.json`
       "version": "8.0.418",
-      "additionalVersions": "9.0.311, 10.0.103"
+      "additionalVersions": "9.0.311, 10.0.400"
     },
     "ghcr.io/devcontainers/features/sshd:1": {
       "version": "latest"
