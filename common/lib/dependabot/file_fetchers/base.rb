@@ -666,17 +666,19 @@ module Dependabot
         response = azure_client.fetch_repo_contents(commit, path)
 
         response.map do |entry|
-          type = case entry.fetch("gitObjectType")
+          object_type = T.cast(entry.fetch("gitObjectType"), String)
+          relative_path = T.cast(entry.fetch("relativePath"), String)
+          type = case object_type
                  when "blob" then "file"
                  when "tree" then "dir"
-                 else entry.fetch("gitObjectType")
+                 else object_type
                  end
 
           RepositoryContent.new(
-            name: File.basename(entry.fetch("relativePath")),
-            path: entry.fetch("relativePath"),
+            name: File.basename(relative_path),
+            path: relative_path,
             type: type,
-            size: entry.fetch("size")
+            size: T.cast(entry.fetch("size"), Integer)
           )
         end
       end
@@ -691,17 +693,19 @@ module Dependabot
                    )
 
         response.map do |file|
-          type = case file.fetch("type")
+          object_type = T.cast(file.fetch("type"), String)
+          path = T.cast(file.fetch("path"), String)
+          type = case object_type
                  when "commit_file" then "file"
                  when "commit_directory" then "dir"
-                 else file.fetch("type")
+                 else object_type
                  end
 
           RepositoryContent.new(
-            name: File.basename(file.fetch("path")),
-            path: file.fetch("path"),
+            name: File.basename(path),
+            path: path,
             type: type,
-            size: file.fetch("size", 0)
+            size: T.cast(file.fetch("size", 0), Integer)
           )
         end
       end

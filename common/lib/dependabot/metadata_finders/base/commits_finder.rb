@@ -312,10 +312,13 @@ module Dependabot
           bitbucket_client
             .compare(T.must(source).repo, T.must(previous_tag), T.must(new_tag))
             .map do |commit|
+            summary = T.cast(commit.fetch("summary"), Dependabot::Clients::Bitbucket::JsonObject)
+            links = T.cast(commit.fetch("links"), Dependabot::Clients::Bitbucket::JsonObject)
+            html = T.cast(links.fetch("html"), Dependabot::Clients::Bitbucket::JsonObject)
             {
-              message: commit.dig("summary", "raw"),
-              sha: commit["hash"],
-              html_url: commit.dig("links", "html", "href")
+              message: T.cast(summary.fetch("raw"), String),
+              sha: T.cast(commit.fetch("hash"), String),
+              html_url: T.cast(html.fetch("href"), String)
             }
           end
         rescue Dependabot::Clients::Bitbucket::NotFound,
