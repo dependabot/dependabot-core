@@ -175,6 +175,16 @@ module Dependabot
       raise TypeError, "metadata #{key} must be a symbol or nil"
     end
 
+    # Reads a boolean metadata field such as "include_debug_script".
+    sig { params(key: String).returns(T.nilable(T::Boolean)) }
+    def metadata_boolean(key)
+      value = metadata_value(key)
+      return if value.nil?
+      return value if value == true || value == false
+
+      raise TypeError, "metadata #{key} must be a boolean or nil"
+    end
+
     # Reads a nested metadata hash whose values are all strings, such as
     # "dependency_set" (`{ group: "my.group", version: "1.4.0" }`). Keys are
     # symbolised so callers can read them with symbols regardless of how the
@@ -205,7 +215,9 @@ module Dependabot
       details = metadata
       return if details.nil?
 
-      details[key.to_sym] || details[key]
+      return details[key.to_sym] if details.key?(key.to_sym)
+
+      details[key]
     end
 
     sig { params(key: Symbol).returns(T.nilable(String)) }
