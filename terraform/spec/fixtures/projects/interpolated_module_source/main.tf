@@ -10,10 +10,12 @@ terraform {
 }
 
 # Terraform >= 1.15 allows a `const` input variable in a module source address, so the ref
-# here is not a literal and carries no readable version.
+# here is not a literal and carries no readable version. `const = true` is what makes the
+# interpolation below legal — an ordinary variable would be rejected by Terraform itself.
 variable "module_version" {
   type    = string
   default = "v0.6.0"
+  const   = true
 }
 
 module "interpolated" {
