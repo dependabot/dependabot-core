@@ -158,6 +158,26 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           expect(WebMock).to have_requested(:get, github_url).once
         end
 
+        context "when the repository also contains a submodule" do
+          let(:github_response) do
+            files = JSON.parse(fixture("github", "business_files.json"))
+            files << {
+              "type" => "submodule",
+              "name" => "vendor",
+              "path" => "vendor",
+              "url" => "#{github_url}vendor",
+              "html_url" => nil,
+              "download_url" => nil
+            }
+            JSON.dump(files)
+          end
+
+          it "ignores the submodule" do
+            expect(changelog_url)
+              .to eq("https://github.com/gocardless/business/blob/master/CHANGELOG.md")
+          end
+        end
+
         context "when given a suggested_changelog_url" do
           let(:suggested_changelog_url) do
             "https://github.com/mperham/sidekiq/blob/master/Pro-Changes.md"

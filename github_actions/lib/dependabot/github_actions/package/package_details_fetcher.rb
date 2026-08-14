@@ -78,14 +78,16 @@ module Dependabot
           # If the dependency is pinned to a tag that looks like a version then
           # we want to update that tag.
           if git_commit_checker.pinned_ref_looks_like_version? && latest_version_tag
-            latest_version = latest_version_tag&.fetch(:version)
+            latest_version = tag_version(T.must(latest_version_tag))
+            return unless latest_version.is_a?(Dependabot::Version)
             return current_version if shortened_semver_eq?(dependency.version, latest_version.to_s)
 
             return latest_version
           end
 
           if git_commit_checker.pinned_ref_looks_like_commit_sha? && latest_version_tag
-            latest_version = latest_version_tag&.fetch(:version)
+            latest_version = tag_version(T.must(latest_version_tag))
+            return unless latest_version.is_a?(Dependabot::Version)
             return latest_commit_for_pinned_ref unless git_commit_checker.local_tag_for_pinned_sha
 
             return latest_version
@@ -97,7 +99,7 @@ module Dependabot
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { returns(T.nilable(T::Hash[Symbol, Object])) }
         def lowest_security_fix_version_tag
           # TODO: Support Docker sources
           return unless git_dependency?
@@ -113,25 +115,25 @@ module Dependabot
                 find_lowest_secure_version(tags)
               end
             end,
-            T.nilable(T::Hash[Symbol, String])
+            T.nilable(T::Hash[Symbol, Object])
           )
         end
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { returns(T.nilable(T::Hash[Symbol, Object])) }
         def latest_version_tag
           @latest_version_tag ||= T.let(
             begin
               return git_commit_checker.local_tag_for_latest_version if dependency.version.nil?
 
               ref = git_commit_checker.local_ref_for_latest_version_matching_existing_precision
-              return ref if ref && ref.fetch(:version) > current_version
+              return ref if ref&.version && T.must(ref.version) > current_version
 
               lower_precision_ref = git_commit_checker.local_ref_for_latest_version_lower_precision
-              return ref if ref&.fetch(:version) == current_version
+              return ref if ref&.version == current_version
 
               lower_precision_ref
             end,
-            T.nilable(T::Hash[Symbol, T.untyped])
+            T.nilable(T::Hash[Symbol, Object])
           )
         end
 
@@ -159,9 +161,7 @@ module Dependabot
           []
         end
 
-        sig do
-          returns(T::Array[T::Hash[Symbol, T.untyped]])
-        end
+        sig { returns(T::Array[T::Hash[Symbol, Object]]) }
         def allowed_version_tags_with_release_dates
           allowed_version_tags_hashes = git_commit_checker.local_tags_for_allowed_versions
           tag_to_release_date = T.let({}, T::Hash[String, T.nilable(String)])
@@ -173,14 +173,14 @@ module Dependabot
 
           # Combine version info with release dates and sort by version descending
           result = allowed_version_tags_hashes.map do |tag_hash|
-            tag_name = tag_hash.fetch(:tag)
+            tag_name = tag_name(tag_hash)
             tag_hash.merge(
               release_date: tag_to_release_date[tag_name]
             )
           end
 
           # Sort by version descending (newest first)
-          result.sort_by { |tag_hash| tag_hash.fetch(:version) }.reverse
+          result.sort_by { |tag_hash| T.cast(tag_hash.fetch(:version), Gem::Version) }.reverse
         end
 
         private
@@ -244,23 +244,39 @@ module Dependabot
         end
 
         sig do
-          params(tags: T::Array[T::Hash[Symbol, T.untyped]]).returns(T.nilable(T::Hash[Symbol, T.untyped]))
+          params(tags: T::Array[T::Hash[Symbol, Object]]).returns(T.nilable(T::Hash[Symbol, Object]))
         end
         def find_lowest_secure_version(tags)
-          relevant_tags = Dependabot::UpdateCheckers::VersionFilters
-                          .filter_vulnerable_versions(tags, security_advisories)
+          relevant_tags = tags.reject do |tag|
+            security_advisories.any? { |advisory| advisory.vulnerable?(T.must(tag_version(tag))) }
+          end
 
           relevant_tags = filter_lower_tags(relevant_tags)
-          relevant_tags.min_by { |tag| tag.fetch(:version) }
+          relevant_tags.min_by { |tag| T.must(tag_version(tag)) }
         end
 
         sig do
-          params(tags_array: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Array[T::Hash[Symbol, T.untyped]])
+          params(tags_array: T::Array[T::Hash[Symbol, Object]]).returns(T::Array[T::Hash[Symbol, Object]])
         end
         def filter_lower_tags(tags_array)
           return tags_array unless current_version
 
-          tags_array.select { |tag| tag.fetch(:version) > current_version }
+          tags_array.select { |tag| T.must(tag_version(tag)) > current_version }
+        end
+
+        sig { params(tag: T::Hash[Symbol, Object]).returns(String) }
+        def tag_name(tag)
+          return tag.tag if tag.is_a?(Dependabot::GitTagDetails)
+
+          T.cast(tag.fetch(:tag), String)
+        end
+
+        sig { params(tag: T::Hash[Symbol, Object]).returns(T.nilable(Gem::Version)) }
+        def tag_version(tag)
+          return tag.version if tag.is_a?(Dependabot::GitTagDetails)
+
+          version = tag[:version]
+          version if version.is_a?(Gem::Version)
         end
 
         sig { returns(T::Boolean) }

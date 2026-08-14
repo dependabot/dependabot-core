@@ -173,15 +173,22 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def fetch_latest_version_for_tag
         tag = latest_version_tag
-        tag&.fetch(:commit_sha)
+        tag && tag_commit_sha(tag)
       end
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { returns(T.nilable(T::Hash[Symbol, Object])) }
       def latest_version_tag
         @latest_version_tag ||= T.let(
           git_commit_checker.local_tag_for_latest_version(update_cooldown),
-          T.nilable(T::Hash[Symbol, T.untyped])
+          T.nilable(T::Hash[Symbol, Object])
         )
+      end
+
+      sig { params(tag: T::Hash[Symbol, Object]).returns(T.nilable(String)) }
+      def tag_commit_sha(tag)
+        return tag.commit_sha if tag.is_a?(Dependabot::GitTagDetails)
+
+        T.cast(tag[:commit_sha], T.nilable(String))
       end
 
       # --- Versioned branch support ---

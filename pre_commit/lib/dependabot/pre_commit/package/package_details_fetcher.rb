@@ -62,7 +62,7 @@ module Dependabot
         def version_tag_release
           return unless git_commit_checker.pinned_ref_looks_like_version? && latest_version_tag
 
-          latest_version = pre_commit_version(latest_version_tag&.fetch(:version))
+          latest_version = pre_commit_version(tag_version(T.must(latest_version_tag)))
           return unless latest_version
 
           return current_version if shortened_semver_eq?(dependency.version, latest_version.to_s)
@@ -76,7 +76,7 @@ module Dependabot
 
           if latest_version_tag
             if git_commit_checker.local_tag_for_pinned_sha || version_comment?
-              return pre_commit_version(T.must(latest_version_tag).fetch(:version))
+              return pre_commit_version(tag_version(T.must(latest_version_tag)))
             end
 
             return latest_commit_for_pinned_ref
@@ -94,7 +94,7 @@ module Dependabot
               end
 
               ref = git_commit_checker.local_ref_for_latest_version_matching_existing_precision
-              return ref if ref && current_version && ref.fetch(:version) > current_version
+              return ref if ref && current_version && tag_version(ref) && T.must(tag_version(ref)) > current_version
 
               git_commit_checker.local_ref_for_latest_version_lower_precision
             end,
@@ -124,6 +124,14 @@ module Dependabot
 
           matching = tags_matching_frozen_constraint(prefix, version_suffix.split("."))
           git_commit_checker.max_local_tag(matching)
+        end
+
+        sig { params(tag: T::Hash[Symbol, Object]).returns(T.nilable(Gem::Version)) }
+        def tag_version(tag)
+          return tag.version if tag.is_a?(Dependabot::GitTagDetails)
+
+          version = tag[:version]
+          version if version.is_a?(Gem::Version)
         end
 
         sig do

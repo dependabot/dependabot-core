@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -18,22 +18,16 @@ module Dependabot
   # release date for cooldown handling.
   #
   # Subclasses Hash so it is a drop-in replacement at the many call sites that
-  # read entries with [:key] / fetch and treat them as
-  # T::Hash[Symbol, T.untyped], while exposing typed readers for the well-known
+  # read entries with [:key] / fetch, while exposing typed readers for the well-known
   # keys. Instances compare equal (Hash#==) to plain hashes with the same
   # content, so existing comparisons and API payloads are unaffected.
   class GitTagDetails < Hash
     extend T::Sig
     extend T::Generic
 
-    # The values are heterogeneous (strings and a version object), so this
-    # bridge class is necessarily untyped at the Hash level; the typed readers
-    # below are the migration path.
-    # rubocop:disable Sorbet/ForbidTUntyped
     K = type_member { { fixed: Symbol } }
-    V = type_member { { fixed: T.untyped } }
-    Elem = type_member { { fixed: [Symbol, T.untyped] } }
-    # rubocop:enable Sorbet/ForbidTUntyped
+    V = type_member { { fixed: Object } }
+    Elem = type_member { { fixed: [Symbol, Object] } }
 
     sig do
       params(
@@ -54,25 +48,25 @@ module Dependabot
     # The tag or ref name, e.g. "v1.2.0".
     sig { returns(String) }
     def tag
-      self[:tag]
+      T.cast(self[:tag], String)
     end
 
     # The version parsed from the tag name.
     sig { returns(T.nilable(Gem::Version)) }
     def version
-      self[:version]
+      T.cast(self[:version], T.nilable(Gem::Version))
     end
 
     # The SHA of the commit the tag points at.
     sig { returns(T.nilable(String)) }
     def commit_sha
-      self[:commit_sha]
+      T.cast(self[:commit_sha], T.nilable(String))
     end
 
     # The SHA of the tag object itself (nil for lightweight tags).
     sig { returns(T.nilable(String)) }
     def tag_sha
-      self[:tag_sha]
+      T.cast(self[:tag_sha], T.nilable(String))
     end
   end
 end

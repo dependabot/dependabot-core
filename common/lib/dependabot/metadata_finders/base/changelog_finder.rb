@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "excon"
@@ -7,51 +7,21 @@ require "sorbet-runtime"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/clients/bitbucket_with_retries"
+require "dependabot/errors"
 require "dependabot/shared_helpers"
 require "dependabot/metadata_finders/base"
 
 module Dependabot
   module MetadataFinders
     class Base
-      class ChangelogFile
-        extend T::Sig
-
-        sig { returns(String) }
-        attr_reader :name
-
-        sig { returns(String) }
-        attr_reader :type
-
-        sig { returns(Integer) }
-        attr_reader :size
-
-        sig { returns(String) }
-        attr_reader :html_url
-
-        sig { returns(String) }
-        attr_reader :download_url
-
-        sig { returns(T.nilable(String)) }
-        attr_reader :path
-
-        sig do
-          params(
-            name: String,
-            type: String,
-            size: Integer,
-            html_url: String,
-            download_url: String,
-            path: T.nilable(String)
-          ).void
-        end
-        def initialize(name:, type:, size:, html_url:, download_url:, path: nil)
-          @name = name
-          @type = type
-          @size = size
-          @html_url = html_url
-          @download_url = download_url
-          @path = path
-        end
+      class ChangelogFile < T::ImmutableStruct
+        const :name, String
+        const :type, String
+        const :size, Integer
+        const :html_url, String
+        const :download_url, String
+        const :path, T.nilable(String), default: nil
+        const :api_url, T.nilable(String), default: nil
       end
 
       # rubocop:disable Metrics/ClassLength
@@ -63,6 +33,7 @@ module Dependabot
 
         # Earlier entries are preferred
         CHANGELOG_NAMES = %w(changelog news changes history release whatsnew releases).freeze
+        CHANGELOG_FILE_TYPES = %w(file dir).freeze
 
         sig { returns(T.nilable(Dependabot::Source)) }
         attr_reader :source
@@ -99,7 +70,9 @@ module Dependabot
           @suggested_changelog_url = @suggested_changelog_url&.split("#")&.first
 
           @new_version = T.let(nil, T.nilable(String))
-          @changelog_from_suggested_url = T.let(nil, T.nilable(Sawyer::Resource))
+          @changelog_from_suggested_url = T.let(nil, T.nilable(ChangelogFile))
+          @file_text = T.let({}, T::Hash[String, T.nilable(String)])
+          @dependency_file_list = T.let({}, T::Hash[T.nilable(String), T::Array[ChangelogFile]])
         end
 
         sig { returns(T.nilable(String)) }
@@ -124,10 +97,11 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def upgrade_guide_text
-          return unless upgrade_guide
+          guide = upgrade_guide
+          return unless guide
 
           @upgrade_guide_text ||= T.let(
-            fetch_file_text(upgrade_guide),
+            fetch_file_text(guide),
             T.nilable(String)
           )
         end
@@ -135,22 +109,24 @@ module Dependabot
         private
 
         # rubocop:disable Metrics/PerceivedComplexity
-        sig { returns(T.untyped) }
+        sig { returns(T.nilable(ChangelogFile)) }
         def changelog
           return unless changelog_from_suggested_url || source
           return if git_source? && !ref_changed?
           return changelog_from_suggested_url if changelog_from_suggested_url
 
           # If there is a changelog, and it includes the new version, return it
-          if new_version && default_branch_changelog &&
-             fetch_file_text(default_branch_changelog)&.include?(T.must(new_version))
-            return default_branch_changelog
+          default_changelog = default_branch_changelog
+          if new_version && default_changelog &&
+             fetch_file_text(default_changelog)&.include?(T.must(new_version))
+            return default_changelog
           end
 
           # Otherwise, look for a changelog at the tag for this version
-          if new_version && relevant_tag_changelog &&
-             fetch_file_text(relevant_tag_changelog)&.include?(T.must(new_version))
-            return relevant_tag_changelog
+          tag_changelog = relevant_tag_changelog
+          if new_version && tag_changelog &&
+             fetch_file_text(tag_changelog)&.include?(T.must(new_version))
+            return tag_changelog
           end
 
           # Fall back to the changelog (or nil) from the default branch
@@ -158,7 +134,7 @@ module Dependabot
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
-        sig { returns(T.nilable(Sawyer::Resource)) }
+        sig { returns(T.nilable(ChangelogFile)) }
         def changelog_from_suggested_url
           return @changelog_from_suggested_url unless @changelog_from_suggested_url.nil?
           return unless suggested_changelog_url
@@ -169,27 +145,27 @@ module Dependabot
 
           opts = { path: suggested_source&.directory, ref: suggested_source&.branch }.compact
           suggested_source_client = github_client_for_source(T.must(suggested_source))
-          tmp_files = suggested_source_client.contents(T.must(suggested_source).repo, opts)
+          response = suggested_source_client.contents(T.must(suggested_source).repo, opts)
+          tmp_files = github_changelog_files(response)
 
           filename = T.must(T.must(suggested_changelog_url).split("/").last)
-          @changelog_from_suggested_url =
-            tmp_files.find { |f| f.name == filename }
+          @changelog_from_suggested_url = tmp_files.find { |f| f.name == filename }
         rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons
           @changelog_from_suggested_url = nil
         end
 
-        sig { returns(T.nilable(T.any(ChangelogFile, Sawyer::Resource))) }
+        sig { returns(T.nilable(ChangelogFile)) }
         def default_branch_changelog
           return unless source
 
           @default_branch_changelog ||=
             T.let(
               changelog_from_ref(nil),
-              T.nilable(T.any(ChangelogFile, Sawyer::Resource))
+              T.nilable(ChangelogFile)
             )
         end
 
-        sig { returns(T.nilable(T.any(ChangelogFile, Sawyer::Resource))) }
+        sig { returns(T.nilable(ChangelogFile)) }
         def relevant_tag_changelog
           return unless source
           return unless tag_for_new_version
@@ -197,11 +173,11 @@ module Dependabot
           @relevant_tag_changelog ||=
             T.let(
               changelog_from_ref(tag_for_new_version),
-              T.nilable(T.any(ChangelogFile, Sawyer::Resource))
+              T.nilable(ChangelogFile)
             )
         end
 
-        sig { params(ref: T.nilable(String)).returns(T.nilable(T.any(ChangelogFile, Sawyer::Resource))) }
+        sig { params(ref: T.nilable(String)).returns(T.nilable(ChangelogFile)) }
         def changelog_from_ref(ref)
           files =
             dependency_file_list(ref)
@@ -216,7 +192,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
-        sig { params(files: T::Array[T.untyped]).returns(T.untyped) }
+        sig { params(files: T::Array[ChangelogFile]).returns(T.nilable(ChangelogFile)) }
         def select_best_changelog(files)
           CHANGELOG_NAMES.each do |name|
             candidates = files.select { |f| f.name =~ /\A#{name}/i }
@@ -257,15 +233,14 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def full_changelog_text
-          return unless changelog
+          selected_changelog = changelog
+          return unless selected_changelog
 
-          fetch_file_text(changelog)
+          fetch_file_text(selected_changelog)
         end
 
-        sig { params(file: T.untyped).returns(T.nilable(String)) }
+        sig { params(file: ChangelogFile).returns(T.nilable(String)) }
         def fetch_file_text(file)
-          @file_text ||= T.let({}, T.nilable(T::Hash[String, T.untyped]))
-
           unless @file_text.key?(file.download_url)
             file_source = T.must(Source.from_url(file.html_url))
             @file_text[file.download_url] =
@@ -279,19 +254,21 @@ module Dependabot
               end
           end
 
-          return unless @file_text[file.download_url].valid_encoding?
+          text = @file_text[file.download_url]
+          return unless text&.valid_encoding?
 
-          @file_text[file.download_url].rstrip
+          text.rstrip
         end
 
-        sig { params(file_source: Dependabot::Source, file: T.untyped).returns(String) }
+        sig { params(file_source: Dependabot::Source, file: ChangelogFile).returns(String) }
         def fetch_github_file(file_source, file)
           # Hitting the download URL directly causes encoding problems
-          raw_content = T.unsafe(github_client_for_source(file_source).get(file.url)).content
+          response = github_client_for_source(file_source).get(T.must(file.api_url))
+          raw_content = sawyer_string(response, :content)
           Base64.decode64(raw_content).force_encoding("UTF-8").encode
         end
 
-        sig { params(file: T.untyped).returns(String) }
+        sig { params(file: ChangelogFile).returns(String) }
         def fetch_gitlab_file(file)
           Excon.get(
             file.download_url,
@@ -300,19 +277,19 @@ module Dependabot
           ).body.force_encoding("UTF-8").encode
         end
 
-        sig { params(file: T.untyped).returns(String) }
+        sig { params(file: ChangelogFile).returns(String) }
         def fetch_bitbucket_file(file)
           bitbucket_client.get(file.download_url).body
                           .force_encoding("UTF-8").encode
         end
 
-        sig { params(file: T.untyped).returns(String) }
+        sig { params(file: ChangelogFile).returns(String) }
         def fetch_azure_file(file)
           azure_client.get(file.download_url).body
                       .force_encoding("UTF-8").encode
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T.nilable(ChangelogFile)) }
         def upgrade_guide
           return unless source
 
@@ -322,18 +299,17 @@ module Dependabot
 
           dependency_file_list
             .select { |f| f.type == "file" }
-            .select { |f| f.name.casecmp("upgrade.md").zero? }
+            .select { |f| f.name.casecmp?("upgrade.md") }
             .reject { |f| f.size > 1_000_000 }
             .max_by(&:size)
         end
 
-        sig { params(ref: T.nilable(String)).returns(T.untyped) }
+        sig { params(ref: T.nilable(String)).returns(T::Array[ChangelogFile]) }
         def dependency_file_list(ref = nil)
-          @dependency_file_list ||= T.let({}, T.nilable(T::Hash[T.nilable(String), T.untyped]))
           @dependency_file_list[ref] ||= fetch_dependency_file_list(ref)
         end
 
-        sig { params(ref: T.nilable(String)).returns(T::Array[T.untyped]) }
+        sig { params(ref: T.nilable(String)).returns(T::Array[ChangelogFile]) }
         def fetch_dependency_file_list(ref)
           case T.must(source).provider
           when "github" then fetch_github_file_list(ref)
@@ -346,36 +322,41 @@ module Dependabot
           end
         end
 
-        sig { params(ref: T.nilable(String)).returns(T::Array[T.untyped]) }
+        sig { params(ref: T.nilable(String)).returns(T::Array[ChangelogFile]) }
         def fetch_github_file_list(ref)
-          files = []
+          files = T.let([], T::Array[ChangelogFile])
 
-          if T.must(source).directory
-            opts = { path: T.must(source).directory, ref: ref }.compact
-            tmp_files = github_client.contents(T.must(source).repo, opts)
-            files += tmp_files if tmp_files.is_a?(Array)
+          directory = T.must(source).directory
+          if directory
+            options = { path: directory, ref: ref }.compact
+            response = github_client.contents(T.must(source).repo, options)
+            files.concat(github_changelog_files(response)) if response.is_a?(Array)
           end
-
-          opts = { ref: ref }.compact
-          files += github_client.contents(T.must(source).repo, opts)
+          files.concat(github_files_at(path: nil, ref: ref))
 
           files.uniq.each do |f|
             next unless f.type == "dir" && f.name.match?(/docs?/o)
 
-            opts = { path: f.path, ref: ref }.compact
-            files += github_client.contents(T.must(source).repo, opts)
+            files.concat(github_files_at(path: f.path, ref: ref))
           end
 
           files
         rescue Octokit::NotFound, Octokit::UnavailableForLegalReasons
           []
         end
-        sig { returns(T.untyped) }
+
+        sig { params(path: T.nilable(String), ref: T.nilable(String)).returns(T::Array[ChangelogFile]) }
+        def github_files_at(path:, ref:)
+          options = { path: path, ref: ref }.compact
+          github_changelog_files(github_client.contents(T.must(source).repo, options))
+        end
+
+        sig { returns(T::Array[ChangelogFile]) }
         def fetch_bitbucket_file_list
           branch = default_bitbucket_branch
           bitbucket_client.fetch_repo_contents(T.must(source).repo).map do |file|
-            object_type = T.cast(file.fetch("type"), String)
-            path = T.cast(file.fetch("path"), String)
+            object_type = object_string(file, "type", "Bitbucket")
+            path = object_string(file, "path", "Bitbucket")
             type = case object_type
                    when "commit_file" then "file"
                    when "commit_directory" then "dir"
@@ -384,7 +365,7 @@ module Dependabot
             ChangelogFile.new(
               name: T.must(path.split("/").last),
               type: type,
-              size: T.cast(file.fetch("size", 100), Integer),
+              size: object_integer(file, "size", "Bitbucket", default: 100),
               html_url: "#{T.must(source).url}/src/#{branch}/#{path}",
               download_url: "#{T.must(source).url}/raw/#{branch}/#{path}"
             )
@@ -395,32 +376,35 @@ module Dependabot
           []
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T::Array[ChangelogFile]) }
         def fetch_gitlab_file_list
           branch = default_gitlab_branch
-          T.unsafe(gitlab_client.repo_tree(T.must(source).repo)).map do |file|
-            type = case file.type
+          gitlab_client.repo_tree(T.must(source).repo).map do |file|
+            object_type = gitlab_string(file, "type")
+            type = case object_type
                    when "blob" then "file"
                    when "tree" then "dir"
-                   else file.fetch("type")
+                   else object_type
                    end
+            path = gitlab_string(file, "path")
             ChangelogFile.new(
-              name: file.name,
+              name: gitlab_string(file, "name"),
               type: type,
               size: 100, # GitLab doesn't return file size
-              html_url: "#{T.must(source).url}/blob/#{branch}/#{file.path}",
-              download_url: "#{T.must(source).url}/raw/#{branch}/#{file.path}"
+              html_url: "#{T.must(source).url}/blob/#{branch}/#{path}",
+              download_url: "#{T.must(source).url}/raw/#{branch}/#{path}",
+              path: path
             )
           end
         rescue Gitlab::Error::NotFound
           []
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T::Array[ChangelogFile]) }
         def fetch_azure_file_list
           azure_client.fetch_repo_contents.map do |entry|
-            object_type = T.cast(entry.fetch("gitObjectType"), String)
-            relative_path = T.cast(entry.fetch("relativePath"), String)
+            object_type = object_string(entry, "gitObjectType", "Azure")
+            relative_path = object_string(entry, "relativePath", "Azure")
             type = case object_type
                    when "blob" then "file"
                    when "tree" then "dir"
@@ -430,16 +414,108 @@ module Dependabot
             ChangelogFile.new(
               name: File.basename(relative_path),
               type: type,
-              size: T.cast(entry.fetch("size"), Integer),
+              size: object_integer(entry, "size", "Azure"),
               path: relative_path,
               html_url: "#{T.must(source).url}?path=/#{relative_path}",
-              download_url: T.cast(entry.fetch("url"), String)
+              download_url: object_string(entry, "url", "Azure")
             )
           end
         rescue Dependabot::Clients::Azure::NotFound,
                Dependabot::Clients::Azure::Unauthorized,
                Dependabot::Clients::Azure::Forbidden
           []
+        end
+
+        sig do
+          params(response: T.any(Sawyer::Resource, T::Array[Sawyer::Resource]))
+            .returns(T::Array[ChangelogFile])
+        end
+        def github_changelog_files(response)
+          resources = response.is_a?(Array) ? response : [response]
+          resources.filter_map do |resource|
+            type = sawyer_string(resource, :type)
+            next unless CHANGELOG_FILE_TYPES.include?(type)
+
+            api_url = sawyer_string(resource, :url)
+            ChangelogFile.new(
+              name: sawyer_string(resource, :name),
+              type: type,
+              size: sawyer_optional_integer(resource, :size) || 0,
+              html_url: sawyer_string(resource, :html_url),
+              download_url: sawyer_optional_string(resource, :download_url) || api_url,
+              path: sawyer_optional_string(resource, :path),
+              api_url: api_url
+            )
+          end
+        end
+
+        sig { params(resource: Sawyer::Resource, key: Symbol).returns(String) }
+        def sawyer_string(resource, key)
+          value = T.cast(resource[key], Object)
+          return value if value.is_a?(String)
+
+          raise_bad_metadata_response("GitHub", "#{key} must be a string")
+        end
+
+        sig { params(resource: Sawyer::Resource, key: Symbol).returns(T.nilable(String)) }
+        def sawyer_optional_string(resource, key)
+          value = T.cast(resource[key], Object)
+          return if value.nil?
+          return value if value.is_a?(String)
+
+          raise_bad_metadata_response("GitHub", "#{key} must be a string or nil")
+        end
+
+        sig { params(resource: Sawyer::Resource, key: Symbol).returns(T.nilable(Integer)) }
+        def sawyer_optional_integer(resource, key)
+          value = T.cast(resource[key], Object)
+          return if value.nil?
+          return value if value.is_a?(Integer)
+
+          raise_bad_metadata_response("GitHub", "#{key} must be an integer or nil")
+        end
+
+        sig { params(resource: Gitlab::ObjectifiedHash, key: String).returns(String) }
+        def gitlab_string(resource, key)
+          value = T.cast(resource[key], Object)
+          return value if value.is_a?(String)
+
+          raise_bad_metadata_response("GitLab", "#{key} must be a string")
+        end
+
+        sig do
+          params(object: T::Hash[String, Object], key: String, provider: String)
+            .returns(String)
+        end
+        def object_string(object, key, provider)
+          value = object[key]
+          return value if value.is_a?(String)
+
+          raise_bad_metadata_response(provider, "#{key} must be a string")
+        end
+
+        sig do
+          params(
+            object: T::Hash[String, Object],
+            key: String,
+            provider: String,
+            default: T.nilable(Integer)
+          ).returns(Integer)
+        end
+        def object_integer(object, key, provider, default: nil)
+          value = object[key]
+          return default if value.nil? && default
+          return value if value.is_a?(Integer)
+
+          raise_bad_metadata_response(provider, "#{key} must be an integer")
+        end
+
+        sig { params(provider: String, message: String).returns(T.noreturn) }
+        def raise_bad_metadata_response(provider, message)
+          raise Dependabot::PrivateSourceBadResponse.new(
+            T.must(source).url,
+            "Malformed #{provider} metadata response: #{message}"
+          )
         end
 
         sig { returns(T.nilable(String)) }
