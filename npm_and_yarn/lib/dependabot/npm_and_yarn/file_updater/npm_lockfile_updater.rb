@@ -48,7 +48,7 @@ module Dependabot
           @dependency_files = dependency_files
           @credentials = credentials
           @security_updates_only = security_updates_only
-            @release_age_days = T.let(release_age_days, T.nilable(Integer))
+          @release_age_days = release_age_days
         end
 
         sig { returns(Dependabot::DependencyFile) }

@@ -40,7 +40,7 @@ module Dependabot
           @repo_contents_path = repo_contents_path
           @credentials = credentials
           @security_updates_only = security_updates_only
-          @release_age_days = T.let(release_age_days, T.nilable(Integer))
+          @release_age_days = release_age_days
           @error_handler = T.let(
             PnpmErrorHandler.new(
               dependencies: dependencies,
