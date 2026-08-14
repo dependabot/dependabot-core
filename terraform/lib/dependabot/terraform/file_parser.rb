@@ -76,14 +76,11 @@ module Dependabot
               details = details.first
 
               source = source_from(details)
-              # Cannot update local path modules, skip
-              next if source && source[:type] == "path"
-              # `source_from` returns nil for an interpolated source address, e.g.
-              # `?ref=${var.module_version}`, which Terraform >= 1.15 permits via a `const`
-              # input variable. There is no version to read and nothing to update, so skip the
-              # module — as the terragrunt path already does — rather than passing nil to
-              # `T.must` and aborting the parse for every other dependency in the repo.
-              next if source.nil?
+              # Cannot update local path modules, and `source_from` returns nil for an
+              # interpolated source (Terraform >= 1.15 permits a `const` variable there), which
+              # has no version to read. Skip both, as the terragrunt path above does, rather
+              # than passing the nil to `T.must` and aborting the parse for the whole repo.
+              next if source.nil? || source[:type] == "path"
 
               dependency_set << build_terraform_dependency(file, name, source, details)
             end
