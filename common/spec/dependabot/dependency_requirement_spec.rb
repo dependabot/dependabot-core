@@ -262,6 +262,27 @@ RSpec.describe Dependabot::DependencyRequirement do
         .to raise_error(TypeError, "metadata type must be a symbol or nil")
     end
 
+    it "reads boolean metadata values with either key style" do
+      symbol_keyed = described_class.create(requirement_hash.merge(metadata: { enabled: true }))
+      string_keyed = described_class.create(requirement_hash.merge(metadata: { "enabled" => false }))
+
+      expect(symbol_keyed.metadata_boolean("enabled")).to be(true)
+      expect(string_keyed.metadata_boolean("enabled")).to be(false)
+    end
+
+    it "returns nil for an absent boolean metadata value" do
+      req = described_class.create(requirement_hash)
+
+      expect(req.metadata_boolean("enabled")).to be_nil
+    end
+
+    it "rejects a non-boolean metadata value" do
+      req = described_class.create(requirement_hash.merge(metadata: { enabled: "yes" }))
+
+      expect { req.metadata_boolean("enabled") }
+        .to raise_error(TypeError, "metadata enabled must be a boolean or nil")
+    end
+
     it "reads a metadata hash of strings" do
       req = described_class.create(
         requirement_hash.merge(metadata: { dependency_set: { group: "my.group", version: "1.4.0" } })

@@ -24,7 +24,7 @@ module Dependabot
         # Returns true if any requirement came from a maven-wrapper.properties
         # file rather than a pom.xml. Used as the primary guard throughout the
         # updater pipeline to short-circuit non-wrapper paths.
-        requirements.any? { |req| req.dig(:source, :type) == DISTRIBUTION_DEPENDENCY_TYPE }
+        requirements.any? { |req| req.source_string("type") == DISTRIBUTION_DEPENDENCY_TYPE }
       end
     end
   end
