@@ -207,5 +207,131 @@ RSpec.describe Dependabot::GoModules::Package::PackageDetailsFetcher do
           )
       end
     end
+
+    context "when the dependency path is a sub-package, not a module root" do
+      let(:dependency_name) { "github.com/wasilibs/go-shellcheck/cmd/shellcheck" }
+      let(:dependency_version) { "0.10.0" }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("{}")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("go mod edit -json")
+          .and_return("{}")
+
+        # Full path returns no versions (sub-package, not a module)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(
+            "go list -m -versions -json github.com/wasilibs/go-shellcheck/cmd/shellcheck",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+          .and_return('{"Path":"github.com/wasilibs/go-shellcheck/cmd/shellcheck","Version":"v0.10.0"}')
+
+        # Intermediate path also fails
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(
+            "go list -m -versions -json github.com/wasilibs/go-shellcheck/cmd",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: "no matching versions", error_context: {}
+                     ))
+
+        # Module root returns versions
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(
+            "go list -m -versions -json github.com/wasilibs/go-shellcheck",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+          .and_return('{"Path":"github.com/wasilibs/go-shellcheck","Versions":["v0.10.0","v0.11.0","v0.11.1"]}')
+      end
+
+      it "falls back to the module root path and finds versions" do
+        result = fetch
+
+        expect(result.length).to eq(3)
+        expect(result.map { |r| r.version.to_s }).to eq(%w(0.10.0 0.11.0 0.11.1))
+      end
+    end
+
+    context "when the dependency path is already a module root" do
+      let(:dependency_name) { "github.com/wasilibs/go-shellcheck" }
+      let(:dependency_version) { "0.10.0" }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("{}")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("go mod edit -json")
+          .and_return("{}")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(
+            "go list -m -versions -json github.com/wasilibs/go-shellcheck",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+          .and_return('{"Path":"github.com/wasilibs/go-shellcheck","Versions":["v0.10.0","v0.11.0","v0.11.1"]}')
+      end
+
+      it "returns versions directly without fallback" do
+        result = fetch
+
+        expect(result.length).to eq(3)
+        expect(result.map { |r| r.version.to_s }).to eq(%w(0.10.0 0.11.0 0.11.1))
+      end
+    end
+
+    context "when neither the full path nor shorter paths return versions" do
+      let(:dependency_name) { "github.com/unknown/repo/cmd/tool" }
+      let(:dependency_version) { "1.0.0" }
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("{}")
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with("go mod edit -json")
+          .and_return("{}")
+
+        # All paths return no versions
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(
+            "go list -m -versions -json github.com/unknown/repo/cmd/tool",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+          .and_return('{"Path":"github.com/unknown/repo/cmd/tool","Version":"v1.0.0"}')
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(
+            "go list -m -versions -json github.com/unknown/repo/cmd",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: "no matching versions", error_context: {}
+                     ))
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(
+            "go list -m -versions -json github.com/unknown/repo",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+          .and_return('{"Path":"github.com/unknown/repo","Version":"v1.0.0"}')
+
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(
+            "go list -m -versions -json github.com/unknown",
+            fingerprint: "go list -m -versions -json <dependency_name>"
+          )
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: "no matching versions", error_context: {}
+                     ))
+      end
+
+      it "falls back to the current version" do
+        result = fetch
+
+        expect(result.length).to eq(1)
+        expect(result.first.version.to_s).to eq("0.3.23")
+      end
+    end
   end
 end

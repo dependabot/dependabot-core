@@ -8,6 +8,7 @@
 
 # Sorbet doesn't currently support RSpec very well, so we ignore all of our specs.
 # See https://stackoverflow.com/a/76548429
+--ignore=bazel/spec/
 --ignore=bun/spec/
 --ignore=bundler/helpers/
 --ignore=bundler/spec/
@@ -28,6 +29,7 @@
 --ignore=hex/spec/
 --ignore=julia/spec/
 --ignore=maven/spec/
+--ignore=nix/spec/
 --ignore=npm_and_yarn/spec/
 --ignore=nuget/spec/
 --ignore=pre_commit/spec/

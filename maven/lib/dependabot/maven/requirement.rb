@@ -15,9 +15,9 @@ module Dependabot
 
       quoted = OPS.keys.map { |k| Regexp.quote k }.join("|")
       PATTERN_RAW = T.let("\\s*(#{quoted})?\\s*(#{Maven::Version::VERSION_PATTERN})\\s*".freeze, String)
-      PATTERN = T.let(/\A#{PATTERN_RAW}\z/, Regexp)
+      PATTERN = /\A#{PATTERN_RAW}\z/
       # Like PATTERN, but the leading operator is required
-      RUBY_STYLE_PATTERN = T.let(/\A\s*(#{quoted})\s*(#{Maven::Version::VERSION_PATTERN})\s*\z/, Regexp)
+      RUBY_STYLE_PATTERN = /\A\s*(#{quoted})\s*(#{Maven::Version::VERSION_PATTERN})\s*\z/
 
       sig { override.returns(Regexp) }
       def self.pattern
@@ -29,7 +29,7 @@ module Dependabot
         RUBY_STYLE_PATTERN
       end
 
-      sig { params(obj: T.any(String, Gem::Version)).returns(T::Array[T.any(String, T.untyped)]) }
+      sig { params(obj: T.any(String, Gem::Version)).returns(T::Array[T.any(String, Gem::Version)]) }
       def self.parse(obj)
         return ["=", Maven::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
@@ -50,7 +50,7 @@ module Dependabot
         end
       end
 
-      sig { params(version: T.untyped).returns(T::Boolean) }
+      sig { params(version: Object).returns(T::Boolean) }
       def satisfied_by?(version)
         version = Maven::Version.new(version.to_s)
         super

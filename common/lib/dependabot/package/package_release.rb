@@ -24,7 +24,7 @@ module Dependabot
           package_type: T.nilable(String),
           language: T.nilable(Dependabot::Package::PackageLanguage),
           tag: T.nilable(String),
-          details: T::Hash[String, T.untyped]
+          details: T::Hash[String, T.anything]
         ).void
       end
       def initialize(
@@ -40,17 +40,17 @@ module Dependabot
         tag: nil,
         details: {}
       )
-        @version = T.let(version, Dependabot::Version)
-        @released_at = T.let(released_at, T.nilable(Time))
-        @latest = T.let(latest, T::Boolean)
-        @yanked = T.let(yanked, T::Boolean)
-        @yanked_reason = T.let(yanked_reason, T.nilable(String))
-        @downloads = T.let(downloads, T.nilable(Integer))
-        @url = T.let(url, T.nilable(String))
-        @package_type = T.let(package_type, T.nilable(String))
-        @language = T.let(language, T.nilable(Dependabot::Package::PackageLanguage))
-        @tag = T.let(tag, T.nilable(String))
-        @details = T.let(details, T::Hash[String, T.untyped])
+        @version = version
+        @released_at = released_at
+        @latest = latest
+        @yanked = yanked
+        @yanked_reason = yanked_reason
+        @downloads = downloads
+        @url = url
+        @package_type = package_type
+        @language = language
+        @tag = tag
+        @details = details
       end
 
       sig { returns(Dependabot::Version) }
@@ -83,7 +83,7 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       attr_reader :tag
 
-      sig { returns(T::Hash[String, T.untyped]) }
+      sig { returns(T::Hash[String, T.anything]) }
       attr_reader :details
 
       sig { returns(T::Boolean) }

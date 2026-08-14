@@ -24,6 +24,16 @@ public static class LoggerExtensions
 
     public static void ReportDiscovery(this ILogger logger, WorkspaceDiscoveryResult discoveryResult)
     {
+        var nu1701Projects = discoveryResult.Projects
+            .Where(p => p.HasNoWarnNU1701)
+            .Select(p => PathHelper.JoinPath(discoveryResult.Path, p.FilePath).FullyNormalizedRootedPath())
+            .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        foreach (var projectPath in nu1701Projects)
+        {
+            logger.Warn($"Project [{projectPath}] has NoWarn property containing NU1701; package compatibility checks may be inaccurate.");
+        }
+
         logger.Info("Discovery JSON content:");
         logger.Info(JsonSerializer.Serialize(discoveryResult, DiscoveryWorker.SerializerOptions));
     }

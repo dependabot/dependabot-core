@@ -1,6 +1,7 @@
 # typed: false
 # frozen_string_literal: true
 
+require "cgi/escape"
 require "json"
 require "spec_helper"
 require "dependabot/dependency"

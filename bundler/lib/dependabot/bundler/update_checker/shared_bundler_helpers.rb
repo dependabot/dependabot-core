@@ -8,6 +8,7 @@ require "uri"
 require "dependabot/bundler/update_checker"
 require "dependabot/bundler/native_helpers"
 require "dependabot/bundler/helpers"
+require "dependabot/logger"
 require "dependabot/registry_client"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -38,6 +39,14 @@ module Dependabot
         GIT_REGEX = /reset --hard [^\s]*` in directory (?<path>[^\s]*)/
         GIT_REF_REGEX = /not exist in the repository (?<path>[^\s]*)\./
         PATH_REGEX = /The path `(?<path>.*)` does not exist/
+        # Raised by Bundler when a registry's compact index (`/info/<gem>`) returns
+        # gem metadata it can't parse (e.g. an illformed `ruby:`/`rubygems:`
+        # requirement). This means the *registry* served bad data, not that the
+        # user's dependency files are broken. The trailing `detail` capture keeps
+        # Bundler's own explanation (e.g. `Illformed requirement [...]`) so the
+        # exact parse failure is preserved rather than discarded.
+        REGISTRY_METADATA_ERROR_REGEX =
+          /error parsing the metadata for the gem (?<gem>\S+) \((?<version>[^)]+)\):?\s*(?<detail>.*)/m
 
         module BundlerErrorPatterns
           MISSING_AUTH_REGEX = /bundle config set --global (?<source>.*) username:password/
@@ -118,7 +127,7 @@ module Dependabot
           case error.error_class
           when "Bundler::Dsl::DSLError", "Bundler::GemspecError"
             # We couldn't evaluate the Gemfile, let alone resolve it
-            raise Dependabot::DependencyFileNotEvaluatable, msg
+            raise registry_metadata_error(error) || Dependabot::DependencyFileNotEvaluatable.new(msg)
           when "Bundler::Source::Git::MissingGitRevisionError"
             match_data = error.message.match(GIT_REF_REGEX)
             gem_name = T.must(T.must(match_data).named_captures["path"])
@@ -195,6 +204,45 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/MethodLength
+
+        # When Bundler fails to parse gem metadata served by a registry's compact
+        # index, surface it as a private source error (the registry returned bad
+        # data) rather than blaming the user's dependency files. Returns nil when
+        # the error isn't a registry metadata error so the caller can fall back.
+        sig do
+          params(error: Dependabot::SharedHelpers::HelperSubprocessFailed)
+            .returns(T.nilable(Dependabot::PrivateSourceBadResponse))
+        end
+        def registry_metadata_error(error)
+          match = error.message.match(REGISTRY_METADATA_ERROR_REGEX)
+          return nil unless match
+
+          source = private_registry_source
+          return nil unless source
+
+          # Bundler's original message identifies which gem/version the registry
+          # served unparseable metadata for, and why (e.g. the illformed
+          # requirement string). The structured job error only records the source
+          # host, so log the full message here to keep the offending gem
+          # diagnosable from the updater logs.
+          Dependabot.logger.error(
+            "Registry #{source} returned unparseable compact-index metadata for " \
+            "#{match[:gem]} (#{match[:version]}); raising PrivateSourceBadResponse. " \
+            "Original Bundler error: #{error.message.strip}"
+          )
+
+          parse_detail = match[:detail].to_s.strip.gsub(/\s*\n\s*/, "; ")
+          detail = "Invalid gem metadata returned for #{match[:gem]} (#{match[:version]}) " \
+                   "by the source: #{source}"
+          detail += " (#{parse_detail})" unless parse_detail.empty?
+
+          Dependabot::PrivateSourceBadResponse.new(source, detail)
+        end
+
+        sig { returns(T.nilable(String)) }
+        def private_registry_source
+          private_registry_credentials.filter_map { |cred| cred["host"] }.first
+        end
 
         sig { returns(T::Array[T::Hash[String, T.untyped]]) }
         def inaccessible_git_dependencies

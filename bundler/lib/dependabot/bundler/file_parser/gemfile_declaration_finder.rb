@@ -77,7 +77,7 @@ module Dependabot
 
         sig do
           params(
-            node: T.untyped,
+            node: T.nilable(Prism::Node),
             dependency: T::Hash[String, String]
           )
             .returns(T.nilable(Prism::Node))
@@ -95,7 +95,7 @@ module Dependabot
 
         sig do
           params(
-            node: T.untyped,
+            node: T.nilable(Prism::Node),
             dependency: T::Hash[String, String]
           )
             .returns(T::Boolean)

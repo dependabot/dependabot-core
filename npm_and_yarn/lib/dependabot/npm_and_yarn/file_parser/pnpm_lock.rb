@@ -15,9 +15,10 @@ module Dependabot
       class PnpmLock
         extend T::Sig
 
-        sig { params(dependency_file: Dependabot::DependencyFile).void }
-        def initialize(dependency_file)
+        sig { params(dependency_file: Dependabot::DependencyFile, dealias_packages: T::Boolean).void }
+        def initialize(dependency_file, dealias_packages: false)
           @dependency_file = dependency_file
+          @dealias_packages = dealias_packages
         end
 
         sig { returns(T::Array[T::Hash[String, T.untyped]]) }
@@ -43,6 +44,7 @@ module Dependabot
 
         # rubocop:disable Metrics/MethodLength
         # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/PerceivedComplexity
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def dependencies
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
@@ -52,7 +54,7 @@ module Dependabot
           dependencies_without_specifiers = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
 
           parsed.each do |details|
-            next if details["aliased"]
+            next if details["aliased"] && !dealias_packages?
 
             name = T.cast(details["name"], String)
             version = T.cast(details["version"], T.nilable(String))
@@ -63,6 +65,9 @@ module Dependabot
               package_manager: "npm_and_yarn",
               requirements: []
             }
+
+            # Tag aliased packages with metadata so the grapher can identify them as direct
+            dependency_args[:metadata] = { alias: name } if details["aliased"]
 
             # Add metadata for subdependencies if marked as a dev dependency.
             dependency_args[:subdependency_metadata] = [{ production: !details["dev"] }] if details["dev"]
@@ -82,7 +87,8 @@ module Dependabot
               version: dependency_args[:version],
               package_manager: dependency_args[:package_manager],
               requirements: dependency_args[:requirements],
-              subdependency_metadata: dependency_args[:subdependency_metadata]
+              subdependency_metadata: dependency_args[:subdependency_metadata],
+              metadata: dependency_args[:metadata]
             )
           end
 
@@ -92,12 +98,14 @@ module Dependabot
               version: dependency_args[:version],
               package_manager: dependency_args[:package_manager],
               requirements: dependency_args[:requirements],
-              subdependency_metadata: dependency_args[:subdependency_metadata]
+              subdependency_metadata: dependency_args[:subdependency_metadata],
+              metadata: dependency_args[:metadata]
             )
           end
 
           dependency_set
         end
+        # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/MethodLength
 
@@ -119,6 +127,13 @@ module Dependabot
           else
             details_candidates.find { |info| info["specifiers"]&.include?(requirement) }
           end
+        end
+
+        private
+
+        sig { returns(T::Boolean) }
+        def dealias_packages?
+          @dealias_packages
         end
       end
     end

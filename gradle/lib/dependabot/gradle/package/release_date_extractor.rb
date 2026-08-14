@@ -32,32 +32,25 @@ module Dependabot
         # This supports mirrors/proxies of both Maven Central and Gradle Plugin Portal.
         sig do
           params(
-            repositories: T::Array[T::Hash[String, T.untyped]],
+            repositories: T::Array[T::Hash[String, Object]],
             dependency_metadata_fetcher: T.proc.params(
-              repo: T::Hash[String, T.untyped]
+              repo: T::Hash[String, Object]
             ).returns(Nokogiri::XML::Document),
             release_info_metadata_fetcher: T.proc.params(
-              repo: T::Hash[String, T.untyped]
+              repo: T::Hash[String, Object]
             ).returns(Nokogiri::HTML::Document)
-          ).returns(T::Hash[String, T::Hash[Symbol, T.untyped]])
+          ).returns(T::Hash[String, T::Hash[Symbol, Object]])
         end
         def extract(repositories:, dependency_metadata_fetcher:, release_info_metadata_fetcher:)
-          release_date_info = T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
+          release_date_info = T.let({}, T::Hash[String, T::Hash[Symbol, Object]])
 
           begin
-            repositories.each do |repository_details|
-              parse_gradle_plugin_portal_release(
-                repository_details,
-                release_date_info,
-                dependency_metadata_fetcher
-              )
-
-              parse_maven_central_releases(
-                repository_details,
-                release_date_info,
-                release_info_metadata_fetcher
-              )
-            end
+            parse_repository_release_dates(
+              repositories: repositories,
+              release_date_info: release_date_info,
+              dependency_metadata_fetcher: dependency_metadata_fetcher,
+              release_info_metadata_fetcher: release_info_metadata_fetcher
+            )
 
             release_date_info
           rescue StandardError => e
@@ -77,13 +70,46 @@ module Dependabot
         sig { returns(T.class_of(Dependabot::Version)) }
         attr_reader :version_class
 
+        sig do
+          params(
+            repositories: T::Array[T::Hash[String, Object]],
+            release_date_info: T::Hash[String, T::Hash[Symbol, Object]],
+            dependency_metadata_fetcher: T.proc.params(
+              repo: T::Hash[String, Object]
+            ).returns(Nokogiri::XML::Document),
+            release_info_metadata_fetcher: T.proc.params(
+              repo: T::Hash[String, Object]
+            ).returns(Nokogiri::HTML::Document)
+          ).void
+        end
+        def parse_repository_release_dates(
+          repositories:,
+          release_date_info:,
+          dependency_metadata_fetcher:,
+          release_info_metadata_fetcher:
+        )
+          repositories.each do |repository_details|
+            parse_gradle_plugin_portal_release(
+              repository_details,
+              release_date_info,
+              dependency_metadata_fetcher
+            )
+
+            parse_maven_central_releases(
+              repository_details,
+              release_date_info,
+              release_info_metadata_fetcher
+            )
+          end
+        end
+
         # Parses Maven-style HTML directory listings to extract release dates.
         sig do
           params(
-            repository_details: T::Hash[String, T.untyped],
-            release_date_info: T::Hash[String, T::Hash[Symbol, T.untyped]],
+            repository_details: T::Hash[String, Object],
+            release_date_info: T::Hash[String, T::Hash[Symbol, Object]],
             metadata_fetcher: T.proc.params(
-              repo: T::Hash[String, T.untyped]
+              repo: T::Hash[String, Object]
             ).returns(Nokogiri::HTML::Document)
           ).void
         end
@@ -108,10 +134,10 @@ module Dependabot
         # Parses Gradle Plugin Portal maven-metadata.xml for release dates.
         sig do
           params(
-            repository_details: T::Hash[String, T.untyped],
-            release_date_info: T::Hash[String, T::Hash[Symbol, T.untyped]],
+            repository_details: T::Hash[String, Object],
+            release_date_info: T::Hash[String, T::Hash[Symbol, Object]],
             metadata_fetcher: T.proc.params(
-              repo: T::Hash[String, T.untyped]
+              repo: T::Hash[String, Object]
             ).returns(Nokogiri::XML::Document)
           ).void
         end

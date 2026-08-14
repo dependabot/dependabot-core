@@ -37,7 +37,8 @@ module Dependabot
         dependency_set = DependencySet.new
 
         composefiles.each do |composefile|
-          yaml = YAML.safe_load(T.must(composefile.content), aliases: true)
+          yaml = YAML.safe_load(T.must(composefile.content), permitted_classes: [Symbol], aliases: true)
+          next unless yaml.is_a?(Hash)
           next unless yaml["services"].is_a?(Hash)
 
           yaml["services"].each do |_, service|
@@ -60,16 +61,18 @@ module Dependabot
 
       private
 
-      sig { params(service: T.untyped).returns(T.nilable(T::Hash[String, T.nilable(String)])) }
+      sig { params(service: T::Hash[String, Object]).returns(T.nilable(T::Hash[String, T.nilable(String)])) }
       def parse_image_spec(service)
-        return nil unless service
+        image = service["image"]
+        return service_image(image) if image.is_a?(String)
 
-        if service["image"]
-          return service_image(service["image"])
-        elsif service["build"].is_a?(Hash) && service["build"]["dockerfile_inline"]
-          return nil if service["build"]["dockerfile_inline"].match?(/^FROM\s+\${[^}]+}$/)
+        build = service["build"]
+        if build.is_a?(Hash)
+          dockerfile_inline = build["dockerfile_inline"]
+          return nil unless dockerfile_inline.is_a?(String)
+          return nil if dockerfile_inline.match?(/^FROM\s+\${[^}]+}$/)
 
-          match = FROM_LINE.match(service["build"]["dockerfile_inline"])
+          match = FROM_LINE.match(dockerfile_inline)
           return match&.named_captures
         end
 

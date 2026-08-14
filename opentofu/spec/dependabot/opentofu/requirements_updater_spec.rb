@@ -35,6 +35,59 @@ RSpec.describe Dependabot::Opentofu::RequirementsUpdater do
 
     specify { expect(updater.updated_requirements.count).to eq(1) }
 
+    context "when the source type is malformed" do
+      let(:source) { { type: 123 } }
+
+      it "raises a type error" do
+        expect { updater.updated_requirements }.to raise_error(TypeError, "source type must be a string or nil")
+      end
+    end
+
+    context "when there is no latest version" do
+      let(:latest_version) { nil }
+
+      context "when an exact requirement was previously specified" do
+        let(:requirement) { "0.3.1" }
+
+        it "leaves the requirement unchanged" do
+          expect(updated_requirements).to eq(requirements.first)
+        end
+      end
+
+      context "when a ~> requirement was previously specified" do
+        let(:requirement) { "~> 0.2.1" }
+
+        it "leaves the requirement unchanged" do
+          expect(updated_requirements).to eq(requirements.first)
+        end
+      end
+
+      context "when a <= requirement was previously specified" do
+        let(:requirement) { "<= 0.1.9" }
+
+        it "leaves the requirement unchanged" do
+          expect(updated_requirements).to eq(requirements.first)
+        end
+      end
+
+      context "when the source is a git requirement" do
+        let(:requirement) { nil }
+        let(:tag_for_latest_version) { "v0.4.0" }
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/cloudposse/terraform-null-label.git",
+            branch: nil,
+            ref: "v0.3.7"
+          }
+        end
+
+        it "still updates the git ref via tag_for_latest_version" do
+          expect(updated_requirements[:source][:ref]).to eq("v0.4.0")
+        end
+      end
+    end
+
     context "when there is a latest version" do
       let(:latest_version) { version_class.new("0.3.7") }
 
@@ -182,6 +235,71 @@ RSpec.describe Dependabot::Opentofu::RequirementsUpdater do
 
       it "does not touch the requirement" do
         expect(updated_requirements[:requirement]).to be_nil
+      end
+
+      context "with string-keyed source details" do
+        let(:requirements) do
+          [
+            {
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                "type" => "git",
+                "url" => "https://github.com/cloudposse/terraform-null-label.git",
+                "branch" => nil,
+                "ref" => "tags/0.3.7",
+                "custom" => "preserved"
+              }
+            }
+          ]
+        end
+
+        it "preserves the source payload and key style" do
+          source = updated_requirements.source_hash
+
+          expect(source).to include("ref" => "tags/0.4.1", "custom" => "preserved")
+          expect(source).not_to have_key(:ref)
+        end
+      end
+    end
+
+    context "when dealing with an OCI requirement" do
+      let(:latest_version) { "v2.0.0" }
+      let(:requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: "main.tf",
+          source: {
+            "type" => "oci",
+            "artifact_identifier" => "example.com/repository-name",
+            "tag" => "v1.0.0",
+            "version" => "v1.0.0",
+            "digest" => nil,
+            "custom" => "preserved"
+          }
+        }]
+      end
+
+      it "updates the tag and version without changing the key style" do
+        source = updated_requirements.source_hash
+
+        expect(source).to include(
+          "tag" => "v2.0.0",
+          "version" => "v2.0.0",
+          "custom" => "preserved"
+        )
+        expect(source).not_to have_key(:tag)
+        expect(source).not_to have_key(:version)
+      end
+
+      context "when pinned to a digest" do
+        before { requirements.first.fetch(:source)["digest"] = "sha256:abc123" }
+
+        it "leaves the source unchanged" do
+          expect(updated_requirements).to eq(requirements.first)
+        end
       end
     end
   end

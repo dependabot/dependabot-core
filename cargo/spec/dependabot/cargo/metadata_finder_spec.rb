@@ -116,5 +116,24 @@ RSpec.describe Dependabot::Cargo::MetadataFinder do
         it { is_expected.to be_nil }
       end
     end
+
+    context "when the source uses string keys (deserialised from a job)" do
+      let(:private_index) { "https://private.example.com/index" }
+      let(:private_url) { "#{private_index}/bi/tf/bitflags" }
+      let(:dependency_source) do
+        { "type" => "registry", "name" => "private-reg", "index" => private_index }
+      end
+
+      before do
+        stub_request(:get, private_url)
+          .to_return(status: 200, body: fixture("crates_io_responses", "bitflags.json"))
+      end
+
+      it "reads the string index key and queries the private registry" do
+        expect(source_url).to eq("https://github.com/rust-lang-nursery/bitflags")
+        expect(WebMock).to have_requested(:get, private_url)
+        expect(WebMock).not_to have_requested(:get, crates_url)
+      end
+    end
   end
 end

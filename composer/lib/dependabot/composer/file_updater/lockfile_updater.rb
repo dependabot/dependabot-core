@@ -29,7 +29,7 @@ module Dependabot
 
           sig { params(extensions: T::Array[T::Hash[Symbol, String]]).void }
           def initialize(extensions)
-            @extensions = T.let(extensions, T::Array[T::Hash[Symbol, String]])
+            @extensions = extensions
             super
           end
         end
@@ -320,8 +320,8 @@ module Dependabot
             next content unless Composer::Version.correct?(updated_req)
 
             old_req =
-              dep.requirements.find { |r| r[:file] == PackageManager::MANIFEST_FILENAME }
-                              &.fetch(:requirement)
+              dep.requirements.find { |r| r.file == PackageManager::MANIFEST_FILENAME }
+                              &.requirement_string
 
             # When updating a subdep there won't be an old requirement
             next content unless old_req

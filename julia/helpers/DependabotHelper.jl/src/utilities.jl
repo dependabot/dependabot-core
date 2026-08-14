@@ -83,16 +83,9 @@ function find_workspace_project_files(dir::String)
         # Julia's Pkg.Types.Context handles workspace detection automatically
         project_file, manifest_file = find_environment_files(dir)
 
-        if !isfile(manifest_file)
-            # No manifest file found, just return the single project file
-            return Dict(
-                "project_files" => [project_file],
-                "manifest_file" => "",
-                "workspace_root" => dirname(project_file)
-            )
-        end
-
-        # The workspace root is where the manifest file lives
+        # Pkg computes the manifest path (and thus the workspace root) even
+        # when the manifest has not been committed, so workspace member
+        # discovery must not depend on the file's existence.
         workspace_root = dirname(manifest_file)
         project_files = String[]
 
@@ -107,7 +100,7 @@ function find_workspace_project_files(dir::String)
 
         return Dict(
             "project_files" => project_files,
-            "manifest_file" => manifest_file,
+            "manifest_file" => isfile(manifest_file) ? manifest_file : "",
             "workspace_root" => workspace_root
         )
     catch ex
@@ -126,7 +119,7 @@ function collect_workspace_projects!(project_files::Vector{String}, dir::String)
     # Find the project file in this directory
     proj_file = nothing
     for name in ("JuliaProject.toml", "Project.toml")
-        candidate = joinpath(dir, name)
+        candidate = normpath(joinpath(dir, name))
         if isfile(candidate)
             proj_file = candidate
             break
@@ -135,10 +128,10 @@ function collect_workspace_projects!(project_files::Vector{String}, dir::String)
 
     proj_file === nothing && return
 
-    # Add this project file if not already present
-    if !(proj_file in project_files)
-        push!(project_files, proj_file)
-    end
+    # Already visited: stop here, otherwise mutually-referencing
+    # [workspace].projects entries would recurse forever
+    proj_file in project_files && return
+    push!(project_files, proj_file)
 
     # Parse the project file to find workspace members
     try

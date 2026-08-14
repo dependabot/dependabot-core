@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.IO.Enumeration;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Xml.Linq;
 
 using NuGet.Versioning;
 
@@ -43,7 +44,7 @@ public class RunWorker
     public async Task<int> RunAsync(FileInfo jobFilePath, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha)
     {
         var jobFileContent = await File.ReadAllTextAsync(jobFilePath.FullName);
-        var jobWrapper = Deserialize(jobFileContent);
+        var jobWrapper = Deserialize(jobFileContent, _logger);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
         var result = await RunAsync(jobWrapper.Job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, experimentsManager);
         return result;
@@ -51,8 +52,29 @@ public class RunWorker
 
     public async Task<int> RunAsync(Job job, DirectoryInfo repoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, ExperimentsManager experimentsManager)
     {
+        if (experimentsManager.FindRootDirectory)
+        {
+            _logger.Info("FindRootDirectory experiment is enabled; resolving root directories...");
+            MSBuildHelper.RegisterMSBuild(repoContentsPath.FullName, repoContentsPath.FullName, _logger);
+            job = await ResolveRootDirectoriesAsync(job, repoContentsPath.FullName);
+        }
+
         var result = await RunScenarioHandlersWithErrorHandlingAsync(job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, experimentsManager);
         return result;
+    }
+
+    internal async Task<Job> ResolveRootDirectoriesAsync(Job job, string repoRootPath)
+    {
+        var originalDirectories = job.GetAllDirectories(repoRootPath);
+        var rootDirectories = await EntryPointFinder.FindRootDirectoriesAsync(originalDirectories, repoRootPath, _logger);
+        if (rootDirectories.SequenceEqual(originalDirectories))
+        {
+            return job;
+        }
+
+        _logger.Info($"  Updated job directories from [{string.Join(", ", originalDirectories)}] to [{string.Join(", ", rootDirectories)}]");
+        var updatedSource = job.Source with { Directory = null, Directories = rootDirectories.ToArray() };
+        return job with { Source = updatedSource };
     }
 
     private static readonly ImmutableArray<IUpdateHandler> UpdateHandlers =
@@ -74,6 +96,14 @@ public class RunWorker
 
         try
         {
+            // Register MSBuild up front so that the `Microsoft.Build` assembly is loadable for
+            // the rest of the job.  This is required even on the error-handling path:
+            // `JobErrorBase.ErrorFromException` references `Microsoft.Build` exception types, so
+            // if a failure occurs before MSBuild is registered, JIT-compiling the error handler
+            // would itself throw `FileNotFoundException` for `Microsoft.Build` and mask the real
+            // error.
+            MSBuildHelper.RegisterMSBuild(repoContentsPath.FullName, repoContentsPath.FullName, _logger);
+            await PatchNuGetConfigFilesAsync(repoContentsPath);
             var handler = GetUpdateHandler(job);
             _logger.Info($"Starting update job of type {handler.TagName}");
             await handler.HandleAsync(job, repoContentsPath, caseInsensitiveRepoContentsPath, baseCommitSha, _discoveryWorker, _analyzeWorker, _updaterWorker, _apiHandler, experimentsManager, _logger);
@@ -241,7 +271,7 @@ public class RunWorker
         return relativeResolvedName;
     }
 
-    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string repoRoot, ILogger logger)
+    internal static UpdatedDependencyList GetUpdatedDependencyListFromDiscovery(WorkspaceDiscoveryResult discoveryResult, string repoRoot, ILogger logger, HashSet<string> initiallyExistingFiles)
     {
         string GetFullRepoPath(string path)
         {
@@ -249,12 +279,17 @@ public class RunWorker
             return Path.Join(discoveryResult.Path, path).FullyNormalizedRootedPath();
         }
 
+        bool IsInitiallyPresent(string filePath)
+        {
+            return !ModifiedFilesTracker.IsFileNotInitiallyPresent(Path.Join(discoveryResult.Path, filePath).NormalizePathToUnix(), initiallyExistingFiles);
+        }
+
         var auxiliaryFiles = new List<string>();
-        if (discoveryResult.GlobalJson is not null)
+        if (discoveryResult.GlobalJson is not null && IsInitiallyPresent(discoveryResult.GlobalJson.FilePath))
         {
             auxiliaryFiles.Add(GetFullRepoPath(discoveryResult.GlobalJson.FilePath));
         }
-        if (discoveryResult.DotNetToolsJson is not null)
+        if (discoveryResult.DotNetToolsJson is not null && IsInitiallyPresent(discoveryResult.DotNetToolsJson.FilePath))
         {
             auxiliaryFiles.Add(GetFullRepoPath(discoveryResult.DotNetToolsJson.FilePath));
         }
@@ -265,33 +300,40 @@ public class RunWorker
             foreach (var extraFile in project.ImportedFiles.Concat(project.AdditionalFiles))
             {
                 var extraFileFullPath = Path.Join(projectDirectory, extraFile);
+                if (!IsInitiallyPresent(extraFileFullPath))
+                {
+                    continue;
+                }
+
                 var extraFileRepoPath = GetFullRepoPath(extraFileFullPath);
                 auxiliaryFiles.Add(extraFileRepoPath);
             }
         }
 
-        var allDependenciesWithFilePath = discoveryResult.Projects.SelectMany(p =>
-        {
-            return p.Dependencies
-                .Where(d => d.Version is not null)
-                .Select(d =>
-                    (p.FilePath, new ReportedDependency()
-                    {
-                        Name = d.Name,
-                        Requirements = [new ReportedRequirement()
-                            {
-                                File = GetFullRepoPath(p.FilePath),
-                                Requirement = d.Version!,
-                                Groups = ["dependencies"],
-                            }],
-                        Version = d.Version,
-                    }));
-        }).ToList();
+        var allDependenciesWithFilePath = discoveryResult.Projects
+            .Where(p => IsInitiallyPresent(p.FilePath))
+            .SelectMany(p =>
+            {
+                return p.Dependencies
+                    .Where(d => d.Version is not null)
+                    .Select(d =>
+                        (p.FilePath, new ReportedDependency()
+                        {
+                            Name = d.Name,
+                            Requirements = [new ReportedRequirement()
+                                {
+                                    File = GetFullRepoPath(p.FilePath),
+                                    Requirement = d.Version!,
+                                    Groups = ["dependencies"],
+                                }],
+                            Version = d.Version,
+                        }));
+            }).ToList();
 
         var nonProjectDependencySet = new (string?, IEnumerable<Dependency>)[]
         {
-            (discoveryResult.GlobalJson?.FilePath, discoveryResult.GlobalJson?.Dependencies ?? []),
-            (discoveryResult.DotNetToolsJson?.FilePath, discoveryResult.DotNetToolsJson?.Dependencies ?? []),
+            (discoveryResult.GlobalJson is not null && IsInitiallyPresent(discoveryResult.GlobalJson.FilePath) ? discoveryResult.GlobalJson.FilePath : null, discoveryResult.GlobalJson?.Dependencies ?? []),
+            (discoveryResult.DotNetToolsJson is not null && IsInitiallyPresent(discoveryResult.DotNetToolsJson.FilePath) ? discoveryResult.DotNetToolsJson.FilePath : null, discoveryResult.DotNetToolsJson?.Dependencies ?? []),
         };
 
         foreach (var (filePath, dependencies) in nonProjectDependencySet)
@@ -324,6 +366,7 @@ public class RunWorker
             .ToArray();
 
         var dependencyFiles = discoveryResult.Projects
+            .Where(p => IsInitiallyPresent(p.FilePath))
             .Select(p => GetFullRepoPath(p.FilePath))
             .Concat(auxiliaryFiles)
             .Select(p => EnsureCorrectFileCasing(p, repoRoot, logger))
@@ -339,9 +382,12 @@ public class RunWorker
         return updatedDependencyList;
     }
 
-    public static JobFile Deserialize(string json)
+    public static JobFile Deserialize(string json) => Deserialize(json, new ConsoleLogger());
+
+    public static JobFile Deserialize(string json, ILogger logger)
     {
-        var jobFile = JsonSerializer.Deserialize<JobFile>(json, SerializerOptions);
+        var options = GetDeserializerOptions(logger);
+        var jobFile = JsonSerializer.Deserialize<JobFile>(json, options);
         if (jobFile is null)
         {
             throw new InvalidOperationException("Unable to deserialize job wrapper.");
@@ -353,5 +399,84 @@ public class RunWorker
         }
 
         return jobFile;
+    }
+
+    internal static JsonSerializerOptions GetDeserializerOptions(ILogger logger)
+    {
+        var options = new JsonSerializerOptions(SerializerOptions);
+        options.Converters.Insert(0, new JobCommandConverter(logger));
+        return options;
+    }
+
+    internal static string AddInsecureConnectionsAttribute(string nugetConfigContents)
+    {
+        try
+        {
+            var doc = XDocument.Parse(nugetConfigContents, LoadOptions.PreserveWhitespace);
+            var ns = doc.Root?.Name.Namespace ?? XNamespace.None;
+            var packageSources = doc.Root?.Element(ns + "packageSources");
+            if (packageSources is null)
+            {
+                return nugetConfigContents;
+            }
+
+            foreach (var addElement in packageSources.Elements(ns + "add"))
+            {
+                if (addElement.Attribute("allowInsecureConnections") is not null)
+                {
+                    continue;
+                }
+
+                var valueAttr = addElement.Attribute("value");
+                if (valueAttr is null)
+                {
+                    continue;
+                }
+
+                if (valueAttr.Value.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+                {
+                    addElement.SetAttributeValue("allowInsecureConnections", "true");
+                }
+            }
+
+            var result = doc.ToString(SaveOptions.DisableFormatting);
+            if (doc.Declaration is not null)
+            {
+                result = doc.Declaration.ToString() + result;
+            }
+
+            return result;
+        }
+        catch
+        {
+            return nugetConfigContents;
+        }
+    }
+
+    /// <summary>
+    /// Scans the repo for all NuGet.Config files (case-insensitive) and adds
+    /// <c>allowInsecureConnections="true"</c> to any package source using an <c>http://</c> URL.
+    /// This allows NuGet to restore from insecure feeds without requiring the attribute to be
+    /// present in the original config file.
+    /// </summary>
+    private static async Task PatchNuGetConfigFilesAsync(DirectoryInfo repoContentsPath)
+    {
+        var options = new EnumerationOptions
+        {
+            RecurseSubdirectories = true,
+            MatchCasing = MatchCasing.CaseInsensitive,
+            IgnoreInaccessible = true,
+        };
+        var configFiles = Directory.EnumerateFiles(repoContentsPath.FullName, "nuget.config", options);
+
+        foreach (var configFile in configFiles)
+        {
+            var contents = await File.ReadAllTextAsync(configFile);
+            var patched = AddInsecureConnectionsAttribute(contents);
+            if (patched != contents)
+            {
+                await File.WriteAllTextAsync(configFile, patched);
+            }
+        }
     }
 }

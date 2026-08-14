@@ -1,0 +1,55 @@
+---
+lockfileVersion: '9.0'
+
+importers:
+
+  .:
+    configDependencies: {}
+    packageManagerDependencies:
+      '@pnpm/exe':
+        specifier: 11.9.0
+        version: 11.9.0
+      pnpm:
+        specifier: 11.9.0
+        version: 11.9.0
+
+packages:
+
+  '@pnpm/exe@11.9.0':
+    resolution: {}
+    hasBin: true
+
+  pnpm@11.9.0:
+    resolution: {}
+    hasBin: true
+
+snapshots:
+
+  '@pnpm/exe@11.9.0': {}
+
+  pnpm@11.9.0: {}
+
+---
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      etag:
+        specifier: ^1.0.0
+        version: 1.8.0
+
+packages:
+
+  etag@1.8.0:
+    resolution: {}
+    engines: {node: '>= 0.6'}
+
+snapshots:
+
+  etag@1.8.0: {}

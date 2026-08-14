@@ -12,6 +12,7 @@ public record ExpectedWorkspaceDiscoveryResult : NativeResult
     public int? ExpectedProjectCount { get; init; }
     public ExpectedDependencyDiscoveryResult? GlobalJson { get; init; }
     public ExpectedDependencyDiscoveryResult? DotNetToolsJson { get; init; }
+    public string? SolutionDirectory { get; init; }
     public string? ErrorRegex { get; init; } = null;
 }
 
@@ -24,6 +25,7 @@ public record ExpectedSdkProjectDiscoveryResult : ExpectedDependencyDiscoveryRes
     public string? ErrorDetails { get; init; }
     public PackageManagementKind? ExpectedPackageManagementKind { get; init; } = null;
     public string? ExpectedPackageManagementSpecialFileRelativePath { get; init; } = null;
+    public ImmutableDictionary<string, ImmutableArray<string>>? ExpectedDependencyGraph { get; init; }
 }
 
 public record ExpectedDependencyDiscoveryResult : IDiscoveryResultWithDependencies

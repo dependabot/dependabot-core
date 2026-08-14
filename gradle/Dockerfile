@@ -5,14 +5,19 @@
 # If you perform a manual update, make sure to update the tag as well.
 # Including the tag with the digest is for documentation purposes, as Docker ignores the tag when a digest is provided
 # It is useful because mapping tags to digests is challenging without OCI metadata, and many images do not provide this metadata.
-FROM docker.io/gradle:9.2.1-jdk21-ubi-minimal@sha256:9049dc0698f42c2c1cd5c45a8e8a34f86602e7dd9a217e65da899e5077be3c21 AS gradle
+FROM docker.io/gradle:9.6.1-jdk21-ubi@sha256:44b577a8ec748195859a8ad3f50f3247ee05b18552c592cf909b962de6dff4b9 AS gradle
 
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    openjdk-17-jdk-headless \
     openjdk-21-jdk-headless \
     ca-certificates-java \
+    && chgrp dependabot /etc/ssl/certs/java /etc/ssl/certs/java/cacerts \
+    && chmod g+w /etc/ssl/certs/java /etc/ssl/certs/java/cacerts \
     && rm -rf /var/lib/apt/lists/*
+
+COPY --chmod=755 updater/bin/java-truststore-entrypoint.sh /usr/local/bin/java-truststore-entrypoint.sh
 
 USER dependabot
 
@@ -24,3 +29,5 @@ ENV PATH=$GRADLE_HOME/bin:$PATH
 COPY --from=gradle $GRADLE_HOME $GRADLE_HOME
 COPY --chown=dependabot:dependabot --parents gradle maven common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+
+ENTRYPOINT ["/usr/local/bin/java-truststore-entrypoint.sh"]

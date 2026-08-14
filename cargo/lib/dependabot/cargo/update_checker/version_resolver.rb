@@ -15,11 +15,12 @@ module Dependabot
       class VersionResolver # rubocop:disable Metrics/ClassLength
         extend T::Sig
 
-        UNABLE_TO_UPDATE = /Unable to update (?<url>.*?)$/
+        UNABLE_TO_UPDATE = /unable to update (?<url>.*?)$/i
         BRANCH_NOT_FOUND_REGEX = /#{UNABLE_TO_UPDATE}.*to find branch `(?<branch>[^`]+)`/m
         REVSPEC_PATTERN = /revspec '.*' not found/
         OBJECT_PATTERN = /object not found - no match for id \(.*\)/
-        REF_NOT_FOUND_REGEX = /#{UNABLE_TO_UPDATE}.*(#{REVSPEC_PATTERN}|#{OBJECT_PATTERN})/m
+        REVISION_PATTERN = /revision .* not found/
+        REF_NOT_FOUND_REGEX = /#{UNABLE_TO_UPDATE}.*(#{REVSPEC_PATTERN}|#{OBJECT_PATTERN}|#{REVISION_PATTERN})/m
         GIT_REF_NOT_FOUND_REGEX = /Updating git repository `(?<url>[^`]*)`.*fatal: couldn't find remote ref/m
 
         # Note that as of Rust 1.80, git error message handling in the `cargo update` command changed.
@@ -105,20 +106,138 @@ module Dependabot
           versions = TomlRB.parse(lockfile_content).fetch("package")
                            .select { |p| p["name"] == dependency.name }
 
-          updated_version =
-            if dependency.top_level?
-              versions.max_by { |p| version_class.new(p.fetch("version")) }
-            else
-              versions.min_by { |p| version_class.new(p.fetch("version")) }
-            end
+          updated_version = updated_package(versions)
 
           return unless updated_version
 
           if git_dependency?
-            updated_version.fetch("source").split("#").last
+            T.cast(updated_version.fetch("source"), String).split("#").last
           else
-            updated_version.fetch("version")
+            T.cast(updated_version.fetch("version"), String)
           end
+        end
+
+        sig do
+          params(
+            packages: T::Array[T::Hash[String, T.anything]]
+          ).returns(T.nilable(T::Hash[String, T.anything]))
+        end
+        def updated_package(packages)
+          if dependency.top_level?
+            packages.max_by do |package|
+              version_class.new(T.cast(package.fetch("version"), String))
+            end
+          else
+            updated_package_for_locked_identity(packages) ||
+              packages.min_by do |package|
+                version_class.new(T.cast(package.fetch("version"), String))
+              end
+          end
+        end
+
+        sig do
+          params(
+            updated_packages: T::Array[T::Hash[String, T.anything]]
+          ).returns(T.nilable(T::Hash[String, T.anything]))
+        end
+        def updated_package_for_locked_identity(updated_packages)
+          target = original_target_package
+          return unless target
+
+          source = T.cast(target["source"], T.nilable(String))
+          candidates = updated_package_candidates(updated_packages, target)
+
+          # Cargo can split a unified line across a version boundary, adding a
+          # new package while retaining the old one for dependents that still
+          # need it. A newly introduced identity is the update; the retained
+          # line only answers when nothing new appeared.
+          fresh = candidates.reject { |package| package_identity(package) == package_identity(target) }
+          return fresh.max_by { |package| version_class.new(T.cast(package.fetch("version"), String)) } if fresh.any?
+
+          candidates.find { |package| version_from_package(package) == dependency.version } ||
+            compatible_packages(updated_packages, source).max_by do |package|
+              version_class.new(T.cast(package.fetch("version"), String))
+            end
+        end
+
+        sig { returns(T.nilable(T::Hash[String, T.anything])) }
+        def original_target_package
+          return unless dependency.version
+
+          targets = original_packages_for_dependency.select do |package|
+            version_from_package(package) == dependency.version
+          end
+
+          package_source = T.cast(dependency.metadata[:cargo_package_source], T.nilable(String))
+          if package_source
+            targets.select! do |package|
+              T.cast(package["source"], T.nilable(String)) == package_source
+            end
+          end
+          targets.first if targets.one?
+        end
+
+        sig do
+          params(
+            updated_packages: T::Array[T::Hash[String, T.anything]],
+            target: T::Hash[String, T.anything]
+          ).returns(T::Array[T::Hash[String, T.anything]])
+        end
+        def updated_package_candidates(updated_packages, target)
+          target_source = T.cast(target["source"], T.nilable(String))
+          other_identities = original_packages_for_dependency
+                             .map { |package| package_identity(package) }
+          target_index = other_identities.index(package_identity(target))
+          other_identities.delete_at(target_index) if target_index
+
+          updated_packages
+            .select { |package| T.cast(package["source"], T.nilable(String)) == target_source }
+            .reject { |package| other_identities.include?(package_identity(package)) }
+        end
+
+        sig { returns(T::Array[T::Hash[String, T.anything]]) }
+        def original_packages_for_dependency
+          original_lockfile_packages.select do |package|
+            T.cast(package["name"], T.nilable(String)) == dependency.name
+          end
+        end
+
+        sig { returns(T::Array[T::Hash[String, T.anything]]) }
+        def original_lockfile_packages
+          original_lockfile = original_dependency_files.find { |file| file.name == "Cargo.lock" }
+          return [] unless original_lockfile
+
+          T.cast(
+            TomlRB.parse(T.must(original_lockfile.content)).fetch("package", []),
+            T::Array[T::Hash[String, T.anything]]
+          )
+        end
+
+        sig do
+          params(
+            packages: T::Array[T::Hash[String, T.anything]],
+            source: T.nilable(String)
+          ).returns(T::Array[T::Hash[String, T.anything]])
+        end
+        def compatible_packages(packages, source)
+          requirement = Requirement.new(T.must(dependency.version))
+          packages.select do |package|
+            T.cast(package["source"], T.nilable(String)) == source &&
+              requirement.satisfied_by?(version_class.new(T.cast(package.fetch("version"), String)))
+          end
+        end
+
+        sig { params(package: T::Hash[String, T.anything]).returns(T::Array[T.anything]) }
+        def package_identity(package)
+          [package["name"], package["version"], package["source"]]
+        end
+
+        sig { params(package: T::Hash[String, T.anything]).returns(String) }
+        def version_from_package(package)
+          source = T.cast(package["source"], T.nilable(String))
+          return T.must(source.split("#").last) if source&.start_with?("git+")
+
+          T.cast(package.fetch("version"), String)
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -186,10 +305,7 @@ module Dependabot
         def run_cargo_command(command, fingerprint: nil)
           start = Time.now
           command = SharedHelpers.escape_command(command)
-          Helpers.bypass_cargo_credential_providers
-          # Pass through any cargo registry configuration via environment variables
-          # (e.g. CARGO_REGISTRIES_CRATES_IO_PROTOCOL, CARGO_REGISTRY_GLOBAL_CREDENTIAL_PROVIDERS).
-          env = ENV.select { |key, _value| key.match(/^CARGO_REGISTR(Y|IES)_/) }
+          env = Helpers.cargo_command_env(original_dependency_files, credentials)
 
           stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
@@ -209,17 +325,19 @@ module Dependabot
           )
         end
 
-        sig { params(prepared: T::Boolean).returns(T.nilable(Integer)) }
+        sig { params(prepared: T::Boolean).void }
         def write_temporary_dependency_files(prepared: true)
           write_manifest_files(prepared: prepared)
 
           File.write(T.must(lockfile).name, T.must(lockfile).content) if lockfile
           File.write(T.must(toolchain).name, T.must(toolchain).content) if toolchain
-          config_file = config
-          return unless config_file
-
-          FileUtils.mkdir_p(File.dirname(config_file.name))
-          File.write(config_file.name, Helpers.sanitize_cargo_config(T.must(config_file.content)))
+          config_files.each do |config_file|
+            FileUtils.mkdir_p(File.dirname(config_file.name))
+            File.write(
+              config_file.name,
+              Helpers.sanitize_cargo_config(T.must(config_file.content), file_name: config_file.name)
+            )
+          end
         end
 
         sig { void }
@@ -367,8 +485,8 @@ module Dependabot
             )
             next unless checker.git_dependency?
 
-            url = T.must(dep.requirements.find { |r| r.dig(:source, :type) == "git" })
-                   .fetch(:source).fetch(:url)
+            requirement = T.must(dep.requirements.find { |r| r.source_string("type") == "git" })
+            url = T.must(requirement.source_string("url"))
 
             if checker.git_repo_reachable?
               T.must(@reachable_git_urls) << url
@@ -491,15 +609,15 @@ module Dependabot
           TomlRB.parse(T.must(lockfile).content)
                 .fetch("package", [])
                 .select { |p| p["name"] == dependency.name }
-                .find { |p| p["source"].end_with?(dependency.version) }
-                .fetch("version")
+                .find { |p| p["source"]&.end_with?(dependency.version) }
+                &.fetch("version")
         end
 
         sig { returns(T.nilable(String)) }
         def git_source_url
           dependency.requirements
-                    .find { |r| r.dig(:source, :type) == "git" }
-                    &.dig(:source, :url)
+                    .find { |r| r.source_string("type") == "git" }
+                    &.source_string("url")
         end
 
         sig { returns(String) }
@@ -556,13 +674,18 @@ module Dependabot
           )
         end
 
-        sig { returns(T.nilable(DependencyFile)) }
-        def config
-          @config ||= T.let(
-            original_dependency_files.find do |f|
-              f.name == ".cargo/config.toml"
+        # Cargo merges `.cargo/config.toml` hierarchically (package directory plus
+        # every ancestor up to the repo root), so we materialise all of them and
+        # let Cargo perform the merge with its own precedence rules. Ancestor
+        # configs carry relative `../` names and are written to the matching
+        # location within the temporary tree.
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def config_files
+          @config_files ||= T.let(
+            original_dependency_files.select do |f|
+              f.name.end_with?(".cargo/config.toml")
             end,
-            T.nilable(Dependabot::DependencyFile)
+            T.nilable(T::Array[Dependabot::DependencyFile])
           )
         end
 

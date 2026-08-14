@@ -65,5 +65,29 @@ RSpec.describe Dependabot::Nix::MetadataFinder do
 
       it { is_expected.to eq("https://gitlab.com/myorg/myrepo") }
     end
+
+    context "when the source is a NixOS channel tarball" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nixpkgs",
+          version: "bd0ff2d3eac24699c3664d5966b9ef36f388e2ca",
+          previous_version: "3030f185ba6a4bf4f18b87f345f104e6a6961f34",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "tarball",
+              url: "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz",
+              branch: nil,
+              ref: "nixos-26.05"
+            }
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      it { is_expected.to eq("https://github.com/NixOS/nixpkgs") }
+    end
   end
 end

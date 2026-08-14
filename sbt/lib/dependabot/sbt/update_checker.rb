@@ -47,11 +47,11 @@ module Dependabot
         nil
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         property_names =
           declarations_using_a_property
-          .filter_map { |req| req.dig(:metadata, :property_name) }
+          .filter_map { |req| req.metadata_string("property_name") }
 
         RequirementsUpdater.new(
           requirements: dependency.requirements,
@@ -132,8 +132,8 @@ module Dependabot
       sig { returns(T::Boolean) }
       def version_comes_from_multi_dependency_property?
         declarations_using_a_property.any? do |requirement|
-          property_name = requirement.dig(:metadata, :property_name)
-          property_source = requirement.dig(:metadata, :property_source)
+          property_name = requirement.metadata_string("property_name")
+          property_source = requirement.metadata_string("property_source")
 
           next false unless property_name
 
@@ -141,20 +141,20 @@ module Dependabot
             next false if dep.name == dependency.name
 
             dep.requirements.any? do |req|
-              next unless req.dig(:metadata, :property_name) == property_name
+              next unless req.metadata_string("property_name") == property_name
 
-              req.dig(:metadata, :property_source) == property_source
+              req.metadata_string("property_source") == property_source
             end
           end
         end
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def declarations_using_a_property
         @declarations_using_a_property ||= T.let(
           dependency.requirements
-                    .select { |req| req.dig(:metadata, :property_name) },
-          T.nilable(T::Array[T::Hash[Symbol, T.untyped]])
+                    .select { |req| req.metadata_string("property_name") },
+          T.nilable(T::Array[Dependabot::DependencyRequirement])
         )
       end
 
@@ -165,7 +165,7 @@ module Dependabot
             dependency_files: dependency_files,
             source: nil
           ).parse.select do |dep|
-            dep.requirements.any? { |req| req.dig(:metadata, :property_name) }
+            dep.requirements.any? { |req| req.metadata_string("property_name") }
           end,
           T.nilable(T::Array[Dependabot::Dependency])
         )

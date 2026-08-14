@@ -3,11 +3,11 @@
     "type": "library",
     "license": "MIT",
     "require": {
-        "php": ">=7.1",
+        "php": ">=8.0",
         "php-http/client-implementation": "^1.0"
     },
     "require-dev": {
-        "php-http/guzzle6-adapter": "^2.0.0"
+        "php-http/guzzle7-adapter": "^1.0"
     },
     "minimum-stability": "stable"
 }

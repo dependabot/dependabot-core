@@ -83,7 +83,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
       end
 
       context "when lockfile generation fails" do
-        it "re-raises the error after logging" do
+        it "raises a classified error after logging" do
           allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
             .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                          message: "npm ERR! ERESOLVE could not resolve",
@@ -92,7 +92,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
 
           expect(Dependabot.logger).to receive(:error).at_least(:once)
 
-          expect { generator.generate }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+          expect { generator.generate }.to raise_error(Dependabot::DependencyFileNotResolvable)
         end
       end
     end
@@ -198,7 +198,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
     let(:dependency_files) { project_dependency_files("grapher/npm_no_lockfile") }
 
     context "with ERESOLVE error" do
-      it "logs a helpful error message about peer dependencies and re-raises" do
+      it "raises DependencyFileNotResolvable with a user-friendly message" do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
           .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                        message: "npm ERR! ERESOLVE could not resolve peer dependencies",
@@ -208,14 +208,16 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
         expect(Dependabot.logger).to receive(:error)
           .with(/Failed to generate lockfile with npm/)
         expect(Dependabot.logger).to receive(:error)
-          .with(/conflicting peer dependencies/)
+          .with("Dependency resolution failed. This may be due to conflicting peer dependencies.")
 
-        expect { generator.generate }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+        expect { generator.generate }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to include("conflicting peer dependencies")
+        end
       end
     end
 
     context "with network error" do
-      it "logs a helpful error message about network issues and re-raises" do
+      it "raises PrivateSourceTimedOut with the registry hostname" do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
           .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
                        message: "npm ERR! ENOTFOUND registry.npmjs.org",
@@ -225,26 +227,111 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher::LockfileGenerator do
         expect(Dependabot.logger).to receive(:error)
           .with(/Failed to generate lockfile with npm/)
         expect(Dependabot.logger).to receive(:error)
-          .with(/Network error/)
+          .with("Network error while generating lockfile. Registry may be unreachable.")
 
-        expect { generator.generate }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+        expect { generator.generate }.to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
+          expect(error.message).to include("registry.npmjs.org")
+        end
       end
     end
 
-    context "with authentication error" do
-      it "logs a helpful error message about credentials and re-raises" do
+    context "with timeout error" do
+      it "raises PrivateSourceTimedOut with the registry hostname" do
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
           .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-                       message: "npm ERR! 401 Unauthorized",
+                       message: "npm ERR! ETIMEDOUT npm.pkg.github.com",
                        error_context: {}
                      ))
 
         expect(Dependabot.logger).to receive(:error)
           .with(/Failed to generate lockfile with npm/)
         expect(Dependabot.logger).to receive(:error)
-          .with(/Authentication error/)
+          .with("Network error while generating lockfile. Registry may be unreachable.")
 
-        expect { generator.generate }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+        expect { generator.generate }.to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
+          expect(error.message).to include("npm.pkg.github.com")
+        end
+      end
+    end
+
+    context "with authentication error (401)" do
+      it "raises PrivateSourceAuthenticationFailure with the registry URL" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: "npm error code E401\n" \
+                                "npm error 401 Unauthorized - GET https://npm.pkg.github.com/@scope%2fpkg\n" \
+                                "npm error authentication token not provided",
+                       error_context: {}
+                     ))
+
+        expect(Dependabot.logger).to receive(:error)
+          .with(/Failed to generate lockfile with npm/)
+        expect(Dependabot.logger).to receive(:error)
+          .with("Authentication error. Check that credentials are configured correctly.")
+
+        expect { generator.generate }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message).to include("npm.pkg.github.com/@scope%2fpkg")
+        end
+      end
+    end
+
+    context "with authentication error (403)" do
+      it "raises PrivateSourceAuthenticationFailure with the registry URL" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: "npm error code E403\n" \
+                                "npm error 403 Forbidden - GET https://registry.npmjs.org/@private%2fpkg",
+                       error_context: {}
+                     ))
+
+        expect(Dependabot.logger).to receive(:error)
+          .with(/Failed to generate lockfile with npm/)
+        expect(Dependabot.logger).to receive(:error)
+          .with("Authentication error. Check that credentials are configured correctly.")
+
+        expect { generator.generate }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message).to include("registry.npmjs.org/@private%2fpkg")
+        end
+      end
+    end
+
+    context "with an unrecognized error" do
+      it "re-raises the original HelperSubprocessFailed error" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command)
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: "npm ERR! something completely unexpected happened",
+                       error_context: {}
+                     ))
+
+        expect(Dependabot.logger).to receive(:error)
+          .with(/Failed to generate lockfile with npm/)
+
+        expect { generator.generate }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
+          expect(error.message).to include("something completely unexpected happened")
+        end
+      end
+    end
+
+    context "with yarn authentication error" do
+      let(:package_manager) { "yarn" }
+      let(:dependency_files) { project_dependency_files("grapher/yarn_no_lockfile") }
+
+      it "raises PrivateSourceAuthenticationFailure with the registry URL" do
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .and_raise(Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                       message: "error An unexpected error occurred: " \
+                                "\"https://npm.pkg.github.com/@scope%2fpkg: authentication token not provided\"",
+                       error_context: {}
+                     ))
+
+        expect(Dependabot.logger).to receive(:error)
+          .with(/Failed to generate lockfile with yarn/)
+        expect(Dependabot.logger).to receive(:error)
+          .with("Authentication error. Check that credentials are configured correctly.")
+
+        expect { generator.generate }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.message).to include("npm.pkg.github.com/@scope%2fpkg")
+        end
       end
     end
   end

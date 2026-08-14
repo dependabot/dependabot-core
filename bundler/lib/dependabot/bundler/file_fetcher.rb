@@ -113,7 +113,7 @@ module Dependabot
         []
       end
 
-      sig { returns(T::Array[String]) }
+      sig { returns(T::Array[Pathname]) }
       def gemspec_directories
         gemfiles = ([gemfile] + child_gemfiles).compact
         directories =
@@ -121,7 +121,7 @@ module Dependabot
             GemspecFinder.new(gemfile: file).gemspec_directories
           end.uniq
 
-        directories.empty? ? ["."] : directories
+        directories.empty? ? [Pathname.new(".")] : directories
       end
 
       sig { returns(T.nilable(DependencyFile)) }

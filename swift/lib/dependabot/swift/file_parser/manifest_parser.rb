@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/file_parsers/base"
+require "dependabot/dependency_requirement"
 require "dependabot/swift/native_requirement"
 
 module Dependabot
@@ -19,18 +20,18 @@ module Dependabot
         sig do
           params(
             manifest: Dependabot::DependencyFile,
-            source: T::Hash[Symbol, String]
+            requirement: Dependabot::DependencyRequirement
           ).void
         end
-        def initialize(manifest, source:)
+        def initialize(manifest, requirement:)
           @manifest = manifest
-          @source = source
+          @requirement = requirement
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[T::Hash[Symbol, Object]]) }
         def requirements
           found = manifest.content&.scan(DEPENDENCY)&.find do |_declaration, url, _requirement|
-            SharedHelpers.scp_to_standard(url.to_s) == source[:url]
+            SharedHelpers.scp_to_standard(url.to_s) == requirement.source_string("url")
           end
 
           return [] unless found
@@ -43,7 +44,7 @@ module Dependabot
               requirement: requirement.to_s,
               groups: ["dependencies"],
               file: manifest.name,
-              source: source,
+              source: T.must(self.requirement.source_hash),
               metadata: { declaration_string: declaration, requirement_string: requirement.declaration }
             }
           ]
@@ -54,8 +55,8 @@ module Dependabot
         sig { returns(Dependabot::DependencyFile) }
         attr_reader :manifest
 
-        sig { returns(T::Hash[Symbol, String]) }
-        attr_reader :source
+        sig { returns(Dependabot::DependencyRequirement) }
+        attr_reader :requirement
       end
     end
   end

@@ -5,6 +5,7 @@ require "excon"
 require "sorbet-runtime"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
+require "dependabot/pub/requirement_source"
 require "dependabot/registry_client"
 
 module Dependabot
@@ -16,14 +17,14 @@ module Dependabot
 
       sig { override.returns(T.nilable(Dependabot::Source)) }
       def look_up_source
-        source = dependency.requirements.first&.dig(:source)
-        if source&.dig("type") == "git"
-          result = T.must(Source.from_url(source.dig("description", "url")))
-          result.directory = source.dig("description", "path")
-          result.commit = source.dig("description", "resolved-ref")
+        source = RequirementSource.new(dependency.requirements.first)
+        if source.type == "git"
+          result = T.must(Source.from_url(source.description_string("url")))
+          result.directory = source.description_string("path")
+          result.commit = source.description_string("resolved-ref")
           return result
         end
-        repository_url = source&.dig("description", "url") || "https://pub.dev"
+        repository_url = source.description_string("url") || "https://pub.dev"
 
         listing = repository_listing(repository_url)
         repo = listing.dig("latest", "pubspec", "repository")

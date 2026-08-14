@@ -8,16 +8,10 @@ module Dependabot
     module ResolvabilityErrors
       extend T::Sig
 
-      GITHUB_REPO_REGEX = T.let(%r{github.com/[^:@ '\n]*}, Regexp)
-      INSECURE_PROTOCOL_REPOSITORY_REGEX = T.let(
-        /go(?: get)?: .*: no secure protocol found for repository/m,
-        Regexp
-      )
-      GO_MODULE_WITH_VERSION_REGEX = T.let(/go(?: get)?:\s*(?<module>[^\s@]+)@/, Regexp)
-      GO_PREFIXED_HOSTED_REPO_REGEX = T.let(
-        %r{(?:^|\n)\s*go(?: get)?:\s*(?<repo>[a-z0-9.-]+\.[a-z]{2,}/[^:@\s]+)(?:[:\s]|$)}i,
-        Regexp
-      )
+      GITHUB_REPO_REGEX = %r{github.com/[^:@ '\n]*}
+      INSECURE_PROTOCOL_REPOSITORY_REGEX = /go(?: get)?: .*: no secure protocol found for repository/m
+      GO_MODULE_WITH_VERSION_REGEX = /go(?: get)?:\s*(?<module>[^\s@]+)@/
+      GO_PREFIXED_HOSTED_REPO_REGEX = %r{(?:^|\n)\s*go(?: get)?:\s*(?<repo>[a-z0-9.-]+\.[a-z]{2,}/[^:@\s]+)(?:[:\s]|$)}i
       REACHABILITY_CHECK_HINTS = T.let(
         [
           /If this is a private repository/i,

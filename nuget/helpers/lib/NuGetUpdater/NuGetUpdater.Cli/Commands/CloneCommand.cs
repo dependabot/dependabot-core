@@ -8,33 +8,24 @@ namespace NuGetUpdater.Cli.Commands;
 
 internal static class CloneCommand
 {
-    internal static readonly Option<FileInfo> JobPathOption = new("--job-path") { Required = true };
-    internal static readonly Option<DirectoryInfo> RepoContentsPathOption = new("--repo-contents-path") { Required = true };
-    internal static readonly Option<Uri> ApiUrlOption = new("--api-url")
-    {
-        Required = true,
-        CustomParser = (argumentResult) => Uri.TryCreate(argumentResult.Tokens.Single().Value, UriKind.Absolute, out var uri) ? uri : throw new ArgumentException("Invalid API URL format.")
-    };
-    internal static readonly Option<string> JobIdOption = new("--job-id") { Required = true };
-
     internal static Command GetCommand(Action<int> setExitCode)
     {
         var command = new Command("clone", "Clones a repository in preparation for a dependabot job.")
         {
-            JobPathOption,
-            RepoContentsPathOption,
-            ApiUrlOption,
-            JobIdOption,
+            SharedOptions.JobPathOption,
+            SharedOptions.RepoContentsPathOption,
+            SharedOptions.ApiUrlOption,
+            SharedOptions.JobIdOption,
         };
 
         command.TreatUnmatchedTokensAsErrors = true;
 
         command.SetAction(async (parseResult, cancellationToken) =>
         {
-            var jobPath = parseResult.GetValue(JobPathOption);
-            var repoContentsPath = parseResult.GetValue(RepoContentsPathOption);
-            var apiUrl = parseResult.GetValue(ApiUrlOption);
-            var jobId = parseResult.GetValue(JobIdOption);
+            var jobPath = parseResult.GetValue(SharedOptions.JobPathOption);
+            var repoContentsPath = parseResult.GetValue(SharedOptions.RepoContentsPathOption);
+            var apiUrl = parseResult.GetValue(SharedOptions.ApiUrlOption);
+            var jobId = parseResult.GetValue(SharedOptions.JobIdOption);
 
             var apiHandler = new HttpApiHandler(apiUrl!.ToString(), jobId!);
             var logger = new OpenTelemetryLogger();

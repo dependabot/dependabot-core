@@ -136,22 +136,23 @@ module Dependabot
         sig { params(version: T.nilable(Dependabot::Version)).returns(T::Boolean) }
         def satisfies_previous_reqs?(version)
           T.must(dependency.previous_requirements).all? do |req|
-            next true unless req.fetch(:requirement)
+            requirement = req.requirement_string
+            next true unless requirement
 
             requirement_class
-              .requirements_array(req.fetch(:requirement))
+              .requirements_array(requirement)
               .all? { |r| r.satisfied_by?(version) }
           end
         end
 
         # TODO: Refactor me so that Composer doesn't need to be special cased
-        sig { params(requirements: T.nilable(T::Array[T::Hash[Symbol, T.untyped]])).returns(T::Boolean) }
+        sig { params(requirements: T.nilable(T::Array[Dependabot::DependencyRequirement])).returns(T::Boolean) }
         def git_source?(requirements)
           # Special case Composer, which uses git as a source but handles tags
           # internally
           return false if dependency.package_manager == "composer"
 
-          sources = requirements&.map { |r| r.fetch(:source) }&.uniq&.compact
+          sources = requirements&.map(&:source_hash)&.uniq&.compact
           return false if sources.nil? || sources.empty?
 
           sources.all? { |s| s[:type] == "git" || s["type"] == "git" }
@@ -168,7 +169,7 @@ module Dependabot
           return unless git_source?(dependency.previous_requirements)
 
           previous_refs = T.must(dependency.previous_requirements).filter_map do |r|
-            r.dig(:source, "ref") || r.dig(:source, :ref)
+            r.source_string("ref")
           end.uniq
           previous_refs.first if previous_refs.one?
         end
@@ -178,7 +179,7 @@ module Dependabot
           return unless git_source?(dependency.previous_requirements)
 
           new_refs = dependency.requirements.filter_map do |r|
-            r.dig(:source, "ref") || r.dig(:source, :ref)
+            r.source_string("ref")
           end.uniq
           new_refs.first if new_refs.one?
         end
@@ -282,13 +283,15 @@ module Dependabot
 
               args = { sha: previous_tag, path: path }.compact
               previous_commit_shas =
-                T.unsafe(github_client).commits(repo, **args).map(&:sha)
+                T.unsafe(github_client.commits(repo, **args)).map(&:sha)
 
               # NOTE: We reverse this so it's consistent with the array we get
               # from `github_client.compare(...)`
               args = { sha: new_tag, path: path }.compact
-              T.unsafe(github_client)
-               .commits(repo, **args)
+              T.unsafe(
+                github_client
+                               .commits(repo, **args)
+              )
                .reject { |c| previous_commit_shas.include?(c.sha) }.reverse
             end
           return [] unless commits
@@ -306,9 +309,9 @@ module Dependabot
 
         sig { returns(T::Array[T::Hash[Symbol, String]]) }
         def fetch_bitbucket_commits
-          T.unsafe(bitbucket_client)
-           .compare(T.must(source).repo, previous_tag, new_tag)
-           .map do |commit|
+          bitbucket_client
+            .compare(T.must(source).repo, T.must(previous_tag), T.must(new_tag))
+            .map do |commit|
             {
               message: commit.dig("summary", "raw"),
               sha: commit["hash"],
@@ -326,8 +329,10 @@ module Dependabot
 
         sig { returns(T::Array[T::Hash[Symbol, String]]) }
         def fetch_gitlab_commits
-          T.unsafe(gitlab_client)
-           .compare(T.must(source).repo, previous_tag, new_tag)
+          T.unsafe(
+            gitlab_client
+                       .compare(T.must(source).repo, T.must(previous_tag), T.must(new_tag))
+          )
            .commits
            .map do |commit|
             {

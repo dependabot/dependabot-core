@@ -103,5 +103,36 @@ public partial class DiscoveryWorkerTests
                 }
             );
         }
+
+        [Fact]
+        public async Task FiltersDependenciesWithUnparseableVersions()
+        {
+            await TestDiscoveryAsync(
+                packages: [],
+                workspacePath: "",
+                files: [
+                    ("global.json", """
+                        {
+                          "sdk": {
+                            "version": "2.2.104"
+                          },
+                          "msbuild-sdks": {
+                            "Microsoft.Build.Traversal": "not-a-version"
+                          }
+                        }
+                        """),
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    GlobalJson = new()
+                    {
+                        FilePath = "global.json",
+                        ExpectedDependencyCount = 0,
+                    },
+                    ExpectedProjectCount = 0,
+                }
+            );
+        }
     }
 }

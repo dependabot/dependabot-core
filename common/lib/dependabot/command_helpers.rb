@@ -20,20 +20,21 @@ module Dependabot
     end
 
     OutputObserver = T.type_alias do
-      T.nilable(T.proc.params(data: String).returns(T::Hash[Symbol, T.untyped]))
+      T.nilable(T.proc.params(data: String).returns(T::Hash[Symbol, T.anything]))
     end
 
     EnvCmdItem = T.type_alias do
       T.any(
         String,
-        T::Hash[T.any(String, Symbol), T.untyped]
+        T::Array[String],
+        T::Hash[T.any(String, Symbol), T.anything]
       )
     end
 
     class ProcessStatus
       extend T::Sig
 
-      sig { params(process_status: Process::Status, custom_exitstatus: T.nilable(Integer)).void }
+      sig { params(process_status: T.nilable(Process::Status), custom_exitstatus: T.nilable(Integer)).void }
       def initialize(process_status, custom_exitstatus = nil)
         @process_status = process_status
         @custom_exitstatus = custom_exitstatus
@@ -42,24 +43,24 @@ module Dependabot
       # Return the exit status, either from the process status or the custom one
       sig { returns(Integer) }
       def exitstatus
-        @custom_exitstatus || @process_status.exitstatus || 0
+        @custom_exitstatus || @process_status&.exitstatus || 0
       end
 
       # Determine if the process was successful
       sig { returns(T::Boolean) }
       def success?
-        @custom_exitstatus.nil? ? @process_status.success? || false : @custom_exitstatus.zero?
+        @custom_exitstatus.nil? ? @process_status&.success? || false : @custom_exitstatus.zero?
       end
 
       # Return the PID of the process (if available)
       sig { returns(T.nilable(Integer)) }
       def pid
-        @process_status.pid
+        @process_status&.pid
       end
 
       sig { returns(T.nilable(Integer)) }
       def termsig
-        @process_status.termsig
+        @process_status&.termsig
       end
 
       # String representation of the status
@@ -68,7 +69,7 @@ module Dependabot
         if @custom_exitstatus
           "pid #{pid || 'unknown'}: exit #{@custom_exitstatus} (custom status)"
         else
-          @process_status.to_s
+          @process_status&.to_s || "unknown status"
         end
       end
     end
@@ -96,7 +97,7 @@ module Dependabot
       stdout = T.let("", String)
       stderr = T.let("", String)
       status = T.let(nil, T.nilable(ProcessStatus))
-      pid = T.let(nil, T.untyped)
+      pid = T.let(nil, T.nilable(Integer))
       start_time = Time.now
 
       begin
@@ -109,7 +110,7 @@ module Dependabot
                               else
                                 env_cmd
                               end
-          command_for_log = sanitized_env_cmd.join(" ")
+          command_for_log = sanitized_env_cmd.map { |item| item.is_a?(Array) ? item.first : item }.join(" ")
           Dependabot.logger.public_send(log_level, "Started process PID: #{pid} with command: #{command_for_log}")
 
           # Write to stdin if input data is provided
@@ -263,7 +264,14 @@ module Dependabot
 
     sig { params(env_cmd: T::Array[EnvCmdItem]).returns(T.nilable(String)) }
     def self.command_string_for_logging(env_cmd)
-      T.cast(env_cmd.find { |item| item.is_a?(String) }, T.nilable(String))
+      command_parts = env_cmd.filter_map do |item|
+        case item
+        when Array then item.first
+        when String then item
+        end
+      end
+
+      command_parts.join(" ") unless command_parts.empty?
     end
     private_class_method :command_string_for_logging
 

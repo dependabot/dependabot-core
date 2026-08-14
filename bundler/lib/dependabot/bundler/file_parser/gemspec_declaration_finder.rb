@@ -46,7 +46,7 @@ module Dependabot
           @declaration_nodes[dependency]
         end
 
-        sig { params(node: T.untyped, dependency: T::Hash[String, String]).returns(T.nilable(Prism::Node)) }
+        sig { params(node: T.nilable(Prism::Node), dependency: T::Hash[String, String]).returns(T.nilable(Prism::Node)) }
         def deep_search_for_gem(node, dependency)
           return unless node.is_a?(Prism::Node)
           return T.cast(node, Prism::CallNode) if declares_targeted_gem?(node, dependency)
@@ -58,7 +58,7 @@ module Dependabot
           declaration_node
         end
 
-        sig { params(node: T.untyped, dependency: T::Hash[String, String]).returns(T::Boolean) }
+        sig { params(node: T.nilable(Prism::Node), dependency: T::Hash[String, String]).returns(T::Boolean) }
         def declares_targeted_gem?(node, dependency)
           return false unless node.is_a?(Prism::CallNode)
 

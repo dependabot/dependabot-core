@@ -4,6 +4,7 @@
 require "spec_helper"
 require "dependabot/pre_commit/additional_dependency_checkers/go"
 require "dependabot/go_modules/update_checker"
+require "dependabot/package/release_cooldown_options"
 
 RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Go do
   let(:checker) do
@@ -246,6 +247,50 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Go do
         updated = checker.updated_requirements("0.29.0")
         expect(updated.first[:source][:original_string]).to eq("golang.org/x/tools@v0.29.0")
       end
+    end
+  end
+
+  describe "cooldown passthrough" do
+    let(:cooldown_options) do
+      Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3)
+    end
+
+    let(:checker_with_cooldown) do
+      described_class.new(
+        source: source,
+        credentials: credentials,
+        requirements: requirements,
+        current_version: current_version,
+        cooldown_options: cooldown_options
+      )
+    end
+
+    let(:go_checker) { instance_double(Dependabot::GoModules::UpdateChecker) }
+
+    it "passes cooldown_options as update_cooldown to the Go UpdateChecker" do
+      allow(Dependabot::GoModules::UpdateChecker).to receive(:new).with(
+        hash_including(update_cooldown: cooldown_options)
+      ).and_return(go_checker)
+      allow(go_checker).to receive(:latest_version).and_return(nil)
+
+      checker_with_cooldown.latest_version
+
+      expect(Dependabot::GoModules::UpdateChecker).to have_received(:new).with(
+        hash_including(update_cooldown: cooldown_options)
+      )
+    end
+
+    it "passes nil update_cooldown when no cooldown_options provided" do
+      allow(Dependabot::GoModules::UpdateChecker).to receive(:new).with(
+        hash_including(update_cooldown: nil)
+      ).and_return(go_checker)
+      allow(go_checker).to receive(:latest_version).and_return(nil)
+
+      checker.latest_version
+
+      expect(Dependabot::GoModules::UpdateChecker).to have_received(:new).with(
+        hash_including(update_cooldown: nil)
+      )
     end
   end
 end

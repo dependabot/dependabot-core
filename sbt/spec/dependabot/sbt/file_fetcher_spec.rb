@@ -34,7 +34,6 @@ RSpec.describe Dependabot::Sbt::FileFetcher do
 
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
-    Dependabot::Experiments.register(:enable_beta_ecosystems, true)
   end
 
   it_behaves_like "a dependency file fetcher"
@@ -202,17 +201,6 @@ RSpec.describe Dependabot::Sbt::FileFetcher do
       expect(file_fetcher_instance.files.count).to eq(3)
       expect(file_fetcher_instance.files.map(&:name))
         .to match_array(%w(build.sbt project/build.properties core/build.sbt))
-    end
-  end
-
-  context "when beta ecosystems are not enabled" do
-    before do
-      Dependabot::Experiments.register(:enable_beta_ecosystems, false)
-    end
-
-    it "raises a DependencyFileNotFound error" do
-      expect { file_fetcher_instance.files }
-        .to raise_error(Dependabot::DependencyFileNotFound)
     end
   end
 end

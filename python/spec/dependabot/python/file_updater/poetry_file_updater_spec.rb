@@ -8,6 +8,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/python/file_updater/poetry_file_updater"
 require "dependabot/shared_helpers"
+require "dependabot/package/release_cooldown_options"
 
 RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
   let(:updater) do
@@ -128,9 +129,9 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
     end
 
     context "with the oldest python version currently supported by Dependabot" do
-      let(:python_version) { "3.9.21" }
-      let(:pyproject_fixture_name) { "python_39.toml" }
-      let(:lockfile_fixture_name) { "python_39.lock" }
+      let(:python_version) { "3.10.20" }
+      let(:pyproject_fixture_name) { "python_310_django.toml" }
+      let(:lockfile_fixture_name) { "python_310_django.lock" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "django",
@@ -1567,7 +1568,64 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
   end
 
   describe "#prepared_project_file" do
-    subject(:prepared_project) { updater.send(:prepared_pyproject) }
+    subject(:prepared_project) { updater_with_cooldown.send(:prepared_pyproject) }
+
+    let(:cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+
+    let(:updater_with_cooldown) do
+      described_class.new(
+        dependency_files: dependency_files,
+        dependencies: [dependency],
+        credentials: credentials,
+        cooldown: cooldown
+      )
+    end
+
+    it "pins updated poetry dependencies to ==version when cooldown is set" do
+      pyproject_object = TomlRB.parse(prepared_project)
+
+      expect(pyproject_object.dig("tool", "poetry", "dependencies", "requests")).to eq("==2.19.1")
+    end
+
+    it "uses a bare version string when cooldown is not set" do
+      no_cooldown_prepared = updater.send(:prepared_pyproject)
+      pyproject_object = TomlRB.parse(no_cooldown_prepared)
+
+      expect(pyproject_object.dig("tool", "poetry", "dependencies", "requests")).to eq("2.19.1")
+    end
+
+    context "with dependency-groups in pyproject.toml" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject_fixture_name) { "poetry_group_dependencies.toml" }
+      let(:dependency_name) { "pytest" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "7.0.0",
+          previous_version: "6.2.5",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "*",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dev"]
+          }],
+          previous_requirements: [{
+            requirement: "*",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dev"]
+          }]
+        )
+      end
+
+      it "pins updated group dependencies to ==version when cooldown is set" do
+        pyproject_object = TomlRB.parse(prepared_project)
+
+        expect(pyproject_object.dig("tool", "poetry", "group", "dev", "dependencies", "pytest"))
+          .to eq("==7.0.0")
+      end
+    end
 
     context "with a python_index with auth details" do
       let(:pyproject_fixture_name) { "private_secondary_source.toml" }

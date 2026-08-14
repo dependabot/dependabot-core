@@ -24,56 +24,38 @@ module Dependabot
       BUILD_PROPERTIES_FILENAME = "project/build.properties"
 
       # Matches a simple identifier or dotted reference (e.g. myVal, V.scala212)
-      IDENT_OR_DOTTED = T.let(
-        "[a-zA-Z_]\\w*(?:\\.[a-zA-Z_]\\w*)*",
-        String
-      )
+      IDENT_OR_DOTTED = "[a-zA-Z_]\\w*(?:\\.[a-zA-Z_]\\w*)*"
 
       # "org" % "artifact" % "version"  or  "org" %% "artifact" % "version"
       # Optionally followed by % "scope" (e.g. % "test", % "provided")
-      LIBRARY_DEP_REGEX = T.let(
-        /"(?<group>[^"]+)"\s+(?<op>%%?)\s+"(?<artifact>[^"]+)"\s+%\s+"(?<version>[^"]+)"(?:\s+%\s+"[^"]*")*/,
-        Regexp
-      )
+      LIBRARY_DEP_REGEX =
+        /"(?<group>[^"]+)"\s+(?<op>%%?)\s+"(?<artifact>[^"]+)"\s+%\s+"(?<version>[^"]+)"(?:\s+%\s+"[^"]*")*/
 
       # "org" % "artifact" % valName  or  "org" %% "artifact" % valName
       # Also handles dotted references like Object.member
-      VAL_REF_DEP_REGEX = T.let(
-        /"(?<group>[^"]+)"\s+(?<op>%%?)\s+"(?<artifact>[^"]+)"\s+%\s+(?<val_name>[a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*)/,
-        Regexp
-      )
+      VAL_REF_DEP_REGEX =
+        /"(?<group>[^"]+)"\s+(?<op>%%?)\s+"(?<artifact>[^"]+)"\s+%\s+(?<val_name>[a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*)/
 
       # addSbtPlugin("org" % "name" % "version")
-      PLUGIN_DEP_REGEX = T.let(
-        /addSbtPlugin\(\s*"(?<group>[^"]+)"\s+%\s+"(?<artifact>[^"]+)"\s+%\s+"(?<version>[^"]+)"\s*\)/,
-        Regexp
-      )
+      PLUGIN_DEP_REGEX =
+        /addSbtPlugin\(\s*"(?<group>[^"]+)"\s+%\s+"(?<artifact>[^"]+)"\s+%\s+"(?<version>[^"]+)"\s*\)/
 
       # addSbtPlugin("org" % "name" % valName)
       # Also handles dotted references like Object.member
-      PLUGIN_VAL_REF_REGEX = T.let(
-        /addSbtPlugin\(\s*"(?<group>[^"]+)"\s+%\s+"(?<artifact>[^"]+)"\s+%\s+(?<val_name>#{IDENT_OR_DOTTED})\s*\)/,
-        Regexp
-      )
+      PLUGIN_VAL_REF_REGEX =
+        /addSbtPlugin\(\s*"(?<group>[^"]+)"\s+%\s+"(?<artifact>[^"]+)"\s+%\s+(?<val_name>#{IDENT_OR_DOTTED})\s*\)/
 
       # sbt.version=1.x.y in build.properties
-      SBT_VERSION_REGEX = T.let(
-        /\Asbt\.version\s*=\s*(?<version>.+)\z/,
-        Regexp
-      )
+      SBT_VERSION_REGEX = /\Asbt\.version\s*=\s*(?<version>.+)\z/
 
       # scalaVersion := "2.13.12"  or  ThisBuild / scalaVersion := "2.13.12"
       # Also: scalaVersion in ThisBuild := "2.13.12" (older SBT syntax)
-      SCALA_VERSION_REGEX = T.let(
-        %r{(?:ThisBuild\s*/\s*)?(?:scalaVersion\s+in\s+ThisBuild|scalaVersion)\s*:=\s*"(?<version>[^"]+)"},
-        Regexp
-      )
+      SCALA_VERSION_REGEX =
+        %r{(?:ThisBuild\s*/\s*)?(?:scalaVersion\s+in\s+ThisBuild|scalaVersion)\s*:=\s*"(?<version>[^"]+)"}
 
       # scalaVersion := valRef  or  scalaVersion in ThisBuild := V.scala212
-      SCALA_VERSION_VAL_REGEX = T.let(
-        %r{(?:ThisBuild\s*/\s*)?(?:scalaVersion\s+in\s+ThisBuild|scalaVersion)\s*:=\s*(?<val_name>#{IDENT_OR_DOTTED})},
-        Regexp
-      )
+      SCALA_VERSION_VAL_REGEX =
+        %r{(?:ThisBuild\s*/\s*)?(?:scalaVersion\s+in\s+ThisBuild|scalaVersion)\s*:=\s*(?<val_name>#{IDENT_OR_DOTTED})}
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
@@ -212,7 +194,7 @@ module Dependabot
 
           metadata = T.let(
             { property_name: val_name, property_source: property_details[:file] },
-            T::Hash[Symbol, T.untyped]
+            T::Hash[Symbol, Object]
           )
           metadata[:packaging_type] = "cross-versioned" if cross_versioned
 
@@ -440,7 +422,7 @@ module Dependabot
           version: String,
           file: String,
           groups: T::Array[String],
-          metadata: T.nilable(T::Hash[Symbol, T.untyped])
+          metadata: T.nilable(T::Hash[Symbol, Object])
         ).returns(Dependabot::Dependency)
       end
       def new_dependency(name:, version:, file:, groups: [], metadata: nil)

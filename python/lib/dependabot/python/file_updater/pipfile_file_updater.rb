@@ -22,7 +22,7 @@ module Dependabot
         require_relative "pipfile_manifest_updater"
         require_relative "setup_file_sanitizer"
 
-        DEPENDENCY_TYPES = T.let(%w(packages dev-packages).freeze, T::Array[String])
+        DEPENDENCY_TYPES = %w(packages dev-packages).freeze
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies

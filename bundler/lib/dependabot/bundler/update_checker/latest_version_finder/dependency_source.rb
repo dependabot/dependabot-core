@@ -85,8 +85,10 @@ module Dependabot
             return unless git?
 
             source_details =
-              dependency.requirements.map { |r| r.fetch(:source) }
-                                     .uniq.compact.first
+              T.must(
+                dependency.requirements.map(&:source_hash)
+                                                     .uniq.compact.first
+              )
 
             SharedHelpers.with_git_configured(credentials: credentials) do
               in_a_native_bundler_context do |tmp_dir|

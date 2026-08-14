@@ -30,6 +30,7 @@ RSpec.describe namespace::LatestVersionFinder do
       branch: nil
     }
   end
+  let(:source_details) { Dependabot::GitCommitChecker::SourceDetails.from_hash(dependency_source) }
   let(:dependency_version) do
     return unless Dependabot::GithubActions::Version.correct?(reference)
 
@@ -189,11 +190,11 @@ RSpec.describe namespace::LatestVersionFinder do
       it "updates to the least new supported version" do
         expect(lowest_security_fix_release).to eq(
           (
-                    { tag: "v1",
-                      version: Dependabot::GithubActions::Version.new("1.0.0"),
-                      commit_sha: "d0b521928fa734513b5cd9c7d9d8e09db50e884a",
-                      tag_sha: "d0b521928fa734513b5cd9c7d9d8e09db50e884a" }
-                  )
+            { tag: "v1",
+              version: Dependabot::GithubActions::Version.new("1.0.0"),
+              commit_sha: "d0b521928fa734513b5cd9c7d9d8e09db50e884a",
+              tag_sha: "d0b521928fa734513b5cd9c7d9d8e09db50e884a" }
+          )
         )
       end
     end
@@ -260,11 +261,52 @@ RSpec.describe namespace::LatestVersionFinder do
         end
       end
 
-      it "returns the tag hash for the selected cooled-down release" do
+      it "keeps the major-only precision instead of rewriting to a full version" do
         expect(latest_version_tag_respecting_cooldown).to include(
-          tag: "v2.7.0",
-          commit_sha: "ee0669bd1cc54295c223e0bb666b733df41de1c5",
-          version: Dependabot::GithubActions::Version.new("2.7.0")
+          tag: "v2",
+          version: Dependabot::GithubActions::Version.new("2")
+        )
+      end
+    end
+
+    context "when cooldown filters out every major tag above the pinned one" do
+      let(:dependency_name) { "actions/checkout" }
+      let(:upload_pack_fixture) { "checkout" }
+      let(:reference) { "v2" }
+      let(:dependency_version) { "2" }
+      let(:dependency_source) do
+        {
+          type: "git",
+          url: "https://github.com/actions/checkout",
+          ref: "v2",
+          branch: nil
+        }
+      end
+      let(:finder) do
+        described_class.new(
+          dependency: dependency,
+          dependency_files: [],
+          credentials: github_credentials,
+          security_advisories: security_advisories,
+          ignored_versions: ignored_versions,
+          raise_on_ignored: raise_on_ignored,
+          cooldown_options: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+        )
+      end
+
+      before do
+        allow(finder).to receive(:select_version_tags_in_cooldown_period) do |tags_with_dates|
+          tags_with_dates.filter_map do |tag|
+            tag_name = tag.is_a?(Hash) ? tag.fetch(:tag) : tag.tag
+            tag_name unless tag_name == "v1"
+          end
+        end
+      end
+
+      it "does not downgrade to an older major tag" do
+        expect(latest_version_tag_respecting_cooldown).to include(
+          tag: "v2",
+          version: Dependabot::GithubActions::Version.new("2")
         )
       end
     end
@@ -518,6 +560,184 @@ RSpec.describe namespace::LatestVersionFinder do
         it "returns empty array" do
           expect(selected_tags).to be_empty
         end
+      end
+    end
+  end
+
+  describe "#commit_metadata_details" do
+    subject(:commit_metadata_details) { finder.send(:commit_metadata_details) }
+
+    let(:reference) { "v1" }
+    let(:dependency_version) { "1.0.0" }
+
+    let(:finder) do
+      described_class.new(
+        dependency: dependency,
+        dependency_files: [],
+        credentials: github_credentials,
+        security_advisories: security_advisories,
+        ignored_versions: ignored_versions,
+        raise_on_ignored: raise_on_ignored,
+        cooldown_options: Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      )
+    end
+
+    before do
+      stub_request(:get, service_pack_url)
+        .to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
+    end
+
+    context "when tag is an annotated tag" do
+      it "uses tag creation date from for-each-ref instead of commit date" do
+        tag_creation_date = Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z")
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return(source_details)
+        allow(finder).to receive_messages(
+          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                                commit_sha: "abc123" },
+          commit_ref: "abc123"
+        )
+        # No GitHub Release available — forces git fallback
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        # for-each-ref returns the annotated tag date
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref/, hash_including(fingerprint: anything))
+          .and_return(tag_creation_date)
+
+        expect(commit_metadata_details).to eq(tag_creation_date)
+      end
+    end
+
+    context "when for-each-ref returns empty (lightweight tag not found)" do
+      it "falls back to commit date from git show" do
+        commit_date = "2026-06-01 10:00:00 +0000"
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return(source_details)
+        allow(finder).to receive_messages(
+          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                                commit_sha: "abc123" },
+          commit_ref: "abc123"
+        )
+        # No GitHub Release available — forces git fallback
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        # for-each-ref returns empty
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref/, hash_including(fingerprint: anything))
+          .and_return("")
+        # Fallback to git show
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git show --no-patch/, hash_including(fingerprint: anything))
+          .and_return(commit_date)
+
+        expect(commit_metadata_details).to eq(commit_date)
+      end
+    end
+
+    context "when tag points to old commit but was recently created" do
+      it "uses tag creation date for cooldown (not old commit date)" do
+        # Tag created today, but commit is from 30 days ago
+        recent_tag_date = Time.now.utc.strftime("%Y-%m-%d %H:%M:%S %z")
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return(source_details)
+        allow(finder).to receive_messages(
+          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                                commit_sha: "abc123" },
+          commit_ref: "abc123"
+        )
+        # Stub GitHub releases to return empty (force git fallback)
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref/, hash_including(fingerprint: anything))
+          .and_return(recent_tag_date)
+
+        expect(commit_metadata_details).to eq(recent_tag_date)
+      end
+    end
+
+    context "when GitHub Release published_at is available" do
+      it "uses published_at from Octokit instead of git clone" do
+        published_at = Time.now.utc - (3 * 24 * 60 * 60)
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return(source_details)
+        allow(finder).to receive(:latest_version_tag)
+          .and_return({ tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                        commit_sha: "abc123" })
+
+        sawyer_agent = instance_double(Sawyer::Agent)
+        allow(sawyer_agent).to receive(:parse_links) { |value| [value, {}] }
+        mock_release = Sawyer::Resource.new(
+          sawyer_agent,
+          { tag_name: "v1.0.0", published_at: published_at, prerelease: false }
+        )
+        mock_client = instance_double(Octokit::Client, releases: [mock_release])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        # Should NOT need to clone repo
+        expect(Dependabot::SharedHelpers).not_to receive(:run_shell_command).with(/git clone/)
+
+        expect(commit_metadata_details).to eq(published_at.iso8601)
+      end
+    end
+
+    context "when GitHub Release does not exist for the tag" do
+      it "falls back to git for-each-ref" do
+        tag_creation_date = (Time.now.utc - (8 * 24 * 60 * 60)).strftime("%Y-%m-%d %H:%M:%S %z")
+
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:dependency_source_details)
+          .and_return(source_details)
+        allow(finder).to receive_messages(
+          latest_version_tag: { tag: "v1.0.0", version: Dependabot::GithubActions::Version.new("1.0.0"),
+                                commit_sha: "abc123" },
+          commit_ref: "abc123"
+        )
+
+        # No release exists
+        mock_client = instance_double(Octokit::Client, releases: [])
+        allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
+
+        # Falls back to git
+        allow(Dependabot::SharedHelpers).to receive(:in_a_temporary_directory).and_yield("/tmp/fake")
+        allow(Dir).to receive(:chdir).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git clone --bare/, any_args).and_return("")
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+          .with(/git for-each-ref/, hash_including(fingerprint: anything))
+          .and_return(tag_creation_date)
+
+        expect(commit_metadata_details).to eq(tag_creation_date)
       end
     end
   end

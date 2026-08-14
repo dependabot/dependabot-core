@@ -753,6 +753,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
       it { is_expected.to eq(Gem::Version.new("1.6.0")) }
     end
 
+    context "when the global registry socket closes unexpectedly" do
+      before do
+        stub_request(:get, registry_listing_url)
+          .to_raise(Excon::Error::Socket.new(EOFError.new))
+      end
+
+      it { is_expected.to be_nil }
+    end
+
     context "when the npm link resolves to a 403" do
       before do
         stub_request(:get, registry_listing_url)

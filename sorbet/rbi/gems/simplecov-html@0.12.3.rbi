@@ -5,84 +5,78 @@
 # Please instead update this file by running `bin/tapioca gem simplecov-html`.
 
 
-# source://simplecov-html//lib/simplecov-html.rb#16
+# pkg:gem/simplecov-html#lib/simplecov-html.rb:16
 module SimpleCov; end
 
-# source://simplecov-html//lib/simplecov-html.rb#17
+# pkg:gem/simplecov-html#lib/simplecov-html.rb:17
 module SimpleCov::Formatter; end
 
-# source://simplecov-html//lib/simplecov-html.rb#18
+# pkg:gem/simplecov-html#lib/simplecov-html.rb:18
 class SimpleCov::Formatter::HTMLFormatter
-  # @return [HTMLFormatter] a new instance of HTMLFormatter
-  #
-  # source://simplecov-html//lib/simplecov-html.rb#19
+  # pkg:gem/simplecov-html#lib/simplecov-html.rb:19
   def initialize; end
 
-  # @return [Boolean]
-  #
-  # source://simplecov-html//lib/simplecov-html.rb#38
+  # pkg:gem/simplecov-html#lib/simplecov-html.rb:38
   def branchable_result?; end
 
-  # source://simplecov-html//lib/simplecov-html.rb#23
+  # pkg:gem/simplecov-html#lib/simplecov-html.rb:23
   def format(result); end
 
-  # @return [Boolean]
-  #
-  # source://simplecov-html//lib/simplecov-html.rb#45
+  # pkg:gem/simplecov-html#lib/simplecov-html.rb:45
   def line_status?(source_file, line); end
 
-  # source://simplecov-html//lib/simplecov-html.rb#34
+  # pkg:gem/simplecov-html#lib/simplecov-html.rb:34
   def output_message(result); end
 
   private
 
-  # source://simplecov-html//lib/simplecov-html.rb#64
+  # pkg:gem/simplecov-html#lib/simplecov-html.rb:64
   def asset_output_path; end
 
-  # source://simplecov-html//lib/simplecov-html.rb#72
+  # pkg:gem/simplecov-html#lib/simplecov-html.rb:72
   def assets_path(name); end
 
-  # source://simplecov-html//lib/simplecov-html.rb#97
+  # pkg:gem/simplecov-html#lib/simplecov-html.rb:97
   def coverage_css_class(covered_percent); end
 
-  # source://simplecov-html//lib/simplecov-html.rb#93
+  # pkg:gem/simplecov-html#lib/simplecov-html.rb:93
   def covered_percent(percent); end
 
   # Returns a table containing the given source files
   #
-  # source://simplecov-html//lib/simplecov-html.rb#84
+  # pkg:gem/simplecov-html#lib/simplecov-html.rb:84
   def formatted_file_list(title, source_files); end
 
   # Returns the html for the given source_file
   #
-  # source://simplecov-html//lib/simplecov-html.rb#77
+  # pkg:gem/simplecov-html#lib/simplecov-html.rb:77
   def formatted_source_file(source_file); end
 
   # Return a (kind of) unique id for the source file given. Uses SHA1 on path for the id
   #
-  # source://simplecov-html//lib/simplecov-html.rb#118
+  # pkg:gem/simplecov-html#lib/simplecov-html.rb:118
   def id(source_file); end
 
-  # source://simplecov-html//lib/simplecov-html.rb#130
+  # pkg:gem/simplecov-html#lib/simplecov-html.rb:130
   def link_to_source_file(source_file); end
 
-  # source://simplecov-html//lib/simplecov-html.rb#60
+  # pkg:gem/simplecov-html#lib/simplecov-html.rb:60
   def output_path; end
 
-  # source://simplecov-html//lib/simplecov-html.rb#126
+  # pkg:gem/simplecov-html#lib/simplecov-html.rb:126
   def shortened_filename(source_file); end
 
-  # source://simplecov-html//lib/simplecov-html.rb#107
+  # pkg:gem/simplecov-html#lib/simplecov-html.rb:107
   def strength_css_class(covered_strength); end
 
   # Returns the an erb instance for the template of given name
   #
-  # source://simplecov-html//lib/simplecov-html.rb#56
+  # pkg:gem/simplecov-html#lib/simplecov-html.rb:56
   def template(name); end
 
-  # source://simplecov-html//lib/simplecov-html.rb#122
+  # pkg:gem/simplecov-html#lib/simplecov-html.rb:122
   def timeago(time); end
 end
 
-# source://simplecov-html//lib/simplecov-html/version.rb#6
+# pkg:gem/simplecov-html#lib/simplecov-html/version.rb:6
 SimpleCov::Formatter::HTMLFormatter::VERSION = T.let(T.unsafe(nil), String)

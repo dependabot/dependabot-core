@@ -18,15 +18,56 @@ public class ModifiedFilesTracker
     private readonly Dictionary<string, EOLType> _originalDependencyFileEOFs = [];
     private readonly Dictionary<string, bool> _originalDependencyFileBOMs = [];
     private string[] _nonProjectFiles = [];
+    private readonly HashSet<string> _initiallyExistingFiles;
+
+    /// <summary>
+    /// The set of file name patterns (case-insensitive) that are allowed to be edited during an update run.
+    /// Files matching these patterns are tracked for pre-existence; any file not present before discovery
+    /// will not be reported as modified.
+    /// </summary>
+    internal static readonly string[] AllowedEditableFilePatterns =
+    [
+        "global.json",
+        "dotnet-tools.json",
+        "*.csproj",
+        "*.fsproj",
+        "*.vbproj",
+        "*.props",
+        "*.targets",
+        "app.config",
+        "web.config",
+        "packages.config",
+        "packages.lock.json",
+    ];
 
     public IReadOnlyDictionary<string, string> OriginalDependencyFileContents => _originalDependencyFileContents;
     //public IReadOnlyDictionary<string, EOLType> OriginalDependencyFileEOFs => _originalDependencyFileEOFs;
     public IReadOnlyDictionary<string, bool> OriginalDependencyFileBOMs => _originalDependencyFileBOMs;
 
-    public ModifiedFilesTracker(DirectoryInfo repoContentsPath, ILogger logger)
+    public ModifiedFilesTracker(DirectoryInfo repoContentsPath, HashSet<string> initiallyExistingFiles, ILogger logger)
     {
         RepoContentsPath = repoContentsPath;
+        _initiallyExistingFiles = initiallyExistingFiles;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Returns the set of editable file paths (relative to repo root, unix-style) that currently exist on disk
+    /// and match the allowed editable file patterns.
+    /// </summary>
+    public static HashSet<string> GetInitiallyExistingFiles(DirectoryInfo repoContentsPath)
+    {
+        var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in Directory.EnumerateFiles(repoContentsPath.FullName, "*", SearchOption.AllDirectories))
+        {
+            var fileName = Path.GetFileName(file);
+            if (MatchesAllowedEditablePattern(fileName))
+            {
+                result.Add(Path.GetRelativePath(repoContentsPath.FullName, file).NormalizePathToUnix());
+            }
+        }
+
+        return result;
     }
 
     public async Task StartTrackingAsync(WorkspaceDiscoveryResult discoveryResult)
@@ -53,10 +94,20 @@ public class ModifiedFilesTracker
         foreach (var project in _currentDiscoveryResult.Projects)
         {
             var projectDirectory = Path.GetDirectoryName(project.FilePath);
+            if (IsFileNotInitiallyPresent(Path.Join(_currentDiscoveryResult.Path, project.FilePath).NormalizePathToUnix()))
+            {
+                continue;
+            }
+
             await TrackOriginalContentsAsync(_currentDiscoveryResult.Path, project.FilePath);
             foreach (var extraFile in project.ImportedFiles.Concat(project.AdditionalFiles))
             {
                 var extraFilePath = Path.Join(projectDirectory, extraFile);
+                if (IsFileNotInitiallyPresent(Path.Join(_currentDiscoveryResult.Path, extraFilePath).NormalizePathToUnix()))
+                {
+                    continue;
+                }
+
                 await TrackOriginalContentsAsync(_currentDiscoveryResult.Path, extraFilePath);
             }
         }
@@ -65,7 +116,9 @@ public class ModifiedFilesTracker
         {
             _currentDiscoveryResult.GlobalJson?.FilePath,
             _currentDiscoveryResult.DotNetToolsJson?.FilePath,
-        }.Where(f => f is not null).Cast<string>().ToArray();
+        }.Where(f => f is not null).Cast<string>()
+         .Where(f => !IsFileNotInitiallyPresent(Path.Join(_currentDiscoveryResult.Path, f).NormalizePathToUnix()))
+         .ToArray();
         foreach (var nonProjectFile in _nonProjectFiles)
         {
             await TrackOriginalContentsAsync(_currentDiscoveryResult.Path, nonProjectFile);
@@ -121,11 +174,21 @@ public class ModifiedFilesTracker
 
         foreach (var project in _currentDiscoveryResult.Projects)
         {
+            if (IsFileNotInitiallyPresent(Path.Join(_currentDiscoveryResult.Path, project.FilePath).NormalizePathToUnix()))
+            {
+                continue;
+            }
+
             await AddUpdatedFileIfDifferentAsync(_currentDiscoveryResult.Path, project.FilePath);
             var projectDirectory = Path.GetDirectoryName(project.FilePath);
             foreach (var extraFile in project.ImportedFiles.Concat(project.AdditionalFiles))
             {
                 var extraFilePath = Path.Join(projectDirectory, extraFile);
+                if (IsFileNotInitiallyPresent(Path.Join(_currentDiscoveryResult.Path, extraFilePath).NormalizePathToUnix()))
+                {
+                    continue;
+                }
+
                 await AddUpdatedFileIfDifferentAsync(_currentDiscoveryResult.Path, extraFilePath);
             }
         }
@@ -149,6 +212,48 @@ public class ModifiedFilesTracker
         var repoFullPath = Path.Join(directory, fileName).FullyNormalizedRootedPath();
         var correctedRepoFullPath = RunWorker.EnsureCorrectFileCasing(repoFullPath, RepoContentsPath.FullName, _logger);
         return correctedRepoFullPath;
+    }
+
+    private bool IsFileNotInitiallyPresent(string repoRelativePath)
+    {
+        return IsFileNotInitiallyPresent(repoRelativePath, _initiallyExistingFiles);
+    }
+
+    public static bool IsFileNotInitiallyPresent(string repoRelativePath, HashSet<string> initiallyExistingFiles)
+    {
+        var normalizedPath = repoRelativePath.NormalizePathToUnix().NormalizeUnixPathParts().TrimStart('/');
+        var fileName = Path.GetFileName(normalizedPath);
+
+        if (!MatchesAllowedEditablePattern(fileName))
+        {
+            return false;
+        }
+
+        return !initiallyExistingFiles.Contains(normalizedPath);
+    }
+
+    internal static bool MatchesAllowedEditablePattern(string fileName)
+    {
+        foreach (var pattern in AllowedEditableFilePatterns)
+        {
+            if (pattern.StartsWith("*"))
+            {
+                var extension = pattern[1..]; // e.g., ".csproj"
+                if (fileName.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                if (fileName.Equals(pattern, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public static ImmutableArray<DependencyFile> MergeUpdatedFileSet(ImmutableArray<DependencyFile> setA, ImmutableArray<DependencyFile> setB)

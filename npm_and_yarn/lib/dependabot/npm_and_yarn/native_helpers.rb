@@ -2,11 +2,14 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/npm_and_yarn/helpers"
 
 module Dependabot
   module NpmAndYarn
     module NativeHelpers
       extend T::Sig
+
+      PNPM_VERSION_REGEX = /\A(?<major>\d+)\.\d+\.\d+(?:[-+][0-9A-Za-z.+-]+)?\z/
 
       sig { returns(String) }
       def self.helper_path
@@ -21,40 +24,49 @@ module Dependabot
         File.join(__dir__, "../../../helpers")
       end
 
-      sig { params(dependency_names: T::Array[String]).returns(String) }
-      def self.run_npm8_subdependency_update_command(dependency_names)
+      sig { params(dependency_names: T::Array[String], security_updates_only: T::Boolean).returns(String) }
+      def self.run_npm8_subdependency_update_command(dependency_names, security_updates_only: false)
         # NOTE: npm options
         # - `--force` ignores checks for platform (os, cpu) and engines
         # - `--ignore-scripts` disables prepare and prepack scripts which are run
         #   when installing git dependencies
-        command = [
+        command_args = [
           "update",
           *dependency_names,
           "--force",
           "--ignore-scripts",
           "--package-lock-only"
-        ].join(" ")
+        ]
+        # Override any min-release-age set in .npmrc: security fixes must not be
+        # blocked by a release-age gate the user configured for regular updates.
+        command_args << "--min-release-age=0" if security_updates_only
+        command = command_args.join(" ")
 
-        fingerprint = [
+        fingerprint_args = [
           "update",
           "<dependency_names>",
           "--force",
           "--ignore-scripts",
           "--package-lock-only"
-        ].join(" ")
+        ]
+        fingerprint_args << "--min-release-age=0" if security_updates_only
+        fingerprint = fingerprint_args.join(" ")
 
         Helpers.run_npm_command(command, fingerprint: fingerprint)
       end
 
-      sig { returns(String) }
-      def self.run_npm_audit_fix_command
+      sig { params(security_updates_only: T::Boolean).returns(String) }
+      def self.run_npm_audit_fix_command(security_updates_only: false)
         # Fallback for transitive dependencies in workspace repos where
         # `npm update` is a no-op because the package isn't in package.json.
         # `npm audit fix` updates all fixable vulnerabilities in the lockfile.
         # `--force` ignores checks for platform (os, cpu) and engines,
         # matching the flags used by run_npm8_subdependency_update_command.
         command = "audit fix --force --package-lock-only --ignore-scripts"
-        fingerprint = "audit fix --force --package-lock-only --ignore-scripts"
+        # Override any min-release-age set in .npmrc: security fixes must not be
+        # blocked by a release-age gate the user configured for regular updates.
+        command += " --min-release-age=0" if security_updates_only
+        fingerprint = command
 
         Helpers.run_npm_command(command, fingerprint: fingerprint)
       end
@@ -62,18 +74,34 @@ module Dependabot
       sig { returns(String) }
       def self.run_pnpm_audit_fix_command
         # Fallback for transitive dependencies where `pnpm update` is a no-op.
-        # `pnpm audit --fix` adds overrides to the manifest for vulnerable deps.
+        # pnpm 11's update fix method updates vulnerable packages in the lockfile.
+        # Older supported versions only accept `--fix`, which may add manifest overrides.
+        version_output = Helpers.run_pnpm_command("-v", fingerprint: "-v")
+        fix_option = pnpm_major_version(version_output) >= 11 ? "--fix=update" : "--fix"
+        command = "audit #{fix_option}"
+
         Helpers.run_pnpm_command(
-          "audit --fix",
-          fingerprint: "audit --fix"
+          command,
+          fingerprint: command
         )
       end
+
+      sig { params(output: String).returns(Integer) }
+      def self.pnpm_major_version(output)
+        output.lines.reverse_each do |line|
+          match = line.strip.match(PNPM_VERSION_REGEX)
+          return T.must(match[:major]).to_i if match
+        end
+
+        0
+      end
+      private_class_method :pnpm_major_version
 
       sig { params(dependency_name: String, recursive: T::Boolean).returns(String) }
       def self.run_pnpm_deep_update_command(dependency_name, recursive: false)
         # `pnpm update --depth Infinity <dep>` traverses the full dependency
         # graph, allowing transitive dependencies to be updated in the lockfile
-        # without modifying any package.json (unlike `pnpm audit --fix`).
+        # without relying on audit fixes that may modify manifests on older pnpm versions.
         # `-r --include-workspace-root` is required for workspace repos so the
         # update is applied across all packages.
         flags = recursive ? "-r --include-workspace-root " : ""

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "open3"
+require "toml-rb"
 require "dependabot/dependency"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_fetcher"
@@ -24,22 +25,18 @@ module Dependabot
         require_relative "requirement_file_updater"
         require_relative "setup_file_sanitizer"
 
-        UNSAFE_PACKAGES = T.let(%w(setuptools distribute pip).freeze, T::Array[String])
-        INCOMPATIBLE_VERSIONS_REGEX = T.let(
-          Regexp.new(
-            "(?:not supported between instances of 'InstallationCandidate'" \
-            "|There are incompatible versions in the resolved dependencies).*\\z",
-            Regexp::MULTILINE
-          ),
-          Regexp
+        UNSAFE_PACKAGES = %w(setuptools distribute pip).freeze
+        INCOMPATIBLE_VERSIONS_REGEX = Regexp.new(
+          "(?:not supported between instances of 'InstallationCandidate'" \
+          "|There are incompatible versions in the resolved dependencies).*\\z",
+          Regexp::MULTILINE
         )
-        WARNINGS = T.let(/\s*# WARNING:.*\Z/m, Regexp)
-        UNSAFE_NOTE = T.let(/\s*# The following packages are considered to be unsafe.*\Z/m, Regexp)
-        RESOLVER_REGEX = T.let(/(?<=--resolver=)(\w+)/, Regexp)
-        NATIVE_COMPILATION_ERROR = T.let(
-          "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1",
-          String
-        )
+        WARNINGS = /\s*# WARNING:.*\Z/m
+        UNSAFE_NOTE = /\s*# The following packages are considered to be unsafe.*\Z/m
+        RESOLVER_REGEX = /(?<=--resolver=)(\w+)/
+        UNSAFE_PACKAGE_OPTION_REGEX = /--unsafe-package(?:=|\s+)(?<name>[^\s\\]+)/
+        NATIVE_COMPILATION_ERROR =
+          "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1"
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         attr_reader :dependencies
@@ -58,10 +55,10 @@ module Dependabot
             index_urls: T.nilable(T::Array[T.nilable(String)])
           ).void
         end
-        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil) # rubocop:disable Metrics/AbcSize
-          @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @index_urls = T.let(index_urls, T.nilable(T::Array[T.nilable(String)]))
+        def initialize(dependencies:, dependency_files:, credentials:, index_urls: nil)
+          @dependencies = dependencies
+          @dependency_files = dependency_files
+          @index_urls = index_urls
           @build_isolation = T.let(true, T::Boolean)
           @sanitized_setup_file_content = T.let({}, T::Hash[String, String])
           @requirement_map = T.let(nil, T.nilable(T::Hash[String, T::Array[String]]))
@@ -71,7 +68,7 @@ module Dependabot
           @setup_cfg_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
           @pip_compile_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
           @compiled_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
-          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @credentials = credentials
         end
 
         sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
@@ -197,22 +194,29 @@ module Dependabot
         def update_uncompiled_files(updated_files)
           updated_filenames = updated_files.map(&:name)
           old_reqs = T.must(T.must(dependency).previous_requirements)
-                      .reject { |r| updated_filenames.include?(r[:file]) }
+                      .reject { |r| updated_filenames.include?(r.file) }
           new_reqs = T.must(dependency).requirements
-                      .reject { |r| updated_filenames.include?(r[:file]) }
+                      .reject { |r| updated_filenames.include?(r.file) }
 
           return [] if new_reqs.none?
 
           files = dependency_files
                   .reject { |file| updated_filenames.include?(file.name) }
 
-          args = dependency.to_h
-          args = args.keys.to_h { |k| [k.to_sym, args[k]] }
-          args[:requirements] = new_reqs
-          args[:previous_requirements] = old_reqs
+          dep = T.must(dependency)
 
           RequirementFileUpdater.new(
-            dependencies: [Dependency.new(**T.unsafe(args))],
+            dependencies: [Dependency.new(
+              name: dep.name,
+              version: dep.version,
+              requirements: new_reqs,
+              package_manager: dep.package_manager,
+              previous_version: dep.previous_version,
+              previous_requirements: old_reqs,
+              directory: dep.directory,
+              subdependency_metadata: dep.subdependency_metadata,
+              removed: dep.removed?
+            )],
             dependency_files: files,
             credentials: credentials
           ).updated_dependency_files
@@ -320,15 +324,15 @@ module Dependabot
           return file.content unless file.name.end_with?(".in")
 
           old_req = T.must(T.must(dependency).previous_requirements)
-                     .find { |r| r[:file] == file.name }
+                     .find { |r| r.file == file.name }
 
           return file.content unless old_req
-          return file.content if old_req == "==#{T.must(dependency).version}"
+          return file.content if old_req.requirement_string == "==#{T.must(dependency).version}"
 
           RequirementReplacer.new(
             content: T.must(file.content),
             dependency_name: T.must(dependency).name,
-            old_requirement: old_req[:requirement],
+            old_requirement: old_req.requirement_string,
             new_requirement: "==#{T.must(dependency).version}",
             index_urls: @index_urls
           ).updated_content
@@ -339,17 +343,17 @@ module Dependabot
           return file.content unless file.name.end_with?(".in")
 
           old_req = T.must(T.must(dependency).previous_requirements)
-                     .find { |r| r[:file] == file.name }
+                     .find { |r| r.file == file.name }
           new_req = T.must(dependency).requirements
-                     .find { |r| r[:file] == file.name }
-          return file.content unless old_req&.fetch(:requirement)
+                     .find { |r| r.file == file.name }
+          return file.content unless old_req&.requirement_string
           return file.content if old_req == new_req
 
           RequirementReplacer.new(
             content: T.must(file.content),
             dependency_name: T.must(dependency).name,
-            old_requirement: old_req[:requirement],
-            new_requirement: T.must(new_req)[:requirement],
+            old_requirement: old_req.requirement_string,
+            new_requirement: T.must(T.must(new_req).requirement_string),
             index_urls: @index_urls
           ).updated_content
         end
@@ -533,37 +537,38 @@ module Dependabot
           # Use the explicit output file if provided, otherwise fall back to finding one
           requirements_file = output_file || compiled_file_for_filename(filename)
           options += pip_compile_options_from_compiled_file(requirements_file) if requirements_file
+          options = merge_pip_tools_config_options(options)
 
           options.join(" ")
         end
 
-        # rubocop:disable Metrics/AbcSize
         sig { params(requirements_file: T.nilable(Dependabot::DependencyFile)).returns(T::Array[String]) }
         def pip_compile_options_from_compiled_file(requirements_file)
+          content = T.must(T.must(requirements_file).content)
           options = ["--output-file=#{T.must(requirements_file).name}"]
 
-          options << "--no-emit-index-url" unless T.must(T.must(requirements_file).content).include?("index-url http")
+          options << "--no-emit-index-url" unless content.include?("index-url http")
 
-          options << "--generate-hashes" if T.must(T.must(requirements_file).content).include?("--hash=sha")
+          options << "--generate-hashes" if content.include?("--hash=sha")
 
-          options << "--allow-unsafe" if includes_unsafe_packages?(T.must(T.must(requirements_file).content))
+          options << "--allow-unsafe" if includes_unsafe_packages?(content)
+          options.concat(unsafe_package_options_from_compiled_file(content))
 
-          options << "--no-annotate" unless T.must(T.must(requirements_file).content).include?("# via ")
+          options << "--no-annotate" unless content.include?("# via ")
 
-          options << "--no-header" unless T.must(T.must(requirements_file).content).include?("autogenerated by pip-c")
+          options << "--no-header" unless content.include?("autogenerated by pip-c")
 
-          options << "--pre" if T.must(T.must(requirements_file).content).include?("--pre")
+          options << "--pre" if content.include?("--pre")
 
-          options << "--strip-extras" if T.must(T.must(requirements_file).content).include?("--strip-extras")
+          options << "--strip-extras" if content.include?("--strip-extras")
 
-          if (resolver = RESOLVER_REGEX.match(T.must(requirements_file).content))
+          if (resolver = RESOLVER_REGEX.match(content))
             options << "--resolver=#{resolver}"
           end
 
           options
         end
 
-        # rubocop:enable Metrics/AbcSize
         sig { returns(T::Array[String]) }
         def pip_compile_index_options
           credentials
@@ -584,11 +589,92 @@ module Dependabot
           UNSAFE_PACKAGES.any? { |n| content.match?(/^#{Regexp.quote(n)}==/) }
         end
 
+        sig { params(content: String).returns(T::Array[String]) }
+        def unsafe_package_options_from_compiled_file(content)
+          header = content.lines.take_while { |line| line.start_with?("#") }.join(" ")
+          header
+            .scan(UNSAFE_PACKAGE_OPTION_REGEX)
+            .flatten
+            .uniq
+            .map { |name| "--unsafe-package=#{name}" }
+        end
+
+        sig { params(options: T::Array[String]).returns(T::Array[String]) }
+        def merge_pip_tools_config_options(options)
+          merged_options = options.dup
+          pip_tools_config_options.each do |option|
+            next if option_already_present?(merged_options, option)
+
+            merged_options << option
+          end
+
+          merged_options
+        end
+
+        sig { returns(T::Array[String]) }
+        def pip_tools_config_options
+          return [] unless pip_tools_config_file&.content
+
+          config = parse_pip_tools_config
+          return [] unless config
+
+          options = []
+          options << "--allow-unsafe" if config["allow-unsafe"] == true
+          options << "--strip-extras" if config["strip-extras"] == true
+
+          options.concat(resolver_option_from_config(config))
+          options.concat(unsafe_package_options_from_config(config))
+
+          options
+        end
+
+        sig { params(existing_options: T::Array[String], option: String).returns(T::Boolean) }
+        def option_already_present?(existing_options, option)
+          return existing_options.include?("--allow-unsafe") if option == "--allow-unsafe"
+          return existing_options.include?("--strip-extras") if option == "--strip-extras"
+          return existing_options.any? { |opt| opt.start_with?("--resolver=") } if option.start_with?("--resolver=")
+          return existing_options.include?(option) if option.start_with?("--unsafe-package=")
+
+          false
+        end
+
+        sig { params(config: T::Hash[String, T.untyped]).returns(T::Array[String]) }
+        def resolver_option_from_config(config)
+          resolver = config["resolver"]
+          return [] unless resolver.is_a?(String)
+          return [] if resolver.empty?
+
+          ["--resolver=#{resolver}"]
+        end
+
+        sig { params(config: T::Hash[String, T.untyped]).returns(T::Array[String]) }
+        def unsafe_package_options_from_config(config)
+          Array(config["unsafe-package"])
+            .select { |package_name| package_name.is_a?(String) && !package_name.empty? }
+            .map { |package_name| "--unsafe-package=#{package_name}" }
+        end
+
+        sig { returns(T.nilable(T::Hash[String, T.untyped])) }
+        def parse_pip_tools_config
+          parsed = T.let(TomlRB.parse(T.must(pip_tools_config_file).content), T::Hash[String, T.untyped])
+          pip_tools_config = parsed["pip-tools"]
+          return unless pip_tools_config.is_a?(Hash)
+
+          pip_tools_config
+        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
+          nil
+        end
+
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
+        def pip_tools_config_file
+          dependency_files.find { |file| file.name.end_with?(".pip-tools.toml") }
+        end
+
         sig { returns(T::Array[String]) }
         def filenames_to_compile
           files_from_reqs =
             T.must(dependency).requirements
-             .map { |r| r[:file] }
+             .filter_map(&:file)
              .select { |fn| fn.end_with?(".in") }
 
           files_from_compiled_files =

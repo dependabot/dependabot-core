@@ -45,6 +45,7 @@ public class DiscoveryWorkerTestBase : TestBase
         ValidateResultWithDependencies(expectedResult.DotNetToolsJson, actualResult.DotNetToolsJson);
         ValidateProjectResults(expectedResult.Projects, actualResult.Projects);
         Assert.Equal(expectedResult.ExpectedProjectCount ?? expectedResult.Projects.Length, actualResult.Projects.Length);
+        Assert.Equal(expectedResult.SolutionDirectory?.NormalizePathToUnix(), actualResult.SolutionDirectory?.NormalizePathToUnix());
         ValidateDiscoveryOperationResult(expectedResult, actualResult);
 
         return;
@@ -117,6 +118,16 @@ public class DiscoveryWorkerTestBase : TestBase
             {
                 Assert.Equal(expectedProject.ExpectedPackageManagementSpecialFileRelativePath, actualProject.PackageManagementSpecialFileRelativePath);
             }
+
+            if (expectedProject.ExpectedDependencyGraph is not null)
+            {
+                Assert.Equal(expectedProject.ExpectedDependencyGraph.Count, actualProject.DependencyGraph.Count);
+                foreach (var (key, expectedDeps) in expectedProject.ExpectedDependencyGraph)
+                {
+                    Assert.True(actualProject.DependencyGraph.TryGetValue(key, out var actualDeps), $"Dependency graph missing key: {key}. Available keys: [{string.Join(", ", actualProject.DependencyGraph.Keys)}]");
+                    AssertEx.Equal(expectedDeps, actualDeps, message: $"Dependency graph mismatch for key: {key}");
+                }
+            }
         }
     }
 
@@ -139,13 +150,21 @@ public class DiscoveryWorkerTestBase : TestBase
             }).ToArray();
             Assert.True(matchingDependencies.Length == 1, $"""
                 Unable to find 1 dependency matching; found {matchingDependencies.Length}:
-                    Name: {expectedDependency.Name}
-                    Type: {expectedDependency.Type}
-                    Version: {expectedDependency.Version}
-                    IsTopLevel: {expectedDependency.IsTopLevel}
-                    TargetFrameworks: {string.Join(", ", expectedDependency.TargetFrameworks ?? [])}
-                Found:{"\n\t"}{string.Join("\n\t", actualDependencies)}
+                {DependencyDisplayString(expectedDependency)}
+                Found:
+                {string.Join("\n    ----\n", actualDependencies.Select(DependencyDisplayString))}
                 """);
+        }
+
+        static string DependencyDisplayString(Dependency d)
+        {
+            return $"""
+                    Name: {d.Name}
+                    Type: {d.Type}
+                    Version: {d.Version}
+                    IsTopLevel: {d.IsTopLevel}
+                    TargetFrameworks: {string.Join(", ", d.TargetFrameworks ?? [])}
+                """;
         }
     }
 

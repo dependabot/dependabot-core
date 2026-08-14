@@ -43,6 +43,7 @@ module Dependabot
         source[:registry] = parsed_line.fetch("registry") if parsed_line.fetch("registry")
         source[:tag] = parsed_line.fetch("tag") if parsed_line.fetch("tag")
         source[:digest] = parsed_line.fetch("digest") if parsed_line.fetch("digest")
+        source[:platform] = parsed_line["platform"] if parsed_line["platform"]
 
         source
       end

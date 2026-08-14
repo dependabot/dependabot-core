@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/update_checkers"
@@ -28,13 +28,16 @@ module Dependabot
         dependency.version
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         return dependency.requirements unless latest_version
 
-        dependency.requirements.map do |req|
-          req.merge(requirement: updated_constraint(req[:requirement]))
+        updated = dependency.requirements.map do |req|
+          Dependabot::DependencyRequirement.create(
+            req.merge(requirement: updated_constraint(req.requirement_string))
+          )
         end
+        updated
       end
 
       private

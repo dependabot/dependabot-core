@@ -16,15 +16,18 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories,
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }],
+      credentials: credentials,
       cooldown_options: cooldown_options,
       options: {}
     )
+  end
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
   end
   let(:dependency_files) { bundler_project_dependency_files("gemfile") }
   let(:bundler_version) { PackageManagerHelper.bundler_version }
@@ -547,6 +550,124 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
               expect(error.source)
                 .to eq("https://repo.fury.io/<redacted>")
             end
+        end
+      end
+
+      context "when the registry returns invalid gem metadata" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "rubygems_server",
+              "host" => "rubygems.pkg.github.com",
+              "token" => "secret_token"
+            }
+          )]
+        end
+
+        let(:error_message) do
+          <<~ERR
+            There was an error parsing the metadata for the gem failbot (2.0.1): Gem::Requirement::BadRequirementError
+            Illformed requirement [">= notaruby"]
+            The metadata was [["checksum", ["abc123"]], ["ruby", [">= notaruby"]]]
+          ERR
+        end
+
+        let(:error_class) { "Bundler::GemspecError" }
+
+        before do
+          allow(Dependabot::Bundler::NativeHelpers)
+            .to receive(:run_bundler_subprocess)
+            .with({
+              bundler_version: bundler_version,
+              function: "private_registry_versions",
+              options: anything,
+              args: anything
+            })
+            .and_raise(subprocess_error)
+        end
+
+        it "raises a PrivateSourceBadResponse error naming the gem and source" do
+          expect { finder.latest_version_details }
+            .to raise_error do |error|
+              expect(error).to be_a(Dependabot::PrivateSourceBadResponse)
+              expect(error.source).to eq("rubygems.pkg.github.com")
+              expect(error.message)
+                .to eq(
+                  "Invalid gem metadata returned for failbot (2.0.1) " \
+                  "by the source: rubygems.pkg.github.com " \
+                  "(Gem::Requirement::BadRequirementError; " \
+                  "Illformed requirement [\">= notaruby\"]; " \
+                  "The metadata was [[\"checksum\", [\"abc123\"]], [\"ruby\", [\">= notaruby\"]]])"
+                )
+            end
+        end
+
+        it "logs the original Bundler error so the offending gem is diagnosable" do
+          allow(Dependabot.logger).to receive(:error)
+
+          expect { finder.latest_version_details }
+            .to raise_error(Dependabot::PrivateSourceBadResponse)
+
+          expect(Dependabot.logger)
+            .to have_received(:error)
+            .with(a_string_including(
+                    "unparseable compact-index metadata for failbot (2.0.1)",
+                    "Illformed requirement [\">= notaruby\"]"
+                  ))
+        end
+
+        context "when Bundler's error carries no trailing explanation" do
+          let(:error_message) do
+            "There was an error parsing the metadata for the gem failbot (2.0.1)"
+          end
+
+          it "preserves the original detail-less message" do
+            expect { finder.latest_version_details }
+              .to raise_error do |error|
+                expect(error).to be_a(Dependabot::PrivateSourceBadResponse)
+                expect(error.source).to eq("rubygems.pkg.github.com")
+                expect(error.message)
+                  .to eq(
+                    "Invalid gem metadata returned for failbot (2.0.1) " \
+                    "by the source: rubygems.pkg.github.com"
+                  )
+              end
+          end
+        end
+      end
+
+      context "when a local gemspec is invalid (not a registry metadata error)" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "rubygems_server",
+              "host" => "rubygems.pkg.github.com",
+              "token" => "secret_token"
+            }
+          )]
+        end
+
+        let(:error_message) do
+          "There was an error while loading `business.gemspec`: undefined method `foo'"
+        end
+
+        let(:error_class) { "Bundler::GemspecError" }
+
+        before do
+          allow(Dependabot::Bundler::NativeHelpers)
+            .to receive(:run_bundler_subprocess)
+            .with({
+              bundler_version: bundler_version,
+              function: "private_registry_versions",
+              options: anything,
+              args: anything
+            })
+            .and_raise(subprocess_error)
+        end
+
+        it "still raises a DependencyFileNotEvaluatable error" do
+          expect { finder.latest_version_details }
+            .to raise_error(Dependabot::DependencyFileNotEvaluatable)
         end
       end
 

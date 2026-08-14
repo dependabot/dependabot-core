@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/sbt/file_parser"
+require "dependabot/maven/shared/property_value_finding"
 
 module Dependabot
   module Sbt
@@ -11,22 +12,22 @@ module Dependabot
       class PropertyValueFinder
         extend T::Sig
 
+        include Dependabot::Maven::Shared::PropertyValueFinding
+
         # Matches: val someVersion = "1.2.3"
         # Also:   val someVersion: String = "1.2.3"
         # Also:   lazy val someVersion = "1.2.3"
-        VAL_DECLARATION_REGEX = T.let(
-          /(?:^|\s)(?:lazy\s+)?val\s+(?<name>\w+)(?:\s*:\s*String)?\s*=\s*"(?<value>[^"]+)"/,
-          Regexp
-        )
+        VAL_DECLARATION_REGEX = /(?:^|\s)(?:lazy\s+)?val\s+(?<name>\w+)(?:\s*:\s*String)?\s*=\s*"(?<value>[^"]+)"/
 
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
         def initialize(dependency_files:)
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
+          @dependency_files = dependency_files
           @properties = T.let({}, T::Hash[String, T::Hash[String, T::Hash[Symbol, String]]])
         end
 
         sig do
-          params(property_name: String, callsite_buildfile: Dependabot::DependencyFile)
+          override
+            .params(property_name: String, callsite_buildfile: Dependabot::DependencyFile)
             .returns(T.nilable(T::Hash[Symbol, String]))
         end
         def property_details(property_name:, callsite_buildfile:)

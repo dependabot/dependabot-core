@@ -1,8 +1,9 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
 require "dependabot/dependency"
+require "dependabot/dependency_requirement"
 require "dependabot/update_checkers"
 require "dependabot/requirements_update_strategy"
 require "dependabot/python/update_checker/requirements_updater"
@@ -25,27 +26,29 @@ module Dependabot
           )
         end
 
-        sig { override.params(latest_version: String).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig do
+          override.params(latest_version: String)
+                  .returns(T::Array[Dependabot::DependencyRequirement])
+        end
         def updated_requirements(latest_version)
           requirements.map do |original_req|
-            original_source = original_req[:source]
-            next original_req unless original_source.is_a?(Hash)
-            next original_req unless original_source[:type] == "additional_dependency"
+            original_source = additional_dependency_source(original_req)
+            next original_req unless original_source
 
-            original_requirement = original_req[:requirement]
+            original_requirement = requirement_string(original_req)
             new_requirement = build_updated_requirement(original_requirement, latest_version)
 
             new_original_string = build_original_string(
-              original_name: original_source[:original_name] || original_source[:package_name],
-              extras: original_source[:extras],
+              original_name: source_string(original_source, "original_name") ||
+                             source_string(original_source, "package_name"),
+              extras: source_string(original_source, "extras"),
               requirement: new_requirement
             )
 
-            new_source = original_source.merge(original_string: new_original_string)
-
-            original_req.merge(
-              requirement: new_requirement,
-              source: new_source
+            build_requirement_entry(
+              original_req,
+              new_requirement: new_requirement,
+              original_string: new_original_string
             )
           end
         end
@@ -92,7 +95,8 @@ module Dependabot
             credentials: credentials,
             ignored_versions: [],
             security_advisories: [],
-            raise_on_ignored: false
+            raise_on_ignored: false,
+            update_cooldown: cooldown_options
           )
         end
 
@@ -124,7 +128,7 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def extract_version_from_requirement
-          req_string = requirements.first&.dig(:requirement)
+          req_string = requirement_string(requirements.first)
           return nil unless req_string
 
           match = req_string.match(/[\d]+(?:\.[\d]+)*(?:\.?\w+)*/)
@@ -164,26 +168,29 @@ module Dependabot
           return ">=#{new_version}" unless original_requirement
 
           updater = Dependabot::Python::UpdateChecker::RequirementsUpdater.new(
-            requirements: [{
-              requirement: original_requirement,
-              file: "requirements.txt",
-              groups: [],
-              source: nil
-            }],
+            requirements: [Dependabot::DependencyRequirement.create(
+              {
+                requirement: original_requirement,
+                file: "requirements.txt",
+                groups: [],
+                source: nil
+              }
+            )],
             update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions,
             has_lockfile: false,
             latest_resolvable_version: new_version
           )
 
           updated_reqs = updater.updated_requirements
-          updated_req = updated_reqs.first&.fetch(:requirement, nil)
+          updated_req = updated_reqs.first&.requirement
 
           return ">=#{new_version}" if updated_req == :unfixable
 
-          if updated_req == original_requirement
+          updated_req_string = T.cast(updated_req, T.nilable(String))
+          if updated_req_string == original_requirement
             force_bump_lower_bounds(original_requirement, new_version)
           else
-            updated_req || ">=#{new_version}"
+            updated_req_string || ">=#{new_version}"
           end
         end
 

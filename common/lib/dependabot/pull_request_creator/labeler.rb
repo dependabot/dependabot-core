@@ -92,7 +92,7 @@ module Dependabot
         return if labels_for_pr.none?
         raise "Only GitHub!" unless source.provider == "github"
 
-        T.unsafe(github_client_for_source).add_labels_to_an_issue(
+        github_client_for_source.add_labels_to_an_issue(
           source.repo,
           pull_request_number,
           labels_for_pr
@@ -165,43 +165,36 @@ module Dependabot
         )
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       sig { params(dep: Dependabot::Dependency).returns(T.nilable(String)) }
       def version(dep)
         return dep.version if version_class.correct?(dep.version)
 
-        source = dep.requirements.find { |r| r.fetch(:source) }&.fetch(:source)
-        type = source&.fetch("type", nil) || source&.fetch(:type)
-        return dep.version unless type == "git"
+        source = dep.requirements.find(&:source)
+        return dep.version if source.nil?
+        return dep.version unless source.source_string("type") == "git"
 
-        ref = source.fetch("ref", nil) || source.fetch(:ref)
-        version_from_ref = ref&.gsub(/^v/, "")
+        version_from_ref = source.source_string("ref")&.gsub(/^v/, "")
         return dep.version unless version_from_ref
         return dep.version unless version_class.correct?(version_from_ref)
 
         version_from_ref
       end
-      # rubocop:enable Metrics/PerceivedComplexity
 
-      # rubocop:disable Metrics/PerceivedComplexity
       sig { params(dep: Dependabot::Dependency).returns(T.nilable(String)) }
       def previous_version(dep)
         version_str = dep.previous_version
         return version_str if version_class.correct?(version_str)
 
-        source = T.must(dep.previous_requirements)
-                  .find { |r| r.fetch(:source) }&.fetch(:source)
-        type = source&.fetch("type", nil) || source&.fetch(:type)
-        return version_str unless type == "git"
+        source = T.must(dep.previous_requirements).find(&:source)
+        return version_str if source.nil?
+        return version_str unless source.source_string("type") == "git"
 
-        ref = source.fetch("ref", nil) || source.fetch(:ref)
-        version_from_ref = ref&.gsub(/^v/, "")
+        version_from_ref = source.source_string("ref")&.gsub(/^v/, "")
         return version_str unless version_from_ref
         return version_str unless version_class.correct?(version_from_ref)
 
         version_from_ref
       end
-      # rubocop:enable Metrics/PerceivedComplexity
 
       sig { returns(T.nilable(T::Array[String])) }
       def create_default_dependencies_label_if_required
@@ -320,16 +313,16 @@ module Dependabot
       def fetch_github_labels
         client = github_client_for_source
 
-        labels =
-          T.unsafe(client)
-           .labels(source.repo, per_page: 100)
-           .map(&:name)
+        labels = T.let(
+          T.unsafe(client.labels(source.repo, per_page: 100)).map(&:name),
+          T::Array[String]
+        )
 
-        next_link = T.unsafe(client).last_response.rels[:next]
+        next_link = T.let(client.last_response.rels[:next], T.nilable(Sawyer::Relation))
 
         while next_link
-          next_page = next_link.get
-          labels += next_page.data.map(&:name)
+          next_page = T.let(next_link.get, Sawyer::Response)
+          labels += T.unsafe(next_page.data).map(&:name)
           next_link = next_page.rels[:next]
         end
 
@@ -338,9 +331,11 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def fetch_gitlab_labels
-        T.unsafe(gitlab_client_for_source)
-         .labels(source.repo, per_page: 100)
-         .auto_paginate
+        T.unsafe(
+          gitlab_client_for_source
+                   .labels(source.repo, per_page: 100)
+                   .auto_paginate
+        )
          .map(&:name)
       end
 
@@ -390,7 +385,7 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def create_github_dependencies_label
-        T.unsafe(github_client_for_source).add_label(
+        github_client_for_source.add_label(
           source.repo,
           DEFAULT_DEPENDENCIES_LABEL,
           "0366d6",
@@ -406,7 +401,7 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def create_gitlab_dependencies_label
-        T.unsafe(gitlab_client_for_source).create_label(
+        gitlab_client_for_source.create_label(
           source.repo,
           DEFAULT_DEPENDENCIES_LABEL,
           "#0366d6",
@@ -417,7 +412,7 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def create_github_security_label
-        T.unsafe(github_client_for_source).add_label(
+        github_client_for_source.add_label(
           source.repo,
           DEFAULT_SECURITY_LABEL,
           "ee0701",
@@ -433,7 +428,7 @@ module Dependabot
 
       sig { returns(T.nilable(T::Array[String])) }
       def create_gitlab_security_label
-        T.unsafe(gitlab_client_for_source).create_label(
+        gitlab_client_for_source.create_label(
           source.repo,
           DEFAULT_SECURITY_LABEL,
           "#ee0701",
@@ -446,7 +441,7 @@ module Dependabot
       def create_github_language_label
         label = self.class.label_details_for_package_manager(package_manager)
         language_name = label.fetch(:name)
-        T.unsafe(github_client_for_source).add_label(
+        github_client_for_source.add_label(
           source.repo,
           language_name,
           label.fetch(:colour),
@@ -470,7 +465,7 @@ module Dependabot
         language_name =
           self.class.label_details_for_package_manager(package_manager)
               .fetch(:name)
-        T.unsafe(gitlab_client_for_source).create_label(
+        gitlab_client_for_source.create_label(
           source.repo,
           language_name,
           "#" + self.class.label_details_for_package_manager(package_manager)
