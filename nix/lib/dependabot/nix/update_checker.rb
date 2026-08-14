@@ -97,11 +97,16 @@ module Dependabot
         return dependency.requirements unless result
 
         dependency.requirements.map do |req|
-          source = req[:source]
-          next req unless source
+          next req unless req.source_hash
 
           Dependabot::DependencyRequirement.create(
-            req.merge(source: source.merge(ref: result[:channel], url: result[:url]))
+            req.merge(
+              source: source_with_values(
+                req,
+                "ref" => result[:channel],
+                "url" => result[:url]
+              )
+            )
           )
         end
       end
@@ -151,10 +156,17 @@ module Dependabot
         return dependency.requirements unless new_tag
 
         dependency.requirements.map do |req|
-          source = req[:source]
-          next req unless source
+          next req unless req.source_hash
 
-          Dependabot::DependencyRequirement.create(req.merge(source: source.merge(ref: new_tag[:tag], branch: nil)))
+          Dependabot::DependencyRequirement.create(
+            req.merge(
+              source: source_with_values(
+                req,
+                "ref" => T.cast(new_tag[:tag], String),
+                "branch" => nil
+              )
+            )
+          )
         end
       end
 
@@ -180,10 +192,17 @@ module Dependabot
         return dependency.requirements unless result
 
         dependency.requirements.map do |req|
-          source = req[:source]
-          next req unless source
+          next req unless req.source_hash
 
-          Dependabot::DependencyRequirement.create(req.merge(source: source.merge(ref: result[:branch], branch: nil)))
+          Dependabot::DependencyRequirement.create(
+            req.merge(
+              source: source_with_values(
+                req,
+                "ref" => result[:branch],
+                "branch" => nil
+              )
+            )
+          )
         end
       end
 
@@ -199,6 +218,29 @@ module Dependabot
           versioned_branch_finder&.latest_versioned_branch,
           T.nilable(T::Hash[Symbol, String])
         )
+      end
+
+      sig do
+        params(
+          requirement: Dependabot::DependencyRequirement,
+          values: T::Hash[String, T.nilable(String)]
+        ).returns(Dependabot::DependencyRequirement::ObjectHash)
+      end
+      def source_with_values(requirement, values)
+        source = T.must(requirement.source_hash).dup
+        values.each do |key, value|
+          actual_key = if source.key?(key.to_sym)
+                         key.to_sym
+                       elsif source.key?(key)
+                         key
+                       elsif source.keys.any?(Symbol)
+                         key.to_sym
+                       else
+                         key
+                       end
+          source[actual_key] = value
+        end
+        source
       end
 
       # --- Commit-tracking (existing behavior) ---
