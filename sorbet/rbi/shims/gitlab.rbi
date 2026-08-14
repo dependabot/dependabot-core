@@ -3,6 +3,9 @@
 
 module Gitlab
   class PaginatedResponse
+    sig { params(block: T.nilable(Proc)).returns(T::Array[Gitlab::ObjectifiedHash]) }
+    def auto_paginate(&block); end
+
     sig do
       type_parameters(:U)
         .params(

@@ -1,9 +1,10 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "octokit"
 require "sorbet-runtime"
 require "dependabot/pull_request_creator"
+require "dependabot/errors"
 require "dependabot/credential"
 
 module Dependabot
@@ -313,16 +314,13 @@ module Dependabot
       def fetch_github_labels
         client = github_client_for_source
 
-        labels = T.let(
-          T.unsafe(client.labels(source.repo, per_page: 100)).map(&:name),
-          T::Array[String]
-        )
+        labels = client.labels(source.repo, per_page: 100).map { |label| github_label_name(label) }
 
         next_link = T.let(client.last_response.rels[:next], T.nilable(Sawyer::Relation))
 
         while next_link
           next_page = T.let(next_link.get, Sawyer::Response)
-          labels += T.unsafe(next_page.data).map(&:name)
+          labels.concat(github_labels_from_page(next_page))
           next_link = next_page.rels[:next]
         end
 
@@ -331,12 +329,47 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def fetch_gitlab_labels
-        T.unsafe(
-          gitlab_client_for_source
-                   .labels(source.repo, per_page: 100)
-                   .auto_paginate
+        gitlab_client_for_source
+          .labels(source.repo, per_page: 100)
+          .auto_paginate
+          .map { |label| gitlab_label_name(label) }
+      end
+
+      sig { params(label: Sawyer::Resource).returns(String) }
+      def github_label_name(label)
+        value = T.cast(label[:name], Object)
+        return value if value.is_a?(String)
+
+        raise_bad_label_response("GitHub", "name must be a string")
+      end
+
+      sig { params(response: Sawyer::Response).returns(T::Array[String]) }
+      def github_labels_from_page(response)
+        data = T.cast(response.data, Object)
+        raise_bad_label_response("GitHub", "page data must be an array") unless data.is_a?(Array)
+
+        data.map do |raw_label|
+          label = T.cast(raw_label, Object)
+          raise_bad_label_response("GitHub", "label must be an object") unless label.is_a?(Sawyer::Resource)
+
+          github_label_name(label)
+        end
+      end
+
+      sig { params(label: ::Gitlab::ObjectifiedHash).returns(String) }
+      def gitlab_label_name(label)
+        value = T.cast(label["name"], Object)
+        return value if value.is_a?(String)
+
+        raise_bad_label_response("GitLab", "name must be a string")
+      end
+
+      sig { params(provider: String, message: String).returns(T.noreturn) }
+      def raise_bad_label_response(provider, message)
+        raise Dependabot::PrivateSourceBadResponse.new(
+          source.url,
+          "Malformed #{provider} label response: #{message}"
         )
-         .map(&:name)
       end
 
       sig { returns(T::Array[String]) }
@@ -394,7 +427,7 @@ module Dependabot
         )
         @labels = [*@labels, DEFAULT_DEPENDENCIES_LABEL].uniq
       rescue Octokit::UnprocessableEntity => e
-        raise unless e.errors.first.fetch(:code) == "already_exists"
+        raise unless github_label_already_exists?(e)
 
         @labels = [*@labels, DEFAULT_DEPENDENCIES_LABEL].uniq
       end
@@ -421,7 +454,7 @@ module Dependabot
         )
         @labels = [*@labels, DEFAULT_SECURITY_LABEL].uniq
       rescue Octokit::UnprocessableEntity => e
-        raise unless e.errors.first.fetch(:code) == "already_exists"
+        raise unless github_label_already_exists?(e)
 
         @labels = [*@labels, DEFAULT_SECURITY_LABEL].uniq
       end
@@ -450,9 +483,22 @@ module Dependabot
         )
         @labels = [*@labels, language_name].uniq
       rescue Octokit::UnprocessableEntity => e
-        raise unless e.errors.first.fetch(:code) == "already_exists"
+        raise unless github_label_already_exists?(e)
 
         @labels = [*@labels, language_name].uniq.compact
+      end
+
+      sig { params(error: Octokit::UnprocessableEntity).returns(T::Boolean) }
+      def github_label_already_exists?(error)
+        errors = T.cast(error.errors, Object)
+        return false unless errors.is_a?(Array)
+
+        first_error = T.cast(errors.first, Object)
+        return false unless first_error.is_a?(Hash)
+
+        typed_error = T.let(first_error, T::Hash[T.any(Symbol, String), Object])
+        code = typed_error[:code] || typed_error["code"]
+        code == "already_exists"
       end
 
       sig { params(language: String).returns(String) }
