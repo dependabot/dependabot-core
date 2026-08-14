@@ -515,13 +515,15 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
 
         context "when the file is in a submodule (shallow)" do
+          let(:submodule_details) do
+            fixture("github", "submodule.json")
+              .gsub("d70e943e00a09a3c98c0e4ac9daab112b749cf62", "sha2")
+          end
+
           before do
             stub_request(:get, url + "some/dir/req.txt?ref=sha")
               .with(headers: { "Authorization" => "token token" })
               .to_return(status: 404)
-            submodule_details =
-              fixture("github", "submodule.json")
-              .gsub("d70e943e00a09a3c98c0e4ac9daab112b749cf62", "sha2")
             stub_request(:get, url + "some/dir?ref=sha")
               .with(headers: { "Authorization" => "token token" })
               .to_return(
@@ -574,6 +576,27 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
               it { is_expected.to be_a(Dependabot::DependencyFile) }
               its(:content) { is_expected.to include("octokit") }
+            end
+          end
+
+          context "when the submodule URL is missing" do
+            before do
+              submodule_without_url = JSON.parse(submodule_details)
+              submodule_without_url["submodule_git_url"] = nil
+              stub_request(:get, url + "some/dir?ref=sha")
+                .with(headers: { "Authorization" => "token token" })
+                .to_return(
+                  status: 200,
+                  body: JSON.dump(submodule_without_url),
+                  headers: { "content-type" => "application/json" }
+                )
+            end
+
+            it "skips the unavailable submodule" do
+              expect { file_fetcher_instance.files }
+                .to raise_error(Dependabot::DependencyFileNotFound) do |error|
+                  expect(error.file_path).to eq("/some/dir/req.txt")
+                end
             end
           end
         end

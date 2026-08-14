@@ -103,6 +103,14 @@ module Dependabot
         T.cast(repository(repo)[:default_branch], String)
       end
 
+      sig { params(repo: String, path: String, ref: String).returns(String) }
+      def raw_contents(repo, path:, ref:)
+        T.cast(
+          contents(repo, path: path, ref: ref, accept: "application/vnd.github.v3.raw"),
+          String
+        )
+      end
+
       ############
       # Proxying #
       ############
