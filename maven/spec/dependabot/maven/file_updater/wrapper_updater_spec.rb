@@ -34,6 +34,22 @@ RSpec.describe Dependabot::Maven::FileUpdater::WrapperUpdater do
   end
   let(:dependency_files) { [properties_file, mvnw_file] }
   let(:credentials) { [] }
+  let(:requirement_source) do
+    {
+      type: "maven-distribution",
+      url: "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.9/apache-maven-3.9.9-bin.zip",
+      property: "distributionUrl"
+    }
+  end
+  let(:requirement_metadata) do
+    {
+      packaging_type: "pom",
+      wrapper_version: "3.3.4",
+      distribution_type: "only-script",
+      distribution_version: "3.9.9",
+      include_debug_script: false
+    }
+  end
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -43,14 +59,9 @@ RSpec.describe Dependabot::Maven::FileUpdater::WrapperUpdater do
       requirements: [{
         requirement: "3.9.9",
         file: ".mvn/wrapper/maven-wrapper.properties",
-        source: {
-          type: "maven-distribution",
-          url: "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.9/apache-maven-3.9.9-bin.zip",
-          property: "distributionUrl"
-        },
+        source: requirement_source,
         groups: [],
-        metadata: { packaging_type: "pom", wrapper_version: "3.3.4", distribution_type: "only-script",
-                    distribution_version: "3.9.9", include_debug_script: false }
+        metadata: requirement_metadata
       }],
       previous_requirements: [{
         requirement: "3.9.8",
@@ -125,6 +136,77 @@ RSpec.describe Dependabot::Maven::FileUpdater::WrapperUpdater do
 
       before do
         allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvnw_wrapper)
+      end
+    end
+
+    context "with string-keyed source and metadata" do
+      include_context "with native helpers stubbed"
+
+      let(:properties_content) do
+        "distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/" \
+          "3.9.8/apache-maven-3.9.8-bin.zip\ndistributionType=only-script\nwrapperVersion=3.3.4\n"
+      end
+      let(:requirement_source) do
+        {
+          "type" => "maven-distribution",
+          "url" => "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/" \
+                   "3.9.9/apache-maven-3.9.9-bin.zip",
+          "property" => "distributionUrl"
+        }
+      end
+      let(:requirement_metadata) do
+        {
+          "packaging_type" => "pom",
+          "wrapper_version" => "3.3.4",
+          "distribution_type" => "only-script",
+          "distribution_version" => "3.9.9",
+          "include_debug_script" => true,
+          "custom" => "preserved"
+        }
+      end
+
+      it "passes the typed wrapper details to the native helper" do
+        received = {}
+        allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvnw_wrapper) { |**kwargs| received = kwargs }
+
+        updater.update_files(buildfile)
+
+        expect(received).to include(
+          version: "3.9.9",
+          wrapper_plugin_version: "3.3.4",
+          distribution_type: "only-script"
+        )
+        expect(received[:extra_args]).to include("-DincludeDebug=true")
+      end
+    end
+
+    context "with malformed wrapper metadata" do
+      include_context "with native helpers stubbed"
+
+      let(:properties_content) do
+        "distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/" \
+          "3.9.8/apache-maven-3.9.8-bin.zip\ndistributionType=only-script\nwrapperVersion=3.3.4\n"
+      end
+      let(:requirement_metadata) { super().merge(wrapper_version: 334) }
+
+      it "raises a type error" do
+        expect { updater.update_files(buildfile) }
+          .to raise_error(TypeError, "metadata wrapper_version must be a string or nil")
+      end
+    end
+
+    context "with malformed debug-script metadata" do
+      include_context "with native helpers stubbed"
+
+      let(:properties_content) do
+        "distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/" \
+          "3.9.8/apache-maven-3.9.8-bin.zip\ndistributionType=only-script\nwrapperVersion=3.3.4\n"
+      end
+      let(:requirement_metadata) { super().merge(include_debug_script: "yes") }
+
+      it "raises a type error" do
+        expect { updater.update_files(buildfile) }
+          .to raise_error(TypeError, "metadata include_debug_script must be a boolean or nil")
       end
     end
 

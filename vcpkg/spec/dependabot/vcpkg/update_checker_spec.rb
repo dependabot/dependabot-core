@@ -284,6 +284,34 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
         )
       end
 
+      context "with string-keyed source details" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: dependency_name,
+            version: dependency_version,
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              source: {
+                "type" => "git",
+                "url" => "https://github.com/microsoft/vcpkg.git",
+                "ref" => dependency_version,
+                "custom" => "preserved"
+              },
+              file: "vcpkg.json"
+            }],
+            package_manager: "vcpkg"
+          )
+        end
+
+        it "preserves the source payload and key style" do
+          source = updated_requirements.first.source_hash
+
+          expect(source).to include("ref" => commit_sha, "custom" => "preserved")
+          expect(source).not_to have_key(:ref)
+        end
+      end
+
       context "when requirement has no source" do
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -605,6 +633,7 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
     let(:baseline_sha) { "fe1cde61e971d53c9687cf9a46308f8f55da19fa" }
     let(:fix) { nil }
     let(:port_constraint) { nil }
+    let(:port_metadata) { nil }
     let(:port_version) { "1.2.11" }
     let(:resolver) { instance_double(Dependabot::Vcpkg::UpdateChecker::SecurityFixResolver) }
 
@@ -623,7 +652,13 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
         name: "zlib",
         version: port_version,
         package_manager: "vcpkg",
-        requirements: [{ requirement: port_constraint, groups: [], source: nil, file: "vcpkg.json" }]
+        requirements: [{
+          requirement: port_constraint,
+          groups: [],
+          source: nil,
+          file: "vcpkg.json",
+          metadata: port_metadata
+        }]
       )
     end
 
@@ -684,6 +719,23 @@ RSpec.describe Dependabot::Vcpkg::UpdateChecker do
 
       it "leaves the constraint alone for a baseline remediation" do
         expect(security_checker.updated_requirements.first[:requirement]).to be_nil
+      end
+
+      context "with string-keyed metadata" do
+        let(:port_metadata) { { "custom" => "preserved" } }
+
+        it "preserves the metadata payload and key style" do
+          metadata = security_checker.updated_requirements.first.metadata
+
+          expect(metadata).to include(
+            "custom" => "preserved",
+            "security_remediation" => :baseline,
+            "security_version" => "1.2.13",
+            "baseline_commit_sha" => "c" * 40,
+            "baseline_tag" => "2023.01.09"
+          )
+          expect(metadata).not_to have_key(:security_remediation)
+        end
       end
 
       context "with a version constraint remediation" do
