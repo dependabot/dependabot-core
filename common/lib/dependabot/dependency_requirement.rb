@@ -215,7 +215,9 @@ module Dependabot
       details = metadata
       return if details.nil?
 
-      details[key.to_sym] || details[key]
+      return details[key.to_sym] if details.key?(key.to_sym)
+
+      details[key]
     end
 
     sig { params(key: Symbol).returns(T.nilable(String)) }

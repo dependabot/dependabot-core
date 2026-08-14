@@ -263,11 +263,15 @@ RSpec.describe Dependabot::DependencyRequirement do
     end
 
     it "reads boolean metadata values with either key style" do
-      symbol_keyed = described_class.create(requirement_hash.merge(metadata: { enabled: true }))
-      string_keyed = described_class.create(requirement_hash.merge(metadata: { "enabled" => false }))
+      symbol_true = described_class.create(requirement_hash.merge(metadata: { enabled: true }))
+      symbol_false = described_class.create(requirement_hash.merge(metadata: { enabled: false }))
+      string_true = described_class.create(requirement_hash.merge(metadata: { "enabled" => true }))
+      string_false = described_class.create(requirement_hash.merge(metadata: { "enabled" => false }))
 
-      expect(symbol_keyed.metadata_boolean("enabled")).to be(true)
-      expect(string_keyed.metadata_boolean("enabled")).to be(false)
+      expect(symbol_true.metadata_boolean("enabled")).to be(true)
+      expect(symbol_false.metadata_boolean("enabled")).to be(false)
+      expect(string_true.metadata_boolean("enabled")).to be(true)
+      expect(string_false.metadata_boolean("enabled")).to be(false)
     end
 
     it "returns nil for an absent boolean metadata value" do
