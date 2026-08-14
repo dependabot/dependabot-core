@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 923
+# Offense count: 922
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bun/lib/dependabot/bun.rb"
@@ -400,4 +400,3 @@ Sorbet/ForbidTUntyped:
     - "vcpkg/lib/dependabot/vcpkg/file_parser.rb"
     - "vcpkg/lib/dependabot/vcpkg/file_updater.rb"
     - "vcpkg/lib/dependabot/vcpkg/package/package_details_fetcher.rb"
-    - "vcpkg/lib/dependabot/vcpkg/update_checker.rb"
