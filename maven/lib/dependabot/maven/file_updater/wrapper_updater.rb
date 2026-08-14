@@ -231,34 +231,19 @@ module Dependabot
         def maven_wrapper_version_from_requirements
           return @wrapper_version_override if @wrapper_version_override
 
-          wrapper_version = dependency.requirements
-                                      .find { |r| r.dig(:metadata, :wrapper_version) }
-                                      &.dig(:metadata, :wrapper_version)
-          raise "Could not determine Maven Wrapper version from dependency requirements" unless wrapper_version
-
-          T.cast(wrapper_version, String)
+          required_metadata_string("wrapper_version", "Maven Wrapper version")
         end
 
         sig { returns(String) }
         def distribution_version_from_requirements
           return @distribution_version_override if @distribution_version_override
 
-          distribution_version = dependency.requirements
-                                           .find { |r| r.dig(:metadata, :distribution_version) }
-                                           &.dig(:metadata, :distribution_version)
-          raise "Could not determine distribution version from dependency requirements" unless distribution_version
-
-          T.cast(distribution_version, String)
+          required_metadata_string("distribution_version", "distribution version")
         end
 
         sig { returns(String) }
         def distribution_type_from_requirements
-          distribution_type = dependency.requirements
-                                        .find { |r| r.dig(:metadata, :distribution_type) }
-                                        &.dig(:metadata, :distribution_type)
-          raise "Could not determine distribution type from dependency requirements" unless distribution_type
-
-          T.cast(distribution_type, String)
+          required_metadata_string("distribution_type", "distribution type")
         end
 
         sig { returns(T::Array[String]) }
@@ -268,15 +253,23 @@ module Dependabot
           distribution_url = effective_distribution_url(properties)
           args << "-DdistributionUrl=#{distribution_url}" if distribution_url
           args.concat(enabled_persistence_args(properties))
-          include_debug = dependency.requirements
-                                    .find { |r| r.dig(:metadata, :include_debug_script) }
-                                    &.dig(:metadata, :include_debug_script)
+          include_debug = dependency.requirements.any? do |requirement|
+            requirement.metadata_boolean("include_debug_script")
+          end
           # The plugin exposes this via the `includeDebug` user property (the field is named
           # includeDebugScript internally). Passing -DincludeDebugScript is silently ignored, which
           # would drop the user's mvnwDebug scripts on every update.
           # https://maven.apache.org/tools/wrapper/maven-wrapper-plugin/wrapper-mojo.html
           args << "-DincludeDebug=true" if include_debug
           args
+        end
+
+        sig { params(key: String, description: String).returns(String) }
+        def required_metadata_string(key, description)
+          value = dependency.requirements.filter_map { |requirement| requirement.metadata_string(key) }.first
+          raise "Could not determine #{description} from dependency requirements" unless value
+
+          value
         end
 
         sig { params(properties: String).returns(T.nilable(String)) }
@@ -476,8 +469,11 @@ module Dependabot
           @wrapper_properties_file ||= T.let(
             begin
               req_file = dependency.requirements
-                                   .find { |r| r.dig(:source, :type) == Distributions::DISTRIBUTION_DEPENDENCY_TYPE }
-                                   &.fetch(:file, nil)
+                                   .find do |requirement|
+                                     requirement.source_string("type") ==
+                                       Distributions::DISTRIBUTION_DEPENDENCY_TYPE
+                                   end
+                                   &.file
               @dependency_files.find { |f| f.name == req_file } ||
                 @dependency_files.find { |f| f.name.end_with?("maven-wrapper.properties") }
             end,
