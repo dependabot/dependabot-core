@@ -246,6 +246,11 @@ module Dependabot
         "error-type": "dependency_file_not_resolvable",
         "error-detail": { message: error.message }
       }
+    when Dependabot::BranchNameFormattingError
+      {
+        "error-type": "branch_name_formatting_error",
+        "error-detail": { message: error.message }
+      }
     when Dependabot::BlockedDependencyVersion
       {
         "error-type": "blocked_dependency_version",
@@ -508,6 +513,8 @@ module Dependabot
   class InvalidGitAuthToken < DependabotError; end
 
   class RefNamespaceConflictError < DependabotError; end
+
+  class BranchNameFormattingError < DependabotError; end
 
   #####################
   # Repo level errors #
