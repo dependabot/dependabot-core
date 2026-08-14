@@ -80,3 +80,8 @@ jobs:
         env:
           BASE_REF: origin/${{ github.base_ref }}
         run: ruby script/sorbet-untyped-ratchet
+
+      - name: Ensure the T.unsafe burndown only shrinks
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: ruby script/sorbet-unsafe-ratchet

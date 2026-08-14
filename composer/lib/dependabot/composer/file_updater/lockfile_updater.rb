@@ -122,21 +122,24 @@ module Dependabot
 
         sig { returns(T::Hash[String, String]) }
         def run_update_helper
-          SharedHelpers.with_git_configured(credentials: T.unsafe(credentials)) do
-            SharedHelpers.run_helper_subprocess(
-              command: "php -d memory_limit=-1 #{php_helper_path}",
-              allow_unsafe_shell_command: true,
-              function: "update",
-              env: credentials_env,
-              args: [
-                Dir.pwd,
-                dependency.name,
-                dependency.version,
-                git_credentials,
-                registry_credentials
-              ]
-            )
-          end
+          T.cast(
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              SharedHelpers.run_helper_subprocess(
+                command: "php -d memory_limit=-1 #{php_helper_path}",
+                allow_unsafe_shell_command: true,
+                function: "update",
+                env: credentials_env,
+                args: [
+                  Dir.pwd,
+                  dependency.name,
+                  dependency.version,
+                  git_credentials,
+                  registry_credentials
+                ]
+              )
+            end,
+            T::Hash[String, String]
+          )
         end
 
         sig { returns(String) }
@@ -418,13 +421,15 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do
             File.write(PackageManager::MANIFEST_FILENAME, updated_composer_json_content)
 
-            content_hash =
+            content_hash = T.cast(
               SharedHelpers.run_helper_subprocess(
                 command: "#{Language::NAME} #{php_helper_path}",
                 function: "get_content_hash",
                 env: credentials_env,
                 args: [Dir.pwd]
-              )
+              ),
+              String
+            )
 
             content.gsub(existing_hash, content_hash)
           end

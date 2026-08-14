@@ -3,7 +3,8 @@
 
 require "spec_helper"
 require "dependabot/command_helpers"
-require "open3"
+require "rbconfig"
+require "tmpdir"
 
 RSpec.describe Dependabot::CommandHelpers do
   describe ".capture3_with_timeout" do
@@ -26,6 +27,27 @@ RSpec.describe Dependabot::CommandHelpers do
         expect(stderr).to eq("")
         expect(status.exitstatus).to eq(0)
         expect(elapsed_time).to be > 0
+      end
+
+      it "passes environment, stdin, and spawn options to an argument vector" do
+        options = { chdir: Dir.tmpdir }
+        command = [
+          { "PREFIX" => "prefix:" },
+          [RbConfig.ruby, RbConfig.ruby],
+          "-e",
+          "print ENV.fetch('PREFIX'); print STDIN.read; print ':'; print Dir.pwd",
+          options
+        ]
+
+        stdout, stderr, status, = described_class.capture3_with_timeout(
+          command,
+          stdin_data: "input"
+        )
+
+        expect(stdout).to eq("prefix:input:#{Dir.tmpdir}")
+        expect(stderr).to eq("")
+        expect(status).to be_success
+        expect(options).to eq(chdir: Dir.tmpdir)
       end
     end
 
@@ -129,37 +151,7 @@ RSpec.describe Dependabot::CommandHelpers do
         allow(Dependabot).to receive(:logger).and_return(logger)
       end
 
-      def stub_popen3_with_success
-        stdin = instance_double(IO, close: nil)
-        process_status = instance_double(
-          Process::Status,
-          success?: true,
-          exitstatus: 0,
-          pid: 12_345,
-          termsig: nil,
-          to_s: "pid 12345 exit 0"
-        )
-        wait_thr = instance_double(Process::Waiter, pid: 12_345, value: process_status)
-
-        allow(Open3).to receive(:popen3) do |*_args, &block|
-          stdout_read, stdout_write = IO.pipe
-          stderr_read, stderr_write = IO.pipe
-
-          stdout_write.close
-          stderr_write.close
-
-          begin
-            block.call(stdin, stdout_read, stderr_read, wait_thr)
-          ensure
-            stdout_read.close unless stdout_read.closed?
-            stderr_read.close unless stderr_read.closed?
-          end
-        end
-      end
-
       it "logs git config commands at debug level" do
-        stub_popen3_with_success
-
         described_class.capture3_with_timeout(
           ["git config --global --list"],
           timeout: timeout
@@ -171,8 +163,6 @@ RSpec.describe Dependabot::CommandHelpers do
       end
 
       it "logs direct-exec git config commands at debug level" do
-        stub_popen3_with_success
-
         described_class.capture3_with_timeout(
           [%w(git git), "config", "--global", "--list"],
           timeout: timeout
@@ -201,32 +191,21 @@ RSpec.describe Dependabot::CommandHelpers do
         allow(Dependabot).to receive(:logger).and_return(logger)
       end
 
-      # Simulates the race where `terminate_process` reaps the child via `Process.waitpid`
-      # before `wait_thr.value` is read, so the Open3 wait thread yields `nil` instead of a
-      # `Process::Status`.
-      def stub_popen3_with_nil_status
-        stdin = instance_double(IO, close: nil)
-        wait_thr = instance_double(Process::Waiter, pid: 12_345, value: nil)
+      let(:process_with_nil_status) do
+        process_io = IO.popen(["true"], "r+")
+        stderr_io, stderr_writer = IO.pipe
+        stderr_writer.close
+        wait_thr = instance_double(Process::Waiter, pid: process_io.pid, value: nil, join: nil)
 
-        allow(Open3).to receive(:popen3) do |*_args, &block|
-          stdout_read, stdout_write = IO.pipe
-          stderr_read, stderr_write = IO.pipe
+        [process_io, stderr_io, wait_thr]
+      end
 
-          stdout_write.close
-          stderr_write.close
-
-          begin
-            block.call(stdin, stdout_read, stderr_read, wait_thr)
-          ensure
-            stdout_read.close unless stdout_read.closed?
-            stderr_read.close unless stderr_read.closed?
-          end
-        end
+      before do
+        # Simulates `terminate_process` reaping the child before the wait thread reads its status.
+        allow(described_class).to receive(:open_process).and_return(process_with_nil_status)
       end
 
       it "does not raise and returns a nil-safe status" do
-        stub_popen3_with_nil_status
-
         stdout, stderr, status, elapsed_time = described_class.capture3_with_timeout(
           ["some-command"],
           timeout: timeout
