@@ -3,6 +3,7 @@
 
 require "yaml"
 require "dependabot/errors"
+require "dependabot/bun/bun_package_manager"
 require "dependabot/bun/helpers"
 require "sorbet-runtime"
 
@@ -31,6 +32,8 @@ module Dependabot
             version = content["lockfileVersion"]
             raise_invalid!("expected 'lockfileVersion' to be an integer") unless version.is_a?(Integer)
             raise_invalid!("expected 'lockfileVersion' to be >= 0") unless version >= 0
+            raise_unsupported_lockfile_version!(version) if
+              version > BunPackageManager::MAX_SUPPORTED_LOCKFILE_VERSION
 
             # configVersion was introduced in Bun v1.3.2 to control install behavior.
             # When present, it must be preserved or Bun will use different install defaults.
@@ -109,6 +112,17 @@ module Dependabot
         sig { params(message: String).void }
         def raise_invalid!(message)
           raise Dependabot::DependencyFileNotParseable.new(@dependency_file.path, "Invalid bun.lock file: #{message}")
+        end
+
+        # The lockfile is well-formed and we can read it, but the bun binary we shell out to cannot.
+        # Without this, bun discards the lockfile it failed to parse, re-resolves from scratch and
+        # writes a downgraded lockfile back, all while exiting successfully.
+        sig { params(version: Integer).returns(T.noreturn) }
+        def raise_unsupported_lockfile_version!(version)
+          raise Dependabot::DependencyFileNotSupported,
+                "Unsupported bun.lock 'lockfileVersion' #{version} in #{@dependency_file.path}. " \
+                "The bun version Dependabot runs supports up to " \
+                "#{BunPackageManager::MAX_SUPPORTED_LOCKFILE_VERSION}."
         end
 
         sig do
