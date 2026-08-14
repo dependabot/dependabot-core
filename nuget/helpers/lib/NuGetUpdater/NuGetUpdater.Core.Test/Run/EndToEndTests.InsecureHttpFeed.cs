@@ -164,6 +164,7 @@ public class EndToEndTests_InsecureHttpFeed
                         new()
                         {
                             Name = "Package.A",
+                            Directory = "/",
                             Version = "1.1.0",
                             Requirements = [
                                 new()
@@ -218,6 +219,7 @@ public class EndToEndTests_InsecureHttpFeed
                         new()
                         {
                             Name = "Package.B",
+                            Directory = "/",
                             Version = "2.1.0",
                             Requirements = [
                                 new()

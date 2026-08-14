@@ -97,6 +97,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -231,6 +232,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -378,6 +380,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/src",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -560,6 +563,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -753,6 +757,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Test.Tool",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -813,6 +818,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "TestSdk",
+                            Directory = "/",
                             Version = "3.10.3",
                             Requirements = [
                                 new()
@@ -1033,6 +1039,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -1060,6 +1067,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -1218,6 +1226,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/src/project",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -1521,6 +1530,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
@@ -1548,6 +1558,7 @@ public class EndToEndTests
                         new()
                         {
                             Name = "Some.Package",
+                            Directory = "/",
                             Version = "2.0.0",
                             Requirements = [
                                 new()
