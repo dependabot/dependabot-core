@@ -16,7 +16,7 @@ module Dependabot
   #
   # Subclasses Hash so it is a drop-in replacement at call sites (and in
   # type annotations) that treat requirement entries as
-  # T::Hash[Symbol, T.untyped], while exposing typed readers for the
+  # T::Hash[Symbol, Object], while exposing typed readers for the
   # well-known keys. New code should prefer the typed readers; hash-style
   # access remains supported while call sites are migrated gradually.
   #
@@ -37,15 +37,11 @@ module Dependabot
     ObjectHash = T.type_alias { T::Hash[T.any(Symbol, String), Object] }
     Requirement = T.type_alias { T.any(String, Symbol) }
     Source = T.type_alias { T.any(String, ObjectHash) }
-    Input = T.type_alias { T.any(DependencyRequirement, ObjectHash) }
+    Input = T.type_alias { T::Hash[T.any(Symbol, String), T.anything] }
 
     K = type_member { { fixed: Symbol } }
-    # Hash-style access remains dynamic until ecosystem callers migrate to the
-    # typed readers. Keeping that compatibility here avoids a flag-day change.
-    # rubocop:disable Sorbet/ForbidTUntyped
-    V = type_member { { fixed: T.untyped } }
-    Elem = type_member { { fixed: [Symbol, T.untyped] } }
-    # rubocop:enable Sorbet/ForbidTUntyped
+    V = type_member { { fixed: Object } }
+    Elem = type_member { { fixed: [Symbol, Object] } }
 
     # Builds a DependencyRequirement from a requirement hash, symbolising
     # top-level keys. Accepts both plain hashes and existing
@@ -53,7 +49,12 @@ module Dependabot
     sig { params(hash: Input).returns(DependencyRequirement) }
     def self.create(hash)
       requirement = new
-      requirement.replace(hash.keys.to_h { |k| [k.to_sym, hash[k]] })
+      hash.each do |key, value|
+        case value
+        when Object then requirement[key.to_sym] = value
+        else raise TypeError, "requirement values must inherit Object"
+        end
+      end
       requirement
     end
 
@@ -62,7 +63,7 @@ module Dependabot
     # or :unfixable when no valid updated requirement can be generated.
     sig { returns(T.nilable(Requirement)) }
     def requirement
-      value = T.cast(self[:requirement], T.nilable(Object))
+      value = self[:requirement]
       return if value.nil?
       return value if value.is_a?(String) || value == :unfixable
 
@@ -82,7 +83,7 @@ module Dependabot
     # the underlying hash access under sorbet-runtime.
     sig { returns(T.nilable(T::Array[Group])) }
     def groups
-      value = T.cast(self[:groups], T.nilable(Object))
+      value = self[:groups]
       return if value.nil?
       raise TypeError, "groups must be an array of strings or symbols, or nil" unless value.is_a?(Array)
 
@@ -101,7 +102,7 @@ module Dependabot
     # parser or deserialised from a job definition.
     sig { returns(T.nilable(Source)) }
     def source
-      value = T.cast(self[:source], T.nilable(Object))
+      value = self[:source]
       return if value.nil?
       return value if value.is_a?(String)
 
@@ -222,7 +223,7 @@ module Dependabot
 
     sig { params(key: Symbol).returns(T.nilable(String)) }
     def optional_string(key)
-      value = T.cast(self[key], T.nilable(Object))
+      value = self[key]
       return if value.nil?
       return value if value.is_a?(String)
 
@@ -231,7 +232,7 @@ module Dependabot
 
     sig { params(key: Symbol).returns(T.nilable(ObjectHash)) }
     def optional_object_hash(key)
-      value = T.cast(self[key], T.nilable(Object))
+      value = self[key]
       return if value.nil?
 
       object_hash(value, key)

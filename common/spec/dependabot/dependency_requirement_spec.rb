@@ -45,6 +45,11 @@ RSpec.describe Dependabot::DependencyRequirement do
 
       expect(requirement[:custom]).to eq(count: 1)
     end
+
+    it "rejects values that do not inherit Object" do
+      expect { described_class.create(requirement_hash.merge(custom: BasicObject.new)) }
+        .to raise_error(TypeError, "requirement values must inherit Object")
+    end
   end
 
   describe "typed readers" do
