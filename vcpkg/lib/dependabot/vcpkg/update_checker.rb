@@ -63,27 +63,33 @@ module Dependabot
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         fix = security_fix
-        return wrap_requirements(security_updated_requirements(fix)) if fix
+        return security_updated_requirements(fix) if fix
         return dependency.requirements unless latest_version
 
-        wrap_requirements(dependency.requirements.map { |requirement| updated_requirement(requirement) })
+        dependency.requirements.map { |requirement| updated_requirement(requirement) }
       end
 
       private
 
       sig do
-        params(requirement: T::Hash[Symbol, T.anything]).returns(T::Hash[Symbol, T.anything])
+        params(requirement: Dependabot::DependencyRequirement)
+          .returns(Dependabot::DependencyRequirement)
       end
       def updated_requirement(requirement)
-        source = T.cast(requirement[:source], T.nilable(T::Hash[Symbol, T.anything]))
+        source = requirement.source_hash
 
         if source && registry_dependency?
           # For git dependencies (baselines), update the git ref with the commit SHA
-          latest_commit_sha = latest_version_finder.latest_release_info&.details&.dig("commit_sha")
-          requirement.merge(source: source.merge(ref: latest_commit_sha))
-        elsif source.nil? && requirement[:requirement]
+          latest_commit_sha = T.cast(
+            latest_version_finder.latest_release_info&.details&.dig("commit_sha"),
+            T.nilable(String)
+          )
+          requirement.source_string("ref")
+          updated_source = hash_with_value(source, "ref", latest_commit_sha)
+          Dependabot::DependencyRequirement.create(requirement.merge(source: updated_source))
+        elsif source.nil? && requirement.requirement
           # For port dependencies (no source but has requirement), update the version constraint
-          requirement.merge(requirement: ">=#{latest_version}")
+          Dependabot::DependencyRequirement.create(requirement.merge(requirement: ">=#{latest_version}"))
         else
           # Keep the original requirement unchanged for other cases
           requirement
@@ -93,22 +99,47 @@ module Dependabot
       # Describes the manifest edit that fixes the advisory, so the file updater can apply it
       # without repeating the resolution.
       sig do
-        params(fix: SecurityFixResolver::Fix).returns(T::Array[T::Hash[Symbol, T.anything]])
+        params(fix: SecurityFixResolver::Fix)
+          .returns(T::Array[Dependabot::DependencyRequirement])
       end
       def security_updated_requirements(fix)
         dependency.requirements.map do |requirement|
-          metadata = T.cast(requirement[:metadata], T.nilable(T::Hash[Symbol, T.untyped])) || {}
-          updated = requirement.merge(
-            metadata: metadata.merge(
-              security_remediation: fix.kind,
-              security_version: fix.version.to_s,
-              baseline_commit_sha: fix.baseline_commit_sha,
-              baseline_tag: fix.baseline_tag
-            )
+          metadata = T.let(
+            requirement.metadata || {},
+            Dependabot::DependencyRequirement::ObjectHash
           )
+          metadata = hash_with_value(metadata, "security_remediation", fix.kind)
+          metadata = hash_with_value(metadata, "security_version", fix.version.to_s)
+          metadata = hash_with_value(metadata, "baseline_commit_sha", fix.baseline_commit_sha)
+          metadata = hash_with_value(metadata, "baseline_tag", fix.baseline_tag)
 
-          fix.kind == :version_constraint ? updated.merge(requirement: ">=#{fix.version}") : updated
+          updated = Dependabot::DependencyRequirement.create(requirement.merge(metadata: metadata))
+          next updated unless fix.kind == :version_constraint
+
+          Dependabot::DependencyRequirement.create(updated.merge(requirement: ">=#{fix.version}"))
         end
+      end
+
+      sig do
+        params(
+          details: Dependabot::DependencyRequirement::ObjectHash,
+          key: String,
+          value: Object
+        ).returns(Dependabot::DependencyRequirement::ObjectHash)
+      end
+      def hash_with_value(details, key, value)
+        updated = details.dup
+        actual_key = if details.key?(key.to_sym)
+                       key.to_sym
+                     elsif details.key?(key)
+                       key
+                     elsif details.empty? || details.keys.any?(Symbol)
+                       key.to_sym
+                     else
+                       key
+                     end
+        updated[actual_key] = value
+        updated
       end
 
       sig { returns(T.nilable(SecurityFixResolver::Fix)) }
@@ -134,13 +165,13 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def registry_dependency?
-        dependency.source_details(allowed_types: ["git"]) in { type: "git" }
+        dependency.source_string("type", allowed_types: ["git"]) == "git"
       end
 
       sig { returns(T::Boolean) }
       def port_dependency?
         # A port dependency has no git source but has a requirement constraint
-        !registry_dependency? && dependency.requirements.any? { |req| req[:requirement] }
+        !registry_dependency? && dependency.requirements.any?(&:requirement)
       end
 
       # A port whose version comes solely from the registry baseline.
@@ -149,7 +180,7 @@ module Dependabot
         return false if registry_dependency?
         return false unless dependency.numeric_version
 
-        dependency.requirements.none? { |requirement| requirement[:requirement] }
+        dependency.requirements.none?(&:requirement)
       end
 
       # `latest_version` may be a version vcpkg cannot order against the current one, which is
