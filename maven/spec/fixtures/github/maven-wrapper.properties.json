@@ -1,0 +1,18 @@
+{
+  "name": "maven-wrapper.properties",
+  "path": ".mvn/wrapper/maven-wrapper.properties",
+  "sha": "abc123def456abc123def456abc123def456abc1",
+  "size": 256,
+  "url": "https://api.github.com/repos/gocardless/business/contents/.mvn/wrapper/maven-wrapper.properties?ref=master",
+  "html_url": "https://github.com/gocardless/business/blob/master/.mvn/wrapper/maven-wrapper.properties",
+  "git_url": "https://api.github.com/repos/gocardless/business/git/blobs/abc123def456abc123def456abc123def456abc1",
+  "download_url": "https://raw.githubusercontent.com/gocardless/business/master/.mvn/wrapper/maven-wrapper.properties",
+  "type": "file",
+  "content": "ZGlzdHJpYnV0aW9uVXJsPWh0dHBzOi8vcmVwby5tYXZlbi5hcGFjaGUub3JnL21hdmVuMi9vcmcv\nYXBhY2hlL21hdmVuL2FwYWNoZS1tYXZlbi8zLjkuOS9hcGFjaGUtbWF2ZW4tMy45LjktYmluLnpp\ncApkaXN0cmlidXRpb25TaGEyNTZTdW09YTU1NTI1NGQ2YjUzZDI2Nzk2NWEzNDA0ZWNiMTRlNTNj\nMzgyN2MwOWMzYjk0YjVjZGJiYTc4NjFhMTQ5ODQwNwpkaXN0cmlidXRpb25UeXBlPW9ubHktc2Ny\naXB0CndyYXBwZXJWZXJzaW9uPTMuMy40Cg==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/gocardless/business/contents/.mvn/wrapper/maven-wrapper.properties?ref=master",
+    "git": "https://api.github.com/repos/gocardless/business/git/blobs/abc123def456abc123def456abc123def456abc1",
+    "html": "https://github.com/gocardless/business/blob/master/.mvn/wrapper/maven-wrapper.properties"
+  }
+}

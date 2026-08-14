@@ -12,7 +12,7 @@ module Dependabot
       require_relative "file_updater/manifest_updater"
       require_relative "file_updater/lockfile_updater"
 
-      MANIFEST_FILENAMES = T.let(%w(deno.json deno.jsonc).freeze, T::Array[String])
+      MANIFEST_FILENAMES = %w(deno.json deno.jsonc).freeze
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files

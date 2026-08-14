@@ -23,6 +23,8 @@ module Dependabot
   module SharedHelpers # rubocop:disable Metrics/ModuleLength
     extend T::Sig
 
+    Command = T.type_alias { T.any(String, T::Array[String]) }
+    CommandArguments = T.type_alias { T::Array[T.any(String, T::Array[String])] }
     USER_AGENT = T.let(
       "dependabot-core/#{Dependabot::VERSION} " \
       "#{Excon::USER_AGENT} ruby/#{RUBY_VERSION} " \
@@ -124,6 +126,26 @@ module Dependabot
     def self.escape_command(command)
       CommandHelpers.escape_command(command)
     end
+
+    sig do
+      params(command: Command, allow_unsafe_shell_command: T::Boolean)
+        .returns([CommandArguments, String])
+    end
+    def self.prepare_command(command, allow_unsafe_shell_command:)
+      unless command.is_a?(Array)
+        prepared_command = allow_unsafe_shell_command ? command : escape_command(command)
+        return [[prepared_command], prepared_command]
+      end
+
+      raise ArgumentError, "command must not be empty" if command.empty?
+      if allow_unsafe_shell_command
+        raise ArgumentError, "allow_unsafe_shell_command cannot be used with an argument vector"
+      end
+
+      executable = T.must(command.first)
+      [[[executable, executable], *command.drop(1)], Shellwords.join(command)]
+    end
+    private_class_method :prepare_command
 
     # rubocop:disable Metrics/MethodLength
     # rubocop:disable Metrics/AbcSize
@@ -461,10 +483,9 @@ module Dependabot
       safe_directories
     end
 
-    # rubocop:disable Metrics/PerceivedComplexity
     sig do
       params(
-        command: String,
+        command: Command,
         allow_unsafe_shell_command: T::Boolean,
         cwd: T.nilable(String),
         env: T.nilable(T::Hash[String, String]),
@@ -485,14 +506,17 @@ module Dependabot
       output_observer: nil
     )
       start = Time.now
-      cmd = allow_unsafe_shell_command ? command : escape_command(command)
+      command_args, command_for_output = prepare_command(
+        command,
+        allow_unsafe_shell_command: allow_unsafe_shell_command
+      )
 
-      puts cmd if ENV["DEBUG_HELPERS"] == "true"
+      puts command_for_output if ENV["DEBUG_HELPERS"] == "true"
 
       opts = {}
       opts[:chdir] = cwd if cwd
 
-      env_cmd = [env || {}, cmd, opts].compact
+      env_cmd = [env || {}, *command_args, opts].compact
       kwargs = {
         stderr_to_stdout: stderr_to_stdout,
         timeout: timeout
@@ -511,7 +535,7 @@ module Dependabot
       return stdout || "" if process&.success?
 
       error_context = {
-        command: cmd,
+        command: command_for_output,
         fingerprint: fingerprint,
         time_taken: time_taken,
         process_exit_value: process.to_s
@@ -524,7 +548,6 @@ module Dependabot
         error_context: error_context
       )
     end
-    # rubocop:enable Metrics/PerceivedComplexity
 
     sig { params(stderr: T.nilable(String), error_context: T::Hash[Symbol, String]).void }
     def self.check_out_of_disk_memory_error(stderr, error_context)

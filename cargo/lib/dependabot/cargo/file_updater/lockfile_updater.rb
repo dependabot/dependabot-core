@@ -32,9 +32,9 @@ module Dependabot
           ).void
         end
         def initialize(dependencies:, dependency_files:, credentials:)
-          @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @dependencies = dependencies
+          @dependency_files = dependency_files
+          @credentials = credentials
           @custom_specifications = T.let({}, T::Hash[String, String])
           @current_dependency = T.let(nil, T.nilable(Dependabot::Dependency))
           @git_ssh_requirements_to_swap = T.let(nil, T.nilable(T::Hash[String, String]))
@@ -255,8 +255,8 @@ module Dependabot
         sig { returns(T.nilable(String)) }
         def git_source_url
           dependency.previous_requirements
-                    &.find { |r| r.dig(:source, :type) == "git" }
-                    &.dig(:source, :url)
+                    &.find { |r| r.source_string("type") == "git" }
+                    &.source_string("url")
         end
 
         sig { returns(String) }
@@ -779,9 +779,9 @@ module Dependabot
         # only when no current git source exists.
         sig { params(key: Symbol).returns(T.nilable(String)) }
         def git_source_detail(key)
-          source = dependency.requirements.find { |r| r.dig(:source, :type) == "git" }&.dig(:source) ||
-                   dependency.previous_requirements&.find { |r| r.dig(:source, :type) == "git" }&.dig(:source)
-          source&.dig(key)
+          requirement = dependency.requirements.find { |r| r.source_string("type") == "git" } ||
+                        dependency.previous_requirements&.find { |r| r.source_string("type") == "git" }
+          requirement&.source_string(key.to_s)
         end
 
         sig do

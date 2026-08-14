@@ -39,7 +39,7 @@ module Dependabot
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
-          @security_updates_only = T.let(security_updates_only, T::Boolean)
+          @security_updates_only = security_updates_only
           @release_age_days = T.let(release_age_days, T.nilable(Integer))
           @error_handler = T.let(
             PnpmErrorHandler.new(

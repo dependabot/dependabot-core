@@ -12,7 +12,7 @@ module Dependabot
     class Requirement < Dependabot::Requirement
       extend T::Sig
 
-      OR_SEPARATOR = T.let(/(?<=[a-zA-Z0-9)*])\s*\|+/, Regexp)
+      OR_SEPARATOR = /(?<=[a-zA-Z0-9)*])\s*\|+/
 
       # Add equality and arbitrary-equality matchers
       OPS = T.let(
@@ -28,8 +28,8 @@ module Dependabot
       version_pattern = Python::Version::VERSION_PATTERN
 
       PATTERN_RAW = T.let("\\s*(?<op>#{quoted})?\\s*(?<version>#{version_pattern})\\s*".freeze, String)
-      PATTERN = T.let(/\A#{PATTERN_RAW}\z/, Regexp)
-      PARENS_PATTERN = T.let(/\A\(([^)]+)\)\z/, Regexp)
+      PATTERN = /\A#{PATTERN_RAW}\z/
+      PARENS_PATTERN = /\A\(([^)]+)\)\z/
 
       sig { params(obj: T.any(Gem::Version, String)).returns([String, Gem::Version]) }
       def self.parse(obj)
@@ -107,11 +107,14 @@ module Dependabot
         req_string = req_string.gsub("~=", "~>")
         req_string = req_string.gsub(/(?<=\d)[<=>].*\Z/, "")
 
-        if req_string.match?(/~[^>]/) then convert_tilde_req(req_string)
-        elsif req_string.start_with?("^") then convert_caret_req(req_string)
+        if req_string.match?(/~[^>]/)
+          convert_tilde_req(req_string)
+        elsif req_string.start_with?("^")
+          convert_caret_req(req_string)
         elsif req_string.match?(/^=?={0,2}\s*\d+\.\d+(\.\d+)?(-[a-z0-9.-]+)?(\.\*)?$/i)
           convert_exact(req_string)
-        elsif req_string.include?(".*") then convert_wildcard(req_string)
+        elsif req_string.include?(".*")
+          convert_wildcard(req_string)
         else
           req_string
         end

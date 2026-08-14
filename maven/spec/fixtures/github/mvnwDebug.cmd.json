@@ -1,0 +1,18 @@
+{
+  "name": "mvnwDebug.cmd",
+  "path": "mvnwDebug.cmd",
+  "sha": "efg567hi8901efg567hi8901efg567hi8901efg5",
+  "size": 72,
+  "url": "https://api.github.com/repos/gocardless/business/contents/mvnwDebug.cmd?ref=master",
+  "html_url": "https://github.com/gocardless/business/blob/master/mvnwDebug.cmd",
+  "git_url": "https://api.github.com/repos/gocardless/business/git/blobs/efg567hi8901efg567hi8901efg567hi8901efg5",
+  "download_url": "https://raw.githubusercontent.com/gocardless/business/master/mvnwDebug.cmd",
+  "type": "file",
+  "content": "QFJFTSBBcGFjaGUgTWF2ZW4gV3JhcHBlciBkZWJ1ZyBiYXRjaCBzY3JpcHQsIHZlcnNpb24gMy4z\nLjQKbXZuICUqCg==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/gocardless/business/contents/mvnwDebug.cmd?ref=master",
+    "git": "https://api.github.com/repos/gocardless/business/git/blobs/efg567hi8901efg567hi8901efg567hi8901efg5",
+    "html": "https://github.com/gocardless/business/blob/master/mvnwDebug.cmd"
+  }
+}

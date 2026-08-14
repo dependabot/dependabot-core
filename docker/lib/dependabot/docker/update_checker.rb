@@ -52,24 +52,18 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
-      MANIFEST_LIST_TYPES = T.let(
-        [
-          "application/vnd.docker.distribution.manifest.list.v2+json",
-          "application/vnd.oci.image.index.v1+json"
-        ].freeze,
-        T::Array[String]
-      )
+      MANIFEST_LIST_TYPES = [
+        "application/vnd.docker.distribution.manifest.list.v2+json",
+        "application/vnd.oci.image.index.v1+json"
+      ].freeze
 
       # Media types returned for single-platform (non manifest-list) images.
       # Used to cheaply rule out manifest-list comparison via a HEAD request's
       # negotiated Content-Type, avoiding a full manifest GET for these images.
-      SINGLE_PLATFORM_MANIFEST_TYPES = T.let(
-        [
-          "application/vnd.docker.distribution.manifest.v2+json",
-          "application/vnd.oci.image.manifest.v1+json"
-        ].freeze,
-        T::Array[String]
-      )
+      SINGLE_PLATFORM_MANIFEST_TYPES = [
+        "application/vnd.docker.distribution.manifest.v2+json",
+        "application/vnd.oci.image.manifest.v1+json"
+      ].freeze
 
       # Tolerance window for platform timestamp comparison.
       # Multi-arch CI builds may finish platforms at slightly different times.
@@ -78,7 +72,7 @@ module Dependabot
       # Maximum number of candidates to run platform timestamp validation against.
       # Each validation can require 1 + 1 + N*2 registry API calls for N platforms,
       # so we cap the attempts to avoid rate limiting or excessive latency.
-      MAX_PLATFORM_VALIDATION_ATTEMPTS = T.let(5, Integer)
+      MAX_PLATFORM_VALIDATION_ATTEMPTS = 5
 
       # Page size used when listing tags from a registry. Without an explicit page
       # size, registries such as Docker Hub try to return every tag in a single
@@ -86,7 +80,7 @@ module Dependabot
       # (e.g. hexpm/elixir has ~1M tags). Requesting a bounded page keeps each
       # request fast; the client then follows the registry's pagination links to
       # collect the remaining tags.
-      TAGS_PAGE_SIZE = T.let(100, Integer)
+      TAGS_PAGE_SIZE = 100
 
       DockerSource = T.type_alias do
         T::Hash[Symbol, T.nilable(String)]
@@ -163,23 +157,25 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        updated = dependency.requirements.map do |req|
-          updated_source = req.fetch(:source).dup
-
-          tag = req[:source][:tag]
-          digest = req[:source][:digest]
+        dependency.requirements.map do |req|
+          updated_source = T.must(req.source_hash).dup
+          source = docker_source(req)
+          tag = source[:tag]
+          digest = source[:digest]
 
           if tag
             updated_tag = latest_version_from(tag)
-            updated_source[:tag] = updated_tag
-            updated_source[:digest] = resolved_digest_for(tag, updated_tag, digest) if digest || pin_digests?
+            set_source_string(updated_source, "tag", updated_tag)
+            if digest || pin_digests?
+              set_source_string(updated_source, "digest", resolved_digest_for(tag, updated_tag, digest))
+            end
           elsif digest
-            updated_source[:digest] = digest_within_cooldown?("latest") ? digest : digest_of("latest")
+            updated_digest = digest_within_cooldown?("latest") ? digest : digest_of("latest")
+            set_source_string(updated_source, "digest", updated_digest)
           end
 
-          req.merge(source: updated_source)
+          Dependabot::DependencyRequirement.create(req.merge(source: updated_source))
         end
-        wrap_requirements(updated)
       end
 
       private
@@ -242,8 +238,8 @@ module Dependabot
 
       sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
       def digest_requirement_up_to_date?(req)
-        source = req.fetch(:source)
-        source_digest = source.fetch(:digest)
+        source = docker_source(req)
+        source_digest = T.must(source[:digest])
         source_tag = source[:tag]
 
         if source_tag
@@ -864,11 +860,7 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def registry_hostname
-        if dependency.requirements.first&.dig(:source, :registry)
-          return T.must(dependency.requirements.first).dig(:source, :registry)
-        end
-
-        credentials_finder.base_registry
+        dependency.requirements.first&.source_string("registry") || credentials_finder.base_registry
       end
 
       sig { returns(T::Boolean) }
@@ -1000,7 +992,35 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def digest_requirements
         dependency.requirements.select do |requirement|
-          requirement.dig(:source, :digest)
+          requirement.source_string("digest")
+        end
+      end
+
+      sig { params(requirement: Dependabot::DependencyRequirement).returns(DockerSource) }
+      def docker_source(requirement)
+        raise TypeError, "Docker source must be a hash" if requirement.source_hash.nil?
+
+        {
+          registry: requirement.source_string("registry"),
+          tag: requirement.source_string("tag"),
+          digest: requirement.source_string("digest"),
+          platform: requirement.source_string("platform")
+        }
+      end
+
+      sig do
+        params(
+          source: Dependabot::DependencyRequirement::ObjectHash,
+          key: String,
+          value: T.nilable(String)
+        ).void
+      end
+      def set_source_string(source, key, value)
+        symbol_key = key.to_sym
+        if source.key?(key) && !source.key?(symbol_key)
+          source[key] = value
+        else
+          source[symbol_key] = value
         end
       end
 

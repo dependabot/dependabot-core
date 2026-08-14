@@ -39,10 +39,10 @@ module Dependabot
         ).void
       end
       def initialize(dependency_snapshot, error_handler, job, group)
-        @dependency_snapshot = T.let(dependency_snapshot, Dependabot::DependencySnapshot)
-        @error_handler = T.let(error_handler, Dependabot::Updater::ErrorHandler)
-        @job = T.let(job, Dependabot::Job)
-        @group = T.let(group, Dependabot::DependencyGroup)
+        @dependency_snapshot = dependency_snapshot
+        @error_handler = error_handler
+        @job = job
+        @group = group
       end
 
       sig { returns(Dependabot::DependencySnapshot) }

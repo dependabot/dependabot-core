@@ -15,6 +15,14 @@ module Dependabot
     class FileParser < Dependabot::FileParsers::Base
       extend T::Sig
 
+      ParsedDependency = T.type_alias do
+        {
+          name: String,
+          version: T.nilable(String),
+          requirements: T::Array[Dependabot::DependencyRequirement]
+        }
+      end
+
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependencies = T.let([], T::Array[Dependabot::Dependency])
@@ -99,13 +107,13 @@ module Dependabot
           parsed_dep = parse_conda_dependency_string(dep, file)
           next unless parsed_dep
 
-          name = T.cast(parsed_dep[:name], String)
+          name = parsed_dep[:name]
           next if name == "pip"
 
           parsed_dependencies << create_dependency(
             name: name,
-            version: T.cast(parsed_dep[:version], T.nilable(String)),
-            requirements: T.cast(parsed_dep[:requirements], T::Array[T::Hash[Symbol, T.anything]]),
+            version: parsed_dep[:version],
+            requirements: parsed_dep[:requirements],
             package_manager: "conda"
           )
         end
@@ -137,9 +145,9 @@ module Dependabot
           next unless parsed_dep
 
           parsed_dependencies << create_dependency(
-            name: T.cast(parsed_dep[:name], String),
-            version: T.cast(parsed_dep[:version], T.nilable(String)),
-            requirements: T.cast(parsed_dep[:requirements], T::Array[T::Hash[Symbol, T.anything]]),
+            name: parsed_dep[:name],
+            version: parsed_dep[:version],
+            requirements: parsed_dep[:requirements],
             package_manager: "pip"
           )
         end
@@ -147,9 +155,7 @@ module Dependabot
         parsed_dependencies
       end
 
-      sig do
-        params(dep_string: String, file: Dependabot::DependencyFile).returns(T.nilable(T::Hash[Symbol, T.anything]))
-      end
+      sig { params(dep_string: String, file: Dependabot::DependencyFile).returns(T.nilable(ParsedDependency)) }
       def parse_conda_dependency_string(dep_string, file)
         return nil if dep_string.nil?
 
@@ -168,7 +174,7 @@ module Dependabot
         match = normalized_dep_string.match(/^([a-zA-Z0-9_.-]+)(?:\s*(.+))?$/)
         return nil unless match
 
-        name = match[1]
+        name = T.must(match[1])
         constraint = match[2]&.strip
 
         version = extract_conda_version(constraint)
@@ -221,27 +227,25 @@ module Dependabot
           constraint: T.nilable(String),
           file: Dependabot::DependencyFile,
           channel: T.nilable(String)
-        ).returns(T::Array[T::Hash[Symbol, T.anything]])
+        ).returns(T::Array[Dependabot::DependencyRequirement])
       end
       def build_conda_requirements(constraint, file, channel = nil)
         source = channel ? { channel: channel } : nil
 
-        [{
+        [Dependabot::DependencyRequirement.create(
           requirement: constraint && !constraint.empty? ? constraint : nil,
           file: file.name,
           source: source,
           groups: ["dependencies"]
-        }]
+        )]
       end
 
-      sig do
-        params(dep_string: String, file: Dependabot::DependencyFile).returns(T.nilable(T::Hash[Symbol, T.anything]))
-      end
+      sig { params(dep_string: String, file: Dependabot::DependencyFile).returns(T.nilable(ParsedDependency)) }
       def parse_pip_dependency_string(dep_string, file)
         match = dep_string.match(/^([a-zA-Z0-9_.-]+)(?:\s*(==|>=|>|<=|<|!=|~=)\s*([0-9][a-zA-Z0-9._+-]*))?$/)
         return nil unless match
 
-        name = match[1]
+        name = T.must(match[1])
         operator = match[2]
         version = match[3]
 
@@ -259,16 +263,15 @@ module Dependabot
           end
         end
 
-        requirements = if operator && version
-                         [{
-                           requirement: "#{operator}#{version}",
-                           file: file.name,
-                           source: nil,
-                           groups: ["pip"]
-                         }]
-                       else
-                         []
-                       end
+        requirements = T.let([], T::Array[Dependabot::DependencyRequirement])
+        if operator && version
+          requirements << Dependabot::DependencyRequirement.create(
+            requirement: "#{operator}#{version}",
+            file: file.name,
+            source: nil,
+            groups: ["pip"]
+          )
+        end
 
         {
           name: name,
@@ -281,7 +284,7 @@ module Dependabot
         params(
           name: String,
           version: T.nilable(String),
-          requirements: T::Array[T::Hash[Symbol, T.anything]],
+          requirements: T::Array[Dependabot::DependencyRequirement],
           package_manager: String
         ).returns(Dependabot::Dependency)
       end

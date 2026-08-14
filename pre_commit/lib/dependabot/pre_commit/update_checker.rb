@@ -50,23 +50,17 @@ module Dependabot
         return wrap_requirements(additional_dependency_updated_requirements) if additional_dependency?
 
         updated_reqs = dependency.requirements.map do |req|
-          source = T.cast(req[:source], T.nilable(T::Hash[Symbol, Object]))
+          source = req.source_hash
+          next req unless source
+
           updated = updated_ref(source)
           next req unless updated
 
-          current = T.cast(source&.[](:ref), T.nilable(String))
-
-          # Maintain short git hash when the updated SHA starts with the current SHA
-          if T.cast(req[:type], T.nilable(String)) == "git" &&
-             git_commit_checker.ref_looks_like_commit_sha?(updated) &&
-             current && git_commit_checker.ref_looks_like_commit_sha?(current) &&
-             updated.start_with?(current)
-            next req
-          end
-
-          new_source = T.must(source).merge(ref: updated)
+          new_source = hash_with_value(source, "ref", updated)
           new_metadata = updated_comment_version_metadata(req, updated)
-          req.merge(source: new_source, metadata: new_metadata)
+          Dependabot::DependencyRequirement.create(
+            req.merge(source: new_source, metadata: new_metadata)
+          )
         end
         wrap_requirements(updated_reqs)
       end
@@ -166,7 +160,10 @@ module Dependabot
         )
       end
 
-      sig { params(source: T.nilable(T::Hash[Symbol, Object])).returns(T.nilable(String)) }
+      sig do
+        params(source: T.nilable(Dependabot::DependencyRequirement::ObjectHash))
+          .returns(T.nilable(String))
+      end
       def updated_ref(source)
         return unless git_commit_checker.git_dependency?
 
@@ -213,13 +210,13 @@ module Dependabot
 
       sig do
         params(
-          req: T::Hash[Symbol, Object],
+          req: Dependabot::DependencyRequirement,
           new_ref: String
-        ).returns(T::Hash[Symbol, Object])
+        ).returns(Dependabot::DependencyRequirement::ObjectHash)
       end
       def updated_comment_version_metadata(req, new_ref)
-        existing_metadata = T.cast(req.fetch(:metadata, {}), T::Hash[Symbol, Object])
-        comment = T.cast(existing_metadata[:comment], T.nilable(String))
+        existing_metadata = req.metadata || {}
+        comment = req.metadata_string("comment")
         return existing_metadata unless comment
 
         old_version = extract_version_from_comment(comment)
@@ -228,7 +225,8 @@ module Dependabot
         new_version = resolve_new_comment_version(new_ref)
         return existing_metadata unless new_version
 
-        existing_metadata.merge(comment_version: old_version, new_comment_version: new_version)
+        updated = hash_with_value(existing_metadata, "comment_version", old_version)
+        hash_with_value(updated, "new_comment_version", new_version)
       end
 
       sig { params(comment: String).returns(T.nilable(String)) }
@@ -243,10 +241,7 @@ module Dependabot
           begin
             comment = T.let(
               @dependency.requirements
-                .filter_map do |req|
-                  val = T.cast(req.fetch(:metadata, {}), T::Hash[Symbol, Object])[:comment]
-                  T.cast(val, T.nilable(String))
-                end
+                .filter_map { |req| req.metadata_string("comment") }
                 .first,
               T.nilable(String)
             )
@@ -310,16 +305,14 @@ module Dependabot
         requirement = dependency.requirements.first
         return false unless requirement
 
-        source = T.cast(requirement[:source], T.nilable(T::Hash[Symbol, Object]))
-        return false unless source
-
-        T.cast(source[:type], T.nilable(String)) == "additional_dependency"
+        requirement.source_string("type") == "additional_dependency"
       end
 
       sig { returns(T.nilable(T.any(String, Gem::Version))) }
       def additional_dependency_latest_version
-        source = T.cast(dependency.requirements.first&.dig(:source), T::Hash[Symbol, Object])
-        language = T.cast(source[:language], T.nilable(String))
+        requirement = T.must(dependency.requirements.first)
+        source = T.must(requirement.source_hash)
+        language = requirement.source_string("language")
         return nil unless language && AdditionalDependencyCheckers.supported?(language)
 
         checker = additional_dependency_checker(language, source)
@@ -331,10 +324,11 @@ module Dependabot
         latest
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def additional_dependency_updated_requirements
-        source = T.cast(dependency.requirements.first&.dig(:source), T::Hash[Symbol, Object])
-        language = T.cast(source[:language], T.nilable(String))
+        requirement = T.must(dependency.requirements.first)
+        source = T.must(requirement.source_hash)
+        language = requirement.source_string("language")
         return dependency.requirements unless language && AdditionalDependencyCheckers.supported?(language)
 
         checker = additional_dependency_checker(language, source)
@@ -349,7 +343,7 @@ module Dependabot
       sig do
         params(
           language: String,
-          source: T::Hash[Symbol, Object]
+          source: Dependabot::DependencyRequirement::ObjectHash
         ).returns(T.nilable(Dependabot::PreCommit::AdditionalDependencyCheckers::Base))
       end
       def additional_dependency_checker(language, source)
@@ -364,6 +358,28 @@ module Dependabot
       rescue StandardError => e
         Dependabot.logger.error("Error creating checker for #{language}: #{e.message}")
         nil
+      end
+
+      sig do
+        params(
+          hash: Dependabot::DependencyRequirement::ObjectHash,
+          key: String,
+          value: Object
+        ).returns(Dependabot::DependencyRequirement::ObjectHash)
+      end
+      def hash_with_value(hash, key, value)
+        updated = hash.dup
+        actual_key = if hash.key?(key.to_sym)
+                       key.to_sym
+                     elsif hash.key?(key)
+                       key
+                     elsif hash.keys.any?(Symbol)
+                       key.to_sym
+                     else
+                       key
+                     end
+        updated[actual_key] = value
+        updated
       end
     end
   end

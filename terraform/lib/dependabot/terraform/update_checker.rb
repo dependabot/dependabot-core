@@ -18,10 +18,7 @@ module Dependabot
 
       require_relative "update_checker/latest_version_resolver"
 
-      ELIGIBLE_SOURCE_TYPES = T.let(
-        %w(git provider registry).freeze,
-        T::Array[String]
-      )
+      ELIGIBLE_SOURCE_TYPES = %w(git provider registry).freeze
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
@@ -95,13 +92,13 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::Terraform::Version]) }
       def all_module_versions
-        identifier = dependency_source_details&.fetch(:module_identifier)
+        identifier = T.must(dependency.source_string("module_identifier", allowed_types: ELIGIBLE_SOURCE_TYPES))
         registry_client.all_module_versions(identifier: identifier)
       end
 
       sig { returns(T::Array[Dependabot::Terraform::Version]) }
       def all_provider_versions
-        identifier = dependency_source_details&.fetch(:module_identifier)
+        identifier = T.must(dependency.source_string("module_identifier", allowed_types: ELIGIBLE_SOURCE_TYPES))
         registry_client.all_provider_versions(identifier: identifier)
       end
 
@@ -118,7 +115,10 @@ module Dependabot
 
       sig { returns(String) }
       def registry_hostname
-        hostname = dependency_source_details&.fetch(:registry_hostname) || RegistryClient::PUBLIC_HOSTNAME
+        hostname = dependency.source_string(
+          "registry_hostname",
+          allowed_types: ELIGIBLE_SOURCE_TYPES
+        ) || RegistryClient::PUBLIC_HOSTNAME
         return hostname unless hostname == RegistryClient::PUBLIC_HOSTNAME
 
         base_registry = credentials.find do |cred|
@@ -158,7 +158,7 @@ module Dependabot
         end
 
         dependency.requirements.any? do |req|
-          req[:requirement]&.match?(/\d-[A-Za-z0-9]/)
+          req.requirement_string&.match?(/\d-[A-Za-z0-9]/)
         end
       end
 
@@ -201,28 +201,17 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def proxy_requirement?
-        dependency.requirements.any? do |req|
-          req.fetch(:source)&.fetch(:proxy_url, nil)
-        end
+        dependency.requirements.any? { |req| req.source_string("proxy_url") }
       end
 
       sig { returns(T::Boolean) }
       def registry_dependency?
-        return false if dependency_source_details.nil?
-
-        dependency_source_details&.fetch(:type) == "registry"
+        dependency.source_string("type", allowed_types: ELIGIBLE_SOURCE_TYPES) == "registry"
       end
 
       sig { returns(T::Boolean) }
       def provider_dependency?
-        return false if dependency_source_details.nil?
-
-        dependency_source_details&.fetch(:type) == "provider"
-      end
-
-      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.untyped])) }
-      def dependency_source_details
-        dependency.source_details(allowed_types: ELIGIBLE_SOURCE_TYPES)
+        dependency.source_string("type", allowed_types: ELIGIBLE_SOURCE_TYPES) == "provider"
       end
 
       sig { returns(T::Boolean) }

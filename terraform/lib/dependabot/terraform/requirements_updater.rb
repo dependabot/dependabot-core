@@ -85,7 +85,7 @@ module Dependabot
         # requirement at index `i` to correspond to the previous requirement
         # at the same index.
         requirements.map do |req|
-          case req.dig(:source, :type)
+          case req.source_string("type")
           when "git" then update_git_requirement(req)
           when "registry", "provider" then update_registry_requirement(req)
           else req
@@ -106,25 +106,28 @@ module Dependabot
 
       sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
       def update_git_requirement(req)
-        return req unless req.dig(:source, :ref)
+        return req unless req.source_string("ref")
         return req unless tag_for_latest_version
 
-        Dependabot::DependencyRequirement.create(req.merge(source: req[:source].merge(ref: tag_for_latest_version)))
+        source = updated_source(req, "ref" => tag_for_latest_version)
+        Dependabot::DependencyRequirement.create(req.merge(source: source))
       end
 
       sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
       def update_registry_requirement(req)
-        return req if req.fetch(:requirement).nil?
+        string_req = req.requirement_string
+        return req if string_req.nil?
 
         latest = latest_version
         return req if latest.nil?
 
-        string_req = req.fetch(:requirement).strip
+        string_req = string_req.strip
         ruby_req = requirement_class.new(string_req)
         return req if ruby_req.satisfied_by?(latest)
 
         new_req =
-          if ruby_req.exact? then latest.to_s
+          if ruby_req.exact?
+            latest.to_s
           elsif string_req.start_with?("~>")
             update_twiddle_version(string_req).to_s
           else
@@ -132,6 +135,33 @@ module Dependabot
           end
 
         Dependabot::DependencyRequirement.create(req.merge(requirement: new_req))
+      end
+
+      sig do
+        params(
+          req: Dependabot::DependencyRequirement,
+          updates: T::Hash[String, String]
+        ).returns(Dependabot::DependencyRequirement::ObjectHash)
+      end
+      def updated_source(req, updates)
+        source = T.must(req.source_hash).dup
+        updates.each do |key, value|
+          source[source_key(source, key)] = value
+        end
+        source
+      end
+
+      sig do
+        params(
+          source: Dependabot::DependencyRequirement::ObjectHash,
+          key: String
+        ).returns(T.any(String, Symbol))
+      end
+      def source_key(source, key)
+        return key.to_sym if source.key?(key.to_sym)
+        return key if source.key?(key)
+
+        source.keys.any?(Symbol) ? key.to_sym : key
       end
 
       # Updates the version in a "~>" constraint to allow the given version

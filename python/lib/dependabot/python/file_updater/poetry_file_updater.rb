@@ -45,7 +45,7 @@ module Dependabot
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
-          @cooldown = T.let(cooldown, T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+          @cooldown = cooldown
           @updated_dependency_files = T.let(nil, T.nilable(T::Array[Dependabot::DependencyFile]))
           @prepared_pyproject = T.let(nil, T.nilable(String))
           @pyproject = T.let(nil, T.nilable(Dependabot::DependencyFile))
@@ -99,7 +99,7 @@ module Dependabot
           updated_content = content.dup
 
           dependency.requirements.zip(T.must(dependency.previous_requirements)).each do |new_r, old_r|
-            next unless new_r[:file] == pyproject&.name && T.must(old_r)[:file] == pyproject&.name
+            next unless new_r.file == pyproject&.name && T.must(old_r).file == pyproject&.name
 
             updated_content = replace_dep(dependency, T.must(updated_content), new_r, T.must(old_r))
           end
@@ -109,7 +109,7 @@ module Dependabot
           updated_content
         end
 
-        sig { params(dep: Dependabot::Dependency, content: String, new_r: T::Hash[Symbol, T.untyped], old_r: T::Hash[Symbol, T.untyped]).returns(String) }
+        sig { params(dep: Dependabot::Dependency, content: String, new_r: Dependabot::DependencyRequirement, old_r: Dependabot::DependencyRequirement).returns(String) }
         def replace_dep(dep, content, new_r, old_r)
           return update_git_tag(dep, content, new_r, old_r) if git_dependency?(new_r) && git_dependency?(old_r)
 
@@ -119,10 +119,10 @@ module Dependabot
             content
         end
 
-        sig { params(dep: Dependabot::Dependency, content: String, new_r: T::Hash[Symbol, T.untyped], old_r: T::Hash[Symbol, T.untyped]).returns(T.nilable(String)) }
+        sig { params(dep: Dependabot::Dependency, content: String, new_r: Dependabot::DependencyRequirement, old_r: Dependabot::DependencyRequirement).returns(T.nilable(String)) }
         def replace_poetry_dep(dep, content, new_r, old_r)
-          new_req = new_r[:requirement]
-          old_req = old_r[:requirement]
+          new_req = T.must(new_r.requirement_string)
+          old_req = T.must(old_r.requirement_string)
 
           declaration_regex = declaration_regex(dep, old_r)
           declaration_match = content.match(declaration_regex)
@@ -135,10 +135,10 @@ module Dependabot
           content.sub(T.must(declaration), new_declaration)
         end
 
-        sig { params(dep: Dependabot::Dependency, content: String, new_r: T::Hash[Symbol, T.untyped], old_r: T::Hash[Symbol, T.untyped]).returns(T.nilable(String)) }
+        sig { params(dep: Dependabot::Dependency, content: String, new_r: Dependabot::DependencyRequirement, old_r: Dependabot::DependencyRequirement).returns(T.nilable(String)) }
         def replace_poetry_table_dep(dep, content, new_r, old_r)
-          old_req = old_r[:requirement]
-          new_req = new_r[:requirement]
+          old_req = T.must(old_r.requirement_string)
+          new_req = T.must(new_r.requirement_string)
           regex = table_declaration_regex(dep, new_r)
 
           return unless content.match(regex)
@@ -151,20 +151,20 @@ module Dependabot
           end
         end
 
-        sig { params(dep: Dependabot::Dependency, content: String, new_r: T::Hash[Symbol, T.untyped], old_r: T::Hash[Symbol, T.untyped]).returns(T.nilable(String)) }
+        sig { params(dep: Dependabot::Dependency, content: String, new_r: Dependabot::DependencyRequirement, old_r: Dependabot::DependencyRequirement).returns(T.nilable(String)) }
         def replace_pep621_dep(dep, content, new_r, old_r)
           Pep621Updater.new(dep: dep).replace(content, new_r, old_r)
         end
 
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
+        sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
         def git_dependency?(req)
-          req.dig(:source, :type) == "git"
+          req.source_string("type") == "git"
         end
 
-        sig { params(dep: Dependabot::Dependency, content: String, new_r: T::Hash[Symbol, T.untyped], old_r: T::Hash[Symbol, T.untyped]).returns(String) }
+        sig { params(dep: Dependabot::Dependency, content: String, new_r: Dependabot::DependencyRequirement, old_r: Dependabot::DependencyRequirement).returns(String) }
         def update_git_tag(dep, content, new_r, old_r)
-          old_tag = old_r.dig(:source, :ref)
-          new_tag = new_r.dig(:source, :ref)
+          old_tag = old_r.source_string("ref")
+          new_tag = new_r.source_string("ref")
 
           return content if old_tag == new_tag
 
@@ -172,7 +172,7 @@ module Dependabot
           # Example: fastapi = { git = "...", extras = ["all"], tag = "0.110.0" }
           git_dep_regex = /
             ^(\s*)#{Regexp.escape(dep.name)}(\s*=\s*\{[^}]*tag\s*=\s*)
-            ["']#{Regexp.escape(old_tag)}["']([^}]*\})
+            ["']#{Regexp.escape(T.must(old_tag))}["']([^}]*\})
           /mx
 
           content.gsub(git_dep_regex) do
@@ -233,7 +233,7 @@ module Dependabot
               # Skip Git dependencies - they use tags/refs, not versions
               next if git_dependency_being_updated?(dep)
 
-              if dep.requirements.find { |r| r[:file] == pyproject&.name }
+              if dep.requirements.find { |r| r.file == pyproject&.name }
                 lock_declaration_to_new_version!(poetry_object, dep)
               else
                 create_declaration_at_new_version!(poetry_object, dep)
@@ -302,7 +302,7 @@ module Dependabot
 
         sig { params(dep: Dependabot::Dependency).returns(T::Boolean) }
         def git_dependency_being_updated?(dep)
-          dep.requirements.any? { |r| r.dig(:source, :type) == "git" }
+          dep.requirements.any? { |r| r.source_string("type") == "git" }
         end
 
         sig { params(pyproject_content: String).returns(String) }
@@ -382,17 +382,17 @@ module Dependabot
           end
         end
 
-        sig { params(dep: Dependabot::Dependency, old_req: T::Hash[Symbol, T.untyped]).returns(Regexp) }
+        sig { params(dep: Dependabot::Dependency, old_req: Dependabot::DependencyRequirement).returns(Regexp) }
         def declaration_regex(dep, old_req)
-          group = old_req[:groups].first
+          group = T.must(old_req.groups).first
 
           header_regex = "#{group}(?:\\.dependencies)?\\]\s*(?:\s*#.*?)*?"
           /#{header_regex}(?:\r?\n).*?(?<declaration>(?:^\s*|["'])#{escape(dep)}["']?\s*=[^\r\n]*)(?=\r?\n|$)/mi
         end
 
-        sig { params(dep: Dependabot::Dependency, old_req: T::Hash[Symbol, T.untyped]).returns(Regexp) }
+        sig { params(dep: Dependabot::Dependency, old_req: Dependabot::DependencyRequirement).returns(Regexp) }
         def table_declaration_regex(dep, old_req)
-          /tool\.poetry\.#{old_req[:groups].first}\.#{escape(dep)}\](?:\r?\n).*?\s*version\s* =.*?(?:\r?\n)/m
+          /tool\.poetry\.#{T.must(old_req.groups).first}\.#{escape(dep)}\](?:\r?\n).*?\s*version\s* =.*?(?:\r?\n)/m
         end
 
         sig { params(dep: Dependency).returns(String) }
@@ -410,7 +410,7 @@ module Dependabot
           changed_requirements =
             dependency.requirements - T.must(dependency.previous_requirements)
 
-          changed_requirements.any? { |f| f[:file] == file.name }
+          changed_requirements.any? { |f| f.file == file.name }
         end
 
         sig { params(file: Dependabot::DependencyFile, content: String).returns(Dependabot::DependencyFile) }

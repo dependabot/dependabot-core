@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -79,7 +79,7 @@ module Dependabot
       def requirement_changed?(file, dependency)
         changed_requirements = dependency.requirements - T.must(dependency.previous_requirements)
 
-        changed_requirements.any? { |f| f[:file] == file.name }
+        changed_requirements.any? { |f| f.file == file.name }
       end
 
       sig { params(file: Dependabot::DependencyFile, content: String).returns(Dependabot::DependencyFile) }

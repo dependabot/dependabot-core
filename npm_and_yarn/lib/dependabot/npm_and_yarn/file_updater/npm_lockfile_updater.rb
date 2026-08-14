@@ -47,8 +47,8 @@ module Dependabot
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
-          @security_updates_only = T.let(security_updates_only, T::Boolean)
-          @release_age_days = T.let(release_age_days, T.nilable(Integer))
+          @security_updates_only = security_updates_only
+            @release_age_days = T.let(release_age_days, T.nilable(Integer))
         end
 
         sig { returns(Dependabot::DependencyFile) }
@@ -490,7 +490,7 @@ module Dependabot
 
         sig { params(dependency: Dependabot::Dependency).returns(String) }
         def npm_install_args(dependency)
-          git_requirement = dependency.requirements.find { |req| req[:source] && req[:source][:type] == "git" }
+          git_requirement = dependency.requirements.find { |req| req.source_string("type") == "git" }
 
           if git_requirement
             # NOTE: For git dependencies we loose some information about the
@@ -499,7 +499,7 @@ module Dependabot
             # `dependabot/depeendabot-core#semver:^0.1` - this is required to
             # pass the correct install argument to `npm install`
             updated_version_requirement = updated_version_requirement_for_dependency(dependency)
-            updated_version_requirement ||= git_requirement[:source][:url]
+            updated_version_requirement ||= T.must(git_requirement.source_string("url"))
 
             # NOTE: Git is configured to auth over https while updating
             updated_version_requirement = updated_version_requirement.gsub(
@@ -508,7 +508,7 @@ module Dependabot
 
             # NOTE: Keep any semver range that has already been updated by the
             # PackageJsonUpdater when installing the new version
-            if updated_version_requirement.include?(dependency.version)
+            if updated_version_requirement.include?(T.must(dependency.version))
               "#{dependency.name}@#{updated_version_requirement}"
             else
               "#{dependency.name}@#{updated_version_requirement.sub(/#.*/, '')}##{dependency.version}"
@@ -521,7 +521,7 @@ module Dependabot
         sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
         def dependency_in_package_json?(dependency)
           dependency.requirements.any? do |req|
-            req[:file] == T.must(package_json).name
+            req.file == T.must(package_json).name
           end
         end
 
@@ -535,7 +535,7 @@ module Dependabot
         sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
         def optional_dependency?(dependency)
           dependency.requirements.any? do |req|
-            req[:groups]&.include?("optionalDependencies")
+            req.groups&.include?("optionalDependencies") || false
           end
         end
 

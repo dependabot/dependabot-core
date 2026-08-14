@@ -3663,13 +3663,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:requirements) { [] }
         let(:previous_requirements) { nil }
 
+        # The yarn sub-dependency updater deletes the entries and reinstalls, so
+        # yarn resolves the ranges against the registry rather than the version
+        # requested above. Match the resolved version loosely, otherwise every
+        # js-yaml 3.x release breaks this spec.
         it "de-duplicates all entries to the same version" do
           expect(updated_files.map(&:name)).to contain_exactly("yarn.lock")
           expect(updated_yarn_lock.content)
-            .to include(
-              "js-yaml@^3.10.0, js-yaml@^3.4.6, js-yaml@^3.9.0:\n" \
-              '  version "3.15.0"'
-            )
+            .to match(/js-yaml@\^3\.10\.0, js-yaml@\^3\.4\.6, js-yaml@\^3\.9\.0:\n  version "3\.\d+\.\d+"/)
         end
       end
 
@@ -3990,10 +3991,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:requirements) { [] }
         let(:previous_requirements) { nil }
 
+        # As with the yarn spec above, pnpm resolves the ranges against the
+        # registry, so assert a single resolved 3.x entry rather than a literal
+        # version that every js-yaml release invalidates.
         it "de-duplicates all entries to the same version" do
           expect(updated_files.map(&:name)).to contain_exactly("pnpm-lock.yaml")
 
-          expect(updated_pnpm_lock.content).to include("js-yaml@3.15.0:\n    resolution").once
+          expect(updated_pnpm_lock.content.scan(/js-yaml@3\.\d+\.\d+:\n    resolution/).size).to eq(1)
         end
       end
 

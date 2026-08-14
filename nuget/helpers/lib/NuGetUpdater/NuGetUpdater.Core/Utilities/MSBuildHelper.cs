@@ -557,7 +557,6 @@ internal static partial class MSBuildHelper
         }
 
         var targets = stdOut.Split('\n')
-            .Skip(1) // first line is msbuild info
             .Select(l => l.Trim())
             .Where(l => !string.IsNullOrEmpty(l))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
