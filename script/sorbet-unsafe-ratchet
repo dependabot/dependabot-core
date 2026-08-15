@@ -12,20 +12,14 @@ require "open3"
 
 BASE_REF = ENV.fetch("BASE_REF", "origin/main")
 PATTERN = /T\.unsafe/
+PRODUCTION_RUBY_PATH = %r{\A[^/]+/lib/.*\.rb\z}
 
-def tracked_ruby_files
-  stdout, stderr, status = Open3.capture3(
-    "git",
-    "ls-files",
-    "-z",
-    "--",
-    "common/lib/**/*.rb",
-    "updater/lib/**/*.rb",
-    "*/lib/**/*.rb"
-  )
-  raise "git ls-files failed: #{stderr}" unless status.success?
+def tracked_ruby_files(ref = nil)
+  command = ref ? ["git", "ls-tree", "-r", "-z", "--name-only", ref] : ["git", "ls-files", "-z"]
+  stdout, stderr, status = Open3.capture3(*command)
+  raise "#{command.take(2).join(' ')} failed: #{stderr}" unless status.success?
 
-  stdout.split("\0")
+  stdout.split("\0").grep(PRODUCTION_RUBY_PATH)
 end
 
 def count_working_tree(files)
@@ -44,7 +38,7 @@ unless system("git", "rev-parse", "--verify", "--quiet", BASE_REF, out: File::NU
   exit 0
 end
 
-files = tracked_ruby_files
+files = tracked_ruby_files(BASE_REF) | tracked_ruby_files
 base_count = count_base(files)
 head_count = count_working_tree(files)
 
