@@ -491,10 +491,10 @@ module Dependabot
 
         response = codecommit_client_for_source.commits(source.repo)
         output = T.cast(response.data, Aws::CodeCommit::Types::BatchGetCommitsOutput)
-        @recent_codecommit_commits = output.commits.map do |commit|
+        @recent_codecommit_commits = (output.commits || []).map do |commit|
           RecentCommit.new(
             message: commit.message,
-            author_email: commit.author.email
+            author_email: commit.author&.email
           )
         end
       end

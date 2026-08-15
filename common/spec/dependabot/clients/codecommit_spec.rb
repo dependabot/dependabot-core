@@ -104,6 +104,29 @@ RSpec.describe Dependabot::Clients::CodeCommit do
   describe "#commits" do
     subject(:commits) { client.commits(repo, branch) }
 
+    let(:batch_get_commits_response) do
+      {
+        commits: [
+          {
+            commit_id: "older",
+            author: {
+              date: "2024-01-01T00:00:00Z",
+              email: "support@dependabot.com"
+            },
+            message: "Older"
+          },
+          {
+            commit_id: "newer",
+            author: {
+              date: "2025-01-01T00:00:00Z",
+              email: "support@dependabot.com"
+            },
+            message: "Newer"
+          }
+        ]
+      }
+    end
+
     before do
       allow(Aws::CodeCommit::Client).to receive(:new).and_return(stubbed_cc_client)
       stubbed_cc_client.stub_responses(
@@ -132,24 +155,7 @@ RSpec.describe Dependabot::Clients::CodeCommit do
       )
       stubbed_cc_client.stub_responses(
         :batch_get_commits,
-        commits: [
-          {
-            commit_id: "older",
-            author: {
-              date: "2024-01-01T00:00:00Z",
-              email: "support@dependabot.com"
-            },
-            message: "Older"
-          },
-          {
-            commit_id: "newer",
-            author: {
-              date: "2025-01-01T00:00:00Z",
-              email: "support@dependabot.com"
-            },
-            message: "Newer"
-          }
-        ]
+        batch_get_commits_response
       )
     end
 
@@ -157,6 +163,26 @@ RSpec.describe Dependabot::Clients::CodeCommit do
       expect(commits).to be_a(Seahorse::Client::Response)
       expect(commits.data).to be_a(Aws::CodeCommit::Types::BatchGetCommitsOutput)
       expect(commits.data.commits.map(&:message)).to eq(%w(Newer Older))
+    end
+
+    context "when the response has no commits" do
+      let(:batch_get_commits_response) { {} }
+
+      it "preserves the empty response" do
+        expect(commits.data.commits).to be_nil
+      end
+    end
+
+    context "when a commit has no author" do
+      let(:batch_get_commits_response) do
+        {
+          commits: [{ commit_id: "newer", message: "No author" }]
+        }
+      end
+
+      it "does not fail while sorting" do
+        expect(commits.data.commits.map(&:message)).to eq(["No author"])
+      end
     end
   end
 end

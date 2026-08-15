@@ -314,9 +314,10 @@ module Dependabot
       def fetch_github_labels
         client = github_client_for_source
 
-        labels = client.labels(source.repo, per_page: 100).map { |label| github_label_name(label) }
-
-        next_link = T.let(client.last_response.rels[:next], T.nilable(Sawyer::Relation))
+        client.labels(source.repo, per_page: 100)
+        first_page = client.last_response
+        labels = github_labels_from_page(first_page)
+        next_link = T.let(first_page.rels[:next], T.nilable(Sawyer::Relation))
 
         while next_link
           next_page = T.let(next_link.get, Sawyer::Response)

@@ -10,12 +10,12 @@ module Aws
       end
 
       class BatchGetCommitsOutput
-        sig { returns(T::Array[Aws::CodeCommit::Types::Commit]) }
+        sig { returns(T.nilable(T::Array[Aws::CodeCommit::Types::Commit])) }
         attr_reader :commits
       end
 
       class Commit
-        sig { returns(Aws::CodeCommit::Types::UserInfo) }
+        sig { returns(T.nilable(Aws::CodeCommit::Types::UserInfo)) }
         attr_reader :author
 
         sig { returns(T.nilable(String)) }
@@ -26,7 +26,7 @@ module Aws
         sig { returns(T.nilable(String)) }
         attr_reader :email
 
-        sig { returns(String) }
+        sig { returns(T.nilable(String)) }
         attr_reader :date
       end
 

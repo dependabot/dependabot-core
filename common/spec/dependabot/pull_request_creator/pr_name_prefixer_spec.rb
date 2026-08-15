@@ -283,6 +283,14 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
           )
         end
         let(:stubbed_cc_client) { Aws::CodeCommit::Client.new(stub_responses: true) }
+        let(:batch_get_commits_response) do
+          {
+            commits: [{
+              author: { email: "support@dependabot.com" },
+              message: "build(deps): Bump business"
+            }]
+          }
+        end
         let(:codecommit_client) do
           instance_double(
             Dependabot::Clients::CodeCommit,
@@ -296,16 +304,29 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
         before do
           stubbed_cc_client.stub_responses(
             :batch_get_commits,
-            commits: [{
-              author: { email: "support@dependabot.com" },
-              message: "build(deps): Bump business"
-            }]
+            batch_get_commits_response
           )
           allow(Dependabot::Clients::CodeCommit)
             .to receive(:for_source).and_return(codecommit_client)
         end
 
         it { is_expected.to eq("build(deps): ") }
+
+        context "when the response has no commits" do
+          let(:batch_get_commits_response) { {} }
+
+          it { is_expected.to eq("") }
+        end
+
+        context "when a commit has no author" do
+          let(:batch_get_commits_response) do
+            {
+              commits: [{ message: "build(deps): Bump business" }]
+            }
+          end
+
+          it { is_expected.to eq("build(deps): ") }
+        end
       end
 
       context "with a security vulnerability fixed" do

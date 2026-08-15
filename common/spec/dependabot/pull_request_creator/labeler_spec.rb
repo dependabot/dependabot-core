@@ -565,6 +565,22 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
         end
       end
 
+      context "when the first page contains a non-object label" do
+        before do
+          stub_request(:get, "#{repo_api_url}/labels?per_page=100")
+            .to_return(
+              status: 200,
+              body: JSON.dump(["dependencies"]),
+              headers: json_header
+            )
+        end
+
+        it "raises a bad response error" do
+          expect { labeler.labels_for_pr }
+            .to raise_error(Dependabot::PrivateSourceBadResponse, /label must be an object/)
+        end
+      end
+
       context "when a 'dependencies' label exists" do
         let(:labels_fixture_name) { "labels_with_dependencies.json" }
 

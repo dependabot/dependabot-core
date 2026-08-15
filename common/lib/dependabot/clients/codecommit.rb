@@ -198,7 +198,9 @@ module Dependabot
 
         # sort the results by date
         output = T.cast(result.data, Aws::CodeCommit::Types::BatchGetCommitsOutput)
-        output.commits.sort! { |a, b| T.must(b.author.date <=> a.author.date) }
+        commits = output.commits
+        commits&.sort_by! { |commit| commit.author&.date || "" }
+        commits&.reverse!
         result
       end
 
