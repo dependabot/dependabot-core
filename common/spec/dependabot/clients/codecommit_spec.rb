@@ -94,9 +94,10 @@ RSpec.describe Dependabot::Clients::CodeCommit do
       )
     end
 
-    it "returns the typed folder payload" do
-      expect(repo_contents).to be_a(Aws::CodeCommit::Types::GetFolderOutput)
-      expect(repo_contents.files.map(&:relative_path)).to eq(["Gemfile"])
+    it "preserves the response wrapper and typed folder payload" do
+      expect(repo_contents).to be_a(Seahorse::Client::Response)
+      expect(repo_contents.data).to be_a(Aws::CodeCommit::Types::GetFolderOutput)
+      expect(repo_contents.data.files.map(&:relative_path)).to eq(["Gemfile"])
     end
   end
 end

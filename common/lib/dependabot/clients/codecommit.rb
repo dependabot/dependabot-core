@@ -83,7 +83,7 @@ module Dependabot
           commit: T.nilable(String),
           path: T.nilable(String)
         )
-          .returns(Aws::CodeCommit::Types::GetFolderOutput)
+          .returns(Seahorse::Client::Response)
       end
       def fetch_repo_contents(repo, commit = nil, path = nil)
         actual_path = path
@@ -94,8 +94,8 @@ module Dependabot
             repository_name: repo,
             commit_specifier: commit,
             folder_path: actual_path
-          ).data,
-          Aws::CodeCommit::Types::GetFolderOutput
+          ),
+          Seahorse::Client::Response
         )
       end
 

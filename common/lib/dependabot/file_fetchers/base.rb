@@ -718,7 +718,8 @@ module Dependabot
           path
         )
 
-        response.files.map do |file|
+        output = T.cast(response.data, Aws::CodeCommit::Types::GetFolderOutput)
+        output.files.map do |file|
           RepositoryContent.new(
             name: File.basename(file.relative_path),
             path: file.relative_path,
