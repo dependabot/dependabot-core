@@ -3,6 +3,12 @@
 
 module Gitlab
   class PaginatedResponse
+    sig { returns(T.nilable(Gitlab::ObjectifiedHash)) }
+    def first; end
+
+    sig { returns(T::Boolean) }
+    def any?; end
+
     sig { returns(T::Array[Gitlab::ObjectifiedHash]) }
     sig do
       params(

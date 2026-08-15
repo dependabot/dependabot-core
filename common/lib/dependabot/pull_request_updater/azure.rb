@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "securerandom"
@@ -114,22 +114,24 @@ module Dependabot
         # 3) Delete temp branch
         update_branch(temp_branch_name, new_commit, OBJECT_ID_FOR_BRANCH_DELETE)
 
-        raise PullRequestUpdateFailed, response.fetch("customMessage", nil) unless response.fetch("success", false)
+        return if object_boolean(response, "success", "updated ref")
+
+        raise PullRequestUpdateFailed, object_optional_string(response, "customMessage", "updated ref")
       end
 
-      sig { returns(T.nilable(T::Hash[String, T.untyped])) }
+      sig { returns(Dependabot::Clients::Azure::JsonObject) }
       def pull_request
         @pull_request ||=
           T.let(
             azure_client_for_source.pull_request(pull_request_number.to_s),
-            T.nilable(T::Hash[String, T.untyped])
+            T.nilable(Dependabot::Clients::Azure::JsonObject)
           )
       end
 
       sig { returns(String) }
       def source_branch_name
         @source_branch_name ||= T.let(
-          pull_request&.fetch("sourceRefName")&.gsub("refs/heads/", ""),
+          object_string(pull_request, "sourceRefName", "pull request").gsub("refs/heads/", ""),
           T.nilable(String)
         )
       end
@@ -147,7 +149,9 @@ module Dependabot
           author
         )
 
-        JSON.parse(response.body).fetch("refUpdates").first.fetch("newObjectId")
+        root = T.cast(JSON.parse(response.body), Dependabot::Clients::Azure::JsonObject)
+        ref_updates = object_array(root, "refUpdates", "created commit")
+        object_string(T.must(ref_updates.first), "newObjectId", "created commit")
       end
 
       sig { returns(String) }
@@ -159,7 +163,10 @@ module Dependabot
           )
       end
 
-      sig { params(branch_name: String, old_commit: String, new_commit: String).returns(T::Hash[String, T.untyped]) }
+      sig do
+        params(branch_name: String, old_commit: String, new_commit: String)
+          .returns(Dependabot::Clients::Azure::JsonObject)
+      end
       def update_branch(branch_name, old_commit, new_commit)
         azure_client_for_source.update_ref(
           branch_name,
@@ -169,23 +176,65 @@ module Dependabot
       end
 
       # For updating source branch, we require the latest commit for the source branch.
-      sig { returns(T::Hash[String, T.untyped]) }
+      sig { returns(Dependabot::Clients::Azure::JsonObject) }
       def commit_being_updated
         @commit_being_updated ||=
           T.let(
             T.must(azure_client_for_source.commits(source_branch_name).first),
-            T.nilable(T::Hash[String, T.untyped])
+            T.nilable(Dependabot::Clients::Azure::JsonObject)
           )
       end
 
       sig { returns(String) }
       def old_source_branch_commit
-        commit_being_updated.fetch("commitId")
+        object_string(commit_being_updated, "commitId", "commit")
       end
 
       sig { returns(String) }
       def commit_message
-        commit_being_updated.fetch("comment")
+        object_string(commit_being_updated, "comment", "commit")
+      end
+
+      sig { params(object: T::Hash[String, Object], key: String, context: String).returns(String) }
+      def object_string(object, key, context)
+        value = object[key]
+        return value if value.is_a?(String)
+
+        raise PullRequestUpdateFailed, "#{context} #{key} must be a string"
+      end
+
+      sig { params(object: T::Hash[String, Object], key: String, context: String).returns(T.nilable(String)) }
+      def object_optional_string(object, key, context)
+        value = object[key]
+        return if value.nil?
+        return value if value.is_a?(String)
+
+        raise PullRequestUpdateFailed, "#{context} #{key} must be a string or nil"
+      end
+
+      sig { params(object: T::Hash[String, Object], key: String, context: String).returns(T::Boolean) }
+      def object_boolean(object, key, context)
+        value = object[key]
+        return value if value == true || value == false
+        return false if value.nil?
+
+        raise PullRequestUpdateFailed, "#{context} #{key} must be a boolean or nil"
+      end
+
+      sig do
+        params(object: T::Hash[String, Object], key: String, context: String)
+          .returns(T::Array[T::Hash[String, Object]])
+      end
+      def object_array(object, key, context)
+        value = object[key]
+        raise PullRequestUpdateFailed, "#{context} #{key} must be an array" unless value.is_a?(Array)
+
+        value.map do |entry|
+          parsed_entry = T.cast(entry, Object)
+          raise PullRequestUpdateFailed, "#{context} entry must be an object" unless parsed_entry.is_a?(Hash)
+
+          T.let(parsed_entry, T::Hash[String, Object])
+        end
       end
     end
   end

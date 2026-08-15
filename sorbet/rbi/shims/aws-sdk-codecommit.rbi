@@ -30,6 +30,29 @@ module Aws
         attr_reader :date
       end
 
+      class GetPullRequestOutput
+        sig { returns(Aws::CodeCommit::Types::PullRequest) }
+        attr_reader :pull_request
+      end
+
+      class PullRequest
+        sig { returns(T::Array[Aws::CodeCommit::Types::PullRequestTarget]) }
+        attr_reader :pull_request_targets
+      end
+
+      class PullRequestTarget
+        sig { returns(String) }
+        attr_reader :source_reference
+
+        sig { returns(Aws::CodeCommit::Types::MergeMetadata) }
+        attr_reader :merge_metadata
+      end
+
+      class MergeMetadata
+        sig { returns(T::Boolean) }
+        attr_reader :is_merged
+      end
+
       class File
         sig { returns(String) }
         attr_reader :relative_path

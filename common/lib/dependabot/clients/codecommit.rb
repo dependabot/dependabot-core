@@ -121,12 +121,15 @@ module Dependabot
         params(
           branch_name: String
         )
-          .returns(String)
+          .returns(Seahorse::Client::Response)
       end
       def branch(branch_name)
-        cc_client.get_branch(
-          repository_name: source.unscoped_repo,
-          branch_name: branch_name
+        T.cast(
+          cc_client.get_branch(
+            repository_name: source.unscoped_repo,
+            branch_name: branch_name
+          ),
+          Seahorse::Client::Response
         )
       end
 
@@ -210,7 +213,7 @@ module Dependabot
           state: String,
           branch: String
         )
-          .returns(T::Array[Aws::CodeCommit::Types::PullRequest])
+          .returns(T::Array[Seahorse::Client::Response])
       end
       def pull_requests(repo, state, branch)
         pull_request_ids = @cc_client.list_pull_requests(
@@ -218,16 +221,20 @@ module Dependabot
           pull_request_status: state
         ).pull_request_ids
 
-        result = []
+        result = T.let([], T::Array[Seahorse::Client::Response])
         # list_pull_requests only gets us the pull request id
         # get_pull_request has all the info we need
         pull_request_ids.each do |id|
-          pr_hash = @cc_client.get_pull_request(
-            pull_request_id: id
+          pr_hash = T.cast(
+            @cc_client.get_pull_request(
+              pull_request_id: id
+            ),
+            Seahorse::Client::Response
           )
+          output = T.cast(pr_hash.data, Aws::CodeCommit::Types::GetPullRequestOutput)
           # only include PRs from the referenced branch
-          if pr_hash.pull_request.pull_request_targets[0]
-                    .source_reference.include? branch
+          if T.must(output.pull_request.pull_request_targets[0])
+              .source_reference.include? branch
             result << pr_hash
           end
         end

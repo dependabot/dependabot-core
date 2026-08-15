@@ -11,6 +11,8 @@ module Dependabot
   class PullRequestUpdater
     extend T::Sig
 
+    UpdateResult = T.type_alias { T.nilable(T.any(Sawyer::Resource, String)) }
+
     class BranchProtected < StandardError; end
 
     sig { returns(Dependabot::Source) }
@@ -82,9 +84,7 @@ module Dependabot
       @provider_metadata   = provider_metadata
     end
 
-    # TODO: Each implementation returns a client-specific type.
-    #       We should standardise this to return a `Dependabot::Branch` type instead.
-    sig { returns(T.untyped) } # rubocop:disable Sorbet/ForbidTUntyped
+    sig { returns(UpdateResult) }
     def update
       case source.provider
       when "github" then github_updater.update

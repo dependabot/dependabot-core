@@ -599,6 +599,24 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                   )
               end
             end
+
+            context "when the PR is closed but unmerged" do
+              before do
+                url = "#{repo_api_url}/pulls?head=gocardless:#{branch_name}" \
+                      "&state=all"
+                stub_request(:get, url).to_return(
+                  status: 200,
+                  body: '[{"number":1347,"state":"closed"}]',
+                  headers: json_header
+                )
+              end
+
+              it "does not recreate the pull request" do
+                expect { creator.create }
+                  .to raise_error(Dependabot::PullRequestCreator::UnmergedPRExists, /1347/)
+                expect(WebMock).not_to have_requested(:post, "#{repo_api_url}/pulls")
+              end
+            end
           end
         end
       end
