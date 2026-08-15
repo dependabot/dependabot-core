@@ -233,10 +233,8 @@ module Dependabot
           )
           output = T.cast(pr_hash.data, Aws::CodeCommit::Types::GetPullRequestOutput)
           # only include PRs from the referenced branch
-          if T.must(output.pull_request.pull_request_targets[0])
-              .source_reference == branch
-            result << pr_hash
-          end
+          source_reference = T.must(output.pull_request.pull_request_targets[0]).source_reference
+          result << pr_hash if source_reference.delete_prefix("refs/heads/") == branch.delete_prefix("refs/heads/")
         end
         result
       end

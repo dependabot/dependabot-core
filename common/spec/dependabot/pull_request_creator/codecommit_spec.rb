@@ -100,8 +100,8 @@ RSpec.describe Dependabot::PullRequestCreator::Codecommit do
   def pull_request_response(merge_metadata: nil)
     client = Aws::CodeCommit::Client.new(stub_responses: true)
     target = {
-      source_reference: branch_name,
-      destination_reference: "main"
+      source_reference: "refs/heads/#{branch_name}",
+      destination_reference: "refs/heads/main"
     }
     target[:merge_metadata] = merge_metadata if merge_metadata
     client.stub_responses(
