@@ -102,6 +102,24 @@ RSpec.describe Dependabot::PullRequestUpdater::Gitlab do
   end
 
   describe "#update" do
+    context "when the merge request response is malformed" do
+      before do
+        merge_request = JSON.parse(fixture("gitlab", "merge_request.json"))
+        merge_request["source_branch"] = 1
+        stub_request(:get, merge_request_url)
+          .to_return(
+            status: 200,
+            body: JSON.dump(merge_request),
+            headers: json_header
+          )
+      end
+
+      it "raises a bad response error" do
+        expect { updater.update }
+          .to raise_error(Dependabot::PrivateSourceBadResponse, /merge request source_branch must be a string/)
+      end
+    end
+
     context "with forked project" do
       let(:target_project_id) { 1 }
       let(:merge_request_url) do

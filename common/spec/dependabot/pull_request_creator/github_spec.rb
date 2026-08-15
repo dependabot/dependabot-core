@@ -140,6 +140,22 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
   end
 
   describe "#create" do
+    context "when GitHub returns a malformed tree response" do
+      before do
+        stub_request(:post, "#{repo_api_url}/git/trees")
+          .to_return(
+            status: 200,
+            body: JSON.dump(sha: 1),
+            headers: json_header
+          )
+      end
+
+      it "raises a bad response error" do
+        expect { creator.create }
+          .to raise_error(Dependabot::PrivateSourceBadResponse, /tree sha must be a string/)
+      end
+    end
+
     it "pushes a commit to GitHub" do
       creator.create
 

@@ -398,6 +398,23 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
             expect(WebMock)
               .to have_requested(:post, "#{repo_api_url}/merge_requests")
           end
+
+          context "when the commit response is malformed" do
+            before do
+              stub_request(:get, "#{repo_api_url}/repository/commits")
+                .with(query: { ref_name: branch_name })
+                .to_return(
+                  status: 200,
+                  body: JSON.dump([{ message: 1 }]),
+                  headers: json_header
+                )
+            end
+
+            it "raises a bad response error" do
+              expect { creator.create }
+                .to raise_error(Dependabot::PrivateSourceBadResponse, /commit message must be a string/)
+            end
+          end
         end
 
         context "when a commit already exists on that branch" do
