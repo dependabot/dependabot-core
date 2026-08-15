@@ -185,4 +185,44 @@ RSpec.describe Dependabot::Clients::CodeCommit do
       end
     end
   end
+
+  describe "#pull_requests" do
+    subject(:pull_requests) { client.pull_requests(repo, "open", "feature") }
+
+    before do
+      allow(Aws::CodeCommit::Client).to receive(:new).and_return(stubbed_cc_client)
+      stubbed_cc_client.stub_responses(
+        :list_pull_requests,
+        pull_request_ids: %w(matching other)
+      )
+      stubbed_cc_client.stub_responses(
+        :get_pull_request,
+        [
+          {
+            pull_request: {
+              pull_request_id: "matching",
+              pull_request_targets: [{
+                source_reference: "refs/heads/feature"
+              }]
+            }
+          },
+          {
+            pull_request: {
+              pull_request_id: "other",
+              pull_request_targets: [{
+                source_reference: "refs/heads/other"
+              }]
+            }
+          }
+        ]
+      )
+    end
+
+    it "preserves matching pull request response wrappers" do
+      expect(pull_requests.length).to eq(1)
+      expect(pull_requests.first).to be_a(Seahorse::Client::Response)
+      expect(pull_requests.first.data).to be_a(Aws::CodeCommit::Types::GetPullRequestOutput)
+      expect(pull_requests.first.data.pull_request.pull_request_id).to eq("matching")
+    end
+  end
 end

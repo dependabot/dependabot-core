@@ -192,13 +192,16 @@ module Dependabot
       sig { returns(T::Array[Sawyer::Resource]) }
       def open_pull_requests
         pull_requests_for_branch
-          .reject { |pull_request| github_pull_request_closed?(pull_request) }
-          .reject { |pull_request| github_boolean(pull_request, :merged, "pull request") }
+          .reject { |pull_request| github_pull_request_merged?(pull_request) }
       end
 
       sig { params(pull_request: Sawyer::Resource).returns(T::Boolean) }
-      def github_pull_request_closed?(pull_request)
-        github_boolean(pull_request, :closed, "pull request")
+      def github_pull_request_merged?(pull_request)
+        merged_at = T.cast(pull_request[:merged_at], Object)
+        return false if merged_at.nil?
+        return true if merged_at.is_a?(String) || merged_at.is_a?(Time)
+
+        raise_bad_github_response("pull request merged_at must be a time, string, or nil")
       end
 
       sig { returns(T::Array[Sawyer::Resource]) }

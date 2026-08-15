@@ -180,7 +180,7 @@ module Dependabot
         pull_requests_for_branch.each do |pr|
           output = T.cast(pr.data, Aws::CodeCommit::Types::GetPullRequestOutput)
           target = T.must(output.pull_request.pull_request_targets[0])
-          unmerged_prs << pr unless target.merge_metadata.is_merged
+          unmerged_prs << pr unless target.merge_metadata&.is_merged
         end
         unmerged_prs.any?
       end

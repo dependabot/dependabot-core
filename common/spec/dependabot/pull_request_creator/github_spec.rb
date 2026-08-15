@@ -541,7 +541,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                   "&state=all"
             stub_request(:get, url).to_return(
               status: 200,
-              body: "[{ \"closed\": true }]",
+              body: '[{"state":"closed","merged_at":"2026-08-14T00:00:00Z"}]',
               headers: json_header
             )
             stub_request(
@@ -606,7 +606,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                       "&state=all"
                 stub_request(:get, url).to_return(
                   status: 200,
-                  body: '[{"number":1347,"state":"closed"}]',
+                  body: '[{"number":1347,"state":"closed","merged_at":null}]',
                   headers: json_header
                 )
               end

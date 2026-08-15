@@ -44,12 +44,12 @@ module Aws
         sig { returns(String) }
         attr_reader :source_reference
 
-        sig { returns(Aws::CodeCommit::Types::MergeMetadata) }
+        sig { returns(T.nilable(Aws::CodeCommit::Types::MergeMetadata)) }
         attr_reader :merge_metadata
       end
 
       class MergeMetadata
-        sig { returns(T::Boolean) }
+        sig { returns(T.nilable(T::Boolean)) }
         attr_reader :is_merged
       end
 
