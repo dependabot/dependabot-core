@@ -3,7 +3,13 @@
 
 module Gitlab
   class PaginatedResponse
-    sig { params(block: T.nilable(Proc)).returns(T::Array[Gitlab::ObjectifiedHash]) }
+    sig { returns(T::Array[Gitlab::ObjectifiedHash]) }
+    sig do
+      params(
+        block: T.proc.params(element: Gitlab::ObjectifiedHash).void
+      )
+        .returns(T::Enumerator[Gitlab::ObjectifiedHash])
+    end
     def auto_paginate(&block); end
 
     sig do
