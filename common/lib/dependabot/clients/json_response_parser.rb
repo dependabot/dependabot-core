@@ -1,6 +1,8 @@
 # typed: strong
 # frozen_string_literal: true
 
+require "json"
+
 require "dependabot/errors"
 require "sorbet-runtime"
 
