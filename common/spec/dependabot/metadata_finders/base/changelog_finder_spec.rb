@@ -206,6 +206,42 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
               )
           end
 
+          context "when the suggested repository response is malformed" do
+            before do
+              stub_request(:get, "https://api.github.com/repos/mperham/sidekiq/contents/")
+                .to_return(
+                  status: 200,
+                  body: JSON.dump([{ type: 1 }]),
+                  headers: { "Content-Type" => "application/json" }
+                )
+            end
+
+            it "attributes the error to the suggested repository" do
+              expect { changelog_url }
+                .to raise_error(Dependabot::PrivateSourceBadResponse) do |error|
+                  expect(error.source).to eq("https://github.com/mperham/sidekiq")
+                end
+            end
+
+            context "when a primary source is also present" do
+              let(:finder) do
+                described_class.new(
+                  source: source,
+                  credentials: credentials,
+                  dependency: dependency,
+                  suggested_changelog_url: suggested_changelog_url
+                )
+              end
+
+              it "still attributes the error to the suggested repository" do
+                expect { changelog_url }
+                  .to raise_error(Dependabot::PrivateSourceBadResponse) do |error|
+                    expect(error.source).to eq("https://github.com/mperham/sidekiq")
+                  end
+              end
+            end
+          end
+
           context "when there is a fragment in the URL" do
             let(:suggested_changelog_url) do
               "https:/github.com/mperham/sidekiq/blob/master/Pro-Changes.md#v2.8.6"

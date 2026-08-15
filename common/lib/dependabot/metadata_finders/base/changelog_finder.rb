@@ -146,7 +146,7 @@ module Dependabot
           opts = { path: suggested_source&.directory, ref: suggested_source&.branch }.compact
           suggested_source_client = github_client_for_source(T.must(suggested_source))
           response = suggested_source_client.contents(T.must(suggested_source).repo, opts)
-          tmp_files = github_changelog_files(response)
+          tmp_files = github_changelog_files(response, source_url: T.must(suggested_source).url)
 
           filename = T.must(T.must(suggested_changelog_url).split("/").last)
           @changelog_from_suggested_url = tmp_files.find { |f| f.name == filename }
@@ -264,7 +264,7 @@ module Dependabot
         def fetch_github_file(file_source, file)
           # Hitting the download URL directly causes encoding problems
           response = github_client_for_source(file_source).get(T.must(file.api_url))
-          raw_content = sawyer_string(response, :content)
+          raw_content = sawyer_string(response, :content, source_url: file_source.url)
           Base64.decode64(raw_content).force_encoding("UTF-8").encode
         end
 
@@ -330,7 +330,7 @@ module Dependabot
           if directory
             options = { path: directory, ref: ref }.compact
             response = github_client.contents(T.must(source).repo, options)
-            files.concat(github_changelog_files(response)) if response.is_a?(Array)
+            files.concat(github_changelog_files(response, source_url: T.must(source).url)) if response.is_a?(Array)
           end
           files.concat(github_files_at(path: nil, ref: ref))
 
@@ -348,7 +348,10 @@ module Dependabot
         sig { params(path: T.nilable(String), ref: T.nilable(String)).returns(T::Array[ChangelogFile]) }
         def github_files_at(path:, ref:)
           options = { path: path, ref: ref }.compact
-          github_changelog_files(github_client.contents(T.must(source).repo, options))
+          github_changelog_files(
+            github_client.contents(T.must(source).repo, options),
+            source_url: T.must(source).url
+          )
         end
 
         sig { returns(T::Array[ChangelogFile]) }
@@ -427,52 +430,61 @@ module Dependabot
         end
 
         sig do
-          params(response: T.any(Sawyer::Resource, T::Array[Sawyer::Resource]))
+          params(
+            response: T.any(Sawyer::Resource, T::Array[Sawyer::Resource]),
+            source_url: String
+          )
             .returns(T::Array[ChangelogFile])
         end
-        def github_changelog_files(response)
+        def github_changelog_files(response, source_url:)
           resources = response.is_a?(Array) ? response : [response]
           resources.filter_map do |resource|
-            type = sawyer_string(resource, :type)
+            type = sawyer_string(resource, :type, source_url: source_url)
             next unless CHANGELOG_FILE_TYPES.include?(type)
 
-            api_url = sawyer_string(resource, :url)
+            api_url = sawyer_string(resource, :url, source_url: source_url)
             ChangelogFile.new(
-              name: sawyer_string(resource, :name),
+              name: sawyer_string(resource, :name, source_url: source_url),
               type: type,
-              size: sawyer_optional_integer(resource, :size) || 0,
-              html_url: sawyer_string(resource, :html_url),
-              download_url: sawyer_optional_string(resource, :download_url) || api_url,
-              path: sawyer_optional_string(resource, :path),
+              size: sawyer_optional_integer(resource, :size, source_url: source_url) || 0,
+              html_url: sawyer_string(resource, :html_url, source_url: source_url),
+              download_url: sawyer_optional_string(resource, :download_url, source_url: source_url) || api_url,
+              path: sawyer_optional_string(resource, :path, source_url: source_url),
               api_url: api_url
             )
           end
         end
 
-        sig { params(resource: Sawyer::Resource, key: Symbol).returns(String) }
-        def sawyer_string(resource, key)
+        sig { params(resource: Sawyer::Resource, key: Symbol, source_url: String).returns(String) }
+        def sawyer_string(resource, key, source_url:)
           value = T.cast(resource[key], Object)
           return value if value.is_a?(String)
 
-          raise_bad_metadata_response("GitHub", "#{key} must be a string")
+          raise_bad_metadata_response("GitHub", "#{key} must be a string", source_url: source_url)
         end
 
-        sig { params(resource: Sawyer::Resource, key: Symbol).returns(T.nilable(String)) }
-        def sawyer_optional_string(resource, key)
+        sig do
+          params(resource: Sawyer::Resource, key: Symbol, source_url: String)
+            .returns(T.nilable(String))
+        end
+        def sawyer_optional_string(resource, key, source_url:)
           value = T.cast(resource[key], Object)
           return if value.nil?
           return value if value.is_a?(String)
 
-          raise_bad_metadata_response("GitHub", "#{key} must be a string or nil")
+          raise_bad_metadata_response("GitHub", "#{key} must be a string or nil", source_url: source_url)
         end
 
-        sig { params(resource: Sawyer::Resource, key: Symbol).returns(T.nilable(Integer)) }
-        def sawyer_optional_integer(resource, key)
+        sig do
+          params(resource: Sawyer::Resource, key: Symbol, source_url: String)
+            .returns(T.nilable(Integer))
+        end
+        def sawyer_optional_integer(resource, key, source_url:)
           value = T.cast(resource[key], Object)
           return if value.nil?
           return value if value.is_a?(Integer)
 
-          raise_bad_metadata_response("GitHub", "#{key} must be an integer or nil")
+          raise_bad_metadata_response("GitHub", "#{key} must be an integer or nil", source_url: source_url)
         end
 
         sig { params(resource: Gitlab::ObjectifiedHash, key: String).returns(String) }
@@ -510,10 +522,16 @@ module Dependabot
           raise_bad_metadata_response(provider, "#{key} must be an integer")
         end
 
-        sig { params(provider: String, message: String).returns(T.noreturn) }
-        def raise_bad_metadata_response(provider, message)
+        sig do
+          params(
+            provider: String,
+            message: String,
+            source_url: T.nilable(String)
+          ).returns(T.noreturn)
+        end
+        def raise_bad_metadata_response(provider, message, source_url: nil)
           raise Dependabot::PrivateSourceBadResponse.new(
-            T.must(source).url,
+            source_url || T.must(source).url,
             "Malformed #{provider} metadata response: #{message}"
           )
         end
