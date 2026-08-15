@@ -187,10 +187,6 @@ RSpec.describe Dependabot::CommandHelpers do
     context "when the wait thread reports no process status (child reaped externally)" do
       let(:logger) { instance_double(Logger, info: nil, debug: nil, warn: nil, error: nil) }
 
-      before do
-        allow(Dependabot).to receive(:logger).and_return(logger)
-      end
-
       let(:process_with_nil_status) do
         process_io = IO.popen(["true"], "r+")
         stderr_io, stderr_writer = IO.pipe
@@ -201,6 +197,8 @@ RSpec.describe Dependabot::CommandHelpers do
       end
 
       before do
+        allow(Dependabot).to receive(:logger).and_return(logger)
+
         # Simulates `terminate_process` reaping the child before the wait thread reads its status.
         allow(described_class).to receive(:open_process).and_return(process_with_nil_status)
       end
