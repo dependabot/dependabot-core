@@ -127,6 +127,15 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
         it { is_expected.to eq("build(deps): ") }
       end
 
+      context "when the GitHub commit response is malformed" do
+        let(:commits_response) { JSON.dump([{ commit: 1 }]) }
+
+        it "raises a bad response error" do
+          expect { pr_name_prefix }
+            .to raise_error(Dependabot::PrivateSourceBadResponse, /Malformed GitHub commit response/)
+        end
+      end
+
       context "when receiving a 409 response when asked for commits" do
         before do
           stub_request(:get, watched_repo_url + "/commits?per_page=100")
@@ -165,6 +174,17 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
         end
 
         it { is_expected.to eq("") }
+
+        context "when the commit response is malformed" do
+          let(:commits_response) do
+            JSON.dump([{ message: 1, author_email: "support@dependabot.com" }])
+          end
+
+          it "raises a bad response error" do
+            expect { pr_name_prefix }
+              .to raise_error(Dependabot::PrivateSourceBadResponse, /Malformed GitLab commit response/)
+          end
+        end
       end
 
       context "when dealing with Azure and no author email is present" do
@@ -192,6 +212,100 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
         end
 
         it { is_expected.to eq("") }
+
+        context "when the commit response is malformed" do
+          let(:commits_response) do
+            JSON.dump(
+              value: [{
+                comment: 1,
+                author: { email: "support@dependabot.com" }
+              }]
+            )
+          end
+
+          it "raises a bad response error" do
+            expect { pr_name_prefix }
+              .to raise_error(Dependabot::PrivateSourceBadResponse, /Malformed azure commit response/i)
+          end
+        end
+      end
+
+      context "when dealing with Bitbucket" do
+        let(:source) do
+          Dependabot::Source.new(provider: "bitbucket", repo: "gocardless/bump")
+        end
+        let(:bitbucket_commits_url) do
+          "https://api.bitbucket.org/2.0/repositories/gocardless/bump/commits/?pagelen=100"
+        end
+        let(:commits_response) do
+          JSON.dump(
+            values: [{
+              message: "build(deps): Bump business",
+              author: { raw: "dependabot <support@dependabot.com>" }
+            }]
+          )
+        end
+
+        before do
+          stub_request(:get, bitbucket_commits_url)
+            .to_return(
+              status: 200,
+              body: commits_response,
+              headers: json_header
+            )
+        end
+
+        it { is_expected.to eq("build(deps): ") }
+
+        context "when the commit response is malformed" do
+          let(:commits_response) do
+            JSON.dump(
+              values: [{
+                message: "build(deps): Bump business",
+                author: 1
+              }]
+            )
+          end
+
+          it "raises a bad response error" do
+            expect { pr_name_prefix }
+              .to raise_error(Dependabot::PrivateSourceBadResponse, /Malformed bitbucket commit response/i)
+          end
+        end
+      end
+
+      context "when dealing with CodeCommit" do
+        let(:source) do
+          Dependabot::Source.new(
+            provider: "codecommit",
+            repo: "gocardless",
+            branch: "master"
+          )
+        end
+        let(:stubbed_cc_client) { Aws::CodeCommit::Client.new(stub_responses: true) }
+        let(:codecommit_client) do
+          instance_double(
+            Dependabot::Clients::CodeCommit,
+            commits: stubbed_cc_client.batch_get_commits(
+              repository_name: source.repo,
+              commit_ids: ["commit"]
+            )
+          )
+        end
+
+        before do
+          stubbed_cc_client.stub_responses(
+            :batch_get_commits,
+            commits: [{
+              author: { email: "support@dependabot.com" },
+              message: "build(deps): Bump business"
+            }]
+          )
+          allow(Dependabot::Clients::CodeCommit)
+            .to receive(:for_source).and_return(codecommit_client)
+        end
+
+        it { is_expected.to eq("build(deps): ") }
       end
 
       context "with a security vulnerability fixed" do

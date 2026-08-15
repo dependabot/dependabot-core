@@ -100,4 +100,63 @@ RSpec.describe Dependabot::Clients::CodeCommit do
       expect(repo_contents.data.files.map(&:relative_path)).to eq(["Gemfile"])
     end
   end
+
+  describe "#commits" do
+    subject(:commits) { client.commits(repo, branch) }
+
+    before do
+      allow(Aws::CodeCommit::Client).to receive(:new).and_return(stubbed_cc_client)
+      stubbed_cc_client.stub_responses(
+        :get_branch,
+        branch: {
+          branch_name: branch,
+          commit_id: "newer"
+        }
+      )
+      stubbed_cc_client.stub_responses(
+        :get_commit,
+        [
+          {
+            commit: {
+              commit_id: "newer",
+              parents: ["older"]
+            }
+          },
+          {
+            commit: {
+              commit_id: "older",
+              parents: []
+            }
+          }
+        ]
+      )
+      stubbed_cc_client.stub_responses(
+        :batch_get_commits,
+        commits: [
+          {
+            commit_id: "older",
+            author: {
+              date: "2024-01-01T00:00:00Z",
+              email: "support@dependabot.com"
+            },
+            message: "Older"
+          },
+          {
+            commit_id: "newer",
+            author: {
+              date: "2025-01-01T00:00:00Z",
+              email: "support@dependabot.com"
+            },
+            message: "Newer"
+          }
+        ]
+      )
+    end
+
+    it "preserves the response wrapper and sorts commits by author date" do
+      expect(commits).to be_a(Seahorse::Client::Response)
+      expect(commits.data).to be_a(Aws::CodeCommit::Types::BatchGetCommitsOutput)
+      expect(commits.data.commits.map(&:message)).to eq(%w(Newer Older))
+    end
+  end
 end
