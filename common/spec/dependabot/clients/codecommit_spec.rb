@@ -204,7 +204,7 @@ RSpec.describe Dependabot::Clients::CodeCommit do
             pull_request: {
               pull_request_id: "matching",
               pull_request_targets: [{
-                source_reference: "refs/heads/#{branch_name}"
+                source_reference: branch_name
               }]
             }
           },
@@ -212,7 +212,7 @@ RSpec.describe Dependabot::Clients::CodeCommit do
             pull_request: {
               pull_request_id: "other",
               pull_request_targets: [{
-                source_reference: "refs/heads/other"
+                source_reference: "#{branch_name}-next"
               }]
             }
           }

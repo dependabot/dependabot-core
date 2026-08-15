@@ -234,7 +234,7 @@ module Dependabot
           output = T.cast(pr_hash.data, Aws::CodeCommit::Types::GetPullRequestOutput)
           # only include PRs from the referenced branch
           if T.must(output.pull_request.pull_request_targets[0])
-              .source_reference.include? branch
+              .source_reference == branch
             result << pr_hash
           end
         end

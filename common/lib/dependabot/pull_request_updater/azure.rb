@@ -151,7 +151,10 @@ module Dependabot
 
         root = T.cast(JSON.parse(response.body), Dependabot::Clients::Azure::JsonObject)
         ref_updates = object_array(root, "refUpdates", "created commit")
-        object_string(T.must(ref_updates.first), "newObjectId", "created commit")
+        ref_update = ref_updates.first
+        raise PullRequestUpdateFailed, "created commit refUpdates must contain at least one object" unless ref_update
+
+        object_string(ref_update, "newObjectId", "created commit")
       end
 
       sig { returns(String) }
