@@ -349,6 +349,35 @@ RSpec.describe Dependabot::FileFetchers::Base do
                      headers: { "content-type" => "application/json" })
       end
 
+      context "when the repository is empty" do
+        let(:repo_url) { "https://api.github.com/repos/#{repo}" }
+
+        before do
+          allow(file_fetcher_instance).to receive(:commit).and_call_original
+          stub_request(:get, repo_url)
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "bump_repo.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, "#{repo_url}/git/refs/heads/master")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 409,
+              body: fixture("github", "git_repo_empty.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "raises a dependency file not found error" do
+          expect { file_fetcher_instance.files }
+            .to raise_error(Dependabot::DependencyFileNotFound) do |error|
+              expect(error.file_path).to eq("/requirements.txt")
+            end
+        end
+      end
+
       its(:length) { is_expected.to eq(1) }
 
       describe "the file" do
@@ -580,6 +609,19 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
 
           context "when the submodule URL is missing" do
+            let(:child_class) do
+              Class.new(described_class) do
+                def fetch_files
+                  [
+                    fetch_file_from_host(
+                      "some/dir/req.txt",
+                      fetch_submodules: true
+                    )
+                  ]
+                end
+              end
+            end
+
             before do
               submodule_without_url = JSON.parse(submodule_details)
               submodule_without_url["submodule_git_url"] = nil
@@ -590,6 +632,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
                   body: JSON.dump(submodule_without_url),
                   headers: { "content-type" => "application/json" }
                 )
+              stub_request(:get, url + "some?ref=sha")
+                .with(headers: { "Authorization" => "token token" })
+                .to_return(status: 404)
             end
 
             it "skips the unavailable submodule" do
@@ -597,6 +642,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
                 .to raise_error(Dependabot::DependencyFileNotFound) do |error|
                   expect(error.file_path).to eq("/some/dir/req.txt")
                 end
+              expect(WebMock)
+                .to have_requested(:get, url + "some/dir?ref=sha")
             end
           end
         end

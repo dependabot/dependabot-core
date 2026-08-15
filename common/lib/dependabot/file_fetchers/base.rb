@@ -788,10 +788,13 @@ module Dependabot
             path: new_path
           )
         else
+          resolved_commit = commit
+          raise Octokit::NotFound unless resolved_commit
+
           RepositorySpecification.new(
             repo: source.repo,
             path: path,
-            commit: T.must(commit),
+            commit: resolved_commit,
             provider: source.provider
           )
         end
