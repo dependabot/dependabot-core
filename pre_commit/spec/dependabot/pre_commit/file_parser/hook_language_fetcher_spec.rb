@@ -10,7 +10,7 @@ require "dependabot/pre_commit/file_parser/hook_language_fetcher"
 RSpec.describe Dependabot::PreCommit::FileParser::HookLanguageFetcher do
   let(:credentials) { [] }
   let(:fetcher) { described_class.new(credentials: credentials) }
-  let(:github_client) { double("github_client") }
+  let(:github_client) { instance_double(Octokit::Client) }
   let(:sawyer_agent) { Sawyer::Agent.new("https://api.github.com") }
 
   def github_content(content)
