@@ -314,10 +314,9 @@ module Dependabot
       def fetch_github_labels
         client = github_client_for_source
 
-        client.labels(source.repo, per_page: 100)
-        first_page = client.last_response
-        labels = github_labels_from_page(first_page)
-        next_link = T.let(first_page.rels[:next], T.nilable(Sawyer::Relation))
+        raw_labels = client.labels(source.repo, per_page: 100)
+        labels = github_label_names(raw_labels)
+        next_link = T.let(client.last_response.rels[:next], T.nilable(Sawyer::Relation))
 
         while next_link
           next_page = T.let(next_link.get, Sawyer::Response)
@@ -346,7 +345,11 @@ module Dependabot
 
       sig { params(response: Sawyer::Response).returns(T::Array[String]) }
       def github_labels_from_page(response)
-        data = T.cast(response.data, Object)
+        github_label_names(T.cast(response.data, Object))
+      end
+
+      sig { params(data: Object).returns(T::Array[String]) }
+      def github_label_names(data)
         raise_bad_label_response("GitHub", "page data must be an array") unless data.is_a?(Array)
 
         data.map do |raw_label|

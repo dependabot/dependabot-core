@@ -581,6 +581,43 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
         end
       end
 
+      context "when Octokit auto-pagination is enabled" do
+        let(:repo_labels_url) { "#{repo_api_url}/labels?per_page=100" }
+        let(:links_header) do
+          {
+            "Content-Type" => "application/json",
+            "Link" => "<#{repo_labels_url}&page=2>; rel=\"next\""
+          }
+        end
+
+        around do |example|
+          original = ENV.fetch("OCTOKIT_AUTO_PAGINATE", nil)
+          ENV["OCTOKIT_AUTO_PAGINATE"] = "true"
+          example.run
+        ensure
+          ENV["OCTOKIT_AUTO_PAGINATE"] = original
+        end
+
+        before do
+          stub_request(:get, repo_labels_url)
+            .to_return(
+              status: 200,
+              body: fixture("github", "labels_with_dependencies.json"),
+              headers: links_header
+            )
+          stub_request(:get, repo_labels_url + "&page=2")
+            .to_return(
+              status: 200,
+              body: fixture("github", "labels_without_dependencies.json"),
+              headers: json_header
+            )
+        end
+
+        it "uses labels returned from every page" do
+          expect(labeler.labels_for_pr).to include("dependencies")
+        end
+      end
+
       context "when a 'dependencies' label exists" do
         let(:labels_fixture_name) { "labels_with_dependencies.json" }
 
