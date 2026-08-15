@@ -187,7 +187,9 @@ RSpec.describe Dependabot::Clients::CodeCommit do
   end
 
   describe "#pull_requests" do
-    subject(:pull_requests) { client.pull_requests(repo, "open", "feature") }
+    subject(:pull_requests) { client.pull_requests(repo, "open", branch_name) }
+
+    let(:branch_name) { "dependabot/bundler/business-1.5.0" }
 
     before do
       allow(Aws::CodeCommit::Client).to receive(:new).and_return(stubbed_cc_client)
@@ -202,7 +204,7 @@ RSpec.describe Dependabot::Clients::CodeCommit do
             pull_request: {
               pull_request_id: "matching",
               pull_request_targets: [{
-                source_reference: "refs/heads/feature"
+                source_reference: "refs/heads/#{branch_name}"
               }]
             }
           },

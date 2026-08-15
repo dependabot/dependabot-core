@@ -53,10 +53,10 @@ RSpec.describe Dependabot::PullRequestCreator::Codecommit do
       .to receive(:for_source).and_return(codecommit_client)
     allow(codecommit_client).to receive(:branch).with(branch_name).and_return(branch_response)
     allow(codecommit_client)
-      .to receive(:pull_requests).with(source.repo, "open", source.branch)
+      .to receive(:pull_requests).with(source.repo, "open", branch_name)
       .and_return(open_pull_requests)
     allow(codecommit_client)
-      .to receive(:pull_requests).with(source.repo, "closed", source.branch)
+      .to receive(:pull_requests).with(source.repo, "closed", branch_name)
       .and_return(closed_pull_requests)
     allow(codecommit_client).to receive_messages(
       create_commit: Aws::CodeCommit::Types::CreateCommitOutput.new,

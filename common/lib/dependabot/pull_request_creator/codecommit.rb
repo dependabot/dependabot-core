@@ -193,12 +193,12 @@ module Dependabot
               open_prs = codecommit_client_for_source.pull_requests(
                 source.repo,
                 "open",
-                source.branch || default_branch
+                branch_name
               )
               closed_prs = codecommit_client_for_source.pull_requests(
                 source.repo,
                 "closed",
-                source.branch || default_branch
+                branch_name
               )
 
               [*open_prs, *closed_prs]
