@@ -795,6 +795,41 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
       end
 
+      context "when file metadata omits the content" do
+        let(:raw_content) { "raw requirements\n" }
+
+        before do
+          metadata = JSON.parse(fixture("github", "gemfile_content.json"))
+          metadata["content"] = ""
+          stub_request(:get, url + "requirements.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: JSON.dump(metadata),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "requirements.txt?ref=sha")
+            .with(
+              headers: {
+                "Accept" => "application/vnd.github.v3.raw",
+                "Authorization" => "token token"
+              }
+            )
+            .to_return(
+              status: 200,
+              body: raw_content,
+              headers: { "content-type" => "text/plain" }
+            )
+        end
+
+        it "fetches the raw file content" do
+          expect(files.first.content).to eq(raw_content)
+          expect(WebMock)
+            .to have_requested(:get, url + "requirements.txt?ref=sha")
+            .with(headers: { "Accept" => "application/vnd.github.v3.raw" })
+        end
+      end
+
       context "when a dependency file is too big to download" do
         let(:blob_url) do
           "https://api.github.com/repos/#{repo}/git/blobs/" \
