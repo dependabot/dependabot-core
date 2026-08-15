@@ -38,7 +38,8 @@ module Dependabot
             elsif v.is_a?(Dependabot::Package::PackageRelease)
               a.vulnerable?(v.version)
             elsif v.is_a?(Dependabot::GitTagDetails)
-              a.vulnerable?(T.must(v.version))
+              version = v.version
+              version ? a.vulnerable?(version) : false
             else
               a.vulnerable?(v.fetch(:version))
             end
