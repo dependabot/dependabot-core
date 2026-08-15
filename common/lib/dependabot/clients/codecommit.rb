@@ -245,13 +245,16 @@ module Dependabot
           branch_name: String,
           commit_id: String
         )
-          .returns(Aws::CodeCommit::Types::BranchInfo)
+          .returns(Seahorse::Client::Response)
       end
       def create_branch(repo, branch_name, commit_id)
-        cc_client.create_branch(
-          repository_name: repo,
-          branch_name: branch_name,
-          commit_id: commit_id
+        T.cast(
+          cc_client.create_branch(
+            repository_name: repo,
+            branch_name: branch_name,
+            commit_id: commit_id
+          ),
+          Seahorse::Client::Response
         )
       end
 
@@ -263,7 +266,7 @@ module Dependabot
           commit_message: String,
           files: T::Array[Dependabot::DependencyFile]
         )
-          .returns(Aws::CodeCommit::Types::CreateCommitOutput)
+          .returns(Seahorse::Client::Response)
       end
       def create_commit(
         branch_name,
@@ -272,19 +275,22 @@ module Dependabot
         commit_message,
         files
       )
-        cc_client.create_commit(
-          repository_name: source.unscoped_repo,
-          branch_name: branch_name,
-          parent_commit_id: base_commit,
-          author_name: author_name,
-          commit_message: commit_message,
-          put_files: files.map do |file|
-            {
-              file_path: file.path,
-              file_mode: "NORMAL",
-              file_content: file.content
-            }
-          end
+        T.cast(
+          cc_client.create_commit(
+            repository_name: source.unscoped_repo,
+            branch_name: branch_name,
+            parent_commit_id: base_commit,
+            author_name: author_name,
+            commit_message: commit_message,
+            put_files: files.map do |file|
+              {
+                file_path: file.path,
+                file_mode: "NORMAL",
+                file_content: file.content
+              }
+            end
+          ),
+          Seahorse::Client::Response
         )
       end
 
@@ -295,7 +301,7 @@ module Dependabot
           source_branch: String,
           pr_description: String
         )
-          .returns(T.nilable(Aws::CodeCommit::Types::CreatePullRequestOutput))
+          .returns(Seahorse::Client::Response)
       end
       def create_pull_request(
         pr_name,
@@ -303,14 +309,17 @@ module Dependabot
         source_branch,
         pr_description
       )
-        cc_client.create_pull_request(
-          title: pr_name,
-          description: pr_description,
-          targets: [
-            { repository_name: source.unscoped_repo,
-              source_reference: target_branch,
-              destination_reference: source_branch }
-          ]
+        T.cast(
+          cc_client.create_pull_request(
+            title: pr_name,
+            description: pr_description,
+            targets: [
+              { repository_name: source.unscoped_repo,
+                source_reference: target_branch,
+                destination_reference: source_branch }
+            ]
+          ),
+          Seahorse::Client::Response
         )
       end
 

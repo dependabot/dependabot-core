@@ -110,7 +110,7 @@ module Dependabot
         ) == base_commit
       end
 
-      sig { returns(T.nilable(Aws::CodeCommit::Types::CreatePullRequestOutput)) }
+      sig { returns(T.nilable(Seahorse::Client::Response)) }
       def create_pull_request
         branch = create_or_get_branch(base_commit)
         return unless branch
@@ -124,7 +124,6 @@ module Dependabot
           pr_description
           # codecommit doesn't support PR labels
         )
-        return unless pull_request
 
         pull_request
       end

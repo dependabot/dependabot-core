@@ -21,7 +21,7 @@ RSpec.describe Dependabot::Clients::CodeCommit do
   let(:source) do
     Dependabot::Source.new(
       provider: "codecommit",
-      repo: "",
+      repo: repo,
       directory: "/",
       branch: "master"
     )
@@ -225,6 +225,44 @@ RSpec.describe Dependabot::Clients::CodeCommit do
       expect(pull_requests.first).to be_a(Seahorse::Client::Response)
       expect(pull_requests.first.data).to be_a(Aws::CodeCommit::Types::GetPullRequestOutput)
       expect(pull_requests.first.data.pull_request.pull_request_id).to eq("matching")
+    end
+  end
+
+  describe "write operations" do
+    let(:dependency_file) do
+      Dependabot::DependencyFile.new(name: "Gemfile", content: "gem \"business\"")
+    end
+
+    it "preserves the create branch response wrapper" do
+      stubbed_cc_client.stub_responses(:create_branch, {})
+
+      response = client.create_branch(repo, "feature", "commit")
+
+      expect(response).to be_a(Seahorse::Client::Response)
+    end
+
+    it "preserves the create commit response wrapper" do
+      stubbed_cc_client.stub_responses(:create_commit, commit_id: "commit", tree_id: "tree")
+
+      response = client.create_commit("feature", nil, "base", "Bump dependency", [dependency_file])
+
+      expect(response).to be_a(Seahorse::Client::Response)
+      expect(response.data).to be_a(Aws::CodeCommit::Types::CreateCommitOutput)
+    end
+
+    it "preserves the create pull request response wrapper" do
+      stubbed_cc_client.stub_responses(
+        :create_pull_request,
+        pull_request: {
+          pull_request_id: "1",
+          pull_request_targets: []
+        }
+      )
+
+      response = client.create_pull_request("PR name", "feature", "main", "PR description")
+
+      expect(response).to be_a(Seahorse::Client::Response)
+      expect(response.data).to be_a(Aws::CodeCommit::Types::CreatePullRequestOutput)
     end
   end
 end

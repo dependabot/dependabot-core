@@ -47,6 +47,35 @@ RSpec.describe Dependabot::PullRequestCreator::Codecommit do
   end
   let(:open_pull_requests) { [] }
   let(:closed_pull_requests) { [] }
+  let(:create_commit_response) do
+    client = Aws::CodeCommit::Client.new(stub_responses: true)
+    client.stub_responses(:create_commit, commit_id: "commit", tree_id: "tree")
+    client.create_commit(
+      repository_name: source.repo,
+      branch_name: branch_name,
+      parent_commit_id: "base",
+      commit_message: "Bump dependency"
+    )
+  end
+  let(:create_pull_request_response) do
+    client = Aws::CodeCommit::Client.new(stub_responses: true)
+    client.stub_responses(
+      :create_pull_request,
+      pull_request: {
+        pull_request_id: "1",
+        pull_request_targets: []
+      }
+    )
+    client.create_pull_request(
+      title: "PR name",
+      description: "PR description",
+      targets: [{
+        repository_name: source.repo,
+        source_reference: branch_name,
+        destination_reference: source.branch
+      }]
+    )
+  end
 
   before do
     allow(Dependabot::Clients::CodeCommit)
@@ -59,8 +88,8 @@ RSpec.describe Dependabot::PullRequestCreator::Codecommit do
       .to receive(:pull_requests).with(source.repo, "closed", branch_name)
       .and_return(closed_pull_requests)
     allow(codecommit_client).to receive_messages(
-      create_commit: Aws::CodeCommit::Types::CreateCommitOutput.new,
-      create_pull_request: Aws::CodeCommit::Types::CreatePullRequestOutput.new
+      create_commit: create_commit_response,
+      create_pull_request: create_pull_request_response
     )
   end
 
