@@ -336,18 +336,15 @@ module Dependabot
         sig { params(yarn_lock: Dependabot::DependencyFile).returns(T::Hash[String, String]) }
         def run_yarn_berry_subdependency_updater(yarn_lock:)
           dep = T.must(sub_dependencies.first)
-          update = "#{dep.name}@#{dep.version}"
-
-          commands = [
-            ["add #{update} #{yarn_berry_args}".strip, "add <update> #{yarn_berry_args}".strip],
-            ["dedupe #{dep.name} #{yarn_berry_args}".strip, "dedupe <dep_name> #{yarn_berry_args}".strip],
-            ["remove #{dep.name} #{yarn_berry_args}".strip, "remove <dep_name> #{yarn_berry_args}".strip]
-          ]
-
           original_content = File.read(yarn_lock.name)
-          Helpers.run_yarn_commands(*commands)
+
+          update_berry_subdependency_via_up(dep)
 
           updated_content = File.read(yarn_lock.name)
+          if updated_content == original_content
+            updated_content = run_yarn_berry_subdependency_add_dedupe_remove(dep, yarn_lock)
+          end
+
           if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
             begin
               NativeHelpers.run_yarn_audit_fix_command
@@ -361,6 +358,46 @@ module Dependabot
           end
 
           { yarn_lock.name => updated_content }
+        end
+
+        # A sub-dependency constrained by a package.json `resolutions`/`overrides`
+        # entry can only be bumped by re-resolving the whole tree with that override
+        # in effect, the same command SubdependencyVersionResolver uses to find the
+        # fix in the first place (see subdependency_version_resolver.rb). Plain
+        # `add`+`dedupe`+`remove` re-derives the version purely from the override
+        # once the temporary pin is removed, so it never moves off the resolved
+        # version already cached in the lockfile.
+        #
+        # The checker derives a sub-dependency's target version from this same bare
+        # `up -R` command (see SubdependencyVersionResolver#run_yarn_berry_updater),
+        # so no exact-version pin is attempted here; Yarn's recursive `up` rejects
+        # version descriptors ("Ranges aren't allowed when using --recursive"). The
+        # target can still diverge when it was chosen by the vulnerability auditor
+        # (full-unlock security fixes) or the audit-fix-fallback experiment; in those
+        # cases `up -R` lands on the latest version matching the override's range
+        # (still a fix), and an unchanged lockfile falls through to the caller's
+        # add/dedupe/remove and audit-fix fallbacks.
+        sig { params(dep: Dependabot::Dependency).void }
+        def update_berry_subdependency_via_up(dep)
+          Helpers.run_yarn_command(
+            "up -R #{dep.name} #{yarn_berry_args}".strip,
+            fingerprint: "up -R <dep_name> #{yarn_berry_args}".strip,
+            env: yarn_time_gate_env
+          )
+        end
+
+        sig { params(dep: Dependabot::Dependency, yarn_lock: Dependabot::DependencyFile).returns(String) }
+        def run_yarn_berry_subdependency_add_dedupe_remove(dep, yarn_lock)
+          update = "#{dep.name}@#{dep.version}"
+
+          commands = [
+            ["add #{update} #{yarn_berry_args}".strip, "add <update> #{yarn_berry_args}".strip],
+            ["dedupe #{dep.name} #{yarn_berry_args}".strip, "dedupe <dep_name> #{yarn_berry_args}".strip],
+            ["remove #{dep.name} #{yarn_berry_args}".strip, "remove <dep_name> #{yarn_berry_args}".strip]
+          ]
+
+          Helpers.run_yarn_commands(*commands)
+          File.read(yarn_lock.name)
         end
 
         sig { returns(T::Boolean) }
