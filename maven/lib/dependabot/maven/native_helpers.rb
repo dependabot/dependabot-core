@@ -3,7 +3,6 @@
 
 require "fileutils"
 require "open3"
-require "shellwords"
 require "uri"
 require "sorbet-runtime"
 require "nokogiri"
@@ -85,7 +84,12 @@ module Dependabot
           "--no-transfer-progress"
         ] + extra_args
 
-        cmd = Shellwords.join(["mvn"] + standard_args)
+        # Pass the argument vector directly instead of a pre-joined shell string.
+        # `run_shell_command` shell-escapes string commands internally, so building
+        # the command with `Shellwords.join` here would double-escape arguments
+        # (e.g. `-Dmaven=3.6.3` becoming `-Dmaven\=3.6.3`), which Maven then fails
+        # to parse. An argument vector is executed without an intermediate shell.
+        cmd = ["mvn"] + standard_args
         run_cwd = cwd && cwd != "." ? cwd : nil
         SharedHelpers.run_shell_command(cmd, env: env, cwd: run_cwd)
       end
