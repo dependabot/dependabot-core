@@ -587,6 +587,20 @@ RSpec.describe Dependabot::Maven::Shared::SharedVersionFinder do
           it { is_expected.to be true }
         end
 
+        context "when the version has a single embedded git commit with the upper case V suffix" do
+          let(:dependency_version) { "5622.Vc9c3051619f5" }
+          let(:comparison_version) { "5681.79d2ddf61465" }
+
+          it { is_expected.to be true }
+        end
+
+        context "when the version has a single embedded git commit with the upper case G suffix" do
+          let(:dependency_version) { "1.2.3-123-Gabcdef7" }
+          let(:comparison_version) { "1.2.3-124-Gabcdef8" }
+
+          it { is_expected.to be true }
+        end
+
         context "when the version contains embedded git commit with a delimiter and leading character" do
           # Example: https://github.com/jenkinsci/bom/releases/tag/5723.v6f9c6b_d1218a_
           let(:dependency_version) { "5723.v6f9c6b_d1218a_" }
