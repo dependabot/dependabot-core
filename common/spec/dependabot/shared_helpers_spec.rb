@@ -207,6 +207,18 @@ RSpec.describe Dependabot::SharedHelpers do
       end
     end
 
+    context "when the subprocess returns a malformed error" do
+      let(:function) { "malformed_error" }
+
+      it "raises a HelperSubprocessFailed error" do
+        expect { run_subprocess }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
+            expect(error.error_class).to eq("TypeError")
+            expect(error.message).to eq("helper error must be a string")
+          end
+      end
+    end
+
     context "when the subprocess is killed" do
       let(:function) { "killed" }
 

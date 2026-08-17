@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -152,9 +152,40 @@ module Dependabot
         run_shell_command("git clean -fx .")
       end
 
-      sig { params(args: SharedHelpers::Command, kwargs: T.any(T::Boolean, String)).returns(String) }
-      def run_shell_command(*args, **kwargs)
-        Dir.chdir(path) { T.unsafe(SharedHelpers).run_shell_command(*args, **kwargs) }
+      sig do
+        params(
+          command: SharedHelpers::Command,
+          allow_unsafe_shell_command: T::Boolean,
+          cwd: T.nilable(String),
+          env: T.nilable(T::Hash[String, String]),
+          fingerprint: T.nilable(String),
+          stderr_to_stdout: T::Boolean,
+          timeout: Integer,
+          output_observer: CommandHelpers::OutputObserver
+        ).returns(String)
+      end
+      def run_shell_command(
+        command,
+        allow_unsafe_shell_command: false,
+        cwd: nil,
+        env: {},
+        fingerprint: nil,
+        stderr_to_stdout: true,
+        timeout: CommandHelpers::TIMEOUTS::DEFAULT,
+        output_observer: nil
+      )
+        Dir.chdir(path) do
+          SharedHelpers.run_shell_command(
+            command,
+            allow_unsafe_shell_command: allow_unsafe_shell_command,
+            cwd: cwd,
+            env: env,
+            fingerprint: fingerprint,
+            stderr_to_stdout: stderr_to_stdout,
+            timeout: timeout,
+            output_observer: output_observer
+          )
+        end
       end
 
       sig { params(message: String).void }
