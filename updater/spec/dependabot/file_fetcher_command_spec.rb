@@ -62,6 +62,34 @@ RSpec.describe Dependabot::FileFetcherCommand do
       expect(dependency_file.content_encoding).to eq("utf-8")
     end
 
+    context "when only a local checkout may be used" do
+      let(:repo_contents_path) { Dir.mktmpdir }
+
+      before do
+        allow(Dependabot::Environment).to receive_messages(
+          repo_contents_path: repo_contents_path
+        )
+        stub_const("ENV", ENV.to_h.merge("DEPENDABOT_LOCAL_CHECKOUT_ONLY" => "true"))
+      end
+
+      after { FileUtils.rm_rf(repo_contents_path) }
+
+      it "reports an error instead of fetching the repository when the checkout is missing" do
+        expect(Dependabot::Bundler::FileFetcher).not_to receive(:new)
+        expect(api_client).to receive(:record_update_job_error).with(
+          hash_including(
+            error_type: "file_fetcher_error",
+            error_details: hash_including(
+              Dependabot::ErrorAttributes::MESSAGE => "Local repository checkout not found at #{repo_contents_path}"
+            )
+          )
+        )
+        expect(api_client).to receive(:mark_job_as_processed)
+
+        expect { perform_job }.to output(/Local repository checkout not found/).to_stdout_from_any_process
+      end
+    end
+
     context "when empty directories are specified" do
       before do
         allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(Dir.mktmpdir)
