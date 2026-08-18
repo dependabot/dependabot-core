@@ -17,7 +17,7 @@ module Dependabot
 
       # Matches a [compat] table header, tolerating indentation and a trailing
       # comment ("[compat]  # pins")
-      COMPAT_HEADER_PATTERN = T.let(/^\s*\[compat\]\s*(?:#.*)?$/, Regexp)
+      COMPAT_HEADER_PATTERN = /^\s*\[compat\]\s*(?:#.*)?$/
 
       sig { returns(T::Array[Regexp]) }
       def self.updated_files_regex
@@ -97,8 +97,8 @@ module Dependabot
         dependencies.each do |dependency|
           # Find the new requirement for this dependency in this file
           new_requirement = dependency.requirements
-                                      .find { |req| T.cast(req[:file], String) == proj_file.name }
-                                      &.fetch(:requirement)
+                                      .find { |req| req.file == proj_file.name }
+                                      &.requirement_string
 
           next unless new_requirement
 

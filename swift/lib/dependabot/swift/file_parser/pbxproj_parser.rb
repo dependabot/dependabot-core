@@ -23,23 +23,20 @@ module Dependabot
         # Regex to extract XCRemoteSwiftPackageReference blocks from pbxproj.
         # Uses [^}]* to match the requirement block content — this is safe because
         # Xcode requirement blocks are always flat dictionaries with no nested braces.
-        PACKAGE_REF_BLOCK = T.let(
-          /
+        PACKAGE_REF_BLOCK = /
             isa\s*=\s*XCRemoteSwiftPackageReference;\s*
             repositoryURL\s*=\s*"(?<url>[^"]+)";\s*
             requirement\s*=\s*\{(?<requirement>[^}]*)\};
-          /mx,
-          Regexp
-        )
+          /mx
 
         # Patterns for extracting requirement fields
-        KIND_PATTERN = T.let(/kind\s*=\s*(\w+);/, Regexp)
-        VERSION_NUMBER_PATTERN = T.let(/[0-9A-Za-z.+-]+/, Regexp)
-        MIN_VERSION_PATTERN = T.let(/minimumVersion\s*=\s*(#{VERSION_NUMBER_PATTERN});/, Regexp)
-        MAX_VERSION_PATTERN = T.let(/maximumVersion\s*=\s*(#{VERSION_NUMBER_PATTERN});/, Regexp)
-        VERSION_PATTERN = T.let(/version\s*=\s*(#{VERSION_NUMBER_PATTERN});/, Regexp)
-        BRANCH_PATTERN = T.let(/branch\s*=\s*"?([^";]+)"?;/, Regexp)
-        REVISION_PATTERN = T.let(/revision\s*=\s*"?([^";]+)"?;/, Regexp)
+        KIND_PATTERN = /kind\s*=\s*(\w+);/
+        VERSION_NUMBER_PATTERN = /[0-9A-Za-z.+-]+/
+        MIN_VERSION_PATTERN = /minimumVersion\s*=\s*(#{VERSION_NUMBER_PATTERN});/
+        MAX_VERSION_PATTERN = /maximumVersion\s*=\s*(#{VERSION_NUMBER_PATTERN});/
+        VERSION_PATTERN = /version\s*=\s*(#{VERSION_NUMBER_PATTERN});/
+        BRANCH_PATTERN = /branch\s*=\s*"?([^";]+)"?;/
+        REVISION_PATTERN = /revision\s*=\s*"?([^";]+)"?;/
 
         sig { params(pbxproj_file: Dependabot::DependencyFile).void }
         def initialize(pbxproj_file)

@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 # Method signatures for Dependabot::Clients::Bitbucket methods delegated via method_missing.
-# These allow callers to use BitbucketWithRetries without T.unsafe wrappers.
+# These give callers concrete types for methods handled by the retry proxy.
 
 module Dependabot
   module Clients
@@ -18,17 +18,17 @@ module Dependabot
           repo: String,
           commit: T.nilable(String),
           path: T.nilable(String)
-        ).returns(T::Array[T::Hash[String, T.untyped]])
+        ).returns(T::Array[Bitbucket::JsonObject])
       end
       def fetch_repo_contents(repo, commit = nil, path = nil); end
 
       sig { params(repo: String, commit: String, path: String).returns(String) }
       def fetch_file_contents(repo, commit, path); end
 
-      sig { params(repo: String, branch_name: T.nilable(String)).returns(T::Enumerator[T::Hash[String, T.untyped]]) }
+      sig { params(repo: String, branch_name: T.nilable(String)).returns(T::Enumerator[Bitbucket::JsonObject]) }
       def commits(repo, branch_name = nil); end
 
-      sig { params(repo: String, branch_name: String).returns(T::Hash[String, T.untyped]) }
+      sig { params(repo: String, branch_name: String).returns(Bitbucket::JsonObject) }
       def branch(repo, branch_name); end
 
       sig do
@@ -37,17 +37,17 @@ module Dependabot
           source_branch: T.nilable(String),
           target_branch: T.nilable(String),
           status: T::Array[String]
-        ).returns(T::Array[T::Hash[String, T.untyped]])
+        ).returns(T::Array[Bitbucket::JsonObject])
       end
       def pull_requests(repo, source_branch, target_branch, status = []); end
 
       sig { params(url: String).returns(Excon::Response) }
       def get(url); end
 
-      sig { params(repo: String, previous_tag: String, new_tag: String).returns(T::Array[T::Hash[String, T.untyped]]) }
+      sig { params(repo: String, previous_tag: String, new_tag: String).returns(T::Array[Bitbucket::JsonObject]) }
       def compare(repo, previous_tag, new_tag); end
 
-      sig { params(repo: String).returns(T::Array[T::Hash[String, String]]) }
+      sig { params(repo: String).returns(T::Array[T::Hash[Symbol, String]]) }
       def default_reviewers(repo); end
     end
   end

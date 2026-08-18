@@ -29,24 +29,24 @@ module Dependabot
         # Matches "requirements" preceded by a hyphen, period, underscore, start-of-string, or slash,
         # followed by non-whitespace chars and ".txt".
         # Examples: requirements.txt, requirements.prod.txt, requirements/production.txt
-        REQUIREMENTS_TXT_REGEX = T.let(%r{(?:[-._]|^|/)requirements[^\s]*\.txt$}i, Regexp)
+        REQUIREMENTS_TXT_REGEX = %r{(?:[-._]|^|/)requirements[^\s]*\.txt$}i
 
         # More lenient: matches "require" at the start of the filename or after a hyphen/period/underscore/
         # slash delimiter, with an optional hyphen/underscore/slash suffix. The leading delimiter prevents
         # matching "require" as a substring of another word (e.g. "prequire.txt", "acquire.txt").
         # Examples: require.txt, require-test.txt, py3-require.txt, pyenv_require_e2e.txt
-        REQUIRE_TXT_REGEX = T.let(%r{(?:[-._]|^|/)require(?:[-_/][^\s.]*)?\.txt$}i, Regexp)
+        REQUIRE_TXT_REGEX = %r{(?:[-._]|^|/)require(?:[-_/][^\s.]*)?\.txt$}i
 
         # Matches "dependencies" / "dependency" preceded by a hyphen, period, underscore,
         # start-of-string, or slash, followed by non-whitespace chars and ".txt".
         # Examples: dependencies.txt, my-dependencies.txt, dependencies/python/ansible-lint.txt
-        DEPENDENCIES_TXT_REGEX = T.let(%r{(?:[-._]|^|/)dependenc(?:y|ies)[^\s]*\.txt$}i, Regexp)
+        DEPENDENCIES_TXT_REGEX = %r{(?:[-._]|^|/)dependenc(?:y|ies)[^\s]*\.txt$}i
 
         # More lenient: matches "depend" / "depends" at the start of the filename or after a hyphen/period/
         # underscore/slash delimiter, with an optional hyphen/underscore/slash suffix. The leading delimiter
         # prevents matching "depend" as a substring of another word (e.g. "codependent.txt").
         # Examples: depend.txt, depends.txt, depend-test.txt, py3-depends.txt
-        DEPEND_TXT_REGEX = T.let(%r{(?:[-._]|^|/)depend(?:s)?(?:[-_/][^\s.]*)?\.txt$}i, Regexp)
+        DEPEND_TXT_REGEX = %r{(?:[-._]|^|/)depend(?:s)?(?:[-_/][^\s.]*)?\.txt$}i
 
         # Whether a .txt filename looks like a real pip manifest rather than an unrelated .txt file.
         sig { params(path: String).returns(T::Boolean) }

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers"
@@ -16,11 +16,9 @@ module Dependabot
       require_relative "file_fetcher/downloader_config_fetcher"
       require_relative "file_fetcher/include_extractor"
 
-      WORKSPACE_FILES = T.let(%w(WORKSPACE WORKSPACE.bazel).freeze, T::Array[String])
-      MODULE_FILE = T.let("MODULE.bazel", String)
-      CONFIG_FILES = T.let(
-        %w(.bazelrc MODULE.bazel.lock .bazelversion maven_install.json BUILD BUILD.bazel).freeze, T::Array[String]
-      )
+      WORKSPACE_FILES = %w(WORKSPACE WORKSPACE.bazel).freeze
+      MODULE_FILE = "MODULE.bazel"
+      CONFIG_FILES = %w(.bazelrc MODULE.bazel.lock .bazelversion maven_install.json BUILD BUILD.bazel).freeze
 
       sig { override.returns(String) }
       def self.required_files_message
@@ -75,7 +73,7 @@ module Dependabot
         files = T.let([], T::Array[DependencyFile])
 
         module_file_items.each do |item|
-          file = fetch_file_if_present(T.must(item.name))
+          file = fetch_file_if_present(item.name)
           files << file if file
         end
 

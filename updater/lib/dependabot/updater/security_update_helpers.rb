@@ -197,11 +197,11 @@ module Dependabot
       # "hard" (enforced) ErrorHandler translation stay in lockstep on one label
       # set rather than re-listing the same strings in two places.
       module BlockedVersionsOperation
-        VERSION_UPDATE = T.let("version_update", String)
-        SECURITY_UPDATE = T.let("security_update", String)
-        REFRESH_SECURITY_UPDATE = T.let("refresh_security_update", String)
-        REFRESH_VERSION_UPDATE = T.let("refresh_version_update", String)
-        GROUP_UPDATE = T.let("group_update", String)
+        VERSION_UPDATE = "version_update"
+        SECURITY_UPDATE = "security_update"
+        REFRESH_SECURITY_UPDATE = "refresh_security_update"
+        REFRESH_VERSION_UPDATE = "refresh_version_update"
+        GROUP_UPDATE = "group_update"
       end
 
       private

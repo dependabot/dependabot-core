@@ -145,6 +145,32 @@ RSpec.describe Dependabot::Bazel::UpdateChecker::RequirementsUpdater do
           }]
         )
       end
+
+      context "with string-keyed nested attributes" do
+        let(:requirements) do
+          [{
+            file: "MODULE.bazel",
+            requirement: "0.33.0",
+            groups: %w(main test),
+            source: {
+              "type" => "registry",
+              "url" => "https://registry.bazel.build",
+              "custom" => "preserved"
+            }
+          }]
+        end
+
+        it "preserves the nested source payload and key style" do
+          source = updater.updated_requirements.first.source_hash
+
+          expect(source).to include(
+            "type" => "registry",
+            "url" => "https://registry.bazel.build",
+            "custom" => "preserved"
+          )
+          expect(source).not_to have_key(:type)
+        end
+      end
     end
 
     context "when requirements are modified after creation" do

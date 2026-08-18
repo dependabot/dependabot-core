@@ -35,13 +35,10 @@ module Dependabot
       # binary. Providers in these namespaces cannot be updated independently
       # because their version tracks the binary itself.
       # See: https://pkg.go.dev/github.com/opentofu/registry-address/v2#Provider.IsBuiltIn
-      BUILTIN_PROVIDER_NAMESPACES = T.let(
-        %w(
-          terraform.io/builtin
-          opentofu.org/builtin
-        ).freeze,
-        T::Array[String]
-      )
+      BUILTIN_PROVIDER_NAMESPACES = %w(
+        terraform.io/builtin
+        opentofu.org/builtin
+      ).freeze
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse

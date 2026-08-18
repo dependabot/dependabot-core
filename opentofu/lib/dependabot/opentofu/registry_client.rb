@@ -19,19 +19,13 @@ module Dependabot
 
       # Archive extensions supported by OpenTofu for HTTP URLs
       # https://opentofu.org/docs/language/modules/sources/#http-urls
-      ARCHIVE_EXTENSIONS = T.let(
-        %w(.zip .bz2 .tar.bz2 .tar.tbz2 .tbz2 .gz .tar.gz .tgz .xz .tar.xz .txz).freeze,
-        T::Array[String]
-      )
+      ARCHIVE_EXTENSIONS = %w(.zip .bz2 .tar.bz2 .tar.tbz2 .tbz2 .gz .tar.gz .tgz .xz .tar.xz .txz).freeze
       PUBLIC_HOSTNAME = "registry.opentofu.org"
       API_BASE_URL = "api.opentofu.org"
 
       # The OpenTofu Module Registry HTTP API is wire-compatible with Terraform's,
       # so credentials issued for either ecosystem are valid here.
-      ACCEPTED_CREDENTIAL_TYPES = T.let(
-        %w(opentofu_registry terraform_registry).freeze,
-        T::Array[String]
-      )
+      ACCEPTED_CREDENTIAL_TYPES = %w(opentofu_registry terraform_registry).freeze
 
       sig { params(hostname: String, credentials: T::Array[Dependabot::Credential]).void }
       def initialize(hostname: PUBLIC_HOSTNAME, credentials: [])
@@ -209,7 +203,7 @@ module Dependabot
       # @return [nil, Dependabot::Source]
       sig { params(dependency: Dependabot::Dependency).returns(T.nilable(Dependabot::Source)) }
       def source(dependency:)
-        type = T.must(dependency.requirements.first)[:source][:type]
+        type = T.must(dependency.source_string("type"))
         base_url = url_for_api("/registry/docs/")
         case type
         when "module", "modules", "registry"

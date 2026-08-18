@@ -17,7 +17,7 @@ module Dependabot
 
         # Placeholder satisfies go-gh's "token must be present" check in hosted mode
         # where the proxy supplies real auth. Mirrors git's installation-token username.
-        DUMMY_TOKEN = T.let("x-access-token", String)
+        DUMMY_TOKEN = "x-access-token"
 
         sig do
           params(credentials: T::Array[Dependabot::Credential])

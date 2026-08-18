@@ -485,6 +485,19 @@ RSpec.describe Dependabot::Vcpkg::FileUpdater do
         expect(updated_content["default-registry"]["kind"]).to eq("git")
         expect(updated_content["default-registry"]["repository"]).to eq("https://github.com/custom/vcpkg")
       end
+
+      context "with string-keyed source details" do
+        before do
+          dependency.requirements.first[:source] =
+            dependency.requirements.first.source_hash.transform_keys(&:to_s)
+        end
+
+        it "updates the baseline in default-registry" do
+          updated_content = JSON.parse(updated_dependency_files.first.content)
+
+          expect(updated_content.dig("default-registry", "baseline")).to eq("new-commit-sha")
+        end
+      end
     end
 
     context "when updating builtin default-registry baseline" do
@@ -879,6 +892,28 @@ RSpec.describe Dependabot::Vcpkg::FileUpdater do
 
       it "adds no overrides" do
         expect(updated_content).not_to have_key("overrides")
+      end
+
+      context "with string-keyed security metadata" do
+        before do
+          requirement = dependencies.first.requirements.first
+          requirement[:metadata] = requirement.metadata.transform_keys(&:to_s).merge("custom" => "preserved")
+        end
+
+        it "moves the baseline" do
+          expect(updated_content["builtin-baseline"]).to eq(baseline_sha)
+        end
+      end
+
+      context "with malformed remediation metadata" do
+        before do
+          dependencies.first.requirements.first[:metadata][:security_remediation] = "baseline"
+        end
+
+        it "raises a type error" do
+          expect { updated_dependency_files }
+            .to raise_error(TypeError, "metadata security_remediation must be a symbol or nil")
+        end
       end
     end
 

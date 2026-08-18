@@ -60,19 +60,21 @@ module Dependabot
 
       sig do
         params(file: Dependabot::DependencyFile)
-          .returns(T::Array[[T::Hash[Symbol, Object], T::Hash[Symbol, Object]]])
+          .returns(
+            T::Array[
+              [Dependabot::DependencyRequirement, Dependabot::DependencyRequirement]
+            ]
+          )
       end
       def requirement_pairs_for_file(file)
         pairs = dependency.requirements.zip(T.must(dependency.previous_requirements))
         filtered_pairs = pairs.reject do |new_req, old_req|
           next true unless old_req
 
-          file_name = T.cast(new_req[:file], T.nilable(String))
+          file_name = new_req.file
           next true if file_name != file.name
 
-          new_source = T.cast(new_req[:source], T.nilable(T::Hash[Symbol, Object]))
-          old_source = T.cast(old_req[:source], T.nilable(T::Hash[Symbol, Object]))
-          new_source == old_source
+          new_req.source == old_req.source
         end
 
         filtered_pairs.map { |new_req, old_req| [new_req, T.must(old_req)] }
@@ -81,15 +83,12 @@ module Dependabot
       sig do
         params(
           content: String,
-          new_req: T::Hash[Symbol, Object],
-          old_req: T::Hash[Symbol, Object]
+          new_req: Dependabot::DependencyRequirement,
+          old_req: Dependabot::DependencyRequirement
         ).returns(String)
       end
       def apply_requirement_update(content, new_req, old_req)
-        new_source = T.cast(new_req.fetch(:source), T::Hash[Symbol, Object])
-        source_type = T.cast(new_source.fetch(:type), String)
-
-        case source_type
+        case new_req.source_string("type")
         when "git"
           apply_git_requirement_update(content, new_req, old_req)
         when "additional_dependency"
@@ -102,20 +101,16 @@ module Dependabot
       sig do
         params(
           content: String,
-          new_req: T::Hash[Symbol, Object],
-          old_req: T::Hash[Symbol, Object]
+          new_req: Dependabot::DependencyRequirement,
+          old_req: Dependabot::DependencyRequirement
         ).returns(String)
       end
       def apply_git_requirement_update(content, new_req, old_req)
-        new_source = T.cast(new_req.fetch(:source), T::Hash[Symbol, Object])
-        old_source = T.cast(old_req.fetch(:source), T::Hash[Symbol, Object])
-        repo_url = T.cast(old_source.fetch(:url), String)
-        old_ref = T.cast(old_source.fetch(:ref), String)
-        new_ref = T.cast(new_source.fetch(:ref), String)
-
-        new_metadata = T.cast(new_req.fetch(:metadata, {}), T::Hash[Symbol, Object])
-        old_version = T.cast(new_metadata[:comment_version], T.nilable(String))
-        new_version = T.cast(new_metadata[:new_comment_version], T.nilable(String))
+        repo_url = T.must(old_req.source_string("url"))
+        old_ref = T.must(old_req.source_string("ref"))
+        new_ref = T.must(new_req.source_string("ref"))
+        old_version = new_req.metadata_string("comment_version")
+        new_version = new_req.metadata_string("new_comment_version")
 
         replace_ref_in_content(
           content,
@@ -130,16 +125,13 @@ module Dependabot
       sig do
         params(
           content: String,
-          new_req: T::Hash[Symbol, Object],
-          old_req: T::Hash[Symbol, Object]
+          new_req: Dependabot::DependencyRequirement,
+          old_req: Dependabot::DependencyRequirement
         ).returns(String)
       end
       def apply_additional_dependency_update(content, new_req, old_req)
-        old_source = T.cast(old_req.fetch(:source), T::Hash[Symbol, Object])
-        new_source = T.cast(new_req.fetch(:source), T::Hash[Symbol, Object])
-
-        old_string = T.cast(old_source.fetch(:original_string), String)
-        new_string = T.cast(new_source.fetch(:original_string), String)
+        old_string = T.must(old_req.source_string("original_string"))
+        new_string = T.must(new_req.source_string("original_string"))
 
         replace_additional_dependency_in_content(content, old_string, new_string)
       end

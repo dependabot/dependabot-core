@@ -21,13 +21,10 @@ module Dependabot
       # Lifecycle scripts that run automatically during package installation.
       # These are security-relevant because they execute with user privileges.
       # https://docs.npmjs.com/cli/v11/using-npm/scripts#npm-install
-      INSTALL_SCRIPTS = T.let(
-        %w(preinstall install postinstall prepublish preprepare prepare postprepare).freeze,
-        T::Array[String]
-      )
+      INSTALL_SCRIPTS = %w(preinstall install postinstall prepublish preprepare prepare postprepare).freeze
 
       # RFC 3986 unreserved ASCII characters; everything else needs percent-encoding.
-      CHARS_REQUIRING_ENCODING = T.let(/[^A-Za-z0-9._~-]/, Regexp)
+      CHARS_REQUIRING_ENCODING = /[^A-Za-z0-9._~-]/
       private_constant :CHARS_REQUIRING_ENCODING
 
       sig { override.returns(T.nilable(String)) }

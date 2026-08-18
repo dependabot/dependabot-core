@@ -14,7 +14,7 @@ module Dependabot
       extend T::Sig
 
       ECOSYSTEM = "deno"
-      MANIFEST_FILENAMES = T.let(%w(deno.json deno.jsonc).freeze, T::Array[String])
+      MANIFEST_FILENAMES = %w(deno.json deno.jsonc).freeze
 
       # Matches jsr:@scope/name[@constraint][/subpath] or npm:[@scope/]name[@constraint][/subpath]
       # Constraint and subpath are both optional per Deno's specifier format.
@@ -38,7 +38,7 @@ module Dependabot
             dep = parse_specifier(specifier.to_s, file)
             next unless dep
 
-            key = [dep.name, T.must(dep.requirements.first)[:source][:type]]
+            key = [dep.name, T.must(T.must(dep.requirements.first).source_string("type"))]
             existing = deps_by_key[key]
             deps_by_key[key] = if existing
                                  Dependabot::Dependency.new(

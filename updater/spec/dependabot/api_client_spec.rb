@@ -800,6 +800,18 @@ RSpec.describe Dependabot::ApiClient do
       end
     end
 
+    context "when the host does not implement the endpoint" do
+      before do
+        stub_request(:post, record_cooldown_meta_url).to_return(status: 404, body: "The resource cannot be found.")
+      end
+
+      it "does not retry" do
+        client.record_cooldown_meta(job)
+
+        expect(WebMock).to have_requested(:post, record_cooldown_meta_url).once
+      end
+    end
+
     context "when running through the Dependabot CLI" do
       subject(:client) { described_class.new("http://example.com", "cli", "token") }
 

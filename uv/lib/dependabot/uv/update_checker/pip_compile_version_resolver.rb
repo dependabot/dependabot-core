@@ -28,26 +28,18 @@ module Dependabot
       class PipCompileVersionResolver
         extend T::Sig
 
-        GIT_DEPENDENCY_UNREACHABLE_REGEX = T.let(/git clone --filter=blob:none --quiet (?<url>[^\s]+).* /, Regexp)
-        GIT_REFERENCE_NOT_FOUND_REGEX = T.let(/Did not find branch or tag '(?<tag>[^\n"]+)'/m, Regexp)
-        GIT_CREDENTIALS_ERROR_REGEX = T.let(
-          /could not read Username for '(?<url>[^']+)'/,
-          Regexp
-        )
-        GIT_DEPENDENCY_URL_FROM_UV_REGEX = T.let(
-          %r{git\+(?<url>https?://[^\s@#]+)},
-          Regexp
-        )
-        NATIVE_COMPILATION_ERROR = T.let(
-          "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1",
-          String
-        )
+        GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /
+        GIT_REFERENCE_NOT_FOUND_REGEX = /Did not find branch or tag '(?<tag>[^\n"]+)'/m
+        GIT_CREDENTIALS_ERROR_REGEX = /could not read Username for '(?<url>[^']+)'/
+        GIT_DEPENDENCY_URL_FROM_UV_REGEX = %r{git\+(?<url>https?://[^\s@#]+)}
+        NATIVE_COMPILATION_ERROR =
+          "pip._internal.exceptions.InstallationSubprocessError: Getting requirements to build wheel exited with 1"
         # See https://packaging.python.org/en/latest/tutorials/packaging-projects/#configuring-metadata
-        PYTHON_PACKAGE_NAME_REGEX = T.let(/[A-Za-z0-9_\-]+/, Regexp)
-        RESOLUTION_IMPOSSIBLE_ERROR = T.let("ResolutionImpossible", String)
-        ERROR_REGEX = T.let(/(?<=ERROR\:\W).*$/, Regexp)
-        UV_UNRESOLVABLE_REGEX = T.let(/ × No solution found when resolving dependencies:[\s\S]*$/, Regexp)
-        PYTHON_VERSION_REGEX = T.let(/--python-version[=\s]+(?<version>\d+\.\d+(?:\.\d+)?)/, Regexp)
+        PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/
+        RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
+        ERROR_REGEX = /(?<=ERROR\:\W).*$/
+        UV_UNRESOLVABLE_REGEX = / × No solution found when resolving dependencies:[\s\S]*$/
+        PYTHON_VERSION_REGEX = /--python-version[=\s]+(?<version>\d+\.\d+(?:\.\d+)?)/
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
@@ -73,10 +65,10 @@ module Dependabot
           ).void
         end
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
-          @dependency               = T.let(dependency, Dependabot::Dependency)
-          @dependency_files         = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials              = T.let(credentials, T::Array[Dependabot::Credential])
-          @repo_contents_path       = T.let(repo_contents_path, T.nilable(String))
+          @dependency               = dependency
+          @dependency_files         = dependency_files
+          @credentials              = credentials
+          @repo_contents_path       = repo_contents_path
           @build_isolation = T.let(true, T::Boolean)
           @error_handler = T.let(PipCompileErrorHandler.new, PipCompileErrorHandler)
         end
@@ -417,14 +409,14 @@ module Dependabot
         def update_req_file(file, updated_req)
           return T.must(file.content) unless file.name.end_with?(".in")
 
-          req = dependency.requirements.find { |r| r[:file] == file.name }
+          req = dependency.requirements.find { |r| r.file == file.name }
 
-          return T.must(file.content) + "\n#{dependency.name} #{updated_req}" unless req&.fetch(:requirement)
+          return T.must(file.content) + "\n#{dependency.name} #{updated_req}" unless req&.requirement_string
 
           Uv::FileUpdater::RequirementReplacer.new(
             content: T.must(file.content),
             dependency_name: dependency.name,
-            old_requirement: req[:requirement],
+            old_requirement: req.requirement_string,
             new_requirement: updated_req
           ).updated_content
         end
@@ -462,7 +454,7 @@ module Dependabot
         def filenames_to_compile
           files_from_reqs =
             dependency.requirements
-                      .map { |r| r[:file] }
+                      .filter_map(&:file)
                       .select { |fn| fn.end_with?(".in") }
 
           files_from_compiled_files =
@@ -609,13 +601,13 @@ module Dependabot
     class PipCompileErrorHandler
       extend T::Sig
 
-      SUBPROCESS_ERROR = T.let(/subprocess-exited-with-error/, Regexp)
+      SUBPROCESS_ERROR = /subprocess-exited-with-error/
 
-      INSTALLATION_ERROR = T.let(/InstallationError/, Regexp)
+      INSTALLATION_ERROR = /InstallationError/
 
-      INSTALLATION_SUBPROCESS_ERROR = T.let(/InstallationSubprocessError/, Regexp)
+      INSTALLATION_SUBPROCESS_ERROR = /InstallationSubprocessError/
 
-      HASH_MISMATCH = T.let(/HashMismatch/, Regexp)
+      HASH_MISMATCH = /HashMismatch/
 
       sig { params(error: String).void }
       def handle_pipcompile_error(error)

@@ -14,9 +14,9 @@ class EcosystemInfrastructureUpdater
 
   sig { params(name: String, overwrite_mode: String, quiet: T::Boolean).void }
   def initialize(name, overwrite_mode = "ask", quiet: false)
-    @ecosystem_name = T.let(name, String)
-    @overwrite_mode = T.let(overwrite_mode, String)
-    @quiet = T.let(quiet, T::Boolean)
+    @ecosystem_name = name
+    @overwrite_mode = overwrite_mode
+    @quiet = quiet
     @github_updater = T.let(
       GitHubWorkflowUpdater.new(name),
       GitHubWorkflowUpdater

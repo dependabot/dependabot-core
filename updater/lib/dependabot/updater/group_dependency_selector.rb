@@ -41,8 +41,8 @@ module Dependabot
 
       sig { params(group: Dependabot::DependencyGroup, dependency_snapshot: Dependabot::DependencySnapshot).void }
       def initialize(group:, dependency_snapshot:)
-        @group = T.let(group, Dependabot::DependencyGroup)
-        @snapshot = T.let(dependency_snapshot, Dependabot::DependencySnapshot)
+        @group = group
+        @snapshot = dependency_snapshot
         @source_directory = T.let(nil, T.nilable(String))
         @updated_dependencies = T.let([], T::Array[Dependabot::Dependency])
         @filtered_dependencies = T.let(nil, T.nilable(T::Array[Dependabot::Dependency]))
