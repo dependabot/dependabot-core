@@ -1388,6 +1388,41 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
+      # Regression coverage for dependabot/dependabot-core#15937: asserts the
+      # derived cooldown reaches the npm invocation, not just that the derivation
+      # returns the right number.
+      context "when a cooldown with per-semver days is configured" do
+        let(:files) { project_dependency_files("npm8/simple") }
+        let(:updater) do
+          described_class.new(
+            dependency_files: files,
+            dependencies: dependencies,
+            credentials: credentials,
+            repo_contents_path: repo_contents_path,
+            options: {
+              update_cooldown: Dependabot::Package::ReleaseCooldownOptions.new(
+                default_days: 14,
+                semver_patch_days: 3
+              )
+            }
+          )
+        end
+
+        it "invokes npm with the patch window, not default_days" do
+          commands = []
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command).and_wrap_original do |original, *args, **kwargs|
+            commands << args.first
+            original.call(*args, **kwargs)
+          end
+
+          expect(updated_files.count).to eq(2)
+
+          gated = commands.select { |command| command.include?("--min-release-age") }
+          expect(gated).not_to be_empty
+          expect(gated).to all(include("--min-release-age=3"))
+        end
+      end
+
       context "when a tarball URL will incorrectly swap to http" do
         let(:files) { project_dependency_files("npm8/tarball_bug") }
 
