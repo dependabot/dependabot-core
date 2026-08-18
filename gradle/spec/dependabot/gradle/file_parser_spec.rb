@@ -452,6 +452,44 @@ RSpec.describe Dependabot::Gradle::FileParser do
       its(:length) { is_expected.to eq(20) }
     end
 
+    context "with a dependency substitution target" do
+      let(:build_plugin_name) { "com.example:build-plugin" }
+      let(:substitution_dependency_name) { "com.fasterxml.jackson.core:jackson-databind" }
+      let(:versioned_substitution_dependency_name) { "com.example:versioned-substitution" }
+      let(:substitution_declaration_type) do
+        described_class::DEPENDENCY_SUBSTITUTION_DECLARATION_TYPE
+      end
+      let(:files) { [settings_file] }
+      let(:settings_file) do
+        Dependabot::DependencyFile.new(
+          name: "settings.gradle",
+          content: fixture("settings_files", "dependency_substitution_settings.gradle")
+        )
+      end
+
+      it "marks substitution declarations while keeping them parsed" do
+        expect(dependencies.map(&:name)).to contain_exactly(
+          build_plugin_name,
+          substitution_dependency_name,
+          versioned_substitution_dependency_name
+        )
+
+        build_plugin = dependencies.find { |dependency| dependency.name == build_plugin_name }
+        substitution = dependencies.find { |dependency| dependency.name == substitution_dependency_name }
+        versioned_substitution = dependencies.find do |dependency|
+          dependency.name == versioned_substitution_dependency_name
+        end
+        expect(build_plugin.requirements.first.metadata).to be_nil
+        expect(substitution.requirements.first.metadata).to eq(
+          { declaration_type: substitution_declaration_type }
+        )
+        expect(versioned_substitution.requirements.map(&:metadata)).to contain_exactly(
+          { declaration_type: substitution_declaration_type },
+          { declaration_type: substitution_declaration_type }
+        )
+      end
+    end
+
     context "with kotlin" do
       let(:buildfile) do
         Dependabot::DependencyFile.new(

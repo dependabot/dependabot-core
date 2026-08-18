@@ -127,7 +127,7 @@ module Dependabot
           unless checker.vulnerable?
             # The current dependency isn't vulnerable if the version is correct and
             # can be matched against the advisories affected versions
-            if checker.version_class.correct?(checker.dependency.version)
+            if resolved_version_known_for_security_update?(checker)
               return record_security_update_not_needed_error(checker.dependency)
             end
 
@@ -232,6 +232,24 @@ module Dependabot
           return dependency unless vulnerable_dependency
 
           vulnerable_dependency
+        end
+
+        sig { params(checker: Dependabot::UpdateCheckers::Base).returns(T::Boolean) }
+        def resolved_version_known_for_security_update?(checker)
+          return false if dependency_substitution_only?(checker.dependency)
+
+          checker.version_class.correct?(checker.dependency.version)
+        end
+
+        sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
+        def dependency_substitution_only?(dependency)
+          return false unless job.package_manager == "gradle"
+          return false if dependency.requirements.empty?
+
+          dependency.requirements.all? do |requirement|
+            requirement.metadata_string("declaration_type") ==
+              Dependabot::Gradle::FileParser::DEPENDENCY_SUBSTITUTION_DECLARATION_TYPE
+          end
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(Dependabot::UpdateCheckers::Base) }

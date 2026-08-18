@@ -8,6 +8,29 @@ require "dependabot/gradle/file_updater"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::Gradle::FileUpdater do
+  def substitution_requirement(version, file: "settings.gradle")
+    {
+      file: file,
+      requirement: version,
+      groups: [],
+      source: nil,
+      metadata: {
+        declaration_type:
+          Dependabot::Gradle::FileParser::DEPENDENCY_SUBSTITUTION_DECLARATION_TYPE
+      }
+    }
+  end
+
+  def regular_requirement(version)
+    {
+      file: "build.gradle",
+      requirement: version,
+      groups: [],
+      source: nil,
+      metadata: nil
+    }
+  end
+
   let(:dependency) do
     Dependabot::Dependency.new(
       name: "co.aikar:acf-paper",
@@ -83,6 +106,73 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
     end
 
     its(:length) { is_expected.to eq(1) }
+
+    context "with multiple substitution requirements on the same line" do
+      let(:dependency_files) { [buildfile] }
+      let(:buildfile) do
+        Dependabot::DependencyFile.new(
+          name: "settings.gradle",
+          content: fixture("settings_files", "dependency_substitution_settings.gradle")
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "com.example:versioned-substitution",
+          version: "3.0.0",
+          previous_version: "2.0.0",
+          requirements: [
+            substitution_requirement("3.0.0"),
+            substitution_requirement("3.0.0")
+          ],
+          previous_requirements: [
+            substitution_requirement("1.0.0"),
+            substitution_requirement("2.0.0")
+          ],
+          package_manager: "gradle"
+        )
+      end
+
+      it "updates the source and target without processing the line twice" do
+        expect(updated_files.first.content).to include(
+          "substitute(module('com.example:versioned-substitution:3.0.0'))" \
+          ".using(module('com.example:versioned-substitution:3.0.0'))"
+        )
+      end
+    end
+
+    context "with a regular declaration and substitution target on the same line" do
+      let(:dependency_files) { [buildfile] }
+      let(:buildfile) do
+        Dependabot::DependencyFile.new(
+          name: "build.gradle",
+          content: fixture("buildfiles", "dependency_and_substitution_same_line.gradle")
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "com.example:mixed-declaration",
+          version: "2.0.0",
+          previous_version: "1.0.0",
+          requirements: [
+            regular_requirement("2.0.0"),
+            substitution_requirement("2.0.0", file: "build.gradle")
+          ],
+          previous_requirements: [
+            regular_requirement("1.0.0"),
+            substitution_requirement("1.0.0", file: "build.gradle")
+          ],
+          package_manager: "gradle"
+        )
+      end
+
+      it "updates both declarations without processing the line twice" do
+        expect(updated_files.first.content).to include(
+          "implementation('com.example:mixed-declaration:2.0.0'); " \
+          "substitute module('com.example:mixed-declaration') " \
+          "using module('com.example:mixed-declaration:2.0.0')"
+        )
+      end
+    end
 
     describe "the updated build.gradle file" do
       subject(:updated_buildfile) do

@@ -67,6 +67,7 @@ module Dependabot
         # dependencies may have multiple requirements targeting the same file or build dir
         # we keep the last one by path to later run its native helpers
         buildfiles_processed = T.let({}, T::Hash[String, Dependabot::DependencyFile])
+        applied_text_changes = T.let(Set.new, T::Set[T::Array[String]])
 
         # The UpdateChecker ensures the order of requirements is preserved
         # when updating, so we can zip them together in new/old pairs.
@@ -93,6 +94,13 @@ module Dependabot
           elsif new_req.metadata_string_hash("dependency_set")
             files = update_files_for_dep_set_change(files, old_req, new_req)
           else
+            text_change_key = [
+              T.must(new_req.file),
+              old_req.requirement.to_s,
+              new_req.requirement.to_s
+            ]
+            next unless applied_text_changes.add?(text_change_key)
+
             files[T.must(files.index(buildfile))] = update_version_in_buildfile(dependency, buildfile, old_req, new_req)
           end
 
@@ -229,7 +237,8 @@ module Dependabot
         original_content = T.must(buildfile.content.dup)
 
         updated_content =
-          original_buildfile_declarations(dependency, previous_req).reduce(original_content) do |content, declaration|
+          original_buildfile_declarations(dependency, previous_req, buildfile)
+          .reduce(original_content) do |content, declaration|
             content.gsub(
               declaration,
               updated_buildfile_declaration(declaration, previous_req, requirement)
@@ -241,19 +250,18 @@ module Dependabot
         updated_file(file: buildfile, content: updated_content)
       end
 
-      # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/PerceivedComplexity
       sig do
         params(
           dependency: Dependabot::Dependency,
-          requirement: Dependabot::DependencyRequirement
+          requirement: Dependabot::DependencyRequirement,
+          buildfile: Dependabot::DependencyFile
         ).returns(T::Array[String])
       end
-      def original_buildfile_declarations(dependency, requirement)
+      def original_buildfile_declarations(dependency, requirement, buildfile)
         # This implementation is limited to declarations that appear on a
         # single line.
         file = T.must(requirement.file)
-        buildfile = T.must(buildfiles.find { |f| f.name == file })
 
         T.must(buildfile.content).lines.select do |line|
           line = evaluate_properties(line, buildfile)
@@ -276,7 +284,6 @@ module Dependabot
           line.include?(T.must(requirement.requirement_string))
         end
       end
-      # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
 
       sig { params(string: String, buildfile: Dependabot::DependencyFile).returns(String) }

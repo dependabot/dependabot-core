@@ -14,6 +14,7 @@ require "dependabot/dependency_change_builder"
 require "dependabot/notices"
 
 require "dependabot/bundler"
+require "dependabot/gradle/file_parser"
 
 RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest do
   include DependencyFileHelpers
@@ -235,6 +236,13 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
   end
 
   describe "#perform" do
+    let(:substitution_dependency_name) { "com.fasterxml.jackson.core:jackson-databind" }
+    let(:substitution_dependency_version) { "2.22.1" }
+    let(:substitution_declaration_type) do
+      Dependabot::Gradle::FileParser::DEPENDENCY_SUBSTITUTION_DECLARATION_TYPE
+    end
+    let(:substitution_file) { "settings.gradle" }
+
     before do
       allow(dependency_snapshot).to receive(
         :dependencies
@@ -270,6 +278,124 @@ RSpec.describe Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest 
         expect(mock_error_handler).not_to receive(
           :handle_dependency_error
         )
+        perform
+      end
+    end
+
+    context "when the dependency version comes only from a substitution target" do
+      before do
+        allow(job).to receive(:package_manager).and_return("gradle")
+        allow(job).to receive_messages(blocked_versions_for?: false, allowed_update?: true)
+        allow(create_security_update_pull_request).to receive(:update_checker_for).and_return(stub_update_checker)
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: substitution_dependency_name,
+          version: substitution_dependency_version,
+          requirements: [{
+            file: substitution_file,
+            requirement: substitution_dependency_version,
+            groups: [],
+            source: nil,
+            metadata: { declaration_type: substitution_declaration_type }
+          }],
+          package_manager: "gradle"
+        )
+      end
+
+      context "when the declared version is not vulnerable" do
+        before do
+          allow(stub_update_checker).to receive(:vulnerable?).and_return(false)
+        end
+
+        it "does not use the substitution as proof that the resolved dependency is safe" do
+          expect(create_security_update_pull_request).not_to receive(:create_pull_request)
+          expect(mock_service).to receive(:record_update_job_error).with(
+            error_type: "dependency_file_not_supported",
+            error_details: { "dependency-name": substitution_dependency_name }
+          )
+
+          perform
+        end
+      end
+
+      context "when the declared version is vulnerable" do
+        it "continues through the normal security update path" do
+          expect(create_security_update_pull_request)
+            .to receive(:create_pull_request)
+            .with(stub_dependency_change)
+
+          perform
+        end
+      end
+    end
+
+    context "when the dependency also has a regular declaration" do
+      before do
+        allow(job).to receive(:package_manager).and_return("gradle")
+        allow(job).to receive_messages(blocked_versions_for?: false, allowed_update?: true)
+        allow(create_security_update_pull_request).to receive(:update_checker_for).and_return(stub_update_checker)
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: substitution_dependency_name,
+          version: substitution_dependency_version,
+          requirements: [
+            {
+              file: substitution_file,
+              requirement: substitution_dependency_version,
+              groups: [],
+              source: nil,
+              metadata: { declaration_type: substitution_declaration_type }
+            },
+            {
+              file: "build.gradle",
+              requirement: substitution_dependency_version,
+              groups: [],
+              source: nil
+            }
+          ],
+          package_manager: "gradle"
+        )
+      end
+
+      it "continues through the normal security update path" do
+        expect(create_security_update_pull_request)
+          .to receive(:create_pull_request)
+          .with(stub_dependency_change)
+
+        perform
+      end
+    end
+
+    context "when a non-Gradle dependency has substitution metadata" do
+      before do
+        allow(stub_update_checker).to receive(:vulnerable?).and_return(false)
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: substitution_dependency_name,
+          version: substitution_dependency_version,
+          requirements: [{
+            file: substitution_file,
+            requirement: substitution_dependency_version,
+            groups: [],
+            source: nil,
+            metadata: { declaration_type: substitution_declaration_type }
+          }],
+          package_manager: "bundler"
+        )
+      end
+
+      it "uses the normal non-vulnerable result" do
+        expect(mock_service).to receive(:record_update_job_error).with(
+          error_type: "security_update_not_needed",
+          error_details: { "dependency-name": substitution_dependency_name }
+        )
+
         perform
       end
     end

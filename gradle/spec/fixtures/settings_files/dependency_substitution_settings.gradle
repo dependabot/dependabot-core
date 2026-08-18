@@ -1,0 +1,15 @@
+buildscript {
+    dependencies {
+        classpath module('com.example:build-plugin:1.0.0')
+    }
+}
+
+gradle.beforeProject { project ->
+    project.configurations.configureEach { configuration ->
+        configuration.resolutionStrategy.dependencySubstitution { substitutions ->
+            substitutions.substitute module('com.fasterxml.jackson.core:jackson-databind') using
+                module('com.fasterxml.jackson.core:jackson-databind:2.22.1')
+            substitutions.substitute(module('com.example:versioned-substitution:1.0.0')).using(module('com.example:versioned-substitution:2.0.0'))
+        }
+    }
+}
