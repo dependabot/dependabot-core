@@ -988,6 +988,22 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         updater.send(:run_pnpm_update_packages)
       end
 
+      # pnpm raises the same code when a newly resolved version is too young;
+      # retrying without the gate there would admit the release the cooldown exists
+      # to reject.
+      it "re-raises a release-age violation that is not from lockfile verification" do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |_cmd, **|
+          raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+            message: "[ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION] no version of foo satisfies " \
+                     "the minimumReleaseAge constraint",
+            error_context: {}
+          )
+        end
+
+        expect { updater.send(:run_pnpm_update_packages) }
+          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+      end
+
       # Regression coverage for dependabot/dependabot-core#13165: when a repo sets
       # `minimumReleaseAge` in pnpm-workspace.yaml *and* a Dependabot `cooldown`,
       # the longest release-age of the two takes precedence so neither policy is

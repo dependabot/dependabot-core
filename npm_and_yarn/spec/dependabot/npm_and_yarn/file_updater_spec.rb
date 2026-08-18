@@ -1410,10 +1410,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         it "invokes npm with the patch window, not default_days" do
           commands = []
-          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command).and_wrap_original do |original, *args, **kwargs|
-            commands << args.first
-            original.call(*args, **kwargs)
-          end
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:run_npm_command).and_wrap_original do |original, *args, **kwargs|
+              commands << args.first
+              original.call(*args, **kwargs)
+            end
 
           expect(updated_files.count).to eq(2)
 

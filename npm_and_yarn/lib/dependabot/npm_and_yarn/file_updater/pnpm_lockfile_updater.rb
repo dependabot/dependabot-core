@@ -234,23 +234,24 @@ module Dependabot
           run_pnpm_command_with_release_age_gate("install --lockfile-only")
         end
 
-        # Failures that mean the cooldown gate itself cannot be applied to this
-        # repo, rather than that the update is wrong. Each is retried once without
-        # the gate so a transitive-cooldown preference never blocks the update:
+        # Failures that mean the cooldown gate cannot be applied to this repo,
+        # rather than that the update is wrong. Each is retried once without the
+        # gate so a transitive-cooldown preference never blocks the update.
         #
-        # - ERR_PNPM_MISSING_TIME: `minimumReleaseAge` needs the registry `time`
-        #   field, absent from the abbreviated metadata pnpm uses for some packages.
-        # - ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION: pnpm re-applies the gate to every
-        #   entry of the lockfile it loads, so a version committed inside the cooldown
-        #   window fails the command even though Dependabot neither introduced nor
-        #   can fix it.
+        # The release-age violation is matched on pnpm's lockfile-verification
+        # wording rather than the bare error code, because pnpm raises the same
+        # code when a *newly resolved* version is too young. Retrying ungated
+        # there would admit the very release the cooldown exists to reject, so
+        # only the verification pass over entries already in the lockfile — which
+        # Dependabot neither introduced nor can fix — is treated as inapplicable.
         RELEASE_AGE_GATE_INAPPLICABLE = T.let(
           {
-            "ERR_PNPM_MISSING_TIME" => "the registry metadata is missing the \"time\" field",
-            "ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION" =>
+            /ERR_PNPM_MISSING_TIME/ =>
+              "the registry metadata is missing the \"time\" field",
+            /ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION[\s\S]*lockfile entries failed verification/ =>
               "the existing lockfile contains entries published inside the cooldown window"
           }.freeze,
-          T::Hash[String, String]
+          T::Hash[Regexp, String]
         )
 
         # Security bypass (`=0`) never triggers these, because it disables the age
@@ -267,11 +268,11 @@ module Dependabot
           rescue SharedHelpers::HelperSubprocessFailed => e
             raise if security_updates_only?
 
-            code, reason = RELEASE_AGE_GATE_INAPPLICABLE.find { |error_code, _| e.message.include?(error_code) }
-            raise unless code
+            _, reason = RELEASE_AGE_GATE_INAPPLICABLE.find { |matcher, _| e.message.match?(matcher) }
+            raise unless reason
 
             Dependabot.logger.warn(
-              "pnpm could not apply the cooldown release-age gate because #{reason} (#{code}); " \
+              "pnpm could not apply the cooldown release-age gate because #{reason}; " \
               "retrying without the transitive cooldown gate so the update is not blocked."
             )
             execute_pnpm_command(cmd, fingerprint)
