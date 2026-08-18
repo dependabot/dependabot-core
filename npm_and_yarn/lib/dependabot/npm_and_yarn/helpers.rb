@@ -230,35 +230,25 @@ module Dependabot
       end
 
       # The concrete pnpm version that will run for this update — resolved via
-      # Corepack when the corepack experiment is enabled (honouring the repo's
-      # `packageManager` pin), otherwise the pnpm on PATH. Returns nil when the
-      # version can't be determined. Used to gate version-specific config such as
+      # Corepack (honouring the repo's `packageManager` pin). Returns nil when
+      # the version can't be determined. Used to gate version-specific config such as
       # `minimumReleaseAge` (added in pnpm 10.16) and `minimumReleaseAgeStrict`
       # (added in pnpm 11.0), which older pnpm versions silently ignore.
       sig { returns(T.nilable(Dependabot::Version)) }
       def self.pnpm_version
-        raw = if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-                package_manager_version(PNPMPackageManager::NAME, env: merge_corepack_env(nil))
-              else
-                local_package_manager_version(PNPMPackageManager::NAME)
-              end
+        raw = package_manager_version(PNPMPackageManager::NAME, env: merge_corepack_env(nil))
         Version.new(raw)
       rescue StandardError => e
         Dependabot.logger.warn("Could not determine pnpm version to gate release-age settings: #{e.message}")
         nil
       end
 
-      # The concrete npm version that will run — via Corepack when the corepack
-      # experiment is enabled (honouring the repo's `packageManager` pin, which can
-      # select npm 7-11), otherwise the npm on PATH. Returns nil when it can't be
+      # The concrete npm version that will run — via Corepack (honouring the
+      # repo's `packageManager` pin, which can select npm 7-11). Returns nil when it can't be
       # determined. Used to gate `--min-release-age`, added in npm 11.10.
       sig { returns(T.nilable(Dependabot::Version)) }
       def self.npm_version
-        raw = if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-                package_manager_version(NpmPackageManager::NAME, env: merge_corepack_env(nil))
-              else
-                local_package_manager_version(NpmPackageManager::NAME)
-              end
+        raw = package_manager_version(NpmPackageManager::NAME, env: merge_corepack_env(nil))
         Version.new(raw)
       rescue StandardError => e
         Dependabot.logger.warn("Could not determine npm version to gate release-age settings: #{e.message}")
@@ -465,21 +455,13 @@ module Dependabot
       end
       def self.run_npm_command(command, fingerprint: command, env: nil)
         merged_env = merge_corepack_env(env)
-        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          package_manager_run_command(
-            NpmPackageManager::NAME,
-            command,
-            fingerprint: fingerprint,
-            output_observer: ->(output) { command_observer(output) },
-            env: merged_env
-          )
-        else
-          Dependabot::SharedHelpers.run_shell_command(
-            "npm #{command}",
-            fingerprint: "npm #{fingerprint}",
-            output_observer: ->(output) { command_observer(output) }
-          )
-        end
+        package_manager_run_command(
+          NpmPackageManager::NAME,
+          command,
+          fingerprint: fingerprint,
+          output_observer: ->(output) { command_observer(output) },
+          env: merged_env
+        )
       end
 
       sig do
@@ -551,15 +533,8 @@ module Dependabot
         ).returns(String)
       end
       def self.run_pnpm_command(command, fingerprint: nil, env: nil)
-        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          merged_env = merge_corepack_env(env)
-          package_manager_run_command(PNPMPackageManager::NAME, command, fingerprint: fingerprint, env: merged_env)
-        else
-          Dependabot::SharedHelpers.run_shell_command(
-            "pnpm #{command}",
-            fingerprint: "pnpm #{fingerprint || command}"
-          )
-        end
+        merged_env = merge_corepack_env(env)
+        package_manager_run_command(PNPMPackageManager::NAME, command, fingerprint: fingerprint, env: merged_env)
       end
 
       # Run single yarn command returning stdout/stderr
@@ -571,16 +546,8 @@ module Dependabot
         ).returns(String)
       end
       def self.run_single_yarn_command(command, fingerprint: nil, env: nil)
-        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          merged_env = merge_corepack_env(env)
-          package_manager_run_command(YarnPackageManager::NAME, command, fingerprint: fingerprint, env: merged_env)
-        else
-          Dependabot::SharedHelpers.run_shell_command(
-            "yarn #{command}",
-            fingerprint: "yarn #{fingerprint || command}",
-            env: env
-          )
-        end
+        merged_env = merge_corepack_env(env)
+        package_manager_run_command(YarnPackageManager::NAME, command, fingerprint: fingerprint, env: merged_env)
       end
 
       # Activate the package manager for specified version by using corepack
