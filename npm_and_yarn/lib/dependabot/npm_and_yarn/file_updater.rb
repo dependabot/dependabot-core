@@ -456,6 +456,11 @@ module Dependabot
       #   cooldown, since a global flag would gate it anyway, and
       # - otherwise the *smallest* of the per-update cooldown days, so it never
       #   exceeds the window any of the selected versions were approved under.
+      #
+      # The smallest is deliberately the opposite of the highest-wins rule in
+      # `Helpers.higher_release_age_gate`: that reconciles two *competing* policies
+      # (ours and the user's), whereas these are all windows we applied ourselves,
+      # and taking the highest would reject the update selected under the shortest.
       sig { returns(T.nilable(Integer)) }
       def cooldown_release_age_days
         return nil if options.fetch(:security_updates_only, false)
