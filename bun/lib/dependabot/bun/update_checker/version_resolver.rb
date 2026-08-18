@@ -341,11 +341,11 @@ module Dependabot
           return false unless types_pkg
 
           latest_types_version = latest_types_package_version
-          return false unless latest_types_version
+          return false unless latest_types_version.is_a?(Version)
 
           latest_allowable_ver = latest_allowable_version
           return false unless latest_allowable_ver.is_a?(Version) && latest_allowable_ver.backwards_compatible_with?(
-            T.unsafe(latest_types_version)
+            latest_types_version
           )
 
           return false unless version_class.correct?(types_pkg.version)
@@ -512,7 +512,7 @@ module Dependabot
             .possible_versions_with_details
             .select do |versions_with_details|
               version, details = versions_with_details
-              next false unless satisfies_peer_reqs_on_dep?(T.unsafe(version))
+              next false unless satisfies_peer_reqs_on_dep?(version)
               next true unless details["peerDependencies"]
               next true if version == version_for_dependency(dependency)
 
