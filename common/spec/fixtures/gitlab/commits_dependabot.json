@@ -1,0 +1,34 @@
+[
+  {
+    "id": "9b1f3c2a5d7e4f6081a2b3c4d5e6f7081923a4b5",
+    "short_id": "9b1f3c2a",
+    "title": "fix(deps): bump business from 1.4.0 to 1.5.0",
+    "created_at": "2024-01-15T09:12:00.000Z",
+    "parent_ids": [
+      "4811450c1905ca49b3f156a8e6d9ac30893bd942"
+    ],
+    "message": "fix(deps): bump business from 1.4.0 to 1.5.0\n",
+    "author_name": "dependabot[bot]",
+    "author_email": "49699333+dependabot[bot]@users.noreply.github.com",
+    "authored_date": "2024-01-15T09:12:00.000Z",
+    "committer_name": "dependabot[bot]",
+    "committer_email": "49699333+dependabot[bot]@users.noreply.github.com",
+    "committed_date": "2024-01-15T09:12:00.000Z"
+  },
+  {
+    "id": "4811450c1905ca49b3f156a8e6d9ac30893bd942",
+    "short_id": "4811450c",
+    "title": "Add separate room assignment model",
+    "created_at": "2018-06-06T21:34:41.000Z",
+    "parent_ids": [
+      "d9d39a70cd3ff6e57c8cbd99a61e0b9faf270a9e"
+    ],
+    "message": "Add separate room assignment model\n",
+    "author_name": "Oren Kanner",
+    "author_email": "okanner@gmail.com",
+    "authored_date": "2018-01-25T17:51:08.000Z",
+    "committer_name": "Oren Kanner",
+    "committer_email": "okanner@gmail.com",
+    "committed_date": "2018-06-06T21:34:41.000Z"
+  }
+]

@@ -201,6 +201,32 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
       end
     end
 
+    context "when the last GitLab commit was authored by Dependabot" do
+      let(:source) do
+        Dependabot::Source.new(provider: "gitlab", repo: "gocardless/bump")
+      end
+      let(:watched_repo_url) do
+        "https://gitlab.com/api/v4/projects/" \
+          "#{CGI.escape(source.repo)}/repository"
+      end
+
+      before do
+        stub_request(:get, watched_repo_url + "/commits")
+          .to_return(
+            status: 200,
+            body: fixture("gitlab", "commits_dependabot.json"),
+            headers: json_header
+          )
+      end
+
+      # The Dependabot commit is identified by the bot author name, not by the
+      # legacy `support@dependabot.com` email (which is no longer used and is
+      # configurable for self-hosted setups), so its `fix(deps)` prefix style is
+      # reused. Matching on the old email would miss the commit and fall back to
+      # detecting a generic `build(deps)` prefix from the other commits.
+      it { is_expected.to eq("fix(deps): ") }
+    end
+
     context "when using angular commits" do
       before do
         stub_request(:get, watched_repo_url + "/commits?per_page=100")
