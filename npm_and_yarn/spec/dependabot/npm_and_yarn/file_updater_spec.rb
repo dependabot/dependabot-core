@@ -4364,9 +4364,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     let(:files) { project_dependency_files("npm8/simple") }
     let(:include_patterns) { [] }
     let(:exclude_patterns) { [] }
+    let(:semver_major_days) { nil }
+    let(:semver_minor_days) { nil }
+    let(:semver_patch_days) { nil }
     let(:cooldown) do
       Dependabot::Package::ReleaseCooldownOptions.new(
         default_days: 7,
+        semver_major_days: semver_major_days,
+        semver_minor_days: semver_minor_days,
+        semver_patch_days: semver_patch_days,
         include: include_patterns,
         exclude: exclude_patterns
       )
@@ -4424,6 +4430,75 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       let(:updater_options) { {} }
 
       it "returns nil" do
+        expect(updater.send(:cooldown_release_age_days)).to be_nil
+      end
+    end
+
+    # Regression coverage for dependabot/dependabot-core#15937: the native gate is
+    # a single global value, so a value stricter than the rule that selected a
+    # version makes the package manager refuse the install it was just asked to
+    # perform (skipped update, or a hung npm resolver).
+    context "when the cooldown sets per-semver-type days" do
+      let(:semver_major_days) { 21 }
+      let(:semver_minor_days) { 14 }
+      let(:semver_patch_days) { 3 }
+
+      it "uses the days that selected the version, not default_days" do
+        # fetch-factory 0.0.1 -> 0.0.2 is a patch bump, approved under 3 days.
+        expect(updater.send(:cooldown_release_age_days)).to eq(3)
+      end
+
+      context "when the bump is a major" do
+        let(:previous_version) { "1.0.0" }
+        let(:version) { "2.0.0" }
+
+        it "uses the major window" do
+          expect(updater.send(:cooldown_release_age_days)).to eq(21)
+        end
+      end
+
+      context "when a group mixes bump types" do
+        let(:other_dependency) do
+          Dependabot::Dependency.new(
+            name: "etag",
+            version: "2.0.0",
+            previous_version: "1.0.0",
+            requirements: requirements,
+            previous_requirements: previous_requirements,
+            package_manager: "npm_and_yarn"
+          )
+        end
+        let(:dependencies) { [dependency, other_dependency] }
+
+        it "uses the smallest window so no selected version is rejected" do
+          expect(updater.send(:cooldown_release_age_days)).to eq(3)
+        end
+      end
+
+      context "when the version cannot be parsed" do
+        let(:version) { "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0" }
+
+        it "falls back to default_days" do
+          expect(updater.send(:cooldown_release_age_days)).to eq(7)
+        end
+      end
+    end
+
+    context "when only some dependencies in the group are excluded" do
+      let(:exclude_patterns) { ["@myorg-*/*"] }
+      let(:other_dependency) do
+        Dependabot::Dependency.new(
+          name: "@myorg-team/lib",
+          version: "1.0.1",
+          previous_version: "1.0.0",
+          requirements: requirements,
+          previous_requirements: previous_requirements,
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:dependencies) { [dependency, other_dependency] }
+
+      it "skips the gate, which would otherwise apply to the excluded dependency" do
         expect(updater.send(:cooldown_release_age_days)).to be_nil
       end
     end

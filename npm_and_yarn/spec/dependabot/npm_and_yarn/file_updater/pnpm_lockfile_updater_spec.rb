@@ -1261,6 +1261,80 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           end
         end
       end
+
+      # pnpm re-applies the CLI gate to every entry of the lockfile it loads, so a
+      # version committed inside the cooldown window would fail the update with
+      # ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION even though Dependabot did not
+      # introduce it.
+      context "when pnpm is 11.3+ (trustLockfile)" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.17.0"))
+        end
+
+        it "trusts the existing lockfile so pre-existing entries do not fail the gate" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            expect(cmd).to include("--config.minimumReleaseAge=10080")
+            expect(cmd).to include("--config.trustLockfile=true")
+            ""
+          end.at_least(:once)
+
+          updater.send(:run_pnpm_update_packages)
+        end
+
+        it "includes trustLockfile in the fingerprint so it matches the command run" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |_cmd, fingerprint:|
+            expect(fingerprint).to include("--config.trustLockfile=true")
+            ""
+          end.at_least(:once)
+
+          updater.send(:run_pnpm_update_packages)
+        end
+      end
+
+      context "when pnpm predates trustLockfile (< 11.3)" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.0.0"))
+        end
+
+        it "does not pass the unsupported trustLockfile setting" do
+          expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            expect(cmd).to include("--config.minimumReleaseAge=10080")
+            expect(cmd).not_to include("trustLockfile")
+            ""
+          end.at_least(:once)
+
+          updater.send(:run_pnpm_update_packages)
+        end
+      end
+    end
+
+    context "when security_updates_only is true on pnpm 11.3+" do
+      let(:updater) do
+        described_class.new(
+          dependency_files: files,
+          dependencies: dependencies,
+          credentials: credentials,
+          repo_contents_path: repo_contents_path,
+          security_updates_only: true
+        )
+      end
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers)
+          .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.17.0"))
+      end
+
+      it "does not trust the lockfile (minimumReleaseAge=0 has nothing to verify)" do
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          expect(cmd).to include("--config.minimumReleaseAge=0")
+          expect(cmd).not_to include("trustLockfile")
+          ""
+        end.at_least(:once)
+
+        updater.send(:run_pnpm_update_packages)
+      end
     end
   end
 end

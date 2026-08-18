@@ -101,6 +101,9 @@ module Dependabot
         # `minimumReleaseAgeStrict` toggle in 11.0; older versions ignore them.
         PNPM_MINIMUM_RELEASE_AGE_VERSION = "10.16"
         PNPM_MINIMUM_RELEASE_AGE_STRICT_VERSION = "11.0"
+        # pnpm 11.3 added `trustLockfile`, which skips the supply-chain verification
+        # pass that re-applies the release-age gate to entries already in the lockfile.
+        PNPM_TRUST_LOCKFILE_VERSION = "11.3"
         # pnpm 10.x ignores minimumReleaseAge when shared-workspace-lockfile is
         # disabled (pnpm/pnpm#10008); the fix ships in pnpm 11.
         PNPM_WORKSPACE_RELEASE_AGE_FIX_VERSION = "11.0"
@@ -323,7 +326,23 @@ module Dependabot
         def minimum_release_age_gate_args(minutes)
           args = "--config.minimumReleaseAge=#{minutes}"
           args += " --config.minimumReleaseAgeStrict=false" if disable_strict_release_age?
+          args += " --config.trustLockfile=true" if trust_existing_lockfile?
           args
+        end
+
+        # pnpm re-applies the effective `minimumReleaseAge` to every entry of the
+        # lockfile it loads, so a version committed inside the cooldown window fails
+        # the whole command with ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION even though
+        # Dependabot neither introduced nor can fix it. `trustLockfile` (pnpm 11.3+)
+        # skips that verification pass, leaving our CLI override to gate the versions
+        # this update actually resolves. Security updates pass `minimumReleaseAge=0`,
+        # which has nothing to verify, so their args are left untouched.
+        sig { returns(T::Boolean) }
+        def trust_existing_lockfile?
+          return false if security_updates_only?
+
+          version = pnpm_version
+          !version.nil? && version >= Version.new(PNPM_TRUST_LOCKFILE_VERSION)
         end
 
         # pnpm defaults `minimumReleaseAgeStrict` to *on* when `minimumReleaseAge`
@@ -341,6 +360,7 @@ module Dependabot
         def fingerprint_minimum_release_age_config
           args = "--config.minimumReleaseAge=<minutes>"
           args += " --config.minimumReleaseAgeStrict=false" if disable_strict_release_age?
+          args += " --config.trustLockfile=true" if trust_existing_lockfile?
           args
         end
 
