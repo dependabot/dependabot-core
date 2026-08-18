@@ -52,7 +52,7 @@ module Dependabot
 
       # The release tag for the current baseline commit SHA (else the SHA), so the
       # PR title's "from" shows the tag, not the "master" ref.
-      sig { params(_updated_version: String).returns(T.nilable(String)) }
+      sig { params(_updated_version: T.any(String, Gem::Version)).returns(T.nilable(String)) }
       def latest_resolvable_previous_version(_updated_version)
         current_version = dependency.version
         return current_version unless registry_dependency? && current_version&.match?(/\A[0-9a-f]{40}\z/)

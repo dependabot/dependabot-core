@@ -174,14 +174,14 @@ module Dependabot
         # we want to update that tag. Because we don't have a lockfile, the
         # latest version is the tag itself. Tags within their cooldown window
         # are filtered out by the shared GitCommitChecker.
-        latest_tag = git_commit_checker.local_tag_for_pinned_version_ref(update_cooldown)&.fetch(:tag)
+        latest_tag = git_commit_checker.local_tag_for_pinned_version_ref(update_cooldown)&.tag
         return unless latest_tag
 
         version_rgx = GitCommitChecker::VERSION_REGEX
         return unless latest_tag.match(version_rgx)
 
-        version = latest_tag.match(version_rgx)
-                            .named_captures.fetch("version")
+        version = T.must(latest_tag.match(version_rgx))
+                   .named_captures.fetch("version")
         version_class.new(version)
       end
 
@@ -189,8 +189,7 @@ module Dependabot
       def tag_for_latest_version
         return unless git_commit_checker.git_dependency?
 
-        latest_tag = git_commit_checker.local_tag_for_pinned_version_ref(update_cooldown)
-                                       &.fetch(:tag)
+        latest_tag = git_commit_checker.local_tag_for_pinned_version_ref(update_cooldown)&.tag
         return unless latest_tag
 
         version_rgx = GitCommitChecker::VERSION_REGEX

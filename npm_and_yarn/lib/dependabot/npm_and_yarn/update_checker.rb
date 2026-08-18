@@ -119,7 +119,7 @@ module Dependabot
         # This will require a full unlock to update multiple top level ancestors.
         return if vulnerability_audit["fix_available"] && vulnerability_audit["top_level_ancestors"].count > 1
 
-        T.unsafe(latest_version_finder.lowest_security_fix_version)
+        latest_version_finder.lowest_security_fix_version
       end
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
@@ -156,10 +156,10 @@ module Dependabot
 
       sig do
         params(updated_version: T.any(String, Gem::Version))
-          .returns(T.nilable(T.any(String, T.untyped)))
+          .returns(T.nilable(T.any(String, Gem::Version)))
       end
       def latest_resolvable_previous_version(updated_version)
-        T.unsafe(version_resolver.latest_resolvable_previous_version(updated_version))
+        version_resolver.latest_resolvable_previous_version(updated_version)
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
@@ -421,10 +421,8 @@ module Dependabot
       def latest_version_for_git_dependency
         @latest_version_for_git_dependency ||=
           if version_class.correct?(dependency.version)
-            T.unsafe(
-              latest_git_version_details[:version] &&
-                            version_class.new(latest_git_version_details[:version])
-            )
+            version = latest_git_version_details[:version]
+            version && version_class.new(version)
           else
             latest_git_version_details[:sha]
           end
@@ -494,7 +492,7 @@ module Dependabot
         git_commit_checker.git_dependency?
       end
 
-      sig { returns(T::Hash[Symbol, T.untyped]) }
+      sig { returns(T::Hash[Symbol, T.nilable(String)]) }
       def latest_git_version_details
         semver_req =
           dependency.requirements
@@ -506,8 +504,8 @@ module Dependabot
         if semver_req || git_commit_checker.pinned_ref_looks_like_version?
           latest_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
           return {
-            sha: latest_tag&.fetch(:commit_sha),
-            version: latest_tag&.fetch(:tag)&.gsub(/^[^\d]*/, "")
+            sha: latest_tag&.commit_sha,
+            version: latest_tag&.tag&.gsub(/^[^\d]*/, "")
           }
         end
 
@@ -529,7 +527,7 @@ module Dependabot
         if git_commit_checker.pinned_ref_looks_like_version? &&
            !git_commit_checker.local_tag_for_latest_version(update_cooldown).nil?
           new_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
-          return dependency_source_details&.merge(ref: new_tag&.fetch(:tag))
+          return dependency_source_details&.merge(ref: new_tag&.tag)
         end
 
         # Otherwise return the original source
