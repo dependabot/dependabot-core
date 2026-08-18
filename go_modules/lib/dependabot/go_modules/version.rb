@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 # Go pre-release versions use 1.0.1-rc1 syntax, which Gem::Version
