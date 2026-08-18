@@ -24,6 +24,10 @@ module Dependabot
       require_relative "file_updater/pnpm_lockfile_updater"
       require_relative "file_updater/pnpm_workspace_updater"
 
+      # Mirrors the updater's `Job::DEFAULT_COOLDOWN_DAYS`, which cannot be
+      # referenced from an ecosystem gem.
+      DEFAULT_RELEASE_AGE_DAYS = 3
+
       class NoChangeError < StandardError
         extend T::Sig
         include Dependabot::HasSentryContext
@@ -449,18 +453,19 @@ module Dependabot
       # express per-semver-type days or include/exclude patterns. Passing a value
       # stricter than the rule that selected a version makes the package manager
       # refuse the install it was just asked to perform, which surfaces as a skipped
-      # update or a hung resolver (dependabot/dependabot-core#15937). To stay
-      # consistent by construction the gate is therefore:
-      #
-      # - skipped entirely when *any* dependency in the invocation is excluded from
-      #   cooldown, since a global flag would gate it anyway, and
-      # - otherwise the *smallest* of the per-update cooldown days, so it never
-      #   exceeds the window any of the selected versions were approved under.
+      # update or a hung resolver (dependabot/dependabot-core#15937). The gate is
+      # therefore the *smallest* of the per-update cooldown days, so it never
+      # exceeds the window any of the selected versions was approved under.
       #
       # The smallest is deliberately the opposite of the highest-wins rule in
       # `Helpers.higher_release_age_gate`: that reconciles two *competing* policies
       # (ours and the user's), whereas these are all windows we applied ourselves,
       # and taking the highest would reject the update selected under the shortest.
+      #
+      # A group containing a cooldown-excluded dependency cannot be expressed in a
+      # global flag, so it falls back to the default floor rather than dropping the
+      # gate below the platform baseline. Excluded dependencies are still held to
+      # that floor, so a release younger than it can still be refused.
       sig { returns(T.nilable(Integer)) }
       def cooldown_release_age_days
         return nil if options.fetch(:security_updates_only, false)
@@ -471,9 +476,11 @@ module Dependabot
         )
         return nil if cooldown.nil?
         return nil if dependencies.empty?
-        return nil unless dependencies.all? { |dep| cooldown.included?(dep.name) }
 
-        days = dependencies.map { |dep| selection_cooldown_days(cooldown, dep) }.min
+        windows = dependencies.map { |dep| selection_cooldown_days(cooldown, dep) }
+        windows << DEFAULT_RELEASE_AGE_DAYS unless dependencies.all? { |dep| cooldown.included?(dep.name) }
+
+        days = windows.min
         days&.positive? ? days : nil
       end
 

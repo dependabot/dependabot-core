@@ -4433,16 +4433,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     context "when the updated dependency is excluded from the cooldown" do
       let(:exclude_patterns) { ["fetch-factory"] }
 
-      it "returns nil so the transitive gate is skipped" do
-        expect(updater.send(:cooldown_release_age_days)).to be_nil
+      it "falls back to the default floor rather than dropping the gate" do
+        expect(updater.send(:cooldown_release_age_days)).to eq(3)
       end
     end
 
     context "when an include list does not match the updated dependency" do
       let(:include_patterns) { ["some-other-dep"] }
 
-      it "returns nil so the transitive gate is skipped" do
-        expect(updater.send(:cooldown_release_age_days)).to be_nil
+      it "falls back to the default floor rather than dropping the gate" do
+        expect(updater.send(:cooldown_release_age_days)).to eq(3)
       end
     end
 
@@ -4534,8 +4534,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
       let(:dependencies) { [dependency, other_dependency] }
 
-      it "skips the gate, which would otherwise apply to the excluded dependency" do
-        expect(updater.send(:cooldown_release_age_days)).to be_nil
+      it "falls back to the default floor rather than dropping the gate" do
+        expect(updater.send(:cooldown_release_age_days)).to eq(3)
+      end
+
+      context "when the cooldown is explicitly disabled" do
+        let(:cooldown) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 0, exclude: exclude_patterns)
+        end
+
+        it "applies no gate" do
+          expect(updater.send(:cooldown_release_age_days)).to be_nil
+        end
+      end
+
+      context "when a selected window is shorter than the floor" do
+        let(:semver_patch_days) { 1 }
+
+        it "does not exceed that window" do
+          expect(updater.send(:cooldown_release_age_days)).to eq(1)
+        end
       end
     end
   end
