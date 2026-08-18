@@ -2,6 +2,9 @@
 # frozen_string_literal: true
 
 require "dependabot/errors"
+require "dependabot/clients/github_with_retries"
+require "dependabot/clients/gitlab_with_retries"
+require "dependabot/metadata_finders/base"
 require "sorbet-runtime"
 
 module Dependabot
