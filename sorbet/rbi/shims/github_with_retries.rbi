@@ -168,7 +168,7 @@ module Dependabot
       def pull_request_commits(repo, number, options = {}); end
 
       # HTTP
-      sig { params(url: String, options: ClientOptions).returns(Sawyer::Resource) }
+      sig { params(url: String, options: ClientOptions).returns(T.any(Sawyer::Resource, T::Array[Sawyer::Resource])) }
       def get(url, options = {}); end
 
       # Pagination
