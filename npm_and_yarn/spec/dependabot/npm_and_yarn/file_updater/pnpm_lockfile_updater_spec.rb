@@ -958,50 +958,63 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       # Regression coverage for dependabot/dependabot-core#15937: pnpm re-applies the
       # gate to entries already in the lockfile, which Dependabot did not introduce
       # and cannot fix, so the gate is dropped rather than failing the update.
-      it "retries without the gate when pnpm raises ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION" do
-        call_count = 0
+      it "retries without the gate when pnpm reports a lockfile-verification violation" do
+        commands = []
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-          call_count += 1
-          if call_count == 1
-            expect(cmd).to include("--config.minimumReleaseAge=10080")
+          commands << cmd
+          if commands.one?
             raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
               message: "[ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION] 1 lockfile entries failed verification: " \
                        "esrap@2.3.4 was published at 2026-08-14T20:24:13.000Z",
               error_context: {}
             )
           end
-          expect(cmd).not_to include("--config.minimumReleaseAge")
           ""
         end
 
-        updater.send(:run_pnpm_update_packages)
-        expect(call_count).to eq(2)
+        updated_pnpm_lock_content
+
+        # The deep-update fallback issues its own gated command, so scope to the
+        # `update --no-save` pair: the gated attempt and its ungated retry.
+        updates = commands.select { |cmd| cmd.include?("--no-save") }
+        expect(updates.length).to eq(2)
+        expect(updates.first).to include("--config.minimumReleaseAge=10080")
+        expect(updates.last).not_to include("--config.minimumReleaseAge")
       end
 
       it "never disables pnpm's own lockfile verification" do
-        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
-          # trustLockfile would also switch off trustPolicy checks for every entry.
-          expect(cmd).not_to include("trustLockfile")
+        commands = []
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          commands << cmd
           ""
-        end.at_least(:once)
+        end
 
-        updater.send(:run_pnpm_update_packages)
+        updated_pnpm_lock_content
+
+        expect(commands).not_to be_empty
+        # trustLockfile would also switch off trustPolicy checks for every entry.
+        expect(commands.join(" ")).not_to include("trustLockfile")
       end
 
       # pnpm raises the same code when a newly resolved version is too young;
       # retrying without the gate there would admit the release the cooldown exists
       # to reject.
-      it "re-raises a release-age violation that is not from lockfile verification" do
-        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |_cmd, **|
-          raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-            message: "[ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION] no version of foo satisfies " \
-                     "the minimumReleaseAge constraint",
-            error_context: {}
-          )
+      it "does not retry when the violation is not from lockfile verification" do
+        commands = []
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          commands << cmd
+          if cmd.start_with?("update ")
+            raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "[ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION] no version of foo satisfies " \
+                       "the minimumReleaseAge constraint",
+              error_context: {}
+            )
+          end
+          ""
         end
 
-        expect { updater.send(:run_pnpm_update_packages) }
-          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+        expect { updated_pnpm_lock_content }.to raise_error(StandardError)
+        expect(commands.count { |cmd| cmd.include?("--no-save") }).to eq(1)
       end
 
       # Regression coverage for dependabot/dependabot-core#13165: when a repo sets
@@ -1331,8 +1344,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           )
         end
 
-        expect { updater.send(:run_pnpm_update_packages) }
-          .to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+        expect { updated_pnpm_lock_content }.to raise_error(StandardError)
       end
     end
   end
