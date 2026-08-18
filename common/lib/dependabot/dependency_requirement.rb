@@ -33,6 +33,8 @@ module Dependabot
     extend T::Sig
     extend T::Generic
 
+    DEPENDENCY_SUBSTITUTION_DECLARATION_TYPE = "dependency_substitution"
+
     Group = T.type_alias { T.any(String, Symbol) }
     ObjectHash = T.type_alias { T::Hash[T.any(Symbol, String), Object] }
     Requirement = T.type_alias { T.any(String, Symbol) }
