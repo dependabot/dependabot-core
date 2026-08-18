@@ -374,17 +374,19 @@ module Dependabot
         def fetch_bitbucket_file_list
           branch = default_bitbucket_branch
           bitbucket_client.fetch_repo_contents(T.must(source).repo).map do |file|
-            type = case file.fetch("type")
+            object_type = T.cast(file.fetch("type"), String)
+            path = T.cast(file.fetch("path"), String)
+            type = case object_type
                    when "commit_file" then "file"
                    when "commit_directory" then "dir"
-                   else file.fetch("type")
+                   else object_type
                    end
             ChangelogFile.new(
-              name: file.fetch("path").split("/").last,
+              name: T.must(path.split("/").last),
               type: type,
-              size: file.fetch("size", 100),
-              html_url: "#{T.must(source).url}/src/#{branch}/#{file['path']}",
-              download_url: "#{T.must(source).url}/raw/#{branch}/#{file['path']}"
+              size: T.cast(file.fetch("size", 100), Integer),
+              html_url: "#{T.must(source).url}/src/#{branch}/#{path}",
+              download_url: "#{T.must(source).url}/raw/#{branch}/#{path}"
             )
           end
         rescue Dependabot::Clients::Bitbucket::NotFound,
@@ -417,19 +419,21 @@ module Dependabot
         sig { returns(T.untyped) }
         def fetch_azure_file_list
           azure_client.fetch_repo_contents.map do |entry|
-            type = case entry.fetch("gitObjectType")
+            object_type = T.cast(entry.fetch("gitObjectType"), String)
+            relative_path = T.cast(entry.fetch("relativePath"), String)
+            type = case object_type
                    when "blob" then "file"
                    when "tree" then "dir"
-                   else entry.fetch("gitObjectType")
+                   else object_type
                    end
 
             ChangelogFile.new(
-              name: File.basename(entry.fetch("relativePath")),
+              name: File.basename(relative_path),
               type: type,
-              size: entry.fetch("size"),
-              path: entry.fetch("relativePath"),
-              html_url: "#{T.must(source).url}?path=/#{entry.fetch('relativePath')}",
-              download_url: entry.fetch("url")
+              size: T.cast(entry.fetch("size"), Integer),
+              path: relative_path,
+              html_url: "#{T.must(source).url}?path=/#{relative_path}",
+              download_url: T.cast(entry.fetch("url"), String)
             )
           end
         rescue Dependabot::Clients::Azure::NotFound,

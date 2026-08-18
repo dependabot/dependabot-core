@@ -81,4 +81,23 @@ RSpec.describe Dependabot::Clients::CodeCommit do
       end
     end
   end
+
+  describe "#fetch_repo_contents" do
+    subject(:repo_contents) { client.fetch_repo_contents(repo, branch, "/") }
+
+    before do
+      stubbed_cc_client.stub_responses(
+        :get_folder,
+        commit_id: branch,
+        folder_path: "/",
+        files: [{ relative_path: "Gemfile" }]
+      )
+    end
+
+    it "preserves the response wrapper and typed folder payload" do
+      expect(repo_contents).to be_a(Seahorse::Client::Response)
+      expect(repo_contents.data).to be_a(Aws::CodeCommit::Types::GetFolderOutput)
+      expect(repo_contents.data.files.map(&:relative_path)).to eq(["Gemfile"])
+    end
+  end
 end
