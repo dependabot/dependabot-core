@@ -341,9 +341,11 @@ module Dependabot
           dep = T.must(sub_dependencies.first)
           update = "#{dep.name}@#{dep.version}"
 
+          dedupe = yarn_dedupe_args(dep.name)
+
           commands = [
             ["add #{update} #{yarn_berry_args}".strip, "add <update> #{yarn_berry_args}".strip],
-            ["dedupe #{dep.name} #{yarn_berry_args}".strip, "dedupe <dep_name> #{yarn_berry_args}".strip],
+            ["dedupe #{dedupe}".strip, "dedupe #{dedupe}".strip],
             ["remove #{dep.name} #{yarn_berry_args}".strip, "remove <dep_name> #{yarn_berry_args}".strip]
           ]
 
@@ -442,6 +444,15 @@ module Dependabot
             Helpers.yarn_berry_args,
             T.nilable(String)
           )
+        end
+
+        sig { params(dep_name: String).returns(String) }
+        def yarn_dedupe_args(dep_name)
+          if Dependabot::Experiments.enabled?(:yarn_full_dedupe)
+            yarn_berry_args
+          else
+            "#{dep_name} #{yarn_berry_args}"
+          end
         end
 
         sig do

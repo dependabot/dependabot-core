@@ -62,6 +62,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
 
   # Variable to control the enabling feature flag for the corepack fix
   let(:enable_corepack_for_npm_and_yarn) { true }
+  let(:yarn_full_dedupe) { false }
 
   before do
     FileUtils.mkdir_p(tmp_path)
@@ -71,6 +72,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
       .with(:enable_private_registry_for_corepack).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_audit_fix_fallback).and_return(true)
+    allow(Dependabot::Experiments).to receive(:enabled?)
+      .with(:yarn_full_dedupe).and_return(yarn_full_dedupe)
   end
 
   after do
@@ -624,6 +627,78 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
         it "returns nil from yarn_time_gate_env" do
           expect(updater.send(:yarn_time_gate_env)).to be_nil
         end
+      end
+    end
+  end
+
+  describe "#yarn_dedupe_args" do
+    let(:files) { project_dependency_files("yarn_berry/simple") }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:yarn_berry_args).and_return("--mode=update-lockfile")
+    end
+
+    context "when yarn_full_dedupe experiment is disabled (default)" do
+      let(:yarn_full_dedupe) { false }
+
+      it "returns scoped dedupe args with the dependency name" do
+        result = updater.send(:yarn_dedupe_args, "my-package")
+        expect(result).to eq("my-package --mode=update-lockfile")
+      end
+    end
+
+    context "when yarn_full_dedupe experiment is enabled" do
+      let(:yarn_full_dedupe) { true }
+
+      it "returns only yarn_berry_args without the dependency name" do
+        result = updater.send(:yarn_dedupe_args, "my-package")
+        expect(result).to eq("--mode=update-lockfile")
+      end
+    end
+  end
+
+  describe "#run_yarn_berry_subdependency_updater" do
+    let(:files) { project_dependency_files("yarn_berry/simple") }
+    let(:dependency_name) { "lodash" }
+    let(:version) { "4.17.21" }
+    let(:previous_version) { "4.17.20" }
+    let(:requirements) { [] }
+    let(:previous_requirements) { [] }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:yarn_berry_args).and_return("--mode=update-lockfile")
+      allow(File).to receive(:read).and_call_original
+    end
+
+    context "when yarn_full_dedupe experiment is disabled (default)" do
+      let(:yarn_full_dedupe) { false }
+
+      it "runs yarn dedupe scoped to the dependency name" do
+        yarn_lock_file = files.find { |f| f.name == "yarn.lock" }
+        allow(File).to receive(:read).with(yarn_lock_file.name).and_return("original")
+
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_commands) do |*commands|
+          dedupe_cmd = commands[1][0]
+          expect(dedupe_cmd).to eq("dedupe lodash --mode=update-lockfile")
+        end
+
+        updater.send(:run_yarn_berry_subdependency_updater, yarn_lock: yarn_lock_file)
+      end
+    end
+
+    context "when yarn_full_dedupe experiment is enabled" do
+      let(:yarn_full_dedupe) { true }
+
+      it "runs yarn dedupe on the entire lockfile" do
+        yarn_lock_file = files.find { |f| f.name == "yarn.lock" }
+        allow(File).to receive(:read).with(yarn_lock_file.name).and_return("original")
+
+        expect(Dependabot::NpmAndYarn::Helpers).to receive(:run_yarn_commands) do |*commands|
+          dedupe_cmd = commands[1][0]
+          expect(dedupe_cmd).to eq("dedupe --mode=update-lockfile")
+        end
+
+        updater.send(:run_yarn_berry_subdependency_updater, yarn_lock: yarn_lock_file)
       end
     end
   end
