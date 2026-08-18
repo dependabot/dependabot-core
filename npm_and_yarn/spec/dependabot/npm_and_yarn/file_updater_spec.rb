@@ -62,8 +62,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
   before do
     FileUtils.mkdir_p(tmp_path)
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_private_registry_for_corepack).and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_audit_fix_fallback).and_return(false)
   end
 
