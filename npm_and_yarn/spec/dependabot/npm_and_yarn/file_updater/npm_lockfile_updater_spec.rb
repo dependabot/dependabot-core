@@ -70,8 +70,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_private_registry_for_corepack).and_return(false)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_audit_fix_fallback).and_return(true)
   end
 
@@ -1593,27 +1591,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     describe "Helpers.build_corepack_env_variables" do
       let(:files) { project_dependency_files("npm8/simple") }
 
-      context "when experiment flag is disabled" do
-        let(:test_credentials) { credentials }
-
-        before do
-          allow(Dependabot::Experiments).to receive(:enabled?)
-            .with(:enable_private_registry_for_corepack).and_return(false)
-          Dependabot::NpmAndYarn::Helpers.dependency_files = files
-          Dependabot::NpmAndYarn::Helpers.credentials = test_credentials
-        end
-
-        it "returns nil" do
-          expect(Dependabot::NpmAndYarn::Helpers.send(:build_corepack_env_variables)).to be_nil
-        end
-      end
-
       context "when experiment flag is enabled" do
-        before do
-          allow(Dependabot::Experiments).to receive(:enabled?)
-            .with(:enable_private_registry_for_corepack).and_return(true)
-        end
-
         context "with npm_registry credentials" do
           let(:test_credentials) do
             [

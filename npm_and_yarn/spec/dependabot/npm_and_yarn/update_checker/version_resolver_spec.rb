@@ -80,8 +80,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       .to_return(status: 200, body: opentelemetry_context_async_hooks_registry_response)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_private_registry_for_corepack).and_return(true)
   end
 
   after do
