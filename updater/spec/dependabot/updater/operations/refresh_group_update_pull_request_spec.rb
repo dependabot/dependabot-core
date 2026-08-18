@@ -471,17 +471,13 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
 
       before do
         stub_rubygems_calls
-        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:allow_refresh_for_existing_pr_dependencies)
-          .and_return(true)
-      end
-
-      after do
-        Dependabot::Experiments.reset!
       end
 
       it "updates the existing pull request without errors" do
+        expect(dependency_snapshot).to receive(:mark_group_handled).with(
+          having_attributes(name: "minor"),
+          { "/" => Set.new(%w(dummy-pkg-a dummy-pkg-b)) }
+        ).and_call_original
         expect(mock_service).not_to receive(:close_pull_request)
         expect(mock_service).to receive(:update_pull_request) do |dependency_change|
           expect(dependency_change.dependency_group.name).to eql("major")
@@ -504,14 +500,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
 
       before do
         stub_rubygems_calls
-        allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:allow_refresh_for_existing_pr_dependencies)
-          .and_return(true)
-      end
-
-      after do
-        Dependabot::Experiments.reset!
       end
 
       it "updates the existing pull request without errors" do
