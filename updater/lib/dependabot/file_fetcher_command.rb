@@ -8,6 +8,7 @@ require "dependabot/git_metadata_fetcher"
 require "dependabot/opentelemetry"
 require "dependabot/updater"
 require "dependabot/file_fetcher_command_connectivity"
+require "fileutils"
 require "octokit"
 require "sorbet-runtime"
 
@@ -28,7 +29,7 @@ module Dependabot
     end
 
     sig { override.void }
-    def perform_job # rubocop:disable Metrics/AbcSize
+    def perform_job # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
       reset_job_state
 
       Dependabot.logger.info("Job definition: #{File.read(Environment.job_path)}") if Environment.job_path
@@ -51,6 +52,8 @@ module Dependabot
           else
             dependency_files
           end
+
+          persist_fetched_files_to_output
         rescue StandardError => e
           @base_commit_sha ||= "unknown"
           if Octokit::RATE_LIMITED_ERRORS.include?(e.class)
@@ -105,6 +108,23 @@ module Dependabot
       else
         isolate ? file_fetcher.files_to_persist : T.must(dependency_files)
       end
+    end
+
+    # Serializes the persisted fetch output to DEPENDABOT_OUTPUT_PATH so a split
+    # update container can rehydrate the files instead of re-cloning the repo.
+    # Only active under isolate_fetch_update; otherwise the combined run is
+    # unchanged and no artifact is written.
+    sig { void }
+    def persist_fetched_files_to_output
+      return unless Experiments.enabled?(:isolate_fetch_update)
+
+      fetched = files
+      output_path = Environment.output_path
+      FileUtils.mkdir_p(File.dirname(output_path))
+      File.write(output_path, fetched.serialize)
+      Dependabot.logger.info(
+        "[isolate_fetch_update] wrote #{fetched.dependency_files.count} persisted file(s) to #{output_path}"
+      )
     end
 
     # When only a single directory is specified via `directories:` (plural), normalize it to use

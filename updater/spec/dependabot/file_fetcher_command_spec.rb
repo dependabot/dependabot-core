@@ -62,6 +62,21 @@ RSpec.describe Dependabot::FileFetcherCommand do
       expect(dependency_file.content_encoding).to eq("utf-8")
     end
 
+    context "when isolate_fetch_update is enabled" do
+      before { Dependabot::Experiments.register(:isolate_fetch_update, true) }
+
+      it "writes the persisted files to the output path",
+         vcr: { cassette_name: "Dependabot_FileFetcherCommand/_perform_job/fetches_the_files" } do
+        perform_job
+
+        output = JSON.parse(File.read(Dependabot::Environment.output_path))
+
+        expect(output["base_commit_sha"]).to be_a(String)
+        expect(output["base64_dependency_files"].map { |f| f["name"] })
+          .to include("dependabot-test-ruby-package.gemspec")
+      end
+    end
+
     context "when empty directories are specified" do
       before do
         allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(Dir.mktmpdir)
