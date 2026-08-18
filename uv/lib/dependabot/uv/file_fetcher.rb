@@ -4,6 +4,7 @@
 require "toml-rb"
 require "sorbet-runtime"
 
+require "dependabot/experiments"
 require "dependabot/file_fetchers"
 require "dependabot/python/file_fetcher"
 require "dependabot/uv"
@@ -43,6 +44,19 @@ module Dependabot
         "Repo must contain a requirements.txt, uv.lock, requirements.in, or pyproject.toml"
       end
 
+      sig { override.returns(T::Array[DependencyFile]) }
+      def fetch_files
+        fetched_files = super
+        return fetched_files unless exclude_pip_files?
+
+        pip_files, kept_files = fetched_files.partition { |f| pip_compile_only_file?(f) }
+
+        log_pip_file_deprecation(pip_files) if pip_files.any?
+        ensure_uv_native_files_present!(kept_files)
+
+        kept_files
+      end
+
       private
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
@@ -63,6 +77,8 @@ module Dependabot
 
       sig { override.returns(T::Array[T::Hash[Symbol, String]]) }
       def path_dependencies
+        return uv_sources_path_dependencies if exclude_pip_files?
+
         [
           *requirement_txt_path_dependencies,
           *requirement_in_path_dependencies,
@@ -355,6 +371,41 @@ module Dependabot
       def fetch_file_with_path(filename, base_path)
         path = base_path ? File.join(base_path, filename) : filename
         fetch_file_from_host(path)
+      end
+
+      sig { returns(T::Boolean) }
+      def exclude_pip_files?
+        Dependabot::Experiments.enabled?(:uv_excludes_pip)
+      end
+
+      sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
+      def pip_compile_only_file?(file)
+        return false if file.name.end_with?("uv.lock")
+
+        file.name.end_with?(".txt", ".in")
+      end
+
+      sig { params(pip_files: T::Array[Dependabot::DependencyFile]).void }
+      def log_pip_file_deprecation(pip_files)
+        Dependabot.logger.warn(
+          "[uv] Skipping #{pip_files.size} requirements.in/.txt file(s): " \
+          "#{pip_files.map(&:name).join(', ')}. " \
+          "The uv ecosystem no longer parses pip-compile files. " \
+          "Move dependencies to pyproject.toml + uv.lock, or switch your " \
+          "Dependabot config to package-ecosystem: \"pip\"."
+        )
+      end
+
+      sig { params(files: T::Array[Dependabot::DependencyFile]).void }
+      def ensure_uv_native_files_present!(files)
+        return if files.any? { |f| f.name == "pyproject.toml" || f.name.end_with?("uv.lock") }
+
+        raise Dependabot::DependencyFileNotFound.new(
+          File.join(directory, "pyproject.toml"),
+          "No pyproject.toml or uv.lock found. The uv ecosystem requires " \
+          "pyproject.toml and/or uv.lock. For repos using requirements.in/.txt " \
+          "only, switch your Dependabot config to package-ecosystem: \"pip\"."
+        )
       end
     end
   end
