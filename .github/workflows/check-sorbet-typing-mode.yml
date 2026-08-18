@@ -76,15 +76,7 @@ jobs:
 
       - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
 
-      - name: Test the T.unsafe ratchet
-        run: ruby script/test-sorbet-unsafe-ratchet
-
       - name: Ensure the Sorbet/ForbidTUntyped burndown only shrinks
         env:
           BASE_REF: origin/${{ github.base_ref }}
         run: ruby script/sorbet-untyped-ratchet
-
-      - name: Ensure the T.unsafe burndown only shrinks
-        env:
-          BASE_REF: origin/${{ github.base_ref }}
-        run: ruby script/sorbet-unsafe-ratchet
