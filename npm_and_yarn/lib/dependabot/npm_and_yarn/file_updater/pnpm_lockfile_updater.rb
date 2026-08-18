@@ -882,7 +882,7 @@ module Dependabot
         sig { params(pnpm_lock: Dependabot::DependencyFile).returns(String) }
         def npmrc_content(pnpm_lock)
           NpmrcBuilder.new(
-            credentials: T.unsafe(credentials),
+            credentials: credentials,
             dependency_files: dependency_files,
             dependencies: lockfile_dependencies(pnpm_lock)
           ).npmrc_content
