@@ -183,18 +183,24 @@ module Dependabot
           repo: String,
           branch_name: String
         )
-          .returns(Aws::CodeCommit::Types::Commit)
+          .returns(Seahorse::Client::Response)
       end
       def commits(repo, branch_name = T.must(source.branch))
         retrieved_commits = fetch_commits(repo, branch_name, 5)
 
-        result = @cc_client.batch_get_commits(
-          commit_ids: retrieved_commits,
-          repository_name: repo
+        result = T.cast(
+          @cc_client.batch_get_commits(
+            commit_ids: retrieved_commits,
+            repository_name: repo
+          ),
+          Seahorse::Client::Response
         )
 
         # sort the results by date
-        result.commits.sort! { |a, b| b.author.date <=> a.author.date }
+        output = T.cast(result.data, Aws::CodeCommit::Types::BatchGetCommitsOutput)
+        commits = output.commits
+        commits&.sort_by! { |commit| commit.author&.date || "" }
+        commits&.reverse!
         result
       end
 
