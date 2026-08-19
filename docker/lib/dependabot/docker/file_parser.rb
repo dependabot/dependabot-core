@@ -54,6 +54,8 @@ module Dependabot
 
         manifest_files.each do |file|
           dependency_set += workfile_file_dependencies(file)
+        rescue Dependabot::DependencyFileNotParseable => e
+          parse_errors << e
         end
 
         dependency_set.dependencies
