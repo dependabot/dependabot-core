@@ -264,6 +264,9 @@ module Dependabot
         def fetch_github_file(file_source, file)
           # Hitting the download URL directly causes encoding problems
           response = github_client_for_source(file_source).get(T.must(file.api_url))
+          raise_bad_metadata_response("GitHub", "file response must be an object", source_url: file_source.url) unless
+            response.is_a?(Sawyer::Resource)
+
           raw_content = sawyer_string(response, :content, source_url: file_source.url)
           Base64.decode64(raw_content).force_encoding("UTF-8").encode
         end
