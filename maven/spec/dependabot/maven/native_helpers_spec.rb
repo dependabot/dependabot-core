@@ -7,8 +7,15 @@ require "spec_helper"
 require "dependabot/maven/native_helpers"
 
 RSpec.describe Dependabot::Maven::NativeHelpers do
+  def wrapper_failure(output)
+    Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+      message: output,
+      error_context: { command: "mvn ..." }
+    )
+  end
+
   def capture_wrapper_error(output)
-    described_class.handle_wrapper_error(output)
+    described_class.handle_wrapper_error(wrapper_failure(output))
     nil
   rescue Dependabot::DependabotError => e
     e
@@ -48,7 +55,7 @@ RSpec.describe Dependabot::Maven::NativeHelpers do
       output = "[ERROR] Could not transfer artifact org.apache.maven:apache-maven:zip:3.9.9 " \
                "from/to central (https://repo.example.com/maven): status code: 401"
       expect do
-        described_class.handle_wrapper_error(output)
+        described_class.handle_wrapper_error(wrapper_failure(output))
       end.to raise_error(Dependabot::PrivateSourceAuthenticationFailure, /repo\.example\.com/)
     end
 
@@ -56,7 +63,7 @@ RSpec.describe Dependabot::Maven::NativeHelpers do
       output = "[ERROR] Could not transfer artifact org.apache.maven:apache-maven:zip:3.9.9 " \
                "from/to central (https://repo.example.com/maven): status code: 403"
       expect do
-        described_class.handle_wrapper_error(output)
+        described_class.handle_wrapper_error(wrapper_failure(output))
       end.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
     end
 
@@ -67,7 +74,7 @@ RSpec.describe Dependabot::Maven::NativeHelpers do
         [ERROR] -> [Help 1]
       OUTPUT
       expect do
-        described_class.handle_wrapper_error(output)
+        described_class.handle_wrapper_error(wrapper_failure(output))
       end.to raise_error(Dependabot::DependencyFileNotResolvable, /Maven Wrapper plugin/)
     end
 
@@ -85,11 +92,15 @@ RSpec.describe Dependabot::Maven::NativeHelpers do
       expect(error.tool_message).not_to include("Scanning for projects")
     end
 
-    it "falls back to the raw output when there are no [ERROR] lines" do
+    it "re-raises the original HelperSubprocessFailed when there are no [ERROR] lines" do
+      # Inactivity timeouts and a missing `mvn` executable surface as
+      # HelperSubprocessFailed without Maven `[ERROR]` markers. These are not tooling
+      # misconfigurations, so the original error is re-raised for normal unknown-error
+      # routing rather than serialized as MisconfiguredTooling.
       output = "some unexpected failure without maven error markers"
       expect do
-        described_class.handle_wrapper_error(output)
-      end.to raise_error(Dependabot::MisconfiguredTooling, /some unexpected failure/)
+        described_class.handle_wrapper_error(wrapper_failure(output))
+      end.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed, /some unexpected failure/)
     end
 
     it "truncates an overly long error summary" do
