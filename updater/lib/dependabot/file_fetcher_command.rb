@@ -8,6 +8,7 @@ require "dependabot/git_metadata_fetcher"
 require "dependabot/opentelemetry"
 require "dependabot/updater"
 require "dependabot/file_fetcher_command_connectivity"
+require "dependabot/file_fetcher_command_local_checkout"
 require "octokit"
 require "sorbet-runtime"
 
@@ -15,6 +16,7 @@ module Dependabot
   class FileFetcherCommand < BaseCommand
     extend T::Sig
     include FileFetcherCommandConnectivity
+    include FileFetcherCommandLocalCheckout
 
     # BaseCommand does not implement this method, so we should expose
     # the instance variable for error handling to avoid raising a
@@ -38,9 +40,7 @@ module Dependabot
         begin
           connectivity_check if ENV["ENABLE_CONNECTIVITY_CHECK"] == "1"
           normalize_single_directory
-          validate_local_checkout
-          validate_target_branch unless local_checkout_only?
-          dependabot_ref_namespace_available? unless local_checkout_only?
+          validate_repository
           clone_repo_contents
           @base_commit_sha = file_fetcher.commit
           raise "base commit SHA not found" unless @base_commit_sha
@@ -342,18 +342,6 @@ module Dependabot
       return unless job.clone?
 
       file_fetcher.clone_repo_contents
-    end
-
-    sig { void }
-    def validate_local_checkout
-      return unless local_checkout_only? && !already_cloned?
-
-      raise "Local repository checkout not found at #{Environment.repo_contents_path}"
-    end
-
-    sig { returns(T::Boolean) }
-    def local_checkout_only?
-      ENV["DEPENDABOT_LOCAL_CHECKOUT_ONLY"] == "true"
     end
 
     sig { returns(T::Boolean) }
