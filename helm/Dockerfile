@@ -6,13 +6,13 @@
 # Including the tag with the digest is for documentation purposes, as Docker ignores the tag when a digest is provided
 # It helps because mapping tags to digests is difficult without OCI metadata and not all the images publish this metadata
 # From https://github.com/sigstore/cosign/releases
-FROM ghcr.io/sigstore/cosign/cosign:v3.0.2@sha256:b29487e48205d875c324c79583e2806d9d269c0fa299e0861bbec023d8430c8b AS cosign
+FROM ghcr.io/sigstore/cosign/cosign:v3.1.3@sha256:9e5c2f2edc34351160407ca3416c61855bdf9403c3c5936e0f0be7fc261611b8 AS cosign
 # From https://github.com/regclient/regclient/releases
-FROM ghcr.io/regclient/regctl:v0.10.0@sha256:c10b839d91d66b2ce9f4fa588f1b576c51c4709934aeb782ef175a20fd49942d AS regctl
+FROM ghcr.io/regclient/regctl:v0.11.5@sha256:dbe356c6cf9f8f85e302b9e47fed481ef3f1b04807350e99b02ab2cadee0a993 AS regctl
 # From https://github.com/helm/helm/releases
-FROM alpine/helm:3.17.2@sha256:b80eb190fca14707e94a5090235a3f1bf2f206f26761f2890d16a1e570386236 AS helm
+FROM alpine/helm:4.2.3@sha256:b97ba4f9b27fe7af16ee3d37e6815783c9d4a51289b6240a9024ec471611ae9b AS helm
 # From https://github.com/oras-project/oras/releases
-FROM ghcr.io/oras-project/oras:v1.2.2@sha256:cd549d80c4aa89638aea5964a3cd8193a6dd8abf939a43b5d562c24dbab08ff1 AS oras
+FROM ghcr.io/oras-project/oras:v1.3.3@sha256:a4c54befd87d0366e0ba3ac3a9536a5288c8a3735acd3b635cdace59a2c559c8 AS oras
 
 # The builder needs to be an image with the cacerts because cosign verification needs them
 # We could use a smaller base image and install the cacerts, but
