@@ -167,8 +167,16 @@ module Dependabot
             next unless details["source"]
 
             source = source_from(details)
-            # Cannot update nil (interpolation sources) or local path modules, skip
+            # nil sources are unpinned; paths are local.
             next if source.nil? || source[:type] == "path"
+
+            # Cannot update modules using early evaluation yet
+            if source[:type] == "interpolation"
+              Dependabot.logger.warn(
+                "Cannot parse terragrunt module source with early evaluation in #{file.name}."
+              )
+              next
+            end
 
             dependency_set << build_terragrunt_dependency(file, source)
           end
@@ -437,8 +445,8 @@ module Dependabot
       # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(source_string: String).returns(Symbol) }
       def source_type(source_string)
-        return :oci if source_string.include?("oci://")
         return :interpolation if source_string.include?("${")
+        return :oci if source_string.include?("oci://")
         return :path if source_string.start_with?(".")
         return :github if source_string.start_with?("github.com/")
         return :bitbucket if source_string.start_with?("bitbucket.org/")
