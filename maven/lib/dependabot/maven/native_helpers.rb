@@ -16,17 +16,13 @@ module Dependabot
 
       # Matches Maven's "Could not transfer artifact" failures, capturing the
       # repository URL and HTTP status so we can classify auth vs. other errors.
-      TRANSFER_FAILURE_REGEX = T.let(
-        %r{Could not transfer artifact (?<artifact>[^ ]+) from/to (?<repository_name>[^ ]+) \((?<repository_url>[^ ]+)\): status code: (?<status_code>[0-9]+)}, # rubocop:disable Layout/LineLength
-        Regexp
-      )
+      TRANSFER_FAILURE_REGEX =
+        %r{Could not transfer artifact (?<artifact>[^ ]+) from/to (?<repository_name>[^ ]+) \((?<repository_url>[^ ]+)\): status code: (?<status_code>[0-9]+)} # rubocop:disable Layout/LineLength
 
       # Matches Maven's "Plugin ... could not be resolved" failures, used to
       # detect when the wrapper plugin itself is unavailable behind the proxy.
-      WRAPPER_PLUGIN_UNRESOLVED_REGEX = T.let(
-        /Plugin org\.apache\.maven\.plugins:maven-wrapper-plugin[^ ]* .*could not be resolved/,
-        Regexp
-      )
+      WRAPPER_PLUGIN_UNRESOLVED_REGEX =
+        /Plugin org\.apache\.maven\.plugins:maven-wrapper-plugin[^ ]* .*could not be resolved/
 
       # Upper bound on the length of the Maven error summary included in raised errors,
       # to avoid oversized error payloads while retaining the relevant failure detail.
