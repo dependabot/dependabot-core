@@ -269,7 +269,10 @@ module Dependabot
         find_lowest_secure_version(tags)
       end
 
-      sig { params(tags: T::Array[T::Hash[Symbol, Object]]).returns(T.nilable(T::Hash[Symbol, Object])) }
+      sig do
+        params(tags: T::Array[T::Hash[Symbol, Object]])
+          .returns(T.nilable(T::Hash[Symbol, Object]))
+      end
       def find_lowest_secure_version(tags)
         relevant_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
           tags.filter_map { |tag| tag_version(tag) },
@@ -281,7 +284,10 @@ module Dependabot
         relevant_tags.min_by { |tag| T.must(tag_version(tag)) }
       end
 
-      sig { params(tags_array: T::Array[T::Hash[Symbol, Object]]).returns(T::Array[T::Hash[Symbol, Object]]) }
+      sig do
+        params(tags_array: T::Array[T::Hash[Symbol, Object]])
+          .returns(T::Array[T::Hash[Symbol, Object]])
+      end
       def filter_lower_tags(tags_array)
         return tags_array unless current_version
 
@@ -294,7 +300,7 @@ module Dependabot
 
       sig { params(tag: T::Hash[Symbol, Object]).returns(T.nilable(Dependabot::Version)) }
       def tag_version(tag)
-        version = tag[:version]
+        version = tag.is_a?(Dependabot::GitTagDetails) ? tag.version : tag[:version]
         Dependabot::Swift::Version.new(version.to_s) if version.is_a?(Gem::Version)
       end
 

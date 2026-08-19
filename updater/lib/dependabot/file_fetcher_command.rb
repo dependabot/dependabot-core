@@ -268,7 +268,10 @@ module Dependabot
 
     sig { params(file_fetcher: Dependabot::FileFetchers::Base).void }
     def post_ecosystem_versions(file_fetcher)
-      ecosystem_versions = file_fetcher.ecosystem_versions
+      ecosystem_versions = T.cast(
+        file_fetcher.ecosystem_versions,
+        T.nilable(T::Hash[Symbol, Object])
+      )
       api_client.record_ecosystem_versions(ecosystem_versions) unless ecosystem_versions.nil?
     end
 

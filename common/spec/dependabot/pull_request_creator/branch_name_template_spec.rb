@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/errors"
 require "dependabot/pull_request_creator/branch_name_template"
 
 RSpec.describe Dependabot::PullRequestCreator::BranchNameTemplate do
@@ -273,6 +274,21 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNameTemplate do
 
         expect(result).to eq("dependabot/develop/lodash")
       end
+    end
+  end
+
+  describe "Error" do
+    it "is a Dependabot::BranchNameFormattingError" do
+      expect(described_class::Error.new).to be_a(Dependabot::BranchNameFormattingError)
+    end
+
+    it "is surfaced as a branch_name_formatting_error via updater_error_details" do
+      error = described_class::Error.new("Malformed or unclosed braces detected.")
+
+      details = Dependabot.updater_error_details(error)
+
+      expect(details.error_type).to eq("branch_name_formatting_error")
+      expect(details.error_detail).to eq({ message: "Malformed or unclosed braces detected." })
     end
   end
 end

@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 922
+# Offense count: 790
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bun/lib/dependabot/bun.rb"
@@ -275,20 +275,6 @@ Sorbet/ForbidTUntyped:
     - "bundler/lib/dependabot/bundler/update_checker/latest_version_finder/dependency_source.rb"
     - "bundler/lib/dependabot/bundler/update_checker/shared_bundler_helpers.rb"
     - "bundler/lib/dependabot/bundler/update_checker/version_resolver.rb"
-    - "common/lib/dependabot/clients/azure.rb"
-    - "common/lib/dependabot/clients/bitbucket.rb"
-    - "common/lib/dependabot/clients/bitbucket_with_retries.rb"
-    - "common/lib/dependabot/clients/codecommit.rb"
-    - "common/lib/dependabot/clients/github_with_retries.rb"
-    - "common/lib/dependabot/clients/gitlab_with_retries.rb"
-    - "common/lib/dependabot/file_fetchers/base.rb"
-    - "common/lib/dependabot/metadata_finders/base/changelog_finder.rb"
-    - "common/lib/dependabot/pull_request_creator/github.rb"
-    - "common/lib/dependabot/pull_request_creator/pr_name_prefixer.rb"
-    - "common/lib/dependabot/pull_request_updater/azure.rb"
-    - "common/lib/dependabot/pull_request_updater/github.rb"
-    - "common/lib/dependabot/pull_request_updater/gitlab.rb"
-    - "common/lib/dependabot/shared_helpers.rb"
     - "composer/lib/dependabot/composer/file_fetcher.rb"
     - "composer/lib/dependabot/composer/file_fetcher/path_dependency_builder.rb"
     - "composer/lib/dependabot/composer/file_parser.rb"
@@ -300,7 +286,6 @@ Sorbet/ForbidTUntyped:
     - "dotnet_sdk/lib/dependabot/dotnet_sdk/package/package_details_fetcher.rb"
     - "git_submodules/lib/dependabot/git_submodules/package/package_details_fetcher.rb"
     - "github_actions/lib/dependabot/github_actions/file_parser.rb"
-    - "github_actions/lib/dependabot/github_actions/package/package_details_fetcher.rb"
     - "github_actions/lib/dependabot/github_actions/update_checker/latest_version_finder.rb"
     - "go_modules/lib/dependabot/go_modules/dependency_grapher.rb"
     - "go_modules/lib/dependabot/go_modules/file_parser.rb"
@@ -320,7 +305,6 @@ Sorbet/ForbidTUntyped:
     - "nix/lib/dependabot/nix/file_parser.rb"
     - "nix/lib/dependabot/nix/flake_nix_parser.rb"
     - "nix/lib/dependabot/nix/package/package_details_fetcher.rb"
-    - "nix/lib/dependabot/nix/update_checker.rb"
     - "nix/lib/dependabot/nix/update_checker/versioned_branch_finder.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/dependency_files_filterer.rb"
@@ -399,4 +383,3 @@ Sorbet/ForbidTUntyped:
     - "uv/lib/dependabot/uv/update_checker.rb"
     - "vcpkg/lib/dependabot/vcpkg/file_parser.rb"
     - "vcpkg/lib/dependabot/vcpkg/file_updater.rb"
-    - "vcpkg/lib/dependabot/vcpkg/package/package_details_fetcher.rb"

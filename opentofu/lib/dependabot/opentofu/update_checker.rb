@@ -184,8 +184,8 @@ module Dependabot
         return unless git_commit_checker.pinned?
         return unless git_commit_checker.pinned_ref_looks_like_version?
 
-        latest_tag = git_commit_checker.local_tag_for_latest_version
-                                       &.fetch(:tag)
+        latest_tag = git_commit_checker.local_tag_for_latest_version&.tag
+        return unless latest_tag
 
         version_rgx = GitCommitChecker::VERSION_REGEX
         return unless latest_tag.match(version_rgx)

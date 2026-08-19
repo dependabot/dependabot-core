@@ -129,7 +129,7 @@ module Dependabot
 
       sig { returns(T.nilable(Gem::Version)) }
       def latest_version_for_git_dependency
-        latest_git_version_details&.fetch(:version)
+        latest_git_version_details&.version
       end
 
       sig { returns(T.nilable(Gem::Version)) }
@@ -152,7 +152,7 @@ module Dependabot
       def updated_git_source
         # Update the git tag if a new version is available
         if git_commit_checker.pinned_ref_looks_like_version? && latest_git_version_details
-          new_tag = T.must(latest_git_version_details).fetch(:tag)
+          new_tag = T.must(latest_git_version_details).tag
           source_details = dependency.source_details
           return source_details.transform_keys(&:to_sym).merge(ref: new_tag) if source_details
         end
@@ -161,11 +161,11 @@ module Dependabot
         dependency.source_details&.transform_keys(&:to_sym)
       end
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { returns(T.nilable(Dependabot::GitTagDetails)) }
       def latest_git_version_details
         @latest_git_version_details ||= T.let(
           git_commit_checker.local_tag_for_latest_version(@update_cooldown),
-          T.nilable(T::Hash[Symbol, T.untyped])
+          T.nilable(Dependabot::GitTagDetails)
         )
       end
 

@@ -188,19 +188,22 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def run_update_checker
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            SharedHelpers.run_helper_subprocess(
-              command: "php -d memory_limit=-1 #{php_helper_path}",
-              allow_unsafe_shell_command: true,
-              function: "get_latest_resolvable_version",
-              args: [
-                Dir.pwd,
-                dependency.name.downcase,
-                git_credentials,
-                registry_credentials
-              ]
-            )
-          end
+          T.cast(
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              SharedHelpers.run_helper_subprocess(
+                command: "php -d memory_limit=-1 #{php_helper_path}",
+                allow_unsafe_shell_command: true,
+                function: "get_latest_resolvable_version",
+                args: [
+                  Dir.pwd,
+                  dependency.name.downcase,
+                  git_credentials,
+                  registry_credentials
+                ]
+              )
+            end,
+            T.nilable(String)
+          )
         end
 
         sig { params(unlock_requirement: T::Boolean).returns(String) }
