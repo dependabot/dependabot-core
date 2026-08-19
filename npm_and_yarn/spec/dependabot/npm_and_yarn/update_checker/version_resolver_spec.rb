@@ -2322,6 +2322,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         }]
       )
     end
+
     before do
       allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_return("npm install successful")
     end
@@ -2338,14 +2339,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         )]
       end
 
-      it "passes registry override environment to npm command" do
+      it "does not pass the Corepack registry override to the npm command" do
         resolver.send(:run_npm8_checker, version: "4.17.21")
 
         expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
           .with(
             anything, # The actual command
             hash_including(
-              env: hash_including("npm_config_registry" => "https://artifactory.example.com/artifactory/api/npm/npm")
+              env: nil
             )
           )
       end
