@@ -72,8 +72,11 @@ RSpec.describe Dependabot::FileFetcherCommand do
         output = JSON.parse(File.read(Dependabot::Environment.output_path))
 
         expect(output["base_commit_sha"]).to be_a(String)
-        expect(output["base64_dependency_files"].map { |f| f["name"] })
-          .to include("dependabot-test-ruby-package.gemspec")
+
+        gemspec = output["dependency_files"]
+                  .find { |f| f["name"] == "dependabot-test-ruby-package.gemspec" }
+        expect(gemspec).not_to be_nil
+        expect(gemspec["content"]).to include("Gem::Specification")
       end
     end
 

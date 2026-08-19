@@ -6,12 +6,14 @@ $LOAD_PATH.unshift(__dir__ + "/../lib")
 $stdout.sync = true
 
 require "dependabot/api_client"
+require "dependabot/dependency_file"
 require "dependabot/environment"
 require "dependabot/fetched_files"
 require "dependabot/service"
 require "dependabot/setup"
 require "dependabot/file_fetcher_command"
 require "dependabot/update_files_command"
+require "json"
 require "debug" if ENV["DEBUG"]
 
 flamegraph = ENV.fetch("FLAMEGRAPH", nil)
@@ -48,7 +50,16 @@ begin
 
   fetched_files =
     if isolate_fetch_update
-      Dependabot::FetchedFiles.deserialize(File.read(Dependabot::Environment.output_path))
+      # The fetch container wrote the files to the shared volume as their raw DependencyFile
+      # hashes; rebuild the DependencyFile objects directly, no decoding required.
+      data = JSON.parse(File.read(Dependabot::Environment.output_path))
+      dependency_files = data.fetch("dependency_files").map do |attributes|
+        Dependabot::DependencyFile.new(**attributes.transform_keys(&:to_sym))
+      end
+      Dependabot::FetchedFiles.new(
+        dependency_files: dependency_files,
+        base_commit_sha: data.fetch("base_commit_sha")
+      )
     else
       fetcher = Dependabot::FileFetcherCommand.new
       fetcher.run

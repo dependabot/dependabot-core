@@ -9,6 +9,7 @@ require "dependabot/opentelemetry"
 require "dependabot/updater"
 require "dependabot/file_fetcher_command_connectivity"
 require "fileutils"
+require "json"
 require "octokit"
 require "sorbet-runtime"
 
@@ -110,10 +111,11 @@ module Dependabot
       end
     end
 
-    # Serializes the persisted fetch output to DEPENDABOT_OUTPUT_PATH so a split
-    # update container can rehydrate the files instead of re-cloning the repo.
-    # Only active under isolate_fetch_update; otherwise the combined run is
-    # unchanged and no artifact is written.
+    # Writes the fetched files to DEPENDABOT_OUTPUT_PATH on the shared volume so a split
+    # update container can read them instead of re-cloning the repo. The files are passed
+    # through as their raw DependencyFile hashes (binary content is already Base64-encoded
+    # via content_encoding). Only active under isolate_fetch_update; otherwise the combined
+    # run is unchanged and no artifact is written.
     sig { void }
     def persist_fetched_files_to_output
       return unless Experiments.enabled?(:isolate_fetch_update)
@@ -121,7 +123,14 @@ module Dependabot
       fetched = files
       output_path = Environment.output_path
       FileUtils.mkdir_p(File.dirname(output_path))
-      File.write(output_path, fetched.serialize)
+      serialized = T.cast(
+        JSON.dump(
+          dependency_files: fetched.dependency_files.map(&:to_h),
+          base_commit_sha: fetched.base_commit_sha
+        ),
+        String
+      )
+      File.write(output_path, serialized)
       Dependabot.logger.info(
         "[isolate_fetch_update] wrote #{fetched.dependency_files.count} persisted file(s) to #{output_path}"
       )
