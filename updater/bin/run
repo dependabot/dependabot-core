@@ -15,6 +15,11 @@ case "$command" in
     ;;
 esac
 
+if [ "$command" = "fetch_files" ] && [ "${DEPENDABOT_ENABLE_FETCH_FILES_COMMAND:-}" != "true" ]; then
+  echo "fetch_files command is disabled"
+  exit 0
+fi
+
 # exec so the Ruby process' exit code becomes the container's exit code: callers
 # chain `run fetch_files && run update_files` and must be able to tell a fetch
 # failure from a success.

@@ -12,10 +12,11 @@ require "support/dummy_package_manager/dummy"
 require "dependabot/bundler"
 
 RSpec.describe Dependabot::FileFetcherCommand do
-  subject(:job) { described_class.new }
+  subject(:job) { described_class.new(record_ecosystem_versions:) }
 
   let(:api_client) { double(Dependabot::ApiClient) }
   let(:job_id) { "123123" }
+  let(:record_ecosystem_versions) { true }
 
   before do
     allow(Dependabot::ApiClient).to receive(:new).and_return(api_client)
@@ -60,6 +61,19 @@ RSpec.describe Dependabot::FileFetcherCommand do
         "dependabot-test-ruby-package.gemspec"
       )
       expect(dependency_file.content_encoding).to eq("utf-8")
+    end
+
+    context "when ecosystem version recording is disabled" do
+      let(:record_ecosystem_versions) { false }
+
+      it "fetches files without recording ecosystem versions",
+         vcr: { cassette_name: "Dependabot_FileFetcherCommand/_perform_job/fetches_the_files" } do
+        expect(api_client).not_to receive(:record_ecosystem_versions)
+
+        perform_job
+
+        expect(job.files.dependency_files).not_to be_empty
+      end
     end
 
     context "when only a local checkout may be used" do

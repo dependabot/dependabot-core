@@ -18,6 +18,11 @@ module Dependabot
     include FileFetcherCommandConnectivity
     include FileFetcherCommandLocalCheckout
 
+    sig { params(record_ecosystem_versions: T::Boolean).void }
+    def initialize(record_ecosystem_versions: true)
+      @record_ecosystem_versions = record_ecosystem_versions
+    end
+
     # BaseCommand does not implement this method, so we should expose
     # the instance variable for error handling to avoid raising a
     # NotImplementedError if it is referenced
@@ -263,7 +268,7 @@ module Dependabot
     sig { returns(T::Boolean) }
     def should_record_ecosystem_versions?
       # We don't set this flag in GHES because there's no point in recording versions since we can't access that data.
-      Experiments.enabled?(:record_ecosystem_versions)
+      @record_ecosystem_versions && Experiments.enabled?(:record_ecosystem_versions)
     end
 
     sig { params(file_fetcher: Dependabot::FileFetchers::Base).void }

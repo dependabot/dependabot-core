@@ -32,7 +32,7 @@ end
 begin
   # Clones into DEPENDABOT_REPO_CONTENTS_PATH. When that path is a shared volume the
   # update container reuses the clone instead of making its own.
-  Dependabot::FileFetcherCommand.new.run
+  Dependabot::FileFetcherCommand.new(record_ecosystem_versions: false).run
 rescue Dependabot::RunFailure
   exit 1
 end
