@@ -107,6 +107,10 @@ module Dependabot
         # pnpm 11 stopped reading non-registry settings (e.g. minimum-release-age)
         # from .npmrc, so a .npmrc release-age gate is only effective on pnpm 10.x.
         PNPM_NPMRC_RELEASE_AGE_DROPPED_VERSION = "11.0"
+        # `trustLockfile` (pnpm 11.3) skips the verification pass that re-applies
+        # minimumReleaseAge/trustPolicy to entries already in the lockfile, without
+        # relaxing the gate for versions pnpm resolves now.
+        PNPM_TRUST_LOCKFILE_VERSION = "11.3"
 
         UNREACHABLE_GIT = %r{Command failed with exit code 128: git ls-remote (?<url>.*github\.com/[^/]+/[^ ]+)}
         UNREACHABLE_GIT_V8 = %r{ERR_PNPM_FETCH_404[ [^:print]]+GET (?<url>https://codeload\.github\.com/[^/]+/[^/]+)/}
@@ -336,12 +340,35 @@ module Dependabot
         end
 
         # Builds the pnpm `--config.minimumReleaseAge` args for `minutes`, adding
-        # the strict toggle only when appropriate (see `disable_strict_release_age?`).
+        # the strict toggle only when appropriate (see `disable_strict_release_age?`)
+        # and trusting the existing lockfile where that is safe (see
+        # `trust_existing_lockfile?`).
         sig { params(minutes: Integer).returns(String) }
         def minimum_release_age_gate_args(minutes)
           args = "--config.minimumReleaseAge=#{minutes}"
           args += " --config.minimumReleaseAgeStrict=false" if disable_strict_release_age?
+          args += " --config.trustLockfile=true" if trust_existing_lockfile?
           args
+        end
+
+        # pnpm re-applies the gate to every entry already in the lockfile, so a
+        # version a human committed inside the cooldown window fails the whole
+        # command even though Dependabot neither introduced it nor can fix it
+        # (dependabot/dependabot-core#15937). Trusting the lockfile keeps the
+        # cooldown enforced for the versions pnpm resolves now, rather than dropping
+        # it wholesale, so an update is still delivered under the gate.
+        #
+        # It is skipped when the repo states its own lockfile-verification policy:
+        # `trustLockfile` is the user's to set, and `trustPolicy` re-verification of
+        # loaded entries is an independent supply-chain control that this must not
+        # silently disable. Those repos fall back to the ungated retry.
+        sig { returns(T::Boolean) }
+        def trust_existing_lockfile?
+          return false if security_updates_only?
+          return false unless pnpm_supports_trust_lockfile?
+          return false if pnpm_lockfile_verification_configured?
+
+          true
         end
 
         # pnpm defaults `minimumReleaseAgeStrict` to *on* when `minimumReleaseAge`
@@ -359,6 +386,7 @@ module Dependabot
         def fingerprint_minimum_release_age_config
           args = "--config.minimumReleaseAge=<minutes>"
           args += " --config.minimumReleaseAgeStrict=false" if disable_strict_release_age?
+          args += " --config.trustLockfile=true" if trust_existing_lockfile?
           args
         end
 
@@ -392,6 +420,29 @@ module Dependabot
         def pnpm_supports_minimum_release_age_strict?
           version = pnpm_version
           !version.nil? && version >= Version.new(PNPM_MINIMUM_RELEASE_AGE_STRICT_VERSION)
+        end
+
+        sig { returns(T::Boolean) }
+        def pnpm_supports_trust_lockfile?
+          version = pnpm_version
+          !version.nil? && version >= Version.new(PNPM_TRUST_LOCKFILE_VERSION)
+        end
+
+        # Whether the repo states its own policy for verifying loaded lockfile
+        # entries, via `trustLockfile` or `trustPolicy` in pnpm-workspace.yaml.
+        sig { returns(T::Boolean) }
+        def pnpm_lockfile_verification_configured?
+          dependency_files.any? do |file|
+            next false unless File.basename(file.name) == "pnpm-workspace.yaml"
+
+            content = file.content.to_s
+            yaml_setting_present?(content, "trustLockfile") || yaml_setting_present?(content, "trustPolicy")
+          end
+        end
+
+        sig { params(content: String, key: String).returns(T::Boolean) }
+        def yaml_setting_present?(content, key)
+          content.match?(/^\s*["']?#{Regexp.escape(key)}["']?\s*:/)
         end
 
         # pnpm 10.x ignores `minimumReleaseAge` when `shared-workspace-lockfile` is

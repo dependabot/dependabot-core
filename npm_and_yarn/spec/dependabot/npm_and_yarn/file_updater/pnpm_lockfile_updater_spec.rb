@@ -870,6 +870,21 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
         updater.send(:run_pnpm_install)
       end
+
+      it "does not trust the lockfile, leaving the repo's verification policy alone" do
+        allow(Dependabot::NpmAndYarn::Helpers)
+          .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.3.0"))
+        commands = []
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          commands << cmd
+          ""
+        end
+
+        updater.send(:run_pnpm_install)
+
+        expect(commands).not_to be_empty
+        expect(commands.join(" ")).not_to include("trustLockfile")
+      end
     end
 
     context "when security_updates_only is false (default)" do
@@ -955,9 +970,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         expect(call_count).to eq(2)
       end
 
-      # Regression coverage for dependabot/dependabot-core#15937: pnpm re-applies the
-      # gate to entries already in the lockfile, which Dependabot did not introduce
-      # and cannot fix, so the gate is dropped rather than failing the update.
+      # Regression coverage for dependabot/dependabot-core#15937 on pnpm too old for
+      # `trustLockfile` (added in 11.3): the gate is dropped rather than failing the
+      # update, because the offending entries are ones Dependabot cannot fix.
       it "retries without the gate when pnpm reports a lockfile-verification violation" do
         commands = []
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
@@ -982,7 +997,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         expect(updates.last).not_to include("--config.minimumReleaseAge")
       end
 
-      it "never disables pnpm's own lockfile verification" do
+      it "does not trust the lockfile on pnpm older than 11.3" do
         commands = []
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
           commands << cmd
@@ -992,8 +1007,72 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         updated_pnpm_lock_content
 
         expect(commands).not_to be_empty
-        # trustLockfile would also switch off trustPolicy checks for every entry.
         expect(commands.join(" ")).not_to include("trustLockfile")
+      end
+
+      # On pnpm 11.3+ the cooldown is kept and the existing lockfile is trusted, so
+      # an entry a human committed inside the window no longer costs the whole gate.
+      context "when the running pnpm supports trustLockfile" do
+        before do
+          allow(Dependabot::NpmAndYarn::Helpers)
+            .to receive(:pnpm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.3.0"))
+        end
+
+        it "keeps the gate and trusts entries already in the lockfile" do
+          commands = []
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            commands << cmd
+            ""
+          end
+
+          updated_pnpm_lock_content
+
+          gated = commands.select { |cmd| cmd.include?("--config.minimumReleaseAge=10080") }
+          expect(gated).not_to be_empty
+          expect(gated).to all(include("--config.trustLockfile=true"))
+        end
+
+        context "when the repo sets trustLockfile itself" do
+          let(:files) do
+            project_dependency_files(project_name) +
+              [Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "trustLockfile: false\n")]
+          end
+
+          it "leaves the repo's lockfile-verification policy untouched" do
+            commands = []
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+              commands << cmd
+              ""
+            end
+
+            updated_pnpm_lock_content
+
+            expect(commands).not_to be_empty
+            expect(commands.join(" ")).not_to include("trustLockfile=true")
+          end
+        end
+
+        context "when the repo configures trustPolicy" do
+          let(:files) do
+            project_dependency_files(project_name) +
+              [Dependabot::DependencyFile.new(
+                name: "pnpm-workspace.yaml", content: "trustPolicy: 'no-downgrade'\n"
+              )]
+          end
+
+          it "does not disable the repo's supply-chain verification" do
+            commands = []
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+              commands << cmd
+              ""
+            end
+
+            updated_pnpm_lock_content
+
+            expect(commands).not_to be_empty
+            expect(commands.join(" ")).not_to include("trustLockfile")
+          end
+        end
       end
 
       # pnpm raises the same code when a newly resolved version is too young;
