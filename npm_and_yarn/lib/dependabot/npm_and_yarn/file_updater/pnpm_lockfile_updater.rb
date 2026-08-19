@@ -41,6 +41,7 @@ module Dependabot
           @credentials = credentials
           @security_updates_only = security_updates_only
           @release_age_days = release_age_days
+          @trust_existing_lockfile = T.let(nil, T.nilable(T::Boolean))
           @error_handler = T.let(
             PnpmErrorHandler.new(
               dependencies: dependencies,
@@ -107,6 +108,13 @@ module Dependabot
         # pnpm 11 stopped reading non-registry settings (e.g. minimum-release-age)
         # from .npmrc, so a .npmrc release-age gate is only effective on pnpm 10.x.
         PNPM_NPMRC_RELEASE_AGE_DROPPED_VERSION = "11.0"
+        # `trustLockfile` (pnpm 11.3) skips the verification pass that re-applies
+        # minimumReleaseAge/trustPolicy to entries already in the lockfile, without
+        # relaxing the gate for versions pnpm resolves now.
+        PNPM_TRUST_LOCKFILE_VERSION = "11.3"
+        # pnpm-workspace.yaml settings that govern verification of loaded lockfile
+        # entries, and so must not be overridden by `trustLockfile=true`.
+        LOCKFILE_VERIFICATION_SETTINGS = T.let(%w(trustLockfile trustPolicy).freeze, T::Array[String])
 
         UNREACHABLE_GIT = %r{Command failed with exit code 128: git ls-remote (?<url>.*github\.com/[^/]+/[^ ]+)}
         UNREACHABLE_GIT_V8 = %r{ERR_PNPM_FETCH_404[ [^:print]]+GET (?<url>https://codeload\.github\.com/[^/]+/[^/]+)/}
@@ -234,12 +242,28 @@ module Dependabot
           run_pnpm_command_with_release_age_gate("install --lockfile-only")
         end
 
-        # pnpm's `minimumReleaseAge` needs the registry `time` field, which is
-        # absent from the abbreviated metadata pnpm uses for some packages during
-        # `pnpm update`, raising ERR_PNPM_MISSING_TIME. When that happens for a
-        # cooldown-derived gate we retry without it so the update still succeeds,
-        # rather than failing the whole job. Security bypass (`=0`) never triggers
-        # this because it disables the age lookup entirely.
+        # Failures that mean the cooldown gate cannot be applied to this repo,
+        # rather than that the update is wrong. Each is retried once without the
+        # gate so a transitive-cooldown preference never blocks the update.
+        #
+        # The release-age violation is matched on pnpm's lockfile-verification
+        # wording rather than the bare error code, because pnpm raises the same
+        # code when a *newly resolved* version is too young. Retrying ungated
+        # there would admit the very release the cooldown exists to reject, so
+        # only the verification pass over entries already in the lockfile — which
+        # Dependabot neither introduced nor can fix — is treated as inapplicable.
+        RELEASE_AGE_GATE_INAPPLICABLE = T.let(
+          {
+            /ERR_PNPM_MISSING_TIME/ =>
+              "the registry metadata is missing the \"time\" field",
+            /ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION[\s\S]*lockfile entries failed verification/ =>
+              "the existing lockfile contains entries published inside the cooldown window"
+          }.freeze,
+          T::Hash[Regexp, String]
+        )
+
+        # Security bypass (`=0`) never triggers these, because it disables the age
+        # lookup entirely, so it is always re-raised.
         sig { params(cmd: String, fingerprint: T.nilable(String)).returns(T.nilable(String)) }
         def run_pnpm_command_with_release_age_gate(cmd, fingerprint = nil)
           gate = release_age_gate_config
@@ -250,15 +274,28 @@ module Dependabot
           begin
             execute_pnpm_command("#{cmd} #{gate}", gated_fingerprint)
           rescue SharedHelpers::HelperSubprocessFailed => e
-            raise if security_updates_only? || !e.message.include?("ERR_PNPM_MISSING_TIME")
+            raise if security_updates_only?
+
+            _, reason = RELEASE_AGE_GATE_INAPPLICABLE.find { |matcher, _| e.message.match?(matcher) }
+            raise unless reason
 
             Dependabot.logger.warn(
-              "pnpm could not apply the cooldown release-age gate because the registry metadata " \
-              "is missing the \"time\" field (ERR_PNPM_MISSING_TIME); retrying without the " \
-              "transitive cooldown gate so the update is not blocked."
+              "pnpm could not apply the cooldown release-age gate because #{reason}; " \
+              "retrying without Dependabot's release-age override so the update is not blocked. " \
+              "#{fallback_release_age_description}"
             )
             execute_pnpm_command(cmd, fingerprint)
           end
+        end
+
+        # What still gates transitive dependencies once Dependabot's override is
+        # dropped, so the warning does not imply the retry is ungated.
+        sig { returns(String) }
+        def fallback_release_age_description
+          configured = pnpm_configured_minimum_release_age
+          return "pnpm falls back to its own minimumReleaseAge default." if configured.nil?
+
+          "pnpm falls back to the repo's own minimumReleaseAge (#{configured} minutes)."
         end
 
         sig { params(cmd: String, fingerprint: T.nilable(String)).returns(T.nilable(String)) }
@@ -318,12 +355,52 @@ module Dependabot
         end
 
         # Builds the pnpm `--config.minimumReleaseAge` args for `minutes`, adding
-        # the strict toggle only when appropriate (see `disable_strict_release_age?`).
+        # the strict toggle only when appropriate (see `disable_strict_release_age?`)
+        # and trusting the existing lockfile where that is safe (see
+        # `trust_existing_lockfile?`).
         sig { params(minutes: Integer).returns(String) }
         def minimum_release_age_gate_args(minutes)
           args = "--config.minimumReleaseAge=#{minutes}"
           args += " --config.minimumReleaseAgeStrict=false" if disable_strict_release_age?
+          args += " --config.trustLockfile=true" if trust_existing_lockfile?
           args
+        end
+
+        # pnpm re-applies the gate to every entry already in the lockfile, so a
+        # version a human committed inside the cooldown window fails the whole
+        # command even though Dependabot neither introduced it nor can fix it
+        # (dependabot/dependabot-core#15937). Trusting the lockfile keeps the
+        # cooldown enforced for the versions pnpm resolves now, rather than dropping
+        # it wholesale, so an update is still delivered under the gate.
+        #
+        # It is skipped when the repo states its own lockfile-verification policy:
+        # `trustLockfile` is the user's to set, and `trustPolicy` re-verification of
+        # loaded entries is an independent supply-chain control that this must not
+        # silently disable. Those repos fall back to the ungated retry.
+        #
+        # Memoized so the decision is logged once per update, not per command.
+        sig { returns(T::Boolean) }
+        def trust_existing_lockfile?
+          @trust_existing_lockfile = compute_trust_existing_lockfile? if @trust_existing_lockfile.nil?
+          @trust_existing_lockfile
+        end
+
+        sig { returns(T::Boolean) }
+        def compute_trust_existing_lockfile?
+          return false if security_updates_only?
+          return false unless pnpm_supports_trust_lockfile?
+
+          configured = configured_lockfile_verification_settings
+          unless configured.empty?
+            Dependabot.logger.info(
+              "pnpm-workspace.yaml sets #{configured.join(', ')}, so Dependabot will not pass " \
+              "trustLockfile; entries already in the lockfile are still verified against the " \
+              "cooldown window, and a violation there falls back to an ungated retry."
+            )
+            return false
+          end
+
+          true
         end
 
         # pnpm defaults `minimumReleaseAgeStrict` to *on* when `minimumReleaseAge`
@@ -341,6 +418,7 @@ module Dependabot
         def fingerprint_minimum_release_age_config
           args = "--config.minimumReleaseAge=<minutes>"
           args += " --config.minimumReleaseAgeStrict=false" if disable_strict_release_age?
+          args += " --config.trustLockfile=true" if trust_existing_lockfile?
           args
         end
 
@@ -374,6 +452,33 @@ module Dependabot
         def pnpm_supports_minimum_release_age_strict?
           version = pnpm_version
           !version.nil? && version >= Version.new(PNPM_MINIMUM_RELEASE_AGE_STRICT_VERSION)
+        end
+
+        sig { returns(T::Boolean) }
+        def pnpm_supports_trust_lockfile?
+          version = pnpm_version
+          !version.nil? && version >= Version.new(PNPM_TRUST_LOCKFILE_VERSION)
+        end
+
+        # The lockfile-verification settings the repo states for itself, via
+        # pnpm-workspace.yaml. Named rather than boolean so the log can say which
+        # setting held `trustLockfile` back.
+        sig { returns(T::Array[String]) }
+        def configured_lockfile_verification_settings
+          dependency_files.flat_map do |file|
+            next [] unless File.basename(file.name) == "pnpm-workspace.yaml"
+
+            workspace_setting_names(file.content.to_s) & LOCKFILE_VERIFICATION_SETTINGS
+          end.uniq
+        end
+
+        # Top-level keys of a pnpm-workspace.yaml. Parsed as YAML rather than
+        # matched per line so flow-style mappings (`{ trustPolicy: no-downgrade }`)
+        # are seen.
+        sig { params(content: String).returns(T::Array[String]) }
+        def workspace_setting_names(content)
+          parsed = YAML.safe_load(content, aliases: true)
+          parsed.is_a?(Hash) ? parsed.keys.map(&:to_s) : []
         end
 
         # pnpm 10.x ignores `minimumReleaseAge` when `shared-workspace-lockfile` is

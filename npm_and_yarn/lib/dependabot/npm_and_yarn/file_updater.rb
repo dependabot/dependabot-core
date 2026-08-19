@@ -7,8 +7,10 @@ require "dependabot/file_updaters/vendor_updater"
 require "dependabot/file_updaters/artifact_updater"
 require "dependabot/errors"
 require "dependabot/package/release_cooldown_options"
+require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
+require "dependabot/npm_and_yarn/version"
 require "sorbet-runtime"
 
 module Dependabot
@@ -442,12 +444,24 @@ module Dependabot
       # Dependabot can constrain the versions the package manager resolves for the
       # transitive tree. Returns nil for security updates (which must never be
       # blocked by a release-age gate) or when no positive cooldown is configured.
-      # `default_days` is used because the native gates are a single global value
-      # and cannot express per-semver-type days or include/exclude patterns.
       #
-      # The gate is also skipped when none of the dependencies being updated are
-      # subject to the cooldown (per its `include`/`exclude` patterns), so an
-      # update the user explicitly opted out of cooldown for is not gated.
+      # The native gates are a single global value per invocation, so they cannot
+      # express per-semver-type days or include/exclude patterns. Passing a value
+      # stricter than the rule that selected a version makes the package manager
+      # refuse the install it was just asked to perform, which surfaces as a skipped
+      # update or a hung resolver (dependabot/dependabot-core#15937). The gate is
+      # therefore the *smallest* of the per-update cooldown days, so it never
+      # exceeds the window any of the selected versions was approved under.
+      #
+      # The smallest is deliberately the opposite of the highest-wins rule in
+      # `Helpers.higher_release_age_gate`: that reconciles two *competing* policies
+      # (ours and the user's), whereas these are all windows we applied ourselves,
+      # and taking the highest would reject the update selected under the shortest.
+      #
+      # A global flag cannot express `include`/`exclude`, and selection gives an
+      # excluded dependency a zero-day window, so any gate at all could reject a
+      # version it approved. The gate is therefore skipped unless every dependency
+      # in the invocation is cooldown-included.
       sig { returns(T.nilable(Integer)) }
       def cooldown_release_age_days
         return nil if options.fetch(:security_updates_only, false)
@@ -457,10 +471,45 @@ module Dependabot
           T.nilable(Dependabot::Package::ReleaseCooldownOptions)
         )
         return nil if cooldown.nil?
-        return nil unless dependencies.any? { |dep| cooldown.included?(dep.name) }
+        return nil if dependencies.empty?
+        return nil unless dependencies.all? { |dep| cooldown.included?(dep.name) }
 
-        days = cooldown.default_days
-        days.positive? ? days : nil
+        days = dependencies.map { |dep| selection_cooldown_days(cooldown, dep) }.min
+        days&.positive? ? days : nil
+      end
+
+      # The cooldown window the update checker applied when it selected this
+      # dependency's target version, so the native gate can never reject a version
+      # Dependabot itself chose. Falls back to `default_days` for versions we cannot
+      # parse, matching how `CooldownCalculation` treats an unknown current version.
+      sig do
+        params(
+          cooldown: Dependabot::Package::ReleaseCooldownOptions,
+          dependency: Dependabot::Dependency
+        ).returns(Integer)
+      end
+      def selection_cooldown_days(cooldown, dependency)
+        new_version = parsed_version(dependency.version)
+        return cooldown.default_days if new_version.nil?
+
+        semver_days = Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(
+          cooldown,
+          parsed_version(dependency.previous_version),
+          new_version
+        )
+
+        # A dependency absent from the lockfile is selected under `default_days`,
+        # because the checker has no current version, yet `previous_version` is
+        # later inferred from the manifest requirement. Capping keeps the gate from
+        # exceeding whichever of the two windows selection actually used.
+        [semver_days, cooldown.default_days].min
+      end
+
+      sig { params(version: T.nilable(String)).returns(T.nilable(Dependabot::NpmAndYarn::Version)) }
+      def parsed_version(version)
+        return nil unless version && Dependabot::NpmAndYarn::Version.correct?(version)
+
+        Dependabot::NpmAndYarn::Version.new(version)
       end
 
       sig { returns(Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater) }
