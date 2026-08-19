@@ -28,6 +28,11 @@ module Dependabot
       # to avoid oversized error payloads while retaining the relevant failure detail.
       MAX_ERROR_SUMMARY_LENGTH = 2_000
 
+      # Matches ANSI/VT100 control sequences. Maven can be configured to emit colored
+      # output (e.g. `-Dstyle.color=always`), wrapping markers like `[ERROR]` in escape
+      # codes; we strip these so classification and the surfaced summary see plain text.
+      ANSI_ESCAPE_REGEX = %r{\e\[[0-9;?]*[ -/]*[@-~]}
+
       pom_path = File.join(__dir__, "pom.xml")
 
       version = File.open(pom_path) do |f|
@@ -128,7 +133,9 @@ module Dependabot
       # instead of mislabelling infrastructure/runtime failures as tooling misconfigurations.
       sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
       def self.handle_wrapper_error(error)
-        output = error.message
+        # Strip ANSI color codes up front so classification and the surfaced summary see
+        # plain text even when Maven is configured to emit colored output.
+        output = error.message.gsub(ANSI_ESCAPE_REGEX, "")
 
         if (match = output.match(TRANSFER_FAILURE_REGEX)) &&
            (match[:status_code] == "403" || match[:status_code] == "401")

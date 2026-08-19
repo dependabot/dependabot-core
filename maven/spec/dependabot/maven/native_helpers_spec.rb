@@ -110,6 +110,25 @@ RSpec.describe Dependabot::Maven::NativeHelpers do
       expect(error.tool_message.length).to be <= 2_003 # 2000 chars + "..."
       expect(error.tool_message).to end_with("...")
     end
+
+    it "strips ANSI color codes so colored [ERROR] markers are still classified" do
+      # Maven can be configured (e.g. `-Dstyle.color=always`) to wrap markers in ANSI
+      # escape codes; the summary must still detect and surface the diagnostic.
+      output = "[\e[1;34mINFO\e[m] Scanning for projects...\n" \
+               "[\e[1;31mERROR\e[m] Failed to execute goal on project demo: proxy host could not be reached\n"
+      error = capture_wrapper_error(output)
+      expect(error).to be_a(Dependabot::MisconfiguredTooling)
+      expect(error.tool_message).to include("proxy host could not be reached")
+      expect(error.tool_message).not_to include("\e[")
+    end
+
+    it "sanitizes basic-auth credentials from the surfaced summary" do
+      output = "[ERROR] Failed to download from https://user:secret@repo.example.com/maven/artifact.jar"
+      error = capture_wrapper_error(output)
+      expect(error).to be_a(Dependabot::MisconfiguredTooling)
+      expect(error.tool_message).not_to include("secret")
+      expect(error.tool_message).to include("repo.example.com")
+    end
   end
 
   describe "run_mvnw_wrapper" do
