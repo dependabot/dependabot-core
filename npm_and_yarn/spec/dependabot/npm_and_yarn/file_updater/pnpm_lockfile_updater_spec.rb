@@ -997,6 +997,33 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         expect(updates.last).not_to include("--config.minimumReleaseAge")
       end
 
+      context "when the repo sets its own minimumReleaseAge" do
+        let(:files) do
+          project_dependency_files(project_name) +
+            [Dependabot::DependencyFile.new(name: "pnpm-workspace.yaml", content: "minimumReleaseAge: 1440\n")]
+        end
+
+        it "reports the gate the retry falls back to, rather than implying none" do
+          allow(Dependabot.logger).to receive(:warn)
+          allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+            if cmd.include?("--config.minimumReleaseAge=10080")
+              raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "[ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION] 1 lockfile entries failed verification",
+                error_context: {}
+              )
+            end
+            ""
+          end
+
+          updated_pnpm_lock_content
+
+          expect(Dependabot.logger)
+            .to have_received(:warn)
+            .with(/falls back to the repo's own minimumReleaseAge \(1440 minutes\)/)
+            .at_least(:once)
+        end
+      end
+
       it "does not trust the lockfile on pnpm older than 11.3" do
         commands = []
         allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
@@ -1062,6 +1089,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
           it "does not disable the repo's supply-chain verification" do
             commands = []
+            allow(Dependabot.logger).to receive(:info)
             allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
               commands << cmd
               ""
@@ -1071,6 +1099,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
 
             expect(commands).not_to be_empty
             expect(commands.join(" ")).not_to include("trustLockfile")
+            expect(Dependabot.logger)
+              .to have_received(:info).with(/pnpm-workspace\.yaml sets trustPolicy/).at_least(:once)
           end
         end
 

@@ -41,6 +41,7 @@ module Dependabot
           @credentials = credentials
           @security_updates_only = security_updates_only
           @release_age_days = release_age_days
+          @trust_existing_lockfile = T.let(nil, T.nilable(T::Boolean))
           @error_handler = T.let(
             PnpmErrorHandler.new(
               dependencies: dependencies,
@@ -280,10 +281,21 @@ module Dependabot
 
             Dependabot.logger.warn(
               "pnpm could not apply the cooldown release-age gate because #{reason}; " \
-              "retrying without the transitive cooldown gate so the update is not blocked."
+              "retrying without Dependabot's release-age override so the update is not blocked. " \
+              "#{fallback_release_age_description}"
             )
             execute_pnpm_command(cmd, fingerprint)
           end
+        end
+
+        # What still gates transitive dependencies once Dependabot's override is
+        # dropped, so the warning does not imply the retry is ungated.
+        sig { returns(String) }
+        def fallback_release_age_description
+          configured = pnpm_configured_minimum_release_age
+          return "pnpm falls back to its own minimumReleaseAge default." if configured.nil?
+
+          "pnpm falls back to the repo's own minimumReleaseAge (#{configured} minutes)."
         end
 
         sig { params(cmd: String, fingerprint: T.nilable(String)).returns(T.nilable(String)) }
@@ -365,11 +377,28 @@ module Dependabot
         # `trustLockfile` is the user's to set, and `trustPolicy` re-verification of
         # loaded entries is an independent supply-chain control that this must not
         # silently disable. Those repos fall back to the ungated retry.
+        #
+        # Memoized so the decision is logged once per update, not per command.
         sig { returns(T::Boolean) }
         def trust_existing_lockfile?
+          @trust_existing_lockfile = compute_trust_existing_lockfile? if @trust_existing_lockfile.nil?
+          @trust_existing_lockfile
+        end
+
+        sig { returns(T::Boolean) }
+        def compute_trust_existing_lockfile?
           return false if security_updates_only?
           return false unless pnpm_supports_trust_lockfile?
-          return false if pnpm_lockfile_verification_configured?
+
+          configured = configured_lockfile_verification_settings
+          unless configured.empty?
+            Dependabot.logger.info(
+              "pnpm-workspace.yaml sets #{configured.join(', ')}, so Dependabot will not pass " \
+              "trustLockfile; entries already in the lockfile are still verified against the " \
+              "cooldown window, and a violation there falls back to an ungated retry."
+            )
+            return false
+          end
 
           true
         end
@@ -431,15 +460,16 @@ module Dependabot
           !version.nil? && version >= Version.new(PNPM_TRUST_LOCKFILE_VERSION)
         end
 
-        # Whether the repo states its own policy for verifying loaded lockfile
-        # entries, via `trustLockfile` or `trustPolicy` in pnpm-workspace.yaml.
-        sig { returns(T::Boolean) }
-        def pnpm_lockfile_verification_configured?
-          dependency_files.any? do |file|
-            next false unless File.basename(file.name) == "pnpm-workspace.yaml"
+        # The lockfile-verification settings the repo states for itself, via
+        # pnpm-workspace.yaml. Named rather than boolean so the log can say which
+        # setting held `trustLockfile` back.
+        sig { returns(T::Array[String]) }
+        def configured_lockfile_verification_settings
+          dependency_files.flat_map do |file|
+            next [] unless File.basename(file.name) == "pnpm-workspace.yaml"
 
-            workspace_setting_names(file.content.to_s).intersect?(LOCKFILE_VERIFICATION_SETTINGS)
-          end
+            workspace_setting_names(file.content.to_s) & LOCKFILE_VERIFICATION_SETTINGS
+          end.uniq
         end
 
         # Top-level keys of a pnpm-workspace.yaml. Parsed as YAML rather than
