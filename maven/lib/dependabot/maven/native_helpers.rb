@@ -120,36 +120,49 @@ module Dependabot
         # classified Dependabot error so operators get an actionable message, mirroring
         # the `run_mvn_dependency_tree_plugin` path.
         Dependabot.logger.warn("mvn wrapper command failed:\n#{e.message}")
-        handle_wrapper_error(e.message)
+        handle_wrapper_error(e)
       end
 
       # Classifies a failed Maven Wrapper invocation into an actionable Dependabot
       # error. Known auth and plugin-resolution failures are mapped to their specific
-      # error types; anything else surfaces the actual Maven error via MisconfiguredTooling
-      # instead of an opaque subprocess failure.
-      sig { params(output: String).returns(T.noreturn) }
-      def self.handle_wrapper_error(output)
+      # error types, and genuine Maven diagnostics are surfaced via MisconfiguredTooling.
+      # `run_shell_command` also reports inactivity timeouts and a missing `mvn`
+      # executable as HelperSubprocessFailed; those carry no Maven `[ERROR]` markers, so
+      # we re-raise the original error and let it follow normal unknown-error routing
+      # instead of mislabelling infrastructure/runtime failures as tooling misconfigurations.
+      sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T.noreturn) }
+      def self.handle_wrapper_error(error)
+        output = error.message
+
         if (match = output.match(TRANSFER_FAILURE_REGEX)) &&
            (match[:status_code] == "403" || match[:status_code] == "401")
           raise Dependabot::PrivateSourceAuthenticationFailure, match[:repository_url]
         end
 
         if output.match?(WRAPPER_PLUGIN_UNRESOLVED_REGEX)
-          raise Dependabot::DependencyFileNotResolvable,
-                "Could not resolve the Maven Wrapper plugin. #{mvn_error_summary(output)}"
+          raise Dependabot::DependencyFileNotResolvable, "Could not resolve the Maven Wrapper plugin."
         end
 
-        raise Dependabot::MisconfiguredTooling.new("Maven Wrapper", mvn_error_summary(output))
+        # Only reclassify when Maven emitted its own `[ERROR]` diagnostics. Otherwise the
+        # failure is not a Maven misconfiguration (e.g. timeout or missing executable), so
+        # re-raise the original error; its full output is already in the job log.
+        summary = mvn_error_summary(output)
+        raise error unless summary
+
+        raise Dependabot::MisconfiguredTooling.new("Maven Wrapper", summary)
       end
 
       # Extracts Maven's own `[ERROR]` lines from the combined tool output so that raised
-      # errors surface the relevant failure reason without leaking unrelated build noise.
-      # Falls back to the trimmed output when no `[ERROR]` lines are present, and caps the
-      # length to keep error payloads reasonable.
-      sig { params(output: String).returns(String) }
+      # errors surface the relevant failure reason without leaking unrelated build noise or
+      # arbitrary subprocess output (which may contain sensitive file contents or paths) into
+      # the reported error. Returns nil when Maven produced no `[ERROR]` diagnostics, and caps
+      # the length to keep error payloads reasonable.
+      sig { params(output: String).returns(T.nilable(String)) }
       def self.mvn_error_summary(output)
         error_lines = output.lines.map(&:chomp).select { |line| line.include?("[ERROR]") }
-        summary = error_lines.empty? ? output.strip : error_lines.join("\n")
+        return nil if error_lines.empty?
+
+        summary = error_lines.join("\n")
         summary.length > MAX_ERROR_SUMMARY_LENGTH ? "#{summary[0, MAX_ERROR_SUMMARY_LENGTH]}..." : summary
       end
     end
