@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -10,6 +10,8 @@ require "dependabot/git_metadata_fetcher"
 require "dependabot/git_commit_checker"
 require "dependabot/metadata_finders/base"
 require "dependabot/credential"
+require "dependabot/errors"
+require_relative "commit_response_parser"
 
 module Dependabot
   module MetadataFinders
@@ -283,24 +285,21 @@ module Dependabot
 
               args = { sha: previous_tag, path: path }.compact
               previous_commit_shas =
-                T.unsafe(github_client.commits(repo, **args)).map(&:sha)
+                github_client.commits(repo, args).map { |commit| commit_response_parser.github_commit_sha(commit) }
 
               # NOTE: We reverse this so it's consistent with the array we get
               # from `github_client.compare(...)`
               args = { sha: new_tag, path: path }.compact
-              T.unsafe(
-                github_client
-                               .commits(repo, **args)
-              )
-               .reject { |c| previous_commit_shas.include?(c.sha) }.reverse
+              github_client
+                .commits(repo, args)
+                .reject { |commit| previous_commit_shas.include?(commit_response_parser.github_commit_sha(commit)) }
+                .reverse
             end
-          return [] unless commits
-
           commits.map do |commit|
             {
-              message: commit.commit.message,
-              sha: commit.sha,
-              html_url: commit.html_url
+              message: commit_response_parser.github_commit_message(commit),
+              sha: commit_response_parser.github_commit_sha(commit),
+              html_url: commit_response_parser.sawyer_string(commit, :html_url, "commit")
             }
           end
         rescue Octokit::NotFound
@@ -312,10 +311,13 @@ module Dependabot
           bitbucket_client
             .compare(T.must(source).repo, T.must(previous_tag), T.must(new_tag))
             .map do |commit|
+            summary = T.cast(commit.fetch("summary"), Dependabot::Clients::Bitbucket::JsonObject)
+            links = T.cast(commit.fetch("links"), Dependabot::Clients::Bitbucket::JsonObject)
+            html = T.cast(links.fetch("html"), Dependabot::Clients::Bitbucket::JsonObject)
             {
-              message: commit.dig("summary", "raw"),
-              sha: commit["hash"],
-              html_url: commit.dig("links", "html", "href")
+              message: T.cast(summary.fetch("raw"), String),
+              sha: T.cast(commit.fetch("hash"), String),
+              html_url: T.cast(html.fetch("href"), String)
             }
           end
         rescue Dependabot::Clients::Bitbucket::NotFound,
@@ -329,16 +331,20 @@ module Dependabot
 
         sig { returns(T::Array[T::Hash[Symbol, String]]) }
         def fetch_gitlab_commits
-          T.unsafe(
-            gitlab_client
-                       .compare(T.must(source).repo, T.must(previous_tag), T.must(new_tag))
-          )
-           .commits
-           .map do |commit|
+          comparison = gitlab_client.compare(T.must(source).repo, T.must(previous_tag), T.must(new_tag))
+          commits = T.cast(comparison["commits"], Object)
+          commit_response_parser.raise_bad_response("GitLab", "commits must be an array") unless commits.is_a?(Array)
+
+          commits.map do |raw_commit|
+            commit = T.cast(raw_commit, Object)
+            commit_response_parser.raise_bad_response("GitLab", "commit must be an object") unless
+              commit.is_a?(Gitlab::ObjectifiedHash)
+
+            id = commit_response_parser.gitlab_string(commit, "id", "commit")
             {
-              message: commit["message"],
-              sha: commit["id"],
-              html_url: "#{T.must(source).url}/commit/#{commit['id']}"
+              message: commit_response_parser.gitlab_string(commit, "message", "commit"),
+              sha: id,
+              html_url: "#{T.must(source).url}/commit/#{id}"
             }
           end
         rescue Gitlab::Error::NotFound
@@ -352,9 +358,9 @@ module Dependabot
             .compare(previous_tag, new_tag, type)
             .map do |commit|
             {
-              message: commit["comment"],
-              sha: commit["commitId"],
-              html_url: commit["remoteUrl"]
+              message: commit_response_parser.object_string(commit, "comment", "commit"),
+              sha: commit_response_parser.object_string(commit, "commitId", "commit"),
+              html_url: commit_response_parser.object_string(commit, "remoteUrl", "commit")
             }
           end
         rescue Dependabot::Clients::Azure::NotFound,
@@ -364,6 +370,14 @@ module Dependabot
                Excon::Error::Socket,
                Excon::Error::Timeout
           []
+        end
+
+        sig { returns(CommitResponseParser) }
+        def commit_response_parser
+          @commit_response_parser ||= T.let(
+            CommitResponseParser.new(source_url: T.must(source).url),
+            T.nilable(CommitResponseParser)
+          )
         end
 
         sig { returns(Dependabot::Clients::GitlabWithRetries) }
@@ -410,21 +424,13 @@ module Dependabot
         end
 
         sig { returns(T.class_of(Dependabot::Version)) }
-        def version_class
-          dependency.version_class
-        end
+        def version_class = dependency.version_class
 
         sig { returns(T.class_of(Dependabot::Requirement)) }
-        def requirement_class
-          dependency.requirement_class
-        end
+        def requirement_class = dependency.requirement_class
 
         sig { params(version: T.nilable(String)).returns(T::Boolean) }
-        def git_sha?(version)
-          return false unless version
-
-          version.match?(/^[0-9a-f]{40}$/)
-        end
+        def git_sha?(version) = version&.match?(/^[0-9a-f]{40}$/) || false
 
         sig { returns(T::Boolean) }
         def reliable_source_directory?

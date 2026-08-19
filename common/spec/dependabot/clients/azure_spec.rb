@@ -58,6 +58,19 @@ RSpec.describe Dependabot::Clients::Azure do
       it { is_expected.to eq("9c8376e9b2e943c2c72fac4b239876f377f0305a") }
     end
 
+    context "when the response has a malformed commit ID" do
+      before do
+        stub_request(:get, branch_url)
+          .with(basic_auth: [username, password])
+          .to_return(status: 200, body: '{"commit":{"commitId":42}}')
+      end
+
+      it "raises a bad response error" do
+        expect { fetch_commit }
+          .to raise_error(Dependabot::PrivateSourceBadResponse, /Malformed Azure response for branch stats/)
+      end
+    end
+
     context "when response is 404" do
       before do
         stub_request(:get, branch_url)

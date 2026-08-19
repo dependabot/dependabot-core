@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "gitlab"
@@ -7,6 +7,7 @@ require "sorbet-runtime"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/credential"
 require "dependabot/pull_request_creator"
+require "dependabot/errors"
 
 module Dependabot
   class PullRequestUpdater
@@ -67,10 +68,10 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def update
         return unless merge_request_exists?
-        return unless branch_exists?(merge_request.source_branch)
+        return unless branch_exists?(gitlab_string(merge_request, "source_branch", "merge request"))
 
         create_commit
-        merge_request.source_branch
+        gitlab_string(merge_request, "source_branch", "merge request")
       end
 
       private
@@ -83,14 +84,14 @@ module Dependabot
         false
       end
 
-      sig { returns(T.untyped) }
+      sig { returns(::Gitlab::ObjectifiedHash) }
       def merge_request
         @merge_request ||= T.let(
-          T.unsafe(gitlab_client_for_source).merge_request(
-            target_project_id || source.repo,
+          gitlab_client_for_source.merge_request(
+            (target_project_id || source.repo).to_s,
             pull_request_number
           ),
-          T.untyped
+          T.nilable(::Gitlab::ObjectifiedHash)
         )
       end
 
@@ -113,8 +114,7 @@ module Dependabot
         false
       end
 
-      # TODO: This needs to be typed when the underlying client is
-      sig { returns(T.untyped) }
+      sig { returns(::Gitlab::ObjectifiedHash) }
       def commit_being_updated
         gitlab_client_for_source.commit(source.repo, old_commit)
       end
@@ -123,11 +123,22 @@ module Dependabot
       def create_commit
         gitlab_client_for_source.create_commit(
           source.repo,
-          merge_request.source_branch,
-          commit_being_updated.title,
+          gitlab_string(merge_request, "source_branch", "merge request"),
+          gitlab_string(commit_being_updated, "title", "commit"),
           files,
           force: true,
-          start_branch: merge_request.target_branch
+          start_branch: gitlab_string(merge_request, "target_branch", "merge request")
+        )
+      end
+
+      sig { params(resource: ::Gitlab::ObjectifiedHash, key: String, context: String).returns(String) }
+      def gitlab_string(resource, key, context)
+        value = T.cast(resource[key], Object)
+        return value if value.is_a?(String)
+
+        raise Dependabot::PrivateSourceBadResponse.new(
+          source.url,
+          "Malformed GitLab response: #{context} #{key} must be a string"
         )
       end
     end

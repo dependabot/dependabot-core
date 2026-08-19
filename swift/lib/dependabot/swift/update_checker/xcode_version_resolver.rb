@@ -101,7 +101,7 @@ module Dependabot
           tag = git_commit_checker.local_tag_for_latest_version
           return nil unless tag
 
-          version = tag.fetch(:version)
+          version = tag_version(tag)
           return nil unless version_meets_requirements?(version)
 
           tag
@@ -116,9 +116,9 @@ module Dependabot
           return nil unless requirement
 
           tags = git_commit_checker.local_tags_for_allowed_versions
-          matching_tags = tags.select { |tag| requirement.satisfied_by?(tag.fetch(:version)) }
+          matching_tags = tags.select { |tag| requirement.satisfied_by?(T.must(tag_version(tag))) }
 
-          matching_tags.max_by { |tag| tag.fetch(:version) }
+          matching_tags.max_by { |tag| T.must(tag_version(tag)) }
         end
 
         sig { returns(T.nilable(Dependabot::Swift::Requirement)) }
@@ -193,6 +193,8 @@ module Dependabot
 
         sig { params(tag: T::Hash[Symbol, Object]).returns(T.nilable(Gem::Version)) }
         def tag_version(tag)
+          return tag.version if tag.is_a?(Dependabot::GitTagDetails)
+
           version = tag[:version]
           version if version.is_a?(Gem::Version)
         end
