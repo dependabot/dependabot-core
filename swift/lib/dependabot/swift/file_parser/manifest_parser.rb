@@ -12,9 +12,12 @@ module Dependabot
         extend T::Sig
         extend T::Helpers
 
+        # After the version requirement there may be additional labeled arguments (e.g. `traits: []`)
+        # that can span onto following lines before the closing `)` of `.package(`.
         DEPENDENCY =
           /(?<declaration>\.package\(\s*
-            (?:name:\s+"[^"]+",\s*)?url:\s+"(?<url>[^"]+)",\s*(?<requirement>#{NativeRequirement::REGEXP})\s*
+            (?:name:\s+"[^"]+",\s*)?url:\s+"(?<url>[^"]+)",\s*(?<requirement>#{NativeRequirement::REGEXP})
+            (?:\s*,?\s*\w+\s*:\s*(?:\[[^\]]*\]|"[^"]*"|[^\s,)]+))*\s*
            \))/x
 
         sig do
