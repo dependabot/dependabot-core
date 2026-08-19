@@ -375,6 +375,32 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyGrapher do
       end
     end
 
+    context "with a pnpm two-document lockfile (env document before the project document)" do
+      let(:dependency_files) { project_dependency_files("grapher/pnpm_multi_document") }
+
+      it "reads the project graph from the last document" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        to_regex_range = resolved_dependencies["pkg:npm/to-regex-range@5.0.1"]
+        expect(to_regex_range).not_to be_nil
+        expect(to_regex_range.direct).to be(true)
+        expect(to_regex_range.dependencies).to include("pkg:npm/is-number@7.0.0")
+
+        is_number = resolved_dependencies["pkg:npm/is-number@7.0.0"]
+        expect(is_number).not_to be_nil
+        expect(is_number.direct).to be(false)
+      end
+
+      it "does not report pnpm's own binaries from the env document" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies.keys).not_to include(
+          "pkg:npm/pnpm@12.0.0",
+          "pkg:npm/%40pnpm/exe@12.0.0"
+        )
+      end
+    end
+
     context "with multiple versions of the same transitive dependency" do
       let(:dependency_files) { project_dependency_files("grapher/npm_with_multiversion_subdeps") }
 
