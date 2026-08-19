@@ -7,6 +7,105 @@ require "dependabot/npm_and_yarn/helpers"
 require "dependabot/shared_helpers"
 
 RSpec.describe Dependabot::NpmAndYarn::Helpers do
+  describe "::run_npm_command" do
+    it "runs npm directly and passes through the environment" do
+      env = { "CUSTOM_VAR" => "custom-value" }
+
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "npm install",
+        fingerprint: "npm install dependencies",
+        output_observer: kind_of(Proc),
+        env: env
+      ).and_return("")
+
+      described_class.run_npm_command("install", fingerprint: "install dependencies", env: env)
+
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+        "npm install",
+        fingerprint: "npm install dependencies",
+        output_observer: kind_of(Proc),
+        env: env
+      )
+    end
+  end
+
+  describe "::run_pnpm_command" do
+    it "runs pnpm directly and passes through the environment" do
+      env = { "CUSTOM_VAR" => "custom-value" }
+
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "pnpm install",
+        fingerprint: "pnpm install dependencies",
+        env: env
+      ).and_return("")
+
+      described_class.run_pnpm_command("install", fingerprint: "install dependencies", env: env)
+
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+        "pnpm install",
+        fingerprint: "pnpm install dependencies",
+        env: env
+      )
+    end
+  end
+
+  describe "::run_yarn_command" do
+    it "runs yarn directly and passes through the environment" do
+      env = { "CUSTOM_VAR" => "custom-value" }
+      allow(described_class).to receive(:setup_yarn_berry)
+
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "yarn install",
+        fingerprint: "yarn install dependencies",
+        env: env
+      ).and_return("")
+
+      described_class.run_yarn_command("install", fingerprint: "install dependencies", env: env)
+
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+        "yarn install",
+        fingerprint: "yarn install dependencies",
+        env: env
+      )
+    end
+  end
+
+  describe "::npm_version" do
+    it "returns the local npm version" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with("npm -v", fingerprint: "npm -v")
+        .and_return("11.10.0\n")
+
+      expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("11.10.0"))
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with("npm -v", fingerprint: "npm -v")
+    end
+
+    it "returns nil when the local npm version cannot be determined" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(StandardError, "missing npm")
+
+      expect(described_class.npm_version).to be_nil
+    end
+  end
+
+  describe "::pnpm_version" do
+    it "returns the local pnpm version" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command)
+        .with("pnpm -v", fingerprint: "pnpm -v")
+        .and_return("10.16.0\n")
+
+      expect(described_class.pnpm_version).to eq(Dependabot::NpmAndYarn::Version.new("10.16.0"))
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command)
+        .with("pnpm -v", fingerprint: "pnpm -v")
+    end
+
+    it "returns nil when the local pnpm version cannot be determined" do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_raise(StandardError, "missing pnpm")
+
+      expect(described_class.pnpm_version).to be_nil
+    end
+  end
+
   describe "::dependencies_with_all_versions_metadata" do
     let(:foo_a) do
       Dependabot::Dependency.new(
@@ -911,120 +1010,6 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         merged = described_class.send(:merge_corepack_env, original_env)
 
         expect(merged["COREPACK_NPM_TOKEN"]).to eq("override-token")
-      end
-    end
-
-    describe ".run_npm_command integration" do
-      it "automatically injects corepack env variables with only registry" do
-        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
-          expect(options[:env]).not_to be_nil
-          expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["npm_config_registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
-          ""
-        end
-
-        described_class.run_npm_command("install")
-      end
-
-      it "injects corepack env variables into the npm version probe" do
-        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |cmd, options|
-          expect(cmd).to eq("corepack npm -v")
-          expect(options[:env]["COREPACK_NPM_REGISTRY"])
-            .to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
-          "11.10.0\n"
-        end
-
-        expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("11.10.0"))
-      end
-
-      it "preserves manually provided env variables" do
-        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
-          expect(options[:env]["CUSTOM_VAR"]).to eq("custom-value")
-          expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["npm_config_registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          ""
-        end
-
-        described_class.run_npm_command("install", env: { "CUSTOM_VAR" => "custom-value" })
-      end
-    end
-
-    describe ".run_pnpm_command integration" do
-      it "automatically injects corepack env variables" do
-        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
-          expect(options[:env]).not_to be_nil
-          expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["npm_config_registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
-          ""
-        end
-
-        described_class.run_pnpm_command("install")
-      end
-
-      it "injects corepack env variables into the pnpm version probe" do
-        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |cmd, options|
-          expect(cmd).to eq("corepack pnpm -v")
-          expect(options[:env]["COREPACK_NPM_REGISTRY"])
-            .to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
-          "11.0.0\n"
-        end
-
-        expect(described_class.pnpm_version).to eq(Dependabot::NpmAndYarn::Version.new("11.0.0"))
-      end
-
-      context "when .npmrc registry has a trailing slash (e.g. CodeArtifact)" do
-        let(:npmrc_file) do
-          Dependabot::DependencyFile.new(
-            name: ".npmrc",
-            content: "registry=https://my-domain.d.codeartifact.amazonaws.com/npm/private/\n"
-          )
-        end
-        let(:credentials) { [] }
-
-        it "strips the trailing slash from COREPACK_NPM_REGISTRY" do
-          expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
-            expect(options[:env]).not_to be_nil
-            expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://my-domain.d.codeartifact.amazonaws.com/npm/private")
-            expect(options[:env]["npm_config_registry"]).to eq("https://my-domain.d.codeartifact.amazonaws.com/npm/private")
-            ""
-          end
-
-          described_class.run_pnpm_command("install")
-        end
-      end
-    end
-
-    describe ".run_single_yarn_command integration" do
-      before { allow(described_class).to receive(:setup_yarn_berry) }
-
-      it "automatically injects corepack env variables" do
-        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
-          expect(options[:env]).not_to be_nil
-          expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["npm_config_registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["registry"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          expect(options[:env]["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
-          ""
-        end
-
-        described_class.run_yarn_command("install")
-      end
-
-      it "merges manually provided env variables with corepack env" do
-        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
-          expect(options[:env]["CUSTOM_VAR"]).to eq("custom-value")
-          expect(options[:env]["COREPACK_NPM_REGISTRY"]).to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
-          ""
-        end
-
-        described_class.run_yarn_command("install", env: { "CUSTOM_VAR" => "custom-value" })
       end
     end
 

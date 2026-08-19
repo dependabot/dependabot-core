@@ -323,11 +323,18 @@ module Dependabot
           )
         end
 
-        version ||= requested_version(name) || guessed_version(name)
+        version ||= requested_version(name)
 
         if version
           raise_if_unsupported!(name, version.to_s)
-          install(name, version.to_s)
+          install(name, version)
+        else
+          version = guessed_version(name)
+
+          if version
+            raise_if_unsupported!(name, version.to_s)
+            install(name, version.to_s) if name == PNPMPackageManager::NAME
+          end
         end
         version
       end
@@ -435,12 +442,17 @@ module Dependabot
 
       sig { params(name: String, version: T.nilable(String)).void }
       def install(name, version)
-        env = {}
-        if Dependabot::Experiments.enabled?(:enable_private_registry_for_corepack)
-          env = @registry_helper.find_corepack_env_variables
+        Dependabot.logger.info("Installing \"#{name}@#{version}\"")
+
+        begin
+          SharedHelpers.run_shell_command(
+            "corepack install #{name}@#{version} --global --cache-only",
+            fingerprint: "corepack install <name>@<version> --global --cache-only"
+          )
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          Dependabot.logger.error("Error installing #{name}@#{version}: #{e.message}")
+          Helpers.fallback_to_local_version(name)
         end
-        # Use the Helpers.install method to install the package manager
-        Helpers.install(name, version.to_s, env: env)
       end
 
       sig { params(name: T.nilable(String)).returns(String) }
