@@ -1337,7 +1337,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
 
       it "re-raises rather than retrying, since =0 cannot be the cause" do
-        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |_cmd, **|
+        commands = []
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+          commands << cmd
           raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
             message: "[ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION] 1 lockfile entries failed verification",
             error_context: {}
@@ -1345,6 +1347,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
         end
 
         expect { updated_pnpm_lock_content }.to raise_error(StandardError)
+
+        updates = commands.select { |cmd| cmd.include?("--no-save") }
+        expect(updates.length).to eq(1)
+        expect(updates.first).to include("--config.minimumReleaseAge=0")
       end
     end
   end
