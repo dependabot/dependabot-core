@@ -4396,7 +4396,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     end
   end
 
-  describe "#cooldown_release_age_days (transitive gate include/exclude)" do
+  describe "#updated_dependency_files (transitive cooldown gate)" do
+    subject(:updated_files) { updater.updated_dependency_files }
+
     let(:files) { project_dependency_files("npm8/simple") }
     let(:include_patterns) { [] }
     let(:exclude_patterns) { [] }
@@ -4423,50 +4425,101 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         options: updater_options
       )
     end
+    let(:etag_dependency) do
+      Dependabot::Dependency.new(
+        name: "etag",
+        version: "2.0.0",
+        previous_version: "1.0.0",
+        requirements: [{
+          file: "package.json", requirement: "^2.0.0", groups: ["devDependencies"], source: nil
+        }],
+        previous_requirements: [{
+          file: "package.json", requirement: "^1.0.0", groups: ["devDependencies"], source: nil
+        }],
+        package_manager: "npm_and_yarn"
+      )
+    end
+    let(:npm_commands) { [] }
+
+    before do
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:npm_supports_min_release_age?).and_return(true)
+      allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_npm_command) do |cmd, **|
+        npm_commands << cmd
+        ""
+      end
+    end
+
+    # Asserting on the flag npm actually receives, rather than on the derivation,
+    # keeps these examples honest if the derived value stops reaching the command.
+    def release_age_gates
+      updated_files
+      npm_commands.filter_map { |cmd| cmd[/--min-release-age=\d+/] }
+    end
 
     context "when the updated dependency is subject to the cooldown (no patterns)" do
-      it "returns the cooldown day count" do
-        expect(updater.send(:cooldown_release_age_days)).to eq(7)
+      it "gates npm at the cooldown window" do
+        gates = release_age_gates
+
+        expect(gates).not_to be_empty
+        expect(gates).to all(eq("--min-release-age=7"))
       end
     end
 
     context "when the updated dependency is excluded from the cooldown" do
       let(:exclude_patterns) { ["fetch-factory"] }
 
-      it "falls back to the default floor rather than dropping the gate" do
-        expect(updater.send(:cooldown_release_age_days)).to eq(3)
+      it "invokes npm without a gate, because selection gave it no window" do
+        expect(release_age_gates).to be_empty
+        expect(npm_commands).not_to be_empty
       end
     end
 
     context "when an include list does not match the updated dependency" do
       let(:include_patterns) { ["some-other-dep"] }
 
-      it "falls back to the default floor rather than dropping the gate" do
-        expect(updater.send(:cooldown_release_age_days)).to eq(3)
+      it "invokes npm without a gate, because selection gave it no window" do
+        expect(release_age_gates).to be_empty
+        expect(npm_commands).not_to be_empty
       end
     end
 
     context "when an include list matches the updated dependency" do
       let(:include_patterns) { ["fetch-factory"] }
 
-      it "returns the cooldown day count" do
-        expect(updater.send(:cooldown_release_age_days)).to eq(7)
+      it "gates npm at the cooldown window" do
+        gates = release_age_gates
+
+        expect(gates).not_to be_empty
+        expect(gates).to all(eq("--min-release-age=7"))
       end
     end
 
     context "when it is a security update" do
       let(:updater_options) { { update_cooldown: cooldown, security_updates_only: true } }
 
-      it "returns nil regardless of include/exclude" do
-        expect(updater.send(:cooldown_release_age_days)).to be_nil
+      it "disables the gate so a fix is never blocked" do
+        gates = release_age_gates
+
+        expect(gates).not_to be_empty
+        expect(gates).to all(eq("--min-release-age=0"))
       end
     end
 
     context "when no cooldown is configured" do
       let(:updater_options) { {} }
 
-      it "returns nil" do
-        expect(updater.send(:cooldown_release_age_days)).to be_nil
+      it "invokes npm without a gate" do
+        expect(release_age_gates).to be_empty
+        expect(npm_commands).not_to be_empty
+      end
+    end
+
+    context "when the cooldown is explicitly disabled" do
+      let(:cooldown) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 0) }
+
+      it "invokes npm without a gate" do
+        expect(release_age_gates).to be_empty
+        expect(npm_commands).not_to be_empty
       end
     end
 
@@ -4479,35 +4532,34 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       let(:semver_minor_days) { 14 }
       let(:semver_patch_days) { 3 }
 
-      it "uses the days that selected the version, not default_days" do
+      it "gates npm with the days that selected the version, not default_days" do
         # fetch-factory 0.0.1 -> 0.0.2 is a patch bump, approved under 3 days.
-        expect(updater.send(:cooldown_release_age_days)).to eq(3)
+        gates = release_age_gates
+
+        expect(gates).not_to be_empty
+        expect(gates).to all(eq("--min-release-age=3"))
       end
 
       context "when the bump is a major" do
         let(:previous_version) { "1.0.0" }
         let(:version) { "2.0.0" }
 
-        it "uses the major window" do
-          expect(updater.send(:cooldown_release_age_days)).to eq(21)
+        it "caps the major window at default_days, which selection may have used" do
+          gates = release_age_gates
+
+          expect(gates).not_to be_empty
+          expect(gates).to all(eq("--min-release-age=7"))
         end
       end
 
       context "when a group mixes bump types" do
-        let(:other_dependency) do
-          Dependabot::Dependency.new(
-            name: "etag",
-            version: "2.0.0",
-            previous_version: "1.0.0",
-            requirements: requirements,
-            previous_requirements: previous_requirements,
-            package_manager: "npm_and_yarn"
-          )
-        end
-        let(:dependencies) { [dependency, other_dependency] }
+        let(:dependencies) { [dependency, etag_dependency] }
 
-        it "uses the smallest window so no selected version is rejected" do
-          expect(updater.send(:cooldown_release_age_days)).to eq(3)
+        it "gates at the smallest window so no selected version is rejected" do
+          gates = release_age_gates
+
+          expect(gates).not_to be_empty
+          expect(gates).to all(eq("--min-release-age=3"))
         end
       end
 
@@ -4515,45 +4567,21 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:version) { "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0" }
 
         it "falls back to default_days" do
-          expect(updater.send(:cooldown_release_age_days)).to eq(7)
+          gates = release_age_gates
+
+          expect(gates).not_to be_empty
+          expect(gates).to all(eq("--min-release-age=7"))
         end
       end
     end
 
     context "when only some dependencies in the group are excluded" do
-      let(:exclude_patterns) { ["@myorg-*/*"] }
-      let(:other_dependency) do
-        Dependabot::Dependency.new(
-          name: "@myorg-team/lib",
-          version: "1.0.1",
-          previous_version: "1.0.0",
-          requirements: requirements,
-          previous_requirements: previous_requirements,
-          package_manager: "npm_and_yarn"
-        )
-      end
-      let(:dependencies) { [dependency, other_dependency] }
+      let(:exclude_patterns) { ["etag"] }
+      let(:dependencies) { [dependency, etag_dependency] }
 
-      it "falls back to the default floor rather than dropping the gate" do
-        expect(updater.send(:cooldown_release_age_days)).to eq(3)
-      end
-
-      context "when the cooldown is explicitly disabled" do
-        let(:cooldown) do
-          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 0, exclude: exclude_patterns)
-        end
-
-        it "applies no gate" do
-          expect(updater.send(:cooldown_release_age_days)).to be_nil
-        end
-      end
-
-      context "when a selected window is shorter than the floor" do
-        let(:semver_patch_days) { 1 }
-
-        it "does not exceed that window" do
-          expect(updater.send(:cooldown_release_age_days)).to eq(1)
-        end
+      it "invokes npm without a gate, because the excluded dependency has no window" do
+        expect(release_age_gates).to be_empty
+        expect(npm_commands).not_to be_empty
       end
     end
   end

@@ -24,10 +24,6 @@ module Dependabot
       require_relative "file_updater/pnpm_lockfile_updater"
       require_relative "file_updater/pnpm_workspace_updater"
 
-      # Mirrors the updater's `Job::DEFAULT_COOLDOWN_DAYS`, which cannot be
-      # referenced from an ecosystem gem.
-      DEFAULT_RELEASE_AGE_DAYS = 3
-
       class NoChangeError < StandardError
         extend T::Sig
         include Dependabot::HasSentryContext
@@ -462,10 +458,10 @@ module Dependabot
       # (ours and the user's), whereas these are all windows we applied ourselves,
       # and taking the highest would reject the update selected under the shortest.
       #
-      # A group containing a cooldown-excluded dependency cannot be expressed in a
-      # global flag, so it falls back to the default floor rather than dropping the
-      # gate below the platform baseline. Excluded dependencies are still held to
-      # that floor, so a release younger than it can still be refused.
+      # A global flag cannot express `include`/`exclude`, and selection gives an
+      # excluded dependency a zero-day window, so any gate at all could reject a
+      # version it approved. The gate is therefore skipped unless every dependency
+      # in the invocation is cooldown-included.
       sig { returns(T.nilable(Integer)) }
       def cooldown_release_age_days
         return nil if options.fetch(:security_updates_only, false)
@@ -476,11 +472,9 @@ module Dependabot
         )
         return nil if cooldown.nil?
         return nil if dependencies.empty?
+        return nil unless dependencies.all? { |dep| cooldown.included?(dep.name) }
 
-        windows = dependencies.map { |dep| selection_cooldown_days(cooldown, dep) }
-        windows << DEFAULT_RELEASE_AGE_DAYS unless dependencies.all? { |dep| cooldown.included?(dep.name) }
-
-        days = windows.min
+        days = dependencies.map { |dep| selection_cooldown_days(cooldown, dep) }.min
         days&.positive? ? days : nil
       end
 
@@ -498,11 +492,17 @@ module Dependabot
         new_version = parsed_version(dependency.version)
         return cooldown.default_days if new_version.nil?
 
-        Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(
+        semver_days = Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(
           cooldown,
           parsed_version(dependency.previous_version),
           new_version
         )
+
+        # A dependency absent from the lockfile is selected under `default_days`,
+        # because the checker has no current version, yet `previous_version` is
+        # later inferred from the manifest requirement. Capping keeps the gate from
+        # exceeding whichever of the two windows selection actually used.
+        [semver_days, cooldown.default_days].min
       end
 
       sig { params(version: T.nilable(String)).returns(T.nilable(Dependabot::NpmAndYarn::Version)) }
