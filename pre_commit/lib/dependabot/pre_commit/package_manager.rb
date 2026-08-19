@@ -12,10 +12,10 @@ module Dependabot
       extend T::Sig
 
       # The package manager name for Pre-commit
-      NAME = T.let("pre_commit", String)
+      NAME = "pre_commit"
 
       # The version of the package manager
-      VERSION = T.let("1.0.0", String)
+      VERSION = "1.0.0"
 
       sig { void }
       def initialize

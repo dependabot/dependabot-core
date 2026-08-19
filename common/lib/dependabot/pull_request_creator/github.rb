@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "octokit"
@@ -6,6 +6,7 @@ require "securerandom"
 require "sorbet-runtime"
 
 require "dependabot/clients/github_with_retries"
+require "dependabot/clients/github_resource_parser"
 require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/commit_signer"
 
@@ -14,6 +15,7 @@ module Dependabot
     # rubocop:disable Metrics/ClassLength
     class Github
       extend T::Sig
+      include Dependabot::Clients::GithubResourceParser
 
       # GitHub limits PR descriptions to a max of 65,536 characters:
       # https://github.com/orgs/community/discussions/27190#discussioncomment-3726017
@@ -121,7 +123,7 @@ module Dependabot
         @require_up_to_date_base = require_up_to_date_base
       end
 
-      sig { returns(T.untyped) }
+      sig { returns(Sawyer::Resource) }
       def create
         Dependabot.logger.info(
           "Initiating Github pull request."
@@ -135,7 +137,8 @@ module Dependabot
         end
 
         if branch_exists?(branch_name) && open_pull_request_exists?
-          raise UnmergedPRExists, "PR ##{open_pull_requests.first.number} already exists"
+          number = github_integer(T.must(open_pull_requests.first), :number, "pull request")
+          raise UnmergedPRExists, "PR ##{number} already exists"
         end
         if require_up_to_date_base? && !base_commit_is_up_to_date?
           raise BaseCommitNotUpToDate, "HEAD #{head_commit} does not match base #{base_commit}"
@@ -186,17 +189,27 @@ module Dependabot
         open_pull_requests.any?
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { returns(T::Array[Sawyer::Resource]) }
       def open_pull_requests
-        pull_requests_for_branch.reject(&:closed).reject(&:merged)
+        pull_requests_for_branch
+          .reject { |pull_request| github_pull_request_merged?(pull_request) }
       end
 
-      sig { returns(T::Array[T.untyped]) }
+      sig { params(pull_request: Sawyer::Resource).returns(T::Boolean) }
+      def github_pull_request_merged?(pull_request)
+        merged_at = T.cast(pull_request[:merged_at], Object)
+        return false if merged_at.nil?
+        return true if merged_at.is_a?(String) || merged_at.is_a?(Time)
+
+        raise_bad_github_response("pull request merged_at must be a time, string, or nil")
+      end
+
+      sig { returns(T::Array[Sawyer::Resource]) }
       def pull_requests_for_branch
         @pull_requests_for_branch ||=
           T.let(
             begin
-              T.unsafe(github_client_for_source).pull_requests(
+              github_client_for_source.pull_requests(
                 source.repo,
                 head: "#{source.repo.split('/').first}:#{branch_name}",
                 state: "all"
@@ -204,20 +217,20 @@ module Dependabot
             rescue Octokit::InternalServerError
               # A GitHub bug sometimes means adding `state: all` causes problems.
               # In that case, fall back to making two separate requests.
-              open_prs = T.unsafe(github_client_for_source).pull_requests(
+              open_prs = github_client_for_source.pull_requests(
                 source.repo,
                 head: "#{source.repo.split('/').first}:#{branch_name}",
                 state: "open"
               )
 
-              closed_prs = T.unsafe(github_client_for_source).pull_requests(
+              closed_prs = github_client_for_source.pull_requests(
                 source.repo,
                 head: "#{source.repo.split('/').first}:#{branch_name}",
                 state: "closed"
               )
               [*open_prs, *closed_prs]
             end,
-            T.nilable(T::Array[T.untyped])
+            T.nilable(T::Array[Sawyer::Resource])
           )
       end
 
@@ -234,7 +247,7 @@ module Dependabot
         )
       end
 
-      sig { returns(T.untyped) }
+      sig { returns(Sawyer::Resource) }
       def create_annotated_pull_request
         commit = create_commit
         branch = create_or_update_branch(commit)
@@ -254,21 +267,21 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def repo_exists?
-        T.unsafe(github_client_for_source).repo(source.repo)
+        github_client_for_source.repo(source.repo)
         true
       rescue Octokit::NotFound
         false
       end
 
-      sig { returns(T.untyped) }
+      sig { returns(Sawyer::Resource) }
       def create_commit
         tree = create_tree
 
         begin
-          T.unsafe(github_client_for_source).create_commit(
+          github_client_for_source.create_commit(
             source.repo,
             commit_message,
-            tree.sha,
+            github_string(tree, :sha, "tree"),
             base_commit,
             commit_options(tree)
           )
@@ -291,19 +304,21 @@ module Dependabot
         retry
       end
 
-      sig { params(tree: T.untyped).returns(T::Hash[Symbol, T.untyped]) }
+      sig { params(tree: Sawyer::Resource).returns(T::Hash[Symbol, Object]) }
       def commit_options(tree)
-        options = author_details&.any? ? { author: author_details } : {}
+        options = T.let({}, T::Hash[Symbol, Object])
+        author = author_details&.dup
+        options[:author] = author if author&.any?
 
-        if options[:author]&.any? && signature_key
-          options[:author][:date] = Time.now.utc.iso8601
-          options[:signature] = commit_signature(tree, options[:author])
+        if author&.any? && signature_key
+          author[:date] = Time.now.utc.iso8601
+          options[:signature] = commit_signature(tree, author)
         end
 
         options
       end
 
-      sig { returns(T.untyped) }
+      sig { returns(Sawyer::Resource) }
       def create_tree
         file_trees = files.map do |file|
           if file.type == "submodule"
@@ -317,8 +332,8 @@ module Dependabot
             content = if file.operation == Dependabot::DependencyFile::Operation::DELETE
                         { sha: nil }
                       elsif file.binary?
-                        sha = T.unsafe(github_client_for_source).create_blob(
-                          source.repo, file.content, "base64"
+                        sha = github_client_for_source.create_blob(
+                          source.repo, T.must(file.content), "base64"
                         )
                         { sha: sha }
                       else
@@ -333,14 +348,14 @@ module Dependabot
           end
         end
 
-        T.unsafe(github_client_for_source).create_tree(
+        github_client_for_source.create_tree(
           source.repo,
           file_trees,
           base_tree: base_commit
         )
       end
 
-      sig { params(commit: T.untyped).returns(T.untyped) }
+      sig { params(commit: Sawyer::Resource).returns(T.nilable(Sawyer::Resource)) }
       def create_or_update_branch(commit)
         if branch_exists?(branch_name)
           update_branch(commit)
@@ -359,13 +374,13 @@ module Dependabot
         retry
       end
 
-      sig { params(commit: T.untyped).returns(T.untyped) }
+      sig { params(commit: Sawyer::Resource).returns(Sawyer::Resource) }
       def create_branch(commit)
         ref = "refs/heads/#{branch_name}"
 
         begin
           branch =
-            T.unsafe(github_client_for_source).create_ref(source.repo, ref, commit.sha)
+            github_client_for_source.create_ref(source.repo, ref, github_string(commit, :sha, "commit"))
           @branch_name = ref.gsub(%r{^refs/heads/}, "")
           branch
         rescue Octokit::UnprocessableEntity => e
@@ -383,32 +398,32 @@ module Dependabot
         end
       end
 
-      sig { params(commit: T.untyped).void }
+      sig { params(commit: Sawyer::Resource).returns(Sawyer::Resource) }
       def update_branch(commit)
-        T.unsafe(github_client_for_source).update_ref(
+        github_client_for_source.update_ref(
           source.repo,
           "heads/#{branch_name}",
-          commit.sha,
+          github_string(commit, :sha, "commit"),
           true
         )
       end
 
-      sig { params(pull_request: T.untyped).void }
+      sig { params(pull_request: Sawyer::Resource).void }
       def annotate_pull_request(pull_request)
-        labeler.label_pull_request(pull_request.number)
+        labeler.label_pull_request(github_integer(pull_request, :number, "pull request"))
         add_reviewers_to_pull_request(pull_request) if reviewers&.any?
         add_assignees_to_pull_request(pull_request) if assignees&.any?
         add_milestone_to_pull_request(pull_request) if milestone
       end
 
-      sig { params(pull_request: T.untyped).void }
+      sig { params(pull_request: Sawyer::Resource).void }
       def add_reviewers_to_pull_request(pull_request)
         reviewers_hash =
           T.must(reviewers).keys.to_h { |k| [k.to_sym, T.must(reviewers)[k]] }
 
-        T.unsafe(github_client_for_source).request_pull_request_review(
+        github_client_for_source.request_pull_request_review(
           source.repo,
-          pull_request.number,
+          github_integer(pull_request, :number, "pull request"),
           reviewers: reviewers_hash[:reviewers] || [],
           team_reviewers: reviewers_hash[:team_reviewers] || []
         )
@@ -434,7 +449,7 @@ module Dependabot
         false
       end
 
-      sig { params(pull_request: T.untyped, message: String).void }
+      sig { params(pull_request: Sawyer::Resource, message: String).void }
       def comment_with_invalid_reviewer(pull_request, message)
         reviewers_hash =
           T.must(reviewers).keys.to_h { |k| [k.to_sym, T.must(reviewers)[k]] }
@@ -458,19 +473,19 @@ module Dependabot
                "#{message}\n" \
                "```"
 
-        T.unsafe(github_client_for_source).add_comment(
+        github_client_for_source.add_comment(
           source.repo,
-          pull_request.number,
+          github_integer(pull_request, :number, "pull request"),
           msg
         )
       end
 
-      sig { params(pull_request: T.untyped).void }
+      sig { params(pull_request: Sawyer::Resource).void }
       def add_assignees_to_pull_request(pull_request)
-        T.unsafe(github_client_for_source).add_assignees(
+        github_client_for_source.add_assignees(
           source.repo,
-          pull_request.number,
-          assignees
+          github_integer(pull_request, :number, "pull request"),
+          T.must(assignees)
         )
       rescue Octokit::NotFound
         # This can happen if a passed assignee login is now an org account
@@ -480,20 +495,20 @@ module Dependabot
         raise unless e.message.include?("Could not add assignees")
       end
 
-      sig { params(pull_request: T.untyped).void }
+      sig { params(pull_request: Sawyer::Resource).void }
       def add_milestone_to_pull_request(pull_request)
-        T.unsafe(github_client_for_source).update_issue(
+        github_client_for_source.update_issue(
           source.repo,
-          pull_request.number,
+          github_integer(pull_request, :number, "pull request"),
           milestone: milestone
         )
       rescue Octokit::UnprocessableEntity => e
         raise unless e.message.include?("code: invalid")
       end
 
-      sig { returns(T.untyped) }
+      sig { returns(T.nilable(Sawyer::Resource)) }
       def create_pull_request
-        T.unsafe(github_client_for_source).create_pull_request(
+        github_client_for_source.create_pull_request(
           source.repo,
           target_branch,
           branch_name,
@@ -521,7 +536,7 @@ module Dependabot
       def default_branch
         @default_branch ||=
           T.let(
-            T.unsafe(github_client_for_source).repo(source.repo).default_branch,
+            github_client_for_source.fetch_default_branch(source.repo),
             T.nilable(String)
           )
       end
@@ -539,13 +554,13 @@ module Dependabot
       end
 
       sig do
-        params(tree: T.untyped, author_details_with_date: T::Hash[Symbol, String]).returns(String)
+        params(tree: Sawyer::Resource, author_details_with_date: T::Hash[Symbol, String]).returns(String)
       end
       def commit_signature(tree, author_details_with_date)
         CommitSigner.new(
           author_details: author_details_with_date,
           commit_message: commit_message,
-          tree_sha: tree.sha,
+          tree_sha: github_string(tree, :sha, "tree"),
           parent_sha: base_commit,
           signature_key: T.must(signature_key)
         ).signature
@@ -568,6 +583,11 @@ module Dependabot
             ),
             T.nilable(Dependabot::Clients::GithubWithRetries)
           )
+      end
+
+      sig { returns(String) }
+      def github_response_source
+        source.url
       end
 
       sig { params(err: StandardError).returns(T.noreturn) }

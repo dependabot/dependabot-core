@@ -15,12 +15,9 @@ module Dependabot
       require_relative "file_updater/property_value_updater"
 
       # Regex matching scalaVersion declarations in all supported SBT syntaxes
-      SCALA_VERSION_DECL = T.let(
-        "(?:ThisBuild\\s*/\\s*)?" \
-        "(?:scalaVersion\\s+in\\s+ThisBuild|scalaVersion)" \
-        '\\s*:=\\s*"',
-        String
-      )
+      SCALA_VERSION_DECL = "(?:ThisBuild\\s*/\\s*)?" \
+                           "(?:scalaVersion\\s+in\\s+ThisBuild|scalaVersion)" \
+                           '\\s*:=\\s*"'
 
       sig { override.returns(T::Array[Dependabot::DependencyFile]) }
       def updated_dependency_files
@@ -60,8 +57,8 @@ module Dependabot
                          .reject { |new_req, old_req| new_req == old_req }
 
         reqs.each do |new_req, old_req|
-          raise "Bad req match" unless new_req[:file] == T.must(old_req)[:file]
-          next if new_req[:requirement] == T.must(old_req)[:requirement]
+          raise "Bad req match" unless new_req.file == T.must(old_req).file
+          next if new_req.requirement == T.must(old_req).requirement
 
           files = apply_requirement_update(files, dependency, new_req, T.must(old_req))
         end
@@ -73,21 +70,21 @@ module Dependabot
         params(
           files: T::Array[Dependabot::DependencyFile],
           dependency: Dependabot::Dependency,
-          new_req: T::Hash[Symbol, T.untyped],
-          old_req: T::Hash[Symbol, T.untyped]
+          new_req: Dependabot::DependencyRequirement,
+          old_req: Dependabot::DependencyRequirement
         ).returns(T::Array[Dependabot::DependencyFile])
       end
       def apply_requirement_update(files, dependency, new_req, old_req)
-        if new_req.dig(:metadata, :property_name)
+        if new_req.metadata_string("property_name")
           update_files_for_property_change(files, old_req, new_req)
-        elsif T.let(new_req[:file], String).end_with?("build.properties")
+        elsif T.must(new_req.file).end_with?("build.properties")
           update_build_properties(files, old_req, new_req)
         elsif scala_version_requirement?(new_req)
-          file = T.must(files.find { |f| f.name == new_req[:file] })
+          file = T.must(files.find { |f| f.name == new_req.file })
           idx = T.must(files.index(file))
           files.dup.tap { |updated| updated[idx] = update_scala_version(file, old_req, new_req) }
         else
-          file = T.must(files.find { |f| f.name == new_req[:file] })
+          file = T.must(files.find { |f| f.name == new_req.file })
           idx = T.must(files.index(file))
           files.dup.tap { |updated| updated[idx] = update_version_in_buildfile(dependency, file, old_req, new_req) }
         end
@@ -96,34 +93,34 @@ module Dependabot
       sig do
         params(
           files: T::Array[Dependabot::DependencyFile],
-          old_req: T::Hash[Symbol, T.untyped],
-          new_req: T::Hash[Symbol, T.untyped]
+          old_req: Dependabot::DependencyRequirement,
+          new_req: Dependabot::DependencyRequirement
         ).returns(T::Array[Dependabot::DependencyFile])
       end
       def update_files_for_property_change(files, old_req, new_req)
-        property_name = T.let(new_req.dig(:metadata, :property_name), String)
-        callsite = T.must(files.find { |f| f.name == new_req[:file] })
+        property_name = T.must(new_req.metadata_string("property_name"))
+        callsite = T.must(files.find { |f| f.name == new_req.file })
 
         PropertyValueUpdater.new(dependency_files: files)
                             .update_files_for_property_change(
                               property_name: property_name,
                               callsite_buildfile: callsite,
-                              previous_value: T.let(old_req.fetch(:requirement), String),
-                              updated_value: T.let(new_req.fetch(:requirement), String)
+                              previous_value: T.must(old_req.requirement_string),
+                              updated_value: T.must(new_req.requirement_string)
                             )
       end
 
       sig do
         params(
           files: T::Array[Dependabot::DependencyFile],
-          old_req: T::Hash[Symbol, T.untyped],
-          new_req: T::Hash[Symbol, T.untyped]
+          old_req: Dependabot::DependencyRequirement,
+          new_req: Dependabot::DependencyRequirement
         ).returns(T::Array[Dependabot::DependencyFile])
       end
       def update_build_properties(files, old_req, new_req)
-        file = T.must(files.find { |f| f.name == new_req[:file] })
-        old_version = T.let(old_req.fetch(:requirement), String)
-        new_version = T.let(new_req.fetch(:requirement), String)
+        file = T.must(files.find { |f| f.name == new_req.file })
+        old_version = T.must(old_req.requirement_string)
+        new_version = T.must(new_req.requirement_string)
 
         updated_content = T.must(file.content).sub(
           /(sbt\.version\s*=\s*)#{Regexp.quote(old_version)}/,
@@ -141,13 +138,13 @@ module Dependabot
       sig do
         params(
           file: Dependabot::DependencyFile,
-          old_req: T::Hash[Symbol, T.untyped],
-          new_req: T::Hash[Symbol, T.untyped]
+          old_req: Dependabot::DependencyRequirement,
+          new_req: Dependabot::DependencyRequirement
         ).returns(Dependabot::DependencyFile)
       end
       def update_scala_version(file, old_req, new_req)
-        old_version = T.let(old_req.fetch(:requirement), String)
-        new_version = T.let(new_req.fetch(:requirement), String)
+        old_version = T.must(old_req.requirement_string)
+        new_version = T.must(new_req.requirement_string)
 
         updated_content = T.must(file.content).sub(
           /(#{SCALA_VERSION_DECL})#{Regexp.quote(old_version)}(")/,
@@ -163,8 +160,8 @@ module Dependabot
         params(
           dependency: Dependabot::Dependency,
           buildfile: Dependabot::DependencyFile,
-          previous_req: T::Hash[Symbol, T.untyped],
-          requirement: T::Hash[Symbol, T.untyped]
+          previous_req: Dependabot::DependencyRequirement,
+          requirement: Dependabot::DependencyRequirement
         ).returns(Dependabot::DependencyFile)
       end
       def update_version_in_buildfile(dependency, buildfile, previous_req, requirement)
@@ -185,18 +182,18 @@ module Dependabot
       sig do
         params(
           dependency: Dependabot::Dependency,
-          requirement: T::Hash[Symbol, T.untyped]
+          requirement: Dependabot::DependencyRequirement
         ).returns(T::Array[String])
       end
       def original_buildfile_declarations(dependency, requirement)
-        buildfile = T.must(dependency_files.find { |f| f.name == T.let(requirement.fetch(:file), String) })
+        buildfile = T.must(dependency_files.find { |f| f.name == requirement.file })
         group, artifact = dependency_group_and_artifact(dependency)
 
         T.must(buildfile.content).lines.select do |line|
           next false unless line.include?(group)
           next false unless line.include?(artifact)
 
-          line.include?(T.let(requirement.fetch(:requirement), String))
+          line.include?(T.must(requirement.requirement_string))
         end
       end
 
@@ -215,13 +212,13 @@ module Dependabot
       sig do
         params(
           old_declaration: String,
-          previous_req: T::Hash[Symbol, T.untyped],
-          requirement: T::Hash[Symbol, T.untyped]
+          previous_req: Dependabot::DependencyRequirement,
+          requirement: Dependabot::DependencyRequirement
         ).returns(String)
       end
       def updated_buildfile_declaration(old_declaration, previous_req, requirement)
-        original_req_string = T.let(previous_req.fetch(:requirement), String)
-        new_req_string = T.let(requirement.fetch(:requirement), String)
+        original_req_string = T.must(previous_req.requirement_string)
+        new_req_string = T.must(requirement.requirement_string)
 
         old_declaration.gsub(
           /"#{Regexp.quote(original_req_string)}"/,
@@ -229,9 +226,9 @@ module Dependabot
         )
       end
 
-      sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
+      sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
       def scala_version_requirement?(req)
-        req.dig(:metadata, :property_source) == "scalaVersion"
+        req.metadata_string("property_source") == "scalaVersion"
       end
     end
   end

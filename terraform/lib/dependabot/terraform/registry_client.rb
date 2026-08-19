@@ -16,11 +16,9 @@ module Dependabot
 
       # Archive extensions supported by Terraform for HTTP URLs
       # https://developer.hashicorp.com/terraform/language/modules/sources#http-urls
-      ARCHIVE_EXTENSIONS = T.let(
-        %w(.zip .bz2 .tar.bz2 .tar.tbz2 .tbz2 .gz .tar.gz .tgz .xz .tar.xz .txz).freeze,
-        T::Array[String]
-      )
+      ARCHIVE_EXTENSIONS = %w(.zip .bz2 .tar.bz2 .tar.tbz2 .tbz2 .gz .tar.gz .tgz .xz .tar.xz .txz).freeze
       PUBLIC_HOSTNAME = "registry.terraform.io"
+      CERTIFICATE_ERROR_KEYWORDS = %w(certificate SSL x509 verify).freeze
 
       sig { params(hostname: String, credentials: T::Array[Dependabot::Credential]).void }
       def initialize(hostname: PUBLIC_HOSTNAME, credentials: [])
@@ -113,7 +111,7 @@ module Dependabot
       # @return [nil, Dependabot::Source]
       sig { params(dependency: Dependabot::Dependency).returns(T.nilable(Dependabot::Source)) }
       def source(dependency:)
-        type = T.must(dependency.requirements.first)[:source][:type]
+        type = T.must(dependency.source_string("type"))
         base_url = service_url_for(service_key_for(type))
         case type
         # https://www.terraform.io/internals/module-registry-protocol#download-source-code-for-a-specific-module-version
@@ -123,7 +121,7 @@ module Dependabot
           return nil unless response.status == 204
 
           source_url = response.headers.fetch("X-Terraform-Get")
-          source_url = URI.join(download_url, source_url) if
+          source_url = URI.join(download_url, source_url).to_s if
             source_url.start_with?("/", "./", "../")
           source_url = RegistryClient.get_proxied_source(source_url) if source_url
         when "provider", "providers"
@@ -176,10 +174,14 @@ module Dependabot
         @services ||= T.let(
           begin
             response = http_get(url_for("/.well-known/terraform.json"))
-            if response.status == 200 && !response.body.empty?
-              JSON.parse(response.body)
-            else
+            if response.status == 200
+              response.body.empty? ? {} : JSON.parse(response.body)
+            elsif response.status == 404
               {}
+            elsif response.status == 401
+              raise PrivateSourceAuthenticationFailure, hostname
+            else
+              raise PrivateSourceBadResponse, hostname
             end
           rescue JSON::ParserError => e
             Dependabot.logger.warn("Failed to parse Terraform registry services: #{e.message}")
@@ -207,7 +209,11 @@ module Dependabot
           url: url.to_s,
           headers: headers_for(hostname)
         )
-      rescue Excon::Error::Socket, Excon::Error::Timeout
+      rescue Excon::Error::Socket => e
+        raise PrivateSourceCertificateFailure, hostname if certificate_error?(e.message)
+
+        raise PrivateSourceBadResponse, hostname
+      rescue Excon::Error::Timeout
         raise PrivateSourceBadResponse, hostname
       end
 
@@ -239,6 +245,11 @@ module Dependabot
       sig { params(message: String).returns(Dependabot::DependabotError) }
       def error(message)
         Dependabot::DependabotError.new(message)
+      end
+
+      sig { params(message: String).returns(T::Boolean) }
+      def certificate_error?(message)
+        CERTIFICATE_ERROR_KEYWORDS.any? { |keyword| message.index(keyword) }
       end
     end
   end

@@ -22,7 +22,7 @@ module Dependabot
           "==" => ->(v, r) { v == r },        # pip equality
           "~=" => ->(v, r) { v >= r && v.release < r.bump } # pip compatible release
         ),
-        T::Hash[String, T.proc.params(arg0: T.untyped, arg1: T.untyped).returns(T.untyped)]
+        T::Hash[String, T.proc.params(arg0: Gem::Version, arg1: Gem::Version).returns(T::Boolean)]
       )
 
       quoted = OPS.keys.sort_by(&:length).reverse
@@ -31,7 +31,7 @@ module Dependabot
       version_pattern = Dependabot::Python::Version::VERSION_PATTERN
 
       PATTERN_RAW = T.let("\\s*(?<op>#{quoted})?\\s*(?<version>#{version_pattern})\\s*".freeze, String)
-      PATTERN = T.let(/\A#{PATTERN_RAW}\z/, Regexp)
+      PATTERN = /\A#{PATTERN_RAW}\z/
 
       sig { params(obj: T.any(Gem::Version, String)).returns([String, Gem::Version]) }
       def self.parse(obj)

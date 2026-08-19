@@ -5,11 +5,11 @@
 # Please instead update this file by running `bin/tapioca gem rspec`.
 
 
-# source://rspec//lib/rspec/version.rb#1
+# pkg:gem/rspec#lib/rspec/version.rb:1
 module RSpec; end
 
-# source://rspec//lib/rspec/version.rb#2
+# pkg:gem/rspec#lib/rspec/version.rb:2
 module RSpec::Version; end
 
-# source://rspec//lib/rspec/version.rb#3
+# pkg:gem/rspec#lib/rspec/version.rb:3
 RSpec::Version::STRING = T.let(T.unsafe(nil), String)

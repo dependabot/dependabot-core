@@ -94,9 +94,10 @@ module Dependabot
           return dependencies unless pipfile_lock
 
           DEPENDENCY_GROUP_KEYS.map { |h| h.fetch(:lockfile) }.each do |key|
-            next unless parsed_pipfile_lock[key]
+            section_data = parsed_pipfile_lock_section(key)
+            next unless section_data
 
-            parsed_pipfile_lock[key].each do |dep_name, details|
+            section_data.each do |dep_name, details|
               version = case details
                         when String then details
                         when Hash then details["version"]
@@ -129,8 +130,7 @@ module Dependabot
           req = version_from_hash_or_string(requirement)
 
           if pipfile_lock
-            details = parsed_pipfile_lock
-                      .dig(group, normalised_name(dep_name))
+            details = parsed_pipfile_lock_section(group)&.[](normalised_name(dep_name))
 
             version = version_from_hash_or_string(details)
             version&.gsub(/^===?/, "")
@@ -183,6 +183,14 @@ module Dependabot
           )
         rescue JSON::ParserError
           raise Dependabot::DependencyFileNotParseable, T.must(pipfile_lock).path
+        end
+
+        sig { params(section: String).returns(T.nilable(T::Hash[String, T.untyped])) }
+        def parsed_pipfile_lock_section(section)
+          section_data = parsed_pipfile_lock[section]
+          return section_data if section_data.is_a?(Hash)
+
+          nil
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }

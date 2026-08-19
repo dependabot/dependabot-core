@@ -5,6 +5,8 @@ require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/file_updaters/vendor_updater"
 require "dependabot/file_updaters/artifact_updater"
+require "dependabot/errors"
+require "dependabot/package/release_cooldown_options"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 require "sorbet-runtime"
@@ -22,14 +24,15 @@ module Dependabot
 
       class NoChangeError < StandardError
         extend T::Sig
+        include Dependabot::HasSentryContext
 
-        sig { params(message: String, error_context: T::Hash[Symbol, T.untyped]).void }
+        sig { params(message: String, error_context: T::Hash[Symbol, T.anything]).void }
         def initialize(message:, error_context:)
           super(message)
           @error_context = error_context
         end
 
-        sig { returns(T::Hash[Symbol, T.untyped]) }
+        sig { override.returns(T::Hash[Symbol, T.anything]) }
         def sentry_context
           { extra: @error_context }
         end
@@ -135,7 +138,7 @@ module Dependabot
         pnp_updater.updated_files(base_directory: base_dir, only_paths: [".pnp.cjs", ".pnp.data.json"]).each do |file|
           updated_files << file
         end
-        T.unsafe(vendor_updater).updated_vendor_cache_files(base_directory: base_dir).each do |file|
+        vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
           updated_files << file
         end
         install_state_updater.updated_files(base_directory: base_dir).each do |file|
@@ -209,7 +212,7 @@ module Dependabot
         raise DependencyFileNotFound.new(nil, "package.json not found.") unless get_original_file("package.json")
       end
 
-      sig { params(updated_files: T::Array[DependencyFile]).returns(T::Hash[Symbol, T.untyped]) }
+      sig { params(updated_files: T::Array[DependencyFile]).returns(T::Hash[Symbol, T.anything]) }
       def error_context(updated_files:)
         {
           dependencies: dependencies.map(&:to_h),
@@ -433,6 +436,33 @@ module Dependabot
           )
       end
 
+      # The number of days from the dependabot.yml `cooldown` config to apply as
+      # a release-age floor for *transitive* dependencies. npm, pnpm and yarn each
+      # enforce this natively at install time, which is the only point at which
+      # Dependabot can constrain the versions the package manager resolves for the
+      # transitive tree. Returns nil for security updates (which must never be
+      # blocked by a release-age gate) or when no positive cooldown is configured.
+      # `default_days` is used because the native gates are a single global value
+      # and cannot express per-semver-type days or include/exclude patterns.
+      #
+      # The gate is also skipped when none of the dependencies being updated are
+      # subject to the cooldown (per its `include`/`exclude` patterns), so an
+      # update the user explicitly opted out of cooldown for is not gated.
+      sig { returns(T.nilable(Integer)) }
+      def cooldown_release_age_days
+        return nil if options.fetch(:security_updates_only, false)
+
+        cooldown = T.cast(
+          options[:update_cooldown],
+          T.nilable(Dependabot::Package::ReleaseCooldownOptions)
+        )
+        return nil if cooldown.nil?
+        return nil unless dependencies.any? { |dep| cooldown.included?(dep.name) }
+
+        days = cooldown.default_days
+        days.positive? ? days : nil
+      end
+
       sig { returns(Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater) }
       def yarn_lockfile_updater
         @yarn_lockfile_updater ||= T.let(
@@ -440,7 +470,9 @@ module Dependabot
             dependencies: dependencies,
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
-            credentials: credentials
+            credentials: credentials,
+            security_updates_only: options.fetch(:security_updates_only, false) ? true : false,
+            release_age_days: cooldown_release_age_days
           ),
           T.nilable(Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater)
         )
@@ -453,7 +485,9 @@ module Dependabot
             dependencies: dependencies,
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
-            credentials: credentials
+            credentials: credentials,
+            security_updates_only: options.fetch(:security_updates_only, false) ? true : false,
+            release_age_days: cooldown_release_age_days
           ),
           T.nilable(Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater)
         )
@@ -469,7 +503,9 @@ module Dependabot
           lockfile: file,
           dependencies: dependencies,
           dependency_files: dependency_files,
-          credentials: credentials
+          credentials: credentials,
+          security_updates_only: options.fetch(:security_updates_only, false) ? true : false,
+          release_age_days: cooldown_release_age_days
         )
       end
 

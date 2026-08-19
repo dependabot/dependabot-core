@@ -30,6 +30,7 @@ gem "dependabot-pre_commit", path: "pre_commit"
 gem "dependabot-pub", path: "pub"
 gem "dependabot-python", path: "python"
 gem "dependabot-rust_toolchain", path: "rust_toolchain"
+gem "dependabot-sbt", path: "sbt"
 gem "dependabot-silent", path: "silent"
 gem "dependabot-swift", path: "swift"
 gem "dependabot-terraform", path: "terraform"
@@ -38,9 +39,9 @@ gem "dependabot-vcpkg", path: "vcpkg"
 
 # Sorbet
 gem "sorbet", "~> 0.6", group: :development
-gem "tapioca", "~> 0.17", require: false, group: :development
+gem "tapioca", "~> 0.19", require: false, group: :development
 
-gem "zeitwerk", "~> 2.7"
+gem "zeitwerk", "~> 2.8"
 
 common_gemspec = File.expand_path("common/dependabot-common.gemspec", __dir__)
 

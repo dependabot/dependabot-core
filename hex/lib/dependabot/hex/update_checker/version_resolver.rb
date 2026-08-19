@@ -31,10 +31,10 @@ module Dependabot
           original_dependency_files:,
           prepared_dependency_files:
         )
-          @dependency = T.let(dependency, Dependabot::Dependency)
-          @original_dependency_files = T.let(original_dependency_files, T::Array[Dependabot::DependencyFile])
-          @prepared_dependency_files = T.let(prepared_dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @dependency = dependency
+          @original_dependency_files = original_dependency_files
+          @prepared_dependency_files = prepared_dependency_files
+          @credentials = credentials
           @latest_resolvable_version = T.let(nil, T.nilable(T.any(Dependabot::Version, String, T::Boolean)))
         end
 
@@ -79,12 +79,15 @@ module Dependabot
 
         sig { returns(String) }
         def run_elixir_update_checker
-          SharedHelpers.run_helper_subprocess(
-            env: mix_env,
-            command: "mix run #{elixir_helper_path}",
-            function: "get_latest_resolvable_version",
-            args: [Dir.pwd, dependency.name, CredentialHelpers.hex_credentials(credentials)],
-            stderr_to_stdout: true
+          T.cast(
+            SharedHelpers.run_helper_subprocess(
+              env: mix_env,
+              command: "mix run #{elixir_helper_path}",
+              function: "get_latest_resolvable_version",
+              args: [Dir.pwd, dependency.name, CredentialHelpers.hex_credentials(credentials)],
+              stderr_to_stdout: true
+            ),
+            String
           )
         end
 

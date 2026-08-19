@@ -9,6 +9,7 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/logger"
 require "dependabot/pub/requirement"
+require "dependabot/pub/requirement_source"
 require "dependabot/requirements_update_strategy"
 require "dependabot/shared_helpers"
 
@@ -62,8 +63,8 @@ module Dependabot
 
       sig { params(dependency: Dependabot::Dependency).returns(String) }
       def repository_url(dependency)
-        source = dependency.requirements.first&.dig(:source)
-        source&.dig("description", "url") || options[:pub_hosted_url] || "https://pub.dev"
+        RequirementSource.new(dependency.requirements.first).description_string("url") || options[:pub_hosted_url] ||
+          "https://pub.dev"
       end
 
       sig { params(dependency: Dependabot::Dependency).returns(T::Hash[String, T.untyped]) }

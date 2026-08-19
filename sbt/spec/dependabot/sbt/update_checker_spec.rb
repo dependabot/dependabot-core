@@ -95,6 +95,11 @@ RSpec.describe Dependabot::Sbt::UpdateChecker do
         stub_request(
           :head,
           "https://repo.maven.apache.org/maven2/" \
+          "com/google/guava/guava/33.4.0-jre/guava-33.4.0-jre.pom"
+        ).to_return(status: 404)
+        stub_request(
+          :head,
+          "https://repo.maven.apache.org/maven2/" \
           "com/google/guava/guava/33.3.0-jre/guava-33.3.0-jre.jar"
         ).to_return(status: 200)
       end

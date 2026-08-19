@@ -50,7 +50,11 @@ module Dependabot
       sig { returns(T.nilable(T::Array[T.any(Integer, String)])) }
       attr_reader :local_parts
 
-      VersionParts = T.let(Struct.new(:epoch, :main, :local), T.untyped)
+      class VersionParts < T::Struct
+        const :epoch, String
+        const :main, String
+        const :local, T.nilable(String)
+      end
       private_constant :VersionParts
 
       sig { override.params(version: VersionParameter).void }
@@ -68,14 +72,14 @@ module Dependabot
         @epoch = T.let(parts.epoch.to_i, Integer)
         @version_parts = T.let(parse_components(parts.main), T::Array[T.any(Integer, String)])
         @local_parts = T.let(
-          parts.local ? parse_components(parts.local) : nil,
+          parts.local ? parse_components(T.must(parts.local)) : nil,
           T.nilable(T::Array[T.any(Integer, String)])
         )
 
         super
       end
 
-      sig { override.params(other: T.untyped).returns(T.nilable(Integer)) }
+      sig { params(other: VersionParameter).returns(T.nilable(Integer)) }
       def <=>(other)
         return nil unless other.is_a?(Dependabot::Conda::Version)
 
@@ -106,12 +110,12 @@ module Dependabot
 
       # Parses epoch and local version from version string
       # Returns VersionParts struct with epoch, main, and local fields
-      sig { params(version_str: String).returns(T.untyped) }
+      sig { params(version_str: String).returns(VersionParts) }
       def parse_epoch_and_local(version_str)
         # Split on '!' for epoch
         parts = version_str.split("!", 2)
         if parts.length == 2
-          epoch_str = parts[0]
+          epoch_str = T.must(parts[0])
           remainder = T.must(parts[1])
         else
           epoch_str = "0"

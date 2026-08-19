@@ -49,8 +49,8 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
           JSON
         end
 
-        it "returns a single dependency for the vcpkg baseline" do
-          expect(dependencies.length).to eq(1)
+        it "returns only the baseline when no registry checkout can resolve the ports" do
+          expect(dependencies.map(&:name)).to eq(["github.com/microsoft/vcpkg"])
         end
 
         describe "the parsed dependency" do
@@ -99,26 +99,121 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
         end
 
         it "returns the baseline dependency and dependencies with version constraints" do
-          expect(dependencies.length).to eq(3)
-
-          baseline_dep = dependencies.find { |d| d.name == "github.com/microsoft/vcpkg" }
-          expect(baseline_dep).not_to be_nil
+          expect(dependencies.map(&:name))
+            .to contain_exactly("github.com/microsoft/vcpkg", "openssl", "zlib")
 
           openssl_dep = dependencies.find { |d| d.name == "openssl" }
-          expect(openssl_dep).not_to be_nil
           expect(openssl_dep.version).to eq("3.1")
           expect(openssl_dep.requirements.first[:requirement]).to eq(">=3.1")
 
           zlib_dep = dependencies.find { |d| d.name == "zlib" }
-          expect(zlib_dep).not_to be_nil
-          expect(zlib_dep.version).to eq("1.2.11")
+          expect(zlib_dep.version).to eq("1.2.11#3")
           expect(zlib_dep.requirements.first[:requirement]).to eq(">=1.2.11#3")
         end
 
-        it "logs warnings for dependencies without version constraints" do
+        it "logs a warning for a bare port no registry checkout can resolve" do
           expect(Dependabot.logger)
             .to receive(:warn).with("Skipping vcpkg dependency 'curl' without version>= constraint")
           dependencies
+        end
+      end
+
+      context "when the registry baseline resolves the declared ports" do
+        let(:versions_database) { instance_double(Dependabot::Vcpkg::Package::VersionsDatabase) }
+        let(:vcpkg_json_content) do
+          <<~JSON
+            {
+              "builtin-baseline": "fe1cde61e971d53c9687cf9a46308f8f55da19fa",
+              "dependencies": [
+                "curl",
+                { "name": "fmt" },
+                { "name": "openssl", "version>=": "3.1" },
+                { "name": "zlib", "version>=": "1.4.0" },
+                "unknown-port"
+              ]
+            }
+          JSON
+        end
+
+        before do
+          allow(Dependabot::Vcpkg::Package::VersionsDatabase).to receive(:new).and_return(versions_database)
+          allow(versions_database).to receive(:baseline_version_for) do |port:, ref:|
+            next nil unless ref == "fe1cde61e971d53c9687cf9a46308f8f55da19fa"
+
+            {
+              "curl" => Dependabot::Vcpkg::Version.new("8.14.1"),
+              "fmt" => Dependabot::Vcpkg::Version.new("11.0.2#1"),
+              "openssl" => Dependabot::Vcpkg::Version.new("3.5.0"),
+              "zlib" => Dependabot::Vcpkg::Version.new("1.3.1")
+            }[port]
+          end
+        end
+
+        it "reads the baseline the manifest pins" do
+          dependencies
+
+          expect(versions_database)
+            .to have_received(:baseline_version_for)
+            .with(port: "curl", ref: "fe1cde61e971d53c9687cf9a46308f8f55da19fa")
+        end
+
+        it "gives bare string dependencies the version the baseline selects" do
+          expect(dependencies.find { |dep| dep.name == "curl" }).to have_attributes(
+            version: "8.14.1",
+            requirements: [{ requirement: nil, groups: [], source: nil, file: "vcpkg.json" }]
+          )
+        end
+
+        it "gives unconstrained object dependencies the version the baseline selects" do
+          expect(dependencies.find { |dep| dep.name == "fmt" }.version).to eq("11.0.2#1")
+        end
+
+        it "prefers the baseline when it outranks the declared constraint" do
+          expect(dependencies.find { |dep| dep.name == "openssl" }).to have_attributes(
+            version: "3.5.0",
+            requirements: [{ requirement: ">=3.1", groups: [], source: nil, file: "vcpkg.json" }]
+          )
+        end
+
+        it "prefers the declared constraint when it outranks the baseline" do
+          expect(dependencies.find { |dep| dep.name == "zlib" }.version).to eq("1.4.0")
+        end
+
+        it "skips ports the baseline does not know about" do
+          expect(dependencies.map(&:name)).not_to include("unknown-port")
+        end
+
+        context "when the baseline version uses an incomparable scheme" do
+          before do
+            allow(versions_database).to receive(:baseline_version_for)
+              .and_return(Dependabot::Vcpkg::Version.new("1.2.11-legacy"))
+          end
+
+          it "keeps the declared constraint rather than guessing across schemes" do
+            expect(dependencies.find { |dep| dep.name == "zlib" }.version).to eq("1.4.0")
+          end
+        end
+      end
+
+      context "when the manifest has no builtin-baseline" do
+        let(:versions_database) { instance_double(Dependabot::Vcpkg::Package::VersionsDatabase) }
+        let(:vcpkg_json_content) do
+          <<~JSON
+            {
+              "dependencies": ["curl"]
+            }
+          JSON
+        end
+
+        before do
+          allow(Dependabot::Vcpkg::Package::VersionsDatabase).to receive(:new).and_return(versions_database)
+          allow(versions_database).to receive(:baseline_version_for)
+        end
+
+        it "does not consult the versions database" do
+          dependencies
+
+          expect(versions_database).not_to have_received(:baseline_version_for)
         end
       end
 
@@ -137,11 +232,10 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
           JSON
         end
 
-        it "returns only the dependency with version constraint" do
-          expect(dependencies.length).to eq(1)
+        it "returns the dependency with version constraint and a synthesized baseline" do
+          expect(dependencies.length).to eq(2)
 
-          openssl_dep = dependencies.first
-          expect(openssl_dep.name).to eq("openssl")
+          openssl_dep = dependencies.find { |d| d.name == "openssl" }
           expect(openssl_dep.version).to eq("3.1")
           expect(openssl_dep.package_manager).to eq("vcpkg")
           expect(openssl_dep.requirements).to eq(
@@ -152,6 +246,9 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
               source: nil
             }]
           )
+
+          baseline_dep = dependencies.find { |d| d.name == "github.com/microsoft/vcpkg" }
+          expect(baseline_dep.version).to be_nil
         end
       end
 
@@ -168,14 +265,15 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
           JSON
         end
 
-        it "returns no dependencies and logs warnings" do
+        it "synthesizes a baseline dependency and logs warnings for the string dependencies" do
           expect(Dependabot.logger)
             .to receive(:warn)
             .with("Skipping vcpkg dependency 'curl' without version>= constraint")
           expect(Dependabot.logger)
             .to receive(:warn)
             .with("Skipping vcpkg dependency 'openssl' without version>= constraint")
-          expect(dependencies).to be_empty
+
+          expect(dependencies.map(&:name)).to contain_exactly("github.com/microsoft/vcpkg")
         end
       end
 
@@ -192,8 +290,25 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
           JSON
         end
 
-        it "returns no dependencies" do
-          expect(dependencies).to be_empty
+        it "synthesizes a baseline dependency to be added to vcpkg.json" do
+          expect(dependencies.length).to eq(1)
+
+          baseline_dep = dependencies.first
+          expect(baseline_dep.name).to eq("github.com/microsoft/vcpkg")
+          expect(baseline_dep.version).to be_nil
+          expect(baseline_dep.requirements).to eq(
+            [{
+              requirement: nil,
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://github.com/microsoft/vcpkg.git",
+                ref: "master"
+              },
+              file: "vcpkg.json"
+            }]
+          )
+          expect(baseline_dep.metadata).to eq({})
         end
       end
 
@@ -226,6 +341,101 @@ RSpec.describe Dependabot::Vcpkg::FileParser do
         it "returns no dependencies" do
           expect(dependencies).to be_empty
         end
+      end
+    end
+
+    context "when the manifest has dependencies but no resolvable baseline" do
+      let(:dependency_files) { [vcpkg_json, vcpkg_configuration_json].compact }
+      let(:vcpkg_json) do
+        Dependabot::DependencyFile.new(
+          name: "vcpkg.json",
+          content: <<~JSON
+            {
+              "dependencies": ["fmt"]
+            }
+          JSON
+        )
+      end
+
+      context "when there is no vcpkg-configuration.json" do
+        let(:vcpkg_configuration_json) { nil }
+
+        it "synthesizes a baseline targeting vcpkg.json" do
+          expect(dependencies.length).to eq(1)
+
+          baseline_dep = dependencies.first
+          expect(baseline_dep.name).to eq("github.com/microsoft/vcpkg")
+          expect(baseline_dep.version).to be_nil
+          expect(baseline_dep.requirements.first[:file]).to eq("vcpkg.json")
+          expect(baseline_dep.metadata).to eq({})
+        end
+      end
+
+      context "when a vcpkg-configuration.json has no default-registry" do
+        let(:vcpkg_configuration_json) do
+          Dependabot::DependencyFile.new(
+            name: "vcpkg-configuration.json",
+            content: <<~JSON
+              {
+                "registries": [
+                  {
+                    "kind": "git",
+                    "repository": "https://github.com/northwindtraders/vcpkg-registry",
+                    "baseline": "dacf4de488094a384ca2c202b923ccc097956e0c",
+                    "packages": ["beicode", "beison"]
+                  }
+                ]
+              }
+            JSON
+          )
+        end
+
+        it "synthesizes a baseline that creates a default-registry in the configuration" do
+          baseline_dep = dependencies.find { |d| d.name == "github.com/microsoft/vcpkg" }
+          expect(baseline_dep).not_to be_nil
+          expect(baseline_dep.version).to be_nil
+          expect(baseline_dep.requirements.first[:file]).to eq("vcpkg-configuration.json")
+          expect(baseline_dep.metadata).to eq(default: true, create_default_registry: true)
+        end
+      end
+
+      context "when a vcpkg-configuration.json default-registry is missing its baseline" do
+        let(:vcpkg_configuration_json) do
+          Dependabot::DependencyFile.new(
+            name: "vcpkg-configuration.json",
+            content: <<~JSON
+              {
+                "default-registry": {
+                  "kind": "git",
+                  "repository": "https://github.com/northwindtraders/vcpkg-registry"
+                }
+              }
+            JSON
+          )
+        end
+
+        it "does not synthesize a baseline" do
+          expect(dependencies).to be_empty
+        end
+      end
+    end
+
+    context "when the manifest has no dependencies and no baseline" do
+      let(:dependency_files) { [vcpkg_json] }
+      let(:vcpkg_json) do
+        Dependabot::DependencyFile.new(
+          name: "vcpkg.json",
+          content: <<~JSON
+            {
+              "name": "my-port",
+              "version": "1.0.0"
+            }
+          JSON
+        )
+      end
+
+      it "does not synthesize a baseline" do
+        expect(dependencies).to be_empty
       end
     end
 

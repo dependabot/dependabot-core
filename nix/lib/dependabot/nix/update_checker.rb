@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -7,6 +7,7 @@ require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/nix/version"
 require "dependabot/nix/requirement"
+require "dependabot/nix/channel"
 require "dependabot/git_commit_checker"
 
 module Dependabot
@@ -16,6 +17,7 @@ module Dependabot
 
       require_relative "update_checker/latest_version_finder"
       require_relative "update_checker/versioned_branch_finder"
+      require_relative "update_checker/channel_version_finder"
 
       sig { override.returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_version
@@ -36,12 +38,14 @@ module Dependabot
         latest_version
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        if ref_pinned_to_version_tag?
-          updated_requirements_for_tag
+        if tarball_channel_input?
+          wrap_requirements(updated_requirements_for_channel)
+        elsif ref_pinned_to_version_tag?
+          wrap_requirements(updated_requirements_for_tag)
         elsif ref_is_versioned_branch?
-          updated_requirements_for_versioned_branch
+          wrap_requirements(updated_requirements_for_versioned_branch)
         else
           dependency.requirements
         end
@@ -61,7 +65,9 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def fetch_latest_version
-        if ref_pinned_to_version_tag?
+        if tarball_channel_input?
+          fetch_latest_version_for_channel
+        elsif ref_pinned_to_version_tag?
           fetch_latest_version_for_tag
         elsif ref_is_versioned_branch?
           fetch_latest_version_for_versioned_branch || fetch_latest_version_for_commit
@@ -70,47 +76,140 @@ module Dependabot
         end
       end
 
+      # --- Tarball channel support ---
+
+      sig { returns(T::Boolean) }
+      def tarball_channel_input?
+        url = dependency.source_string("url", allowed_types: ["tarball"])
+        return false unless url
+
+        Channel.channel_url?(url)
+      end
+
+      sig { returns(T.nilable(String)) }
+      def fetch_latest_version_for_channel
+        latest_channel&.fetch(:commit_sha) || channel_version_finder.current_channel_revision
+      end
+
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
+      def updated_requirements_for_channel
+        result = latest_channel
+        return dependency.requirements unless result
+
+        dependency.requirements.map do |req|
+          next req unless req.source_hash
+
+          Dependabot::DependencyRequirement.create(
+            req.merge(
+              source: source_with_values(
+                req,
+                "ref" => result[:channel],
+                "url" => result[:url]
+              )
+            )
+          )
+        end
+      end
+
+      sig { returns(T.nilable(T::Hash[Symbol, String])) }
+      def latest_channel
+        @latest_channel ||= T.let(
+          channel_version_finder.latest_channel,
+          T.nilable(T::Hash[Symbol, String])
+        )
+      end
+
+      sig { returns(ChannelVersionFinder) }
+      def channel_version_finder
+        @channel_version_finder ||= T.let(
+          ChannelVersionFinder.new(
+            current_channel: T.must(tarball_channel_name),
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            extension: tarball_channel_extension
+          ),
+          T.nilable(ChannelVersionFinder)
+        )
+      end
+
+      sig { returns(T.nilable(String)) }
+      def tarball_channel_name
+        ref = dependency.source_string("ref", allowed_types: ["tarball"])
+        return ref if ref
+
+        # Fall back to the URL's channel when the source omits a ref.
+        Channel.channel_name_from_url(dependency.source_string("url", allowed_types: ["tarball"]))
+      end
+
+      # Preserve the flake's existing tarball suffix (xz, gz, bz2) on a bump.
+      sig { returns(String) }
+      def tarball_channel_extension
+        url = dependency.source_string("url", allowed_types: ["tarball"])
+        Channel.extension_from_url(url) || Channel::DEFAULT_EXTENSION
+      end
+
       # --- Tag-pinned ref support ---
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements_for_tag
         new_tag = latest_version_tag
         return dependency.requirements unless new_tag
 
         dependency.requirements.map do |req|
-          source = req[:source]
-          next req unless source
+          next req unless req.source_hash
 
-          req.merge(source: source.merge(ref: new_tag[:tag], branch: nil))
+          Dependabot::DependencyRequirement.create(
+            req.merge(
+              source: source_with_values(
+                req,
+                "ref" => T.cast(new_tag[:tag], String),
+                "branch" => nil
+              )
+            )
+          )
         end
       end
 
       sig { returns(T.nilable(String)) }
       def fetch_latest_version_for_tag
         tag = latest_version_tag
-        tag&.fetch(:commit_sha)
+        tag && tag_commit_sha(tag)
       end
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { returns(T.nilable(T::Hash[Symbol, Object])) }
       def latest_version_tag
         @latest_version_tag ||= T.let(
-          git_commit_checker.local_tag_for_latest_version,
-          T.nilable(T::Hash[Symbol, T.untyped])
+          git_commit_checker.local_tag_for_latest_version(update_cooldown),
+          T.nilable(T::Hash[Symbol, Object])
         )
+      end
+
+      sig { params(tag: T::Hash[Symbol, Object]).returns(T.nilable(String)) }
+      def tag_commit_sha(tag)
+        return tag.commit_sha if tag.is_a?(Dependabot::GitTagDetails)
+
+        T.cast(tag[:commit_sha], T.nilable(String))
       end
 
       # --- Versioned branch support ---
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements_for_versioned_branch
         result = latest_versioned_branch
         return dependency.requirements unless result
 
         dependency.requirements.map do |req|
-          source = req[:source]
-          next req unless source
+          next req unless req.source_hash
 
-          req.merge(source: source.merge(ref: result[:branch], branch: nil))
+          Dependabot::DependencyRequirement.create(
+            req.merge(
+              source: source_with_values(
+                req,
+                "ref" => result[:branch],
+                "branch" => nil
+              )
+            )
+          )
         end
       end
 
@@ -126,6 +225,29 @@ module Dependabot
           versioned_branch_finder&.latest_versioned_branch,
           T.nilable(T::Hash[Symbol, String])
         )
+      end
+
+      sig do
+        params(
+          requirement: Dependabot::DependencyRequirement,
+          values: T::Hash[String, T.nilable(String)]
+        ).returns(Dependabot::DependencyRequirement::ObjectHash)
+      end
+      def source_with_values(requirement, values)
+        source = T.must(requirement.source_hash).dup
+        values.each do |key, value|
+          actual_key = if source.key?(key.to_sym)
+                         key.to_sym
+                       elsif source.key?(key)
+                         key
+                       elsif source.keys.any?(Symbol)
+                         key.to_sym
+                       else
+                         key
+                       end
+          source[actual_key] = value
+        end
+        source
       end
 
       # --- Commit-tracking (existing behavior) ---
@@ -166,7 +288,7 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def dependency_source_ref
-        dependency.source_details(allowed_types: ["git"])&.fetch(:ref, nil)
+        dependency.source_string("ref", allowed_types: ["git"])
       end
 
       sig { returns(T.nilable(VersionedBranchFinder)) }

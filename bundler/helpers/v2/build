@@ -19,8 +19,8 @@ fi
 
 cd "$install_dir"
 
-# Default to Bundler 4, with an override for controlled testing/rollouts.
-bundler_constraint="${DEPENDABOT_BUNDLER_VERSION_CONSTRAINT:-${BUNDLER_VERSION_CONSTRAINT:-~> 4.0}}"
+# Default to Bundler 2, with an override for controlled testing/rollouts.
+bundler_constraint="${DEPENDABOT_BUNDLER_VERSION_CONSTRAINT:-${BUNDLER_VERSION_CONSTRAINT:-~> 2}}"
 
 export GEM_HOME=$install_dir/.bundle
 

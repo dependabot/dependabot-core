@@ -11,11 +11,11 @@ module Dependabot
     class Requirement < Dependabot::Requirement
       extend T::Sig
 
-      GEM_DEP_SPLIT = T.let(/\A(?<name>[a-zA-Z0-9_\-]+):(?<version>.+)\z/, Regexp)
+      GEM_DEP_SPLIT = /\A(?<name>[a-zA-Z0-9_\-]+):(?<version>.+)\z/
 
-      sig { params(req: T::Hash[Symbol, String], version: Gem::Version).returns(T::Boolean) }
+      sig { params(req: Dependabot::DependencyRequirement, version: Gem::Version).returns(T::Boolean) }
       def self.satisfied_by?(req, version)
-        new(req[:requirement]).satisfied_by?(version)
+        new(req.requirement_string).satisfied_by?(version)
       end
 
       # For consistency with other languages, we define a requirements array.
@@ -26,7 +26,7 @@ module Dependabot
         [new(requirement_string)]
       end
 
-      sig { params(dep_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { params(dep_string: String).returns(T.nilable(T::Hash[Symbol, T.nilable(String)])) }
       def self.parse_dep_string(dep_string)
         stripped = dep_string.strip
         return nil if stripped.empty?

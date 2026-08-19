@@ -357,6 +357,71 @@ RSpec.describe Dependabot::Source do
     end
   end
 
+  describe ".github_enterprise?" do
+    context "when the URL is a GitHub Enterprise instance" do
+      before do
+        stub_request(:get, "https://ghes.example.com/status").to_return(
+          status: 200,
+          headers: { "X-GitHub-Request-Id" => "abc123" }
+        )
+      end
+
+      it "returns true" do
+        expect(described_class.github_enterprise?("https://ghes.example.com")).to be true
+      end
+
+      it "caches the result and does not make repeated HTTP requests" do
+        described_class.github_enterprise?("https://ghes.example.com")
+        described_class.github_enterprise?("https://ghes.example.com")
+
+        expect(WebMock).to have_requested(:get, "https://ghes.example.com/status").once
+      end
+    end
+
+    context "when the URL is not a GitHub Enterprise instance" do
+      before do
+        stub_request(:get, "https://typescript-eslint.io/status").to_return(status: 404)
+      end
+
+      it "returns false" do
+        expect(described_class.github_enterprise?("https://typescript-eslint.io")).to be false
+      end
+
+      it "caches the negative result and does not make repeated HTTP requests" do
+        described_class.github_enterprise?("https://typescript-eslint.io")
+        described_class.github_enterprise?("https://typescript-eslint.io")
+
+        expect(WebMock).to have_requested(:get, "https://typescript-eslint.io/status").once
+      end
+    end
+
+    context "when the request raises an error" do
+      before do
+        stub_request(:get, "https://unreachable.example.com/status").to_raise(Excon::Error::Timeout)
+      end
+
+      it "returns false and retries the probe on subsequent calls" do
+        expect(described_class.github_enterprise?("https://unreachable.example.com")).to be false
+        described_class.github_enterprise?("https://unreachable.example.com")
+
+        expect(WebMock).to have_requested(:get, "https://unreachable.example.com/status").twice
+      end
+    end
+
+    context "when the request returns a transient server error" do
+      before do
+        stub_request(:get, "https://flaky-ghes.example.com/status").to_return(status: 502)
+      end
+
+      it "returns false and retries the probe on subsequent calls" do
+        expect(described_class.github_enterprise?("https://flaky-ghes.example.com")).to be false
+        described_class.github_enterprise?("https://flaky-ghes.example.com")
+
+        expect(WebMock).to have_requested(:get, "https://flaky-ghes.example.com/status").twice
+      end
+    end
+  end
+
   describe "#url_with_directory" do
     subject { source.url_with_directory }
 

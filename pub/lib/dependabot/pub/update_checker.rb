@@ -71,7 +71,7 @@ module Dependabot
         version_unless_ignored(entry)
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         # Requirements that need to be changed, if obtain:
         # latest_resolvable_version or lowest_security_fix_version

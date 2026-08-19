@@ -3,7 +3,9 @@
 
 require "sorbet-runtime"
 
+require "dependabot/clients/github_with_retries"
 require "dependabot/errors"
+require "dependabot/git_cooldown_date_resolver"
 require "dependabot/github_actions/file_parser"
 require "dependabot/github_actions/package/package_details_fetcher"
 require "dependabot/github_actions/requirement"
@@ -19,6 +21,7 @@ module Dependabot
     class UpdateChecker
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
+        include Dependabot::GitCooldownDateResolver
 
         sig do
           params(
@@ -29,7 +32,8 @@ module Dependabot
             security_advisories: T::Array[Dependabot::SecurityAdvisory],
             raise_on_ignored: T::Boolean,
             options: T::Hash[Symbol, T.untyped],
-            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
+            cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions),
+            git_metadata_fetcher: T.nilable(Dependabot::GitMetadataFetcher)
           ).void
         end
         def initialize(
@@ -40,7 +44,8 @@ module Dependabot
           security_advisories:,
           raise_on_ignored:,
           options: {},
-          cooldown_options: nil
+          cooldown_options: nil,
+          git_metadata_fetcher: nil
         )
           @dependency          = dependency
           @dependency_files    = dependency_files
@@ -50,9 +55,19 @@ module Dependabot
           @raise_on_ignored    = raise_on_ignored
           @options             = options
           @cooldown_options = cooldown_options
+          @git_metadata_fetcher = git_metadata_fetcher
 
           @git_helper = T.let(git_helper, Dependabot::GithubActions::Helpers::Githelper)
-          super
+          super(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            security_advisories: security_advisories,
+            raise_on_ignored: raise_on_ignored,
+            options: options,
+            cooldown_options: cooldown_options
+          )
         end
 
         sig { returns(Dependabot::Dependency) }
@@ -116,14 +131,22 @@ module Dependabot
                 if latest_tag&.fetch(:version) == selected_release
                   latest_tag
                 else
-                  T.must(package_details_fetcher)
-                   .allowed_version_tags_with_release_dates
-                   .find { |tag_hash| tag_hash.fetch(:version) == selected_release }
+                  tag_for_version(selected_release)
                 end
               end
             end,
             T.nilable(T::Hash[Symbol, T.untyped])
           )
+        end
+
+        sig { override.returns(T.nilable(String)) }
+        def cooldown_source_url
+          @git_helper.git_commit_checker.dependency_source_details&.url
+        end
+
+        sig { override.returns(T::Array[Dependabot::Credential]) }
+        def cooldown_credentials
+          @credentials
         end
 
         private
@@ -137,7 +160,8 @@ module Dependabot
                           credentials: credentials,
                           ignored_versions: ignored_versions,
                           raise_on_ignored: raise_on_ignored,
-                          security_advisories: security_advisories
+                          security_advisories: security_advisories,
+                          git_metadata_fetcher: @git_metadata_fetcher
                         ),
             T.nilable(Dependabot::GithubActions::Package::PackageDetailsFetcher)
           )
@@ -198,14 +222,23 @@ module Dependabot
           tags_in_cooldown = Set.new(select_version_tags_in_cooldown_period(allowed_versions_with_dates))
           return release if tags_in_cooldown.empty?
 
-          # Walk through all allowed version tags in descending order (newest first)
+          # Only consider tags with the same precision as the pinned ref, so a `v1` style
+          # pin falls back to another major-only tag rather than being rewritten to a fully
+          # qualified version such as `v1.5.5`.
+          candidates = tags_matching_pinned_precision(allowed_versions_with_dates)
+
+          # Walk through the candidate version tags in descending order (newest first)
           # and return the first one NOT in cooldown
-          allowed_versions_with_dates.each do |tag_info|
+          candidates.each do |tag_info|
             tag_name = tag_info.fetch(:tag)
             next if tags_in_cooldown.include?(tag_name)
 
-            # Found a version not in cooldown, return it
             version = tag_info.fetch(:version)
+            # Candidates are sorted descending, so once we drop below the pinned version
+            # every remaining candidate would be a downgrade.
+            break if pinned_version && version < pinned_version
+
+            # Found a version not in cooldown, return it
             Dependabot.logger.info("Found acceptable version outside cooldown: #{version}")
             return version
           end
@@ -213,6 +246,46 @@ module Dependabot
           # All versions are in cooldown, return nil to fallback to current version
           Dependabot.logger.info("All versions are in cooldown period, returning current version")
           nil
+        end
+
+        # Tags whose version has the same number of segments as the currently pinned
+        # version. Returns every tag when the pin isn't a version we can reason about
+        # (e.g. a commit SHA), since precision has no meaning in that case.
+        sig do
+          params(tags: T::Array[T::Hash[Symbol, T.untyped]])
+            .returns(T::Array[T::Hash[Symbol, T.untyped]])
+        end
+        def tags_matching_pinned_precision(tags)
+          pinned = pinned_version
+          return tags unless pinned
+
+          pinned_precision = precision(pinned.to_s)
+          tags.select { |tag_info| precision(tag_info.fetch(:version).to_s) == pinned_precision }
+        end
+
+        # Resolves a version back to its tag. Versions compare equal across precisions
+        # (`2` == `2.0.0`), so tags matching the pinned precision are preferred to avoid
+        # rewriting e.g. a `v2` pin to `v2.0.0`.
+        sig { params(version: Dependabot::Version).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        def tag_for_version(version)
+          all_tags = T.must(package_details_fetcher).allowed_version_tags_with_release_dates
+          matching_precision = tags_matching_pinned_precision(all_tags)
+
+          matching_precision.find { |tag_hash| tag_hash.fetch(:version) == version } ||
+            all_tags.find { |tag_hash| tag_hash.fetch(:version) == version }
+        end
+
+        sig { returns(T.nilable(Dependabot::Version)) }
+        def pinned_version
+          version = dependency.version
+          return nil unless version && Dependabot::GithubActions::Version.correct?(version)
+
+          Dependabot::GithubActions::Version.new(version)
+        end
+
+        sig { params(version: String).returns(Integer) }
+        def precision(version)
+          version.split(".").length
         end
 
         sig do
@@ -235,34 +308,68 @@ module Dependabot
           []
         end
 
+        # Returns the release date for the latest version tag.
+        # Priority: GitHub Release published_at > tag creation date > commit date.
+        # This ensures re-tagged or republished releases are evaluated based on
+        # when they were actually made available.
         sig { returns(T.nilable(String)) }
         def commit_metadata_details
           @commit_metadata_details ||= T.let(
-            begin
-              url = @git_helper.git_commit_checker.dependency_source_details&.fetch(:url)
-              source = T.must(Source.from_url(url))
-
-              SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
-                repo_contents_path = File.join(temp_dir, File.basename(source.repo))
-
-                SharedHelpers.run_shell_command("git clone --bare --no-recurse-submodules #{url} #{repo_contents_path}")
-                Dir.chdir(repo_contents_path) do
-                  date = SharedHelpers.run_shell_command(
-                    "git show --no-patch --format=\"%cd\" " \
-                    "--date=iso #{commit_ref}"
-                  )
-                  Dependabot.logger.info("Found release date : #{Time.parse(date)}")
-                  return date
-                end
-              end
-            rescue StandardError => e
-              msg = "Error (github actions) while checking release date for #{dependency.name}: #{e.message}"
-              Dependabot.logger.warn(msg)
-
-              nil
-            end,
+            resolve_commit_metadata_details,
             T.nilable(String)
           )
+        end
+
+        sig { returns(T.nilable(String)) }
+        def resolve_commit_metadata_details
+          # First, try GitHub Release published_at via Octokit
+          tag_name = latest_version_tag&.fetch(:tag, nil)
+          normalized_tag = tag_name ? normalize_tag_name(tag_name) : nil
+          if normalized_tag
+            release_date = github_release_published_at(normalized_tag)
+            if release_date
+              Dependabot.logger.info("Found release date from GitHub Release: #{release_date}")
+              return release_date.iso8601
+            end
+          end
+
+          # Fallback to git-based date detection
+          fetch_date_from_git(normalized_tag)
+        rescue StandardError => e
+          msg = "Error (github actions) while checking release date for #{dependency.name}: #{e.message}"
+          Dependabot.logger.warn(msg)
+          nil
+        end
+
+        sig { params(tag_name: T.nilable(String)).returns(T.nilable(String)) }
+        def fetch_date_from_git(tag_name)
+          url = cooldown_source_url
+          source = T.must(Source.from_url(url))
+
+          SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
+            repo_contents_path = File.join(temp_dir, File.basename(source.repo))
+
+            SharedHelpers.run_shell_command("git clone --bare --no-recurse-submodules #{url} #{repo_contents_path}")
+            Dir.chdir(repo_contents_path) do
+              date = if tag_name
+                       tag_date = SharedHelpers.run_shell_command(
+                         "git for-each-ref --format=\"%(creatordate:iso)\" " \
+                         "\"refs/tags/#{tag_name}\"",
+                         fingerprint: "git for-each-ref --format=\"%(creatordate:iso)\" \"refs/tags/<tag_name>\""
+                       ).strip
+                       tag_date.empty? ? nil : tag_date
+                     end
+
+              date ||= SharedHelpers.run_shell_command(
+                "git show --no-patch --format=\"%cd\" " \
+                "--date=iso #{commit_ref}",
+                fingerprint: "git show --no-patch --format=\"%cd\" --date=iso <commit_ref>"
+              ).strip
+
+              Dependabot.logger.info("Found release date : #{Time.parse(date)}")
+              date
+            end
+          end
         end
 
         sig { params(release_date: T.nilable(String)).returns(T::Boolean) }
@@ -298,7 +405,7 @@ module Dependabot
 
         sig { returns(T.nilable(T.any(Dependabot::Version, String))) }
         def current_version
-          return dependency.source_details(allowed_types: ["git"])&.fetch(:ref) if release_type_sha?
+          return dependency.source_string("ref", allowed_types: ["git"]) if release_type_sha?
 
           T.let(dependency.numeric_version, T.nilable(Dependabot::Version))
         end
@@ -316,7 +423,8 @@ module Dependabot
             ignored_versions: ignored_versions,
             raise_on_ignored: raise_on_ignored,
             consider_version_branches_pinned: false,
-            dependency_source_details: nil
+            dependency_source_details: nil,
+            git_metadata_fetcher: @git_metadata_fetcher
           )
         end
       end

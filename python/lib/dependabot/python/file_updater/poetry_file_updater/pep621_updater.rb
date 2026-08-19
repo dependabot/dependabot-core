@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -19,12 +19,12 @@ module Dependabot
           sig do
             params(
               content: String,
-              new_r: T::Hash[Symbol, T.untyped],
-              old_r: T::Hash[Symbol, T.untyped]
+              new_r: Dependabot::DependencyRequirement,
+              old_r: Dependabot::DependencyRequirement
             ).returns(T.nilable(String))
           end
           def replace(content, new_r, old_r)
-            source_req = dep.metadata[:source_requirement]
+            source_req = dep.metadata_string(:source_requirement)
 
             if source_req
               replace_with_source_requirement(content, source_req, new_r, old_r)
@@ -96,8 +96,8 @@ module Dependabot
             params(
               content: String,
               source_req: String,
-              new_r: T::Hash[Symbol, T.untyped],
-              old_r: T::Hash[Symbol, T.untyped]
+              new_r: Dependabot::DependencyRequirement,
+              old_r: Dependabot::DependencyRequirement
             ).returns(T.nilable(String))
           end
           def replace_with_source_requirement(content, source_req, new_r, old_r)
@@ -105,7 +105,11 @@ module Dependabot
             return unless match
 
             declaration = T.must(match[:declaration])
-            new_req_str = rewrite_pep508_requirement(source_req, old_r[:requirement], new_r[:requirement])
+            new_req_str = rewrite_pep508_requirement(
+              source_req,
+              T.must(old_r.requirement_string),
+              T.must(new_r.requirement_string)
+            )
             content.sub(declaration, declaration.sub(source_req, new_req_str))
           end
 
@@ -116,13 +120,13 @@ module Dependabot
           sig do
             params(
               content: String,
-              new_r: T::Hash[Symbol, T.untyped],
-              old_r: T::Hash[Symbol, T.untyped]
+              new_r: Dependabot::DependencyRequirement,
+              old_r: Dependabot::DependencyRequirement
             ).returns(T.nilable(String))
           end
           def replace_with_normalized_requirement(content, new_r, old_r)
-            old_req = old_r[:requirement]
-            new_req = new_r[:requirement]
+            old_req = T.must(old_r.requirement_string)
+            new_req = T.must(new_r.requirement_string)
 
             match = content.match(normalized_declaration_regex(old_req))
             return unless match

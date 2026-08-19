@@ -1,7 +1,8 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "parser/current"
+require "parser"
+require "prism"
 require "sorbet-runtime"
 
 require "dependabot/bundler/file_updater"
@@ -24,7 +25,7 @@ module Dependabot
         def rewrite(content)
           buffer = Parser::Source::Buffer.new("(gemfile_content)")
           buffer.source = content
-          ast = Parser::CurrentRuby.new.parse(buffer)
+          ast = Prism::Translation::ParserCurrent.new.parse(buffer)
 
           Rewriter.new(dependency: dependency).rewrite(buffer, ast)
         end
@@ -43,7 +44,7 @@ module Dependabot
 
           sig { params(dependency: Dependabot::Dependency).void }
           def initialize(dependency:)
-            @dependency = T.let(dependency, Dependabot::Dependency)
+            @dependency = dependency
           end
 
           sig { params(node: Parser::AST::Node).void }
@@ -56,10 +57,10 @@ module Dependabot
               key_from_hash_pair(hash_pair)
             end
 
-            if keys.none? { |key| GOOD_KEYS.include?(key) }
-              remove_all_kwargs(node)
-            else
+            if keys.intersect?(GOOD_KEYS)
               remove_git_related_kwargs(kwargs_node)
+            else
+              remove_all_kwargs(node)
             end
           end
 

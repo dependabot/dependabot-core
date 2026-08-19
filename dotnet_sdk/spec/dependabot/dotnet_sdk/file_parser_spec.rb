@@ -80,6 +80,44 @@ RSpec.describe Dependabot::DotnetSdk::FileParser do
     it_behaves_like "parse"
   end
 
+  context "with a global.json that has no SDK version" do
+    let(:project_name) { "config_in_root" }
+    let(:directory) { "/" }
+    let(:files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "global.json",
+          content: <<~JSON,
+            {
+              "msbuild-sdks": {
+                "MSBuild.Sdk.Extras": "1.6.65"
+              }
+            }
+          JSON
+          directory: directory
+        )
+      ]
+    end
+
+    it "does not raise and returns no dependencies" do
+      expect { dependencies }.not_to raise_error
+      expect(dependencies).to be_empty
+    end
+
+    it "does not raise when building the ecosystem" do
+      ecosystem = nil
+      expect { ecosystem = parser.ecosystem }.not_to raise_error
+      expect(ecosystem.name).to eq("dotnet-sdk")
+      expect(ecosystem.package_manager.name).to eq("dotnet_sdk")
+      expect(ecosystem.language).to be_nil
+    end
+
+    it "logs a warning" do
+      expect(Dependabot.logger).to receive(:warn).with(/No .NET SDK version found in global.json/)
+      parser.ecosystem
+    end
+  end
+
   context "with a global.json containing UTF-8 BOM" do
     let(:project_name) { "config_in_root" }
     let(:directory) { "/" }

@@ -74,6 +74,10 @@ git_submodules:
 rust_toolchain:
   - *common
   - 'rust_toolchain/**'
+sbt:
+  - *common
+  - 'sbt/**'
+  - 'maven/**'
 swift:
   - *common
   - 'swift/**'

@@ -52,6 +52,19 @@ RSpec.describe Dependabot::GithubActions::FileParser do
 
     its(:length) { is_expected.to eq(2) }
 
+    context "with an actions lockfile" do
+      let(:lockfile) do
+        Dependabot::DependencyFile.new(
+          name: Dependabot::GithubActions::LOCKFILE_NAME,
+          directory: Dependabot::GithubActions::WORKFLOW_DIRECTORY,
+          content: "not workflow yaml"
+        )
+      end
+      let(:files) { [workflow_files, lockfile] }
+
+      its(:length) { is_expected.to eq(2) }
+    end
+
     describe "the first dependency" do
       subject(:dependency) { dependencies.first }
 
@@ -953,6 +966,99 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("actions/checkout")
           expect(dependency.version).to eq("1")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    context "with multiple path based actions pinned to commit shas" do
+      let(:workflow_file_fixture_name) { "workflow_monorepo_path_based_sha_comments.yml" }
+
+      before do
+        allow(Dependabot::GitCommitChecker).to receive(:new).and_wrap_original do |method, **kwargs|
+          dependency = kwargs.fetch(:dependency)
+          git_checker = method.call(**kwargs)
+          declaration_string = dependency.requirements.first.dig(:metadata, :declaration_string)
+
+          resolved_version = case declaration_string
+                             when /create-github-app-token/
+                               Dependabot::GithubActions::Version.new("create-github-app-token/v0.2.0")
+                             when /get-vault-secrets/
+                               Dependabot::GithubActions::Version.new("get-vault-secrets/v1.2.1")
+                             end
+
+          allow(git_checker).to receive_messages(
+            git_repo_reachable?: true,
+            pinned?: true,
+            version_for_pinned_sha: resolved_version
+          )
+
+          git_checker
+        end
+      end
+
+      it "parses each path as a separate dependency" do
+        expect(dependencies.count).to be(2)
+        expect(dependencies.map(&:name)).to eq(
+          [
+            "grafana/shared-workflows/actions/create-github-app-token",
+            "grafana/shared-workflows/actions/get-vault-secrets"
+          ]
+        )
+      end
+
+      describe "the create-github-app-token dependency" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/grafana/shared-workflows",
+              ref: "eb02241ed0a92aff205feab8ac3afcdf51c757c8",
+              branch: nil
+            },
+            metadata: {
+              declaration_string:
+                "grafana/shared-workflows/actions/create-github-app-token@eb02241ed0a92aff205feab8ac3afcdf51c757c8"
+            }
+          }]
+        end
+
+        it "keeps the path in the dependency identity" do
+          expect(dependency.name).to eq("grafana/shared-workflows/actions/create-github-app-token")
+          expect(dependency.version).to eq("0.2.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the get-vault-secrets dependency" do
+        subject(:dependency) { dependencies.last }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/grafana/shared-workflows",
+              ref: "9f37f656e063f0ad0b0bfc38d49894b57d363936",
+              branch: nil
+            },
+            metadata: {
+              declaration_string:
+                "grafana/shared-workflows/actions/get-vault-secrets@9f37f656e063f0ad0b0bfc38d49894b57d363936"
+            }
+          }]
+        end
+
+        it "resolves the path specific tag version" do
+          expect(dependency.name).to eq("grafana/shared-workflows/actions/get-vault-secrets")
+          expect(dependency.version).to eq("1.2.1")
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end

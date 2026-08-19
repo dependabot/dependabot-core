@@ -39,13 +39,13 @@ module Dependabot
 
       sig do
         params(
-          yaml: T::Hash[T.untyped, T.untyped],
+          yaml: T::Hash[String, Object],
           chart_file: Dependabot::DependencyFile,
           dependency_set: DependencySet
         ).void
       end
       def parse_dependencies(yaml, chart_file, dependency_set)
-        yaml["dependencies"].each do |dep|
+        T.cast(yaml["dependencies"], T::Array[Object]).each do |dep|
           next unless dep.is_a?(Hash) && dep["name"] && dep["version"]
 
           parsed_line = {
@@ -65,9 +65,8 @@ module Dependabot
       sig { params(dependency: Dependabot::Dependency, type: Symbol).void }
       def add_dependency_type_to_dependency(dependency, type)
         dependency.requirements.map! do |req|
-          req[:metadata] = {} unless req[:metadata]
-          req[:metadata][:type] = type
-          req
+          metadata = req.metadata || {}
+          Dependabot::DependencyRequirement.create(req.merge(metadata: metadata.merge(type: type)))
         end
       end
 
@@ -95,7 +94,7 @@ module Dependabot
           next unless yaml.is_a?(Hash)
 
           find_images_in_hash(yaml).each do |image_details|
-            parsed_line = extract_image_details(image_details[:image])
+            parsed_line = extract_image_details(T.must(image_details[:image]))
             next unless parsed_line
 
             version = version_from(parsed_line)
@@ -132,7 +131,7 @@ module Dependabot
         params(
           key: String,
           value: String,
-          hash: T::Hash[T.untyped, T.untyped],
+          hash: T::Hash[String, Object],
           current_path: T::Array[String]
         ).returns(T::Array[T::Hash[Symbol, String]])
       end
@@ -153,7 +152,7 @@ module Dependabot
       end
 
       sig do
-        params(value: T::Array[T.untyped], current_path: T::Array[String]).returns(T::Array[T::Hash[Symbol, String]])
+        params(value: T::Array[Object], current_path: T::Array[String]).returns(T::Array[T::Hash[Symbol, String]])
       end
       def handle_array_value(value, current_path)
         images = []
@@ -163,9 +162,10 @@ module Dependabot
         images
       end
 
-      sig { params(hash: T.untyped, path: T.untyped).returns(T::Array[T.untyped]) }
+      sig { params(hash: Object, path: T::Array[String]).returns(T::Array[T::Hash[Symbol, String]]) }
       def find_images_in_hash(hash, path = [])
-        images = []
+        images = T.let([], T::Array[T::Hash[Symbol, String]])
+        return images unless hash.is_a?(Hash)
 
         hash.each do |key, value|
           current_path = path + [key.to_s]

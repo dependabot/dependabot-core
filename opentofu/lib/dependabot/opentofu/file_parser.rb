@@ -35,13 +35,10 @@ module Dependabot
       # binary. Providers in these namespaces cannot be updated independently
       # because their version tracks the binary itself.
       # See: https://pkg.go.dev/github.com/opentofu/registry-address/v2#Provider.IsBuiltIn
-      BUILTIN_PROVIDER_NAMESPACES = T.let(
-        %w(
-          terraform.io/builtin
-          opentofu.org/builtin
-        ).freeze,
-        T::Array[String]
-      )
+      BUILTIN_PROVIDER_NAMESPACES = %w(
+        terraform.io/builtin
+        opentofu.org/builtin
+      ).freeze
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
@@ -346,11 +343,11 @@ module Dependabot
         # sub-module path; only the bare repo is queryable for tags.
         artifact_identifier, subdirectory = uri_part.split(%r{(?<!:)//}, 2)
 
-        qs = CGI.parse(query_part)
+        qs = URI.decode_www_form(query_part).to_h
         # Treat `?tag=` or `?digest=` (empty value) the same as the param
         # being absent, so we don't propagate "" as a usable version.
-        tag = qs["tag"].first&.then { |v| v.empty? ? nil : v }
-        digest = qs["digest"].first&.then { |v| v.empty? ? nil : v }
+        tag = qs["tag"]&.then { |v| v.empty? ? nil : v }
+        digest = qs["digest"]&.then { |v| v.empty? ? nil : v }
 
         if tag && digest
           raise DependencyFileNotEvaluatable,

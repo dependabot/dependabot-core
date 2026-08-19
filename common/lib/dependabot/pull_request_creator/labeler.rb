@@ -1,9 +1,10 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "octokit"
 require "sorbet-runtime"
 require "dependabot/pull_request_creator"
+require "dependabot/errors"
 require "dependabot/credential"
 
 module Dependabot
@@ -92,7 +93,7 @@ module Dependabot
         return if labels_for_pr.none?
         raise "Only GitHub!" unless source.provider == "github"
 
-        T.unsafe(github_client_for_source).add_labels_to_an_issue(
+        github_client_for_source.add_labels_to_an_issue(
           source.repo,
           pull_request_number,
           labels_for_pr
@@ -165,43 +166,36 @@ module Dependabot
         )
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       sig { params(dep: Dependabot::Dependency).returns(T.nilable(String)) }
       def version(dep)
         return dep.version if version_class.correct?(dep.version)
 
-        source = dep.requirements.find { |r| r.fetch(:source) }&.fetch(:source)
-        type = source&.fetch("type", nil) || source&.fetch(:type)
-        return dep.version unless type == "git"
+        source = dep.requirements.find(&:source)
+        return dep.version if source.nil?
+        return dep.version unless source.source_string("type") == "git"
 
-        ref = source.fetch("ref", nil) || source.fetch(:ref)
-        version_from_ref = ref&.gsub(/^v/, "")
+        version_from_ref = source.source_string("ref")&.gsub(/^v/, "")
         return dep.version unless version_from_ref
         return dep.version unless version_class.correct?(version_from_ref)
 
         version_from_ref
       end
-      # rubocop:enable Metrics/PerceivedComplexity
 
-      # rubocop:disable Metrics/PerceivedComplexity
       sig { params(dep: Dependabot::Dependency).returns(T.nilable(String)) }
       def previous_version(dep)
         version_str = dep.previous_version
         return version_str if version_class.correct?(version_str)
 
-        source = T.must(dep.previous_requirements)
-                  .find { |r| r.fetch(:source) }&.fetch(:source)
-        type = source&.fetch("type", nil) || source&.fetch(:type)
-        return version_str unless type == "git"
+        source = T.must(dep.previous_requirements).find(&:source)
+        return version_str if source.nil?
+        return version_str unless source.source_string("type") == "git"
 
-        ref = source.fetch("ref", nil) || source.fetch(:ref)
-        version_from_ref = ref&.gsub(/^v/, "")
+        version_from_ref = source.source_string("ref")&.gsub(/^v/, "")
         return version_str unless version_from_ref
         return version_str unless version_class.correct?(version_from_ref)
 
         version_from_ref
       end
-      # rubocop:enable Metrics/PerceivedComplexity
 
       sig { returns(T.nilable(T::Array[String])) }
       def create_default_dependencies_label_if_required
@@ -320,16 +314,13 @@ module Dependabot
       def fetch_github_labels
         client = github_client_for_source
 
-        labels =
-          T.unsafe(client)
-           .labels(source.repo, per_page: 100)
-           .map(&:name)
-
-        next_link = T.unsafe(client).last_response.rels[:next]
+        raw_labels = client.labels(source.repo, per_page: 100)
+        labels = github_label_names(raw_labels)
+        next_link = T.let(client.last_response.rels[:next], T.nilable(Sawyer::Relation))
 
         while next_link
-          next_page = next_link.get
-          labels += next_page.data.map(&:name)
+          next_page = T.let(next_link.get, Sawyer::Response)
+          labels.concat(github_labels_from_page(next_page))
           next_link = next_page.rels[:next]
         end
 
@@ -338,10 +329,51 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def fetch_gitlab_labels
-        T.unsafe(gitlab_client_for_source)
-         .labels(source.repo, per_page: 100)
-         .auto_paginate
-         .map(&:name)
+        gitlab_client_for_source
+          .labels(source.repo, per_page: 100)
+          .auto_paginate
+          .map { |label| gitlab_label_name(label) }
+      end
+
+      sig { params(label: Sawyer::Resource).returns(String) }
+      def github_label_name(label)
+        value = T.cast(label[:name], Object)
+        return value if value.is_a?(String)
+
+        raise_bad_label_response("GitHub", "name must be a string")
+      end
+
+      sig { params(response: Sawyer::Response).returns(T::Array[String]) }
+      def github_labels_from_page(response)
+        github_label_names(T.cast(response.data, Object))
+      end
+
+      sig { params(data: Object).returns(T::Array[String]) }
+      def github_label_names(data)
+        raise_bad_label_response("GitHub", "page data must be an array") unless data.is_a?(Array)
+
+        data.map do |raw_label|
+          label = T.cast(raw_label, Object)
+          raise_bad_label_response("GitHub", "label must be an object") unless label.is_a?(Sawyer::Resource)
+
+          github_label_name(label)
+        end
+      end
+
+      sig { params(label: ::Gitlab::ObjectifiedHash).returns(String) }
+      def gitlab_label_name(label)
+        value = T.cast(label["name"], Object)
+        return value if value.is_a?(String)
+
+        raise_bad_label_response("GitLab", "name must be a string")
+      end
+
+      sig { params(provider: String, message: String).returns(T.noreturn) }
+      def raise_bad_label_response(provider, message)
+        raise Dependabot::PrivateSourceBadResponse.new(
+          source.url,
+          "Malformed #{provider} label response: #{message}"
+        )
       end
 
       sig { returns(T::Array[String]) }
@@ -390,7 +422,7 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def create_github_dependencies_label
-        T.unsafe(github_client_for_source).add_label(
+        github_client_for_source.add_label(
           source.repo,
           DEFAULT_DEPENDENCIES_LABEL,
           "0366d6",
@@ -399,14 +431,14 @@ module Dependabot
         )
         @labels = [*@labels, DEFAULT_DEPENDENCIES_LABEL].uniq
       rescue Octokit::UnprocessableEntity => e
-        raise unless e.errors.first.fetch(:code) == "already_exists"
+        raise unless github_label_already_exists?(e)
 
         @labels = [*@labels, DEFAULT_DEPENDENCIES_LABEL].uniq
       end
 
       sig { returns(T::Array[String]) }
       def create_gitlab_dependencies_label
-        T.unsafe(gitlab_client_for_source).create_label(
+        gitlab_client_for_source.create_label(
           source.repo,
           DEFAULT_DEPENDENCIES_LABEL,
           "#0366d6",
@@ -417,7 +449,7 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def create_github_security_label
-        T.unsafe(github_client_for_source).add_label(
+        github_client_for_source.add_label(
           source.repo,
           DEFAULT_SECURITY_LABEL,
           "ee0701",
@@ -426,14 +458,14 @@ module Dependabot
         )
         @labels = [*@labels, DEFAULT_SECURITY_LABEL].uniq
       rescue Octokit::UnprocessableEntity => e
-        raise unless e.errors.first.fetch(:code) == "already_exists"
+        raise unless github_label_already_exists?(e)
 
         @labels = [*@labels, DEFAULT_SECURITY_LABEL].uniq
       end
 
       sig { returns(T.nilable(T::Array[String])) }
       def create_gitlab_security_label
-        T.unsafe(gitlab_client_for_source).create_label(
+        gitlab_client_for_source.create_label(
           source.repo,
           DEFAULT_SECURITY_LABEL,
           "#ee0701",
@@ -446,7 +478,7 @@ module Dependabot
       def create_github_language_label
         label = self.class.label_details_for_package_manager(package_manager)
         language_name = label.fetch(:name)
-        T.unsafe(github_client_for_source).add_label(
+        github_client_for_source.add_label(
           source.repo,
           language_name,
           label.fetch(:colour),
@@ -455,9 +487,22 @@ module Dependabot
         )
         @labels = [*@labels, language_name].uniq
       rescue Octokit::UnprocessableEntity => e
-        raise unless e.errors.first.fetch(:code) == "already_exists"
+        raise unless github_label_already_exists?(e)
 
         @labels = [*@labels, language_name].uniq.compact
+      end
+
+      sig { params(error: Octokit::UnprocessableEntity).returns(T::Boolean) }
+      def github_label_already_exists?(error)
+        errors = T.cast(error.errors, Object)
+        return false unless errors.is_a?(Array)
+
+        first_error = T.cast(errors.first, Object)
+        return false unless first_error.is_a?(Hash)
+
+        typed_error = T.let(first_error, T::Hash[T.any(Symbol, String), Object])
+        code = typed_error[:code] || typed_error["code"]
+        code == "already_exists"
       end
 
       sig { params(language: String).returns(String) }
@@ -470,7 +515,7 @@ module Dependabot
         language_name =
           self.class.label_details_for_package_manager(package_manager)
               .fetch(:name)
-        T.unsafe(gitlab_client_for_source).create_label(
+        gitlab_client_for_source.create_label(
           source.repo,
           language_name,
           "#" + self.class.label_details_for_package_manager(package_manager)

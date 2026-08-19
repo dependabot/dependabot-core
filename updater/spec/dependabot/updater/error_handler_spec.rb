@@ -15,9 +15,12 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
   subject(:error_handler) do
     described_class.new(
       service: mock_service,
-      job: mock_job
+      job: mock_job,
+      operation_name: operation_name
     )
   end
+
+  let(:operation_name) { "update_all_versions" }
 
   let(:mock_service) do
     instance_double(Dependabot::Service).tap do |service|
@@ -55,6 +58,54 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         )
 
         handle_dependency_error
+      end
+    end
+
+    context "when a blocked version is enforced" do
+      let(:error) do
+        Dependabot::BlockedDependencyVersion.new(
+          dependency_name: "transitive-dep",
+          blocked_version: "1.5.0",
+          version_requirement: "= 1.5.0",
+          reason: "malware"
+        )
+      end
+
+      # operation_name is the canonical "update_all_versions" tag; the metric maps
+      # it onto the curated "version_update" label shared with blocked_versions.ignored.
+      it "increments blocked_versions.enforced metric with operation and package manager" do
+        expect(mock_service).to receive(:increment_metric).with(
+          "blocked_versions.enforced",
+          tags: { operation: "version_update", package_manager: "bundler" }
+        )
+
+        expect(mock_service).to receive(:record_update_job_error).with(
+          error_type: "blocked_dependency_version",
+          error_details: {
+            "dependency-name": "transitive-dep",
+            "blocked-version": "1.5.0",
+            "version-requirement": "= 1.5.0",
+            reason: "malware"
+          },
+          dependency: dependency
+        )
+
+        handle_dependency_error
+      end
+
+      context "when the operation has no curated label" do
+        let(:operation_name) { "some_future_operation" }
+
+        it "falls back to the raw operation name" do
+          expect(mock_service).to receive(:increment_metric).with(
+            "blocked_versions.enforced",
+            tags: { operation: "some_future_operation", package_manager: "bundler" }
+          )
+
+          allow(mock_service).to receive(:record_update_job_error)
+
+          handle_dependency_error
+        end
       end
     end
 
@@ -355,6 +406,34 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
 
         expect(Dependabot.logger).to receive(:info).with(
           a_string_starting_with("Handled error whilst processing job:")
+        )
+
+        handle_job_error
+      end
+    end
+
+    context "when a blocked version is enforced" do
+      let(:error) do
+        Dependabot::BlockedDependencyVersion.new(
+          dependency_name: "transitive-dep",
+          blocked_version: "1.5.0",
+          version_requirement: "= 1.5.0"
+        )
+      end
+
+      it "increments blocked_versions.enforced metric with operation and package manager" do
+        expect(mock_service).to receive(:increment_metric).with(
+          "blocked_versions.enforced",
+          tags: { operation: "version_update", package_manager: "bundler" }
+        )
+
+        expect(mock_service).to receive(:record_update_job_error).with(
+          error_type: "blocked_dependency_version",
+          error_details: {
+            "dependency-name": "transitive-dep",
+            "blocked-version": "1.5.0",
+            "version-requirement": "= 1.5.0"
+          }
         )
 
         handle_job_error

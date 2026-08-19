@@ -20,7 +20,7 @@ module Dependabot
           @gemfile = gemfile
         end
 
-        sig { returns(T::Array[String]) }
+        sig { returns(T::Array[Pathname]) }
         def path_gemspec_paths
           result = Prism.parse(gemfile&.content)
           raise Dependabot::DependencyFileNotParseable, T.must(gemfile).path if result.failure?
@@ -33,7 +33,7 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         attr_reader :gemfile
 
-        sig { params(node: T.untyped).returns(T::Array[T.untyped]) }
+        sig { params(node: T.nilable(Prism::Node)).returns(T::Array[Pathname]) }
         def find_path_gemspec_paths(node)
           return [] unless node.is_a?(Prism::Node)
 

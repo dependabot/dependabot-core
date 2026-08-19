@@ -1,0 +1,8 @@
+/.bundle
+/.env
+/tmp
+/dependabot-*.gem
+Gemfile.lock
+spec/fixtures/projects/*/.bundle/
+!spec/fixtures/projects/**/Gemfile.lock
+!spec/fixtures/projects/**/vendor

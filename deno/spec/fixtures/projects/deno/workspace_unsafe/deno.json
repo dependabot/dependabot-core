@@ -1,0 +1,6 @@
+{
+  "workspace": ["./packages/alpha", "../escape", "/etc"],
+  "imports": {
+    "@std/path": "jsr:@std/path@^1.0.0"
+  }
+}

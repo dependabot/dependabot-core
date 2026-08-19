@@ -32,7 +32,7 @@ module Dependabot
             ignored_versions: T::Array[String],
             security_advisories: T::Array[Dependabot::SecurityAdvisory],
             raise_on_ignored: T::Boolean,
-            options: T::Hash[Symbol, T.untyped],
+            options: T::Hash[Symbol, T.anything],
             cooldown_options: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
@@ -161,7 +161,7 @@ module Dependabot
             next unless new_version
 
             old_reqs = original_dep.requirements.map do |req|
-              requirement_class.new(req[:requirement])
+              requirement_class.new(req.requirement_string)
             end
 
             next if old_reqs.all? { |req| req.satisfied_by?(new_version) }

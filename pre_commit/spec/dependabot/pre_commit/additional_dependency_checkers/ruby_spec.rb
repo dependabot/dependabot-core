@@ -3,6 +3,7 @@
 
 require "spec_helper"
 require "dependabot/pre_commit/additional_dependency_checkers/ruby"
+require "dependabot/package/release_cooldown_options"
 
 RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Ruby do
   let(:checker) do
@@ -273,6 +274,59 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Ruby do
       expect(updated.first[:source][:hook_id]).to eq("scss-lint")
       expect(updated.first[:source][:hook_repo]).to eq("https://github.com/pre-commit/mirrors-scss-lint")
       expect(updated.first[:source][:package_name]).to eq("scss_lint")
+    end
+  end
+
+  describe "cooldown passthrough" do
+    let(:cooldown_options) do
+      Dependabot::Package::ReleaseCooldownOptions.new(default_days: 3)
+    end
+
+    let(:checker_with_cooldown) do
+      described_class.new(
+        source: source,
+        credentials: credentials,
+        requirements: requirements,
+        current_version: current_version,
+        cooldown_options: cooldown_options
+      )
+    end
+
+    # rubocop:disable RSpec/VerifiedDoubleReference
+    let(:bundler_checker_class) { class_double("Dependabot::Bundler::UpdateChecker") }
+    # rubocop:enable RSpec/VerifiedDoubleReference
+    let(:bundler_checker) { instance_double(Dependabot::UpdateCheckers::Base) }
+
+    before do
+      allow(Dependabot::UpdateCheckers).to receive(:for_package_manager)
+        .with("bundler")
+        .and_return(bundler_checker_class)
+    end
+
+    it "passes cooldown_options as update_cooldown to the bundler UpdateChecker" do
+      allow(bundler_checker_class).to receive(:new).with(
+        hash_including(update_cooldown: cooldown_options)
+      ).and_return(bundler_checker)
+      allow(bundler_checker).to receive(:latest_version).and_return(nil)
+
+      checker_with_cooldown.latest_version
+
+      expect(bundler_checker_class).to have_received(:new).with(
+        hash_including(update_cooldown: cooldown_options)
+      )
+    end
+
+    it "passes nil update_cooldown when no cooldown_options provided" do
+      allow(bundler_checker_class).to receive(:new).with(
+        hash_including(update_cooldown: nil)
+      ).and_return(bundler_checker)
+      allow(bundler_checker).to receive(:latest_version).and_return(nil)
+
+      checker.latest_version
+
+      expect(bundler_checker_class).to have_received(:new).with(
+        hash_including(update_cooldown: nil)
+      )
     end
   end
 end

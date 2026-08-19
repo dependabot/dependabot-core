@@ -3038,6 +3038,74 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             .to include(%("acorn@npm:^5.0.0, acorn@npm:^5.1.2":\n  version: 5.7.3))
         end
       end
+
+      context "when the target version differs from latest in range (security update)" do
+        let(:project_name) { "yarn_berry/security_update" }
+        let(:files) { project_dependency_files(project_name) }
+        let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+        let(:dependency_name) { "axios" }
+        let(:version) { "1.15.2" }
+        let(:previous_version) { "1.15.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^1.15.2",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "^1.15.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "pins to the exact target version with the caret range descriptor" do
+          parsed_lockfile = YAML.safe_load(updated_yarn_lock.content)
+          axios_entry = parsed_lockfile.find { |k, _| k.is_a?(String) && k.include?("axios") }
+
+          expect(axios_entry&.first).to include("^1.15.2")
+          expect(axios_entry&.last&.dig("version")).to eq("1.15.2")
+        end
+      end
+
+      context "when the target version differs from latest in range (version update with ignore)" do
+        let(:project_name) { "yarn_berry/security_update" }
+        let(:files) { project_dependency_files(project_name) }
+        let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+        let(:dependency_name) { "lodash" }
+        let(:version) { "4.17.10" }
+        let(:previous_version) { "4.17.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "~4.17.10",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "~4.17.0",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "pins to the exact target version with the tilde range descriptor" do
+          parsed_lockfile = YAML.safe_load(updated_yarn_lock.content)
+          lodash_entry = parsed_lockfile.find { |k, _| k.is_a?(String) && k.include?("lodash") }
+
+          expect(lodash_entry&.first).to include("~4.17.10")
+          expect(lodash_entry&.last&.dig("version")).to eq("4.17.10")
+        end
+      end
     end
 
     #######################
@@ -3590,18 +3658,19 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:files) { project_dependency_files("yarn/multiple_sub_dependencies") }
 
         let(:dependency_name) { "js-yaml" }
-        let(:version) { "3.14.2" }
+        let(:version) { "3.15.0" }
         let(:previous_version) { "3.9.0" }
         let(:requirements) { [] }
         let(:previous_requirements) { nil }
 
+        # The yarn sub-dependency updater deletes the entries and reinstalls, so
+        # yarn resolves the ranges against the registry rather than the version
+        # requested above. Match the resolved version loosely, otherwise every
+        # js-yaml 3.x release breaks this spec.
         it "de-duplicates all entries to the same version" do
           expect(updated_files.map(&:name)).to contain_exactly("yarn.lock")
           expect(updated_yarn_lock.content)
-            .to include(
-              "js-yaml@^3.10.0, js-yaml@^3.4.6, js-yaml@^3.9.0:\n" \
-              '  version "3.14.2"'
-            )
+            .to match(/js-yaml@\^3\.10\.0, js-yaml@\^3\.4\.6, js-yaml@\^3\.9\.0:\n  version "3\.\d+\.\d+"/)
         end
       end
 
@@ -3917,15 +3986,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:project_name) { "pnpm/multiple_sub_dependencies" }
 
         let(:dependency_name) { "js-yaml" }
-        let(:version) { "3.14.2" }
+        let(:version) { "3.15.0" }
         let(:previous_version) { "3.9.0" }
         let(:requirements) { [] }
         let(:previous_requirements) { nil }
 
+        # As with the yarn spec above, pnpm resolves the ranges against the
+        # registry, so assert a single resolved 3.x entry rather than a literal
+        # version that every js-yaml release invalidates.
         it "de-duplicates all entries to the same version" do
           expect(updated_files.map(&:name)).to contain_exactly("pnpm-lock.yaml")
 
-          expect(updated_pnpm_lock.content).to include("js-yaml@3.14.2:\n    resolution").once
+          expect(updated_pnpm_lock.content.scan(/js-yaml@3\.\d+\.\d+:\n    resolution/).size).to eq(1)
         end
       end
 
@@ -4284,6 +4356,75 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:filename) { "package.json" }
 
         it { is_expected.to be_nil }
+      end
+    end
+  end
+
+  describe "#cooldown_release_age_days (transitive gate include/exclude)" do
+    let(:files) { project_dependency_files("npm8/simple") }
+    let(:include_patterns) { [] }
+    let(:exclude_patterns) { [] }
+    let(:cooldown) do
+      Dependabot::Package::ReleaseCooldownOptions.new(
+        default_days: 7,
+        include: include_patterns,
+        exclude: exclude_patterns
+      )
+    end
+    let(:updater_options) { { update_cooldown: cooldown } }
+    let(:updater) do
+      described_class.new(
+        dependency_files: files,
+        dependencies: dependencies,
+        credentials: credentials,
+        repo_contents_path: repo_contents_path,
+        options: updater_options
+      )
+    end
+
+    context "when the updated dependency is subject to the cooldown (no patterns)" do
+      it "returns the cooldown day count" do
+        expect(updater.send(:cooldown_release_age_days)).to eq(7)
+      end
+    end
+
+    context "when the updated dependency is excluded from the cooldown" do
+      let(:exclude_patterns) { ["fetch-factory"] }
+
+      it "returns nil so the transitive gate is skipped" do
+        expect(updater.send(:cooldown_release_age_days)).to be_nil
+      end
+    end
+
+    context "when an include list does not match the updated dependency" do
+      let(:include_patterns) { ["some-other-dep"] }
+
+      it "returns nil so the transitive gate is skipped" do
+        expect(updater.send(:cooldown_release_age_days)).to be_nil
+      end
+    end
+
+    context "when an include list matches the updated dependency" do
+      let(:include_patterns) { ["fetch-factory"] }
+
+      it "returns the cooldown day count" do
+        expect(updater.send(:cooldown_release_age_days)).to eq(7)
+      end
+    end
+
+    context "when it is a security update" do
+      let(:updater_options) { { update_cooldown: cooldown, security_updates_only: true } }
+
+      it "returns nil regardless of include/exclude" do
+        expect(updater.send(:cooldown_release_age_days)).to be_nil
+      end
+    end
+
+    context "when no cooldown is configured" do
+      let(:updater_options) { {} }
+
+      it "returns nil" do
+        expect(updater.send(:cooldown_release_age_days)).to be_nil
       end
     end
   end

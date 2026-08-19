@@ -2,10 +2,10 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 # Check for updates at https://github.com/oven-sh/bun/releases
-ARG BUN_VERSION=1.3.5
+ARG BUN_VERSION=1.3.14
 
 # See https://github.com/nodesource/distributions#installation-instructions
-ARG NODEJS_VERSION=20
+ARG NODEJS_VERSION=24
 
 # Install Node and bun
 RUN mkdir -p /etc/apt/keyrings \

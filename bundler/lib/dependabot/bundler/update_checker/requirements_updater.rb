@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/bundler/update_checker"
+require "dependabot/dependency_requirement"
 require "dependabot/requirements_update_strategy"
 
 module Dependabot
@@ -25,9 +26,9 @@ module Dependabot
 
         sig do
           params(
-            requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            requirements: T::Array[Dependabot::DependencyRequirement],
             update_strategy: Dependabot::RequirementsUpdateStrategy,
-            updated_source: T.nilable(T::Hash[Symbol, T.untyped]),
+            updated_source: T.nilable(Dependabot::DependencyRequirement::ObjectHash),
             latest_version: T.nilable(String),
             latest_resolvable_version: T.nilable(String)
           ).void
@@ -39,7 +40,10 @@ module Dependabot
           latest_version:,
           latest_resolvable_version:
         )
-          @requirements = requirements
+          @requirements = T.let(
+            requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
+            T::Array[Dependabot::DependencyRequirement]
+          )
           @latest_version = T.let(
             (T.cast(Dependabot::Bundler::Version.new(latest_version), Dependabot::Bundler::Version) if latest_version),
             T.nilable(Dependabot::Bundler::Version)
@@ -57,12 +61,12 @@ module Dependabot
           )
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_requirements
           return requirements if update_strategy.lockfile_only?
 
           requirements.map do |req|
-            if req[:file].include?(".gemspec")
+            if T.must(req.file).include?(".gemspec")
               update_gemspec_requirement(req)
             else
               # If a requirement doesn't come from a gemspec, it must be from
@@ -74,10 +78,10 @@ module Dependabot
 
         private
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :requirements
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash)) }
         attr_reader :updated_source
 
         sig { returns(T.nilable(Dependabot::Bundler::Version)) }
@@ -96,9 +100,9 @@ module Dependabot
           raise "Unknown update strategy: #{update_strategy}"
         end
 
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_gemfile_requirement(req)
-          req = req.merge(source: updated_source)
+          req = Dependabot::DependencyRequirement.create(req.merge(source: updated_source))
           return req unless latest_resolvable_version
 
           case update_strategy
@@ -110,31 +114,32 @@ module Dependabot
           end
         end
 
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_version_requirement_if_needed(req)
           return req if new_version_satisfies?(req)
 
           update_version_requirement(req)
         end
 
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_version_requirement(req)
           requirements =
-            req[:requirement].split(",").map { |r| Gem::Requirement.new(r) }
+            T.must(req.requirement_string).split(",").map { |r| Gem::Requirement.new(r) }
 
           new_requirement =
-            if requirements.any?(&:exact?) then latest_resolvable_version.to_s
+            if requirements.any?(&:exact?)
+              latest_resolvable_version.to_s
             elsif requirements.any? { |r| r.to_s.start_with?("~>") }
               tw_req = requirements.find { |r| r.to_s.start_with?("~>") }
-              update_twiddle_version(tw_req, T.must(latest_resolvable_version)).to_s
+              update_twiddle_version(T.must(tw_req), T.must(latest_resolvable_version)).to_s
             else
               update_gemfile_range(requirements).join(", ")
             end
 
-          req.merge(requirement: new_requirement)
+          Dependabot::DependencyRequirement.create(req.merge(requirement: new_requirement))
         end
 
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
+        sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
         def new_version_satisfies?(req)
           return false unless latest_resolvable_version
 
@@ -179,32 +184,33 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_gemspec_requirement(req)
-          req = req.merge(source: updated_source) if req.fetch(:source)
+          req = Dependabot::DependencyRequirement.create(req.merge(source: updated_source)) if req.source
           return req unless latest_version && latest_resolvable_version
 
           requirements =
-            req[:requirement].split(",").map { |r| Gem::Requirement.new(r) }
+            T.must(req.requirement_string).split(",").map { |r| Gem::Requirement.new(r) }
+          groups = T.must(req.groups).map(&:to_s)
 
           return req if requirements.all? do |r|
-            requirement_satisfied?(r, req[:groups])
+            requirement_satisfied?(r, groups)
           end
 
           updated_requirements =
             requirements.flat_map do |r|
-              next r if requirement_satisfied?(r, req[:groups])
+              next r if requirement_satisfied?(r, groups)
 
-              if req[:groups] == ["development"] then bumped_requirements(r)
+              if groups == ["development"] then bumped_requirements(r)
               else
                 widened_requirements(r)
               end
             end
 
           updated_requirements = binding_requirements(updated_requirements)
-          req.merge(requirement: updated_requirements.join(", "))
+          Dependabot::DependencyRequirement.create(req.merge(requirement: updated_requirements.join(", ")))
         rescue UnfixableRequirement
-          req.merge(requirement: :unfixable)
+          Dependabot::DependencyRequirement.create(req.merge(requirement: :unfixable))
         end
         # rubocop:enable Metrics/PerceivedComplexity
 

@@ -1,0 +1,15 @@
+{
+  "originHash" : "c9b41f624024b98d949a36705b338158f56e289bf8fd74423c470ff8bc770856",
+  "pins" : [
+    {
+      "identity" : "benchmark",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ordo-one/benchmark",
+      "state" : {
+        "revision" : "595d8db7d9d612ecf256ebf659c20aeec338c5ca",
+        "version" : "1.34.1"
+      }
+    }
+  ],
+  "version" : 3
+}

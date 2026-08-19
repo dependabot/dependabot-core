@@ -78,10 +78,10 @@ module Dependabot
           ).void
         end
         def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
-          @dependency               = T.let(dependency, Dependabot::Dependency)
-          @dependency_files         = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials              = T.let(credentials, T::Array[Dependabot::Credential])
-          @repo_contents_path       = T.let(repo_contents_path, T.nilable(String))
+          @dependency               = dependency
+          @dependency_files         = dependency_files
+          @credentials              = credentials
+          @repo_contents_path       = repo_contents_path
           @error_handler = T.let(
             PoetryErrorHandler.new(dependencies: dependency, dependency_files: dependency_files),
             Dependabot::Python::PoetryErrorHandler
@@ -333,7 +333,7 @@ module Dependabot
           end
 
           # If this is a sub-dependency, add the new requirement
-          unless dependency.requirements.find { |r| r[:file] == T.must(pyproject).name }
+          unless dependency.requirements.find { |r| r.file == T.must(pyproject).name }
             poetry_object[subdep_type] ||= {}
             poetry_object[subdep_type][dependency.name] = updated_requirement
           end
@@ -341,8 +341,10 @@ module Dependabot
           TomlRB.dump(pyproject_object)
         end
 
-        sig { params(toml_node: T::Hash[String, T.untyped], requirement: String).void }
+        sig { params(toml_node: T.nilable(T::Hash[String, T.untyped]), requirement: String).void }
         def update_dependency_requirement(toml_node, requirement)
+          return unless toml_node
+
           names = toml_node.keys
           pkg_name = names.find { |nm| normalise(nm) == dependency.name }
           return unless pkg_name
@@ -488,8 +490,8 @@ module Dependabot
         ).void
       end
       def initialize(dependencies:, dependency_files:)
-        @dependencies = T.let(dependencies, Dependabot::Dependency)
-        @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
+        @dependencies = dependencies
+        @dependency_files = dependency_files
       end
 
       private

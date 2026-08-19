@@ -163,6 +163,11 @@ RSpec.describe Dependabot::Sbt::Package::PackageDetailsFetcher do
           "https://repo.maven.apache.org/maven2/" \
           "com/google/guava/guava/33.4.0-jre/guava-33.4.0-jre.jar"
         ).to_return(status: 404)
+        stub_request(
+          :head,
+          "https://repo.maven.apache.org/maven2/" \
+          "com/google/guava/guava/33.4.0-jre/guava-33.4.0-jre.pom"
+        ).to_return(status: 404)
       end
 
       it { is_expected.to be false }

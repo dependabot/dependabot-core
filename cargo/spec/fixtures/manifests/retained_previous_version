@@ -1,0 +1,11 @@
+[package]
+name = "retained-previous-version"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+windows-sys = "=0.52.0"
+socket2 = "=0.5.7"

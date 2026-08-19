@@ -71,6 +71,24 @@ public class UpdateHandlerSelectionTests : UpdateHandlersTestsBase
             GroupUpdateAllVersionsHandler.Instance,
         ];
 
+        // multi-ecosystem update; this short-circuits to `group_update_all_versions` even when
+        // `UpdatingAPullRequest` is true, no top-level dependencies are listed, and a group is
+        // being refreshed (regression test for "Unable to find appropriate update handler.")
+        yield return
+        [
+            new Job()
+            {
+                Source = CreateJobSource("/"),
+                Dependencies = [],
+                DependencyGroups = [new() { Name = "some-group" }],
+                DependencyGroupToRefresh = "some-group",
+                SecurityUpdatesOnly = false,
+                UpdatingAPullRequest = true,
+                MultiEcosystemUpdate = true,
+            },
+            GroupUpdateAllVersionsHandler.Instance,
+        ];
+
         //
         // update_version_group_pr
         //

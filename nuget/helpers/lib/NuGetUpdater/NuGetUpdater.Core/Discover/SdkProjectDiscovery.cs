@@ -71,7 +71,7 @@ internal static class SdkProjectDiscovery
     // this seems to be the maximum number of TFMs that can be restored in parallel without running into race conditions
     private const int MaximumParallelTargetFrameworkRestores = 2;
 
-    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string startingProjectPath, ExperimentsManager experimentsManager, ILogger logger)
+    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, string startingProjectPath, ExperimentsManager experimentsManager, string? solutionDir, ILogger logger)
     {
         var extension = Path.GetExtension(startingProjectPath)?.ToLowerInvariant();
         switch (extension)
@@ -178,6 +178,9 @@ internal static class SdkProjectDiscovery
                     args.Add($"/p:InnerTargets=\"{string.Join(";", requiredTargets)}\"");
                 }
 
+                // only execute the desired targets on transitive project references
+                args.Add($"/p:ProjectReferenceBuildTargets=\"{string.Join(";", requiredTargets)}\"");
+
                 // inject various props and targets to help with discovery
                 var dependencyDiscoveryTargetingPacksPropsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscoveryTargetingPacks.props");
                 var dependencyDiscoveryTargetsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscovery.targets");
@@ -188,6 +191,15 @@ internal static class SdkProjectDiscovery
                 if (isIndividualTfmRestore)
                 {
                     args.Add($"/p:TargetFramework={tfm}");
+                }
+
+                // if the project lives alongside a solution file, fake the MSBuild `SolutionDir` property so that
+                // project files referencing `$(SolutionDir)` can be evaluated correctly; MSBuild expects this value
+                // to end with a directory separator so that `$(SolutionDir)foo` concatenations form valid paths
+                if (solutionDir is not null)
+                {
+                    var normalizedSolutionDir = $"{solutionDir.TrimEnd('/', Path.DirectorySeparatorChar)}/";
+                    args.Add($"/p:SolutionDir={normalizedSolutionDir}");
                 }
 
                 // if using CPM and a project also sets TreatWarningsAsErrors to true, this can cause discovery to fail; explicitly don't allow that
@@ -207,10 +219,21 @@ internal static class SdkProjectDiscovery
                 }
 
                 MSBuildHelper.ThrowOnError(stdOut);
+                MSBuildHelper.ThrowOnError(stdErr);
                 if (exitCode != 0)
                 {
                     // log error, but still try to resolve what we can
                     logger.Warn($"  Error determining dependencies from `{startingProjectPath}`:\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
+                }
+
+                if (!File.Exists(binLogPath))
+                {
+                    if (stdErr.Contains("A compatible .NET SDK was not found."))
+                    {
+                        throw new Exception("Missing SDK, check global.json locations vs. job directories.");
+                    }
+
+                    throw new FileNotFoundException("Dependency discovery didn't produce a log file.");
                 }
 
                 var buildRoot = BinaryLog.ReadBuild(binLogPath);
@@ -435,6 +458,7 @@ internal static class SdkProjectDiscovery
                 packagesPerProject,
                 explicitPackageVersionsPerProject,
                 experimentsManager,
+                solutionDir,
                 logger
             );
         }
@@ -513,6 +537,11 @@ internal static class SdkProjectDiscovery
             {
                 if (propertiesForProject.TryGetValue("ProjectAssetsFile", out var assetsFilePath))
                 {
+                    if (!File.Exists(assetsFilePath))
+                    {
+                        throw new FileNotFoundException("The file specified at $(ProjectAssetsFile) does not exist.");
+                    }
+
                     var assetsContent = File.ReadAllText(assetsFilePath);
                     var assets = JsonDocument.Parse(assetsContent).RootElement;
                     return assets;
@@ -630,6 +659,60 @@ internal static class SdkProjectDiscovery
                 .ThenBy(d => d.Version)
                 .ToImmutableArray();
 
+            // extract dependency graph from project.assets.json
+            var dependencyGraphBuilder = new Dictionary<string, ImmutableArray<string>>(StringComparer.OrdinalIgnoreCase);
+            if (assetsJson.Value is { } assetsForGraph &&
+                assetsForGraph.TryGetProperty("targets", out var graphTargets))
+            {
+                foreach (var tfmObject in graphTargets.EnumerateObject())
+                {
+                    // Build a complete lookup of package name -> resolved version for this TFM.
+                    // This must be a separate pass because the dependency resolution below needs to
+                    // look up any package by name, including ones that appear later in the enumeration.
+                    var resolvedVersions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var packageObject in tfmObject.Value.EnumerateObject())
+                    {
+                        var parts = packageObject.Name.Split('/');
+                        if (parts.Length == 2)
+                        {
+                            resolvedVersions[parts[0]] = parts[1];
+                        }
+                    }
+
+                    // Now that all resolved versions are known, build the dependency graph edges.
+                    foreach (var packageObject in tfmObject.Value.EnumerateObject())
+                    {
+                        var parts = packageObject.Name.Split('/');
+                        if (parts.Length == 2)
+                        {
+                            var packageName = parts[0];
+                            var packageVersion = parts[1];
+                            var graphKey = $"{packageName}/{packageVersion}";
+                            var depEntries = packageObject.Value.TryGetProperty("dependencies", out var deps)
+                                ? deps.EnumerateObject()
+                                    .Where(d => resolvedVersions.ContainsKey(d.Name))
+                                    .Select(d => $"{d.Name}/{resolvedVersions[d.Name]}")
+                                : [];
+                            if (!dependencyGraphBuilder.TryGetValue(graphKey, out var existing))
+                            {
+                                dependencyGraphBuilder[graphKey] = depEntries
+                                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                                    .ToImmutableArray();
+                            }
+                            else
+                            {
+                                dependencyGraphBuilder[graphKey] = existing
+                                    .Union(depEntries, StringComparer.OrdinalIgnoreCase)
+                                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                                    .ToImmutableArray();
+                            }
+                        }
+                    }
+                }
+            }
+
+            var dependencyGraph = dependencyGraphBuilder.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase);
+
             // other values
             var projectProperties = resolvedProperties[projectPath];
             var referenced = referencedProjects.GetOrAdd(projectPath, () => new(PathComparer.Instance))
@@ -663,15 +746,31 @@ internal static class SdkProjectDiscovery
                 _ => null,
             };
 
-            if (packageManagementFile is not null)
+            // If a repo has an incomplete setup of package management, it's possible we detect it but then get an
+            // empty string for the special file path.  The fix is to explicitly check for that and not just a null
+            // value.  A check below will then autocorrect to default package management since that's what's really
+            // being used.
+            if (!string.IsNullOrWhiteSpace(packageManagementFile))
             {
                 packageManagementFile = Path.GetRelativePath(projectFullDirectory, packageManagementFile).NormalizePathToUnix();
             }
 
-            if (packageManagementKind != PackageManagementKind.Default && packageManagementFile is null)
+            if (packageManagementKind != PackageManagementKind.Default && string.IsNullOrWhiteSpace(packageManagementFile))
             {
                 logger.Warn($"Project [{projectRelativePath}] detected package management kind of {packageManagementKind} but no package management file found; forcing management kind to {PackageManagementKind.Default}.");
                 packageManagementKind = PackageManagementKind.Default;
+            }
+
+            // check for NoWarn containing NU1701
+            var noWarnValue = GetStringPropertyFromProjectProperties(projectProperties, "NoWarn");
+            var hasNoWarnNU1701 = false;
+            if (noWarnValue is not null)
+            {
+                var noWarnCodes = noWarnValue.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (noWarnCodes.Contains("NU1701", StringComparer.OrdinalIgnoreCase))
+                {
+                    hasNoWarnNU1701 = true;
+                }
             }
 
             var projectDiscoveryResult = new ProjectDiscoveryResult()
@@ -684,6 +783,8 @@ internal static class SdkProjectDiscovery
                 AdditionalFiles = additional,
                 PackageManagementKind = packageManagementKind,
                 PackageManagementSpecialFileRelativePath = packageManagementFile,
+                HasNoWarnNU1701 = hasNoWarnNU1701,
+                DependencyGraph = dependencyGraph,
             };
             projectDiscoveryResults.Add(projectDiscoveryResult);
         }
@@ -721,6 +822,7 @@ internal static class SdkProjectDiscovery
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> packagesPerProject,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> explicitPackageVersionsPerProject,
         ExperimentsManager experimentsManager,
+        string? solutionDir,
         ILogger logger
     )
     {
@@ -743,8 +845,14 @@ internal static class SdkProjectDiscovery
 
             var tempProjectPath = await MSBuildHelper.CreateTempProjectAsync(tempDirectory, repoRootPath, projectPath, targetFrameworks, topLevelDependencies, logger);
             var tempProjectDirectory = Path.GetDirectoryName(tempProjectPath)!;
-            var rediscoveredDependencies = await DiscoverAsync(tempProjectDirectory, tempProjectDirectory, tempProjectPath, experimentsManager, logger);
-            var rediscoveredDependenciesForThisProject = rediscoveredDependencies.Single(); // we started with a single temp project, this will be the only result
+            var rediscoveredDependencies = await DiscoverAsync(tempProjectDirectory, tempProjectDirectory, tempProjectPath, experimentsManager, solutionDir, logger);
+            var tempProjectFileName = Path.GetFileName(tempProjectPath);
+            var rediscoveredDependenciesForThisProject = rediscoveredDependencies.FirstOrDefault(r => PathComparer.Instance.Equals(r.FilePath, tempProjectFileName));
+            if (rediscoveredDependenciesForThisProject is null)
+            {
+                logger.Warn($"Unable to rediscover packages for legacy project {projectPath}; using original package set.");
+                return packagesPerProject;
+            }
 
             // re-build packagesPerProject
             var rebuiltPackagesPerProject = packagesPerProject.ToDictionary(PathComparer.Instance); // shallow copy

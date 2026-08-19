@@ -30,7 +30,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "aws-sdk-ecr", "~> 1.5"
   spec.add_dependency "bundler", ">= 2.4", "< 5.0.0"
   spec.add_dependency "commonmarker", "~> 2.3"
-  spec.add_dependency "docker_registry2", "~> 1.18"
+  spec.add_dependency "docker_registry2", "~> 1.19"
   spec.add_dependency "excon", "~> 1.2"
   spec.add_dependency "faraday", "~> 2.7"
   spec.add_dependency "faraday-retry", "~> 2.2"

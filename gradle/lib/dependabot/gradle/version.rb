@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -15,7 +15,7 @@ module Dependabot
     class Version < Dependabot::Version
       extend T::Sig
 
-      NULL_VALUES = T.let(%w(0 final ga).freeze, T::Array[String])
+      NULL_VALUES = %w(0 final ga).freeze
       PREFIXED_TOKEN_HIERARCHY = T.let(
         {
           "." => { qualifier: 1, number: 4 },
@@ -25,33 +25,33 @@ module Dependabot
         T::Hash[String, T::Hash[Symbol, Integer]]
       )
       NAMED_QUALIFIERS_HIERARCHY = T.let(
+        # Pragmatic (not spec-exact) ranking; preview≈rc, experimental/unstable≈alpha.
         {
+          "dev" => 0,
           "a" => 1, "alpha" => 1,
-          "b" => 2, "beta"      => 2,
+          "experimental" => 1, "unstable" => 1,
+          "b" => 2, "beta" => 2,
           "m" => 3, "milestone" => 3,
-          "rc" => 4, "cr" => 4, "pr" => 4, "pre" => 4,
-          "snapshot" => 5, "dev" => 5,
+          "rc" => 4, "cr" => 4, "pr" => 4, "pre" => 4, "preview" => 4,
+          "snapshot" => 5,
           "ga" => 6, "" => 6, "final" => 6,
           "sp" => 7
         }.freeze,
         T::Hash[String, Integer]
       )
-      VERSION_PATTERN = T.let(
-        "[0-9a-zA-Z]+" \
-        '(?>\.[0-9a-zA-Z]*)*' \
-        '([_\-\+][0-9A-Za-z_-]*(\.[0-9A-Za-z_-]*)*)?',
-        String
-      )
-      ANCHORED_VERSION_PATTERN = T.let(/\A\s*(#{VERSION_PATTERN})?\s*\z/, Regexp)
+      VERSION_PATTERN = "[0-9a-zA-Z]+" \
+                        '(?>\.[0-9a-zA-Z]*)*' \
+                        '([_\-\+][0-9A-Za-z_-]*(\.[0-9A-Za-z_-]*)*)?'
+      ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
-      sig { override.params(version: T.untyped).returns(T::Boolean) }
+      sig { override.params(version: Object).returns(T::Boolean) }
       def self.correct?(version)
         return false if version.nil?
 
         version.to_s.match?(ANCHORED_VERSION_PATTERN)
       end
 
-      sig { override.params(version: T.untyped).void }
+      sig { override.params(version: Object).void }
       def initialize(version)
         @version_string = T.let(version.to_s, String)
         super(version.to_s.tr("_", "-"))
@@ -72,7 +72,7 @@ module Dependabot
         end
       end
 
-      sig { params(other: T.untyped).returns(Integer) }
+      sig { params(other: Object).returns(Integer) }
       def <=>(other)
         version = stringify_version(@version_string)
         version = fill_tokens(version)
@@ -119,7 +119,7 @@ module Dependabot
         @tokens
       end
 
-      sig { params(version: T.untyped).returns(String) }
+      sig { params(version: Object).returns(String) }
       def stringify_version(version)
         version = version.to_s.downcase
 

@@ -57,7 +57,7 @@ module Dependabot
           nil
         end
 
-        sig { params(_version: T.untyped).returns(T::Boolean) }
+        sig { params(_version: T.anything).returns(T::Boolean) }
         def resolvable?(_version)
           # Always return true since we don't actually attempt resolution
           # This is just a placeholder implementation

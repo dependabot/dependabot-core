@@ -674,7 +674,7 @@ RSpec.describe Dependabot::Docker::FileParser do
             requirement: nil,
             groups: [],
             file: "Dockerfile",
-            source: { tag: "artful" }
+            source: { tag: "artful", platform: "linux/amd64" }
           }]
         end
 
@@ -691,6 +691,27 @@ RSpec.describe Dependabot::Docker::FileParser do
 
           expect(ecosystem.package_manager.deprecated?).to be false
           expect(ecosystem.package_manager.unsupported?).to be false
+        end
+      end
+    end
+
+    context "with a build-arg platform placeholder" do
+      let(:dockerfile_body) { "FROM --platform=$BUILDPLATFORM ubuntu:artful" }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "artful", platform: "$BUILDPLATFORM" }
+          }]
+        end
+
+        it "captures the raw platform value" do
+          expect(dependency.requirements).to eq(expected_requirements)
         end
       end
     end

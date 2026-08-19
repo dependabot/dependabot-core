@@ -262,5 +262,120 @@ RSpec.describe Dependabot::Nix::FileUpdater do
         expect(nix_file.content).not_to include("nixos-24.11")
       end
     end
+
+    context "with a NixOS channel tarball input (channel bumped)" do
+      let(:flake_nix_content) do
+        <<~NIX
+          {
+            inputs = {
+              nixpkgs.url = "https://channels.nixos.org/nixos-25.05/nixexprs.tar.xz";
+            };
+            outputs = { self, nixpkgs }: { };
+          }
+        NIX
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nixpkgs",
+          version: "new_rev_bbb",
+          previous_version: "old_rev_aaa",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            source: {
+              type: "tarball",
+              url: "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz",
+              branch: nil,
+              ref: "nixos-26.05"
+            },
+            groups: []
+          }],
+          previous_requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            source: {
+              type: "tarball",
+              url: "https://channels.nixos.org/nixos-25.05/nixexprs.tar.xz",
+              branch: nil,
+              ref: "nixos-25.05"
+            },
+            groups: []
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      let(:updated_lock_content) { '{"updated": true}' }
+
+      it "returns both flake.nix and flake.lock" do
+        expect(updated_files.length).to eq(2)
+        expect(updated_files.map(&:name)).to contain_exactly("flake.nix", "flake.lock")
+      end
+
+      it "rewrites the channel in flake.nix" do
+        nix_file = updated_files.find { |f| f.name == "flake.nix" }
+        expect(nix_file.content).to include('"https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz"')
+        expect(nix_file.content).not_to include("nixos-25.05")
+      end
+
+      it "runs nix flake update for the input" do
+        updated_files
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_shell_command)
+          .with("nix flake update nixpkgs", fingerprint: "nix flake update <input_name>")
+      end
+    end
+
+    context "with a NixOS channel tarball input (lock refresh only)" do
+      let(:flake_nix_content) do
+        <<~NIX
+          {
+            inputs = {
+              nixpkgs.url = "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz";
+            };
+            outputs = { self, nixpkgs }: { };
+          }
+        NIX
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "nixpkgs",
+          version: "new_rev_bbb",
+          previous_version: "old_rev_aaa",
+          requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            source: {
+              type: "tarball",
+              url: "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz",
+              branch: nil,
+              ref: "nixos-26.05"
+            },
+            groups: []
+          }],
+          previous_requirements: [{
+            file: "flake.lock",
+            requirement: nil,
+            source: {
+              type: "tarball",
+              url: "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz",
+              branch: nil,
+              ref: "nixos-26.05"
+            },
+            groups: []
+          }],
+          package_manager: "nix"
+        )
+      end
+
+      let(:updated_lock_content) { '{"updated": true}' }
+
+      it "returns only the updated flake.lock" do
+        expect(updated_files.length).to eq(1)
+        expect(updated_files.first.name).to eq("flake.lock")
+      end
+    end
   end
 end

@@ -11,6 +11,7 @@ public interface IFileWriter
         ImmutableArray<string> relativeFilePaths,
         ImmutableArray<Dependency> originalDependencies,
         ImmutableArray<Dependency> requiredPackageVersions,
-        PackageManagementKind packageManagementKind
+        PackageManagementKind packageManagementKind,
+        string? packageManagementSpecialFileRelativePath
     );
 }

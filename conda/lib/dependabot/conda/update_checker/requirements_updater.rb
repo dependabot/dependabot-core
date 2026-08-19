@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "dependabot/dependency_requirement"
 require "dependabot/conda/requirement"
 require "dependabot/conda/update_checker"
 require "dependabot/conda/version"
@@ -13,7 +14,7 @@ module Dependabot
       class RequirementsUpdater
         extend T::Sig
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :requirements
 
         sig { returns(Dependabot::RequirementsUpdateStrategy) }
@@ -24,13 +25,16 @@ module Dependabot
 
         sig do
           params(
-            requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            requirements: T::Array[Dependabot::DependencyRequirement],
             update_strategy: Dependabot::RequirementsUpdateStrategy,
             latest_resolvable_version: T.nilable(String)
           ).void
         end
         def initialize(requirements:, update_strategy:, latest_resolvable_version:)
-          @requirements = requirements
+          @requirements = T.let(
+            requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
+            T::Array[Dependabot::DependencyRequirement]
+          )
           @update_strategy = update_strategy
           @latest_resolvable_version = T.let(
             (Conda::Version.new(latest_resolvable_version) if latest_resolvable_version),
@@ -38,7 +42,7 @@ module Dependabot
           )
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_requirements
           return requirements if update_strategy.lockfile_only?
           return requirements unless latest_resolvable_version
@@ -59,25 +63,33 @@ module Dependabot
 
         private
 
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_requirement_if_needed(req)
           return req if new_version_satisfies?(req)
 
           update_requirement(req)
         end
 
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_requirement(req)
-          return req unless req[:requirement]
-          return req if ["", "*"].include?(req[:requirement])
+          requirement = req.requirement_string
+          return req unless requirement
+          return req if ["", "*"].include?(requirement)
 
-          requirement_strings = req[:requirement].split(",").map(&:strip)
+          requirement_strings = requirement.split(",").map(&:strip)
           new_req = calculate_updated_requirement(req, requirement_strings)
 
-          new_req == :unfixable ? req.merge(requirement: :unfixable) : req.merge(requirement: new_req)
+          Dependabot::DependencyRequirement.create(
+            new_req == :unfixable ? req.merge(requirement: :unfixable) : req.merge(requirement: new_req)
+          )
         end
 
-        sig { params(req: T::Hash[Symbol, T.untyped], requirement_strings: T::Array[String]).returns(T.any(String, Symbol)) }
+        sig do
+          params(
+            req: Dependabot::DependencyRequirement,
+            requirement_strings: T::Array[String]
+          ).returns(T.any(String, Symbol))
+        end
         def calculate_updated_requirement(req, requirement_strings)
           # Step 1: Check for equality match first (e.g., "==1.21.0" or bare "1.21.0")
           return handle_equality_match(requirement_strings) if equality_match?(requirement_strings)
@@ -99,28 +111,33 @@ module Dependabot
           find_and_update_equality_match(requirement_strings, latest_resolvable_version)
         end
 
-        sig { params(req: T::Hash[Symbol, T.untyped], requirement_strings: T::Array[String]).returns(T.any(String, Symbol)) }
+        sig do
+          params(
+            req: Dependabot::DependencyRequirement,
+            requirement_strings: T::Array[String]
+          ).returns(T.any(String, Symbol))
+        end
         def handle_range_requirement(req, requirement_strings)
           # Only skip update if using BumpVersionsIfNecessary strategy and version already satisfies
           # For BumpVersions strategy, always update to the new version
           if update_strategy == RequirementsUpdateStrategy::BumpVersionsIfNecessary &&
              new_version_satisfies?(req)
-            return req[:requirement]
+            return T.must(req.requirement)
           end
 
           update_requirements_range(requirement_strings)
         end
 
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T.any(String, Symbol)) }
+        sig { params(req: Dependabot::DependencyRequirement).returns(T.any(String, Symbol)) }
         def handle_single_constraint(req)
           # Only skip update if using BumpVersionsIfNecessary strategy and version already satisfies
           # For BumpVersions strategy, always update to the new version
           if update_strategy == RequirementsUpdateStrategy::BumpVersionsIfNecessary &&
              new_version_satisfies?(req)
-            return req[:requirement]
+            return T.must(req.requirement)
           end
 
-          bump_version_string(req[:requirement], T.must(latest_resolvable_version).to_s)
+          bump_version_string(T.must(req.requirement_string), T.must(latest_resolvable_version).to_s)
         end
 
         sig do
@@ -156,23 +173,25 @@ module Dependabot
           "#{operator}#{latest_version}"
         end
 
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def widen_requirement(req)
-          return req unless req[:requirement]
-          return req if ["", "*"].include?(req[:requirement])
+          requirement = req.requirement_string
+          return req unless requirement
+          return req if ["", "*"].include?(requirement)
 
           # For WidenRanges, always widen to ensure proper upper bounds
           # Don't return early even if version satisfies - we want to add/update bounds
-          new_requirement = widen_requirement_string(req[:requirement])
-          req.merge(requirement: new_requirement)
+          new_requirement = widen_requirement_string(requirement)
+          Dependabot::DependencyRequirement.create(req.merge(requirement: new_requirement))
         end
 
-        sig { params(req: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
+        sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
         def new_version_satisfies?(req)
-          return false unless req[:requirement]
+          requirement = req.requirement_string
+          return false unless requirement
 
           Conda::Requirement
-            .requirements_array(req[:requirement])
+            .requirements_array(requirement)
             .all? { |r| r.satisfied_by?(T.must(latest_resolvable_version)) }
         end
 

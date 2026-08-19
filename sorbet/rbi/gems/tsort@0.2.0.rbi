@@ -119,7 +119,7 @@
 # R. E. Tarjan, "Depth First Search and Linear Graph Algorithms",
 # <em>SIAM Journal on Computing</em>, Vol. 1, No. 2, pp. 146-160, June 1972.
 #
-# source://tsort//lib/tsort.rb#124
+# pkg:gem/tsort#lib/tsort.rb:124
 module TSort
   # The iterator version of the #strongly_connected_components method.
   # <tt><em>obj</em>.each_strongly_connected_component</tt> is similar to
@@ -150,7 +150,7 @@ module TSort
   #   #   [2, 3]
   #   #   [1]
   #
-  # source://tsort//lib/tsort.rb#316
+  # pkg:gem/tsort#lib/tsort.rb:316
   def each_strongly_connected_component(&block); end
 
   # Iterates over strongly connected component in the subgraph reachable from
@@ -179,7 +179,7 @@ module TSort
   #   #=> [4]
   #   #   [2, 3]
   #
-  # source://tsort//lib/tsort.rb#386
+  # pkg:gem/tsort#lib/tsort.rb:386
   def each_strongly_connected_component_from(node, id_map = T.unsafe(nil), stack = T.unsafe(nil), &block); end
 
   # Returns strongly connected components as an array of arrays of nodes.
@@ -201,7 +201,7 @@ module TSort
   #   graph = G.new({1=>[2], 2=>[3, 4], 3=>[2], 4=>[]})
   #   p graph.strongly_connected_components #=> [[4], [2, 3], [1]]
   #
-  # source://tsort//lib/tsort.rb#257
+  # pkg:gem/tsort#lib/tsort.rb:257
   def strongly_connected_components; end
 
   # Returns a topologically sorted array of nodes.
@@ -225,7 +225,7 @@ module TSort
   #   graph = G.new({1=>[2], 2=>[3, 4], 3=>[2], 4=>[]})
   #   p graph.tsort # raises TSort::Cyclic
   #
-  # source://tsort//lib/tsort.rb#152
+  # pkg:gem/tsort#lib/tsort.rb:152
   def tsort; end
 
   # The iterator version of the #tsort method.
@@ -251,25 +251,21 @@ module TSort
   #   #   3
   #   #   1
   #
-  # source://tsort//lib/tsort.rb#205
+  # pkg:gem/tsort#lib/tsort.rb:205
   def tsort_each(&block); end
 
   # Should be implemented by a extended class.
   #
   # #tsort_each_child is used to iterate for child nodes of _node_.
   #
-  # @raise [NotImplementedError]
-  #
-  # source://tsort//lib/tsort.rb#452
+  # pkg:gem/tsort#lib/tsort.rb:452
   def tsort_each_child(node); end
 
   # Should be implemented by a extended class.
   #
   # #tsort_each_node is used to iterate for all nodes over a graph.
   #
-  # @raise [NotImplementedError]
-  #
-  # source://tsort//lib/tsort.rb#444
+  # pkg:gem/tsort#lib/tsort.rb:444
   def tsort_each_node; end
 
   class << self
@@ -296,7 +292,7 @@ module TSort
     #   #   [2, 3]
     #   #   [1]
     #
-    # source://tsort//lib/tsort.rb#345
+    # pkg:gem/tsort#lib/tsort.rb:345
     def each_strongly_connected_component(each_node, each_child); end
 
     # Iterates over strongly connected components in a graph.
@@ -320,7 +316,7 @@ module TSort
     #   #   [2, 3]
     #   #   [1]
     #
-    # source://tsort//lib/tsort.rb#411
+    # pkg:gem/tsort#lib/tsort.rb:411
     def each_strongly_connected_component_from(node, each_child, id_map = T.unsafe(nil), stack = T.unsafe(nil)); end
 
     # Returns strongly connected components as an array of arrays of nodes.
@@ -343,7 +339,7 @@ module TSort
     #   p TSort.strongly_connected_components(each_node, each_child)
     #   #=> [[4], [2, 3], [1]]
     #
-    # source://tsort//lib/tsort.rb#283
+    # pkg:gem/tsort#lib/tsort.rb:283
     def strongly_connected_components(each_node, each_child); end
 
     # Returns a topologically sorted array of nodes.
@@ -366,7 +362,7 @@ module TSort
     #   each_child = lambda {|n, &b| g[n].each(&b) }
     #   p TSort.tsort(each_node, each_child) # raises TSort::Cyclic
     #
-    # source://tsort//lib/tsort.rb#178
+    # pkg:gem/tsort#lib/tsort.rb:178
     def tsort(each_node, each_child); end
 
     # The iterator version of the TSort.tsort method.
@@ -384,10 +380,10 @@ module TSort
     #   #   3
     #   #   1
     #
-    # source://tsort//lib/tsort.rb#226
+    # pkg:gem/tsort#lib/tsort.rb:226
     def tsort_each(each_node, each_child); end
   end
 end
 
-# source://tsort//lib/tsort.rb#126
+# pkg:gem/tsort#lib/tsort.rb:126
 TSort::VERSION = T.let(T.unsafe(nil), String)

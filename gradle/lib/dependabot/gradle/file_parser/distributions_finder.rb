@@ -26,30 +26,34 @@ module Dependabot
           version = match.fetch("version")
 
           requirements = T.let(
-            [{
-              requirement: version,
-              file: properties_file.name,
-              source: {
-                type: Distributions::DISTRIBUTION_DEPENDENCY_TYPE,
-                url: distribution_url,
-                property: "distributionUrl"
-              },
-              groups: []
-            }],
-            T::Array[T::Hash[Symbol, T.untyped]]
+            [DependencyRequirement.create(
+              {
+                requirement: version,
+                file: properties_file.name,
+                source: {
+                  type: Distributions::DISTRIBUTION_DEPENDENCY_TYPE,
+                  url: distribution_url,
+                  property: "distributionUrl"
+                },
+                groups: []
+              }
+            )],
+            T::Array[Dependabot::DependencyRequirement]
           )
 
           if checksum
-            requirements << {
-              requirement: checksum,
-              file: properties_file.name,
-              source: {
-                type: Distributions::DISTRIBUTION_DEPENDENCY_TYPE,
-                url: "#{distribution_url}.sha256",
-                property: "distributionSha256Sum"
-              },
-              groups: []
-            }
+            requirements << DependencyRequirement.create(
+              {
+                requirement: checksum,
+                file: properties_file.name,
+                source: {
+                  type: Distributions::DISTRIBUTION_DEPENDENCY_TYPE,
+                  url: "#{distribution_url}.sha256",
+                  property: "distributionSha256Sum"
+                },
+                groups: []
+              }
+            )
           end
 
           Dependency.new(

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -19,7 +19,7 @@ module Dependabot
       attr_reader :build_info
 
       VERSION_PATTERN = T.let(Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.]+)?', String)
-      ANCHORED_VERSION_PATTERN = T.let(/\A\s*(#{VERSION_PATTERN})?\s*\z/, Regexp)
+      ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
       sig { override.params(version: VersionParameter).returns(T::Boolean) }
       def self.correct?(version)
@@ -48,7 +48,7 @@ module Dependabot
         "#<#{self.class} #{@version_string}>"
       end
 
-      sig { params(other: T.untyped).returns(T.nilable(Integer)) }
+      sig { params(other: Object).returns(T.nilable(Integer)) }
       def <=>(other)
         version_comparison = super
         return version_comparison unless version_comparison&.zero?

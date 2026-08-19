@@ -418,6 +418,161 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           )
         )
       end
+
+      it "keeps native Bundler cooldown enabled for the regular update" do
+        checker.latest_version
+
+        expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
+          hash_including(options: hash_including(security_updates_only: false))
+        )
+      end
+
+      context "when the Gemfile source defines a cooldown" do
+        let(:dependency_files) { bundler_project_dependency_files("gemfile_with_cooldown") }
+        let(:expected_cooldown_options) do
+          Dependabot::Package::ReleaseCooldownOptions.new(
+            default_days: 14,
+            semver_major_days: 14,
+            semver_minor_days: 14,
+            semver_patch_days: 14,
+            include: [],
+            exclude: []
+          )
+        end
+
+        context "without a dependabot cooldown configured" do
+          let(:update_cooldown) { nil }
+
+          it "derives cooldown_options from the Gemfile source cooldown" do
+            checker.latest_version
+
+            expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
+              hash_including(
+                cooldown_options: an_object_having_attributes(
+                  default_days: expected_cooldown_options.default_days,
+                  semver_major_days: expected_cooldown_options.semver_major_days,
+                  semver_minor_days: expected_cooldown_options.semver_minor_days,
+                  semver_patch_days: expected_cooldown_options.semver_patch_days,
+                  include: expected_cooldown_options.include,
+                  exclude: expected_cooldown_options.exclude
+                )
+              )
+            )
+          end
+        end
+
+        context "with a dependabot cooldown configured" do
+          let(:update_cooldown) do
+            Dependabot::Package::ReleaseCooldownOptions.new(
+              default_days: 7,
+              semver_major_days: 30,
+              semver_minor_days: 10,
+              semver_patch_days: 3,
+              include: ["business"],
+              exclude: ["statesman"]
+            )
+          end
+
+          it "floors every semver tier to the source cooldown and drops include/exclude" do
+            checker.latest_version
+
+            expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
+              hash_including(
+                cooldown_options: an_object_having_attributes(
+                  default_days: 14,
+                  semver_major_days: 30,
+                  semver_minor_days: 14,
+                  semver_patch_days: 14,
+                  include: [],
+                  exclude: []
+                )
+              )
+            )
+          end
+        end
+
+        context "with a security advisory" do
+          let(:update_cooldown) { nil }
+          let(:security_advisories) do
+            [
+              Dependabot::SecurityAdvisory.new(
+                dependency_name: dependency_name,
+                package_manager: "bundler",
+                vulnerable_versions: ["<= 1.4.0"]
+              )
+            ]
+          end
+
+          it "does not derive cooldown_options from the Gemfile source cooldown" do
+            checker.latest_version
+
+            expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
+              hash_including(cooldown_options: nil)
+            )
+          end
+
+          it "disables native Bundler cooldown for the security update" do
+            checker.latest_version
+
+            expect(Dependabot::Bundler::UpdateChecker::LatestVersionFinder).to have_received(:new).with(
+              hash_including(options: hash_including(security_updates_only: true))
+            )
+          end
+        end
+      end
+    end
+  end
+
+  describe "native Bundler cooldown env for a Bundler 4 project" do
+    let(:dependency_files) { bundler_project_dependency_files("gemfile_with_cooldown_bundler4") }
+
+    before do
+      # Stub only the lowest-level subprocess boundary so the public update path runs
+      # without a real Bundler resolve, while run_bundler_subprocess still builds the
+      # env. "default" is the source type returned for the RubyGems remote probe.
+      allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess).and_return("default")
+      stub_request(:get, rubygems_url + "versions/business.json")
+        .to_return(status: 200, body: fixture("ruby", "rubygems_response_versions.json"))
+    end
+
+    context "when performing a regular update" do
+      it "invokes the Bundler 4 helper with native cooldown left enabled" do
+        checker.latest_version
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_helper_subprocess)
+          .with(
+            command: a_string_including("v4"),
+            function: anything,
+            args: anything,
+            env: hash_excluding("BUNDLE_COOLDOWN")
+          )
+          .at_least(:once)
+      end
+    end
+
+    context "when performing a security update" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "bundler",
+            vulnerable_versions: ["< 999"]
+          )
+        ]
+      end
+
+      it "invokes the Bundler 4 helper with native cooldown disabled" do
+        checker.latest_version
+
+        expect(Dependabot::SharedHelpers).to have_received(:run_helper_subprocess)
+          .with(
+            command: a_string_including("v4"),
+            function: anything,
+            args: anything,
+            env: hash_including("BUNDLE_COOLDOWN" => "0")
+          )
+          .at_least(:once)
+      end
     end
   end
 
@@ -1027,6 +1182,50 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             it "fetches the latest SHA-1 hash of the latest version tag" do
               expect(checker.latest_resolvable_version)
                 .to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
+            end
+
+            context "when a cooldown period is configured" do
+              let(:update_cooldown) do
+                Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+              end
+
+              before do
+                allow_any_instance_of(Dependabot::GitCommitChecker)
+                  .to receive(:refs_for_tag_with_detail)
+                  .and_return(
+                    [
+                      Dependabot::GitTagWithDetail.new(tag: "v1.11.1", release_date: "2018-01-02"),
+                      Dependabot::GitTagWithDetail.new(
+                        tag: "v1.13.0",
+                        release_date: Time.now.strftime("%Y-%m-%d")
+                      )
+                    ]
+                  )
+              end
+
+              it "skips the version tag still within its cooldown window" do
+                expect(checker.latest_version)
+                  .to eq("c170ea081c121c00ed6fe8764e3557e731454b9d")
+              end
+
+              context "when there is no cooldown (e.g. a security update)" do
+                let(:update_cooldown) { nil }
+
+                it "uses the latest version tag" do
+                  expect(checker.latest_version)
+                    .to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
+                end
+              end
+
+              context "when the Gemfile source declares a cooldown" do
+                let(:dependency_files) { bundler_project_dependency_files("git_source_with_cooldown") }
+                let(:update_cooldown) { nil }
+
+                it "does not apply the RubyGems source cooldown to git tag selection" do
+                  expect(checker.latest_version)
+                    .to eq("37f41032a0f191507903ebbae8a5c0cb945d7585")
+                end
+              end
             end
 
             context "when the dependency has never been released" do

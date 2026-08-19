@@ -44,7 +44,7 @@ RUN ARCH=$([ $TARGETARCH = "arm64" ] && echo "arm64" || echo "x64") \
 
 # Install .NET SDK
 # these versions should be kept in sync with the files `.devcontainer/devcontainer.json` and `nuget/helpers/lib/NuGetUpdater/global.json`
-ARG DOTNET_SDK_VERSIONS="8.0.418 9.0.311 10.0.103"
+ARG DOTNET_SDK_VERSIONS="8.0.424 9.0.317 10.0.400"
 ARG DOTNET_SDK_INSTALL_URL=https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh
 ENV DOTNET_INSTALL_DIR=/usr/local/dotnet/current
 ENV DOTNET_INSTALL_SCRIPT_PATH=/tmp/dotnet-install.sh
@@ -86,6 +86,9 @@ RUN chmod +x $DEPENDABOT_HOME/dependabot-updater/bin/run
 
 # .NET install targeting packs
 RUN pwsh $DEPENDABOT_HOME/dependabot-updater/bin/install-targeting-packs.ps1
+
+# Extract the Dependabot gem version for runtime use
+RUN sed -n 's/.*VERSION = "\(.*\)"/\1/p' $DEPENDABOT_HOME/common/lib/dependabot.rb > $DEPENDABOT_HOME/.dependabot-version
 
 # Enable MSBuild operations with a shallow clone for repos that use the Nerdbank.GitVersioning package
 ENV NBGV_GitEngine=Disabled

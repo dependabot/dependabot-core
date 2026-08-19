@@ -1,8 +1,9 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
 require "dependabot/dependency_file"
+require "dependabot/maven/shared/property_value_finding"
 
 module Dependabot
   module Maven
@@ -20,7 +21,7 @@ module Dependabot
 
         sig { params(dependency_files: T::Array[DependencyFile]).void }
         def initialize(dependency_files:)
-          @dependency_files = T.let(dependency_files, T::Array[DependencyFile])
+          @dependency_files = dependency_files
         end
 
         sig do
@@ -67,7 +68,7 @@ module Dependabot
         sig { returns(T::Array[DependencyFile]) }
         attr_reader :dependency_files
 
-        sig { abstract.returns(T.untyped) }
+        sig { abstract.returns(Dependabot::Maven::Shared::PropertyValueFinding) }
         def property_value_finder; end
 
         sig { params(previous_value: String).returns(Regexp) }
