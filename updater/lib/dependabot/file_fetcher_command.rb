@@ -294,7 +294,7 @@ module Dependabot
       end
     end
 
-    sig { void }
+    sig { override.void }
     def dependabot_ref_namespace_available?
       dependabot_branch = "dependabot"
       begin
@@ -313,7 +313,7 @@ module Dependabot
       end
     end
 
-    sig { void }
+    sig { override.void }
     def validate_target_branch
       return unless job.source.branch
 
@@ -344,7 +344,7 @@ module Dependabot
       file_fetcher.clone_repo_contents
     end
 
-    sig { returns(T::Boolean) }
+    sig { override.returns(T::Boolean) }
     def already_cloned?
       return false unless Environment.repo_contents_path
 
