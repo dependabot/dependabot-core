@@ -880,7 +880,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
           ""
         end
 
-        updater.send(:run_pnpm_install)
+        updated_pnpm_lock_content
 
         expect(commands).not_to be_empty
         expect(commands.join(" ")).not_to include("trustLockfile")
@@ -1057,6 +1057,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
             project_dependency_files(project_name) +
               [Dependabot::DependencyFile.new(
                 name: "pnpm-workspace.yaml", content: "trustPolicy: 'no-downgrade'\n"
+              )]
+          end
+
+          it "does not disable the repo's supply-chain verification" do
+            commands = []
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |cmd, **|
+              commands << cmd
+              ""
+            end
+
+            updated_pnpm_lock_content
+
+            expect(commands).not_to be_empty
+            expect(commands.join(" ")).not_to include("trustLockfile")
+          end
+        end
+
+        context "when the repo configures trustPolicy in flow style" do
+          let(:files) do
+            project_dependency_files(project_name) +
+              [Dependabot::DependencyFile.new(
+                name: "pnpm-workspace.yaml", content: "{ trustPolicy: no-downgrade }\n"
               )]
           end
 

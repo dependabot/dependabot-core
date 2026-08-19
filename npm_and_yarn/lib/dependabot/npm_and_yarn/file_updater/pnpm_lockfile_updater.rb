@@ -111,6 +111,9 @@ module Dependabot
         # minimumReleaseAge/trustPolicy to entries already in the lockfile, without
         # relaxing the gate for versions pnpm resolves now.
         PNPM_TRUST_LOCKFILE_VERSION = "11.3"
+        # pnpm-workspace.yaml settings that govern verification of loaded lockfile
+        # entries, and so must not be overridden by `trustLockfile=true`.
+        LOCKFILE_VERIFICATION_SETTINGS = T.let(%w(trustLockfile trustPolicy).freeze, T::Array[String])
 
         UNREACHABLE_GIT = %r{Command failed with exit code 128: git ls-remote (?<url>.*github\.com/[^/]+/[^ ]+)}
         UNREACHABLE_GIT_V8 = %r{ERR_PNPM_FETCH_404[ [^:print]]+GET (?<url>https://codeload\.github\.com/[^/]+/[^/]+)/}
@@ -435,14 +438,17 @@ module Dependabot
           dependency_files.any? do |file|
             next false unless File.basename(file.name) == "pnpm-workspace.yaml"
 
-            content = file.content.to_s
-            yaml_setting_present?(content, "trustLockfile") || yaml_setting_present?(content, "trustPolicy")
+            workspace_setting_names(file.content.to_s).intersect?(LOCKFILE_VERIFICATION_SETTINGS)
           end
         end
 
-        sig { params(content: String, key: String).returns(T::Boolean) }
-        def yaml_setting_present?(content, key)
-          content.match?(/^\s*["']?#{Regexp.escape(key)}["']?\s*:/)
+        # Top-level keys of a pnpm-workspace.yaml. Parsed as YAML rather than
+        # matched per line so flow-style mappings (`{ trustPolicy: no-downgrade }`)
+        # are seen.
+        sig { params(content: String).returns(T::Array[String]) }
+        def workspace_setting_names(content)
+          parsed = YAML.safe_load(content, aliases: true)
+          parsed.is_a?(Hash) ? parsed.keys.map(&:to_s) : []
         end
 
         # pnpm 10.x ignores `minimumReleaseAge` when `shared-workspace-lockfile` is
