@@ -1,0 +1,12 @@
+{
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^12.0"
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/org/private-package.git"
+        }
+    ]
+}

@@ -1469,5 +1469,68 @@ RSpec.describe Dependabot::Python::FileParser do
         expect(dependencies.map(&:name)).to contain_exactly("numpy", "scipy")
       end
     end
+
+    context "with requires-poetry constraint in pyproject.toml" do
+      let(:files) { [pyproject, poetry_lock] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", pyproject_fixture)
+        )
+      end
+      let(:poetry_lock) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("poetry_locks", "poetry.lock")
+        )
+      end
+
+      context "when the constraint is satisfied by the installed version" do
+        let(:pyproject_fixture) { "requires_poetry_satisfied.toml" }
+
+        it "populates the requirement on the package manager" do
+          ecosystem = parser.ecosystem
+
+          expect(ecosystem.package_manager.name).to eq("poetry")
+          expect(ecosystem.package_manager.requirement).not_to be_nil
+          expect(ecosystem.package_manager.requirement.to_s).to include(">= 2.0")
+        end
+      end
+
+      context "when the constraint is not satisfied by the installed version" do
+        let(:pyproject_fixture) { "requires_poetry_not_satisfied.toml" }
+
+        it "raises ToolVersionNotSupported when raise_if_unsupported! is called" do
+          ecosystem = parser.ecosystem
+
+          expect { ecosystem.raise_if_unsupported! }.to raise_error(Dependabot::ToolVersionNotSupported) do |error|
+            expect(error.tool_name).to eq("poetry")
+            expect(error.supported_versions).to eq(">= 3.0")
+          end
+        end
+      end
+
+      context "when the constraint has multiple parts" do
+        let(:pyproject_fixture) { "requires_poetry_complex.toml" }
+
+        it "populates the requirement on the package manager" do
+          ecosystem = parser.ecosystem
+
+          expect(ecosystem.package_manager.name).to eq("poetry")
+          expect(ecosystem.package_manager.requirement).not_to be_nil
+        end
+      end
+
+      context "when requires-poetry is absent" do
+        let(:pyproject_fixture) { "basic_poetry_dependencies.toml" }
+
+        it "has no requirement on the package manager" do
+          ecosystem = parser.ecosystem
+
+          expect(ecosystem.package_manager.name).to eq("poetry")
+          expect(ecosystem.package_manager.requirement).to be_nil
+        end
+      end
+    end
   end
 end

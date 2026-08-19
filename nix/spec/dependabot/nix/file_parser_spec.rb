@@ -67,7 +67,7 @@ RSpec.describe Dependabot::Nix::FileParser do
             source: {
               type: "git",
               url: "https://github.com/NixOS/nixpkgs",
-              branch: "nixos-unstable",
+              branch: nil,
               ref: "nixos-unstable"
             },
             groups: []
@@ -113,6 +113,15 @@ RSpec.describe Dependabot::Nix::FileParser do
       end
     end
 
+    context "with a commit-pinned (bare SHA) input that should be skipped" do
+      let(:flake_lock_content) { fixture("flake_with_rev_pinned.lock") }
+
+      it "skips inputs pinned to an immutable revision" do
+        expect(dependencies.length).to eq(1)
+        expect(dependencies.first.name).to eq("nixpkgs")
+      end
+    end
+
     context "with gitlab inputs" do
       let(:flake_lock_content) { fixture("flake_with_gitlab.lock") }
 
@@ -146,6 +155,70 @@ RSpec.describe Dependabot::Nix::FileParser do
         dep = dependencies.find { |d| d.name == "internal-lib" }
         expect(dep.requirements.first[:source][:url])
           .to eq("https://github.corp.example.com/myteam/internal-lib")
+      end
+    end
+
+    context "with a NixOS channel tarball input" do
+      let(:flake_lock_content) { fixture("flake_with_tarball.lock") }
+
+      it "parses the tarball channel input" do
+        nixpkgs = dependencies.find { |d| d.name == "nixpkgs" }
+        expect(nixpkgs).to be_a(Dependabot::Dependency)
+        expect(nixpkgs.version).to eq("bd0ff2d3eac24699c3664d5966b9ef36f388e2ca")
+        expect(nixpkgs.requirements).to eq(
+          [{
+            requirement: nil,
+            file: "flake.lock",
+            source: {
+              type: "tarball",
+              url: "https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz",
+              branch: nil,
+              ref: "nixos-26.05"
+            },
+            groups: []
+          }]
+        )
+      end
+
+      it "still parses git-backed inputs alongside it" do
+        expect(dependencies.map(&:name)).to contain_exactly("nixpkgs", "flake-utils")
+        flake_utils = dependencies.find { |d| d.name == "flake-utils" }
+        expect(flake_utils.requirements.first[:source][:type]).to eq("git")
+      end
+    end
+
+    context "with a non-NixOS tarball input" do
+      let(:flake_lock_content) do
+        <<~JSON
+          {
+            "nodes": {
+              "some-tarball": {
+                "locked": {
+                  "lastModified": 1700000000,
+                  "narHash": "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+                  "rev": "1111111111111111111111111111111111111111",
+                  "type": "tarball",
+                  "url": "https://example.com/archive/v1.0.0.tar.gz"
+                },
+                "original": {
+                  "type": "tarball",
+                  "url": "https://example.com/archive/v1.0.0.tar.gz"
+                }
+              },
+              "root": {
+                "inputs": {
+                  "some-tarball": "some-tarball"
+                }
+              }
+            },
+            "root": "root",
+            "version": 7
+          }
+        JSON
+      end
+
+      it "skips tarball inputs that are not NixOS channels" do
+        expect(dependencies).to be_empty
       end
     end
   end

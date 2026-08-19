@@ -27,10 +27,10 @@ public class MSBuildHelperTests : TestBase
 
         Dependency[] expectedDependencies =
         [
-            new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["netstandard2.0"], IsDirect: true),
-            new("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Package.C", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
-            new("Package.D", "4.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTransitive: true),
+            new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["netstandard2.0"]),
+            new("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTopLevel: false),
+            new("Package.C", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTopLevel: false),
+            new("Package.D", "4.0.0", DependencyType.Unknown, TargetFrameworks: ["netstandard2.0"], IsTopLevel: false),
         ];
         var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
             temp.DirectoryPath,
@@ -105,58 +105,58 @@ public class MSBuildHelperTests : TestBase
 
         Dependency[] expectedDependencies =
         [
-            new("Package.1A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-            new("Package.1B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1C", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1D", "4.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1E", "5.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1F", "6.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1G", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1H", "8.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1I", "9.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1J", "10.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1K", "11.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1L", "12.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1M", "13.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1N", "14.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1O", "15.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1P", "16.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1Q", "17.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1R", "18.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-            new("Package.1S", "19.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1T", "20.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1U", "21.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1V", "22.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1W", "23.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1X", "24.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1Y", "25.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.1Z", "26.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-            new("Package.2B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2C", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2D", "4.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2E", "5.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2F", "6.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2G", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2H", "8.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2I", "9.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2J", "10.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2K", "11.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2L", "12.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2M", "13.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2N", "14.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2O", "15.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2P", "16.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2Q", "17.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2R", "18.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect : true),
-            new("Package.2S", "19.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2T", "20.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2U", "21.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2V", "22.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2W", "23.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2X", "24.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2Y", "25.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
-            new("Package.2Z", "26.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.1A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+            new("Package.1B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1C", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1D", "4.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1E", "5.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1F", "6.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1G", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1H", "8.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1I", "9.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1J", "10.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1K", "11.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1L", "12.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1M", "13.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1N", "14.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1O", "15.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1P", "16.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1Q", "17.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1R", "18.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+            new("Package.1S", "19.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1T", "20.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1U", "21.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1V", "22.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1W", "23.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1X", "24.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1Y", "25.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.1Z", "26.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+            new("Package.2B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2C", "3.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2D", "4.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2E", "5.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2F", "6.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2G", "7.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2H", "8.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2I", "9.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2J", "10.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2K", "11.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2L", "12.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2M", "13.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2N", "14.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2O", "15.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2P", "16.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2Q", "17.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2R", "18.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+            new("Package.2S", "19.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2T", "20.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2U", "21.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2V", "22.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2W", "23.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2X", "24.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2Y", "25.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
+            new("Package.2Z", "26.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
         ];
         var packages = new[]
         {
@@ -196,8 +196,8 @@ public class MSBuildHelperTests : TestBase
 
         Dependency[] expectedDependencies =
         [
-            new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-            new("Package.B", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
+            new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+            new("Package.B", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
         ];
         var packages = new[]
         {
@@ -269,8 +269,8 @@ public class MSBuildHelperTests : TestBase
 
         Dependency[] expectedDependencies =
         [
-            new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect : true),
-            new("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true),
+            new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+            new("Package.B", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false),
         ];
 
         var actualDependencies = await MSBuildHelper.GetAllPackageDependenciesAsync(
@@ -479,6 +479,30 @@ public class MSBuildHelperTests : TestBase
         yield return
         [
             // output
+            "error : End of Central Directory record could not be found.",
+            // expectedError
+            new PrivateSourceBadResponse(["http://localhost/test-feed"], "unused"),
+        ];
+
+        yield return
+        [
+            // output
+            "The content at 'https://nuget.example.com/v3/some.package/index.json' is not a valid JSON object.",
+            // expectedError
+            new PrivateSourceBadResponse(["https://nuget.example.com/v3/some.package/index.json"], "unused"),
+        ];
+
+        yield return
+        [
+            // a generic 404 (e.g., a misconfigured credential in a `packages.config` scenario) is reported as a bad response
+            // output
+            "Failed to fetch results from V2 feed at 'https://nuget.example.com/FindPackagesById()?id='Some.Package'&semVerLevel=2.0.0' with following message : Response status code does not indicate success: 404 (Not Found)",
+            // expectedError
+            new PrivateSourceBadResponse(["https://nuget.example.com"], "unused"),
+        ];
+        yield return
+        [
+            // output
             "The file is not a valid nupkg.",
             // expectedError
             new PrivateSourceBadResponse(["http://localhost/test-feed"], "unused"),
@@ -645,6 +669,22 @@ public class MSBuildHelperTests : TestBase
             """,
             // expectedError
             new DependencyFileNotParseable("/path/to/packages.config", "Unexpected XML declaration. The XML declaration must be the first node in the document, and no whitespace characters are allowed to appear before it. Line 1, position 5.")
+        ];
+
+        yield return
+        [
+            // output
+            "Circular dependency detected 'ReactiveProperty 3.6.0 => System.Reactive 3.1.1 => System.Reactive.PlatformServices 6.1.0 => System.Reactive 3.1.1'.",
+            // expectedError
+            new UnknownError(new Exception("Circular dependency detected"), "TEST-JOB-ID"),
+        ];
+
+        yield return
+        [
+            // output
+            "Couldn't find a valid ICU package installed on the system. Set the configuration flag System.Globalization.Invariant to true if you want to run with no globalization support.",
+            // expectedError
+            new UnknownError(new Exception("Couldn't find a valid ICU package installed on the system. Likely EOL SDK."), "TEST-JOB-ID"),
         ];
     }
 }

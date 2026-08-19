@@ -1,11 +1,13 @@
 # typed: strong
 # frozen_string_literal: true
 
-require "sorbet-runtime"
+require "fileutils"
+require "pathname"
 require "shellwords"
+require "sorbet-runtime"
 
-require "dependabot/gradle/file_parser"
 require "dependabot/gradle/file_updater"
+require "dependabot/gradle/file_fetcher/settings_file_parser"
 
 module Dependabot
   module Gradle
@@ -13,81 +15,219 @@ module Dependabot
       class LockfileUpdater
         extend T::Sig
 
-        sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
-        def initialize(dependency_files:)
+        INIT_SCRIPT_TASK_NAME = "dependabotResolveAll"
+        GRADLE_JVMARGS_ATTEMPTS = [
+          "-Xmx1536m -Dfile.encoding=UTF-8",
+          "-Xmx2048m -Dfile.encoding=UTF-8"
+        ].freeze
+        sig do
+          params(
+            dependency_files: T::Array[Dependabot::DependencyFile],
+            repo_contents_path: T.nilable(String)
+          ).void
+        end
+        def initialize(dependency_files:, repo_contents_path: nil)
           @dependency_files = dependency_files
+          @repo_contents_path = repo_contents_path
         end
 
-        sig { params(build_file: Dependabot::DependencyFile).returns(T::Array[Dependabot::DependencyFile]) }
-        def update_lockfiles(build_file)
-          local_lockfiles = dependency_files.select do |file|
-            file.directory == build_file.directory && file.name.end_with?(".lockfile")
-          end
+        sig do
+          params(
+            build_file: Dependabot::DependencyFile,
+            build_files: T::Array[Dependabot::DependencyFile]
+          ).returns(T::Array[Dependabot::DependencyFile])
+        end
+        def update_lockfiles(build_file, build_files: [build_file])
+          root_dir = determine_root_dir(build_file: build_file)
+          lockfiles = lockfiles_for_root(root_dir)
 
-          # If we don't have any lockfiles in the build files don't generate one
-          return dependency_files unless local_lockfiles.any?
+          return dependency_files unless lockfiles.any?
 
           updated_files = dependency_files.dup
+
           SharedHelpers.in_a_temporary_directory do |temp_dir|
             populate_temp_directory(temp_dir)
-            cwd = File.join(temp_dir, build_file.directory, build_file.name)
-            cwd = if build_file.path.end_with?("/gradle/libs.versions.toml")
-                    File.dirname(cwd, 2)
-                  else
-                    File.dirname(cwd)
-                  end
 
-            # Create gradle.properties file with proxy settings
-            # Would prefer to use command line arguments, but they don't work.
-            properties_filename = File.join(temp_dir, build_file.directory, "gradle.properties")
-            write_properties_file(properties_filename)
+            cwd = File.join(temp_dir, root_dir == "/" ? "" : root_dir.delete_prefix("/"))
+            FileUtils.mkdir_p(cwd)
+
+            properties_file_path = File.join(cwd, "gradle.properties")
+
+            init_script_path = File.join(cwd, "dependabot-locking.init.gradle")
+            write_init_script(init_script_path)
 
             command_parts = [
-              "gradle",
-              "dependencies",
-              "--no-daemon",
-              "--write-locks"
+              gradle_executable_for(cwd: cwd, workspace_root: temp_dir.to_s),
+              "--init-script", init_script_path,
+              *lockfile_tasks_for(build_files),
+              "--write-locks",
+              "--no-daemon"
             ]
             command = Shellwords.join(command_parts)
+            run_lockfile_update_with_retry(
+              command: command,
+              cwd: cwd,
+              properties_file_path: properties_file_path
+            )
 
-            Dir.chdir(cwd) do
-              SharedHelpers.run_shell_command(command, cwd: cwd)
-              update_lockfiles_content(temp_dir, local_lockfiles, updated_files)
-            rescue SharedHelpers::HelperSubprocessFailed => e
-              puts "Failed to update lockfiles: #{e.message}"
-              return updated_files
-            end
+            update_lockfiles_content(temp_dir, lockfiles, updated_files)
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            Dependabot.logger.error("Failed to update lockfiles: #{e.message}")
+            return updated_files
           end
+
           updated_files
+        end
+
+        sig { params(build_file: Dependabot::DependencyFile).returns(String) }
+        def determine_root_dir(build_file:)
+          settings_file = find_settings_file(build_file)
+          return normalized_directory_path(settings_file) if settings_file
+
+          file_path = normalized_file_path(build_file)
+          return normalize_path(File.dirname(file_path, 2)) if file_path.end_with?("/gradle/libs.versions.toml")
+
+          normalized_directory_path(build_file)
+        end
+
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
+        def normalized_directory_path(file)
+          file_path = normalized_file_path(file)
+          dir = File.dirname(file_path)
+          dir == "/" ? "/" : normalize_path(dir)
+        end
+
+        sig { params(root_dir: String).returns(T::Array[Dependabot::DependencyFile]) }
+        def lockfiles_for_root(root_dir)
+          sub_build_roots = sub_build_roots_for(root_dir)
+
+          dependency_files.select do |file|
+            next false unless file.name.end_with?(".lockfile")
+
+            file_path = normalized_file_path(file)
+            next false unless path_under_root?(file_path, root_dir)
+
+            sub_build_roots.none? { |sub_root| file_path.start_with?("#{sub_root}/") || file_path == sub_root }
+          end
         end
 
         sig do
           params(
             temp_dir: T.any(Pathname, String),
-            local_lockfiles: T::Array[Dependabot::DependencyFile],
+            lockfiles: T::Array[Dependabot::DependencyFile],
             updated_lockfiles: T::Array[Dependabot::DependencyFile]
           ).void
         end
-        def update_lockfiles_content(temp_dir, local_lockfiles, updated_lockfiles)
-          local_lockfiles.each do |file|
-            f_content = File.read(File.join(temp_dir, file.directory, file.name))
+        def update_lockfiles_content(temp_dir, lockfiles, updated_lockfiles)
+          lockfiles.each do |file|
+            # Handle "/" directory as root - File.join treats "/" as absolute path and ignores prior components
+            relative_dir = file.directory == "/" ? "" : file.directory
+            lockfile_path = File.join(temp_dir, relative_dir, file.name)
+
+            unless File.exist?(lockfile_path)
+              Dependabot.logger.warn(
+                "Lockfile #{file.name} was not regenerated by Gradle after a successful lockfile update run. " \
+                "Preserving existing lockfile."
+              )
+              next
+            end
+
+            content = File.read(lockfile_path)
+            next if content == file.content
+
             tmp_file = file.dup
-            tmp_file.content = f_content
-            updated_lockfiles[T.must(updated_lockfiles.index(file))] = tmp_file
+            tmp_file.content = content
+
+            index = updated_lockfiles.find_index { |f| f.name == file.name }
+            if index
+              updated_lockfiles[index] = tmp_file
+            else
+              updated_lockfiles << tmp_file
+            end
           end
+        end
+
+        private
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        attr_reader :dependency_files
+
+        sig { params(file_path: String, root_dir: String).returns(T::Boolean) }
+        def path_under_root?(file_path, root_dir)
+          root_dir == "/" || file_path == root_dir || file_path.start_with?("#{root_dir}/")
+        end
+
+        # Find all sub-build roots (settings files deeper than root_dir) so we can
+        # exclude lockfiles that belong to an included/composite build.
+        sig { params(root_dir: String).returns(T::Array[String]) }
+        def sub_build_roots_for(root_dir)
+          dependency_files.filter_map do |f|
+            basename = File.basename(f.name)
+            next unless basename == "settings.gradle" || basename == "settings.gradle.kts"
+
+            dir = normalized_directory_path(f)
+            next if dir == root_dir
+
+            dir if path_under_root?(dir, root_dir)
+          end
+        end
+
+        sig { params(file: Dependabot::DependencyFile).returns(String) }
+        def normalized_file_path(file)
+          # Handle "/" directory as root - File.join treats "/" as absolute path and ignores prior components
+          relative_dir = file.directory == "/" ? "" : file.directory
+          path = relative_dir.empty? ? file.name : File.join(relative_dir, file.name)
+          normalize_path(path)
+        end
+
+        sig { params(path: String).returns(String) }
+        def normalize_path(path)
+          normalized = path.squeeze("/")
+          normalized = "/#{normalized}" unless normalized.start_with?("/")
+          normalized = normalized.sub(%r{/$}, "")
+          normalized.empty? ? "/" : normalized
         end
 
         sig { params(temp_dir: T.any(Pathname, String)).void }
         def populate_temp_directory(temp_dir)
+          copy_repo_contents_to_temp_dir(temp_dir, @repo_contents_path)
+
           @dependency_files.each do |file|
-            in_path_name = File.join(temp_dir, file.directory, file.name)
+            # Handle "/" directory as root - File.join treats "/" as absolute path and ignores prior components
+            relative_dir = file.directory == "/" ? "" : file.directory
+            in_path_name = File.join(temp_dir, relative_dir, file.name)
             FileUtils.mkdir_p(File.dirname(in_path_name))
-            File.write(in_path_name, file.content)
+            File.binwrite(in_path_name, file.decoded_content)
           end
         end
 
-        sig { params(file_name: String).void }
-        def write_properties_file(file_name) # rubocop:disable Metrics/PerceivedComplexity
+        sig { params(temp_dir: T.any(Pathname, String), repo_contents_path: T.nilable(String)).void }
+        def copy_repo_contents_to_temp_dir(temp_dir, repo_contents_path)
+          return if repo_contents_path.nil? || repo_contents_path.strip.empty?
+
+          source_dir = Pathname.new(repo_contents_path).expand_path
+          return unless source_dir.directory?
+
+          # Use the full checkout when available to ensure Gradle can compile
+          # convention plugin implementations from non-manifest source trees.
+          Dir.each_child(source_dir.to_s) do |entry|
+            entry = T.let(entry, String)
+            source_entry = File.join(source_dir.to_s, entry)
+            dest_entry = File.join(temp_dir.to_s, entry)
+
+            if entry == ".git"
+              # Some convention plugins shell out to `git` (e.g. for version derivation) and
+              # fail without a working repository. Symlink instead of copying to avoid the
+              # disk/time cost of duplicating the whole history for every lockfile update.
+              File.symlink(source_entry, dest_entry)
+            else
+              FileUtils.cp_r(source_entry, dest_entry)
+            end
+          end
+        end
+
+        sig { params(file_name: String, jvmargs: String, base_content: String).void }
+        def write_properties_file(file_name, jvmargs:, base_content:) # rubocop:disable Metrics/PerceivedComplexity
           http_proxy = ENV.fetch("HTTP_PROXY", nil)
           https_proxy = ENV.fetch("HTTPS_PROXY", nil)
           http_split = http_proxy&.split(":")
@@ -96,18 +236,234 @@ module Dependabot
           https_proxy_host = https_split&.fetch(1, nil)&.gsub("//", "") || "host.docker.internal"
           http_proxy_port = http_split&.fetch(2) || "1080"
           https_proxy_port = https_split&.fetch(2) || "1080"
-          properties_content = "
+
+          existing_jvmargs = base_content[/^org\.gradle\.jvmargs=(.*)$/, 1]
+          # Preserve any existing jvmargs (e.g. --add-opens flags) by merging rather than
+          # replacing them outright; the raw line is dropped from existing_content below
+          # since combined_jvmargs already includes its value.
+          has_existing_jvmargs = existing_jvmargs && !existing_jvmargs.strip.empty?
+          combined_jvmargs = has_existing_jvmargs ? "#{existing_jvmargs.strip} #{jvmargs}" : jvmargs
+          existing_content = base_content.gsub(/^org\.gradle\.jvmargs=.*$\n?/, "")
+
+          proxy_properties = "
+org.gradle.jvmargs=#{combined_jvmargs}
+org.gradle.workers.max=1
+org.gradle.java.installations.auto-download=false
+org.gradle.java.installations.paths=#{installed_gradle_toolchain_paths}
+kotlin.compiler.execution.strategy=in-process
 systemProp.http.proxyHost=#{http_proxy_host}
 systemProp.http.proxyPort=#{http_proxy_port}
 systemProp.https.proxyHost=#{https_proxy_host}
 systemProp.https.proxyPort=#{https_proxy_port}"
-          File.write(file_name, properties_content)
+
+          separator = !existing_content.empty? && !existing_content.end_with?("\n") ? "\n" : ""
+          File.write(file_name, existing_content + separator + proxy_properties)
         end
 
-        private
+        sig { params(command: String, cwd: String, properties_file_path: String).void }
+        def run_lockfile_update_with_retry(command:, cwd:, properties_file_path:)
+          base_content = File.exist?(properties_file_path) ? File.read(properties_file_path) : ""
 
-        sig { returns(T::Array[Dependabot::DependencyFile]) }
-        attr_reader :dependency_files
+          catch(:success) do
+            GRADLE_JVMARGS_ATTEMPTS.each_with_index do |jvmargs, index|
+              write_properties_file(properties_file_path, jvmargs: jvmargs, base_content: base_content)
+              begin
+                SharedHelpers.run_shell_command(command, cwd: cwd)
+                throw :success
+              rescue SharedHelpers::HelperSubprocessFailed => e
+                # If this is the last attempt, re-raise the error
+                raise e if index == GRADLE_JVMARGS_ATTEMPTS.length - 1
+
+                # Only retry if it's a retryable failure
+                raise e unless retryable_daemon_failure?(e)
+
+                Dependabot.logger.warn(
+                  "Gradle build failed with jvmargs '#{jvmargs}'. Retrying once with larger heap size..."
+                )
+              end
+            end
+          end
+        end
+
+        sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
+        def retryable_daemon_failure?(error)
+          message = error.message.downcase
+          # Retry if daemon disappeared
+          if message.include?("daemon disappeared") || message.include?("build daemon disappeared unexpectedly")
+            return true
+          end
+
+          # Retry if process was killed (SIGKILL)
+          return true if T.cast(error.error_context[:process_termsig], T.nilable(Integer)) == SharedHelpers::SIGKILL
+
+          false
+        end
+
+        sig { returns(String) }
+        def installed_gradle_toolchain_paths
+          Dir.glob("/usr/lib/jvm/java-*-openjdk-*").join(",")
+        end
+
+        sig { params(file_name: String).void }
+        def write_init_script(file_name)
+          # Resolve every lockable configuration in one invocation. Not from the task action: that
+          # needs the project, which the configuration cache forbids.
+          script_content = <<~GRADLE
+            allprojects {
+              if (tasks.findByName("#{INIT_SCRIPT_TASK_NAME}") == null) {
+                tasks.create("#{INIT_SCRIPT_TASK_NAME}") { }
+              }
+            }
+
+            gradle.projectsEvaluated {
+              // Prepare every project before resolving anything: with a project dependency,
+              // resolving one project computes the other project's javaCompiler.
+            #{compiler_fallback_snippet}
+
+              gradle.rootProject.allprojects { target ->
+                target.configurations.findAll {
+                  it.canBeResolved &&
+                    it.resolutionStrategy.dependencyLockingEnabled &&
+                    it.allDependencies.any { dependency ->
+                      dependency instanceof org.gradle.api.artifacts.ModuleDependency
+                    }
+                }.each { it.incoming.resolutionResult.allDependencies }
+              }
+            }
+          GRADLE
+          File.write(file_name, script_content)
+        end
+
+        # Resolving computes the compile task's javaCompiler, which fails when the toolchain is
+        # missing. Only the compiler is swapped, so resolution is unaffected.
+        sig { returns(String) }
+        def compiler_fallback_snippet
+          <<~GRADLE.gsub(/^/, "  ")
+            gradle.rootProject.allprojects { target ->
+                // By name: JavaToolchainService only exists from 6.7, locking from 4.8.
+                def javaExtension = target.extensions.findByName("java")
+                def toolchainService = target.extensions.findByName("javaToolchains")
+                if (javaExtension != null && toolchainService != null) {
+                  def toolchain = javaExtension.toolchain
+                  // Toolchains landed in 6.7, vendor and implementation in 6.8, native image in 8.14.
+                  def constraints = ["vendor", "implementation", "nativeImageCapable"].collectEntries { name ->
+                    [(name): toolchain.hasProperty(name) ? toolchain."$name".getOrNull() : null]
+                  }
+                  if (toolchain.languageVersion.present) {
+                    def requested = toolchain.languageVersion.get()
+                    try {
+                      // Throwaway spec: compilerFor finalizes whatever spec it is given.
+                      toolchainService.compilerFor { spec ->
+                        spec.languageVersion.set(requested)
+                        constraints.each { name, value -> if (value != null) spec."$name".set(value) }
+                      }.get()
+                    } catch (Exception ignored) {
+                      def fallback = JavaLanguageVersion.of(JavaVersion.current().majorVersion)
+                      target.logger.lifecycle("Dependabot: Java toolchain " + requested +
+                        " is not available, compiling with " + fallback + " to resolve dependencies.")
+                      def c = toolchainService.compilerFor { s -> s.languageVersion.set(fallback) }
+                      target.tasks.withType(JavaCompile).configureEach { t -> t.javaCompiler.set(c) }
+                      // Kotlin asks for its own toolchain; convention plugins compile during config.
+                      def l = toolchainService.launcherFor { s -> s.languageVersion.set(fallback) }
+                      target.tasks.matching { it.hasProperty("kotlinJavaToolchain") }
+                        .configureEach { t -> t.kotlinJavaToolchain.toolchain.use(l) }
+                    }
+                  }
+                }
+              }
+          GRADLE
+        end
+
+        sig { params(build_files: T::Array[Dependabot::DependencyFile]).returns(T::Array[String]) }
+        def lockfile_tasks_for(build_files)
+          build_files.filter_map { |build_file| dependency_task_for(build_file) }.uniq << INIT_SCRIPT_TASK_NAME
+        end
+
+        sig { params(build_file: Dependabot::DependencyFile).returns(T.nilable(String)) }
+        def dependency_task_for(build_file)
+          settings_file = find_settings_file(build_file)
+          return nil unless settings_file
+
+          root_dir = determine_root_dir(build_file: build_file)
+          file_path = normalized_file_path(build_file)
+          relative_path = path_relative_to_root(file_path, root_dir)
+
+          return nil if relative_path.start_with?("gradle/")
+
+          dirname = File.dirname(relative_path)
+          return nil if dirname == "." || dirname.empty?
+
+          # Look up the canonical Gradle project name from the settings file to handle repos
+          # that use custom projectDir mappings
+          # (e.g. project(':chrome-trace').projectDir = file('subprojects/chrome-trace')).
+          # Deriving the task from the filesystem path alone would produce a wrong Gradle task path.
+          parser = FileFetcher::SettingsFileParser.new(settings_file: settings_file)
+          project_name = parser.subproject_path_to_name_map[dirname]
+          return nil unless project_name
+
+          "#{project_name}:dependencies"
+        end
+
+        sig { params(file_path: String, root_dir: String).returns(String) }
+        def path_relative_to_root(file_path, root_dir)
+          return file_path.sub(%r{^/}, "") if root_dir == "/"
+
+          root_prefix = "#{root_dir}/"
+          return file_path.delete_prefix(root_prefix) if file_path.start_with?(root_prefix)
+
+          file_path.sub(%r{^/}, "")
+        end
+
+        sig { params(cwd: String, workspace_root: String).returns(String) }
+        def gradle_executable_for(cwd:, workspace_root:)
+          cwd_path = Pathname.new(cwd).expand_path
+          workspace_root_path = Pathname.new(workspace_root).expand_path
+
+          return "gradle" unless cwd_path == workspace_root_path || cwd_path.to_s.start_with?("#{workspace_root_path}/")
+
+          search_path = cwd_path
+
+          loop do
+            wrapper_script = search_path.join("gradlew")
+            if File.file?(wrapper_script)
+              wrapper_script_path = wrapper_script.to_s
+              FileUtils.chmod("+x", wrapper_script_path)
+
+              relative_path = wrapper_script.relative_path_from(cwd_path).to_s
+              return relative_path.start_with?(".") ? relative_path : "./#{relative_path}"
+            end
+
+            parent_path = search_path.parent
+            break if parent_path == search_path || search_path == workspace_root_path
+
+            search_path = parent_path
+          end
+
+          "gradle"
+        end
+
+        sig { params(build_file: Dependabot::DependencyFile).returns(T.nilable(Dependabot::DependencyFile)) }
+        def find_settings_file(build_file)
+          settings_files = dependency_files.select do |f|
+            basename = File.basename(f.name)
+            basename == "settings.gradle" || basename == "settings.gradle.kts"
+          end
+
+          return nil if settings_files.empty?
+
+          build_dir = normalized_directory_path(build_file)
+
+          ancestor_settings = settings_files.select do |f|
+            settings_dir = normalized_directory_path(f)
+            path_under_root?(build_dir, settings_dir)
+          end
+
+          return nil if ancestor_settings.empty?
+
+          ancestor_settings.max_by do |f|
+            normalized_directory_path(f).split("/").count { |element| !element.empty? }
+          end
+        end
       end
     end
   end

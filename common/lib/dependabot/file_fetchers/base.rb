@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -19,40 +19,26 @@ require "dependabot/shared_helpers"
 # rubocop:disable Metrics/ClassLength
 module Dependabot
   module FileFetchers
-    class RepositoryContent
-      extend T::Sig
+    class RepositoryContent < T::ImmutableStruct
+      const :name, String
+      const :path, String
+      const :type, String
+      const :size, Integer
+      const :sha, T.nilable(String), default: nil
+    end
 
-      sig { returns(T.nilable(String)) }
-      attr_reader :name
+    class LinkedPath < T::ImmutableStruct
+      const :repo, String
+      const :provider, String
+      const :commit, String
+      const :path, String
+    end
 
-      sig { returns(T.nilable(String)) }
-      attr_reader :path
-
-      sig { returns(T.nilable(String)) }
-      attr_reader :type
-
-      sig { returns(T.nilable(Integer)) }
-      attr_reader :size
-
-      sig { returns(T.nilable(String)) }
-      attr_reader :sha
-
-      sig do
-        params(
-          name: T.nilable(String),
-          path: T.nilable(String),
-          type: T.nilable(String),
-          size: T.nilable(Integer),
-          sha: T.nilable(String)
-        ).void
-      end
-      def initialize(name: nil, path: nil, type: nil, size: nil, sha: nil)
-        @name = name
-        @path = path
-        @type = type
-        @size = size
-        @sha = sha
-      end
+    class RepositorySpecification < T::ImmutableStruct
+      const :provider, String
+      const :repo, String
+      const :path, String
+      const :commit, String
     end
 
     class Base
@@ -70,7 +56,7 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       attr_reader :repo_contents_path
 
-      sig { returns(T::Hash[String, String]) }
+      sig { returns(T::Hash[Symbol, Object]) }
       attr_reader :options
 
       CLIENT_NOT_FOUND_ERRORS = T.let(
@@ -135,7 +121,7 @@ module Dependabot
             source: Dependabot::Source,
             credentials: T::Array[Dependabot::Credential],
             repo_contents_path: T.nilable(String),
-            options: T::Hash[String, String],
+            options: T::Hash[Symbol, Object],
             update_config: T.nilable(Dependabot::Config::UpdateConfig)
           )
           .void
@@ -146,8 +132,9 @@ module Dependabot
         @repo_contents_path = repo_contents_path
         @update_config = T.let(update_config, T.nilable(Dependabot::Config::UpdateConfig))
         @exclude_paths = T.let(update_config&.exclude_paths || [], T::Array[String])
-        @linked_paths = T.let({}, T::Hash[T.untyped, T.untyped])
-        @submodules = T.let([], T::Array[T.untyped])
+        @linked_paths = T.let({}, T::Hash[String, LinkedPath])
+        @submodules = T.let([], T::Array[String])
+        @repo_contents = T.let(nil, T.nilable(T::Hash[String, T::Array[RepositoryContent]]))
         @options = options
 
         @files = T.let([], T::Array[DependencyFile])
@@ -196,12 +183,13 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def commit
-        return T.must(cloned_commit) if cloned_commit
+        resolved_cloned_commit = cloned_commit
+        return resolved_cloned_commit if resolved_cloned_commit
         return T.must(source.commit) if source.commit
 
         branch = target_branch || default_branch_for_repo
 
-        @commit ||= T.let(T.unsafe(client_for_provider).fetch_commit(repo, branch), T.nilable(String))
+        @commit ||= T.let(fetch_commit_for_provider(repo, branch), T.nilable(String))
       rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::BranchNotFound, branch
       rescue Octokit::Conflict => e
@@ -225,7 +213,7 @@ module Dependabot
         raise Dependabot::RepoNotFound.new(source, e.message)
       end
 
-      sig { overridable.returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { overridable.returns(T.nilable(T::Hash[Symbol, T.anything])) }
       def ecosystem_versions; end
 
       sig { abstract.returns(T::Array[DependencyFile]) }
@@ -235,7 +223,9 @@ module Dependabot
 
       sig { params(name: String).returns(T.nilable(Dependabot::DependencyFile)) }
       def fetch_support_file(name)
-        fetch_file_if_present(name)&.tap { |f| f.support_file = true }
+        file = fetch_file_if_present(name)
+        file.support_file = true if file
+        file
       end
 
       sig { params(filename: String, fetch_submodules: T::Boolean).returns(T.nilable(DependencyFile)) }
@@ -303,7 +293,10 @@ module Dependabot
 
         linked_path = symlinked_subpath(clean_path)
         type = "symlink" if linked_path
-        symlink_target = clean_path.sub(T.must(linked_path), @linked_paths.dig(linked_path, :path)) if type == "symlink"
+        if type == "symlink"
+          linked_path_details = T.must(@linked_paths[T.must(linked_path)])
+          symlink_target = clean_path.sub(T.must(linked_path), linked_path_details.path)
+        end
 
         DependencyFile.new(
           name: Pathname.new(filename).cleanpath.to_path,
@@ -324,7 +317,7 @@ module Dependabot
 
       sig { params(path: String).returns(T::Boolean) }
       def in_submodule?(path)
-        subpaths(path.delete_prefix("/")).any? { |subpath| @submodules.include?(subpath) }
+        subpaths(path.delete_prefix("/")).intersect?(@submodules)
       end
 
       # Given a "foo/bar/baz" path, returns ["foo", "foo/bar", "foo/bar/baz"]
@@ -341,7 +334,7 @@ module Dependabot
           raise_errors: T::Boolean,
           fetch_submodules: T::Boolean
         )
-          .returns(T::Array[T.untyped])
+          .returns(T::Array[RepositoryContent])
       end
       def repo_contents(
         dir: ".",
@@ -352,7 +345,7 @@ module Dependabot
         dir = File.join(directory, dir) unless ignore_base_directory
         path = Pathname.new(dir).cleanpath.to_path.gsub(%r{^/*}, "")
 
-        @repo_contents ||= T.let({}, T.nilable(T::Hash[String, T::Array[T.untyped]]))
+        @repo_contents ||= {}
         @repo_contents[dir.to_s] ||= if repo_contents_path
                                        _cloned_repo_contents(path)
                                      else
@@ -377,7 +370,7 @@ module Dependabot
 
       sig { returns(String) }
       def default_branch_for_repo
-        @default_branch_for_repo ||= T.let(T.unsafe(client_for_provider).fetch_default_branch(repo), T.nilable(String))
+        @default_branch_for_repo ||= T.let(fetch_default_branch_for_provider(repo), T.nilable(String))
       rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::RepoNotFound, source
       end
@@ -389,49 +382,54 @@ module Dependabot
           commit: String,
           github_response: Sawyer::Resource
         )
-          .returns(T.nilable(T::Hash[String, T.untyped]))
+          .returns(T.nilable(LinkedPath))
       end
       def update_linked_paths(repo, path, commit, github_response)
-        case T.unsafe(github_response).type
+        case sawyer_string(github_response, :type)
         when "submodule"
-          sub_source = Source.from_url(T.unsafe(github_response).submodule_git_url)
+          submodule_url = sawyer_optional_string(github_response, :submodule_git_url)
+          return unless submodule_url
+
+          sub_source = Source.from_url(submodule_url)
           return unless sub_source
 
-          @linked_paths[path] = {
+          @linked_paths[path] = LinkedPath.new(
             repo: sub_source.repo,
             provider: sub_source.provider,
-            commit: T.unsafe(github_response).sha,
+            commit: sawyer_string(github_response, :sha),
             path: "/"
-          }
+          )
         when "symlink"
-          updated_path = File.join(File.dirname(path), T.unsafe(github_response).target)
-          @linked_paths[path] = {
+          updated_path = File.join(File.dirname(path), sawyer_string(github_response, :target))
+          @linked_paths[path] = LinkedPath.new(
             repo: repo,
             provider: "github",
             commit: commit,
             path: Pathname.new(updated_path).cleanpath.to_path
-          }
+          )
         end
       end
 
-      sig do
-        returns(
-          T.any(
-            Dependabot::Clients::GithubWithRetries,
-            Dependabot::Clients::GitlabWithRetries,
-            Dependabot::Clients::Azure,
-            Dependabot::Clients::BitbucketWithRetries,
-            Dependabot::Clients::CodeCommit
-          )
-        )
-      end
-      def client_for_provider
+      sig { params(repo: String, branch: String).returns(String) }
+      def fetch_commit_for_provider(repo, branch)
         case source.provider
-        when "github" then github_client
-        when "gitlab" then gitlab_client
-        when "azure" then azure_client
-        when "bitbucket" then bitbucket_client
-        when "codecommit" then codecommit_client
+        when "github" then github_client.fetch_commit(repo, branch)
+        when "gitlab" then gitlab_client.fetch_commit(repo, branch)
+        when "azure" then azure_client.fetch_commit(repo, branch)
+        when "bitbucket" then bitbucket_client.fetch_commit(repo, branch)
+        when "codecommit" then codecommit_client.fetch_commit(repo, branch)
+        else raise "Unsupported provider '#{source.provider}'."
+        end
+      end
+
+      sig { params(repo: String).returns(String) }
+      def fetch_default_branch_for_provider(repo)
+        case source.provider
+        when "github" then github_client.fetch_default_branch(repo)
+        when "gitlab" then gitlab_client.fetch_default_branch(repo)
+        when "azure" then azure_client.fetch_default_branch(repo)
+        when "bitbucket" then bitbucket_client.fetch_default_branch(repo)
+        when "codecommit" then codecommit_client.fetch_default_branch(repo)
         else raise "Unsupported provider '#{source.provider}'."
         end
       end
@@ -507,9 +505,11 @@ module Dependabot
       end
       def _fetch_repo_contents(path, fetch_submodules: false, raise_errors: true) # rubocop:disable Metrics/PerceivedComplexity
         path = path.gsub(" ", "%20")
-        provider, repo, tmp_path, commit =
-          _full_specification_for(path, fetch_submodules: fetch_submodules)
-          .values_at(:provider, :repo, :path, :commit)
+        specification = _full_specification_for(path, fetch_submodules: fetch_submodules)
+        provider = specification.provider
+        repo = specification.repo
+        tmp_path = specification.path
+        commit = specification.commit
 
         entries = _fetch_repo_contents_fully_specified(provider, repo, tmp_path, commit)
         if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files)
@@ -528,7 +528,7 @@ module Dependabot
         # a retry to get its contents.
         updated_path =
           _full_specification_for(path, fetch_submodules: fetch_submodules)
-          .fetch(:path)
+          .path
         retry if updated_path != tmp_path
 
         return result.call unless fetch_submodules && !retrying
@@ -563,9 +563,9 @@ module Dependabot
       sig { params(repo: String, path: String, commit: String).returns(T::Array[RepositoryContent]) }
       def _github_repo_contents(repo, path, commit)
         path = path.gsub(" ", "%20")
-        github_response = T.unsafe(github_client).contents(repo, path: path, ref: commit)
+        github_response = github_client.contents(repo, path: path, ref: commit)
 
-        if github_response.respond_to?(:type)
+        if github_response.is_a?(Sawyer::Resource)
           update_linked_paths(repo, path, commit, github_response)
           raise Octokit::NotFound
         end
@@ -605,7 +605,7 @@ module Dependabot
       end
 
       # Filters out any entries whose paths match one of the exclude_paths globs.
-      sig { params(entries: T::Array[T.untyped]).returns(T::Array[T.untyped]) }
+      sig { params(entries: T::Array[RepositoryContent]).returns(T::Array[RepositoryContent]) }
       def filter_excluded(entries)
         Dependabot.logger.info("DEBUG filter_excluded: entries=#{entries.length}, exclude_paths=#{@exclude_paths.inspect}") # rubocop:disable Layout/LineLength
 
@@ -627,31 +627,76 @@ module Dependabot
 
       sig { params(file: Sawyer::Resource).returns(RepositoryContent) }
       def _build_github_file_struct(file)
+        name = sawyer_string(file, :name)
         RepositoryContent.new(
-          name: T.unsafe(file).name,
-          path: T.unsafe(file).path,
-          type: T.unsafe(file).type,
-          sha: T.unsafe(file).sha,
-          size: T.unsafe(file).size
+          name: name,
+          path: sawyer_optional_string(file, :path) || name,
+          type: sawyer_optional_string(file, :type) || "",
+          sha: sawyer_optional_string(file, :sha),
+          size: sawyer_optional_integer(file, :size) || 0
+        )
+      end
+
+      sig { params(resource: Sawyer::Resource, key: Symbol).returns(String) }
+      def sawyer_string(resource, key)
+        value = T.cast(resource[key], Object)
+        return value if value.is_a?(String)
+
+        raise_bad_repository_response("GitHub", "#{key} must be a string")
+      end
+
+      sig { params(resource: Sawyer::Resource, key: Symbol).returns(T.nilable(String)) }
+      def sawyer_optional_string(resource, key)
+        value = T.cast(resource[key], Object)
+        return if value.nil?
+        return value if value.is_a?(String)
+
+        raise_bad_repository_response("GitHub", "#{key} must be a string or nil")
+      end
+
+      sig { params(resource: Sawyer::Resource, key: Symbol).returns(T.nilable(Integer)) }
+      def sawyer_optional_integer(resource, key)
+        value = T.cast(resource[key], Object)
+        return if value.nil?
+        return value if value.is_a?(Integer)
+
+        raise_bad_repository_response("GitHub", "#{key} must be an integer or nil")
+      end
+
+      sig { params(resource: Gitlab::ObjectifiedHash, key: String).returns(String) }
+      def gitlab_string(resource, key)
+        value = T.cast(resource[key], Object)
+        return value if value.is_a?(String)
+
+        raise_bad_repository_response("GitLab", "#{key} must be a string")
+      end
+
+      sig { params(provider: String, message: String).returns(T.noreturn) }
+      def raise_bad_repository_response(provider, message)
+        raise Dependabot::PrivateSourceBadResponse.new(
+          source.url,
+          "Malformed #{provider} repository response: #{message}"
         )
       end
 
       sig { params(repo: String, path: String, commit: String).returns(T::Array[RepositoryContent]) }
       def _gitlab_repo_contents(repo, path, commit)
-        T.unsafe(gitlab_client)
-         .repo_tree(repo, path: path, ref: commit, per_page: 100)
-         .map do |file|
+        gitlab_client
+          .repo_tree(repo, path: path, ref: commit, per_page: 100)
+          .map do |raw_file|
+          file = raw_file
+          object_type = gitlab_string(file, "type")
           # GitLab API essentially returns the output from `git ls-tree`
-          type = case file.type
+          type = case object_type
                  when "blob" then "file"
                  when "tree" then "dir"
                  when "commit" then "submodule"
-                 else file.fetch("type")
+                 else object_type
                  end
 
           RepositoryContent.new(
-            name: file.name,
-            path: file.path,
+            name: gitlab_string(file, "name"),
+            path: gitlab_string(file, "path"),
             type: type,
             size: 0 # GitLab doesn't return file size
           )
@@ -663,42 +708,46 @@ module Dependabot
         response = azure_client.fetch_repo_contents(commit, path)
 
         response.map do |entry|
-          type = case entry.fetch("gitObjectType")
+          object_type = T.cast(entry.fetch("gitObjectType"), String)
+          relative_path = T.cast(entry.fetch("relativePath"), String)
+          type = case object_type
                  when "blob" then "file"
                  when "tree" then "dir"
-                 else entry.fetch("gitObjectType")
+                 else object_type
                  end
 
           RepositoryContent.new(
-            name: File.basename(entry.fetch("relativePath")),
-            path: entry.fetch("relativePath"),
+            name: File.basename(relative_path),
+            path: relative_path,
             type: type,
-            size: entry.fetch("size")
+            size: T.cast(entry.fetch("size"), Integer)
           )
         end
       end
 
       sig { params(repo: String, path: String, commit: String).returns(T::Array[RepositoryContent]) }
       def _bitbucket_repo_contents(repo, path, commit)
-        response = T.unsafe(bitbucket_client)
-                    .fetch_repo_contents(
-                      repo,
-                      commit,
-                      path
-                    )
+        response = bitbucket_client
+                   .fetch_repo_contents(
+                     repo,
+                     commit,
+                     path
+                   )
 
         response.map do |file|
-          type = case file.fetch("type")
+          object_type = T.cast(file.fetch("type"), String)
+          path = T.cast(file.fetch("path"), String)
+          type = case object_type
                  when "commit_file" then "file"
                  when "commit_directory" then "dir"
-                 else file.fetch("type")
+                 else object_type
                  end
 
           RepositoryContent.new(
-            name: File.basename(file.fetch("path")),
-            path: file.fetch("path"),
+            name: File.basename(path),
+            path: path,
             type: type,
-            size: file.fetch("size", 0)
+            size: T.cast(file.fetch("size", 0), Integer)
           )
         end
       end
@@ -711,7 +760,8 @@ module Dependabot
           path
         )
 
-        response.files.map do |file|
+        output = T.cast(response.data, Aws::CodeCommit::Types::GetFolderOutput)
+        output.files.map do |file|
           RepositoryContent.new(
             name: File.basename(file.relative_path),
             path: file.relative_path,
@@ -721,29 +771,32 @@ module Dependabot
         end
       end
 
-      sig { params(path: String, fetch_submodules: T::Boolean).returns(T::Hash[Symbol, T.untyped]) }
+      sig { params(path: String, fetch_submodules: T::Boolean).returns(RepositorySpecification) }
       def _full_specification_for(path, fetch_submodules:)
         if fetch_submodules && _linked_dir_for(path)
-          linked_dir_details = @linked_paths[_linked_dir_for(path)]
+          linked_dir_details = T.must(@linked_paths[T.must(_linked_dir_for(path))])
           sub_path =
             path.gsub(%r{^#{Regexp.quote(T.must(_linked_dir_for(path)))}(/|$)}, "")
           new_path =
-            Pathname.new(File.join(linked_dir_details.fetch(:path), sub_path))
+            Pathname.new(File.join(linked_dir_details.path, sub_path))
                     .cleanpath.to_path
                     .gsub(%r{^/}, "")
-          {
-            repo: linked_dir_details.fetch(:repo),
-            commit: linked_dir_details.fetch(:commit),
-            provider: linked_dir_details.fetch(:provider),
+          RepositorySpecification.new(
+            repo: linked_dir_details.repo,
+            commit: linked_dir_details.commit,
+            provider: linked_dir_details.provider,
             path: new_path
-          }
+          )
         else
-          {
+          resolved_commit = commit
+          raise Octokit::NotFound unless resolved_commit
+
+          RepositorySpecification.new(
             repo: source.repo,
             path: path,
-            commit: commit,
+            commit: resolved_commit,
             provider: source.provider
-          }
+          )
         end
       end
 
@@ -751,9 +804,11 @@ module Dependabot
       def _fetch_file_content(path, fetch_submodules: false)
         path = path.gsub(%r{^/*}, "")
 
-        provider, repo, path, commit =
-          _full_specification_for(path, fetch_submodules: fetch_submodules)
-          .values_at(:provider, :repo, :path, :commit)
+        specification = _full_specification_for(path, fetch_submodules: fetch_submodules)
+        provider = specification.provider
+        repo = specification.repo
+        path = specification.path
+        commit = specification.commit
 
         _fetch_file_content_fully_specified(provider, repo, path, commit)
       rescue *CLIENT_NOT_FOUND_ERRORS
@@ -774,45 +829,29 @@ module Dependabot
         when "github"
           _fetch_file_content_from_github(path, repo, commit)
         when "gitlab"
-          tmp = T.unsafe(gitlab_client).get_file(repo, path, commit).content
+          tmp = gitlab_string(gitlab_client.get_file(repo, path, commit), "content")
           decode_binary_string(tmp)
         when "azure"
           azure_client.fetch_file_contents(commit, path)
         when "bitbucket"
-          T.unsafe(bitbucket_client).fetch_file_contents(repo, commit, path)
+          bitbucket_client.fetch_file_contents(repo, commit, path)
         when "codecommit"
           codecommit_client.fetch_file_contents(repo, commit, path)
         else raise "Unsupported provider '#{source.provider}'."
         end
       end
 
-      # rubocop:disable Metrics/AbcSize
       sig { params(path: String, repo: String, commit: String).returns(String) }
       def _fetch_file_content_from_github(path, repo, commit)
-        tmp = T.unsafe(github_client).contents(repo, path: path, ref: commit)
+        tmp = github_file_resource(path, repo, commit)
 
-        raise Octokit::NotFound if tmp.is_a?(Array)
-
-        if tmp.type == "symlink"
-          @linked_paths[path] = {
-            repo: repo,
-            provider: "github",
-            commit: commit,
-            path: Pathname.new(tmp.target).cleanpath.to_path
-          }
-          tmp = T.unsafe(github_client).contents(
-            repo,
-            path: Pathname.new(tmp.target).cleanpath.to_path,
-            ref: commit
-          )
-        end
-
-        if tmp.content == ""
+        content = sawyer_string(tmp, :content)
+        if content == ""
           # The file may have exceeded the 1MB limit
           # see https://github.blog/changelog/2022-05-03-increased-file-size-limit-when-retrieving-file-contents-via-rest-api/
-          T.unsafe(github_client).contents(repo, path: path, ref: commit, accept: "application/vnd.github.v3.raw")
+          github_client.raw_contents(repo, path: path, ref: commit)
         else
-          decode_binary_string(tmp.content)
+          decode_binary_string(content)
         end
       rescue Octokit::Forbidden => e
         raise unless e.message.include?("too_large")
@@ -824,17 +863,37 @@ module Dependabot
         file_details = repo_contents(dir: dir).find { |f| f.name == basename }
         raise unless file_details
 
-        tmp = T.unsafe(github_client).blob(repo, file_details.sha)
-        return tmp.content if tmp.encoding == "utf-8"
+        tmp = github_client.blob(repo, T.must(file_details.sha))
+        content = sawyer_string(tmp, :content)
+        return content if sawyer_string(tmp, :encoding) == "utf-8"
 
-        decode_binary_string(tmp.content)
+        decode_binary_string(content)
       end
-      # rubocop:enable Metrics/AbcSize
+      sig { params(path: String, repo: String, commit: String).returns(Sawyer::Resource) }
+      def github_file_resource(path, repo, commit)
+        resource = github_client.contents(repo, path: path, ref: commit)
+        raise Octokit::NotFound if resource.is_a?(Array)
+        return resource unless sawyer_optional_string(resource, :type) == "symlink"
+
+        target = sawyer_string(resource, :target)
+        clean_target = Pathname.new(target).cleanpath.to_path
+        @linked_paths[path] = LinkedPath.new(
+          repo: repo,
+          provider: "github",
+          commit: commit,
+          path: clean_target
+        )
+
+        target_resource = github_client.contents(repo, path: clean_target, ref: commit)
+        return target_resource if target_resource.is_a?(Sawyer::Resource)
+
+        raise_bad_repository_response("GitHub", "symlink target must be a file")
+      end
 
       # Update the @linked_paths hash by exploiting a side-effect of
       # recursively calling `repo_contents` for each directory up the tree
       # until a submodule or symlink is found
-      sig { params(path: String).returns(T.nilable(T::Array[T.untyped])) }
+      sig { params(path: String).returns(T.nilable(T::Array[RepositoryContent])) }
       def _find_linked_dirs(path)
         path = Pathname.new(path).cleanpath.to_path.gsub(%r{^/*}, "")
         dir = File.dirname(path)

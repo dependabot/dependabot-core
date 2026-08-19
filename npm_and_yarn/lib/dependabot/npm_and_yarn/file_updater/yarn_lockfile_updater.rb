@@ -21,6 +21,7 @@ module Dependabot
         require_relative "npmrc_builder"
         require_relative "package_json_updater"
         require_relative "package_json_preparer"
+        require_relative "berry_lockfile_handler"
 
         extend T::Sig
 
@@ -29,15 +30,26 @@ module Dependabot
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
             repo_contents_path: T.nilable(String),
-            credentials: T::Array[Dependabot::Credential]
+            credentials: T::Array[Dependabot::Credential],
+            security_updates_only: T::Boolean,
+            release_age_days: T.nilable(Integer)
           )
             .void
         end
-        def initialize(dependencies:, dependency_files:, repo_contents_path:, credentials:)
+        def initialize(
+          dependencies:,
+          dependency_files:,
+          repo_contents_path:,
+          credentials:,
+          security_updates_only: false,
+          release_age_days: nil
+        )
           @dependencies = dependencies
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
           @credentials = credentials
+          @security_updates_only = security_updates_only
+          @release_age_days = release_age_days
           @error_handler = T.let(
             YarnErrorHandler.new(
               dependencies: dependencies,
@@ -221,7 +233,14 @@ module Dependabot
           # the lockfile.
 
           if top_level_dependency_updates.all? { |dep| requirements_changed?(dep[:name]) }
-            Helpers.run_yarn_command("install #{yarn_berry_args}".strip)
+            Helpers.run_yarn_command("install #{yarn_berry_args}".strip, env: yarn_time_gate_env)
+
+            # Yarn berry resolves ranges to the latest matching version, which
+            # may differ from Dependabot's target. If the lockfile resolved to a
+            # different version, re-install with the exact target and rewrite
+            # the lockfile descriptor back to the range — same approach as yarn
+            # classic's replaceLockfileDeclaration.
+            pin_berry_versions_if_needed(top_level_dependency_updates, yarn_lock)
           else
             updates = top_level_dependency_updates.collect do |dep|
               dep[:name]
@@ -229,7 +248,8 @@ module Dependabot
 
             Helpers.run_yarn_command(
               "up -R #{updates.join(' ')} #{yarn_berry_args}".strip,
-              fingerprint: "up -R <dependency_names> #{yarn_berry_args}".strip
+              fingerprint: "up -R <dependency_names> #{yarn_berry_args}".strip,
+              env: yarn_time_gate_env
             )
           end
           { yarn_lock.name => File.read(yarn_lock.name) }
@@ -243,6 +263,79 @@ module Dependabot
           dep.requirements != dep.previous_requirements
         end
 
+        # Checks if yarn resolved to a different version than Dependabot's target
+        # and re-pins if needed. Yarn berry resolves ranges to the latest matching
+        # version, which can bypass Dependabot's version selection — including
+        # security updates (minimum safe version), ignore conditions, and cooldown.
+        sig do
+          params(
+            top_level_dependency_updates: T::Array[T::Hash[Symbol, T.untyped]],
+            yarn_lock: Dependabot::DependencyFile
+          ).void
+        end
+        def pin_berry_versions_if_needed(top_level_dependency_updates, yarn_lock)
+          parsed = BerryLockfileHandler.parse(yarn_lock.name)
+          return unless parsed
+
+          top_level_dependency_updates.each do |dep|
+            pin_berry_version_if_needed(dep, yarn_lock, parsed)
+          end
+        end
+
+        sig do
+          params(
+            dep: T::Hash[Symbol, T.untyped],
+            yarn_lock: Dependabot::DependencyFile,
+            parsed_lockfile: T::Hash[String, T.untyped]
+          ).void
+        end
+        def pin_berry_version_if_needed(dep, yarn_lock, parsed_lockfile)
+          version = dep[:version]
+          return unless version
+
+          dep_name = T.cast(dep[:name], String)
+          reqs = T.cast(dep[:requirements], T.nilable(T::Array[Dependabot::DependencyRequirement]))
+          return if reqs.nil? || reqs.empty?
+          return if reqs.any? { |req| req.source_string("type") == "git" }
+          return if BerryLockfileHandler.version_matches?(parsed_lockfile, dep_name, T.cast(version, String))
+
+          saved_package_jsons = save_package_jsons
+
+          Helpers.run_yarn_command(
+            "up #{dep_name}@#{version} #{yarn_berry_args}".strip,
+            fingerprint: "up <dep>@<version> #{yarn_berry_args}".strip,
+            env: yarn_time_gate_env
+          )
+
+          reqs.each do |req|
+            requirement = req.requirement_string
+            next unless requirement
+
+            BerryLockfileHandler.replace_declaration(yarn_lock.name, dep_name, T.cast(version, String), requirement)
+          end
+
+          # Restore package.json and re-install to normalize lockfile descriptors,
+          # same as yarn classic's replaceLockfileDeclaration flow.
+          restore_package_jsons(saved_package_jsons)
+          Helpers.run_yarn_command("install #{yarn_berry_args}".strip, env: yarn_time_gate_env)
+        end
+
+        sig { returns(T::Hash[String, String]) }
+        def save_package_jsons
+          result = T.let({}, T::Hash[String, String])
+          package_files.each do |file|
+            next unless File.exist?(file.name)
+
+            result[file.name] = File.read(file.name)
+          end
+          result
+        end
+
+        sig { params(saved: T::Hash[String, String]).void }
+        def restore_package_jsons(saved)
+          saved.each { |path, content| File.write(path, content) }
+        end
+
         sig { params(yarn_lock: Dependabot::DependencyFile).returns(T::Hash[String, String]) }
         def run_yarn_berry_subdependency_updater(yarn_lock:)
           dep = T.must(sub_dependencies.first)
@@ -254,8 +347,93 @@ module Dependabot
             ["remove #{dep.name} #{yarn_berry_args}".strip, "remove <dep_name> #{yarn_berry_args}".strip]
           ]
 
-          Helpers.run_yarn_commands(*commands)
-          { yarn_lock.name => File.read(yarn_lock.name) }
+          original_content = File.read(yarn_lock.name)
+          Helpers.run_yarn_commands(*commands, env: yarn_time_gate_env)
+
+          updated_content = File.read(yarn_lock.name)
+          if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+            run_yarn_audit_fix_fallback(dep)
+            updated_content = File.read(yarn_lock.name)
+          end
+
+          { yarn_lock.name => updated_content }
+        end
+
+        # Fallback for transitive deps where add/dedupe/remove is a no-op. Threads
+        # the release-age gate env so the audit-fix resolve honours the same cooldown
+        # (and security `=0` bypass) as the primary commands.
+        sig { params(dep: Dependabot::Dependency).void }
+        def run_yarn_audit_fix_fallback(dep)
+          NativeHelpers.run_yarn_audit_fix_command(env: yarn_time_gate_env)
+          dep.metadata[:audit_fix_used] = true
+        rescue SharedHelpers::HelperSubprocessFailed
+          Dependabot.logger.info(
+            "yarn npm audit --fix failed or partially fixed — continuing with any changes made"
+          )
+        end
+
+        sig { returns(T::Boolean) }
+        def security_updates_only?
+          @security_updates_only
+        end
+
+        # Returns an env hash that sets Yarn Berry's YARN_NPM_MINIMAL_AGE_GATE.
+        # Security updates set it to 0 so a release-age gate never blocks a fix
+        # (this intentionally overrides any `.yarnrc.yml` gate). Regular updates set
+        # it to the dependabot.yml cooldown floor (in minutes) so yarn holds
+        # transitive dependencies back to versions at least that old. For regular
+        # updates an equal-or-longer `npmMinimalAgeGate` in .yarnrc.yml takes
+        # precedence, so it is left untouched.
+        #
+        # npmMinimalAgeGate was introduced in Yarn 4.10.0. Setting the env var on
+        # older Yarn Berry releases (or Yarn classic) raises "Unrecognized or legacy
+        # configuration settings found: npmMinimalAgeGate" and aborts the install,
+        # so we gate on a version check.
+        #
+        # Memoized (including a nil result): the value is deterministic for the
+        # updater's lifetime and this is invoked from several yarn command sites,
+        # so we avoid running `yarn --version` (and emitting duplicate log lines)
+        # more than once per update.
+        sig { returns(T.nilable(T::Hash[String, String])) }
+        def yarn_time_gate_env
+          return @yarn_time_gate_env if defined?(@yarn_time_gate_env)
+
+          gate_value = yarn_minimal_age_gate_value
+          env = if gate_value && Helpers.yarn_berry_supports_minimal_age_gate?
+                  { "YARN_NPM_MINIMAL_AGE_GATE" => gate_value }
+                end
+          @yarn_time_gate_env = T.let(env, T.nilable(T::Hash[String, String]))
+        end
+
+        # Returns the YARN_NPM_MINIMAL_AGE_GATE value (in minutes) for a regular
+        # update, or nil when none applies. Security updates pass "0" so a
+        # release-age gate never blocks a fix (this intentionally overrides any
+        # `.yarnrc.yml` gate).
+        #
+        # When the repo also sets an explicit `npmMinimalAgeGate` in `.yarnrc.yml`,
+        # the longest release-age wins: the cooldown floor is only injected via the
+        # env var when it exceeds the user's configured value, otherwise the user's
+        # (equal or longer) gate is left untouched so neither policy is silently
+        # weakened.
+        sig { returns(T.nilable(String)) }
+        def yarn_minimal_age_gate_value
+          return "0" if security_updates_only?
+
+          cooldown_minutes = @release_age_days && (@release_age_days * Helpers::MINUTES_PER_DAY)
+          effective = Helpers.higher_release_age_gate(cooldown_minutes, yarnrc_minimal_age_gate)
+          effective&.to_s
+        end
+
+        # The `npmMinimalAgeGate` (in minutes) configured across the repo's
+        # `.yarnrc.yml` files, or nil when unset. A value we cannot parse as a bare
+        # integer is reported as Float::INFINITY so an explicit-but-non-numeric user
+        # gate is never overridden by the cooldown floor.
+        sig { returns(T.nilable(T.any(Integer, Float))) }
+        def yarnrc_minimal_age_gate
+          Helpers.max_configured_release_age(
+            dependency_files,
+            [Helpers::ReleaseAgeGateSetting.new(filename: ".yarnrc.yml", key: "npmMinimalAgeGate", separator: ":")]
+          )
         end
 
         sig { returns(String) }
@@ -308,18 +486,19 @@ module Dependabot
 
         sig do
           params(
-            requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            requirements: T::Array[Dependabot::DependencyRequirement],
             path: String
           )
-            .returns(T::Array[T::Hash[Symbol, T.untyped]])
+            .returns(T::Array[Dependabot::DependencyRequirement])
         end
         def requirements_for_path(requirements, path)
           return requirements if path.to_s == "."
 
           requirements.filter_map do |r|
-            next unless r[:file].start_with?("#{path}/")
+            file = r.file
+            next unless file&.start_with?("#{path}/")
 
-            r.merge(file: r[:file].gsub(/^#{Regexp.quote("#{path}/")}/, ""))
+            Dependabot::DependencyRequirement.create(r.merge(file: file.gsub(/^#{Regexp.quote("#{path}/")}/, "")))
           end
         end
 
@@ -440,13 +619,15 @@ module Dependabot
         def write_temporary_dependency_files(yarn_lock, update_package_json: true)
           write_lockfiles
 
-          if Helpers.yarn_berry?(yarn_lock) && yarnrc_yml_file
-            yarnrc_yml_sanitize_content = sanitize_yarnrc_content(yarnrc_yml_content)
-            File.write(".yarnrc.yml", yarnrc_yml_sanitize_content)
-          else
-            File.write(".npmrc", npmrc_content)
-            File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
+          if Helpers.yarn_berry?(yarn_lock)
+            if yarnrc_yml_file
+              yarnrc_yml_sanitize_content = sanitize_yarnrc_content(yarnrc_yml_content)
+              File.write(".yarnrc.yml", yarnrc_yml_sanitize_content)
+            end
+          elsif yarnrc_specifies_private_reg?
+            File.write(".yarnrc", yarnrc_content)
           end
+          File.write(".npmrc", npmrc_content)
 
           package_files.each do |file|
             path = file.name

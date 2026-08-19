@@ -1,3 +1,4 @@
+using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Updater.FileWriters;
 
 using Xunit;
@@ -299,6 +300,720 @@ public class XmlFileWriterTests : FileWriterTestsBase
                     </Project>
                     """),
             ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageVersions_DirectUpdate()
+    {
+        // update the existing version attribute
+        await TestAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageVersions,
+            files: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.1.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Dependency" Version="1.1.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageVersions_TransitiveIsPinnedWithExistingVersion()
+    {
+        // add a new PackageReference element to the project; version attribute in central file needs no change
+        await TestAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageVersions,
+            files: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Not.This.Dependency" />
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/0.9.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Not.This.Dependency" />
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageVersions_TransitiveIsPinnedWithUpdatedVersion()
+    {
+        // add a new PackageReference element to the project and update the attribute in the central file
+        await TestAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageVersions,
+            files: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Not.This.Dependency" />
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Dependency" Version="1.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.1.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Not.This.Dependency" />
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Dependency" Version="1.1.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageVersions_TransitiveIsPinnedWithNewVersion()
+    {
+        // add a PackageReference element to the project and package version file
+        await TestAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageVersions,
+            files: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Not.This.Dependency" />
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Not.This.Dependency" Version="2.0.0" />
+                        <PackageReference Update="Unrelated.Dependency" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.1.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Not.This.Dependency" />
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Not.This.Dependency" Version="2.0.0" />
+                        <PackageReference Update="Some.Dependency" Version="1.1.0" />
+                        <PackageReference Update="Unrelated.Dependency" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageVersions_TransitiveIsPinned_RangeAlreadyContainsRequiredVersion()
+    {
+        // the central file already pins an exact version range matching the required version; only add the
+        // `PackageReference` to the project and leave the central `Version` attribute untouched
+        await TestAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageVersions,
+            files: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Not.This.Dependency" />
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Dependency" Version="[1.1.0]" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.1.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Not.This.Dependency" />
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Dependency" Version="[1.1.0]" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageVersions_TransitiveIsPinned_ExactRangeIsUpdatedPreservingRangeForm()
+    {
+        // the central file pins an exact version range that needs updating; the bracketed range form is preserved
+        await TestAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageVersions,
+            files: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Not.This.Dependency" />
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Dependency" Version="[1.0.0]" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.1.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Not.This.Dependency" />
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Dependency" Version="[1.1.0]" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageVersions_TransitiveIsPinned_AddedAtFrontOfItemGroup_NonStandardIndentation()
+    {
+        // new `PackageReference` sorts before the existing entries, so it's added at the front of each `ItemGroup`;
+        // 3-space indentation is used to ensure the new elements match the surrounding formatting
+        await TestAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageVersions,
+            files: [
+                ("project.csproj", """
+                    <Project>
+                       <ItemGroup>
+                          <PackageReference Include="Zzz.Dependency" />
+                       </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                       <ItemGroup>
+                          <PackageReference Update="Zzz.Dependency" Version="2.0.0" />
+                       </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.1.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project>
+                       <ItemGroup>
+                          <PackageReference Include="Some.Dependency" />
+                          <PackageReference Include="Zzz.Dependency" />
+                       </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                       <ItemGroup>
+                          <PackageReference Update="Some.Dependency" Version="1.1.0" />
+                          <PackageReference Update="Zzz.Dependency" Version="2.0.0" />
+                       </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageVersions_TransitiveIsPinned_AddedInMiddleOfItemGroup_NonStandardIndentation()
+    {
+        // new `PackageReference` sorts between the existing entries, so it's added in the middle of each `ItemGroup`;
+        // 3-space indentation is used to ensure the new elements match the surrounding formatting
+        await TestAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageVersions,
+            files: [
+                ("project.csproj", """
+                    <Project>
+                       <ItemGroup>
+                          <PackageReference Include="Aaa.Dependency" />
+                          <PackageReference Include="Zzz.Dependency" />
+                       </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                       <ItemGroup>
+                          <PackageReference Update="Aaa.Dependency" Version="2.0.0" />
+                          <PackageReference Update="Zzz.Dependency" Version="2.0.0" />
+                       </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.1.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project>
+                       <ItemGroup>
+                          <PackageReference Include="Aaa.Dependency" />
+                          <PackageReference Include="Some.Dependency" />
+                          <PackageReference Include="Zzz.Dependency" />
+                       </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                       <ItemGroup>
+                          <PackageReference Update="Aaa.Dependency" Version="2.0.0" />
+                          <PackageReference Update="Some.Dependency" Version="1.1.0" />
+                          <PackageReference Update="Zzz.Dependency" Version="2.0.0" />
+                       </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageVersions_TransitiveIsPinned_AddedAtEndOfItemGroup_NonStandardIndentation()
+    {
+        // new `PackageReference` sorts after the existing entries, so it's added at the end of each `ItemGroup`;
+        // 3-space indentation is used to ensure the new elements match the surrounding formatting
+        await TestAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageVersions,
+            files: [
+                ("project.csproj", """
+                    <Project>
+                       <ItemGroup>
+                          <PackageReference Include="Aaa.Dependency" />
+                          <PackageReference Include="Bbb.Dependency" />
+                       </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                       <ItemGroup>
+                          <PackageReference Update="Aaa.Dependency" Version="2.0.0" />
+                          <PackageReference Update="Bbb.Dependency" Version="2.0.0" />
+                       </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.1.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project>
+                       <ItemGroup>
+                          <PackageReference Include="Aaa.Dependency" />
+                          <PackageReference Include="Bbb.Dependency" />
+                          <PackageReference Include="Some.Dependency" />
+                       </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                       <ItemGroup>
+                          <PackageReference Update="Aaa.Dependency" Version="2.0.0" />
+                          <PackageReference Update="Bbb.Dependency" Version="2.0.0" />
+                          <PackageReference Update="Some.Dependency" Version="1.1.0" />
+                       </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageVersions_TransitiveIsPinned_NewItemGroupAddedToProject_NonStandardIndentation()
+    {
+        // the project has no `ItemGroup`, so a new one is created to hold the pinned `PackageReference`; the central
+        // file's existing `Version` is updated in place. 3-space indentation is used throughout.
+        await TestAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageVersions,
+            files: [
+                ("project.csproj", """
+                    <Project>
+                       <PropertyGroup>
+                          <TargetFramework>net9.0</TargetFramework>
+                       </PropertyGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                       <ItemGroup>
+                          <PackageReference Update="Some.Dependency" Version="1.0.0" />
+                       </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.1.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project>
+                       <PropertyGroup>
+                          <TargetFramework>net9.0</TargetFramework>
+                       </PropertyGroup>
+                       <ItemGroup>
+                          <PackageReference Include="Some.Dependency" />
+                       </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                       <ItemGroup>
+                          <PackageReference Update="Some.Dependency" Version="1.1.0" />
+                       </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageVersions_TransitiveIsPinned_NoExistingCentralElement_ElementAddedToCentralFile()
+    {
+        // CPV is in use and the central file has no `<PackageReference Update=...>` elements yet; the package is being
+        // pinned as a transitive dependency, so a new `<PackageReference Update=...>` element is added to the central file.
+        await TestAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageVersions,
+            files: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.1.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Dependency" Version="1.1.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageVersions_TransitiveIsPinned_CentralVersionFromProperty_UpdatesProperty()
+    {
+        // the central `<PackageReference Update=...>` element's version is expressed via an MSBuild property; pinning
+        // the transitive dependency must update the backing property rather than clobbering the `$(...)` reference
+        await TestAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageVersions,
+            files: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <SomeDependencyVersion>1.0.0</SomeDependencyVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Dependency" Version="$(SomeDependencyVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.1.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <SomeDependencyVersion>1.1.0</SomeDependencyVersion>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Dependency" Version="$(SomeDependencyVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageVersions_TransitiveIsPinned_CentralPackagesFileFromDiscovery_ElementAddedToDiscoveredFile()
+    {
+        // CPV is in use with a non-conventionally-named central file (`Versions.props`) that has no
+        // `<PackageReference Update=...>` elements yet; because the discovered `CentralPackagesFile` path is supplied,
+        // the new central element is added to that file rather than relying on the `Packages.props` filename heuristic.
+        await TestAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageVersions,
+            packageManagementSpecialFileRelativePath: "Versions.props",
+            files: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Versions.props", """
+                    <Project>
+                      <ItemGroup>
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.1.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Versions.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Dependency" Version="1.1.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageVersions_TransitiveIsPinned_NoCentralFileFound_NoUpdatePerformed()
+    {
+        // CPV is in use but there's no `Packages.props` file, no existing `<PackageReference Update=...>` element, and
+        // no discovered `CentralPackagesFile` path, so there's no reliable location to record the version; rather than
+        // writing a versionless, unresolvable `PackageReference`, no update is performed and the files are left unchanged.
+        await TestNoChangeAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageVersions,
+            files: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Versions.props", """
+                    <Project>
+                      <ItemGroup>
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.1.0"]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageVersions_TransitiveIsPinned_RangeSatisfiesBothOldAndRequired_FloorIsRaised()
+    {
+        // the central file pins an open range (`[1.0.0,)`) that satisfies both the old and required versions; the
+        // floor must be raised to the required version rather than left untouched, otherwise resolution could fall
+        // back to a now-undesired older version
+        await TestAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageVersions,
+            files: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Dependency" Version="[1.0.0,)" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/2.0.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Some.Dependency" />
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Dependency" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task SingleDependency_CentralPackageVersions_TransitiveIsPinned_CentralElementHasNoVersionAttribute_NoUpdatePerformed()
+    {
+        // the matched central `<PackageReference Update=...>` element has no `Version` attribute, so there's no
+        // location to record the version; rather than reporting success with a versionless, unresolvable pin, no
+        // update is performed and the files are left unchanged
+        await TestNoChangeAsync(
+            packageManagementKind: PackageManagementKind.CentralPackageVersions,
+            files: [
+                ("project.csproj", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Include="Unrelated.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Packages.props", """
+                    <Project>
+                      <ItemGroup>
+                        <PackageReference Update="Some.Dependency" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Some.Dependency/1.0.0"],
+            requiredDependencyStrings: ["Some.Dependency/1.1.0"]
         );
     }
 
@@ -1558,7 +2273,7 @@ public class XmlFileWriterTests : FileWriterTestsBase
     public async Task SingleDependency_CentralPackageManagement_TransitiveIsPinned_NoExistingPackageVersionElement_TransitivePinningEnabled_OnlyPackagesPropsIsUpdated()
     {
         await TestAsync(
-            useCentralPackageTransitivePinning: true,
+            packageManagementKind: PackageManagementKind.CentralPackageManagementWithTransitivePinning,
             files: [
                 ("project.csproj", """
                     <Project Sdk="Microsoft.NET.Sdk">
@@ -1739,6 +2454,85 @@ public class XmlFileWriterTests : FileWriterTestsBase
                       <ItemGroup>
                         <PackageReference Include="A.Dependency" Version="3.0.0" /> <!-- some comment -->
                         <PackageReference Include="Some.Dependency" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task FormattingIsPreserved_InMiddleOfItemGroup_HonorsIndentation()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net10.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package.A" Version="2.0.0" />
+                        <PackageReference Include="Package.B" Version="2.0.0" />
+                        <PackageReference Include="Package.D" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Package.C/1.0.0"],
+            requiredDependencyStrings: ["Package.C/1.1.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net10.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package.A" Version="2.0.0" />
+                        <PackageReference Include="Package.B" Version="2.0.0" />
+                        <PackageReference Include="Package.C" Version="1.1.0" />
+                        <PackageReference Include="Package.D" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task FormattingIsPreserved_InMiddleOfItemGroup_HonorsIndentation_EvenWithWhitespaceOnlyLine()
+    {
+        // note that the blank line after Package.A isn't actually blank; it has two leading spaces
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net10.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package.A" Version="2.0.0" />
+                          
+                        <PackageReference Include="Package.B" Version="2.0.0" />
+                        <PackageReference Include="Package.D" Version="2.0.0" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["Package.C/1.0.0"],
+            requiredDependencyStrings: ["Package.C/1.1.0"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <PropertyGroup>
+                        <TargetFramework>net10.0</TargetFramework>
+                      </PropertyGroup>
+                      <ItemGroup>
+                        <PackageReference Include="Package.A" Version="2.0.0" />
+                          
+                        <PackageReference Include="Package.B" Version="2.0.0" />
+                        <PackageReference Include="Package.C" Version="1.1.0" />
+                        <PackageReference Include="Package.D" Version="2.0.0" />
                       </ItemGroup>
                     </Project>
                     """)
@@ -1954,7 +2748,7 @@ public class XmlFileWriterTests : FileWriterTestsBase
     public async Task UpdatingAPinnedCentrallyManagedPackageUpdatesJustTheVersionNumberWhenDeclarationIsPresent()
     {
         await TestAsync(
-            useCentralPackageTransitivePinning: true,
+            packageManagementKind: PackageManagementKind.CentralPackageManagementWithTransitivePinning,
             files: [
                 ("src/project.csproj", """
                     <?xml version="1.0"?>
@@ -1992,6 +2786,70 @@ public class XmlFileWriterTests : FileWriterTestsBase
                         <PackageVersion Include="Some.Dependency" Version="2.0.0" />
                         <PackageVersion Include="Unrelated.Dependency" Version="3.0.0" />
                       </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task NewReference_ItemGroupWithExistingPackageReferences_IsAdded()
+    {
+        await TestAsync(
+            files: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="A.Package.Not.Related" Version="1.2.3" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <AdditionalFiles Include="some-resource.json" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["This.Package.Gets.Pinned/4.5.5"],
+            requiredDependencyStrings: ["This.Package.Gets.Pinned/4.5.6"],
+            expectedFiles: [
+                ("project.csproj", """
+                    <Project Sdk="Microsoft.NET.Sdk">
+                      <ItemGroup>
+                        <PackageReference Include="A.Package.Not.Related" Version="1.2.3" />
+                        <PackageReference Include="This.Package.Gets.Pinned" Version="4.5.6" />
+                      </ItemGroup>
+                      <ItemGroup>
+                        <AdditionalFiles Include="some-resource.json" />
+                      </ItemGroup>
+                    </Project>
+                    """)
+            ]
+        );
+    }
+
+    [Fact]
+    public async Task NewReference_AtStartOfItemGroup_HonorsIndentation()
+    {
+        // this test requires tabs and rather than deal with various editor states, a tab character is explicitly included
+        var tb = '\t';
+        await TestAsync(
+            files: [
+                ("project.csproj", $"""
+                    <Project Sdk="Microsoft.NET.Sdk">
+                    {tb}<ItemGroup>
+                    {tb}{tb}<AdditionalFiles Include="some-resource.json" />
+                    {tb}</ItemGroup>
+                    </Project>
+                    """)
+            ],
+            initialProjectDependencyStrings: ["This.Package.Gets.Pinned/4.5.5"],
+            requiredDependencyStrings: ["This.Package.Gets.Pinned/4.5.6"],
+            expectedFiles: [
+                ("project.csproj", $"""
+                    <Project Sdk="Microsoft.NET.Sdk">
+                    {tb}<ItemGroup>
+                    {tb}{tb}<PackageReference Include="This.Package.Gets.Pinned" Version="4.5.6" />
+                    {tb}{tb}<AdditionalFiles Include="some-resource.json" />
+                    {tb}</ItemGroup>
                     </Project>
                     """)
             ]

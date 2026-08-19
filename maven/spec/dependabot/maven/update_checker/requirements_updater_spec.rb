@@ -7,7 +7,7 @@ require "dependabot/maven/update_checker/requirements_updater"
 RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
   let(:updater) do
     described_class.new(
-      requirements: requirements,
+      requirements: requirements.map { |requirement| Dependabot::DependencyRequirement.create(requirement) },
       latest_version: latest_version,
       source_url: "new_url",
       properties_to_update: []
@@ -65,6 +65,35 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
           let(:latest_version) { version_class.new("v2-rev404-1.25.0") }
 
           its([:requirement]) { is_expected.to eq("v2-rev404-1.25.0") }
+        end
+      end
+
+      context "when the latest version matches the current requirement" do
+        let(:pom_req_string) { "23.6-jre" }
+        let(:latest_version) { version_class.new("23.6-jre") }
+
+        it "does not update the requirement or source" do
+          expect(updater.updated_requirements.first).to eq(pom_req)
+        end
+      end
+
+      context "when only source metadata differs but requirement is unchanged" do
+        let(:pom_req) do
+          {
+            file: "pom.xml",
+            requirement: "1.46.0",
+            groups: [],
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }
+        end
+        let(:pom_req_string) { "1.46.0" }
+        let(:latest_version) { version_class.new("1.46.0") }
+
+        it "returns the original requirement without updating source" do
+          result = updater.updated_requirements.first
+          expect(result).to eq(pom_req)
+          expect(result[:source]).to be_nil
         end
       end
 
@@ -131,6 +160,135 @@ RSpec.describe Dependabot::Maven::UpdateChecker::RequirementsUpdater do
               }
             )
           end
+        end
+
+        context "when one requirement is already at the latest version" do
+          let(:pom_req_string) { "23.6-jre" }
+          let(:other_requirement_string) { "23.3-jre" }
+
+          it "only updates the outdated requirement" do
+            expect(updater.updated_requirements).to contain_exactly(
+              {
+                file: "pom.xml",
+                requirement: "23.6-jre",
+                groups: [],
+                source: nil
+              },
+              {
+                file: "another/pom.xml",
+                requirement: "23.6-jre",
+                groups: [],
+                source: { type: "maven_repo", url: "new_url" }
+              }
+            )
+          end
+        end
+      end
+    end
+
+    # Wrapper requirements (maven-wrapper.properties) live outside the pom. The FileUpdater reads the
+    # target version from metadata[:distribution_version] / metadata[:wrapper_version] and the source
+    # url, so the RequirementsUpdater must keep those in sync with the bumped :requirement — otherwise
+    # the wrapper is regenerated for the old version.
+    context "when the requirement is a wrapper distribution requirement" do
+      subject(:updated) { updater.updated_requirements.first }
+
+      context "when bumping a distributionUrl requirement" do
+        let(:latest_version) { version_class.new("3.9.11") }
+        let(:requirements) do
+          [{
+            file: ".mvn/wrapper/maven-wrapper.properties",
+            requirement: "3.9.9",
+            groups: [],
+            source: {
+              type: "maven-distribution",
+              property: "distributionUrl",
+              url: "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/" \
+                   "3.9.9/apache-maven-3.9.9-bin.zip"
+            },
+            metadata: { distribution_version: "3.9.9", wrapper_version: "3.3.4" }
+          }]
+        end
+
+        it "bumps the requirement string" do
+          expect(updated[:requirement]).to eq("3.9.11")
+        end
+
+        it "updates metadata[:distribution_version] to the new version" do
+          expect(updated.dig(:metadata, :distribution_version)).to eq("3.9.11")
+        end
+
+        it "rewrites the versioned source url" do
+          expect(updated.dig(:source, :url)).to eq(
+            "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/" \
+            "3.9.11/apache-maven-3.9.11-bin.zip"
+          )
+        end
+
+        it "leaves the unrelated wrapper_version metadata untouched" do
+          expect(updated.dig(:metadata, :wrapper_version)).to eq("3.3.4")
+        end
+      end
+
+      context "when bumping a wrapperVersion requirement" do
+        let(:latest_version) { version_class.new("3.3.4") }
+        let(:requirements) do
+          [{
+            file: ".mvn/wrapper/maven-wrapper.properties",
+            requirement: "3.3.3",
+            groups: [],
+            source: { type: "maven-distribution", property: "wrapperVersion" },
+            metadata: { distribution_version: "3.9.9", wrapper_version: "3.3.3" }
+          }]
+        end
+
+        it "bumps the requirement string" do
+          expect(updated[:requirement]).to eq("3.3.4")
+        end
+
+        it "updates metadata[:wrapper_version] to the new version" do
+          expect(updated.dig(:metadata, :wrapper_version)).to eq("3.3.4")
+        end
+
+        it "does not synthesise a source url" do
+          expect(updated.dig(:source, :url)).to be_nil
+        end
+      end
+
+      context "when the distribution dependency carries a wrapperUrl requirement" do
+        subject(:updated) { updater.updated_requirements.last }
+
+        let(:latest_version) { version_class.new("3.9.11") }
+        let(:wrapper_url) do
+          "https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/" \
+            "maven-wrapper/3.3.4/maven-wrapper-3.3.4.jar"
+        end
+        let(:requirements) do
+          [
+            {
+              file: ".mvn/wrapper/maven-wrapper.properties",
+              requirement: "3.9.9",
+              groups: [],
+              source: {
+                type: "maven-distribution",
+                property: "distributionUrl",
+                url: "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/" \
+                     "3.9.9/apache-maven-3.9.9-bin.zip"
+              },
+              metadata: { distribution_version: "3.9.9", wrapper_version: "3.3.4" }
+            },
+            {
+              file: ".mvn/wrapper/maven-wrapper.properties",
+              requirement: "3.3.4",
+              groups: [],
+              source: { type: "maven-distribution", property: "wrapperUrl", url: wrapper_url }
+            }
+          ]
+        end
+
+        it "leaves the independent wrapper requirement unchanged" do
+          expect(updated.requirement_string).to eq("3.3.4")
+          expect(updated.source_string("url")).to eq(wrapper_url)
         end
       end
     end

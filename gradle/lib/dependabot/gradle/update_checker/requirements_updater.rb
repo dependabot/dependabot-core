@@ -8,6 +8,7 @@
 
 require "sorbet-runtime"
 
+require "dependabot/dependency_requirement"
 require "dependabot/requirements_updater/base"
 require "dependabot/gradle/distributions"
 require "dependabot/gradle/package/distributions_fetcher"
@@ -29,7 +30,7 @@ module Dependabot
 
         sig do
           params(
-            requirements: T::Array[T::Hash[Symbol, T.untyped]],
+            requirements: T::Array[Dependabot::DependencyRequirement],
             latest_version: T.nilable(T.any(Version, String)),
             source_url: T.nilable(String),
             properties_to_update: T::Array[String]
@@ -51,7 +52,7 @@ module Dependabot
           @is_distribution = T.let(Distributions.distribution_requirements?(requirements), T::Boolean)
         end
 
-        sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_requirements
           return requirements unless latest_version
           return updated_distribution_requirements if @is_distribution
@@ -60,20 +61,21 @@ module Dependabot
           # requirement at index `i` to correspond to the previous requirement
           # at the same index.
           requirements.map do |req|
-            next req if req.fetch(:requirement).nil?
-            next req if req.fetch(:requirement).include?(",")
+            requirement = req.requirement_string
+            next req if requirement.nil?
+            next req if requirement.include?(",")
 
-            property_name = req.dig(:metadata, :property_name)
+            property_name = req.metadata_string("property_name")
             next req if property_name && !properties_to_update.include?(property_name)
 
-            new_req = update_requirement(req[:requirement])
-            req.merge(requirement: new_req, source: updated_source)
+            new_req = update_requirement(requirement)
+            Dependabot::DependencyRequirement.create(req.merge(requirement: new_req, source: updated_source))
           end
         end
 
         private
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :requirements
 
         sig { returns(T.nilable(Version)) }
@@ -118,34 +120,57 @@ module Dependabot
           end
         end
 
-        sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_distribution_requirements
           distribution_url = T.let(nil, T.nilable(String))
 
           requirements.map do |req|
-            source = req[:source]
+            source = req.source_hash
             next req unless source
 
-            case source[:property]
+            case req.source_string("property")
             when "distributionUrl"
-              requirement = req[:requirement]
+              requirement = T.must(req.requirement_string)
               version = update_exact_requirement(requirement)
-              distribution_url = source[:url].gsub(requirement, version)
+              distribution_url = T.must(req.source_string("url")).gsub(requirement, version)
+              updated_source = set_source_string(source.dup, "url", distribution_url)
 
-              req.merge(
-                requirement: version,
-                source: source.merge(url: distribution_url)
+              Dependabot::DependencyRequirement.create(
+                req.merge(
+                  requirement: version,
+                  source: updated_source
+                )
               )
             when "distributionSha256Sum"
               checksum_url, checksum = Gradle::Package::DistributionsFetcher.resolve_checksum(T.must(distribution_url))
-              req.merge(
-                requirement: checksum,
-                source: source.merge(url: checksum_url)
+              updated_source = set_source_string(source.dup, "url", checksum_url)
+              Dependabot::DependencyRequirement.create(
+                req.merge(
+                  requirement: checksum,
+                  source: updated_source
+                )
               )
             else
               next req
             end
           end
+        end
+
+        sig do
+          params(
+            source: Dependabot::DependencyRequirement::ObjectHash,
+            key: String,
+            value: T.nilable(String)
+          ).returns(Dependabot::DependencyRequirement::ObjectHash)
+        end
+        def set_source_string(source, key, value)
+          symbol_key = key.to_sym
+          if source.key?(key) && !source.key?(symbol_key)
+            source[key] = value
+          else
+            source[symbol_key] = value
+          end
+          source
         end
 
         sig { override.returns(T::Class[Version]) }

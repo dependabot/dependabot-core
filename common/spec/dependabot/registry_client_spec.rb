@@ -157,11 +157,12 @@ RSpec.describe Dependabot::RegistryClient do
 
   describe "exception caching" do
     let(:unreachable_url) { "https://example.local" }
+    let(:escaped_unreachable_url) { Regexp.escape(unreachable_url) }
 
     before do
       described_class.clear_cache!
-      allow(Excon).to receive(:get).with(/#{unreachable_url}/, anything).and_raise(error)
-      allow(Excon).to receive(:head).with(/#{unreachable_url}/, anything).and_raise(error)
+      allow(Excon).to receive(:get).with(/#{escaped_unreachable_url}/, anything).and_raise(error)
+      allow(Excon).to receive(:head).with(/#{escaped_unreachable_url}/, anything).and_raise(error)
     end
 
     describe "when Excon times out internally" do
@@ -185,38 +186,60 @@ RSpec.describe Dependabot::RegistryClient do
     end
 
     describe "when Excon encounters a socket error" do
-      let(:error) { Excon::Error::Socket.new(EOFError.new) }
+      context "with EOFError" do
+        let(:error) { Excon::Error::Socket.new(EOFError.new) }
 
-      it "only attempts to reach it once via get and then plays back the first error" do
-        expect(Excon).to receive(:get).with(unreachable_url, anything).once
+        it "does not cache get failures" do
+          expect(Excon).to receive(:get).with(/#{escaped_unreachable_url}/, anything).exactly(3).times
 
-        expect { described_class.get(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
-        expect { described_class.get(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
-        expect { described_class.get(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
+          expect { described_class.get(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
+          expect { described_class.get(url: "#{unreachable_url}/foos") }.to raise_error(Excon::Error::Socket)
+          expect { described_class.get(url: "#{unreachable_url}/foos/bars") }.to raise_error(Excon::Error::Socket)
+        end
+
+        it "does not cache head failures" do
+          expect(Excon).to receive(:head).with(/#{escaped_unreachable_url}/, anything).exactly(3).times
+
+          expect { described_class.head(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
+          expect { described_class.head(url: "#{unreachable_url}/foos") }.to raise_error(Excon::Error::Socket)
+          expect { described_class.head(url: "#{unreachable_url}/foos/bars") }.to raise_error(Excon::Error::Socket)
+        end
       end
 
-      it "replays the first get error for the host on any request path" do
-        expect(Excon).to receive(:get).with(unreachable_url, anything).once
+      context "with non-EOF socket errors" do
+        let(:error) { Excon::Error::Socket.new(SocketError.new("getaddrinfo failed")) }
 
-        expect { described_class.get(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
-        expect { described_class.get(url: "#{unreachable_url}/foos") }.to raise_error(Excon::Error::Socket)
-        expect { described_class.get(url: "#{unreachable_url}/foos/bars") }.to raise_error(Excon::Error::Socket)
-      end
+        it "only attempts to reach it once via get and then plays back the first error" do
+          expect(Excon).to receive(:get).with(unreachable_url, anything).once
 
-      it "only attempts to reach it once via head and then plays back the first error" do
-        expect(Excon).to receive(:head).with(unreachable_url, anything).once
+          expect { described_class.get(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
+          expect { described_class.get(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
+          expect { described_class.get(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
+        end
 
-        expect { described_class.head(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
-        expect { described_class.head(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
-        expect { described_class.head(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
-      end
+        it "replays the first get error for the host on any request path" do
+          expect(Excon).to receive(:get).with(unreachable_url, anything).once
 
-      it "replays the first head error for the host on any request path" do
-        expect(Excon).to receive(:head).with(unreachable_url, anything).once
+          expect { described_class.get(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
+          expect { described_class.get(url: "#{unreachable_url}/foos") }.to raise_error(Excon::Error::Socket)
+          expect { described_class.get(url: "#{unreachable_url}/foos/bars") }.to raise_error(Excon::Error::Socket)
+        end
 
-        expect { described_class.head(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
-        expect { described_class.head(url: "#{unreachable_url}/foos") }.to raise_error(Excon::Error::Socket)
-        expect { described_class.head(url: "#{unreachable_url}/foos/bars") }.to raise_error(Excon::Error::Socket)
+        it "only attempts to reach it once via head and then plays back the first error" do
+          expect(Excon).to receive(:head).with(unreachable_url, anything).once
+
+          expect { described_class.head(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
+          expect { described_class.head(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
+          expect { described_class.head(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
+        end
+
+        it "replays the first head error for the host on any request path" do
+          expect(Excon).to receive(:head).with(unreachable_url, anything).once
+
+          expect { described_class.head(url: unreachable_url) }.to raise_error(Excon::Error::Socket)
+          expect { described_class.head(url: "#{unreachable_url}/foos") }.to raise_error(Excon::Error::Socket)
+          expect { described_class.head(url: "#{unreachable_url}/foos/bars") }.to raise_error(Excon::Error::Socket)
+        end
       end
     end
 
@@ -228,7 +251,7 @@ RSpec.describe Dependabot::RegistryClient do
           let(:error) { error_class.new(error_message) }
 
           it "does not cache anything" do
-            expect(Excon).to receive(:get).with(/#{unreachable_url}/, anything)
+            expect(Excon).to receive(:get).with(/#{escaped_unreachable_url}/, anything)
 
             expect { described_class.get(url: unreachable_url) }.to raise_error(error_class)
             expect { described_class.get(url: "#{unreachable_url}/foos") }.to raise_error(error_class)
@@ -242,7 +265,7 @@ RSpec.describe Dependabot::RegistryClient do
       let(:error) { Excon::Error.new("Boom!") }
 
       it "does not cache anything" do
-        expect(Excon).to receive(:get).with(/#{unreachable_url}/, anything)
+        expect(Excon).to receive(:get).with(/#{escaped_unreachable_url}/, anything)
 
         expect { described_class.get(url: unreachable_url) }.to raise_error(Excon::Error)
         expect { described_class.get(url: "#{unreachable_url}/foos") }.to raise_error(Excon::Error)

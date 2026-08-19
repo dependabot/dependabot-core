@@ -104,7 +104,7 @@ module Dependabot
       sig { params(dependencies: T::Array[Dependabot::Dependency]).returns(T::Boolean) }
       def git_source?(dependencies)
         dependencies.any? do |dep|
-          dep.requirements.any? { |req| req.fetch(:source)&.fetch(:type) == "git" }
+          dep.requirements.any? { |req| req.source_string("type") == "git" }
         end
       end
 
@@ -347,10 +347,12 @@ module Dependabot
         )
       end
 
-      sig { returns(T.untyped) }
+      sig { returns(::Bundler::LockfileParser) }
       def parsed_lockfile
-        @parsed_lockfile = T.let(@parsed_lockfile, T.untyped)
-        @parsed_lockfile ||= CachedLockfileParser.parse(sanitized_lockfile_content)
+        @parsed_lockfile ||= T.let(
+          CachedLockfileParser.parse(sanitized_lockfile_content),
+          T.nilable(::Bundler::LockfileParser)
+        )
       end
 
       sig { returns(T::Array[String]) }
@@ -378,7 +380,7 @@ module Dependabot
       sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
       def production?(dependency)
         groups = dependency.requirements
-                           .flat_map { |r| r.fetch(:groups) }
+                           .flat_map { |r| r.groups || [] }
                            .map(&:to_s)
 
         return true if groups.empty?

@@ -174,7 +174,9 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         before do
           allow(job).to receive_messages(
             dependencies: [dependency],
-            dependency_groups: [{ "applies-to" => "security-updates" }]
+            dependency_groups: [
+              Dependabot::Job::DependencyGroupDefinition.from_hash({ "applies-to" => "security-updates" })
+            ]
           )
         end
 
@@ -187,7 +189,9 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         before do
           allow(job).to receive_messages(
             dependencies: [dependency],
-            dependency_groups: [{ "applies-to" => "version-updates" }]
+            dependency_groups: [
+              Dependabot::Job::DependencyGroupDefinition.from_hash({ "applies-to" => "version-updates" })
+            ]
           )
         end
 
@@ -266,7 +270,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
           allow(job).to receive(:existing_group_pull_requests).and_return(
             [
               { "dependency-group-name" => "dummy-group", "pr_number" => 123 }
-            ]
+            ].map { |pr| Dependabot::Job::ExistingGroupPullRequest.from_hash(pr) }
           )
         end
 
@@ -299,7 +303,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
                   }
                 ]
               }
-            ],
+            ].map { |pr| Dependabot::Job::ExistingGroupPullRequest.from_hash(pr) },
             source: mock_source
           )
           allow(mock_source).to receive(:directory).and_return("/")
@@ -328,7 +332,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
                   }
                 ]
               }
-            ],
+            ].map { |pr| Dependabot::Job::ExistingGroupPullRequest.from_hash(pr) },
             source: mock_source
           )
           allow(mock_source).to receive(:directory).and_return("/")
@@ -337,6 +341,67 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         it "skips creating a new PR" do
           expect(mock_create_group_update).not_to receive(:perform)
           expect(dependency_snapshot).to receive(:mark_group_handled).with(dependency_group)
+          perform
+        end
+      end
+
+      context "when PR covers a subset of the job's directories" do
+        before do
+          allow(job).to receive_messages(
+            existing_group_pull_requests: [
+              {
+                "dependency-group-name" => "dummy-group",
+                "pr_number" => 123,
+                "dependencies" => [
+                  {
+                    "dependency-name" => "rollup",
+                    "dependency-version" => "2.79.2",
+                    "directory" => "/"
+                  }
+                ]
+              }
+            ].map { |pr| Dependabot::Job::ExistingGroupPullRequest.from_hash(pr) },
+            source: mock_source_with_multiple_dirs
+          )
+        end
+
+        it "skips creating a new PR" do
+          expect(mock_create_group_update).not_to receive(:perform)
+          expect(dependency_snapshot).to receive(:mark_group_handled).with(dependency_group)
+          perform
+        end
+      end
+
+      context "when PR covers directories outside the job's directories" do
+        before do
+          allow(job).to receive_messages(
+            existing_group_pull_requests: [
+              {
+                "dependency-group-name" => "dummy-group",
+                "pr_number" => 123,
+                "dependencies" => [
+                  {
+                    "dependency-name" => "rollup",
+                    "dependency-version" => "2.79.2",
+                    "directory" => "/"
+                  },
+                  {
+                    "dependency-name" => "rollup",
+                    "dependency-version" => "2.79.2",
+                    "directory" => "/packages/corelib"
+                  }
+                ]
+              }
+            ].map { |pr| Dependabot::Job::ExistingGroupPullRequest.from_hash(pr) },
+            source: mock_source
+          )
+          allow(mock_source).to receive(:directory).and_return("/")
+        end
+
+        it "creates a new PR" do
+          allow(mock_create_group_update).to receive(:perform).and_return(mock_dependency_change)
+          expect(mock_create_group_update).to receive(:perform)
+          expect(dependency_snapshot).not_to receive(:mark_group_handled).with(dependency_group)
           perform
         end
       end
@@ -352,7 +417,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
                   { "dependency-name" => "rollup", "dependency-version" => "2.79.2" }
                 ]
               }
-            ],
+            ].map { |pr| Dependabot::Job::ExistingGroupPullRequest.from_hash(pr) },
             source: mock_source
           )
           allow(mock_source).to receive(:directory).and_return("/")

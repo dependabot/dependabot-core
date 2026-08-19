@@ -6,6 +6,7 @@ require "toml-rb"
 require "sorbet-runtime"
 
 require "dependabot/dependency"
+require "dependabot/dependency_requirement"
 require "dependabot/errors"
 require "dependabot/uv/name_normaliser"
 require "dependabot/uv/requirement_parser"
@@ -31,10 +32,10 @@ module Dependabot
       require_relative "update_checker/latest_version_finder"
       require_relative "update_checker/lock_file_resolver"
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         RequirementsUpdater.new(
-          requirements: requirements,
+          requirements: dependency.requirements,
           latest_resolvable_version: preferred_resolvable_version&.to_s,
           update_strategy: requirements_update_strategy,
           has_lockfile: requirements_text_file?
@@ -97,10 +98,9 @@ module Dependabot
         raise "Claimed to be a sub-dependency, but no lockfile exists!"
       end
 
-      sig { override.params(reqs: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Boolean) }
+      sig { override.params(reqs: T::Array[Dependabot::DependencyRequirement]).returns(T::Boolean) }
       def exact_requirement?(reqs)
-        reqs = reqs.map { |r| r.fetch(:requirement) }
-        reqs = reqs.compact
+        reqs = reqs.filter_map(&:requirement_string)
         reqs = reqs.flat_map { |r| r.split(",").map(&:strip) }
         reqs.any? { |r| Uv::Requirement.new(r).exact? }
       end
@@ -143,7 +143,8 @@ module Dependabot
             credentials: credentials,
             repo_contents_path: repo_contents_path,
             security_advisories: security_advisories,
-            ignored_versions: ignored_versions
+            ignored_versions: ignored_versions,
+            update_cooldown: @update_cooldown
           ),
           T.nilable(LockFileResolver)
         )
@@ -155,12 +156,13 @@ module Dependabot
         return if reqs.none?
 
         requirement = reqs.find do |r|
-          file = r[:file]
+          file = r.file
+          next false unless file
 
-          file == "uv.lock" || file == "pyproject.toml" || file.end_with?(".in") || file.end_with?(".txt")
+          file == "uv.lock" || file.end_with?("pyproject.toml") || file.end_with?(".in") || file.end_with?(".txt")
         end
 
-        requirement&.fetch(:requirement)
+        requirement&.requirement_string
       end
 
       sig { override.returns(String) }
@@ -185,7 +187,7 @@ module Dependabot
         return ">=#{dependency.version}" if dependency.version
 
         version_for_requirement =
-          requirements.filter_map { |r| r[:requirement] }
+          requirements.filter_map(&:requirement_string)
                       .reject { |req_string| req_string.start_with?("<") }
                       .select { |req_string| req_string.match?(VERSION_REGEX) }
                       .map { |req_string| req_string.match(VERSION_REGEX).to_s }
@@ -211,27 +213,9 @@ module Dependabot
         )
       end
 
-      sig { override.returns(T::Boolean) }
-      def library?
-        return false unless updating_pyproject?
-        return false unless library_details
-
-        return false if T.must(library_details)["name"].nil?
-
-        # Hit PyPi and check whether there are details for a library with a
-        # matching name and description
-        index_response = Dependabot::RegistryClient.get(
-          url: "https://pypi.org/pypi/#{normalised_name(T.must(library_details)['name'])}/json/"
-        )
-
-        return false unless index_response.status == 200
-
-        pypi_info = JSON.parse(index_response.body)["info"] || {}
-        pypi_info["summary"] == T.must(library_details)["description"]
-      rescue Excon::Error::Timeout, Excon::Error::Socket
-        false
-      rescue URI::InvalidURIError
-        false
+      sig { returns(T::Boolean) }
+      def updating_pyproject?
+        requirement_files.any? { |file| file.end_with?("pyproject.toml") }
       end
 
       sig { returns(T::Boolean) }

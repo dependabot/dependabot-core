@@ -58,6 +58,41 @@ RSpec.describe Dependabot::Composer::Helpers do
 
       expect(described_class.composer_version(composer_json)).to eq("2")
     end
+
+    context "with a lockfile" do
+      it "uses '2' when lockfile has a V2 plugin-api-version" do
+        composer_json = JSON.parse(composer_v2_content)
+        parsed_lockfile = { "plugin-api-version" => "2.6.0" }
+
+        expect(Dependabot.logger).not_to receive(:warn)
+        expect(described_class.composer_version(composer_json, parsed_lockfile)).to eq("2")
+      end
+
+      it "uses '2' when lockfile has a V1 plugin-api-version since V1 is no longer supported" do
+        composer_json = JSON.parse(composer_v2_content)
+        parsed_lockfile = { "plugin-api-version" => "1.1.0" }
+
+        expect(Dependabot.logger).to receive(:warn).with(/Composer V1 lockfile detected/)
+        expect(described_class.composer_version(composer_json, parsed_lockfile)).to eq("2")
+      end
+
+      it "uses '2' and does not log a warning when lockfile is missing plugin-api-version" do
+        composer_json = JSON.parse(composer_v2_content)
+        parsed_lockfile = {}
+
+        expect(Dependabot.logger).not_to receive(:warn)
+        expect(described_class.composer_version(composer_json, parsed_lockfile)).to eq("2")
+      end
+
+      it "logs the V1 warning on each call" do
+        composer_json = JSON.parse(composer_v2_content)
+        parsed_lockfile = { "plugin-api-version" => "1.1.0" }
+
+        expect(Dependabot.logger).to receive(:warn).with(/Composer V1 lockfile detected/).twice
+        described_class.composer_version(composer_json, parsed_lockfile)
+        described_class.composer_version(composer_json, parsed_lockfile)
+      end
+    end
   end
 
   describe ".package_manager_run_command" do

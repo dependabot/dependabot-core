@@ -14,6 +14,9 @@ namespace NuGetUpdater.Core.Run.ApiModel;
 public sealed record Job
 {
     public string PackageManager { get; init; } = "nuget";
+
+    public JobCommand Command { get; init; } = JobCommand.None;
+
     public ImmutableArray<AllowedUpdate> AllowedUpdates { get; init; } = [new AllowedUpdate()];
 
     [JsonConverter(typeof(NullAsBoolConverter))]
@@ -34,12 +37,12 @@ public sealed record Job
     public required JobSource Source { get; init; }
     public bool UpdateSubdependencies { get; init; } = false;
     public bool UpdatingAPullRequest { get; init; } = false;
+    public bool MultiEcosystemUpdate { get; init; } = false;
     public bool VendorDependencies { get; init; } = false;
     public bool RejectExternalCode { get; init; } = false;
     public bool RepoPrivate { get; init; } = false;
     public CommitOptions? CommitMessageOptions { get; init; } = null;
     public ImmutableArray<Dictionary<string, object>>? CredentialsMetadata { get; init; } = null;
-    public int MaxUpdaterRunTime { get; init; } = 0;
     public Cooldown? Cooldown { get; init; } = null;
 
     public ImmutableArray<string> GetRawDirectories()
@@ -50,7 +53,7 @@ public sealed record Job
             builder.Add(Source.Directory);
         }
 
-        builder.AddRange(Source.Directories ?? []);
+        builder.AddRange((Source.Directories ?? []).Where(d => d is not null));
         if (builder.Count == 0)
         {
             builder.Add("/");
@@ -210,8 +213,8 @@ public sealed record Job
                     return true;
                 }
 
-                // ...no specific update being performed, do it if it's not transitive
-                return !dependency.IsTransitive;
+                // ...no specific update being performed, do it if it's a top-level dependency
+                return dependency.IsTopLevel;
             }
         }
 

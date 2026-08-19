@@ -9,36 +9,25 @@ module Dependabot
     module Helpers
       extend T::Sig
 
-      V1 = T.let("1", String)
-      V2 = T.let("2", String)
+      V1 = "1"
+      V2 = "2"
+
       # If we are updating a project with no lock file then the default should be the newest version
       DEFAULT = T.let(V2, String)
 
       # From composers json-schema: https://getcomposer.org/schema.json
-      COMPOSER_V2_NAME_REGEX = T.let(
-        %r{^[a-z0-9]([_.-]?[a-z0-9]++)*/[a-z0-9](([_.]?|-{0,2})[a-z0-9]++)*$},
-        Regexp
-      )
+      COMPOSER_V2_NAME_REGEX = %r{^[a-z0-9]([_.-]?[a-z0-9]++)*/[a-z0-9](([_.]?|-{0,2})[a-z0-9]++)*$}
 
       # From https://github.com/composer/composer/blob/b7d770659b4e3ef21423bd67ade935572913a4c1/src/Composer/Repository/PlatformRepository.php#L33
-      PLATFORM_PACKAGE_REGEX = T.let(
-        /
+      PLATFORM_PACKAGE_REGEX = /
         ^(?:php(?:-64bit|-ipv6|-zts|-debug)?|hhvm|(?:ext|lib)-[a-z0-9](?:[_.-]?[a-z0-9]+)*
         |composer-(?:plugin|runtime)-api)$
-        /x,
-        Regexp
-      )
+        /x
 
-      FAILED_GIT_CLONE_WITH_MIRROR = T.let(
-        /^Failed to execute git clone --(mirror|checkout)[^']*'(?<url>[^']*?)'/,
-        Regexp
-      )
-      FAILED_GIT_CLONE = T.let(/^Failed to clone (?<url>.*?)/, Regexp)
+      FAILED_GIT_CLONE_WITH_MIRROR = /^Failed to execute git clone --(mirror|checkout)[^']*'(?<url>[^']*?)'/
+      FAILED_GIT_CLONE = /^Failed to clone (?<url>.*?)/
 
-      GIT_REPO_URL = T.let(
-        %r{((git|ssh|http(s)?)|(git@[\w\.]+))(:(//)?)([\w\.@\:/\-~]+)(/)?},
-        Regexp
-      )
+      GIT_REPO_URL = %r{((git|ssh|http(s)?)|(git@[\w\.]+))(:(//)?)([\w\.@\:/\-~]+)(/)?}
 
       sig do
         params(
@@ -48,13 +37,21 @@ module Dependabot
           .returns(String)
       end
       def self.composer_version(composer_json, parsed_lockfile = nil)
-        # If the parsed lockfile has a plugin API version, we return either V1 or V2
-        # based on the major version of the lockfile.
+        # If the parsed lockfile has a plugin API version, always use V2.
+        # V1 helpers have been removed, so we run with Composer V2 regardless.
         if parsed_lockfile && parsed_lockfile[PackageManager::PLUGIN_API_VERSION_KEY]
           version = Composer::Version.new(parsed_lockfile[PackageManager::PLUGIN_API_VERSION_KEY])
           major_version = version.canonical_segments.first
 
-          return major_version.nil? || major_version > 1 ? V2 : V1
+          if major_version && major_version <= 1
+            plugin_api_version = parsed_lockfile[PackageManager::PLUGIN_API_VERSION_KEY]
+            Dependabot.logger.warn(
+              "Composer V1 lockfile detected (plugin-api-version: #{plugin_api_version}). " \
+              "Dependabot no longer supports Composer V1. Running with Composer V2."
+            )
+          end
+
+          return V2
         end
 
         # Check if the composer name does not follow the Composer V2 naming conventions.

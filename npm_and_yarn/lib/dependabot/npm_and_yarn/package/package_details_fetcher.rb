@@ -7,12 +7,14 @@ require "time"
 require "dependabot/package/package_release"
 require "dependabot/package/package_details"
 require "dependabot/npm_and_yarn/package/registry_finder"
+require "dependabot/npm_and_yarn/package/registry_credential_helpers"
 
 module Dependabot
   module NpmAndYarn
     module Package
       class PackageDetailsFetcher
         extend T::Sig
+        include RegistryCredentialHelpers
 
         GLOBAL_REGISTRY = "registry.npmjs.org"
         NPM_OFFICIAL_WEBSITE = "https://www.npmjs.com"
@@ -49,9 +51,9 @@ module Dependabot
           dependency_files:,
           credentials:
         )
-          @dependency = T.let(dependency, Dependabot::Dependency)
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @dependency = dependency
+          @dependency_files = dependency_files
+          @credentials = credentials
 
           @npm_details = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
           @dist_tags = T.let(nil, T.nilable(T::Hash[String, String]))
@@ -60,10 +62,10 @@ module Dependabot
           @yanked = T.let({}, T::Hash[Gem::Version, T.nilable(T::Boolean)])
         end
 
-        sig { returns(Dependabot::Dependency) }
+        sig { override.returns(Dependabot::Dependency) }
         attr_reader :dependency
 
-        sig { returns(T::Array[Dependabot::Credential]) }
+        sig { override.returns(T::Array[Dependabot::Credential]) }
         attr_reader :credentials
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -96,6 +98,11 @@ module Dependabot
 
         sig { returns(String) }
         def dependency_url
+          if (configured_registry = configured_registry_from_credentials)
+            escaped_dependency_name = dependency.name.gsub("/", "%2F")
+            return "#{configured_registry}/#{escaped_dependency_name}"
+          end
+
           registry_finder.dependency_url
         end
 
@@ -381,11 +388,19 @@ module Dependabot
 
         sig { returns(T::Hash[String, String]) }
         def registry_auth_headers
+          if (configured_registry = configured_registry_from_credentials)
+            return auth_headers_for_registry(configured_registry)
+          end
+
           registry_finder.auth_headers
         end
 
         sig { returns(String) }
         def dependency_registry
+          if (configured_registry = configured_registry_from_credentials)
+            return configured_registry.sub(%r{^https?://}, "")
+          end
+
           registry_finder.registry
         end
 

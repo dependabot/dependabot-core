@@ -9,6 +9,7 @@ require "sorbet-runtime"
 require "dependabot/errors"
 require "dependabot/logger"
 require "dependabot/pub/requirement"
+require "dependabot/pub/requirement_source"
 require "dependabot/requirements_update_strategy"
 require "dependabot/shared_helpers"
 
@@ -62,8 +63,8 @@ module Dependabot
 
       sig { params(dependency: Dependabot::Dependency).returns(String) }
       def repository_url(dependency)
-        source = dependency.requirements.first&.dig(:source)
-        source&.dig("description", "url") || options[:pub_hosted_url] || "https://pub.dev"
+        RequirementSource.new(dependency.requirements.first).description_string("url") || options[:pub_hosted_url] ||
+          "https://pub.dev"
       end
 
       sig { params(dependency: Dependabot::Dependency).returns(T::Hash[String, T.untyped]) }
@@ -295,11 +296,11 @@ module Dependabot
 
       sig { params(stderr: String).returns(T.noreturn) }
       def raise_error(stderr)
-        if stderr.include?("Failed parsing lock file") || stderr.include?("Unsupported operation")
+        if stderr.match?(/Failed parsing lock file|Unsupported operation|Duplicate mapping key|"name" field/)
           raise DependencyFileNotEvaluatable, "dependency_services failed: #{stderr}"
         elsif stderr.include?("Git error")
           raise Dependabot::InvalidGitAuthToken, "dependency_services failed: #{stderr}"
-        elsif stderr.include?("version solving failed")
+        elsif stderr.match?(/version solving failed|found no workspace root|Only apply dependency_services to the root/)
           raise Dependabot::DependencyFileNotResolvable, "dependency_services failed: #{stderr}"
         elsif stderr.include?("Could not find a file named \"pubspec.yaml\"")
           raise Dependabot::DependencyFileNotFound.new("pubspec.yaml", "dependency_services failed: #{stderr}")

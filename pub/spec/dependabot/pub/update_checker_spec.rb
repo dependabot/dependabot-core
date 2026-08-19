@@ -805,6 +805,54 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
       end
     end
+
+    context "when workspace root is missing" do
+      let(:stderr) do
+        "Found a pubspec.yaml at dependabot_tmp_dir/packages/geo_ip_client. " \
+          "But it has resolution `workspace`.\n" \
+          "But found no workspace root including it in parent directories."
+      end
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "when dependency_services is not run from workspace root" do
+      let(:stderr) { "Only apply dependency_services to the root of the workspace." }
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "when pubspec.yaml has duplicate mapping keys" do
+      let(:stderr) { "Error on line 39, column 3 of pubspec.yaml: Duplicate mapping key." }
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
+
+    context "when pubspec.yaml name doesn't match expected name" do
+      let(:stderr) do
+        "Error on line 1, column 7: \"name\" field doesn't match expected name \"flutter_shortcuts\"."
+      end
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
+
+    context "when pubspec.yaml name field is not a string" do
+      let(:stderr) do
+        "Error on line 1, column 7 of pubspec.yaml: \"name\" field must be a String."
+      end
+
+      it "raises the correct error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
   end
 
   context "with a git dependency" do

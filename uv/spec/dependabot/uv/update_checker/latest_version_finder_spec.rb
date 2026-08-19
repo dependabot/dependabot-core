@@ -141,6 +141,10 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LatestVersionFinder do
       end
 
       it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+
+      it "returns a version with a clean string representation" do
+        expect(latest_version.to_s).to eq("2.6.0")
+      end
     end
 
     context "when the PyPI response includes data-requires-python entries" do

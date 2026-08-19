@@ -1,0 +1,10 @@
+[project]
+name = "myapp"
+version = "1.0.0"
+
+dependencies = [
+    "requests >= 2.13.0, < 3.0",
+    "urllib3 == 1.26.0",
+    "cachecontrol[filecache] >= 0.14.0",
+    "idna >= 2.5 ; python_version < '3.0'",
+]

@@ -1212,6 +1212,32 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         it { is_expected.to eq(Gem::Version.new("0.14.9")) }
+
+        context "when pnpm reports a conflicting peer" do
+          before do
+            allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command) do |command, **_kwargs|
+              if command == "--filter . peers check"
+                raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                  message: <<~OUTPUT,
+                    Issues with peer dependencies found
+
+                    ✕ conflicting peer react
+                      Wanted:
+                        ^0.14.0:
+                          react-modal@0.6.1
+                        "^0.14.9 || ^15.3.0":
+                          react-tabs@1.1.0
+                  OUTPUT
+                  error_context: {}
+                )
+              end
+
+              command.include?("@16.3.1") ? 'Run "pnpm peers check" to list them.' : ""
+            end
+          end
+
+          it { is_expected.to eq(Gem::Version.new("0.14.9")) }
+        end
       end
 
       describe "when pnpm returns ERR_PNPM_TRUST_DOWNGRADE" do
@@ -2326,7 +2352,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           .with(
             anything, # The actual command
             hash_including(
-              env: hash_including("npm_config_registry" => "https://artifactory.example.com/artifactory/api/npm/npm/")
+              env: hash_including("npm_config_registry" => "https://artifactory.example.com/artifactory/api/npm/npm")
             )
           )
       end

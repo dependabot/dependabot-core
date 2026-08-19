@@ -186,7 +186,7 @@
 #    s = "This is line 1\nThis is line 2\n"
 #    Base64.encode64(s) # => "VGhpcyBpcyBsaW5lIDEKVGhpcyBpcyBsaW5lIDIK\n"
 #
-# source://base64//lib/base64.rb#184
+# pkg:gem/base64#lib/base64.rb:184
 module Base64
   private
 
@@ -211,7 +211,7 @@ module Base64
   #   Base64.decode64("MDEyMzQ1Njc=")  # => "01234567"
   #   Base64.decode64("MDEyMzQ1Njc==") # => "01234567"
   #
-  # source://base64//lib/base64.rb#247
+  # pkg:gem/base64#lib/base64.rb:247
   def decode64(str); end
 
   # :call-seq:
@@ -246,7 +246,7 @@ module Base64
   #   s = "This is line 1\nThis is line 2\n"
   #   Base64.encode64(s) # => "VGhpcyBpcyBsaW5lIDEKVGhpcyBpcyBsaW5lIDIK\n"
   #
-  # source://base64//lib/base64.rb#222
+  # pkg:gem/base64#lib/base64.rb:222
   def encode64(bin); end
 
   # :call-seq:
@@ -272,7 +272,7 @@ module Base64
   #   Base64.strict_decode64("MDEyMzQ1Njc=")  # => "01234567"
   #   Base64.strict_decode64("MDEyMzQ1Njc==") # Raises ArgumentError
   #
-  # source://base64//lib/base64.rb#309
+  # pkg:gem/base64#lib/base64.rb:309
   def strict_decode64(str); end
 
   # :call-seq:
@@ -306,7 +306,7 @@ module Base64
   #   s = "This is line 1\nThis is line 2\n"
   #   Base64.strict_encode64(s) # => "VGhpcyBpcyBsaW5lIDEKVGhpcyBpcyBsaW5lIDIK"
   #
-  # source://base64//lib/base64.rb#282
+  # pkg:gem/base64#lib/base64.rb:282
   def strict_encode64(bin); end
 
   # :call-seq:
@@ -328,7 +328,7 @@ module Base64
   #   Base64.urlsafe_decode64("MDEyMzQ1Njc=") # => "01234567"
   #   Base64.urlsafe_decode64("MDEyMzQ1Njc==") # Raises ArgumentError.
   #
-  # source://base64//lib/base64.rb#369
+  # pkg:gem/base64#lib/base64.rb:369
   def urlsafe_decode64(str); end
 
   # :call-seq:
@@ -361,7 +361,7 @@ module Base64
   #   Base64.urlsafe_encode64('*' * 46)
   #   # => "KioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKg=="
   #
-  # source://base64//lib/base64.rb#343
+  # pkg:gem/base64#lib/base64.rb:343
   def urlsafe_encode64(bin, padding: T.unsafe(nil)); end
 
   class << self
@@ -386,7 +386,7 @@ module Base64
     #   Base64.decode64("MDEyMzQ1Njc=")  # => "01234567"
     #   Base64.decode64("MDEyMzQ1Njc==") # => "01234567"
     #
-    # source://base64//lib/base64.rb#247
+    # pkg:gem/base64#lib/base64.rb:247
     def decode64(str); end
 
     # :call-seq:
@@ -421,7 +421,7 @@ module Base64
     #   s = "This is line 1\nThis is line 2\n"
     #   Base64.encode64(s) # => "VGhpcyBpcyBsaW5lIDEKVGhpcyBpcyBsaW5lIDIK\n"
     #
-    # source://base64//lib/base64.rb#222
+    # pkg:gem/base64#lib/base64.rb:222
     def encode64(bin); end
 
     # :call-seq:
@@ -447,7 +447,7 @@ module Base64
     #   Base64.strict_decode64("MDEyMzQ1Njc=")  # => "01234567"
     #   Base64.strict_decode64("MDEyMzQ1Njc==") # Raises ArgumentError
     #
-    # source://base64//lib/base64.rb#309
+    # pkg:gem/base64#lib/base64.rb:309
     def strict_decode64(str); end
 
     # :call-seq:
@@ -481,7 +481,7 @@ module Base64
     #   s = "This is line 1\nThis is line 2\n"
     #   Base64.strict_encode64(s) # => "VGhpcyBpcyBsaW5lIDEKVGhpcyBpcyBsaW5lIDIK"
     #
-    # source://base64//lib/base64.rb#282
+    # pkg:gem/base64#lib/base64.rb:282
     def strict_encode64(bin); end
 
     # :call-seq:
@@ -503,7 +503,7 @@ module Base64
     #   Base64.urlsafe_decode64("MDEyMzQ1Njc=") # => "01234567"
     #   Base64.urlsafe_decode64("MDEyMzQ1Njc==") # Raises ArgumentError.
     #
-    # source://base64//lib/base64.rb#369
+    # pkg:gem/base64#lib/base64.rb:369
     def urlsafe_decode64(str); end
 
     # :call-seq:
@@ -536,10 +536,10 @@ module Base64
     #   Base64.urlsafe_encode64('*' * 46)
     #   # => "KioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKg=="
     #
-    # source://base64//lib/base64.rb#343
+    # pkg:gem/base64#lib/base64.rb:343
     def urlsafe_encode64(bin, padding: T.unsafe(nil)); end
   end
 end
 
-# source://base64//lib/base64.rb#186
+# pkg:gem/base64#lib/base64.rb:186
 Base64::VERSION = T.let(T.unsafe(nil), String)

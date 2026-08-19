@@ -2,6 +2,9 @@ using Test
 using JSON
 using DependabotHelper
 
+# Keep tests hermetic: don't hit the network to refresh registries
+ENV["DEPENDABOT_SKIP_REGISTRY_UPDATE"] = "1"
+
 @testset "DependabotHelper.jl Tests" begin
     # Define UUIDs once for reuse throughout all tests
     json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
@@ -107,6 +110,34 @@ using DependabotHelper
         @test occursin("Unknown function", result["error"])
     end
 
+    @testset "JSON error contract" begin
+        # Expected domain errors are wrapped under "result" (exit 0 on the
+        # subprocess side) so Ruby can inspect result["error"].
+        input = """{"function": "get_latest_version", "args": {"package_name": "NonExistentPackage12345", "package_uuid": "00000000-0000-0000-0000-000000000000"}}"""
+        result = JSON.parse(DependabotHelper.run(input))
+        @test haskey(result, "result")
+        @test !haskey(result, "error")
+        @test haskey(result["result"], "error")
+        @test occursin("not found", result["result"]["error"])
+
+        # Missing-argument validation errors are also domain errors.
+        input = """{"function": "get_latest_version", "args": {"package_name": "JSON"}}"""
+        result = JSON.parse(DependabotHelper.run(input))
+        @test haskey(result, "result")
+        @test haskey(result["result"], "error")
+
+        # Unknown functions are protocol errors: top-level "error" (exit 1).
+        input = """{"function": "no_such_function", "args": {}}"""
+        result = JSON.parse(DependabotHelper.run(input))
+        @test haskey(result, "error")
+        @test !haskey(result, "result")
+        @test occursin("Unknown function", result["error"])
+
+        # Malformed input is a protocol error.
+        result = JSON.parse(DependabotHelper.run("{not json"))
+        @test haskey(result, "error")
+    end
+
     @testset "Integration Tests" begin
         # Test that all main functions return proper error handling
         functions_to_test = [
@@ -114,8 +145,7 @@ using DependabotHelper
             () -> DependabotHelper.get_latest_version("NonExistentPackage12345", "00000000-0000-0000-0000-000000000000"),
             () -> DependabotHelper.parse_project("/nonexistent/Project.toml"),
             () -> DependabotHelper.get_package_metadata("NonExistentPackage12345", "00000000-0000-0000-0000-000000000000"),
-            () -> DependabotHelper.parse_manifest("/nonexistent/Manifest.toml"),
-            () -> DependabotHelper.check_update_compatibility("/nonexistent/Project.toml", "JSON", "0.21.0", json_uuid)
+            () -> DependabotHelper.parse_manifest("/nonexistent/Manifest.toml")
         ]
 
         for test_func in functions_to_test
@@ -401,6 +431,120 @@ using DependabotHelper
             @test samefile(manifest_a, manifest_b)
         end
 
+        @testset "workspace discovery without committed manifest" begin
+            mktempdir() do tmpdir
+                write(joinpath(tmpdir, "Project.toml"), """
+                name = "Root"
+                uuid = "1234e567-e89b-12d3-a456-789012345678"
+                version = "0.1.0"
+
+                [workspace]
+                projects = ["docs"]
+                """)
+                mkpath(joinpath(tmpdir, "docs"))
+                write(joinpath(tmpdir, "docs", "Project.toml"), """
+                [deps]
+                Example = "7876af07-990d-54b4-ab0e-23690620f79a"
+                """)
+
+                result = DependabotHelper.find_workspace_project_files(joinpath(tmpdir, "docs"))
+
+                @test !haskey(result, "error")
+                names = [relpath(realpath(p), realpath(tmpdir)) for p in result["project_files"]]
+                @test "Project.toml" in names
+                @test joinpath("docs", "Project.toml") in names
+                @test result["manifest_file"] == ""
+            end
+        end
+
+        @testset "workspace discovery survives membership cycles" begin
+            mktempdir() do tmpdir
+                write(joinpath(tmpdir, "Project.toml"), """
+                name = "Root"
+                uuid = "1234e567-e89b-12d3-a456-789012345678"
+                version = "0.1.0"
+
+                [workspace]
+                projects = ["sub"]
+                """)
+                mkpath(joinpath(tmpdir, "sub"))
+                write(joinpath(tmpdir, "sub", "Project.toml"), """
+                name = "Sub"
+                uuid = "9999e567-e89b-12d3-a456-789012345678"
+                version = "0.1.0"
+
+                [workspace]
+                projects = [".."]
+                """)
+
+                project_files = String[]
+                DependabotHelper.collect_workspace_projects!(project_files, tmpdir)
+
+                @test length(project_files) == 2
+            end
+        end
+
+        @testset "update_manifest does not promote weakdeps" begin
+            mktempdir() do tmpdir
+                write(joinpath(tmpdir, "Project.toml"), """
+                name = "WeakdepProject"
+                uuid = "1234e567-e89b-12d3-a456-789012345678"
+                version = "0.1.0"
+
+                [weakdeps]
+                JSON = "$json_uuid"
+
+                [compat]
+                JSON = "0.21"
+                """)
+                original_manifest = """
+                julia_version = "1.12.0"
+                manifest_format = "2.0"
+                """
+                write(joinpath(tmpdir, "Manifest.toml"), original_manifest)
+
+                result = DependabotHelper.update_manifest(
+                    tmpdir,
+                    Dict{String, Any}(json_uuid => Dict("name" => "JSON", "version" => "0.21.4"))
+                )
+
+                @test isa(result, Dict)
+                @test !haskey(result, "error")
+                # The weakdep must not be Pkg.add'ed into [deps] or the manifest
+                project_after = read(joinpath(tmpdir, "Project.toml"), String)
+                @test !occursin("[deps]", project_after)
+                @test !occursin("JSON", result["manifest_content"])
+            end
+        end
+
+        @testset "parse_project skips [sources]-pinned packages" begin
+            mktempdir() do tmpdir
+                write(joinpath(tmpdir, "Project.toml"), """
+                name = "SourcesProject"
+                uuid = "1234e567-e89b-12d3-a456-789012345678"
+                version = "0.1.0"
+
+                [deps]
+                JSON = "$json_uuid"
+                Example = "7876af07-990d-54b4-ab0e-23690620f79a"
+
+                [sources]
+                JSON = {url = "https://github.com/JuliaIO/JSON.jl", rev = "main"}
+
+                [compat]
+                JSON = "0.21"
+                Example = "0.4"
+                """)
+
+                result = DependabotHelper.parse_project(joinpath(tmpdir, "Project.toml"))
+
+                @test !haskey(result, "error")
+                names = [d["name"] for d in result["dependencies"]]
+                @test "Example" in names
+                @test !("JSON" in names)
+            end
+        end
+
         @testset "WorkspaceTwo update simulation" begin
             # This test simulates what happens when trying to update one workspace member
             # when workspace members have conflicting compat requirements
@@ -533,22 +677,20 @@ using DependabotHelper
         # Test package version fetching
         json_uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
         result = @test_nowarn DependabotHelper.fetch_package_versions("JSON", json_uuid)
-        if !haskey(result, "error")
-            @test result["package_name"] == "JSON"
-            @test haskey(result, "versions")
-            @test haskey(result, "latest_version")
-            @test haskey(result, "total_versions")
-            @test length(result["versions"]) > 0
-        end
+        @test !haskey(result, "error")
+        @test result["package_name"] == "JSON"
+        @test haskey(result, "versions")
+        @test haskey(result, "latest_version")
+        @test haskey(result, "total_versions")
+        @test length(result["versions"]) > 0
 
         # Test package info fetching
         result = @test_nowarn DependabotHelper.fetch_package_info("JSON", json_uuid)
-        if !haskey(result, "error")
-            @test result["name"] == "JSON"
-            @test haskey(result, "uuid")
-            @test haskey(result, "all_versions")
-            @test haskey(result, "latest_version")
-        end
+        @test !haskey(result, "error")
+        @test result["name"] == "JSON"
+        @test haskey(result, "uuid")
+        @test haskey(result, "all_versions")
+        @test haskey(result, "latest_version")
 
         # Test with non-existent package
         result = @test_nowarn DependabotHelper.fetch_package_versions("NonExistentPackage12345", "00000000-0000-0000-0000-000000000000")
@@ -572,28 +714,35 @@ using DependabotHelper
 
         # Test get_latest_version with UUID
         version_result = @test_nowarn DependabotHelper.get_latest_version("JSON", json_uuid)
-        @test haskey(version_result, "version") || haskey(version_result, "error")
-        if haskey(version_result, "version")
-            @test haskey(version_result, "package_uuid")
-            @test version_result["package_uuid"] == json_uuid
-        end
+        @test haskey(version_result, "version")
+        @test haskey(version_result, "package_uuid")
+        @test version_result["package_uuid"] == json_uuid
     end
 
     @testset "New Package Functions Tests" begin
 
         # Test get_available_versions function
         result = @test_nowarn DependabotHelper.get_available_versions("JSON", json_uuid)
-        if !haskey(result, "error")
-            @test haskey(result, "versions")
-            @test isa(result["versions"], Array)
-            @test length(result["versions"]) > 0
-            # Check that versions are strings
-            @test all(v -> isa(v, String), result["versions"])
-        end
+        @test !haskey(result, "error")
+        @test haskey(result, "versions")
+        @test isa(result["versions"], Array)
+        @test length(result["versions"]) > 0
+        # Check that versions are strings
+        @test all(v -> isa(v, String), result["versions"])
 
         # Test get_available_versions with non-existent package
         result = @test_nowarn DependabotHelper.get_available_versions("NonExistentPackage12345", "00000000-0000-0000-0000-000000000000")
         @test haskey(result, "error")
+
+        # Regression test for https://github.com/dependabot/dependabot-core/issues/14912
+        # OrdinaryDiffEqCore 5.0.0 was yanked in JuliaRegistries/General#153927 and must
+        # not be returned by get_available_versions, otherwise the latest version finder
+        # will propose updates to a retracted release.
+        ordinarydiffeqcore_uuid = "bbf590c4-e513-4bbe-9b18-05decba2e5d8"
+        result = @test_nowarn DependabotHelper.get_available_versions("OrdinaryDiffEqCore", ordinarydiffeqcore_uuid)
+        @test !haskey(result, "error")
+        @test haskey(result, "versions")
+        @test "5.0.0" ∉ result["versions"]
 
         # Test get_version_release_date function with General registry package
         # JSON.jl is in the General registry, so it should return a real date
@@ -602,13 +751,16 @@ using DependabotHelper
         result = @test_nowarn DependabotHelper.get_version_release_date("JSON", test_version, json_uuid)
         @test result["release_date"] == "2025-10-17T01:08:11"
 
-        # Test get_version_release_date with non-existent package
+        # A non-existent package yields no date rather than an error
         result = @test_nowarn DependabotHelper.get_version_release_date("NonExistentPackage12345", "1.0.0", "00000000-0000-0000-0000-000000000000")
-        @test haskey(result, "error")
+        @test !haskey(result, "error")
+        @test result["release_date"] === nothing
 
-        # Test get_version_release_date with invalid version
+        # An unknown version yields no date rather than an error (dates of
+        # yanked or old locked versions remain queryable)
         result = @test_nowarn DependabotHelper.get_version_release_date("JSON", "999.999.999", json_uuid)
-        @test haskey(result, "error")
+        @test !haskey(result, "error")
+        @test result["release_date"] === nothing
 
         # Test helper functions for General registry
         @testset "General Registry Helper Functions" begin
@@ -724,17 +876,37 @@ using DependabotHelper
         result = @test_nowarn DependabotHelper.extract_package_metadata_from_url("JSON", "invalid-url")
         @test haskey(result, "error") || haskey(result, "source_url")
 
-        # Test with a GitHub URL format that might be expected
-        github_url = "https://github.com/JuliaIO/JSON.jl.git"
-        result = @test_nowarn DependabotHelper.extract_package_metadata_from_url("JSON", github_url)
-        # This should either succeed or fail gracefully
-        @test isa(result, Dict)
+        # Repo names keep their ".jl" suffix; only trailing ".git" is stripped
+        for url in [
+            "https://github.com/JuliaIO/JSON.jl.git",
+            "https://github.com/JuliaIO/JSON.jl",
+            "git@github.com:JuliaIO/JSON.jl.git"
+        ]
+            result = @test_nowarn DependabotHelper.extract_package_metadata_from_url("JSON", url)
+            @test result["owner"] == "JuliaIO"
+            @test result["repo"] == "JSON.jl"
+        end
     end
 
-    @testset "Dependency Resolution Tests" begin
-        # Test resolve_dependencies_with_constraints with non-existent project
-        result = @test_nowarn DependabotHelper.resolve_dependencies_with_constraints("/nonexistent/Project.toml", Dict(json_uuid => Dict("name" => "JSON", "version" => "0.21.4")))
-        @test haskey(result, "error")
+    @testset "parse_project of non-package environment" begin
+        mktempdir() do tmpdir
+            write(joinpath(tmpdir, "Project.toml"), """
+            [deps]
+            Example = "7876af07-990d-54b4-ab0e-23690620f79a"
+            """)
+            result = DependabotHelper.parse_project(joinpath(tmpdir, "Project.toml"))
+            @test !haskey(result, "error")
+            @test result["version"] === nothing
+            @test result["uuid"] === nothing
+        end
+    end
+
+    @testset "get_version_release_date with null uuid" begin
+        result = @test_nowarn DependabotHelper.get_version_release_date(
+            Dict{String,Any}("package_name" => "JSON", "version" => "0.21.4", "package_uuid" => nothing)
+        )
+        @test isa(result, Dict)
+        @test !haskey(result, "error")
     end
 
     @testset "Args Wrapper Function Tests" begin
@@ -790,8 +962,7 @@ using DependabotHelper
             """{"function": "get_version_release_date", "args": {"package_name": "JSON", "version": "0.21.4", "package_uuid": "$json_uuid"}}""",
             """{"function": "get_version_from_manifest", "args": {"manifest_path": "/nonexistent/Manifest.toml", "name": "JSON", "uuid": "$json_uuid"}}""",
             """{"function": "update_manifest", "args": {"project_path": "/nonexistent/Project.toml", "updates": {"JSON": "0.21.4"}}}""",
-            """{"function": "extract_package_metadata_from_url", "args": {"package_name": "JSON", "source_url": "https://github.com/JuliaIO/JSON.jl.git"}}""",
-            """{"function": "resolve_dependencies_with_constraints", "args": {"project_path": "/nonexistent/Project.toml", "target_updates": {"JSON": "0.21.4"}}}"""
+            """{"function": "extract_package_metadata_from_url", "args": {"package_name": "JSON", "source_url": "https://github.com/JuliaIO/JSON.jl.git"}}"""
         ]
 
         for test_input in new_test_cases

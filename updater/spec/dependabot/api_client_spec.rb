@@ -375,7 +375,7 @@ RSpec.describe Dependabot::ApiClient do
                 ]
               )
               expect(data["base-commit-sha"]).to eql("sha")
-              expect(data).not_to have_key("commit-message")
+              expect(data["commit-message"]).to eq("Commit message")
               expect(data["pr-title"]).to eq("PR name")
               expect(data["pr-body"]).to eq("PR message")
             end)
@@ -793,10 +793,201 @@ RSpec.describe Dependabot::ApiClient do
       )
     end
 
-    context "when cooldown is nil" do
+    context "when job is nil" do
       it "does not send a request" do
         client.record_cooldown_meta(nil)
         expect(WebMock).not_to have_requested(:post, record_cooldown_meta_url)
+      end
+    end
+
+    context "when the host does not implement the endpoint" do
+      before do
+        stub_request(:post, record_cooldown_meta_url).to_return(status: 404, body: "The resource cannot be found.")
+      end
+
+      it "does not retry" do
+        client.record_cooldown_meta(job)
+
+        expect(WebMock).to have_requested(:post, record_cooldown_meta_url).once
+      end
+    end
+
+    context "when running through the Dependabot CLI" do
+      subject(:client) { described_class.new("http://example.com", "cli", "token") }
+
+      let(:record_cooldown_meta_url) { "http://example.com/update_jobs/cli/record_cooldown_meta" }
+
+      it "does not send hosted-service telemetry" do
+        client.record_cooldown_meta(job)
+        expect(WebMock).not_to have_requested(:post, record_cooldown_meta_url)
+      end
+    end
+  end
+
+  describe "fetch_blocked_versions" do
+    let(:blocked_versions_url) { "http://example.com/update_jobs/1/blocked_versions" }
+
+    context "when the API returns blocked versions" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(
+            status: 200,
+            body: {
+              data: [
+                { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" },
+                { "dependency-name" => "flatmap-stream", "version-requirement" => "= 0.1.1", "reason" => "malware" }
+              ]
+            }.to_json,
+            headers: headers
+          )
+      end
+
+      it "returns the blocked versions array" do
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq(
+          [
+            { "dependency-name" => "event-stream", "version-requirement" => "= 3.3.6", "reason" => "malware" },
+            { "dependency-name" => "flatmap-stream", "version-requirement" => "= 0.1.1", "reason" => "malware" }
+          ]
+        )
+      end
+    end
+
+    context "when the API returns an error" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(status: 500, body: "Internal Server Error", headers: headers)
+      end
+
+      it "returns an empty array and logs a warning" do
+        expect(Dependabot.logger).to receive(:warn).with(/Failed to fetch blocked versions/)
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq([])
+      end
+    end
+
+    context "when the API times out" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_timeout
+      end
+
+      it "returns an empty array and logs a warning" do
+        expect(Dependabot.logger).to receive(:warn).with(/Failed to fetch blocked versions/)
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq([])
+      end
+    end
+
+    context "when the API returns no blocked versions" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(
+            status: 200,
+            body: { data: [] }.to_json,
+            headers: headers
+          )
+      end
+
+      it "returns an empty array" do
+        result = client.fetch_blocked_versions("npm_and_yarn")
+        expect(result).to eq([])
+      end
+    end
+
+    context "when the API returns invalid JSON" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(status: 200, body: "not json", headers: headers)
+      end
+
+      it "raises an API error" do
+        expect { client.fetch_blocked_versions("npm_and_yarn") }
+          .to raise_error(Dependabot::ApiError, /blocked versions response/)
+      end
+    end
+
+    context "when the API returns data that is not an array" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(
+            status: 200,
+            body: { data: "unexpected" }.to_json,
+            headers: headers
+          )
+      end
+
+      it "raises an API error" do
+        expect { client.fetch_blocked_versions("npm_and_yarn") }
+          .to raise_error(Dependabot::ApiError, /blocked versions response/)
+      end
+    end
+
+    context "when the API returns a non-object JSON body" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(status: 200, body: "[]", headers: headers)
+      end
+
+      it "raises an API error" do
+        expect { client.fetch_blocked_versions("npm_and_yarn") }
+          .to raise_error(Dependabot::ApiError, /blocked versions response/)
+      end
+    end
+
+    context "when the API returns data entries that are not hashes" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(
+            status: 200,
+            body: { data: [1, "not-a-hash"] }.to_json,
+            headers: headers
+          )
+      end
+
+      it "raises an API error" do
+        expect { client.fetch_blocked_versions("npm_and_yarn") }
+          .to raise_error(Dependabot::ApiError, /blocked versions response/)
+      end
+    end
+
+    context "when the API omits data" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(status: 200, body: {}.to_json, headers: headers)
+      end
+
+      it "raises an API error" do
+        expect { client.fetch_blocked_versions("npm_and_yarn") }
+          .to raise_error(Dependabot::ApiError, /blocked versions response/)
+      end
+    end
+
+    context "when an entry has malformed fields" do
+      before do
+        stub_request(:get, blocked_versions_url)
+          .with(query: { "package-manager": "npm_and_yarn" })
+          .to_return(
+            status: 200,
+            body: {
+              data: [{ "dependency-name" => 1, "version-requirement" => [], "reason" => true }]
+            }.to_json,
+            headers: headers
+          )
+      end
+
+      it "raises an API error" do
+        expect { client.fetch_blocked_versions("npm_and_yarn") }
+          .to raise_error(Dependabot::ApiError, /blocked versions response/)
       end
     end
   end

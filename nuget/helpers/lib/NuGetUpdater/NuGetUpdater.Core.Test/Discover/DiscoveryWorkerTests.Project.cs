@@ -49,11 +49,8 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "myproj.csproj",
                             Dependencies = [
-                                new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net7.0"], IsDirect: true),
-                                new("Package.B", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net7.0"], IsDirect: true),
-                            ],
-                            Properties = [
-                                new("TargetFrameworks", "net7.0;net8.0", "myproj.csproj"),
+                                new("Package.A", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net7.0"]),
+                                new("Package.B", "2.0.0", DependencyType.PackageReference, TargetFrameworks: ["net7.0"]),
                             ],
                             TargetFrameworks = ["net7.0", "net8.0"],
                             ReferencedProjectPaths = [],
@@ -76,6 +73,7 @@ public partial class DiscoveryWorkerTests
                 [
                     MockNuGetPackage.CreateSimplePackage("Package.A", "1.2.3", "net8.0"),
                     MockNuGetPackage.CreateSimplePackage("Package.B", "4.5.6", "net8.0"),
+                    MockNuGetPackage.WellKnownHostPackage("Microsoft.NETCore.App", "net8.0"),
                 ],
                 workspacePath: "",
                 files: [
@@ -115,14 +113,8 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "project.csproj",
                             Dependencies = [
-                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                                new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                            ],
-                            Properties = [
-                                new("ImplicitUsings", "enable", "project.csproj"),
-                                new("Nullable", "enable", "project.csproj"),
-                                new("OutputType", "Exe", "project.csproj"),
-                                new("TargetFramework", "net8.0", "project.csproj"),
+                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                                new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],
@@ -172,11 +164,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "project.csproj",
                             Dependencies = [
-                                new("Global.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                            ],
-                            Properties = [
-                                new("ManagePackageVersionsCentrally", "true", "project.csproj"),
-                                new("TargetFramework", "net8.0", "project.csproj"),
+                                new("Global.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],
@@ -238,12 +226,9 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "myproj.csproj",
                             Dependencies = [
-                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net7.0"], IsDirect: true),
-                                new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net7.0"], IsDirect: true),
-                                new("Global.Package", "7.8.9", DependencyType.PackageReference, TargetFrameworks: ["net7.0"], IsDirect: true),
-                            ],
-                            Properties = [
-                                new("TargetFramework", "net7.0", "myproj.csproj"),
+                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net7.0"]),
+                                new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net7.0"]),
+                                new("Global.Package", "7.8.9", DependencyType.PackageReference, TargetFrameworks: ["net7.0"]),
                             ],
                             TargetFrameworks = ["net7.0"],
                             ReferencedProjectPaths = [],
@@ -294,10 +279,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "myproj.csproj",
                             Dependencies = [
-                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                            ],
-                            Properties = [
-                                new("TargetFramework", "net8.0", "myproj.csproj"),
+                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],
@@ -366,10 +348,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "myproj.csproj",
                             Dependencies = [
-                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                            ],
-                            Properties = [
-                                new("TargetFramework", "net8.0", "myproj.csproj"),
+                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],
@@ -412,11 +391,8 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "myproj.csproj",
                             Dependencies = [
-                                new("Some.Package", "1.2.3.4", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"], IsDirect: true),
-                                new("Transitive.Dependency", "5.6.7.8", DependencyType.Unknown, TargetFrameworks: ["net7.0", "net8.0"], IsTransitive: true),
-                            ],
-                            Properties = [
-                                new("TargetFrameworks", "net7.0;net8.0", "myproj.csproj"),
+                                new("Some.Package", "1.2.3.4", DependencyType.PackageReference, TargetFrameworks: ["net7.0", "net8.0"]),
+                                new("Transitive.Dependency", "5.6.7.8", DependencyType.Unknown, TargetFrameworks: ["net7.0", "net8.0"], IsTopLevel: false),
                             ],
                             TargetFrameworks = ["net7.0", "net8.0"],
                             ReferencedProjectPaths = [],
@@ -472,14 +448,11 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "unit-tests.csproj",
                             Dependencies = [
-                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true),
-                                new("Package.B", "4.5.6", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true)
+                                new("Package.A", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                                new("Package.B", "4.5.6", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false)
                             ],
                             ReferencedProjectPaths = [
                                 "../src/helpers.csproj",
-                            ],
-                            Properties = [
-                                new("TargetFramework", "net8.0", @"test/unit-tests.csproj"),
                             ],
                             TargetFrameworks = ["net8.0"],
                             ImportedFiles = [],
@@ -489,10 +462,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "../src/helpers.csproj",
                             Dependencies = [
-                                new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
-                            ],
-                            Properties = [
-                                new("TargetFramework", "net8.0", @"src/helpers.csproj"),
+                                new("Package.B", "4.5.6", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],
@@ -549,15 +519,13 @@ public partial class DiscoveryWorkerTests
                 expectedResult: new()
                 {
                     Path = "solutions",
+                    SolutionDirectory = "solutions",
                     Projects = [
                         new()
                         {
                             FilePath = "../projects/library.csproj",
                             Dependencies = [
-                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
-                            ],
-                            Properties = [
-                                new("TargetFramework", "net8.0", @"projects/library.csproj"),
+                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],
@@ -597,10 +565,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "project.csproj",
                             Dependencies = [
-                                new("Some.Os.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net9.0-windows"], IsDirect: true)
-                            ],
-                            Properties = [
-                                new("TargetFramework", "net9.0-windows", "project.csproj")
+                                new("Some.Os.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net9.0-windows"])
                             ],
                             TargetFrameworks = ["net9.0-windows"],
                             ReferencedProjectPaths = [],
@@ -642,10 +607,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "project.csproj",
                             Dependencies = [
-                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0-android", "net8.0-ios", "net8.0-maccatalyst", "net8.0-macos", "net8.0-windows"], IsDirect: true),
-                            ],
-                            Properties = [
-                                new("TargetFrameworks", "net8.0-android;net8.0-ios;net8.0-maccatalyst;net8.0-macos;net8.0-windows", @"src/project.csproj"),
+                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0-android", "net8.0-ios", "net8.0-maccatalyst", "net8.0-macos", "net8.0-windows"]),
                             ],
                             TargetFrameworks = ["net8.0-android", "net8.0-ios", "net8.0-maccatalyst", "net8.0-macos", "net8.0-windows"],
                             ReferencedProjectPaths = [],
@@ -690,10 +652,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "project.csproj",
                             Dependencies = [
-                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"], IsDirect: true)
-                            ],
-                            Properties = [
-                                new("TargetFramework", "net8.0", "src/project.csproj"),
+                                new("Some.Package", "1.2.3", DependencyType.PackageReference, TargetFrameworks: ["net8.0"])
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],
@@ -754,6 +713,8 @@ public partial class DiscoveryWorkerTests
                             <TargetFramework>net8.0</TargetFramework>
                             <!-- the SDK turns `<TargetFramework>net8.0</TargetFramework>` into the following -->
                             <TargetFrameworkMoniker>.NETCoreApp,Version=8.0</TargetFrameworkMoniker>
+                            <!-- the SDK sets this property but we need to fake it so it appears to be an SDK-style project -->
+                            <NETCoreSdkVersion>10.0.100</NETCoreSdkVersion>
                           </PropertyGroup>
 
                           <ItemGroup>
@@ -813,11 +774,7 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "project.csproj",
                             Dependencies = [
-                                new("Test.Only.Package", "1.0.99", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTransitive: true)
-                            ],
-                            Properties = [
-                                new("TargetFramework", "net8.0", "project.csproj"),
-                                new("TargetFrameworkMoniker", ".NETCoreApp,Version=8.0", "project.csproj"),
+                                new("Test.Only.Package", "1.0.99", DependencyType.Unknown, TargetFrameworks: ["net8.0"], IsTopLevel: false)
                             ],
                             TargetFrameworks = ["net8.0"],
                             ReferencedProjectPaths = [],
@@ -864,10 +821,9 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "project.csproj",
                             Dependencies = [
-                                new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net48"], IsDirect: true),
-                                new("Some.Transitive.Dependency", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net48"], IsTransitive: true),
+                                new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net48"]),
+                                new("Some.Transitive.Dependency", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net48"], IsTopLevel: false),
                             ],
-                            Properties = [],
                             TargetFrameworks = ["net48"],
                             ReferencedProjectPaths = [],
                             ImportedFiles = [],
@@ -924,10 +880,9 @@ public partial class DiscoveryWorkerTests
                         {
                             FilePath = "project.csproj",
                             Dependencies = [
-                                new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net48"], IsDirect: true),
-                                new("Some.Transitive.Dependency", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net48"], IsTransitive: true),
+                                new("Some.Dependency", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net48"]),
+                                new("Some.Transitive.Dependency", "2.0.0", DependencyType.Unknown, TargetFrameworks: ["net48"], IsTopLevel: false),
                             ],
-                            Properties = [],
                             TargetFrameworks = ["net48"],
                             ReferencedProjectPaths = [],
                             ImportedFiles = [
@@ -940,6 +895,165 @@ public partial class DiscoveryWorkerTests
                     ]
                 }
             );
+        }
+
+        [Fact]
+        public async Task MSBuildResponseFileDoesNotCauseDiscoveryFailure()
+        {
+            await TestDiscoveryAsync(
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0"),
+                ],
+                workspacePath: "",
+                files: [
+                    ("myproj.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net9.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Some.Package" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("Directory.Build.props", "<Project />"),
+                    ("Directory.Build.targets", "<Project />"),
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageVersion Include="Some.Package" Version="1.0.0" />
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("Directory.Build.rsp", """
+                        /this-is-not-a-supported-switch-and-would-normally-cause-a-discovery-failure
+                        """)
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "myproj.csproj",
+                            Dependencies = [
+                                new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net9.0"]),
+                            ],
+                            TargetFrameworks = ["net9.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "Directory.Build.props",
+                                "Directory.Build.targets",
+                                "Directory.Packages.props",
+                            ],
+                            AdditionalFiles = [],
+                        },
+                    ],
+                }
+            );
+        }
+
+        [Fact]
+        public async Task RestoreDoesNotCallBuildOnTransitiveProjectReference()
+        {
+            // Ensure the `Build` target isn't invoked in transitive project references.
+
+            // To test this a custom target is added with `BeforeTargets="Build"` which writes a sentinel file to disk
+            // so we have to ensure that file doesn't get created.
+            using var tempDir = new TemporaryDirectory();
+            var sentinelFile1 = Path.Combine(tempDir.DirectoryPath, "sentinel1.txt");
+            var sentinelFile2 = Path.Combine(tempDir.DirectoryPath, "sentinel2.txt");
+
+            await TestDiscoveryAsync(
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net10.0"),
+                ],
+                workspacePath: "src/client",
+                files: [
+                    ("Directory.Build.props", "<Project />"),
+                    ("Directory.Build.targets", "<Project />"),
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                          </PropertyGroup>
+                        </Project>
+                        """),
+                    ("src/client/client.csproj", $$"""
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net10.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <ProjectReference Include="..\common\common.csproj" />
+                          </ItemGroup>
+                          <Target Name="BuildSentinel" BeforeTargets="Build">
+                            <WriteLinesToFile File="{{sentinelFile1}}" Lines="Build target was called" Overwrite="true" />
+                          </Target>
+                        </Project>
+                        """),
+                    ("src/common/common.csproj", $$"""
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net10.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Some.Package" Version="1.0.0" />
+                          </ItemGroup>
+                          <Target Name="BuildSentinel" BeforeTargets="Build">
+                            <WriteLinesToFile File="{{sentinelFile2}}" Lines="Build target was called" Overwrite="true" />
+                          </Target>
+                        </Project>
+                        """),
+                ],
+                expectedResult: new()
+                {
+                    Path = "src/client",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "client.csproj",
+                            TargetFrameworks = ["net10.0"],
+                            Dependencies = [
+                                new("Some.Package", "1.0.0", DependencyType.Unknown, TargetFrameworks: ["net10.0"], IsTopLevel: false),
+                            ],
+                            ReferencedProjectPaths = [
+                                "../common/common.csproj"
+                            ],
+                            ImportedFiles = [
+                                "../../Directory.Build.props",
+                                "../../Directory.Build.targets",
+                                "../../Directory.Packages.props"
+                            ],
+                            AdditionalFiles = [],
+                        },
+                        new()
+                        {
+                            FilePath = "../common/common.csproj",
+                            TargetFrameworks = ["net10.0"],
+                            Dependencies = [
+                                new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net10.0"], IsTopLevel: true),
+                            ],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "../../Directory.Build.props",
+                                "../../Directory.Build.targets",
+                                "../../Directory.Packages.props"
+                            ],
+                            AdditionalFiles = [],
+                        }
+                    ],
+                }
+            );
+
+            // Verify that the Build target was not called (and BeforeTargets="Build") by checking that the sentinel file was not created
+            Assert.False(File.Exists(sentinelFile1), "Build target should not have been called on primary project");
+            Assert.False(File.Exists(sentinelFile2), "Build target should not have been called on referenced project");
         }
     }
 }

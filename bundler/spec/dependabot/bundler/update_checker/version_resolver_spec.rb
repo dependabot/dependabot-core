@@ -143,6 +143,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:dependency_files) { bundler_project_dependency_files("requires_bundler") }
 
         it "resolves version" do
+          # guard-bundler requires bundler < 3, incompatible with Bundler 4+
+          skip "Requires Bundler 2.x (guard-bundler constraint: < 3)" if PackageManagerHelper.helper_running_bundler_v4?
           expect(latest_resolvable_version_details[:version]).to eq(Dependabot::Bundler::Version.new("3.0.0"))
         end
       end

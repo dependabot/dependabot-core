@@ -16,48 +16,42 @@ module Dependabot
       # Matches semantic versions:
       VERSION = T.let("#{DIGIT}(?:\\.#{DIGIT}){0,2}#{PRERELEASE}#{BUILD_METADATA}".freeze, String)
 
-      VERSION_REGEX = T.let(/^#{VERSION}$/, Regexp)
+      VERSION_REGEX = /^#{VERSION}$/
 
       # Base regex for SemVer (major.minor.patch[-prerelease][+build])
       # This pattern extracts valid semantic versioning strings based on the SemVer 2.0 specification.
-      SEMVER_REGEX = T.let(
-        /
+      SEMVER_REGEX = /
           (?<version>\d+\.\d+\.\d+)               # Match major.minor.patch (e.g., 1.2.3)
           (?:-(?<prerelease>[a-zA-Z0-9.-]+))?     # Optional prerelease (e.g., -alpha.1, -rc.1, -beta.5)
           (?:\+(?<build>[a-zA-Z0-9.-]+))?         # Optional build metadata (e.g., +build.20231101, +exp.sha.5114f85)
-        /x,
-        Regexp
-      )
+        /x
 
       # Full SemVer validation regex (ensures the entire string is a valid SemVer)
       # This ensures the entire input strictly follows SemVer, without extra characters before/after.
-      SEMVER_VALIDATION_REGEX = T.let(/^#{SEMVER_REGEX}$/, Regexp)
+      SEMVER_VALIDATION_REGEX = /^#{SEMVER_REGEX}$/
 
       # SemVer constraint regex (supports package.json version constraints)
       # This pattern ensures proper parsing of SemVer versions with optional operators.
-      SEMVER_CONSTRAINT_REGEX = T.let(
-        /
+      SEMVER_CONSTRAINT_REGEX = /
                 (?: (>=|<=|>|<|=|~|\^)\s*)?  # Make operators optional (e.g., >=, ^, ~)
                 (\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?(?:\+[a-zA-Z0-9.-]+)?)  # Match full SemVer versions
                 | (\*|latest) # Match wildcard (*) or 'latest'
-              /x,
-        Regexp
-      )
+              /x
 
       # /(>=|<=|>|<|=|~|\^)\s*(\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?(?:\+[a-zA-Z0-9.-]+)?)|(\*|latest)/
 
       SEMVER_OPERATOR_REGEX = /^(>=|<=|>|<|~|\^|=)$/
 
       # Constraint Types as Constants
-      CARET_CONSTRAINT_REGEX = T.let(/^\^\s*(#{VERSION})$/, Regexp)
-      TILDE_CONSTRAINT_REGEX = T.let(/^~\s*(#{VERSION})$/, Regexp)
-      EXACT_CONSTRAINT_REGEX = T.let(/^\s*(#{VERSION})$/, Regexp)
-      GREATER_THAN_EQUAL_REGEX = T.let(/^>=\s*(#{VERSION})$/, Regexp)
-      LESS_THAN_EQUAL_REGEX = T.let(/^<=\s*(#{VERSION})$/, Regexp)
-      GREATER_THAN_REGEX = T.let(/^>\s*(#{VERSION})$/, Regexp)
-      LESS_THAN_REGEX = T.let(/^<\s*(#{VERSION})$/, Regexp)
-      WILDCARD_REGEX = T.let(/^\*$/, Regexp)
-      LATEST_REGEX = T.let(/^latest$/, Regexp)
+      CARET_CONSTRAINT_REGEX = /^\^\s*(#{VERSION})$/
+      TILDE_CONSTRAINT_REGEX = /^~\s*(#{VERSION})$/
+      EXACT_CONSTRAINT_REGEX = /^\s*(#{VERSION})$/
+      GREATER_THAN_EQUAL_REGEX = /^>=\s*(#{VERSION})$/
+      LESS_THAN_EQUAL_REGEX = /^<=\s*(#{VERSION})$/
+      GREATER_THAN_REGEX = /^>\s*(#{VERSION})$/
+      LESS_THAN_REGEX = /^<\s*(#{VERSION})$/
+      WILDCARD_REGEX = /^\*$/
+      LATEST_REGEX = /^latest$/
       SEMVER_CONSTANTS = ["*", "latest"].freeze
 
       # Unified Regex for Valid Constraints

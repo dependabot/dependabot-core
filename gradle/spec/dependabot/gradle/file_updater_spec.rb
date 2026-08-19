@@ -735,6 +735,13 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
             is_expected.to include("distributionUrl=#{distribution_url}")
 
+            # Regression guard for #15312: user-customized and structural keys must survive the
+            # wrapper update rather than being reset to Gradle's hardcoded defaults.
+            is_expected.to include("networkTimeout=10000")
+            is_expected.to include("validateDistributionUrl=true")
+            is_expected.to include("distributionBase=GRADLE_USER_HOME")
+            is_expected.to include("zipStoreBase=GRADLE_USER_HOME")
+
             if checksum
               expected_command += " --gradle-distribution-sha256-sum #{updated_checksum}"
               is_expected.to include("distributionSha256Sum=#{updated_checksum}")
@@ -802,6 +809,61 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           is_expected.to include(
             'kotlinter = { id = "org.jmailen.kotlinter", version = "3.12.0" }'
           )
+        end
+      end
+
+      context "when a version catalog dependency has a lockfile" do
+        let(:buildfile) do
+          Dependabot::DependencyFile.new(
+            name: "gradle/libs.versions.toml",
+            content: fixture("version_catalog_file", "libs.versions.toml")
+          )
+        end
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "gradle.lockfile",
+            content: "androidx.core:core-ktx:1.7.0=compileClasspath\nempty=\n"
+          )
+        end
+        let(:dependency_files) { [buildfile, lockfile] }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "androidx.core:core-ktx",
+            version: "1.8.0",
+            previous_version: "1.7.0",
+            requirements: [{
+              file: "gradle/libs.versions.toml",
+              requirement: "1.8.0",
+              groups: [],
+              source: nil,
+              metadata: { property_name: "corektx" }
+            }],
+            previous_requirements: [{
+              file: "gradle/libs.versions.toml",
+              requirement: "1.7.0",
+              groups: [],
+              source: nil,
+              metadata: { property_name: "corektx" }
+            }],
+            package_manager: "gradle"
+          )
+        end
+
+        before do
+          allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_command, cwd:|
+            File.write(
+              File.join(cwd, "gradle.lockfile"),
+              "androidx.core:core-ktx:1.8.0=compileClasspath\nempty=\n"
+            )
+          end
+        end
+
+        it "updates the version catalog and the lockfile" do
+          expect(updated_files.map(&:name)).to contain_exactly("gradle/libs.versions.toml", "gradle.lockfile")
+          expect(updated_files.find { |f| f.name == "gradle/libs.versions.toml" }.content)
+            .to include('corektx = "1.8.0"')
+          expect(updated_files.find { |f| f.name == "gradle.lockfile" }.content)
+            .to include("androidx.core:core-ktx:1.8.0")
         end
       end
 

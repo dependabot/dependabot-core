@@ -1,9 +1,10 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/logger"
+require "dependabot/pull_request_creator/commit_message_options"
 require "dependabot/pull_request_creator/pr_name_prefixer"
 
 module Dependabot
@@ -25,7 +26,7 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::PullRequestCreator::PrNamePrefixer)) }
         attr_reader :prefixer
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { returns(T.nilable(CommitMessageOptions)) }
         attr_reader :commit_message_options
 
         sig { returns(T.nilable(T::Array[Dependabot::Dependency])) }
@@ -35,14 +36,17 @@ module Dependabot
           params(
             base_title: String,
             prefixer: T.nilable(Dependabot::PullRequestCreator::PrNamePrefixer),
-            commit_message_options: T.nilable(T::Hash[Symbol, T.untyped]),
+            commit_message_options: T.nilable(T::Hash[Symbol, T.anything]),
             dependencies: T.nilable(T::Array[Dependabot::Dependency])
           ).void
         end
         def initialize(base_title:, prefixer: nil, commit_message_options: nil, dependencies: nil)
           @base_title = base_title
           @prefixer = prefixer
-          @commit_message_options = commit_message_options
+          @commit_message_options = T.let(
+            commit_message_options && CommitMessageOptions.from_hash(commit_message_options),
+            T.nilable(CommitMessageOptions)
+          )
           @dependencies = dependencies
         end
 
@@ -85,12 +89,12 @@ module Dependabot
         # but without requiring source/credentials.
         sig { returns(String) }
         def build_explicit_prefix
-          return "" unless commit_message_options&.key?(:prefix)
+          return "" unless commit_message_options&.prefix?
 
           prefix = explicit_prefix_string
           return "" if prefix.empty?
 
-          prefix += "(#{scope})" if commit_message_options&.dig(:include_scope)
+          prefix += "(#{scope})" if commit_message_options&.include_scope
           # Append colon after alphanumeric or closing bracket to follow
           # conventional commit format (e.g., "chore: ..." or "fix(deps): ...")
           prefix += ":" if prefix.match?(/[A-Za-z0-9\)\]]\Z/)
@@ -101,11 +105,11 @@ module Dependabot
         sig { returns(String) }
         def explicit_prefix_string
           if production_dependencies?
-            commit_message_options&.dig(:prefix).to_s
-          elsif commit_message_options&.key?(:prefix_development)
-            commit_message_options&.dig(:prefix_development).to_s
+            commit_message_options&.prefix.to_s
+          elsif commit_message_options&.prefix_development?
+            commit_message_options&.prefix_development.to_s
           else
-            commit_message_options&.dig(:prefix).to_s
+            commit_message_options&.prefix.to_s
           end
         end
 

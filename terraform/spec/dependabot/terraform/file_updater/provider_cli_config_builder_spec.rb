@@ -32,24 +32,24 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
         requirement: "3.42.0",
         groups: [],
         file: "versions.tf",
-        source: {
-          type: "provider",
-          registry_hostname: "registry.terraform.io",
-          module_identifier: "hashicorp/aws"
-        }
+        source: source
       }],
       previous_requirements: [{
         requirement: "3.37.0",
         groups: [],
         file: "versions.tf",
-        source: {
-          type: "provider",
-          registry_hostname: "registry.terraform.io",
-          module_identifier: "hashicorp/aws"
-        }
+        source: source
       }],
       package_manager: "terraform"
     )
+  end
+
+  let(:source) do
+    {
+      type: "provider",
+      registry_hostname: "registry.terraform.io",
+      module_identifier: "hashicorp/aws"
+    }
   end
 
   let(:terraform_files) { [] }
@@ -165,6 +165,23 @@ RSpec.describe Dependabot::Terraform::FileUpdater::ProviderCliConfigBuilder do
         expect(config_content).to include("provider_installation {")
         expect(config_content).to include("dev_overrides {")
         expect(config_content).to include("direct {}")
+      end
+
+      context "when the target requirement source uses string keys" do
+        let(:source) do
+          {
+            "type" => "provider",
+            "registry_hostname" => "registry.terraform.io",
+            "module_identifier" => "hashicorp/aws"
+          }
+        end
+
+        it "still excludes the target provider" do
+          config_content = File.read(builder.env.fetch("TF_CLI_CONFIG_FILE"))
+
+          expect(config_content).to include("registry.terraform.io/acme-corp/nonexistent")
+          expect(config_content).not_to include("hashicorp/aws")
+        end
       end
     end
 

@@ -190,6 +190,131 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         expect(grapher.relevant_dependency_file).to eql(requirements_txt_with_extras)
       end
     end
+
+    context "when pip package manager selects pip_requirements_file" do
+      let(:requirements_content) { "requests==2.32.5\n" }
+
+      context "when requirements.txt is present" do
+        let(:dependency_files) { [requirements_txt] }
+
+        it "selects requirements.txt" do
+          expect(grapher.relevant_dependency_file).to eql(requirements_txt)
+        end
+      end
+
+      context "when dependencies.txt is present (no requirements.txt)" do
+        let(:dependencies_txt) do
+          Dependabot::DependencyFile.new(
+            name: "dependencies.txt",
+            content: requirements_content,
+            directory: "/"
+          )
+        end
+
+        let(:dependency_files) { [dependencies_txt] }
+
+        it "selects dependencies.txt" do
+          expect(grapher.relevant_dependency_file).to eql(dependencies_txt)
+        end
+      end
+
+      context "when depends.txt is present (no requirements.txt)" do
+        let(:depends_txt) do
+          Dependabot::DependencyFile.new(
+            name: "depends.txt",
+            content: requirements_content,
+            directory: "/"
+          )
+        end
+
+        let(:dependency_files) { [depends_txt] }
+
+        it "selects depends.txt" do
+          expect(grapher.relevant_dependency_file).to eql(depends_txt)
+        end
+      end
+
+      context "when a nested dependencies path is present" do
+        let(:ansible_lint_txt) do
+          Dependabot::DependencyFile.new(
+            name: "dependencies/python/ansible-lint.txt",
+            content: requirements_content,
+            directory: "/"
+          )
+        end
+
+        let(:dependency_files) { [ansible_lint_txt] }
+
+        it "selects the nested dependencies file" do
+          expect(grapher.relevant_dependency_file).to eql(ansible_lint_txt)
+        end
+      end
+
+      context "when only notes.txt is present (no requirements.txt)" do
+        let(:notes_txt) do
+          Dependabot::DependencyFile.new(
+            name: "notes.txt",
+            content: "Some release notes\n",
+            directory: "/"
+          )
+        end
+
+        let(:dependency_files) { [notes_txt] }
+
+        it "does not select notes.txt as a pip manifest" do
+          relevant_file = grapher.relevant_dependency_file
+
+          expect(relevant_file.name).to eq("")
+          expect(grapher.resolved_dependencies).to be_empty
+        end
+      end
+
+      context "when only release-notes.txt is present (no requirements.txt)" do
+        let(:release_notes_txt) do
+          Dependabot::DependencyFile.new(
+            name: "release-notes.txt",
+            content: "Some release notes\n",
+            directory: "/"
+          )
+        end
+
+        let(:dependency_files) { [release_notes_txt] }
+
+        it "does not select release-notes.txt as a pip manifest" do
+          relevant_file = grapher.relevant_dependency_file
+
+          expect(relevant_file.name).to eq("")
+          expect(grapher.resolved_dependencies).to be_empty
+        end
+      end
+    end
+
+    context "when dependencies resolve but no owning manifest can be identified" do
+      let(:notes_txt) do
+        Dependabot::DependencyFile.new(
+          name: "notes.txt",
+          content: "Some release notes\n",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [notes_txt] }
+
+      # A grapher variant that resolves dependencies without an identifiable manifest file - an inconsistent
+      # state that should never occur in practice, but which we still guard against.
+      let(:grapher) do
+        grapher_class = Class.new(Dependabot::Python::DependencyGrapher) do
+          def resolved_dependencies
+            { "pkg:pypi/requests@2.32.5" => nil }
+          end
+        end
+        grapher_class.new(file_parser: parser)
+      end
+
+      it "raises because the resolved state cannot be represented" do
+        expect { grapher.relevant_dependency_file }.to raise_error(Dependabot::DependabotError)
+      end
+    end
   end
 
   describe "#resolved_dependencies" do
@@ -252,11 +377,242 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
       end
     end
 
+    context "when a non-manifest .txt file is fetched alongside a real manifest" do
+      let(:requirements_txt) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "requests==2.32.5\n",
+          directory: "/"
+        )
+      end
+
+      # A prose wordlist: one bare token per line. Each line happens to be a valid
+      # pip requirement name, so the file fetcher's content check keeps it,
+      # but it is not a real manifest and must not contribute dependencies.
+      let(:wordlist_txt) do
+        Dependabot::DependencyFile.new(
+          name: "doc/wordlist.txt",
+          content: "alpha\nbravo\ncharlie\n",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [requirements_txt, wordlist_txt] }
+
+      it "graphs dependencies from the real manifest" do
+        expect(grapher.resolved_dependencies.keys).to include("pkg:pypi/requests@2.32.5")
+      end
+
+      it "does not graph tokens from the wordlist" do
+        expect(grapher.resolved_dependencies.keys).not_to include(
+          "pkg:pypi/alpha",
+          "pkg:pypi/bravo",
+          "pkg:pypi/charlie"
+        )
+      end
+    end
+
+    context "when a dependency appears in both a real manifest and a wordlist" do
+      let(:requirements_txt) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "alpha==1.0.0\n",
+          directory: "/"
+        )
+      end
+
+      let(:wordlist_txt) do
+        Dependabot::DependencyFile.new(
+          name: "doc/wordlist.txt",
+          content: "alpha\n",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [requirements_txt, wordlist_txt] }
+
+      it "retains the dependency using the version from the manifest" do
+        keys = grapher.resolved_dependencies.keys
+        expect(keys).to include("pkg:pypi/alpha@1.0.0")
+        expect(keys).not_to include("pkg:pypi/alpha")
+      end
+    end
+
+    context "when a requirements-style .txt variant is present" do
+      let(:requirements_prod_txt) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.prod.txt",
+          content: "requests==2.32.5\n",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [requirements_prod_txt] }
+
+      it "graphs dependencies from the variant manifest" do
+        expect(grapher.resolved_dependencies.keys).to include("pkg:pypi/requests@2.32.5")
+      end
+    end
+
+    context "when a poetry project has a bystander .txt file" do
+      let(:poetry_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("dependency_grapher", "poetry_lock_with_relationships.lock"),
+          directory: "/"
+        )
+      end
+
+      let(:wordlist_txt) do
+        Dependabot::DependencyFile.new(
+          name: "doc/wordlist.txt",
+          content: "alpha\nbravo\ncharlie\n",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pyproject_toml, poetry_lock_file, wordlist_txt] }
+
+      it "graphs the poetry dependencies" do
+        expect(grapher.resolved_dependencies.keys).to include(
+          "pkg:pypi/flask@3.1.3",
+          "pkg:pypi/requests@2.32.5",
+          "pkg:pypi/ruff@0.15.4"
+        )
+      end
+
+      it "does not graph tokens from the bystander .txt file" do
+        expect(grapher.resolved_dependencies.keys).not_to include(
+          "pkg:pypi/alpha",
+          "pkg:pypi/bravo",
+          "pkg:pypi/charlie"
+        )
+      end
+    end
+
+    context "when a layered pip-compile project has compiled .txt outputs and a bystander .txt" do
+      let(:base_in) do
+        Dependabot::DependencyFile.new(
+          name: "base.in",
+          content: "requests\n",
+          directory: "/"
+        )
+      end
+
+      # A compiled pip-compile output whose name does not contain "requirements"; the `--output-file` header
+      # identifies it as a lockfile so it must be retained and graphed.
+      let(:base_txt) do
+        Dependabot::DependencyFile.new(
+          name: "base.txt",
+          content: <<~TXT,
+            # This file is autogenerated by pip-compile
+            #    pip-compile --output-file=base.txt base.in
+            requests==2.32.5
+          TXT
+          directory: "/"
+        )
+      end
+
+      # A prose wordlist that is not a compiled output and has no sibling .in; must be dropped.
+      let(:wordlist_txt) do
+        Dependabot::DependencyFile.new(
+          name: "doc/wordlist.txt",
+          content: "alpha\nbravo\ncharlie\n",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [base_in, base_txt, wordlist_txt] }
+
+      it "graphs dependencies from the compiled pip-compile output" do
+        expect(grapher.resolved_dependencies.keys).to include("pkg:pypi/requests@2.32.5")
+      end
+
+      it "does not graph tokens from the bystander wordlist" do
+        expect(grapher.resolved_dependencies.keys).not_to include(
+          "pkg:pypi/alpha",
+          "pkg:pypi/bravo",
+          "pkg:pypi/charlie"
+        )
+      end
+    end
+
+    context "when a requirements file references child .txt files via -r/-c" do
+      # requirements.txt is a manifest by name, so it is retained and its `-r`/`-c` references are followed.
+      let(:requirements_txt) do
+        Dependabot::DependencyFile.new(
+          name: "requirements.txt",
+          content: "-r base.txt\n-c constraints.txt\n",
+          directory: "/"
+        )
+      end
+
+      # A referenced child requirements file whose name does not match the manifest regexes; it must be
+      # retained because requirements.txt pulls it in via `-r`.
+      let(:base_txt) do
+        Dependabot::DependencyFile.new(
+          name: "base.txt",
+          content: "flask==3.0.0\n",
+          directory: "/"
+        )
+      end
+
+      # A referenced constraints file (via `-c`); it must be retained so the parser can honour the pins.
+      let(:constraints_txt) do
+        Dependabot::DependencyFile.new(
+          name: "constraints.txt",
+          content: "flask==3.0.0\n",
+          directory: "/"
+        )
+      end
+
+      # A bystander wordlist that is not referenced by any requirements file; must be dropped.
+      let(:wordlist_txt) do
+        Dependabot::DependencyFile.new(
+          name: "doc/wordlist.txt",
+          content: "alpha\nbravo\ncharlie\n",
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [requirements_txt, base_txt, constraints_txt, wordlist_txt] }
+
+      it "retains referenced child requirement and constraint files for parsing" do
+        grapher.resolved_dependencies
+        expect(parser.dependency_files.map(&:name)).to include("base.txt", "constraints.txt")
+      end
+
+      it "drops the bystander wordlist that nothing references" do
+        grapher.resolved_dependencies
+        expect(parser.dependency_files.map(&:name)).not_to include("doc/wordlist.txt")
+      end
+
+      it "graphs dependencies from the referenced child file" do
+        expect(grapher.resolved_dependencies.keys).to include("pkg:pypi/flask@3.0.0")
+      end
+
+      it "does not graph tokens from the bystander wordlist" do
+        expect(grapher.resolved_dependencies.keys).not_to include(
+          "pkg:pypi/alpha",
+          "pkg:pypi/bravo",
+          "pkg:pypi/charlie"
+        )
+      end
+    end
+
     context "when poetry.lock is not present" do
+      let(:ephemeral_lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("dependency_grapher", "poetry_lock_with_relationships.lock"),
+          directory: "/"
+        )
+      end
+
       let(:lockfile_generator) do
         instance_double(
           Dependabot::Python::DependencyGrapher::LockfileGenerator,
-          generate: nil
+          generate: ephemeral_lockfile
         )
       end
 
@@ -275,13 +631,31 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         expect(lockfile_generator).to have_received(:generate)
       end
 
-      context "when lockfile generation fails" do
-        it "returns dependencies without relationship data" do
-          resolved_dependencies = grapher.resolved_dependencies
-
-          resolved_dependencies.each_value do |dep|
-            expect(dep.dependencies).to eq([])
+      context "when lockfile generation raises an error" do
+        let(:lockfile_generator) do
+          instance_double(
+            Dependabot::Python::DependencyGrapher::LockfileGenerator
+          ).tap do |gen|
+            allow(gen).to receive(:generate).and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "poetry lock failed: authentication required",
+                error_context: {}
+              )
+            )
           end
+        end
+
+        it "sets the error flag for degraded status" do
+          grapher.resolved_dependencies
+
+          expect(grapher.errored_fetching_subdependencies).to be(true)
+        end
+
+        it "preserves the original error as the subdependency error" do
+          grapher.resolved_dependencies
+
+          expect(grapher.subdependency_error).to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
+          expect(grapher.subdependency_error.message).to include("poetry lock failed")
         end
 
         it "returns PURLs without resolved versions" do
@@ -292,6 +666,14 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
             "pkg:pypi/requests",
             "pkg:pypi/ruff"
           )
+        end
+
+        it "returns dependencies without relationship data" do
+          resolved_dependencies = grapher.resolved_dependencies
+
+          resolved_dependencies.each_value do |dep|
+            expect(dep.dependencies).to eq([])
+          end
         end
       end
 
@@ -339,6 +721,25 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
         it "reports pyproject.toml as the relevant dependency file, not the ephemeral lockfile" do
           grapher.resolved_dependencies
           expect(grapher.relevant_dependency_file).to eql(pyproject_toml)
+        end
+      end
+
+      context "when reject_external_code is true" do
+        let(:parser) do
+          Dependabot::FileParsers.for_package_manager("pip").new(
+            dependency_files: dependency_files,
+            source: nil,
+            credentials: [],
+            reject_external_code: true
+          )
+        end
+
+        it "raises UnexpectedExternalCode without attempting lockfile generation" do
+          expect(Dependabot::Python::DependencyGrapher::LockfileGenerator)
+            .not_to receive(:new)
+
+          expect { grapher.resolved_dependencies }
+            .to raise_error(Dependabot::UnexpectedExternalCode)
         end
       end
     end
@@ -556,6 +957,260 @@ RSpec.describe Dependabot::Python::DependencyGrapher do
 
         expect(resolved_dependencies.keys).to include("pkg:pypi/cachecontrol@0.14.4")
         expect(resolved_dependencies.keys).not_to include("pkg:pypi/cachecontrol")
+      end
+    end
+  end
+
+  # Regression: multiple independent pip-compile manifests stacked in a single directory.
+  #
+  # Mirrors freedomofpress/securedrop's securedrop/requirements directory, which stacks several
+  # unrelated pip-compile manifests (bootstrap-, develop-, test-, translation-requirements, etc.)
+  # in one directory, each generated from its matching *.in file.
+  #
+  # The grapher attributes the whole directory's snapshot to a single "relevant" dependency file
+  # (the first *.txt in the set, i.e. bootstrap-requirements.txt alphabetically). Every dependency
+  # parsed from every other manifest is therefore compressed onto that one file, even though it does
+  # not declare them. See github/dependency-graph#12035.
+  describe "attributing dependencies from multiple requirements files in one directory" do
+    let(:bootstrap_requirements_in) do
+      Dependabot::DependencyFile.new(
+        name: "bootstrap-requirements.in",
+        content: "pip-tools==7.4.1\n",
+        directory: "/"
+      )
+    end
+
+    let(:bootstrap_requirements_txt) do
+      Dependabot::DependencyFile.new(
+        name: "bootstrap-requirements.txt",
+        content: <<~TXT,
+          # This file is autogenerated by pip-compile
+          #    pip-compile --output-file=bootstrap-requirements.txt bootstrap-requirements.in
+          pip-tools==7.4.1
+        TXT
+        directory: "/"
+      )
+    end
+
+    let(:app_requirements_in) do
+      Dependabot::DependencyFile.new(
+        name: "requirements.in",
+        content: "starlette==0.40.0\n",
+        directory: "/"
+      )
+    end
+
+    let(:app_requirements_txt) do
+      Dependabot::DependencyFile.new(
+        name: "requirements.txt",
+        content: <<~TXT,
+          # This file is autogenerated by pip-compile
+          #    pip-compile --output-file=requirements.txt requirements.in
+          starlette==0.40.0
+        TXT
+        directory: "/"
+      )
+    end
+
+    let(:test_requirements_in) do
+      Dependabot::DependencyFile.new(
+        name: "test-requirements.in",
+        content: "pytest==8.3.3\n",
+        directory: "/"
+      )
+    end
+
+    let(:test_requirements_txt) do
+      Dependabot::DependencyFile.new(
+        name: "test-requirements.txt",
+        content: <<~TXT,
+          # This file is autogenerated by pip-compile
+          #    pip-compile --output-file=test-requirements.txt test-requirements.in
+          pytest==8.3.3
+        TXT
+        directory: "/"
+      )
+    end
+
+    # Ordered alphabetically, exactly as the GitHub API returns the directory contents.
+    let(:dependency_files) do
+      [
+        bootstrap_requirements_in, bootstrap_requirements_txt,
+        app_requirements_in, app_requirements_txt,
+        test_requirements_in, test_requirements_txt
+      ]
+    end
+
+    # Package names pinned (`name==version`) in a given requirements file.
+    def declared_package_names(dependency_file)
+      dependency_file.content.to_s.each_line.filter_map do |line|
+        next if line.lstrip.start_with?("#")
+
+        match = line.strip.match(/\A([A-Za-z0-9_.\-]+)==/)
+        Dependabot::Python::NameNormaliser.normalise(match[1]) if match
+      end
+    end
+
+    it "parses the dependencies from every requirements file in the directory" do
+      resolved_dependencies = grapher.resolved_dependencies
+
+      expect(resolved_dependencies.keys).to include(
+        "pkg:pypi/pip-tools@7.4.1",
+        "pkg:pypi/starlette@0.40.0",
+        "pkg:pypi/pytest@8.3.3"
+      )
+    end
+
+    it "produces one manifest group per requirements layer" do
+      manifest_names = grapher.manifest_group_snapshots.map { |snapshot| snapshot.manifest_file.name }
+
+      expect(manifest_names).to contain_exactly(
+        "bootstrap-requirements.txt",
+        "requirements.txt",
+        "test-requirements.txt"
+      )
+    end
+
+    it "attributes every resolved dependency to a manifest that actually declares it" do
+      grapher.manifest_group_snapshots.each do |snapshot|
+        declared_names = declared_package_names(snapshot.manifest_file)
+
+        resolved_names = snapshot.resolved_dependencies.each_key.map do |purl|
+          purl[%r{\Apkg:pypi/([^@]+)}, 1]
+        end
+
+        undeclared = resolved_names - declared_names
+
+        expect(undeclared).to be_empty,
+                              "expected #{snapshot.manifest_file.name} to declare every snapshotted " \
+                              "dependency, but it declares #{declared_names.inspect} while the snapshot " \
+                              "additionally contains #{undeclared.inspect}"
+      end
+    end
+  end
+
+  # Plain pip (no pip-compile *.in files): a directory with a canonical requirements.txt alongside a
+  # peer dev-requirements.txt. Each is its own manifest by name, so layering must emit one snapshot per
+  # file rather than collapsing dev-requirements.txt onto requirements.txt (the alphabetically-first
+  # *.txt). This is the exact case that the dependency-snapshots-api convergence must stop collapsing.
+  describe "attributing dependencies for a plain-pip directory with peer requirements files (no .in)" do
+    let(:app_requirements_txt) do
+      Dependabot::DependencyFile.new(
+        name: "requirements.txt",
+        content: "flask==3.0.0\n",
+        directory: "/"
+      )
+    end
+
+    let(:dev_requirements_txt) do
+      Dependabot::DependencyFile.new(
+        name: "dev-requirements.txt",
+        content: "pytest==8.3.3\n",
+        directory: "/"
+      )
+    end
+
+    # Ordered alphabetically, exactly as the GitHub API returns the directory contents, so
+    # dev-requirements.txt precedes requirements.txt (the pre-fix collapse target).
+    let(:dependency_files) { [dev_requirements_txt, app_requirements_txt] }
+
+    def resolved_package_names(snapshot)
+      snapshot.resolved_dependencies.each_key.map { |purl| purl[%r{\Apkg:pypi/([^@]+)}, 1] }
+    end
+
+    it "produces one manifest group per requirements file" do
+      manifest_names = grapher.manifest_group_snapshots.map { |snapshot| snapshot.manifest_file.name }
+
+      expect(manifest_names).to contain_exactly("requirements.txt", "dev-requirements.txt")
+    end
+
+    it "attributes each dependency only to the file that declares it (no collapse)" do
+      snapshots = grapher.manifest_group_snapshots.to_h { |snapshot| [snapshot.manifest_file.name, snapshot] }
+
+      expect(resolved_package_names(snapshots.fetch("requirements.txt"))).to contain_exactly("flask")
+      expect(resolved_package_names(snapshots.fetch("dev-requirements.txt"))).to contain_exactly("pytest")
+    end
+  end
+
+  # A pip/pip-compile directory can hold requirements layers AND a non-requirements manifest
+  # (setup.py/setup.cfg/pyproject.toml).
+  #
+  # When layering splits the directory, those non-requirements manifests must still be emitted as their own
+  # self-attributed snapshots rather than dropped.
+  describe "attributing dependencies when a non-requirements manifest shares the layered directory" do
+    let(:app_requirements_txt) do
+      Dependabot::DependencyFile.new(
+        name: "requirements.txt",
+        content: "flask==3.0.0\n",
+        directory: "/"
+      )
+    end
+
+    let(:dev_requirements_txt) do
+      Dependabot::DependencyFile.new(
+        name: "dev-requirements.txt",
+        content: "pytest==8.3.3\n",
+        directory: "/"
+      )
+    end
+
+    let(:dependency_files) { [dev_requirements_txt, app_requirements_txt, setup_py] }
+
+    def resolved_package_names(snapshot)
+      snapshot.resolved_dependencies.each_key.map { |purl| purl[%r{\Apkg:pypi/([^@]+)}, 1] }
+    end
+
+    it "emits a self-attributed group for the non-requirements manifest alongside each layer (no drop)" do
+      manifest_names = grapher.manifest_group_snapshots.map { |snapshot| snapshot.manifest_file.name }
+
+      expect(manifest_names).to contain_exactly("requirements.txt", "dev-requirements.txt", "setup.py")
+    end
+
+    it "attributes each manifest's dependencies only to itself" do
+      snapshots = grapher.manifest_group_snapshots.to_h { |snapshot| [snapshot.manifest_file.name, snapshot] }
+
+      expect(resolved_package_names(snapshots.fetch("requirements.txt"))).to contain_exactly("flask")
+      expect(resolved_package_names(snapshots.fetch("dev-requirements.txt"))).to contain_exactly("pytest")
+      expect(resolved_package_names(snapshots.fetch("setup.py"))).to contain_exactly("requests")
+    end
+  end
+
+  describe "#manifest_group_snapshots for package managers that do not support layering" do
+    context "when the directory is a Poetry project" do
+      let(:poetry_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "poetry.lock",
+          content: fixture("dependency_grapher", "poetry_lock_with_relationships.lock"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pyproject_toml, poetry_lock_file] }
+
+      it "emits a single manifest group attributed to poetry.lock" do
+        snapshots = grapher.manifest_group_snapshots
+
+        expect(snapshots.length).to eq(1)
+        expect(snapshots.first.manifest_file).to eql(poetry_lock_file)
+      end
+    end
+
+    context "when the directory is a Pipenv project" do
+      let(:pipfile_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "Pipfile.lock",
+          content: fixture("dependency_grapher", "pipfile_lock_with_dependencies.json"),
+          directory: "/"
+        )
+      end
+
+      let(:dependency_files) { [pipfile, pipfile_lock_file] }
+
+      it "emits a single manifest group attributed to Pipfile.lock" do
+        snapshots = grapher.manifest_group_snapshots
+
+        expect(snapshots.length).to eq(1)
+        expect(snapshots.first.manifest_file).to eql(pipfile_lock_file)
       end
     end
   end

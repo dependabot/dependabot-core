@@ -48,7 +48,7 @@ module Dependabot
           end
         end
 
-        sig { returns(T::Hash[String, T.untyped]) }
+        sig { returns(T::Hash[String, Object]) }
         def formatted_deps
           deps = SharedHelpers.run_shell_command(
             "swift package show-dependencies --format json",
@@ -60,30 +60,41 @@ module Dependabot
 
         sig do
           params(
-            data: T::Hash[String, T.untyped],
+            data: T::Hash[String, Object],
             level: Integer
           )
             .returns(T::Array[Dependabot::Dependency])
         end
         def subdependencies(data, level: 0)
-          data["dependencies"].flat_map { |root| all_dependencies(root, level: level) }
+          dependencies = data["dependencies"]
+          return [] unless dependencies.is_a?(Array)
+
+          dependencies.flat_map do |root|
+            next [] unless root.is_a?(Hash)
+
+            all_dependencies(root, level: level)
+          end
         end
 
         sig do
           params(
-            data: T::Hash[String, T.untyped],
+            data: T::Hash[String, Object],
             level: Integer
           )
             .returns(T::Array[Dependabot::Dependency])
         end
         def all_dependencies(data, level: 0)
           identity = data["identity"]
-          url = SharedHelpers.scp_to_standard(data["url"])
-          name = UrlHelpers.normalize_name(url)
+          url_value = data["url"]
           version = data["version"]
+          return subdependencies(data, level: level + 1) unless url_value.is_a?(String)
+
+          url = SharedHelpers.scp_to_standard(url_value)
+          name = UrlHelpers.normalize_name(url)
+          version = nil unless version.is_a?(String)
 
           source = { type: "git", url: url, ref: version, branch: nil }
-          metadata = { identity: identity }
+          metadata = { identity: identity.is_a?(String) ? identity : nil }
           args = { name: name, version: version, package_manager: "swift", requirements: [], metadata: metadata }
 
           if level.zero?
@@ -92,7 +103,7 @@ module Dependabot
             args[:subdependency_metadata] = [{ source: source }]
           end
 
-          dep = Dependency.new(**args) if data["version"] != "unspecified"
+          dep = Dependency.new(**args) if version != "unspecified"
 
           [dep, *subdependencies(data, level: level + 1)].compact
         end

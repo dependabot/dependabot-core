@@ -36,7 +36,7 @@ public class PackagesConfigBuildFileTests
         var expectedDependencies = new List<Dependency>
         {
             new("Microsoft.CodeDom.Providers.DotNetCompilerPlatform", "1.0.0", DependencyType.PackagesConfig),
-            new("Microsoft.Net.Compilers", "1.0.0", DependencyType.PackagesConfig, IsDevDependency: true),
+            new("Microsoft.Net.Compilers", "1.0.0", DependencyType.PackagesConfig),
             new("Newtonsoft.Json", "8.0.3", DependencyType.PackagesConfig)
         };
 

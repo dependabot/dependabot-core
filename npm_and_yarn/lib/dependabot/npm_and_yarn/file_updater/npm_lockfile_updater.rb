@@ -29,15 +29,26 @@ module Dependabot
             lockfile: Dependabot::DependencyFile,
             dependencies: T::Array[Dependabot::Dependency],
             dependency_files: T::Array[Dependabot::DependencyFile],
-            credentials: T::Array[Credential]
+            credentials: T::Array[Credential],
+            security_updates_only: T::Boolean,
+            release_age_days: T.nilable(Integer)
           )
             .void
         end
-        def initialize(lockfile:, dependencies:, dependency_files:, credentials:)
+        def initialize(
+          lockfile:,
+          dependencies:,
+          dependency_files:,
+          credentials:,
+          security_updates_only: false,
+          release_age_days: nil
+        )
           @lockfile = lockfile
           @dependencies = dependencies
           @dependency_files = dependency_files
           @credentials = credentials
+          @security_updates_only = security_updates_only
+          @release_age_days = release_age_days
         end
 
         sig { returns(Dependabot::DependencyFile) }
@@ -71,6 +82,11 @@ module Dependabot
 
         sig { returns(T::Array[Credential]) }
         attr_reader :credentials
+
+        sig { returns(T::Boolean) }
+        def security_updates_only?
+          @security_updates_only
+        end
 
         UNREACHABLE_GIT = /fatal: repository '(?<url>.*)' not found/
         FORBIDDEN_GIT = /fatal: Authentication failed for '(?<url>.*)'/
@@ -332,8 +348,30 @@ module Dependabot
         sig { params(sub_dependencies: T::Array[Dependabot::Dependency]).returns(T::Hash[String, String]) }
         def run_npm8_subdependency_updater(sub_dependencies:)
           dependency_names = sub_dependencies.map(&:name)
-          NativeHelpers.run_npm8_subdependency_update_command(dependency_names)
-          { lockfile_basename => File.read(lockfile_basename) }
+          original_content = File.read(lockfile_basename)
+
+          NativeHelpers.run_npm8_subdependency_update_command(
+            dependency_names,
+            min_release_age_arg: effective_min_release_age_arg
+          )
+
+          updated_content = File.read(lockfile_basename)
+          if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
+            # `npm update` is a no-op for transitive dependencies not listed in
+            # any package.json (common in workspace repos). Fall back to
+            # `npm audit fix` which can update these in the lockfile.
+            # npm audit fix exits non-zero when vulnerabilities remain, so we
+            # rescue and use whatever lockfile changes it managed to make.
+            begin
+              NativeHelpers.run_npm_audit_fix_command(min_release_age_arg: effective_min_release_age_arg)
+              sub_dependencies.each { |dep| dep.metadata[:audit_fix_used] = true }
+            rescue SharedHelpers::HelperSubprocessFailed
+              Dependabot.logger.info("npm audit fix failed or partially fixed — continuing with any changes made")
+            end
+            updated_content = File.read(lockfile_basename)
+          end
+
+          { lockfile_basename => updated_content }
         end
 
         sig { params(dependency: Dependabot::Dependency).returns(T.nilable(String)) }
@@ -375,6 +413,8 @@ module Dependabot
           ]
 
           command_args << "--save-optional" if has_optional_dependencies
+          min_release_age_arg = effective_min_release_age_arg
+          command_args << min_release_age_arg if min_release_age_arg
 
           command = command_args.join(" ")
 
@@ -387,15 +427,70 @@ module Dependabot
           ]
 
           fingerprint_args << "--save-optional" if has_optional_dependencies
+          # The cooldown day value varies per job, so keep it out of the fingerprint.
+          fingerprint_args << fingerprint_min_release_age_arg(min_release_age_arg) if min_release_age_arg
 
           fingerprint = fingerprint_args.join(" ")
 
           Helpers.run_npm_command(command, fingerprint: fingerprint)
         end
 
+        # Returns the `--min-release-age` argument to pass to npm (`install`,
+        # `update`, or `audit fix`), or nil when none applies. Security updates pass
+        # `=0` so a release-age gate never blocks a fix (this intentionally
+        # overrides any `.npmrc` gate). Regular updates pass the dependabot.yml
+        # cooldown floor (in days) so npm holds transitive dependencies back to
+        # versions at least that old. Requires npm >= 11.10 (the updater image
+        # ships a supporting version).
+        #
+        # When the repo also sets an explicit `min-release-age` in `.npmrc`, the
+        # longest release-age wins: the cooldown floor is only injected on the CLI
+        # when it exceeds the user's configured value, otherwise the user's (equal
+        # or longer) gate is left untouched so neither policy is silently weakened.
+        sig { returns(T.nilable(String)) }
+        def effective_min_release_age_arg
+          return nil unless npm_supports_min_release_age?
+
+          return "--min-release-age=0" if security_updates_only?
+
+          effective = Helpers.higher_release_age_gate(@release_age_days, npmrc_min_release_age)
+          return nil unless effective
+
+          "--min-release-age=#{effective}"
+        end
+
+        # Whether the npm that will run supports `--min-release-age` (npm 11.10+).
+        # npm runs through Corepack, so a repo pinned to an older npm via
+        # `packageManager` would reject the flag; gate it out for those. Memoized so
+        # the version subprocess runs at most once per update.
+        sig { returns(T::Boolean) }
+        def npm_supports_min_release_age?
+          @npm_supports_min_release_age = T.let(@npm_supports_min_release_age, T.nilable(T::Boolean))
+          return @npm_supports_min_release_age unless @npm_supports_min_release_age.nil?
+
+          @npm_supports_min_release_age = Helpers.npm_supports_min_release_age?
+        end
+
+        sig { params(arg: String).returns(String) }
+        def fingerprint_min_release_age_arg(arg)
+          arg == "--min-release-age=0" ? arg : "--min-release-age=<days>"
+        end
+
+        # The `min-release-age` (in days) configured across the repo's `.npmrc`
+        # files, or nil when unset. A value we cannot parse as a bare integer is
+        # reported as Float::INFINITY so an explicit-but-non-numeric user gate is
+        # never overridden by the cooldown floor.
+        sig { returns(T.nilable(T.any(Integer, Float))) }
+        def npmrc_min_release_age
+          Helpers.max_configured_release_age(
+            dependency_files,
+            [Helpers::ReleaseAgeGateSetting.new(filename: ".npmrc", key: "min-release-age", separator: "=")]
+          )
+        end
+
         sig { params(dependency: Dependabot::Dependency).returns(String) }
         def npm_install_args(dependency)
-          git_requirement = dependency.requirements.find { |req| req[:source] && req[:source][:type] == "git" }
+          git_requirement = dependency.requirements.find { |req| req.source_string("type") == "git" }
 
           if git_requirement
             # NOTE: For git dependencies we loose some information about the
@@ -404,7 +499,7 @@ module Dependabot
             # `dependabot/depeendabot-core#semver:^0.1` - this is required to
             # pass the correct install argument to `npm install`
             updated_version_requirement = updated_version_requirement_for_dependency(dependency)
-            updated_version_requirement ||= git_requirement[:source][:url]
+            updated_version_requirement ||= T.must(git_requirement.source_string("url"))
 
             # NOTE: Git is configured to auth over https while updating
             updated_version_requirement = updated_version_requirement.gsub(
@@ -413,7 +508,7 @@ module Dependabot
 
             # NOTE: Keep any semver range that has already been updated by the
             # PackageJsonUpdater when installing the new version
-            if updated_version_requirement.include?(dependency.version)
+            if updated_version_requirement.include?(T.must(dependency.version))
               "#{dependency.name}@#{updated_version_requirement}"
             else
               "#{dependency.name}@#{updated_version_requirement.sub(/#.*/, '')}##{dependency.version}"
@@ -426,7 +521,7 @@ module Dependabot
         sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
         def dependency_in_package_json?(dependency)
           dependency.requirements.any? do |req|
-            req[:file] == T.must(package_json).name
+            req.file == T.must(package_json).name
           end
         end
 
@@ -440,7 +535,7 @@ module Dependabot
         sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
         def optional_dependency?(dependency)
           dependency.requirements.any? do |req|
-            req[:groups]&.include?("optionalDependencies")
+            req.groups&.include?("optionalDependencies") || false
           end
         end
 

@@ -158,6 +158,34 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       its(:content) { is_expected.to include "RUN apt-get update" }
     end
 
+    context "when nested source keys are strings" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "ubuntu",
+          version: "17.10",
+          previous_version: "17.04",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { "tag" => "17.10" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { "tag" => "17.04" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      it "updates the image tag" do
+        expect(updated_files.find { |f| f.name == "Dockerfile" }&.content)
+          .to include("FROM ubuntu:17.10\n")
+      end
+    end
+
     context "when the old tag is a prefix of the new tag" do
       let(:dependency) do
         Dependabot::Dependency.new(

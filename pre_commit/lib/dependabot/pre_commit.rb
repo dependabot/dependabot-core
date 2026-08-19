@@ -29,7 +29,7 @@ Dependabot::Dependency.register_humanized_previous_version_builder(
     return nil unless previous_reqs
 
     comment = previous_reqs
-              .filter_map { |r| r.dig(:metadata, :comment) }
+              .filter_map { |requirement| requirement.metadata_string("comment") }
               .first
     return nil unless comment
 

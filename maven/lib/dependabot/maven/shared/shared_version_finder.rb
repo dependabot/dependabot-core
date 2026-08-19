@@ -5,12 +5,15 @@ require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/package/package_latest_version_finder"
-
+require "date"
 module Dependabot
   module Maven
     module Shared
       class SharedVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
+        extend T::Helpers
+
+        abstract!
 
         # Regex to match common Maven release qualifiers that indicate stable releases.
         # See https://github.com/apache/maven/blob/848fbb4bf2d427b72bdb2471c22fced7ebd9a7a1/maven-artifact/src/main/java/org/apache/maven/artifact/versioning/ComparableVersion.java#L315-L320
@@ -23,23 +26,19 @@ module Dependabot
         /ix
 
         # Common Maven pre-release qualifiers.
-        # They often indicate versions that are not yet stable but that are released to the public for testing.
+        # Indicate versions not yet stable but released for testing.
         # Examples: 1.0.0-RC1, 2.0.0-ALPHA2, 3.1.0-BETA, 4.0.0-DEV5, etc.
         # See https://maven.apache.org/guides/mini/guide-naming-conventions.html#version-identifier
         MAVEN_PRE_RELEASE_QUALIFIERS = /
             # Must be at start OR preceded by a delimiter
             (?: \A | [-._])(
-              # --- Qualifiers that usually REQUIRE a number ---
-              # Examples: "RC1", "BETA2", "M3", "ALPHA-1", "EAP.2"
-              # The number differentiates multiple pre-releases; a version like "1.0.0-RC"
-              (?i)(?:RC|CR|M|MILESTONE|ALPHA|BETA|EA|EAP)(?:[-._]?\d+)?
-              |
-              # --- Qualifiers that do NOT usually have numbers ---
-              DEV|
-              PREVIEW|
-              PRERELEASE|
-              EXPERIMENTAL|
-              UNSTABLE
+              # Pre-release qualifiers, each with an optional numeric suffix
+              # (e.g., RC1, BETA2, DEV, PREVIEW1)
+              (?:
+                RC | CR | M | MILESTONE | ALPHA | BETA | EA | EAP |
+                DEV | PREVIEW | PRERELEASE | EXPERIMENTAL | UNSTABLE
+              )
+              (?:[-._]?\d+)?
             )$
           /ix
 
@@ -53,10 +52,7 @@ module Dependabot
         # - Only hexadecimal characters (0-9, a-f)
         # - Case-insensitive
         # - At least one letter a-f to avoid purely numeric strings
-        GIT_COMMIT = T.let(
-          /\A(?=[0-9a-f]{#{MIN_GIT_SHA_LENGTH},#{MAX_GIT_SHA_LENGTH}}\z)(?=.*[a-f])/i,
-          Regexp
-        )
+        GIT_COMMIT = /\A(?=[0-9a-f]{#{MIN_GIT_SHA_LENGTH},#{MAX_GIT_SHA_LENGTH}}\z)(?=.*[a-f])/i
 
         sig { params(comparison_version: Dependabot::Version).returns(T::Boolean) }
         def matches_dependency_version_type?(comparison_version)
@@ -69,7 +65,74 @@ module Dependabot
 
           return true if upgrade_to_stable?(current, candidate)
 
+          # If either version contains a date, consider them compatible
+          return true if contains_date?(current) || contains_date?(candidate)
+
           suffix_compatible?(current, candidate)
+        end
+
+        protected
+
+        sig do
+          params(possible_versions: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def filter_date_based_versions(possible_versions)
+          return possible_versions if wants_date_based_version?
+
+          filtered = possible_versions.reject { |release| release.version > version_class.new(1900) }
+          if possible_versions.count > filtered.count
+            Dependabot.logger.info("Filtered out #{possible_versions.count - filtered.count} date-based versions")
+          end
+          filtered
+        end
+
+        sig do
+          params(possible_versions: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def filter_version_types(possible_versions)
+          filtered = possible_versions.select do |release|
+            matches_dependency_version_type?(release.version)
+          end
+          if possible_versions.count > filtered.count
+            diff = possible_versions.count - filtered.count
+            classifier = dependency.version&.split(/[.\-]/)&.last
+            Dependabot.logger.info("Filtered out #{diff} non-#{classifier} classifier versions")
+          end
+          filtered
+        end
+
+        sig { returns(T::Boolean) }
+        def wants_prerelease?
+          return true if dependency.numeric_version&.prerelease?
+
+          dependency.requirements.any? do |req|
+            req_string = req.requirement_string.to_s
+            req_string.split(",").any? do |segment|
+              normalized = segment.strip.gsub(/\A[\[\(]\s*/, "")
+                                  .gsub(/\s*[\]\)]\z/, "")
+              normalized.match?(MAVEN_PRE_RELEASE_QUALIFIERS) ||
+                normalized.match?(MAVEN_SNAPSHOT_QUALIFIER)
+            end
+          end
+        end
+
+        sig { returns(T::Boolean) }
+        def wants_date_based_version?
+          return false unless dependency.numeric_version
+
+          T.must(dependency.numeric_version) >= version_class.new(100)
+        end
+
+        sig { returns(T.class_of(Dependabot::Version)) }
+        def version_class
+          dependency.version_class
+        end
+
+        sig { returns(T::Boolean) }
+        def cooldown_enabled?
+          true
         end
 
         private
@@ -114,6 +177,8 @@ module Dependabot
           end
 
           return true if contains_git_sha?(current_suffix) || contains_git_sha?(candidate_suffix)
+
+          return true if contains_date?(current_suffix) || contains_date?(candidate_suffix)
 
           # If both versions share the exact suffix or no suffix, they are compatible
           current_suffix == candidate_suffix
@@ -171,6 +236,57 @@ module Dependabot
           version.split(/[-._]/).any? { |part| git_sha?(part) } ||
             # Check if removing delimiters reveals a SHA (e.g., "va_b_018a_a_6b_0d3")
             git_sha?(version.gsub(/[-._]/, ""))
+        end
+
+        # Determines whether a version string contains a date.
+        #
+        # This method checks if any part of a version string (when split by common
+        # delimiters like '-', '.', or '_') is a valid date.
+        #
+        # @example Standard delimiter-separated dates
+        #   contains_date?("2025-12-16-05-04") # => true
+        #   contains_date?("2025_12_16_05_04") # => true
+        #   contains_date?("1.0-2025_12_16_05_04") # => true
+        # @example Compact date formats
+        #   contains_date?("20251216") # => true
+        #
+        #   contains_date?("1.2.3-alpha")          # => false
+        #   contains_date?("abcdef123")            # => false
+        sig { params(version: T.nilable(String)).returns(T::Boolean) }
+        def contains_date?(version)
+          return false unless version
+
+          parts = T.let(T.cast(version.scan(/\d+/), T::Array[String]).map(&:to_i), T::Array[Integer])
+
+          case parts.length
+          when 2
+            # Example: "2024.1"
+            year, month = parts
+            valid_date_parts?(year, month, 1)
+          when 3
+            # Example: https://github.com/relizaio/versioning/releases/tag/versioning-2026.01.7
+            year, month, day = parts
+            valid_date_parts?(year, month, day)
+          when 4, 5
+            # Examples:
+            # https://github.com/relizaio/versioning/releases/tag/2019.05.Stable.3
+            # 2025_12_16_05_04 used in https://github.com/dependabot/dependabot-core/issues/14084
+            year, month, day, = parts
+            # Just validate the date part ignoring the build number
+            valid_date_parts?(year, month, day)
+          else
+            false
+          end
+        end
+
+        sig { params(year: T.nilable(Integer), month: T.nilable(Integer), day: T.nilable(Integer)).returns(T::Boolean) }
+        def valid_date_parts?(year, month, day)
+          # Require 4-digit year to avoid matching short version numbers like "1.2.3"
+          return false unless year && year > 999
+          return false unless month&.between?(1, 12)
+          return false unless day&.between?(1, 31)
+
+          Date.valid_date?(year, month, day)
         end
 
         # Determines whether two versions are compatible based on pre-release status.
@@ -353,11 +469,6 @@ module Dependabot
           return suffix if suffix.include?("-") || suffix.include?("_") || git_sha?(suffix)
 
           suffix.empty? ? nil : suffix
-        end
-
-        sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
-        def package_details
-          raise NotImplementedError, "Subclasses must implement `package_details`"
         end
       end
     end

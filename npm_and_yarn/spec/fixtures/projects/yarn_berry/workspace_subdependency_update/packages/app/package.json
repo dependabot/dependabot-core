@@ -1,0 +1,7 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "dependencies": {
+    "fetch-factory": "0.0.1"
+  }
+}

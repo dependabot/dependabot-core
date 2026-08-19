@@ -675,6 +675,38 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RequirementsUpdater do
       end
     end
 
+    context "with a JSR short form requirement" do
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
+      let(:latest_resolvable_version) { Gem::Version.new("3.2.0") }
+      let(:package_json_req_string) { "jsr:^3.0.0" }
+
+      its([:requirement]) { is_expected.to eq("jsr:^3.2.0") }
+    end
+
+    context "with a JSR long form requirement" do
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersions }
+      let(:latest_resolvable_version) { Gem::Version.new("3.2.0") }
+      let(:package_json_req_string) { "jsr:@arendjr/text-clipper@^3.0.0" }
+
+      its([:requirement]) { is_expected.to eq("jsr:@arendjr/text-clipper@^3.2.0") }
+    end
+
+    context "with a JSR requirement when version is already satisfied" do
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary }
+      let(:latest_resolvable_version) { Gem::Version.new("3.0.5") }
+      let(:package_json_req_string) { "jsr:^3.0.0" }
+
+      its([:requirement]) { is_expected.to eq("jsr:^3.0.0") }
+    end
+
+    context "with a JSR requirement when widening ranges" do
+      let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::WidenRanges }
+      let(:latest_resolvable_version) { Gem::Version.new("4.0.0") }
+      let(:package_json_req_string) { "jsr:^3.0.0" }
+
+      its([:requirement]) { is_expected.to eq("jsr:^4.0.0") }
+    end
+
     context "when dealing with a requirement being left alone" do
       let(:update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 

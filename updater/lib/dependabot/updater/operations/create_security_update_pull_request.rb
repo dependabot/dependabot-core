@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/updater/security_update_helpers"
@@ -118,6 +118,9 @@ module Dependabot
           checker = update_checker_for(dependency)
 
           log_checking_for_update(dependency)
+          record_blocked_version_ignored(
+            job: job, dependency: dependency, operation: BlockedVersionsOperation::SECURITY_UPDATE
+          )
 
           Dependabot.logger.info("Latest version is #{checker.latest_version}")
 
@@ -216,9 +219,11 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
         sig { params(dependency: Dependabot::Dependency).returns(Dependabot::Dependency) }
         def vulnerable_version(dependency)
-          return dependency if dependency.metadata[:all_versions].one?
+          all_versions = dependency.metadata_array(:all_versions)
+          return dependency unless all_versions
+          return dependency if all_versions.one?
 
-          vulnerable_dependency = dependency.metadata[:all_versions].find do |dep|
+          vulnerable_dependency = dependency.metadata_dependencies(:all_versions)&.find do |dep|
             checker = update_checker_for(dep)
             checker.version_class.correct?(dep.version) && checker.vulnerable?
           end

@@ -6,6 +6,7 @@ require "toml-rb"
 require "sorbet-runtime"
 
 require "dependabot/dependency"
+require "dependabot/dependency_requirement"
 require "dependabot/errors"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/requirement_parser"
@@ -93,12 +94,12 @@ module Dependabot
         )
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         return updated_git_requirements if git_dependency?
 
         RequirementsUpdater.new(
-          requirements: requirements,
+          requirements: dependency.requirements,
           latest_resolvable_version: preferred_resolvable_version&.to_s,
           update_strategy: requirements_update_strategy,
           has_lockfile: !(pipfile_lock || poetry_lock).nil?
@@ -128,7 +129,7 @@ module Dependabot
 
       sig { returns(T.nilable(Gem::Version)) }
       def latest_version_for_git_dependency
-        latest_git_version_details&.fetch(:version)
+        latest_git_version_details&.version
       end
 
       sig { returns(T.nilable(Gem::Version)) }
@@ -137,13 +138,13 @@ module Dependabot
         latest_version_for_git_dependency
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_git_requirements
         updated_source = updated_git_source
-        return requirements unless updated_source
+        return dependency.requirements unless updated_source
 
-        requirements.map do |req|
-          req.merge(source: updated_source)
+        dependency.requirements.map do |req|
+          Dependabot::DependencyRequirement.create(req.merge(source: updated_source))
         end
       end
 
@@ -151,7 +152,7 @@ module Dependabot
       def updated_git_source
         # Update the git tag if a new version is available
         if git_commit_checker.pinned_ref_looks_like_version? && latest_git_version_details
-          new_tag = T.must(latest_git_version_details).fetch(:tag)
+          new_tag = T.must(latest_git_version_details).tag
           source_details = dependency.source_details
           return source_details.transform_keys(&:to_sym).merge(ref: new_tag) if source_details
         end
@@ -160,11 +161,11 @@ module Dependabot
         dependency.source_details&.transform_keys(&:to_sym)
       end
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { returns(T.nilable(Dependabot::GitTagDetails)) }
       def latest_git_version_details
         @latest_git_version_details ||= T.let(
-          latest_version_finder.latest_version_tag(git_commit_checker: git_commit_checker),
-          T.nilable(T::Hash[Symbol, T.untyped])
+          git_commit_checker.local_tag_for_latest_version(@update_cooldown),
+          T.nilable(Dependabot::GitTagDetails)
         )
       end
 
@@ -252,10 +253,9 @@ module Dependabot
         :requirements
       end
 
-      sig { params(reqs: T::Array[T::Hash[Symbol, T.untyped]]).returns(T::Boolean) }
+      sig { params(reqs: T::Array[Dependabot::DependencyRequirement]).returns(T::Boolean) }
       def exact_requirement?(reqs)
-        reqs = reqs.map { |r| r.fetch(:requirement) }
-        reqs = reqs.compact
+        reqs = reqs.filter_map(&:requirement_string)
         reqs = reqs.flat_map { |r| r.split(",").map(&:strip) }
         reqs.any? { |r| Python::Requirement.new(r).exact? }
       end
@@ -331,12 +331,13 @@ module Dependabot
         return if reqs.none?
 
         requirement = reqs.find do |r|
-          file = r[:file]
+          file = r.file
+          next false unless file
 
           file == "Pipfile" || file == "pyproject.toml" || file.end_with?(".in") || file.end_with?(".txt")
         end
 
-        requirement&.fetch(:requirement)
+        requirement&.requirement_string
       end
 
       sig { returns(String) }
@@ -360,13 +361,13 @@ module Dependabot
       def updated_version_req_lower_bound
         return ">=#{dependency.version}" if dependency.version
 
-        version_for_requirement =
-          requirements.filter_map { |r| r[:requirement] }
-                      .reject { |req_string| req_string.start_with?("<") }
-                      .select { |req_string| req_string.match?(VERSION_REGEX) }
-                      .map { |req_string| req_string.match(VERSION_REGEX).to_s }
-                      .select { |version| Python::Version.correct?(version) }
-                      .max_by { |version| Python::Version.new(version) }
+        version_for_requirement = requirements
+                                  .filter_map(&:requirement_string)
+                                  .reject { |req_string| req_string.start_with?("<") }
+                                  .select { |req_string| req_string.match?(VERSION_REGEX) }
+                                  .map { |req_string| req_string.match(VERSION_REGEX).to_s }
+                                  .select { |version| Python::Version.correct?(version) }
+                                  .max_by { |version| Python::Version.new(version) }
 
         ">=#{version_for_requirement || 0}"
       end
@@ -407,16 +408,24 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def check_pypi_for_library_match
-        return false unless updating_pyproject? && library_details && !T.must(library_details)["name"].nil?
+        return false unless updating_pyproject?
+
+        library_details_temp = library_details
+        return false unless library_details_temp && !library_details_temp["name"].nil?
+
+        has_library_metadata = !library_details_temp["description"].nil?
 
         response = Dependabot::RegistryClient.get(
-          url: "https://pypi.org/pypi/#{normalised_name(T.must(library_details)['name'])}/json/"
+          url: "https://pypi.org/pypi/#{normalised_name(library_details_temp['name'])}/json/"
         )
-        return false unless response.status == 200
+        return has_library_metadata unless response.status == 200
 
-        (JSON.parse(response.body)["info"] || {})["summary"] == T.must(library_details)["description"]
+        local_description = library_details_temp["description"]
+        return true if local_description.nil?
+
+        (JSON.parse(response.body)["info"] || {})["summary"] == local_description
       rescue Excon::Error::Timeout, Excon::Error::Socket, URI::InvalidURIError
-        false
+        has_library_metadata
       end
 
       sig { returns(T::Boolean) }
@@ -441,10 +450,10 @@ module Dependabot
 
       sig { returns(T::Array[String]) }
       def requirement_files
-        requirements.map { |r| r.fetch(:file) }
+        requirements.filter_map(&:file)
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def requirements
         dependency.requirements
       end

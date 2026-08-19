@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -e
+
+helpers_dir="$(dirname "${BASH_SOURCE[0]}")/../helpers"
+
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  export DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
+fi
+
+bash "$helpers_dir/build"

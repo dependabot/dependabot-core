@@ -1,6 +1,7 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "toml-rb"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -110,7 +111,13 @@ module Dependabot
 
         return PipenvPackageManager.new(T.must(detect_pipenv_version)) if detect_pipenv_version
 
-        return PoetryPackageManager.new(T.must(detect_poetry_version)) if detect_poetry_version
+        poetry_version = detect_poetry_version
+        if poetry_version
+          return PoetryPackageManager.new(
+            poetry_version,
+            requires_poetry_version_constraint
+          )
+        end
 
         return PipCompilePackageManager.new(T.must(detect_pipcompile_version)) if detect_pipcompile_version
 
@@ -132,6 +139,19 @@ module Dependabot
           version if version&.match?(/^\d+(?:\.\d+)*$/)
         end
       rescue StandardError
+        nil
+      end
+
+      sig { returns(T.nilable(Dependabot::Python::Requirement)) }
+      def requires_poetry_version_constraint
+        return nil unless pyproject&.content
+
+        parsed = TomlRB.parse(T.must(pyproject).content)
+        constraint = parsed.dig("tool", "poetry", "requires-poetry")
+        return nil unless constraint.is_a?(String) && !constraint.strip.empty?
+
+        Dependabot::Python::Requirement.new(constraint.strip)
+      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError, Gem::Requirement::BadRequirementError
         nil
       end
 
@@ -519,7 +539,7 @@ module Dependabot
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def pip_compile_files
-        @pip_compile_files ||= T.let(dependency_files.select { |f| f.name.end_with?(".in") }, T.untyped)
+        @pip_compile_files ||= T.let(dependency_files.select { |f| f.name.end_with?(".in") }, T.nilable(T::Array[Dependabot::DependencyFile]))
       end
 
       sig { returns(Dependabot::Python::PipCompileFileMatcher) }

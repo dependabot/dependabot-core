@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -31,20 +31,26 @@ module Dependabot
         raise NotImplementedError
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         dependency.requirements.map do |requirement|
-          required_version = T.cast(version_class.new(requirement[:requirement]), Dependabot::Devcontainers::Version)
-          updated_requirement = remove_precision_changes(
-            T.cast(release_versions, T::Array[Dependabot::Devcontainers::Version]),
-            required_version
-          ).last
-          {
-            file: requirement[:file],
-            requirement: updated_requirement,
-            groups: requirement[:groups],
-            source: requirement[:source]
-          }
+          original_requirement = T.must(requirement.requirement_string)
+          required_version = T.cast(version_class.new(original_requirement), Dependabot::Devcontainers::Version)
+          versions = T.cast(release_versions, T::Array[Dependabot::Devcontainers::Version])
+          precision_matches = remove_precision_changes(versions, required_version)
+          # When the published tags don't include a precision-matching tag (e.g. a feature
+          # that only publishes full semver like "1.10.0" but the pin is the major-only ":1"),
+          # fall back to truncating the latest version to the required precision so that
+          # ":1" stays ":1" within the same major and becomes ":2" on a major bump.
+          updated_requirement =
+            if precision_matches.any?
+              precision_matches.last
+            else
+              versions.last&.truncate_to_precision_of(required_version)
+            end
+          Dependabot::DependencyRequirement.create(
+            requirement.merge(requirement: updated_requirement&.to_s || original_requirement)
+          )
         end
       end
 

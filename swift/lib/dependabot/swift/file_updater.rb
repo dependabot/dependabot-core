@@ -1,7 +1,6 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
-require "dependabot/experiments"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/swift/xcode_file_helpers"
@@ -97,8 +96,6 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def xcode_spm_mode?
-        return false unless Dependabot::Experiments.enabled?(:enable_swift_xcode_spm)
-
         manifest.nil? && xcode_resolved_files.any?
       end
 
@@ -144,7 +141,7 @@ module Dependabot
 
       sig { params(dep: Dependabot::Dependency).returns(T::Set[String]) }
       def requirement_files_for(dep)
-        files = dep.requirements.map { |req| req[:file] } + (dep.previous_requirements || []).map { |req| req[:file] }
+        files = dep.requirements.map(&:file) + (dep.previous_requirements || []).map(&:file)
         files.compact.to_set
       end
 

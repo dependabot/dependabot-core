@@ -17,3 +17,11 @@ export const copyDependencies = (sourceDir: string, destDir: string): void => {
   );
   fs.copyFileSync(srcLockfile, `${destDir}/package-lock.json`);
 };
+
+export const copyDependenciesTree = (
+  sourceDir: string,
+  destDir: string
+): void => {
+  const srcDir = path.join(__dirname, "fixtures", sourceDir);
+  fs.cpSync(srcDir, destDir, { recursive: true });
+};

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -11,8 +11,8 @@ module Dependabot
       class RepositoriesFinder
         extend T::Sig
 
-        SUPPORTED_BUILD_FILE_NAMES = T.let(%w(build.gradle build.gradle.kts).freeze, T::Array[String])
-        SUPPORTED_SETTINGS_FILE_NAMES = T.let(%w(settings.gradle settings.gradle.kts).freeze, T::Array[String])
+        SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
+        SUPPORTED_SETTINGS_FILE_NAMES = %w(settings.gradle settings.gradle.kts).freeze
 
         # The Central Repo doesn't have special status for Gradle, but until
         # we're confident we're selecting repos correctly it's wise to include
@@ -32,11 +32,13 @@ module Dependabot
         sig do
           params(
             dependency_files: T::Array[Dependabot::DependencyFile],
-            target_dependency_file: T.nilable(Dependabot::DependencyFile)
+            target_dependency_file: T.nilable(Dependabot::DependencyFile),
+            credentials: T::Array[Dependabot::Credential]
           ).void
         end
-        def initialize(dependency_files:, target_dependency_file:)
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
+        def initialize(dependency_files:, target_dependency_file:, credentials: [])
+          @dependency_files = dependency_files
+          @credentials = credentials
           raise "No target file!" unless target_dependency_file
 
           @target_dependency_file = T.let(target_dependency_file, Dependabot::DependencyFile)
@@ -57,13 +59,16 @@ module Dependabot
 
           return repository_urls unless repository_urls.empty?
 
-          [CENTRAL_REPO_URL]
+          [central_repo_url]
         end
 
         private
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
         attr_reader :dependency_files
+
+        sig { returns(T::Array[Dependabot::Credential]) }
+        attr_reader :credentials
 
         sig { returns(Dependabot::DependencyFile) }
         attr_reader :target_dependency_file
@@ -143,7 +148,7 @@ module Dependabot
           repository_blocks.each do |block|
             repository_urls << GOOGLE_MAVEN_REPO if block.match?(/\sgoogle\(/)
 
-            repository_urls << CENTRAL_REPO_URL if block.match?(/\smavenCentral\(/)
+            repository_urls << central_repo_url if block.match?(/\smavenCentral\(/)
 
             repository_urls << "https://jcenter.bintray.com/" if block.match?(/\sjcenter\(/)
 
@@ -158,6 +163,24 @@ module Dependabot
             .map { |url| url.strip.gsub(%r{/$}, "") }
             .select { |url| valid_url?(url) }
             .uniq
+        end
+
+        sig { returns(String) }
+        def central_repo_url
+          base_credential = credentials.find do |cred|
+            cred["type"] == "maven_repository" && replaces_base?(cred) && cred["url"]
+          end
+
+          base_credential ? T.must(base_credential["url"]).gsub(%r{/+$}, "") : CENTRAL_REPO_URL
+        end
+
+        sig { params(credential: T.any(Dependabot::Credential, T::Hash[String, Object])).returns(T::Boolean) }
+        def replaces_base?(credential)
+          if credential.is_a?(Dependabot::Credential)
+            credential.replaces_base?
+          else
+            credential["replaces-base"] == true
+          end
         end
 
         sig { params(string: String).returns(Integer) }

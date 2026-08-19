@@ -53,7 +53,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         latest_resolvable_version: latest_resolvable_version,
         latest_resolvable_version_with_no_unlock: latest_resolvable_version_with_no_unlock,
         latest_resolvable_previous_version: latest_resolvable_previous_version,
-        updated_requirements: updated_requirements
+        updated_requirements: updated_requirements.map { |r| Dependabot::DependencyRequirement.create(r) }
       )
   end
 

@@ -7,7 +7,7 @@
 
 # module URI
 #
-# source://uri//lib/uri/common.rb#895
+# pkg:gem/uri#lib/uri/common.rb:895
 module Kernel
   private
 
@@ -24,7 +24,7 @@ module Kernel
   #
   # You must require 'uri' to use this method.
   #
-  # source://uri//lib/uri/common.rb#911
+  # pkg:gem/uri#lib/uri/common.rb:911
   def URI(uri); end
 
   class << self
@@ -41,20 +41,116 @@ module Kernel
     #
     # You must require 'uri' to use this method.
     #
-    # source://uri//lib/uri/common.rb#921
+    # pkg:gem/uri#lib/uri/common.rb:921
     def URI(uri); end
   end
 end
 
-# source://uri//lib/uri.rb#90
+# URI is a module providing classes to handle Uniform Resource Identifiers
+# (RFC2396[https://www.rfc-editor.org/rfc/rfc2396]).
+#
+# == Features
+#
+# * Uniform way of handling URIs.
+# * Flexibility to introduce custom URI schemes.
+# * Flexibility to have an alternate URI::Parser (or just different patterns
+#   and regexp's).
+#
+# == Basic example
+#
+#   require 'uri'
+#
+#   uri = URI("http://foo.com/posts?id=30&limit=5#time=1305298413")
+#   #=> #<URI::HTTP http://foo.com/posts?id=30&limit=5#time=1305298413>
+#
+#   uri.scheme    #=> "http"
+#   uri.host      #=> "foo.com"
+#   uri.path      #=> "/posts"
+#   uri.query     #=> "id=30&limit=5"
+#   uri.fragment  #=> "time=1305298413"
+#
+#   uri.to_s      #=> "http://foo.com/posts?id=30&limit=5#time=1305298413"
+#
+# == Adding custom URIs
+#
+#   module URI
+#     class RSYNC < Generic
+#       DEFAULT_PORT = 873
+#     end
+#     register_scheme 'RSYNC', RSYNC
+#   end
+#   #=> URI::RSYNC
+#
+#   URI.scheme_list
+#   #=> {"FILE"=>URI::File, "FTP"=>URI::FTP, "HTTP"=>URI::HTTP,
+#   #    "HTTPS"=>URI::HTTPS, "LDAP"=>URI::LDAP, "LDAPS"=>URI::LDAPS,
+#   #    "MAILTO"=>URI::MailTo, "RSYNC"=>URI::RSYNC}
+#
+#   uri = URI("rsync://rsync.foo.com")
+#   #=> #<URI::RSYNC rsync://rsync.foo.com>
+#
+# == RFC References
+#
+# A good place to view an RFC spec is http://www.ietf.org/rfc.html.
+#
+# Here is a list of all related RFC's:
+# - RFC822[https://www.rfc-editor.org/rfc/rfc822]
+# - RFC1738[https://www.rfc-editor.org/rfc/rfc1738]
+# - RFC2255[https://www.rfc-editor.org/rfc/rfc2255]
+# - RFC2368[https://www.rfc-editor.org/rfc/rfc2368]
+# - RFC2373[https://www.rfc-editor.org/rfc/rfc2373]
+# - RFC2396[https://www.rfc-editor.org/rfc/rfc2396]
+# - RFC2732[https://www.rfc-editor.org/rfc/rfc2732]
+# - RFC3986[https://www.rfc-editor.org/rfc/rfc3986]
+#
+# == Class tree
+#
+# - URI::Generic (in uri/generic.rb)
+#   - URI::File - (in uri/file.rb)
+#   - URI::FTP - (in uri/ftp.rb)
+#   - URI::HTTP - (in uri/http.rb)
+#     - URI::HTTPS - (in uri/https.rb)
+#   - URI::LDAP - (in uri/ldap.rb)
+#     - URI::LDAPS - (in uri/ldaps.rb)
+#   - URI::MailTo - (in uri/mailto.rb)
+# - URI::Parser - (in uri/common.rb)
+# - URI::REGEXP - (in uri/common.rb)
+#   - URI::REGEXP::PATTERN - (in uri/common.rb)
+# - URI::Util - (in uri/common.rb)
+# - URI::Error - (in uri/common.rb)
+#   - URI::InvalidURIError - (in uri/common.rb)
+#   - URI::InvalidComponentError - (in uri/common.rb)
+#   - URI::BadURIError - (in uri/common.rb)
+#
+# == Copyright Info
+#
+# Author:: Akira Yamada <akira@ruby-lang.org>
+# Documentation::
+#   Akira Yamada <akira@ruby-lang.org>
+#   Dmitry V. Sabanin <sdmitry@lrn.ru>
+#   Vincent Batts <vbatts@hashbangbash.com>
+# License::
+#  Copyright (c) 2001 akira yamada <akira@ruby-lang.org>
+#  You can redistribute it and/or modify it under the same term as Ruby.
+#
+# --
+# = uri/common.rb
+#
+# Author:: Akira Yamada <akira@ruby-lang.org>
+# License::
+#   You can redistribute it and/or modify it under the same term as Ruby.
+#
+# See URI for general documentation
+#
+# pkg:gem/uri#lib/uri.rb:90
 module URI
   class << self
-    # source://uri//lib/uri/common.rb#50
+    # pkg:gem/uri#lib/uri/common.rb:50
     def const_missing(const); end
 
     # Like URI.decode_www_form_component, except that <tt>'+'</tt> is preserved.
     #
-    # source://uri//lib/uri/common.rb#441
+    # pkg:gem/uri#lib/uri/common.rb:441
     def decode_uri_component(str, enc = T.unsafe(nil)); end
 
     # Returns name/value pairs derived from the given string +str+,
@@ -90,9 +186,7 @@ module URI
     #   URI.decode_www_form('foo=0--bar=1--baz', separator: '--')
     #   # => [["foo", "0"], ["bar", "1"], ["baz", ""]]
     #
-    # @raise [ArgumentError]
-    #
-    # source://uri//lib/uri/common.rb#620
+    # pkg:gem/uri#lib/uri/common.rb:620
     def decode_www_form(str, enc = T.unsafe(nil), separator: T.unsafe(nil), use__charset_: T.unsafe(nil), isindex: T.unsafe(nil)); end
 
     # Returns a string decoded from the given \URL-encoded string +str+.
@@ -125,13 +219,13 @@ module URI
     #
     # Related: URI.decode_uri_component (preserves <tt>'+'</tt>).
     #
-    # source://uri//lib/uri/common.rb#430
+    # pkg:gem/uri#lib/uri/common.rb:430
     def decode_www_form_component(str, enc = T.unsafe(nil)); end
 
     # Like URI.encode_www_form_component, except that <tt>' '</tt> (space)
     # is encoded as <tt>'%20'</tt> (instead of <tt>'+'</tt>).
     #
-    # source://uri//lib/uri/common.rb#436
+    # pkg:gem/uri#lib/uri/common.rb:436
     def encode_uri_component(str, enc = T.unsafe(nil)); end
 
     # Returns a URL-encoded string derived from the given
@@ -232,7 +326,7 @@ module URI
     #   URI.encode_www_form({foo: [0, 1], bar: 2})
     #   # => "foo=0&foo=1&bar=2"
     #
-    # source://uri//lib/uri/common.rb#567
+    # pkg:gem/uri#lib/uri/common.rb:567
     def encode_www_form(enum, enc = T.unsafe(nil)); end
 
     # Returns a URL-encoded string derived from the given string +str+.
@@ -272,7 +366,7 @@ module URI
     #
     # Related: URI.encode_uri_component (encodes <tt>' '</tt> as <tt>'%20'</tt>).
     #
-    # source://uri//lib/uri/common.rb#397
+    # pkg:gem/uri#lib/uri/common.rb:397
     def encode_www_form_component(str, enc = T.unsafe(nil)); end
 
     # == Synopsis
@@ -298,7 +392,7 @@ module URI
     #   URI.extract("text here http://foo.example.org/bla and here mailto:test@example.com and here also.")
     #   # => ["http://foo.example.com/bla", "mailto:test@example.com"]
     #
-    # source://uri//lib/uri/common.rb#301
+    # pkg:gem/uri#lib/uri/common.rb:301
     def extract(str, schemes = T.unsafe(nil), &block); end
 
     # Returns a new object constructed from the given +scheme+, +arguments+,
@@ -317,13 +411,13 @@ module URI
     #   URI.for('foo', *values, default: URI::HTTP)
     #   # => #<URI::HTTP foo://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top>
     #
-    # source://uri//lib/uri/common.rb#187
+    # pkg:gem/uri#lib/uri/common.rb:187
     def for(scheme, *arguments, default: T.unsafe(nil)); end
 
     # return encoding or nil
     # http://encoding.spec.whatwg.org/#concept-encoding-get
     #
-    # source://uri//lib/uri/common.rb#890
+    # pkg:gem/uri#lib/uri/common.rb:890
     def get_encoding(label); end
 
     # Merges the given URI strings +str+
@@ -349,7 +443,7 @@ module URI
     #   URI.join('http://example.com', '/foo/', 'bar')
     #   # => #<URI::HTTP http://example.com/foo/bar>
     #
-    # source://uri//lib/uri/common.rb#273
+    # pkg:gem/uri#lib/uri/common.rb:273
     def join(*str); end
 
     # Returns a new \URI object constructed from the given string +uri+:
@@ -362,12 +456,12 @@ module URI
     # It's recommended to first URI::RFC2396_PARSER.escape string +uri+
     # if it may contain invalid URI characters.
     #
-    # source://uri//lib/uri/common.rb#246
+    # pkg:gem/uri#lib/uri/common.rb:246
     def parse(uri); end
 
     # Set the default parser instance.
     #
-    # source://uri//lib/uri/common.rb#29
+    # pkg:gem/uri#lib/uri/common.rb:29
     def parser=(parser = T.unsafe(nil)); end
 
     # == Synopsis
@@ -401,7 +495,7 @@ module URI
     #     p $&
     #   end
     #
-    # source://uri//lib/uri/common.rb#338
+    # pkg:gem/uri#lib/uri/common.rb:338
     def regexp(schemes = T.unsafe(nil)); end
 
     # Registers the given +klass+ as the class to be instantiated
@@ -413,7 +507,7 @@ module URI
     # Note that after calling String#upcase on +scheme+, it must be a valid
     # constant name.
     #
-    # source://uri//lib/uri/common.rb#143
+    # pkg:gem/uri#lib/uri/common.rb:143
     def register_scheme(scheme, klass); end
 
     # Returns a hash of the defined schemes:
@@ -431,7 +525,7 @@ module URI
     #
     # Related: URI.register_scheme.
     #
-    # source://uri//lib/uri/common.rb#161
+    # pkg:gem/uri#lib/uri/common.rb:161
     def scheme_list; end
 
     # Returns a 9-element array representing the parts of the \URI
@@ -452,7 +546,7 @@ module URI
     #    ["query", "tag=networking&order=newest"],
     #    ["fragment", "top"]]
     #
-    # source://uri//lib/uri/common.rb#232
+    # pkg:gem/uri#lib/uri/common.rb:232
     def split(uri); end
 
     private
@@ -460,15 +554,13 @@ module URI
     # Returns a string decoding characters matching +regexp+ from the
     # given \URL-encoded string +str+.
     #
-    # @raise [ArgumentError]
-    #
-    # source://uri//lib/uri/common.rb#463
+    # pkg:gem/uri#lib/uri/common.rb:463
     def _decode_uri_component(regexp, str, enc); end
 
     # Returns a string derived from the given string +str+ with
     # URI-encoded characters matching +regexp+ according to +table+.
     #
-    # source://uri//lib/uri/common.rb#447
+    # pkg:gem/uri#lib/uri/common.rb:447
     def _encode_uri_component(regexp, table, str, enc); end
   end
 end
@@ -480,7 +572,7 @@ end
 # is a good summary about the de facto spec.
 # https://datatracker.ietf.org/doc/html/draft-hoffman-ftp-uri-04
 #
-# source://uri//lib/uri/ftp.rb#22
+# pkg:gem/uri#lib/uri/ftp.rb:22
 class URI::FTP < ::URI::Generic
   # == Description
   #
@@ -493,13 +585,10 @@ class URI::FTP < ::URI::Generic
   # Arguments are +scheme+, +userinfo+, +host+, +port+, +registry+, +path+,
   # +opaque+, +query+, and +fragment+, in that order.
   #
-  # @raise [InvalidURIError]
-  # @return [FTP] a new instance of FTP
-  #
-  # source://uri//lib/uri/ftp.rb#133
+  # pkg:gem/uri#lib/uri/ftp.rb:133
   def initialize(scheme, userinfo, host, port, registry, path, opaque, query, fragment, parser = T.unsafe(nil), arg_check = T.unsafe(nil)); end
 
-  # source://uri//lib/uri/ftp.rb#214
+  # pkg:gem/uri#lib/uri/ftp.rb:214
   def merge(oth); end
 
   # Returns the path from an FTP URI.
@@ -519,19 +608,19 @@ class URI::FTP < ::URI::Generic
   #
   # This method will then return "/pub/ruby".
   #
-  # source://uri//lib/uri/ftp.rb#240
+  # pkg:gem/uri#lib/uri/ftp.rb:240
   def path; end
 
   # Returns a String representation of the URI::FTP.
   #
-  # source://uri//lib/uri/ftp.rb#251
+  # pkg:gem/uri#lib/uri/ftp.rb:251
   def to_s; end
 
   # typecode accessor.
   #
   # See URI::FTP::COMPONENT.
   #
-  # source://uri//lib/uri/ftp.rb#161
+  # pkg:gem/uri#lib/uri/ftp.rb:161
   def typecode; end
 
   # == Args
@@ -556,21 +645,21 @@ class URI::FTP < ::URI::Generic
   #   uri
   #   #=> #<URI::FTP ftp://john@ftp.example.com/my_file.img;type=i>
   #
-  # source://uri//lib/uri/ftp.rb#208
+  # pkg:gem/uri#lib/uri/ftp.rb:208
   def typecode=(typecode); end
 
   protected
 
   # Private setter for the path of the URI::FTP.
   #
-  # source://uri//lib/uri/ftp.rb#245
+  # pkg:gem/uri#lib/uri/ftp.rb:245
   def set_path(v); end
 
   # Private setter for the typecode +v+.
   #
   # See also URI::FTP.typecode=.
   #
-  # source://uri//lib/uri/ftp.rb#180
+  # pkg:gem/uri#lib/uri/ftp.rb:180
   def set_typecode(v); end
 
   private
@@ -578,7 +667,7 @@ class URI::FTP < ::URI::Generic
   # Validates typecode +v+,
   # returns +true+ or +false+.
   #
-  # source://uri//lib/uri/ftp.rb#166
+  # pkg:gem/uri#lib/uri/ftp.rb:166
   def check_typecode(v); end
 
   class << self
@@ -610,64 +699,58 @@ class URI::FTP < ::URI::Generic
     #       :path => 'ruby/src'})
     #     uri2.to_s  # => "ftp://ftp.example.com/ruby/src"
     #
-    # source://uri//lib/uri/ftp.rb#96
+    # pkg:gem/uri#lib/uri/ftp.rb:96
     def build(args); end
 
-    # source://uri//lib/uri/ftp.rb#47
+    # pkg:gem/uri#lib/uri/ftp.rb:47
     def new2(user, password, host, port, path, typecode = T.unsafe(nil), arg_check = T.unsafe(nil)); end
   end
 end
 
 # The "file" URI is defined by RFC8089.
 #
-# source://uri//lib/uri/file.rb#10
+# pkg:gem/uri#lib/uri/file.rb:10
 class URI::File < ::URI::Generic
   # raise InvalidURIError
   #
-  # @raise [URI::InvalidURIError]
-  #
-  # source://uri//lib/uri/file.rb#82
+  # pkg:gem/uri#lib/uri/file.rb:82
   def check_password(user); end
 
   # raise InvalidURIError
   #
-  # @raise [URI::InvalidURIError]
-  #
-  # source://uri//lib/uri/file.rb#77
+  # pkg:gem/uri#lib/uri/file.rb:77
   def check_user(user); end
 
   # raise InvalidURIError
   #
-  # @raise [URI::InvalidURIError]
-  #
-  # source://uri//lib/uri/file.rb#72
+  # pkg:gem/uri#lib/uri/file.rb:72
   def check_userinfo(user); end
 
   # Protected setter for the host component +v+.
   #
   # See also URI::Generic.host=.
   #
-  # source://uri//lib/uri/file.rb#62
+  # pkg:gem/uri#lib/uri/file.rb:62
   def set_host(v); end
 
   # do nothing
   #
-  # source://uri//lib/uri/file.rb#95
+  # pkg:gem/uri#lib/uri/file.rb:95
   def set_password(v); end
 
   # do nothing
   #
-  # source://uri//lib/uri/file.rb#68
+  # pkg:gem/uri#lib/uri/file.rb:68
   def set_port(v); end
 
   # do nothing
   #
-  # source://uri//lib/uri/file.rb#91
+  # pkg:gem/uri#lib/uri/file.rb:91
   def set_user(v); end
 
   # do nothing
   #
-  # source://uri//lib/uri/file.rb#87
+  # pkg:gem/uri#lib/uri/file.rb:87
   def set_userinfo(v); end
 
   class << self
@@ -700,25 +783,25 @@ class URI::File < ::URI::Generic
     #     uri3 = URI::File.build({:path => URI::RFC2396_PARSER.escape('/path/my file.txt')})
     #     uri3.to_s  # => "file:///path/my%20file.txt"
     #
-    # source://uri//lib/uri/file.rb#53
+    # pkg:gem/uri#lib/uri/file.rb:53
     def build(args); end
   end
 end
 
 # An Array of the available components for URI::File.
 #
-# source://uri//lib/uri/file.rb#17
+# pkg:gem/uri#lib/uri/file.rb:17
 URI::File::COMPONENT = T.let(T.unsafe(nil), Array)
 
 # A Default port of nil for URI::File.
 #
-# source://uri//lib/uri/file.rb#12
+# pkg:gem/uri#lib/uri/file.rb:12
 URI::File::DEFAULT_PORT = T.let(T.unsafe(nil), T.untyped)
 
 # Base class for all URI classes.
 # Implements generic URI syntax as per RFC 2396.
 #
-# source://uri//lib/uri/generic.rb#21
+# pkg:gem/uri#lib/uri/generic.rb:21
 class URI::Generic
   include ::URI
 
@@ -751,75 +834,34 @@ class URI::Generic
   #
   # Creates a new URI::Generic instance from ``generic'' components without check.
   #
-  # @return [Generic] a new instance of Generic
-  #
-  # source://uri//lib/uri/generic.rb#169
+  # pkg:gem/uri#lib/uri/generic.rb:169
   def initialize(scheme, userinfo, host, port, registry, path, opaque, query, fragment, parser = T.unsafe(nil), arg_check = T.unsafe(nil)); end
 
-  # == Args
-  #
-  # +oth+::
-  #    URI or String
-  #
-  # == Description
-  #
-  # Merges two URIs.
-  #
-  # == Usage
-  #
-  #   require 'uri'
-  #
-  #   uri = URI.parse("http://my.example.com")
-  #   uri.merge("/main.rbx?page=1")
-  #   # => "http://my.example.com/main.rbx?page=1"
   # merge
   #
-  # source://uri//lib/uri/generic.rb#1164
+  # pkg:gem/uri#lib/uri/generic.rb:1164
   def +(oth); end
 
-  # == Args
-  #
-  # +oth+::
-  #    URI or String
-  #
-  # == Description
-  #
-  # Calculates relative path from oth to self.
-  #
-  # == Usage
-  #
-  #   require 'uri'
-  #
-  #   uri = URI.parse('http://my.example.com/main.rbx?page=1')
-  #   uri.route_from('http://my.example.com')
-  #   #=> #<URI::Generic /main.rbx?page=1>
-  #
-  # source://uri//lib/uri/generic.rb#1294
+  # pkg:gem/uri#lib/uri/generic.rb:1294
   def -(oth); end
 
   # Compares two URIs.
   #
-  # source://uri//lib/uri/generic.rb#1399
+  # pkg:gem/uri#lib/uri/generic.rb:1399
   def ==(oth); end
 
-  # Returns true if URI has a scheme (e.g. http:// or https://) specified.
-  #
-  # @return [Boolean]
-  #
-  # source://uri//lib/uri/generic.rb#994
+  # pkg:gem/uri#lib/uri/generic.rb:994
   def absolute; end
 
   # Returns true if URI has a scheme (e.g. http:// or https://) specified.
   #
-  # @return [Boolean]
-  #
-  # source://uri//lib/uri/generic.rb#987
+  # pkg:gem/uri#lib/uri/generic.rb:987
   def absolute?; end
 
   # Returns the authority info (array of user, password, host and
   # port), if any is set.  Or returns +nil+.
   #
-  # source://uri//lib/uri/generic.rb#579
+  # pkg:gem/uri#lib/uri/generic.rb:579
   def authority; end
 
   # == Args
@@ -840,34 +882,32 @@ class URI::Generic
   #   uri.coerce("http://foo.com")
   #   #=> [#<URI::HTTP http://foo.com>, #<URI::HTTP http://my.example.com>]
   #
-  # source://uri//lib/uri/generic.rb#1478
+  # pkg:gem/uri#lib/uri/generic.rb:1478
   def coerce(oth); end
 
   # Components of the URI in the order.
   #
-  # source://uri//lib/uri/generic.rb#313
+  # pkg:gem/uri#lib/uri/generic.rb:313
   def component; end
 
   # Returns the password component after URI decoding.
   #
-  # source://uri//lib/uri/generic.rb#589
+  # pkg:gem/uri#lib/uri/generic.rb:589
   def decoded_password; end
 
   # Returns the user component after URI decoding.
   #
-  # source://uri//lib/uri/generic.rb#584
+  # pkg:gem/uri#lib/uri/generic.rb:584
   def decoded_user; end
 
   # Returns default port.
   #
-  # source://uri//lib/uri/generic.rb#39
+  # pkg:gem/uri#lib/uri/generic.rb:39
   def default_port; end
 
   # Compares with _oth_ for Hash.
   #
-  # @return [Boolean]
-  #
-  # source://uri//lib/uri/generic.rb#1413
+  # pkg:gem/uri#lib/uri/generic.rb:1413
   def eql?(oth); end
 
   # Returns a proxy URI.
@@ -886,16 +926,14 @@ class URI::Generic
   # http_proxy is not used too if the variable is case insensitive.
   # CGI_HTTP_PROXY can be used instead.
   #
-  # @raise [BadURIError]
-  #
-  # source://uri//lib/uri/generic.rb#1504
+  # pkg:gem/uri#lib/uri/generic.rb:1504
   def find_proxy(env = T.unsafe(nil)); end
 
   # Returns the fragment component of the URI.
   #
   #   URI("http://foo/bar/baz?search=FooBar#ponies").fragment #=> "ponies"
   #
-  # source://uri//lib/uri/generic.rb#283
+  # pkg:gem/uri#lib/uri/generic.rb:283
   def fragment; end
 
   # Checks the fragment +v+ component against the +parser+ Regexp for :FRAGMENT.
@@ -919,12 +957,12 @@ class URI::Generic
   #   uri.fragment = "time=1305212086"
   #   uri.to_s  #=> "http://my.example.com/?id=25#time=1305212086"
   #
-  # source://uri//lib/uri/generic.rb#944
+  # pkg:gem/uri#lib/uri/generic.rb:944
   def fragment=(v); end
 
   # Returns the hash value.
   #
-  # source://uri//lib/uri/generic.rb#1408
+  # pkg:gem/uri#lib/uri/generic.rb:1408
   def hash; end
 
   # Returns true if URI is hierarchical.
@@ -945,9 +983,7 @@ class URI::Generic
   #   uri.hierarchical?
   #   #=> false
   #
-  # @return [Boolean]
-  #
-  # source://uri//lib/uri/generic.rb#976
+  # pkg:gem/uri#lib/uri/generic.rb:976
   def hierarchical?; end
 
   # Returns the host component of the URI.
@@ -970,7 +1006,7 @@ class URI::Generic
   #   URI("http://[::1]/bar/baz").host     #=> "[::1]"
   #   URI("http://[::1]/bar/baz").hostname #=> "::1"
   #
-  # source://uri//lib/uri/generic.rb#243
+  # pkg:gem/uri#lib/uri/generic.rb:243
   def host; end
 
   # == Args
@@ -993,7 +1029,7 @@ class URI::Generic
   #   uri.host = "foo.com"
   #   uri.to_s  #=> "http://foo.com"
   #
-  # source://uri//lib/uri/generic.rb#652
+  # pkg:gem/uri#lib/uri/generic.rb:652
   def host=(v); end
 
   # Extract the host part of the URI and unwrap brackets for IPv6 addresses.
@@ -1005,7 +1041,7 @@ class URI::Generic
   #   uri.hostname      #=> "::1"
   #   uri.host          #=> "[::1]"
   #
-  # source://uri//lib/uri/generic.rb#668
+  # pkg:gem/uri#lib/uri/generic.rb:668
   def hostname; end
 
   # Sets the host part of the URI as the argument with brackets for IPv6 addresses.
@@ -1020,10 +1056,10 @@ class URI::Generic
   # If the argument seems to be an IPv6 address,
   # it is wrapped with brackets.
   #
-  # source://uri//lib/uri/generic.rb#685
+  # pkg:gem/uri#lib/uri/generic.rb:685
   def hostname=(v); end
 
-  # source://uri//lib/uri/generic.rb#1455
+  # pkg:gem/uri#lib/uri/generic.rb:1455
   def inspect; end
 
   # == Args
@@ -1043,7 +1079,7 @@ class URI::Generic
   #   uri.merge("/main.rbx?page=1")
   #   # => "http://my.example.com/main.rbx?page=1"
   #
-  # source://uri//lib/uri/generic.rb#1124
+  # pkg:gem/uri#lib/uri/generic.rb:1124
   def merge(oth); end
 
   # == Args
@@ -1063,7 +1099,7 @@ class URI::Generic
   #   uri.merge!("/main.rbx?page=1")
   #   uri.to_s  # => "http://my.example.com/main.rbx?page=1"
   #
-  # source://uri//lib/uri/generic.rb#1096
+  # pkg:gem/uri#lib/uri/generic.rb:1096
   def merge!(oth); end
 
   # Returns normalized URI.
@@ -1078,12 +1114,12 @@ class URI::Generic
   # * scheme and host are converted to lowercase,
   # * an empty path component is set to "/".
   #
-  # source://uri//lib/uri/generic.rb#1331
+  # pkg:gem/uri#lib/uri/generic.rb:1331
   def normalize; end
 
   # Destructive version of #normalize.
   #
-  # source://uri//lib/uri/generic.rb#1340
+  # pkg:gem/uri#lib/uri/generic.rb:1340
   def normalize!; end
 
   # Returns the opaque part of the URI.
@@ -1095,7 +1131,7 @@ class URI::Generic
   # The path typically refers to an absolute path or an opaque part.
   # (See RFC2396 Section 3 and 5.2.)
   #
-  # source://uri//lib/uri/generic.rb#277
+  # pkg:gem/uri#lib/uri/generic.rb:277
   def opaque; end
 
   # == Args
@@ -1110,19 +1146,19 @@ class URI::Generic
   #
   # See also URI::Generic.check_opaque.
   #
-  # source://uri//lib/uri/generic.rb#916
+  # pkg:gem/uri#lib/uri/generic.rb:916
   def opaque=(v); end
 
   # Returns the parser to be used.
   #
   # Unless the +parser+ is defined, DEFAULT_PARSER is used.
   #
-  # source://uri//lib/uri/generic.rb#289
+  # pkg:gem/uri#lib/uri/generic.rb:289
   def parser; end
 
   # Returns the password component (without URI decoding).
   #
-  # source://uri//lib/uri/generic.rb#573
+  # pkg:gem/uri#lib/uri/generic.rb:573
   def password; end
 
   # == Args
@@ -1145,14 +1181,14 @@ class URI::Generic
   #   uri.password = "V3ry_S3nsit1ve"
   #   uri.to_s  #=> "http://john:V3ry_S3nsit1ve@my.example.com"
   #
-  # source://uri//lib/uri/generic.rb#498
+  # pkg:gem/uri#lib/uri/generic.rb:498
   def password=(password); end
 
   # Returns the path component of the URI.
   #
   #   URI("http://foo/bar/baz").path #=> "/bar/baz"
   #
-  # source://uri//lib/uri/generic.rb#260
+  # pkg:gem/uri#lib/uri/generic.rb:260
   def path; end
 
   # == Args
@@ -1175,7 +1211,7 @@ class URI::Generic
   #   uri.path = "/faq/"
   #   uri.to_s  #=> "http://my.example.com/faq/"
   #
-  # source://uri//lib/uri/generic.rb#830
+  # pkg:gem/uri#lib/uri/generic.rb:830
   def path=(v); end
 
   # Returns the port component of the URI.
@@ -1183,7 +1219,7 @@ class URI::Generic
   #   URI("http://foo/bar/baz").port      #=> 80
   #   URI("http://foo:8080/bar/baz").port #=> 8080
   #
-  # source://uri//lib/uri/generic.rb#250
+  # pkg:gem/uri#lib/uri/generic.rb:250
   def port; end
 
   # == Args
@@ -1206,14 +1242,14 @@ class URI::Generic
   #   uri.port = 8080
   #   uri.to_s  #=> "http://my.example.com:8080"
   #
-  # source://uri//lib/uri/generic.rb#743
+  # pkg:gem/uri#lib/uri/generic.rb:743
   def port=(v); end
 
   # Returns the query component of the URI.
   #
   #   URI("http://foo/bar/baz?search=FooBar").query #=> "search=FooBar"
   #
-  # source://uri//lib/uri/generic.rb#266
+  # pkg:gem/uri#lib/uri/generic.rb:266
   def query; end
 
   # == Args
@@ -1233,24 +1269,18 @@ class URI::Generic
   #   uri.query = "id=1"
   #   uri.to_s  #=> "http://my.example.com/?id=1"
   #
-  # @raise [InvalidURIError]
-  #
-  # source://uri//lib/uri/generic.rb#854
+  # pkg:gem/uri#lib/uri/generic.rb:854
   def query=(v); end
 
-  # source://uri//lib/uri/generic.rb#252
+  # pkg:gem/uri#lib/uri/generic.rb:252
   def registry; end
 
-  # @raise [InvalidURIError]
-  #
-  # source://uri//lib/uri/generic.rb#760
+  # pkg:gem/uri#lib/uri/generic.rb:760
   def registry=(v); end
 
   # Returns true if URI does not have a scheme (e.g. http:// or https://) specified.
   #
-  # @return [Boolean]
-  #
-  # source://uri//lib/uri/generic.rb#999
+  # pkg:gem/uri#lib/uri/generic.rb:999
   def relative?; end
 
   # == Args
@@ -1270,7 +1300,7 @@ class URI::Generic
   #   uri.route_from('http://my.example.com')
   #   #=> #<URI::Generic /main.rbx?page=1>
   #
-  # source://uri//lib/uri/generic.rb#1274
+  # pkg:gem/uri#lib/uri/generic.rb:1274
   def route_from(oth); end
 
   # == Args
@@ -1290,14 +1320,14 @@ class URI::Generic
   #   uri.route_to('http://my.example.com/main.rbx?page=1')
   #   #=> #<URI::Generic /main.rbx?page=1>
   #
-  # source://uri//lib/uri/generic.rb#1314
+  # pkg:gem/uri#lib/uri/generic.rb:1314
   def route_to(oth); end
 
   # Returns the scheme component of the URI.
   #
   #   URI("http://foo/bar/baz").scheme #=> "http"
   #
-  # source://uri//lib/uri/generic.rb#221
+  # pkg:gem/uri#lib/uri/generic.rb:221
   def scheme; end
 
   # == Args
@@ -1320,7 +1350,7 @@ class URI::Generic
   #   uri.scheme = "https"
   #   uri.to_s  #=> "https://my.example.com"
   #
-  # source://uri//lib/uri/generic.rb#360
+  # pkg:gem/uri#lib/uri/generic.rb:360
   def scheme=(v); end
 
   # == Args
@@ -1340,22 +1370,20 @@ class URI::Generic
   #   uri.select(:userinfo, :host, :path)
   #   # => ["myuser:mypass", "my.example.com", "/test.rbx"]
   #
-  # source://uri//lib/uri/generic.rb#1444
+  # pkg:gem/uri#lib/uri/generic.rb:1444
   def select(*components); end
 
   # Constructs String from URI.
   #
-  # source://uri//lib/uri/generic.rb#1355
+  # pkg:gem/uri#lib/uri/generic.rb:1355
   def to_s; end
 
-  # Constructs String from URI.
-  #
-  # source://uri//lib/uri/generic.rb#1394
+  # pkg:gem/uri#lib/uri/generic.rb:1394
   def to_str; end
 
   # Returns the user component (without URI decoding).
   #
-  # source://uri//lib/uri/generic.rb#568
+  # pkg:gem/uri#lib/uri/generic.rb:568
   def user; end
 
   # == Args
@@ -1378,84 +1406,82 @@ class URI::Generic
   #   uri.user = "sam"
   #   uri.to_s  #=> "http://sam:V3ry_S3nsit1ve@my.example.com"
   #
-  # source://uri//lib/uri/generic.rb#471
+  # pkg:gem/uri#lib/uri/generic.rb:471
   def user=(user); end
 
   # Returns the userinfo, either as 'user' or 'user:password'.
   #
-  # source://uri//lib/uri/generic.rb#557
+  # pkg:gem/uri#lib/uri/generic.rb:557
   def userinfo; end
 
   # Sets userinfo, argument is string like 'name:pass'.
   #
-  # source://uri//lib/uri/generic.rb#441
+  # pkg:gem/uri#lib/uri/generic.rb:441
   def userinfo=(userinfo); end
 
   protected
 
   # Returns an Array of the components defined from the COMPONENT Array.
   #
-  # source://uri//lib/uri/generic.rb#1420
+  # pkg:gem/uri#lib/uri/generic.rb:1420
   def component_ary; end
 
   # Protected setter for the authority info (+user+, +password+, +host+
   # and +port+).  If +port+ is +nil+, +default_port+ will be set.
   #
-  # source://uri//lib/uri/generic.rb#627
+  # pkg:gem/uri#lib/uri/generic.rb:627
   def set_authority(user, password, host, port = T.unsafe(nil)); end
 
   # Protected setter for the host component +v+.
   #
   # See also URI::Generic.host=.
   #
-  # source://uri//lib/uri/generic.rb#619
+  # pkg:gem/uri#lib/uri/generic.rb:619
   def set_host(v); end
 
   # Protected setter for the opaque component +v+.
   #
   # See also URI::Generic.opaque=.
   #
-  # source://uri//lib/uri/generic.rb#898
+  # pkg:gem/uri#lib/uri/generic.rb:898
   def set_opaque(v); end
 
   # Protected setter for the password component +v+.
   #
   # See also URI::Generic.password=.
   #
-  # source://uri//lib/uri/generic.rb#534
+  # pkg:gem/uri#lib/uri/generic.rb:534
   def set_password(v); end
 
   # Protected setter for the path component +v+.
   #
   # See also URI::Generic.path=.
   #
-  # source://uri//lib/uri/generic.rb#804
+  # pkg:gem/uri#lib/uri/generic.rb:804
   def set_path(v); end
 
   # Protected setter for the port component +v+.
   #
   # See also URI::Generic.port=.
   #
-  # source://uri//lib/uri/generic.rb#716
+  # pkg:gem/uri#lib/uri/generic.rb:716
   def set_port(v); end
 
-  # @raise [InvalidURIError]
-  #
-  # source://uri//lib/uri/generic.rb#755
+  # pkg:gem/uri#lib/uri/generic.rb:755
   def set_registry(v); end
 
   # Protected setter for the scheme component +v+.
   #
   # See also URI::Generic.scheme=.
   #
-  # source://uri//lib/uri/generic.rb#334
+  # pkg:gem/uri#lib/uri/generic.rb:334
   def set_scheme(v); end
 
   # Protected setter for the user component +v+.
   #
   # See also URI::Generic.user=.
   #
-  # source://uri//lib/uri/generic.rb#524
+  # pkg:gem/uri#lib/uri/generic.rb:524
   def set_user(v); end
 
   # Protected setter for the +user+ component, and +password+ if available
@@ -1463,7 +1489,7 @@ class URI::Generic
   #
   # See also URI::Generic.userinfo=.
   #
-  # source://uri//lib/uri/generic.rb#509
+  # pkg:gem/uri#lib/uri/generic.rb:509
   def set_userinfo(user, password = T.unsafe(nil)); end
 
   private
@@ -1474,7 +1500,7 @@ class URI::Generic
   # Can not have a registry or opaque component defined,
   # with a host component defined.
   #
-  # source://uri//lib/uri/generic.rb#600
+  # pkg:gem/uri#lib/uri/generic.rb:600
   def check_host(v); end
 
   # Checks the opaque +v+ component for RFC2396 compliance and
@@ -1483,7 +1509,7 @@ class URI::Generic
   # Can not have a host, port, user, or path component defined,
   # with an opaque component defined.
   #
-  # source://uri//lib/uri/generic.rb#876
+  # pkg:gem/uri#lib/uri/generic.rb:876
   def check_opaque(v); end
 
   # Checks the password +v+ component for RFC2396 compliance
@@ -1492,7 +1518,7 @@ class URI::Generic
   # Can not have a registry or opaque component defined,
   # with a user component defined.
   #
-  # source://uri//lib/uri/generic.rb#417
+  # pkg:gem/uri#lib/uri/generic.rb:417
   def check_password(v, user = T.unsafe(nil)); end
 
   # Checks the path +v+ component for RFC2396 compliance
@@ -1502,7 +1528,7 @@ class URI::Generic
   # Can not have a opaque component defined,
   # with a path component defined.
   #
-  # source://uri//lib/uri/generic.rb#772
+  # pkg:gem/uri#lib/uri/generic.rb:772
   def check_path(v); end
 
   # Checks the port +v+ component for RFC2396 compliance
@@ -1511,17 +1537,15 @@ class URI::Generic
   # Can not have a registry or opaque component defined,
   # with a port component defined.
   #
-  # source://uri//lib/uri/generic.rb#697
+  # pkg:gem/uri#lib/uri/generic.rb:697
   def check_port(v); end
 
-  # @raise [InvalidURIError]
-  #
-  # source://uri//lib/uri/generic.rb#750
+  # pkg:gem/uri#lib/uri/generic.rb:750
   def check_registry(v); end
 
   # Checks the scheme +v+ component against the +parser+ Regexp for :SCHEME.
   #
-  # source://uri//lib/uri/generic.rb#320
+  # pkg:gem/uri#lib/uri/generic.rb:320
   def check_scheme(v); end
 
   # Checks the user +v+ component for RFC2396 compliance
@@ -1530,7 +1554,7 @@ class URI::Generic
   # Can not have a registry or opaque component defined,
   # with a user component defined.
   #
-  # source://uri//lib/uri/generic.rb#393
+  # pkg:gem/uri#lib/uri/generic.rb:393
   def check_user(v); end
 
   # Checks the +user+ and +password+.
@@ -1541,44 +1565,44 @@ class URI::Generic
   #
   # See also URI::Generic.check_user, URI::Generic.check_password.
   #
-  # source://uri//lib/uri/generic.rb#375
+  # pkg:gem/uri#lib/uri/generic.rb:375
   def check_userinfo(user, password = T.unsafe(nil)); end
 
   # Escapes 'user:password' +v+ based on RFC 1738 section 3.1.
   #
-  # source://uri//lib/uri/generic.rb#551
+  # pkg:gem/uri#lib/uri/generic.rb:551
   def escape_userpass(v); end
 
   # Merges a base path +base+, with relative path +rel+,
   # returns a modified base path.
   #
-  # source://uri//lib/uri/generic.rb#1015
+  # pkg:gem/uri#lib/uri/generic.rb:1015
   def merge_path(base, rel); end
 
   # Replaces self by other URI object.
   #
-  # source://uri//lib/uri/generic.rb#299
+  # pkg:gem/uri#lib/uri/generic.rb:299
   def replace!(oth); end
 
   # :stopdoc:
   #
-  # source://uri//lib/uri/generic.rb#1206
+  # pkg:gem/uri#lib/uri/generic.rb:1206
   def route_from0(oth); end
 
   # :stopdoc:
   #
-  # source://uri//lib/uri/generic.rb#1167
+  # pkg:gem/uri#lib/uri/generic.rb:1167
   def route_from_path(src, dst); end
 
   # Returns an Array of the path split on '/'.
   #
-  # source://uri//lib/uri/generic.rb#1006
+  # pkg:gem/uri#lib/uri/generic.rb:1006
   def split_path(path); end
 
   # Returns the userinfo +ui+ as <code>[user, password]</code>
   # if properly formatted as 'user:password'.
   #
-  # source://uri//lib/uri/generic.rb#542
+  # pkg:gem/uri#lib/uri/generic.rb:542
   def split_userinfo(ui); end
 
   class << self
@@ -1593,7 +1617,7 @@ class URI::Generic
     # opaque, query, and fragment. You can provide arguments either by an Array or a Hash.
     # See ::new for hash keys to use or for order of array items.
     #
-    # source://uri//lib/uri/generic.rb#116
+    # pkg:gem/uri#lib/uri/generic.rb:116
     def build(args); end
 
     # == Synopsis
@@ -1606,25 +1630,23 @@ class URI::Generic
     # URI::Generic::build. But, if exception URI::InvalidComponentError is raised,
     # then it does URI::RFC2396_PARSER.escape all URI components and tries again.
     #
-    # source://uri//lib/uri/generic.rb#78
+    # pkg:gem/uri#lib/uri/generic.rb:78
     def build2(args); end
 
     # Components of the URI in the order.
     #
-    # source://uri//lib/uri/generic.rb#57
+    # pkg:gem/uri#lib/uri/generic.rb:57
     def component; end
 
     # Returns default port.
     #
-    # source://uri//lib/uri/generic.rb#32
+    # pkg:gem/uri#lib/uri/generic.rb:32
     def default_port; end
 
-    # @return [Boolean]
-    #
-    # source://uri//lib/uri/generic.rb#1570
+    # pkg:gem/uri#lib/uri/generic.rb:1570
     def use_proxy?(hostname, addr, port, no_proxy); end
 
-    # source://uri//lib/uri/generic.rb#63
+    # pkg:gem/uri#lib/uri/generic.rb:63
     def use_registry; end
   end
 end
@@ -1636,7 +1658,7 @@ end
 # supported in Internet Explorer 5 and 6, before the MS04-004 security
 # update. See <URL:http://support.microsoft.com/kb/834489>.
 #
-# source://uri//lib/uri/http.rb#22
+# pkg:gem/uri#lib/uri/http.rb:22
 class URI::HTTP < ::URI::Generic
   # == Description
   #
@@ -1650,12 +1672,12 @@ class URI::HTTP < ::URI::Generic
   #     URI::HTTP.build(host: 'www.example.com', port: 8000, path: '/foo/bar').authority #=> "www.example.com:8000"
   #     URI::HTTP.build(host: 'www.example.com', port: 80, path: '/foo/bar').authority #=> "www.example.com"
   #
-  # source://uri//lib/uri/http.rb#109
+  # pkg:gem/uri#lib/uri/http.rb:109
   def authority; end
 
   # Do not allow empty host names, as they are not allowed by RFC 3986.
   #
-  # source://uri//lib/uri/http.rb#65
+  # pkg:gem/uri#lib/uri/http.rb:65
   def check_host(v); end
 
   # == Description
@@ -1671,7 +1693,7 @@ class URI::HTTP < ::URI::Generic
   #     URI::HTTP.build(host: 'www.example.com', port: 80, path: '/foo/bar').origin #=> "http://www.example.com"
   #     URI::HTTPS.build(host: 'www.example.com', path: '/foo/bar').origin #=> "https://www.example.com"
   #
-  # source://uri//lib/uri/http.rb#131
+  # pkg:gem/uri#lib/uri/http.rb:131
   def origin; end
 
   # == Description
@@ -1686,7 +1708,7 @@ class URI::HTTP < ::URI::Generic
   #     uri = URI::HTTP.build(path: '/foo/bar', query: 'test=true')
   #     uri.request_uri #  => "/foo/bar?test=true"
   #
-  # source://uri//lib/uri/http.rb#89
+  # pkg:gem/uri#lib/uri/http.rb:89
   def request_uri; end
 
   class << self
@@ -1713,14 +1735,14 @@ class URI::HTTP < ::URI::Generic
     # Currently, if passed userinfo components this method generates
     # invalid HTTP URIs as per RFC 1738.
     #
-    # source://uri//lib/uri/http.rb#59
+    # pkg:gem/uri#lib/uri/http.rb:59
     def build(args); end
   end
 end
 
 # :stopdoc:
 #
-# source://uri//lib/uri/common.rb#166
+# pkg:gem/uri#lib/uri/common.rb:166
 URI::INITIAL_SCHEMES = T.let(T.unsafe(nil), Hash)
 
 # LDAP URI SCHEMA (described in RFC2255).
@@ -1728,7 +1750,7 @@ URI::INITIAL_SCHEMES = T.let(T.unsafe(nil), Hash)
 # ldap://<host>/<dn>[?<attrs>[?<scope>[?<filter>[?<extensions>]]]]
 # ++
 #
-# source://uri//lib/uri/ldap.rb#23
+# pkg:gem/uri#lib/uri/ldap.rb:23
 class URI::LDAP < ::URI::Generic
   # == Description
   #
@@ -1745,114 +1767,108 @@ class URI::LDAP < ::URI::Generic
   #
   # See also URI::Generic.new.
   #
-  # @return [LDAP] a new instance of LDAP
-  #
-  # source://uri//lib/uri/ldap.rb#108
+  # pkg:gem/uri#lib/uri/ldap.rb:108
   def initialize(*arg); end
 
   # Returns attributes.
   #
-  # source://uri//lib/uri/ldap.rb#178
+  # pkg:gem/uri#lib/uri/ldap.rb:178
   def attributes; end
 
   # Setter for attributes +val+.
   #
-  # source://uri//lib/uri/ldap.rb#191
+  # pkg:gem/uri#lib/uri/ldap.rb:191
   def attributes=(val); end
 
   # Returns dn.
   #
-  # source://uri//lib/uri/ldap.rb#159
+  # pkg:gem/uri#lib/uri/ldap.rb:159
   def dn; end
 
   # Setter for dn +val+.
   #
-  # source://uri//lib/uri/ldap.rb#172
+  # pkg:gem/uri#lib/uri/ldap.rb:172
   def dn=(val); end
 
   # Returns extensions.
   #
-  # source://uri//lib/uri/ldap.rb#235
+  # pkg:gem/uri#lib/uri/ldap.rb:235
   def extensions; end
 
   # Setter for extensions +val+.
   #
-  # source://uri//lib/uri/ldap.rb#248
+  # pkg:gem/uri#lib/uri/ldap.rb:248
   def extensions=(val); end
 
   # Returns filter.
   #
-  # source://uri//lib/uri/ldap.rb#216
+  # pkg:gem/uri#lib/uri/ldap.rb:216
   def filter; end
 
   # Setter for filter +val+.
   #
-  # source://uri//lib/uri/ldap.rb#229
+  # pkg:gem/uri#lib/uri/ldap.rb:229
   def filter=(val); end
 
   # Checks if URI has a path.
   # For URI::LDAP this will return +false+.
   #
-  # @return [Boolean]
-  #
-  # source://uri//lib/uri/ldap.rb#255
+  # pkg:gem/uri#lib/uri/ldap.rb:255
   def hierarchical?; end
 
   # Returns scope.
   #
-  # source://uri//lib/uri/ldap.rb#197
+  # pkg:gem/uri#lib/uri/ldap.rb:197
   def scope; end
 
   # Setter for scope +val+.
   #
-  # source://uri//lib/uri/ldap.rb#210
+  # pkg:gem/uri#lib/uri/ldap.rb:210
   def scope=(val); end
 
   protected
 
   # Private setter for attributes +val+.
   #
-  # source://uri//lib/uri/ldap.rb#183
+  # pkg:gem/uri#lib/uri/ldap.rb:183
   def set_attributes(val); end
 
   # Private setter for dn +val+.
   #
-  # source://uri//lib/uri/ldap.rb#164
+  # pkg:gem/uri#lib/uri/ldap.rb:164
   def set_dn(val); end
 
   # Private setter for extensions +val+.
   #
-  # source://uri//lib/uri/ldap.rb#240
+  # pkg:gem/uri#lib/uri/ldap.rb:240
   def set_extensions(val); end
 
   # Private setter for filter +val+.
   #
-  # source://uri//lib/uri/ldap.rb#221
+  # pkg:gem/uri#lib/uri/ldap.rb:221
   def set_filter(val); end
 
   # Private setter for scope +val+.
   #
-  # source://uri//lib/uri/ldap.rb#202
+  # pkg:gem/uri#lib/uri/ldap.rb:202
   def set_scope(val); end
 
   private
 
   # Private method to assemble +query+ from +attributes+, +scope+, +filter+, and +extensions+.
   #
-  # source://uri//lib/uri/ldap.rb#146
+  # pkg:gem/uri#lib/uri/ldap.rb:146
   def build_path_query; end
 
   # Private method to cleanup +dn+ from using the +path+ component attribute.
   #
-  # @raise [InvalidURIError]
-  #
-  # source://uri//lib/uri/ldap.rb#120
+  # pkg:gem/uri#lib/uri/ldap.rb:120
   def parse_dn; end
 
   # Private method to cleanup +attributes+, +scope+, +filter+, and +extensions+
   # from using the +query+ component attribute.
   #
-  # source://uri//lib/uri/ldap.rb#128
+  # pkg:gem/uri#lib/uri/ldap.rb:128
   def parse_query; end
 
   class << self
@@ -1877,14 +1893,14 @@ class URI::LDAP < ::URI::Generic
     #     uri = URI::LDAP.build(["ldap.example.com", nil,
     #       "/dc=example;dc=com", "query", nil, nil, nil])
     #
-    # source://uri//lib/uri/ldap.rb#74
+    # pkg:gem/uri#lib/uri/ldap.rb:74
     def build(args); end
   end
 end
 
 # RFC6068, the mailto URL scheme.
 #
-# source://uri//lib/uri/mailto.rb#17
+# pkg:gem/uri#lib/uri/mailto.rb:17
 class URI::MailTo < ::URI::Generic
   include ::URI::RFC2396_REGEXP
 
@@ -1896,29 +1912,27 @@ class URI::MailTo < ::URI::Generic
   # This method is usually called from URI::parse, which checks
   # the validity of each component.
   #
-  # @return [MailTo] a new instance of MailTo
-  #
-  # source://uri//lib/uri/mailto.rb#132
+  # pkg:gem/uri#lib/uri/mailto.rb:132
   def initialize(*arg); end
 
   # E-mail headers set by the URL, as an Array of Arrays.
   #
-  # source://uri//lib/uri/mailto.rb#166
+  # pkg:gem/uri#lib/uri/mailto.rb:166
   def headers; end
 
   # Setter for headers +v+.
   #
-  # source://uri//lib/uri/mailto.rb#232
+  # pkg:gem/uri#lib/uri/mailto.rb:232
   def headers=(v); end
 
   # The primary e-mail address of the URL, as a String.
   #
-  # source://uri//lib/uri/mailto.rb#163
+  # pkg:gem/uri#lib/uri/mailto.rb:163
   def to; end
 
   # Setter for to +v+.
   #
-  # source://uri//lib/uri/mailto.rb#200
+  # pkg:gem/uri#lib/uri/mailto.rb:200
   def to=(v); end
 
   # Returns the RFC822 e-mail text equivalent of the URL, as a String.
@@ -1931,37 +1945,27 @@ class URI::MailTo < ::URI::Generic
   #   uri.to_mailtext
   #   # => "To: ruby-list@ruby-lang.org\nSubject: subscribe\nCc: myaddr\n\n\n"
   #
-  # source://uri//lib/uri/mailto.rb#268
+  # pkg:gem/uri#lib/uri/mailto.rb:268
   def to_mailtext; end
 
-  # Returns the RFC822 e-mail text equivalent of the URL, as a String.
-  #
-  # Example:
-  #
-  #   require 'uri'
-  #
-  #   uri = URI.parse("mailto:ruby-list@ruby-lang.org?Subject=subscribe&cc=myaddr")
-  #   uri.to_mailtext
-  #   # => "To: ruby-list@ruby-lang.org\nSubject: subscribe\nCc: myaddr\n\n\n"
-  #
-  # source://uri//lib/uri/mailto.rb#289
+  # pkg:gem/uri#lib/uri/mailto.rb:289
   def to_rfc822text; end
 
   # Constructs String from URI.
   #
-  # source://uri//lib/uri/mailto.rb#239
+  # pkg:gem/uri#lib/uri/mailto.rb:239
   def to_s; end
 
   protected
 
   # Private setter for headers +v+.
   #
-  # source://uri//lib/uri/mailto.rb#221
+  # pkg:gem/uri#lib/uri/mailto.rb:221
   def set_headers(v); end
 
   # Private setter for to +v+.
   #
-  # source://uri//lib/uri/mailto.rb#194
+  # pkg:gem/uri#lib/uri/mailto.rb:194
   def set_to(v); end
 
   private
@@ -1969,12 +1973,12 @@ class URI::MailTo < ::URI::Generic
   # Checks the headers +v+ component against either
   # * HEADER_REGEXP
   #
-  # source://uri//lib/uri/mailto.rb#208
+  # pkg:gem/uri#lib/uri/mailto.rb:208
   def check_headers(v); end
 
   # Checks the to +v+ component.
   #
-  # source://uri//lib/uri/mailto.rb#169
+  # pkg:gem/uri#lib/uri/mailto.rb:169
   def check_to(v); end
 
   class << self
@@ -2004,19 +2008,19 @@ class URI::MailTo < ::URI::Generic
     #    m3 = URI::MailTo.build({:to => 'listman@example.com', :headers => [['subject', 'subscribe']]})
     #    m3.to_s  # => "mailto:listman@example.com?subject=subscribe"
     #
-    # source://uri//lib/uri/mailto.rb#85
+    # pkg:gem/uri#lib/uri/mailto.rb:85
     def build(args); end
   end
 end
 
-# source://uri//lib/uri/common.rb#34
+# pkg:gem/uri#lib/uri/common.rb:34
 URI::PARSER = T.let(T.unsafe(nil), URI::RFC3986_Parser)
 
 # Class that parses String's into URI's.
 #
 # It contains a Hash set of patterns and Regexp's that match and validate.
 #
-# source://uri//lib/uri/rfc2396_parser.rb#64
+# pkg:gem/uri#lib/uri/rfc2396_parser.rb:64
 class URI::RFC2396_Parser
   include ::URI::RFC2396_REGEXP
 
@@ -2051,9 +2055,7 @@ class URI::RFC2396_Parser
   #   u1 == u2 #=> true
   #   u1.eql?(u2) #=> false
   #
-  # @return [RFC2396_Parser] a new instance of RFC2396_Parser
-  #
-  # source://uri//lib/uri/rfc2396_parser.rb#99
+  # pkg:gem/uri#lib/uri/rfc2396_parser.rb:99
   def initialize(opts = T.unsafe(nil)); end
 
   # :call-seq:
@@ -2072,7 +2074,7 @@ class URI::RFC2396_Parser
   # Constructs a safe String from +str+, removing unsafe characters,
   # replacing them with codes.
   #
-  # source://uri//lib/uri/rfc2396_parser.rb#286
+  # pkg:gem/uri#lib/uri/rfc2396_parser.rb:286
   def escape(str, unsafe = T.unsafe(nil)); end
 
   # :call-seq:
@@ -2095,10 +2097,10 @@ class URI::RFC2396_Parser
   #
   # See also #make_regexp.
   #
-  # source://uri//lib/uri/rfc2396_parser.rb#248
+  # pkg:gem/uri#lib/uri/rfc2396_parser.rb:248
   def extract(str, schemes = T.unsafe(nil)); end
 
-  # source://uri//lib/uri/rfc2396_parser.rb#325
+  # pkg:gem/uri#lib/uri/rfc2396_parser.rb:325
   def inspect; end
 
   # == Args
@@ -2110,13 +2112,13 @@ class URI::RFC2396_Parser
   #
   # Attempts to parse and merge a set of URIs.
   #
-  # source://uri//lib/uri/rfc2396_parser.rb#222
+  # pkg:gem/uri#lib/uri/rfc2396_parser.rb:222
   def join(*uris); end
 
   # Returns Regexp that is default +self.regexp[:ABS_URI_REF]+,
   # unless +schemes+ is provided. Then it is a Regexp.union with +self.pattern[:X_ABS_URI]+.
   #
-  # source://uri//lib/uri/rfc2396_parser.rb#261
+  # pkg:gem/uri#lib/uri/rfc2396_parser.rb:261
   def make_regexp(schemes = T.unsafe(nil)); end
 
   # == Args
@@ -2134,26 +2136,26 @@ class URI::RFC2396_Parser
   #   URI::RFC2396_PARSER.parse("ldap://ldap.example.com/dc=example?user=john")
   #   #=> #<URI::LDAP ldap://ldap.example.com/dc=example?user=john>
   #
-  # source://uri//lib/uri/rfc2396_parser.rb#208
+  # pkg:gem/uri#lib/uri/rfc2396_parser.rb:208
   def parse(uri); end
 
   # The Hash of patterns.
   #
   # See also #initialize_pattern.
   #
-  # source://uri//lib/uri/rfc2396_parser.rb#112
+  # pkg:gem/uri#lib/uri/rfc2396_parser.rb:112
   def pattern; end
 
   # The Hash of Regexp.
   #
   # See also #initialize_regexp.
   #
-  # source://uri//lib/uri/rfc2396_parser.rb#117
+  # pkg:gem/uri#lib/uri/rfc2396_parser.rb:117
   def regexp; end
 
   # Returns a split URI against +regexp[:ABS_URI]+.
   #
-  # source://uri//lib/uri/rfc2396_parser.rb#120
+  # pkg:gem/uri#lib/uri/rfc2396_parser.rb:120
   def split(uri); end
 
   # :call-seq:
@@ -2171,7 +2173,7 @@ class URI::RFC2396_Parser
   #
   # Removes escapes from +str+.
   #
-  # source://uri//lib/uri/rfc2396_parser.rb#317
+  # pkg:gem/uri#lib/uri/rfc2396_parser.rb:317
   def unescape(str, escaped = T.unsafe(nil)); end
 
   private
@@ -2179,164 +2181,157 @@ class URI::RFC2396_Parser
   # Returns +uri+ as-is if it is URI, or convert it to URI if it is
   # a String.
   #
-  # source://uri//lib/uri/rfc2396_parser.rb#528
+  # pkg:gem/uri#lib/uri/rfc2396_parser.rb:528
   def convert_to_uri(uri); end
 
   # Constructs the default Hash of patterns.
   #
-  # source://uri//lib/uri/rfc2396_parser.rb#337
+  # pkg:gem/uri#lib/uri/rfc2396_parser.rb:337
   def initialize_pattern(opts = T.unsafe(nil)); end
 
   # Constructs the default Hash of Regexp's.
   #
-  # source://uri//lib/uri/rfc2396_parser.rb#495
+  # pkg:gem/uri#lib/uri/rfc2396_parser.rb:495
   def initialize_regexp(pattern); end
 end
 
-# source://uri//lib/uri/rfc2396_parser.rb#323
+# pkg:gem/uri#lib/uri/rfc2396_parser.rb:323
 URI::RFC2396_Parser::TO_S = T.let(T.unsafe(nil), UnboundMethod)
 
-# source://uri//lib/uri/rfc3986_parser.rb#3
+# pkg:gem/uri#lib/uri/rfc3986_parser.rb:3
 class URI::RFC3986_Parser
-  # @return [RFC3986_Parser] a new instance of RFC3986_Parser
-  #
-  # source://uri//lib/uri/rfc3986_parser.rb#73
+  # pkg:gem/uri#lib/uri/rfc3986_parser.rb:73
   def initialize; end
 
   # Compatibility for RFC2396 parser
   #
-  # source://uri//lib/uri/rfc3986_parser.rb#156
+  # pkg:gem/uri#lib/uri/rfc3986_parser.rb:156
   def escape(str, unsafe = T.unsafe(nil)); end
 
   # Compatibility for RFC2396 parser
   #
-  # source://uri//lib/uri/rfc3986_parser.rb#144
+  # pkg:gem/uri#lib/uri/rfc3986_parser.rb:144
   def extract(str, schemes = T.unsafe(nil), &block); end
 
-  # source://uri//lib/uri/rfc3986_parser.rb#169
+  # pkg:gem/uri#lib/uri/rfc3986_parser.rb:169
   def inspect; end
 
-  # source://uri//lib/uri/rfc3986_parser.rb#138
+  # pkg:gem/uri#lib/uri/rfc3986_parser.rb:138
   def join(*uris); end
 
   # Compatibility for RFC2396 parser
   #
-  # source://uri//lib/uri/rfc3986_parser.rb#150
+  # pkg:gem/uri#lib/uri/rfc3986_parser.rb:150
   def make_regexp(schemes = T.unsafe(nil)); end
 
-  # source://uri//lib/uri/rfc3986_parser.rb#134
+  # pkg:gem/uri#lib/uri/rfc3986_parser.rb:134
   def parse(uri); end
 
-  # Returns the value of attribute regexp.
-  #
-  # source://uri//lib/uri/rfc3986_parser.rb#71
+  # pkg:gem/uri#lib/uri/rfc3986_parser.rb:71
   def regexp; end
 
-  # source://uri//lib/uri/rfc3986_parser.rb#77
+  # pkg:gem/uri#lib/uri/rfc3986_parser.rb:77
   def split(uri); end
 
   # Compatibility for RFC2396 parser
   #
-  # source://uri//lib/uri/rfc3986_parser.rb#162
+  # pkg:gem/uri#lib/uri/rfc3986_parser.rb:162
   def unescape(str, escaped = T.unsafe(nil)); end
 
   private
 
-  # source://uri//lib/uri/rfc3986_parser.rb#194
+  # pkg:gem/uri#lib/uri/rfc3986_parser.rb:194
   def convert_to_uri(uri); end
 
-  # source://uri//lib/uri/rfc3986_parser.rb#180
+  # pkg:gem/uri#lib/uri/rfc3986_parser.rb:180
   def default_regexp; end
 end
 
-# source://uri//lib/uri/rfc3986_parser.rb#33
+# pkg:gem/uri#lib/uri/rfc3986_parser.rb:33
 URI::RFC3986_Parser::FRAGMENT = T.let(T.unsafe(nil), String)
 
 # URI defined in RFC3986
 #
-# source://uri//lib/uri/rfc3986_parser.rb#5
+# pkg:gem/uri#lib/uri/rfc3986_parser.rb:5
 URI::RFC3986_Parser::HOST = T.let(T.unsafe(nil), Regexp)
 
-# source://uri//lib/uri/rfc3986_parser.rb#54
+# pkg:gem/uri#lib/uri/rfc3986_parser.rb:54
 URI::RFC3986_Parser::RFC3986_relative_ref = T.let(T.unsafe(nil), Regexp)
 
-# source://uri//lib/uri/rfc3986_parser.rb#30
+# pkg:gem/uri#lib/uri/rfc3986_parser.rb:30
 URI::RFC3986_Parser::SCHEME = T.let(T.unsafe(nil), String)
 
-# source://uri//lib/uri/rfc3986_parser.rb#31
+# pkg:gem/uri#lib/uri/rfc3986_parser.rb:31
 URI::RFC3986_Parser::SEG = T.let(T.unsafe(nil), String)
 
-# source://uri//lib/uri/rfc3986_parser.rb#32
+# pkg:gem/uri#lib/uri/rfc3986_parser.rb:32
 URI::RFC3986_Parser::SEG_NC = T.let(T.unsafe(nil), String)
 
-# source://uri//lib/uri/rfc3986_parser.rb#28
+# pkg:gem/uri#lib/uri/rfc3986_parser.rb:28
 URI::RFC3986_Parser::USERINFO = T.let(T.unsafe(nil), Regexp)
 
-# source://uri//lib/uri/common.rb#97
+# pkg:gem/uri#lib/uri/common.rb:97
 module URI::Schemes
   class << self
     # Use Lo category chars as escaped chars for TruffleRuby, which
     # does not allow Symbol categories as identifiers.
     #
-    # source://uri//lib/uri/common.rb#104
+    # pkg:gem/uri#lib/uri/common.rb:104
     def escape(name); end
 
-    # source://uri//lib/uri/common.rb#115
+    # pkg:gem/uri#lib/uri/common.rb:115
     def find(name); end
 
-    # source://uri//lib/uri/common.rb#126
+    # pkg:gem/uri#lib/uri/common.rb:126
     def list; end
 
-    # source://uri//lib/uri/common.rb#119
+    # pkg:gem/uri#lib/uri/common.rb:119
     def register(name, klass); end
 
-    # source://uri//lib/uri/common.rb#111
+    # pkg:gem/uri#lib/uri/common.rb:111
     def unescape(name); end
   end
 end
 
-# source://uri//lib/uri/common.rb#123
+# pkg:gem/uri#lib/uri/common.rb:123
 URI::Schemes::FILE = URI::File
 
-# source://uri//lib/uri/common.rb#123
+# pkg:gem/uri#lib/uri/common.rb:123
 URI::Schemes::FTP = URI::FTP
 
-# source://uri//lib/uri/common.rb#123
+# pkg:gem/uri#lib/uri/common.rb:123
 URI::Schemes::HTTP = URI::HTTP
 
-# source://uri//lib/uri/common.rb#123
+# pkg:gem/uri#lib/uri/common.rb:123
 URI::Schemes::HTTPS = URI::HTTPS
 
-# source://uri//lib/uri/common.rb#123
+# pkg:gem/uri#lib/uri/common.rb:123
 URI::Schemes::LDAP = URI::LDAP
 
-# source://uri//lib/uri/common.rb#123
+# pkg:gem/uri#lib/uri/common.rb:123
 URI::Schemes::LDAPS = URI::LDAPS
 
-# source://uri//lib/uri/common.rb#123
+# pkg:gem/uri#lib/uri/common.rb:123
 URI::Schemes::MAILTO = URI::MailTo
 
-# source://uri//lib/uri/common.rb#123
-URI::Schemes::SOURCE = Tapioca::SourceURI
-
-# source://uri//lib/uri/common.rb#123
+# pkg:gem/uri#lib/uri/common.rb:123
 URI::Schemes::WS = URI::WS
 
-# source://uri//lib/uri/common.rb#123
+# pkg:gem/uri#lib/uri/common.rb:123
 URI::Schemes::WSS = URI::WSS
 
-# source://uri//lib/uri/common.rb#347
+# pkg:gem/uri#lib/uri/common.rb:347
 URI::TBLENCURICOMP_ = T.let(T.unsafe(nil), Hash)
 
-# source://uri//lib/uri/common.rb#65
+# pkg:gem/uri#lib/uri/common.rb:65
 module URI::Util
   private
 
-  # source://uri//lib/uri/common.rb#66
+  # pkg:gem/uri#lib/uri/common.rb:66
   def make_components_hash(klass, array_hash); end
 
   class << self
-    # source://uri//lib/uri/common.rb#94
+    # pkg:gem/uri#lib/uri/common.rb:94
     def make_components_hash(klass, array_hash); end
   end
 end
@@ -2348,7 +2343,7 @@ end
 # supported in Internet Explorer 5 and 6, before the MS04-004 security
 # update. See <URL:http://support.microsoft.com/kb/834489>.
 #
-# source://uri//lib/uri/ws.rb#22
+# pkg:gem/uri#lib/uri/ws.rb:22
 class URI::WS < ::URI::Generic
   # == Description
   #
@@ -2362,7 +2357,7 @@ class URI::WS < ::URI::Generic
   #     uri = URI::WS.build(path: '/foo/bar', query: 'test=true')
   #     uri.request_uri #  => "/foo/bar?test=true"
   #
-  # source://uri//lib/uri/ws.rb#74
+  # pkg:gem/uri#lib/uri/ws.rb:74
   def request_uri; end
 
   class << self
@@ -2387,7 +2382,7 @@ class URI::WS < ::URI::Generic
     # Currently, if passed userinfo components this method generates
     # invalid WS URIs as per RFC 1738.
     #
-    # source://uri//lib/uri/ws.rb#56
+    # pkg:gem/uri#lib/uri/ws.rb:56
     def build(args); end
   end
 end
@@ -2396,10 +2391,10 @@ end
 # than 'ws:'. Other than that, WSS URIs are identical to WS URIs;
 # see URI::WS.
 #
-# source://uri//lib/uri/wss.rb#17
+# pkg:gem/uri#lib/uri/wss.rb:17
 class URI::WSS < ::URI::WS; end
 
 # A Default port of 443 for URI::WSS
 #
-# source://uri//lib/uri/wss.rb#19
+# pkg:gem/uri#lib/uri/wss.rb:19
 URI::WSS::DEFAULT_PORT = T.let(T.unsafe(nil), Integer)

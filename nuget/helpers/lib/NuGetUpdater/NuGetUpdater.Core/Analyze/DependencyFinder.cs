@@ -34,7 +34,7 @@ internal static class DependencyFinder
             foreach (var dependency in dependencies)
             {
                 var infoUrl = await nugetContext.GetPackageInfoUrlAsync(dependency.Name, dependency.Version!, cancellationToken);
-                var updatedDependency = dependency with { IsTransitive = false, InfoUrl = infoUrl };
+                var updatedDependency = dependency with { IsTopLevel = true, InfoUrl = infoUrl };
                 updatedDependencies.Add(updatedDependency);
             }
 

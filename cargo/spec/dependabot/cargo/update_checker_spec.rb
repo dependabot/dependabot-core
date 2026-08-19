@@ -4,6 +4,7 @@
 require "spec_helper"
 
 require "dependabot/cargo/update_checker"
+require "dependabot/cargo/file_parser"
 require "dependabot/dependency_file"
 require "dependabot/dependency"
 require "dependabot/requirements_update_strategy"
@@ -148,6 +149,40 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
 
         # The SHA of the next version tag
         it { is_expected.to eq("83141b376b93484341c68fbca3ca110ae5cd2708") }
+
+        context "with a cooldown period configured" do
+          let(:update_cooldown) do
+            Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90)
+          end
+
+          before do
+            allow(checker.send(:git_commit_checker))
+              .to receive(:refs_for_tag_with_detail)
+              .and_return(
+                [
+                  Dependabot::GitTagWithDetail.new(tag: "0.1.3", release_date: "2018-01-02"),
+                  Dependabot::GitTagWithDetail.new(
+                    tag: "1.0.0",
+                    release_date: Time.now.strftime("%Y-%m-%d")
+                  )
+                ]
+              )
+          end
+
+          it "skips the version tag still within its cooldown window" do
+            expect(checker.latest_version)
+              .to eq("d5094c7e9456f2965dec20de671094a98c6929c2")
+          end
+
+          context "when there is no cooldown (e.g. a security update)" do
+            let(:update_cooldown) { nil }
+
+            it "uses the latest version tag" do
+              expect(checker.latest_version)
+                .to eq("83141b376b93484341c68fbca3ca110ae5cd2708")
+            end
+          end
+        end
       end
 
       context "with a non-version tag" do
@@ -450,14 +485,15 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           requirements: requirements,
           updated_source: nil,
           target_version: "0.1.40",
-          update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
+          update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary
         )
         .and_call_original
+      # "0.1.12" (caret) already allows 0.1.40, so the requirement is left as-is.
       expect(checker.updated_requirements)
         .to eq(
           [{
             file: "Cargo.toml",
-            requirement: "0.1.40",
+            requirement: "0.1.12",
             groups: [],
             source: nil
           }]
@@ -483,18 +519,56 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
             requirements: requirements,
             updated_source: nil,
             target_version: "0.1.39",
-            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersions
+            update_strategy: Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary
           )
           .and_call_original
+        # "0.1.12" already allows the 0.1.39 fix, so only the lockfile changes.
         expect(checker.updated_requirements)
           .to eq(
             [{
               file: "Cargo.toml",
-              requirement: "0.1.39",
+              requirement: "0.1.12",
               groups: [],
               source: nil
             }]
           )
+      end
+    end
+
+    context "with string-keyed git source details" do
+      let(:requirements) do
+        [{
+          file: "Cargo.toml",
+          requirement: nil,
+          groups: [],
+          source: {
+            "type" => "git",
+            "url" => "https://github.com/BurntSushi/utf8-ranges",
+            "ref" => "v1.0.0",
+            "custom" => "preserved"
+          }
+        }]
+      end
+      let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+      before do
+        allow(checker).to receive_messages(
+          target_version: "v1.5.0",
+          git_dependency?: true,
+          latest_git_tag_is_resolvable?: true,
+          git_commit_checker: git_checker
+        )
+        allow(git_checker).to receive_messages(
+          pinned_ref_looks_like_version?: true,
+          local_tag_for_latest_version: { tag: "v1.5.0" }
+        )
+      end
+
+      it "preserves the source payload and key style" do
+        source = checker.updated_requirements.first.source_hash
+
+        expect(source).to include("ref" => "v1.5.0", "custom" => "preserved")
+        expect(source).not_to have_key(:ref)
       end
     end
   end
@@ -508,6 +582,253 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
       let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
 
       it { is_expected.to be(false) }
+    end
+  end
+
+  describe "#requirements_update_strategy" do
+    subject(:strategy) { checker.requirements_update_strategy }
+
+    context "with no explicit strategy and a lockfile present" do
+      it "defaults to BumpVersionsIfNecessary" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary)
+      end
+    end
+
+    context "with no explicit strategy and no lockfile" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "Cargo.toml",
+            content: fixture("manifests", manifest_fixture_name)
+          )
+        ]
+      end
+
+      it "defaults to BumpVersionsIfNecessary" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::BumpVersionsIfNecessary)
+      end
+    end
+
+    context "when an explicit strategy is passed" do
+      let(:requirements_update_strategy) { Dependabot::RequirementsUpdateStrategy::LockfileOnly }
+
+      it "honours the explicit strategy" do
+        expect(strategy).to eq(Dependabot::RequirementsUpdateStrategy::LockfileOnly)
+      end
+    end
+  end
+
+  context "with multiple locked versions of a transitive dependency" do
+    let(:manifest_fixture_name) { "multiple_locked_versions" }
+    let(:lockfile_fixture_name) { "multiple_locked_versions" }
+    let(:crates_response) { "{}" }
+    let(:dependency) do
+      Dependabot::Cargo::FileParser.new(dependency_files: dependency_files, source: nil)
+                                   .parse
+                                   .find { |candidate| candidate.name == "getrandom" }
+    end
+
+    before do
+      latest_version_finder = instance_double(
+        Dependabot::Cargo::UpdateChecker::LatestVersionFinder,
+        latest_version: Dependabot::Cargo::Version.new("0.4.3"),
+        lowest_security_fix_version: Dependabot::Cargo::Version.new("0.4.3")
+      )
+      allow(Dependabot::Cargo::UpdateChecker::LatestVersionFinder)
+        .to receive(:new).and_return(latest_version_finder)
+    end
+
+    it "updates the newer compatible line without changing the older line" do
+      updated_dependencies = checker.updated_dependencies(requirements_to_unlock: :own)
+
+      expect(updated_dependencies.map { |candidate| [candidate.previous_version, candidate.version] })
+        .to eq([["0.4.2", "0.4.3"]])
+    end
+
+    context "when every locked line is at its compatible ceiling" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "getrandom",
+          version: "0.2.17",
+          requirements: [],
+          package_manager: "cargo",
+          metadata: { all_versions: locked_versions }
+        )
+      end
+      let(:locked_versions) do
+        ["0.2.17", "0.4.3"].map do |version|
+          Dependabot::Dependency.new(
+            name: "getrandom",
+            version: version,
+            requirements: [],
+            package_manager: "cargo",
+            metadata: { cargo_package_source: "registry+https://github.com/rust-lang/crates.io-index" }
+          )
+        end
+      end
+
+      before do
+        allow(Dependabot::Cargo::UpdateChecker::VersionResolver).to receive(:new) do |dependency:, **|
+          instance_double(
+            Dependabot::Cargo::UpdateChecker::VersionResolver,
+            latest_resolvable_version: Dependabot::Cargo::Version.new(dependency.version)
+          )
+        end
+      end
+
+      it "is up to date when each line resolves to its current version" do
+        expect(checker).to be_up_to_date
+      end
+    end
+
+    context "when more than one locked line is independently updateable" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "getrandom",
+          version: "0.2.16",
+          requirements: [],
+          package_manager: "cargo",
+          metadata: { all_versions: locked_versions }
+        )
+      end
+      let(:locked_versions) do
+        ["0.2.16", "0.4.2"].map do |version|
+          Dependabot::Dependency.new(
+            name: "getrandom",
+            version: version,
+            requirements: [],
+            package_manager: "cargo",
+            metadata: { cargo_package_source: "registry+https://github.com/rust-lang/crates.io-index" }
+          )
+        end
+      end
+
+      before do
+        allow(Dependabot::Cargo::UpdateChecker::VersionResolver).to receive(:new) do |dependency:, **|
+          resolved_version = { "0.2.16" => "0.2.17", "0.4.2" => "0.4.3" }.fetch(dependency.version)
+          instance_double(
+            Dependabot::Cargo::UpdateChecker::VersionResolver,
+            latest_resolvable_version: Dependabot::Cargo::Version.new(resolved_version)
+          )
+        end
+      end
+
+      it "returns an update for each exact locked package" do
+        updated_dependencies = checker.updated_dependencies(requirements_to_unlock: :own)
+
+        expect(updated_dependencies.map { |candidate| [candidate.previous_version, candidate.version] })
+          .to eq([["0.2.16", "0.2.17"], ["0.4.2", "0.4.3"]])
+      end
+
+      context "when all updates for one locked line are ignored" do
+        let(:raise_on_ignored) { true }
+
+        before do
+          allow(Dependabot::Cargo::UpdateChecker::LatestVersionFinder).to receive(:new) do |dependency:, **|
+            finder = instance_double(Dependabot::Cargo::UpdateChecker::LatestVersionFinder)
+            allow(finder).to receive(:lowest_security_fix_version)
+              .and_return(Dependabot::Cargo::Version.new("0.4.3"))
+            if dependency.version == "0.4.2"
+              allow(finder).to receive(:latest_version).and_raise(Dependabot::AllVersionsIgnored)
+            else
+              allow(finder).to receive(:latest_version).and_return(Dependabot::Cargo::Version.new("0.2.17"))
+            end
+            finder
+          end
+        end
+
+        it "updates the allowed line without leaking the ignored error" do
+          updated_dependencies = checker.updated_dependencies(requirements_to_unlock: :own)
+
+          expect(updated_dependencies.map { |candidate| [candidate.previous_version, candidate.version] })
+            .to eq([["0.2.16", "0.2.17"]])
+        end
+      end
+
+      context "when one line is at its ceiling and the other line's updates are all ignored" do
+        let(:raise_on_ignored) { true }
+
+        before do
+          allow(Dependabot::Cargo::UpdateChecker::LatestVersionFinder).to receive(:new) do |dependency:, **|
+            finder = instance_double(Dependabot::Cargo::UpdateChecker::LatestVersionFinder)
+            if dependency.version == "0.4.2"
+              allow(finder).to receive(:latest_version).and_raise(Dependabot::AllVersionsIgnored)
+            else
+              allow(finder).to receive(:latest_version).and_return(Dependabot::Cargo::Version.new("0.4.2"))
+            end
+            finder
+          end
+          allow(Dependabot::Cargo::UpdateChecker::VersionResolver).to receive(:new) do |dependency:, **|
+            instance_double(
+              Dependabot::Cargo::UpdateChecker::VersionResolver,
+              latest_resolvable_version: Dependabot::Cargo::Version.new(dependency.version)
+            )
+          end
+        end
+
+        it "re-raises instead of reporting the dependency as current" do
+          expect { checker.up_to_date? }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+
+        it "raises from the preflight probes the updater guards" do
+          expect { checker.latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
+          expect { checker.lowest_security_fix_version }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+
+      context "when all updates for every locked line are ignored" do
+        let(:raise_on_ignored) { true }
+
+        before do
+          allow(Dependabot::Cargo::UpdateChecker::LatestVersionFinder).to receive(:new) do
+            finder = instance_double(Dependabot::Cargo::UpdateChecker::LatestVersionFinder)
+            allow(finder).to receive(:latest_version).and_raise(Dependabot::AllVersionsIgnored)
+            finder
+          end
+        end
+
+        it "re-raises so the ignored status is reported" do
+          expect { checker.up_to_date? }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+
+      context "when performing a security update" do
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: "getrandom",
+              package_manager: "cargo",
+              vulnerable_versions: [">= 0.4.0, < 0.4.3"]
+            )
+          ]
+        end
+
+        it "updates only vulnerable locked packages" do
+          updated_dependencies = checker.updated_dependencies(requirements_to_unlock: :own)
+
+          expect(updated_dependencies.map { |candidate| [candidate.previous_version, candidate.version] })
+            .to eq([["0.4.2", "0.4.3"]])
+        end
+
+        context "when the advisory matches every locked line" do
+          let(:security_advisories) do
+            [
+              Dependabot::SecurityAdvisory.new(
+                dependency_name: "getrandom",
+                package_manager: "cargo",
+                vulnerable_versions: [">= 0.2.0, < 0.2.17", ">= 0.4.0, < 0.4.3"]
+              )
+            ]
+          end
+
+          it "returns an update for every vulnerable locked line" do
+            updated_dependencies = checker.updated_dependencies(requirements_to_unlock: :own)
+
+            expect(updated_dependencies.map { |candidate| [candidate.previous_version, candidate.version] })
+              .to eq([["0.2.16", "0.2.17"], ["0.4.2", "0.4.3"]])
+          end
+        end
+      end
     end
   end
 

@@ -76,6 +76,12 @@ RSpec.describe Dependabot::DotnetSdk::Package::PackageDetailsFetcher do
           expect(release.version).to be_a(Dependabot::DotnetSdk::Version)
         end
       end
+
+      it "preserves prerelease version strings" do
+        versions = fetcher.fetch.releases.map { |release| release.version.to_s }
+
+        expect(versions).to include("9.0.100-preview.7.24407.12", "9.0.100-rc.1.24452.12")
+      end
     end
 
     context "when releases index request fails" do

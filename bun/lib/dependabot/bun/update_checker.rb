@@ -51,7 +51,7 @@ module Dependabot
       )
         @latest_version = T.let(nil, T.nilable(T.any(String, Gem::Version)))
         @latest_resolvable_version = T.let(nil, T.nilable(T.any(String, Dependabot::Version)))
-        @updated_requirements = T.let(nil, T.nilable(T::Array[T::Hash[Symbol, T.untyped]]))
+        @updated_requirements = T.let(nil, T.nilable(T::Array[Dependabot::DependencyRequirement]))
         @vulnerability_audit = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
         @vulnerable_versions = T.let(nil, T.nilable(T::Array[T.any(String, Gem::Version)]))
 
@@ -118,7 +118,7 @@ module Dependabot
         # This will require a full unlock to update multiple top level ancestors.
         return if vulnerability_audit["fix_available"] && vulnerability_audit["top_level_ancestors"].count > 1
 
-        T.unsafe(latest_version_finder.lowest_security_fix_version)
+        latest_version_finder.lowest_security_fix_version
       end
 
       sig { override.returns(T.nilable(Dependabot::Version)) }
@@ -155,13 +155,13 @@ module Dependabot
 
       sig do
         params(updated_version: T.any(String, Gem::Version))
-          .returns(T.nilable(T.any(String, T.untyped)))
+          .returns(T.nilable(T.any(String, Gem::Version)))
       end
       def latest_resolvable_previous_version(updated_version)
-        T.unsafe(version_resolver.latest_resolvable_previous_version(updated_version))
+        version_resolver.latest_resolvable_previous_version(updated_version)
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
         resolvable_version =
           if preferred_resolvable_version.is_a?(version_class)
@@ -368,9 +368,10 @@ module Dependabot
       sig { returns(T.nilable(T.any(String, Dependabot::Version))) }
       def latest_resolvable_version_with_no_unlock_for_git_dependency
         reqs = dependency.requirements.filter_map do |r|
-          next if r.fetch(:requirement).nil?
+          requirement = r.requirement_string
+          next if requirement.nil?
 
-          requirement_class.requirements_array(r.fetch(:requirement))
+          requirement_class.requirements_array(requirement)
         end
 
         current_version =
@@ -393,10 +394,8 @@ module Dependabot
       def latest_version_for_git_dependency
         @latest_version_for_git_dependency ||=
           if version_class.correct?(dependency.version)
-            T.unsafe(
-              latest_git_version_details[:version] &&
-                            version_class.new(latest_git_version_details[:version])
-            )
+            version = latest_git_version_details[:version]
+            version && version_class.new(version)
           else
             latest_git_version_details[:sha]
           end
@@ -465,20 +464,20 @@ module Dependabot
         git_commit_checker.git_dependency?
       end
 
-      sig { returns(T::Hash[Symbol, T.untyped]) }
+      sig { returns(T::Hash[Symbol, T.nilable(String)]) }
       def latest_git_version_details
         semver_req =
           dependency.requirements
-                    .find { |req| req.dig(:source, :type) == "git" }
-                    &.fetch(:requirement)
+                    .find { |req| req.source_string("type") == "git" }
+                    &.requirement_string
 
         # If there was a semver requirement provided or the dependency was
         # pinned to a version, look for the latest tag
         if semver_req || git_commit_checker.pinned_ref_looks_like_version?
-          latest_tag = git_commit_checker.local_tag_for_latest_version
+          latest_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
           return {
-            sha: latest_tag&.fetch(:commit_sha),
-            version: latest_tag&.fetch(:tag)&.gsub(/^[^\d]*/, "")
+            sha: latest_tag&.commit_sha,
+            version: latest_tag&.tag&.gsub(/^[^\d]*/, "")
           }
         end
 
@@ -491,16 +490,16 @@ module Dependabot
         { sha: dependency.version }
       end
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash)) }
       def updated_source
         # Never need to update source, unless a git_dependency
         return dependency_source_details unless git_dependency?
 
         # Update the git tag if updating a pinned version
         if git_commit_checker.pinned_ref_looks_like_version? &&
-           !git_commit_checker.local_tag_for_latest_version.nil?
-          new_tag = git_commit_checker.local_tag_for_latest_version
-          return dependency_source_details&.merge(ref: new_tag&.fetch(:tag))
+           !git_commit_checker.local_tag_for_latest_version(update_cooldown).nil?
+          new_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
+          return dependency_source_details&.merge(ref: new_tag&.tag)
         end
 
         # Otherwise return the original source
@@ -525,22 +524,22 @@ module Dependabot
         security_advisories.any?
       end
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash)) }
       def dependency_source_details
         original_source(dependency)
       end
 
       sig do
         params(updated_dependency: Dependabot::Dependency)
-          .returns(T.nilable(T::Hash[Symbol, T.untyped]))
+          .returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash))
       end
       def original_source(updated_dependency)
         sources =
           updated_dependency
-          .requirements.map { |r| r.fetch(:source) }
-                       .uniq.compact
+          .requirements.map(&:source_hash)
+          .uniq.compact
           .sort_by do |source|
-            Package::RegistryFinder.central_registry?(source[:url]) ? 1 : 0
+            Package::RegistryFinder.central_registry?(T.cast(source[:url], String)) ? 1 : 0
           end
 
         sources.first

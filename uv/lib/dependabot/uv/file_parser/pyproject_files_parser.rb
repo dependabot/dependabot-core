@@ -31,6 +31,7 @@ module Dependabot
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
           dependency_set += pyproject_dependencies if using_poetry? || using_pep621? || using_pep735?
+          dependency_set += workspace_member_dependencies if workspace_member_pyproject_files.any?
           dependency_set += lockfile_dependencies if using_poetry? && lockfile
 
           dependency_set
@@ -46,13 +47,13 @@ module Dependabot
           if using_poetry?
             poetry_dependencies
           else
-            pep621_pep735_dependencies
+            pep621_pep735_dependencies(T.must(pyproject))
           end
         end
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
         def poetry_dependencies
-          @poetry_dependencies ||= T.let(parse_poetry_dependencies, T.untyped)
+          @poetry_dependencies ||= T.let(parse_poetry_dependencies, T.nilable(Dependabot::FileParsers::Base::DependencySet))
         end
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -71,8 +72,8 @@ module Dependabot
           dependencies
         end
 
-        sig { returns(Dependabot::FileParsers::Base::DependencySet) }
-        def pep621_pep735_dependencies
+        sig { params(pyproject_file: Dependabot::DependencyFile).returns(Dependabot::FileParsers::Base::DependencySet) }
+        def pep621_pep735_dependencies(pyproject_file)
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           # PDM is not yet supported, so we want to ignore it for now because in
@@ -81,7 +82,7 @@ module Dependabot
           # undesirable. Leave PDM alone until properly supported
           return dependencies if using_pdm?
 
-          parse_pep621_pep735_dependencies.each do |dep|
+          parse_pep621_pep735_dependencies(pyproject_file).each do |dep|
             # If a requirement has a `<` or `<=` marker then updating it is
             # probably blocked. Ignore it.
             next if dep["markers"]&.include?("<")
@@ -101,6 +102,22 @@ module Dependabot
                 }],
                 package_manager: "uv"
               )
+          end
+
+          dependencies
+        end
+
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def workspace_member_pyproject_files
+          dependency_files.select { |file| file.support_file? && file.name.end_with?("pyproject.toml") }
+        end
+
+        sig { returns(Dependabot::FileParsers::Base::DependencySet) }
+        def workspace_member_dependencies
+          dependencies = Dependabot::FileParsers::Base::DependencySet.new
+
+          workspace_member_pyproject_files.each do |pyproject_file|
+            dependencies += pep621_pep735_dependencies(pyproject_file)
           end
 
           dependencies
@@ -271,16 +288,19 @@ module Dependabot
           NameNormaliser.normalise(name)
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T::Hash[String, T.untyped]) }
         def parsed_pyproject
-          @parsed_pyproject ||= T.let(TomlRB.parse(T.must(pyproject).content), T.untyped)
+          @parsed_pyproject ||= T.let(TomlRB.parse(T.must(pyproject).content), T.nilable(T::Hash[String, T.untyped]))
         rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
           raise Dependabot::DependencyFileNotParseable, T.must(pyproject).path
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T::Hash[String, T.untyped]) }
         def parsed_poetry_lock
-          @parsed_poetry_lock ||= T.let(TomlRB.parse(T.must(poetry_lock).content), T.untyped)
+          @parsed_poetry_lock ||= T.let(
+            TomlRB.parse(T.must(poetry_lock).content),
+            T.nilable(T::Hash[String, T.untyped])
+          )
         rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
           raise Dependabot::DependencyFileNotParseable, T.must(poetry_lock).path
         end
@@ -298,24 +318,24 @@ module Dependabot
           poetry_lock
         end
 
-        sig { returns(T.untyped) }
-        def parse_pep621_pep735_dependencies
+        sig { params(pyproject_file: Dependabot::DependencyFile).returns(T.untyped) }
+        def parse_pep621_pep735_dependencies(pyproject_file)
           SharedHelpers.in_a_temporary_directory do
-            write_temporary_pyproject
+            write_temporary_pyproject(pyproject_file)
 
             SharedHelpers.run_helper_subprocess(
               command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
               function: "parse_pep621_pep735_dependencies",
-              args: [T.must(pyproject).name]
+              args: [pyproject_file.name]
             )
           end
         end
 
-        sig { returns(Integer) }
-        def write_temporary_pyproject
-          path = T.must(pyproject).name
+        sig { params(pyproject_file: Dependabot::DependencyFile).returns(Integer) }
+        def write_temporary_pyproject(pyproject_file)
+          path = pyproject_file.name
           FileUtils.mkdir_p(Pathname.new(path).dirname)
-          File.write(path, T.must(pyproject).content)
+          File.write(path, pyproject_file.content)
         end
 
         sig { returns(T.untyped) }

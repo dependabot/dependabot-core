@@ -4,8 +4,8 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [requires]
-python_full_version = "3.9.4"
-python_version = "3.9"
+python_full_version = "3.10.20"
+python_version = "3.10"
 
 [dev-packages]
 pytest = "==3.4.0"

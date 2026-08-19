@@ -18,45 +18,44 @@ class RakeHelpers
 
   # ./dependabot-core.gemspec is purposefully excluded from this list
   # because it's an empty gem as a placeholder to prevent namesquatting.
-  GEMSPECS = T.let(
-    %w(
-      common/dependabot-common.gemspec
-      bazel/dependabot-bazel.gemspec
-      bun/dependabot-bun.gemspec
-      bundler/dependabot-bundler.gemspec
-      cargo/dependabot-cargo.gemspec
-      composer/dependabot-composer.gemspec
-      conda/dependabot-conda.gemspec
-      devcontainers/dependabot-devcontainers.gemspec
-      docker_compose/dependabot-docker_compose.gemspec
-      docker/dependabot-docker.gemspec
-      dotnet_sdk/dependabot-dotnet_sdk.gemspec
-      elm/dependabot-elm.gemspec
-      git_submodules/dependabot-git_submodules.gemspec
-      github_actions/dependabot-github_actions.gemspec
-      go_modules/dependabot-go_modules.gemspec
-      gradle/dependabot-gradle.gemspec
-      helm/dependabot-helm.gemspec
-      hex/dependabot-hex.gemspec
-      julia/dependabot-julia.gemspec
-      maven/dependabot-maven.gemspec
-      nix/dependabot-nix.gemspec
-      npm_and_yarn/dependabot-npm_and_yarn.gemspec
-      nuget/dependabot-nuget.gemspec
-      omnibus/dependabot-omnibus.gemspec
-      opentofu/dependabot-opentofu.gemspec
-      pre_commit/dependabot-pre_commit.gemspec
-      pub/dependabot-pub.gemspec
-      python/dependabot-python.gemspec
-      rust_toolchain/dependabot-rust_toolchain.gemspec
-      silent/dependabot-silent.gemspec
-      swift/dependabot-swift.gemspec
-      terraform/dependabot-terraform.gemspec
-      uv/dependabot-uv.gemspec
-      vcpkg/dependabot-vcpkg.gemspec
-    ).freeze,
-    T::Array[String]
-  )
+  GEMSPECS = %w(
+    common/dependabot-common.gemspec
+    bazel/dependabot-bazel.gemspec
+    bun/dependabot-bun.gemspec
+    bundler/dependabot-bundler.gemspec
+    cargo/dependabot-cargo.gemspec
+    composer/dependabot-composer.gemspec
+    conda/dependabot-conda.gemspec
+    deno/dependabot-deno.gemspec
+    devcontainers/dependabot-devcontainers.gemspec
+    docker/dependabot-docker_compose.gemspec
+    docker/dependabot-docker.gemspec
+    dotnet_sdk/dependabot-dotnet_sdk.gemspec
+    elm/dependabot-elm.gemspec
+    git_submodules/dependabot-git_submodules.gemspec
+    github_actions/dependabot-github_actions.gemspec
+    go_modules/dependabot-go_modules.gemspec
+    gradle/dependabot-gradle.gemspec
+    helm/dependabot-helm.gemspec
+    hex/dependabot-hex.gemspec
+    julia/dependabot-julia.gemspec
+    maven/dependabot-maven.gemspec
+    nix/dependabot-nix.gemspec
+    npm_and_yarn/dependabot-npm_and_yarn.gemspec
+    nuget/dependabot-nuget.gemspec
+    omnibus/dependabot-omnibus.gemspec
+    opentofu/dependabot-opentofu.gemspec
+    pre_commit/dependabot-pre_commit.gemspec
+    pub/dependabot-pub.gemspec
+    python/dependabot-python.gemspec
+    rust_toolchain/dependabot-rust_toolchain.gemspec
+    sbt/dependabot-sbt.gemspec
+    silent/dependabot-silent.gemspec
+    swift/dependabot-swift.gemspec
+    terraform/dependabot-terraform.gemspec
+    uv/dependabot-uv.gemspec
+    vcpkg/dependabot-vcpkg.gemspec
+  ).freeze
 
   sig { params(command: String).void }
   def self.run_command(command)

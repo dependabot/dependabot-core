@@ -29,16 +29,17 @@ module Dependabot
         raise NotImplementedError
       end
 
-      sig { override.returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+      sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        dependency.requirements.map do |requirement|
+        updated_reqs = dependency.requirements.map do |requirement|
           {
             file: requirement[:file],
-            requirement: latest_version,
+            requirement: latest_version&.to_s,
             groups: requirement[:groups],
             source: requirement[:source]
           }
         end
+        wrap_requirements(updated_reqs)
       end
 
       private

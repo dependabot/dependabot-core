@@ -271,6 +271,36 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
 
       it { expect { requirement }.not_to raise_error }
     end
+
+    context "with a JSR short form caret requirement" do
+      let(:requirement_string) { "jsr:^3.0.0" }
+
+      it { is_expected.to eq(described_class.new(">= 3.0.0", "< 4.0.0.a")) }
+    end
+
+    context "with a JSR long form caret requirement" do
+      let(:requirement_string) { "jsr:@arendjr/text-clipper@^3.0.0" }
+
+      it { is_expected.to eq(described_class.new(">= 3.0.0", "< 4.0.0.a")) }
+    end
+
+    context "with a JSR short form tilde requirement" do
+      let(:requirement_string) { "jsr:~3.0.0" }
+
+      it { is_expected.to eq(described_class.new("~> 3.0.0")) }
+    end
+
+    context "with a JSR short form exact requirement" do
+      let(:requirement_string) { "jsr:3.0.0" }
+
+      it { is_expected.to eq(described_class.new("3.0.0")) }
+    end
+
+    context "with a JSR non-scoped package requirement" do
+      let(:requirement_string) { "jsr:text-clipper@^3.0.0" }
+
+      it { is_expected.to eq(described_class.new(">= 3.0.0", "< 4.0.0.a")) }
+    end
   end
 
   describe "#requirements_array" do
@@ -306,6 +336,26 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
         expect(reqs).to contain_exactly(
           Gem::Requirement.new(">= 1.0.0", "< 2.0.0.a"),
           Gem::Requirement.new(">= 2.0.0", "< 3.0.0.a")
+        )
+      end
+    end
+
+    context "with a JSR short form requirement" do
+      let(:requirement_string) { "jsr:^3.0.0" }
+
+      it do
+        expect(reqs).to contain_exactly(
+          Gem::Requirement.new(">= 3.0.0", "< 4.0.0.a")
+        )
+      end
+    end
+
+    context "with a JSR long form requirement" do
+      let(:requirement_string) { "jsr:@arendjr/text-clipper@^3.0.0" }
+
+      it do
+        expect(reqs).to contain_exactly(
+          Gem::Requirement.new(">= 3.0.0", "< 4.0.0.a")
         )
       end
     end

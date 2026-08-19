@@ -23,23 +23,20 @@ module Dependabot
         # Regex to extract XCRemoteSwiftPackageReference blocks from pbxproj.
         # Uses [^}]* to match the requirement block content — this is safe because
         # Xcode requirement blocks are always flat dictionaries with no nested braces.
-        PACKAGE_REF_BLOCK = T.let(
-          /
+        PACKAGE_REF_BLOCK = /
             isa\s*=\s*XCRemoteSwiftPackageReference;\s*
             repositoryURL\s*=\s*"(?<url>[^"]+)";\s*
             requirement\s*=\s*\{(?<requirement>[^}]*)\};
-          /mx,
-          Regexp
-        )
+          /mx
 
         # Patterns for extracting requirement fields
-        KIND_PATTERN = T.let(/kind\s*=\s*(\w+);/, Regexp)
-        VERSION_NUMBER_PATTERN = T.let(/[0-9A-Za-z.+-]+/, Regexp)
-        MIN_VERSION_PATTERN = T.let(/minimumVersion\s*=\s*(#{VERSION_NUMBER_PATTERN});/, Regexp)
-        MAX_VERSION_PATTERN = T.let(/maximumVersion\s*=\s*(#{VERSION_NUMBER_PATTERN});/, Regexp)
-        VERSION_PATTERN = T.let(/version\s*=\s*(#{VERSION_NUMBER_PATTERN});/, Regexp)
-        BRANCH_PATTERN = T.let(/branch\s*=\s*"?([^";]+)"?;/, Regexp)
-        REVISION_PATTERN = T.let(/revision\s*=\s*"?([^";]+)"?;/, Regexp)
+        KIND_PATTERN = /kind\s*=\s*(\w+);/
+        VERSION_NUMBER_PATTERN = /[0-9A-Za-z.+-]+/
+        MIN_VERSION_PATTERN = /minimumVersion\s*=\s*(#{VERSION_NUMBER_PATTERN});/
+        MAX_VERSION_PATTERN = /maximumVersion\s*=\s*(#{VERSION_NUMBER_PATTERN});/
+        VERSION_PATTERN = /version\s*=\s*(#{VERSION_NUMBER_PATTERN});/
+        BRANCH_PATTERN = /branch\s*=\s*"?([^";]+)"?;/
+        REVISION_PATTERN = /revision\s*=\s*"?([^";]+)"?;/
 
         sig { params(pbxproj_file: Dependabot::DependencyFile).void }
         def initialize(pbxproj_file)
@@ -49,12 +46,12 @@ module Dependabot
         # Returns a hash mapping normalized URL to requirement metadata.
         # Each entry includes the Dependabot requirement string and the raw
         # Xcode requirement kind/version info for use in metadata.
-        sig { returns(T::Hash[String, T::Hash[Symbol, T.untyped]]) }
+        sig { returns(T::Hash[String, T::Hash[Symbol, Object]]) }
         def parse
           content = pbxproj_file.content
           return {} unless content
 
-          requirements = T.let({}, T::Hash[String, T::Hash[Symbol, T.untyped]])
+          requirements = T.let({}, T::Hash[String, T::Hash[Symbol, Object]])
 
           content.scan(PACKAGE_REF_BLOCK).each do |url, requirement_block|
             url = T.cast(url, String)
@@ -81,7 +78,7 @@ module Dependabot
 
         sig do
           params(block: String)
-            .returns(T.nilable(T::Hash[Symbol, T.untyped]))
+            .returns(T.nilable(T::Hash[Symbol, Object]))
         end
         def parse_requirement_block(block)
           kind = block.match(KIND_PATTERN)&.captures&.first
@@ -103,7 +100,7 @@ module Dependabot
           end
         end
 
-        sig { params(block: String).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(block: String).returns(T::Hash[Symbol, Object]) }
         def build_up_to_next_major(block)
           min_version = extract_version(block, MIN_VERSION_PATTERN)
           requirement_string = "from: \"#{min_version}\""
@@ -116,7 +113,7 @@ module Dependabot
           }
         end
 
-        sig { params(block: String).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(block: String).returns(T::Hash[Symbol, Object]) }
         def build_up_to_next_minor(block)
           min_version = extract_version(block, MIN_VERSION_PATTERN)
           requirement_string = ".upToNextMinor(from: \"#{min_version}\")"
@@ -129,7 +126,7 @@ module Dependabot
           }
         end
 
-        sig { params(block: String).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(block: String).returns(T::Hash[Symbol, Object]) }
         def build_exact(block)
           version = extract_version(block, MIN_VERSION_PATTERN) || extract_version(block, VERSION_PATTERN)
           requirement_string = "exact: \"#{version}\""
@@ -142,7 +139,7 @@ module Dependabot
           }
         end
 
-        sig { params(block: String).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(block: String).returns(T::Hash[Symbol, Object]) }
         def build_range(block)
           min_version = extract_version(block, MIN_VERSION_PATTERN)
           max_version = extract_version(block, MAX_VERSION_PATTERN)
@@ -156,7 +153,7 @@ module Dependabot
           }
         end
 
-        sig { params(block: String).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(block: String).returns(T::Hash[Symbol, Object]) }
         def build_branch(block)
           branch = block.match(BRANCH_PATTERN)&.captures&.first
 
@@ -168,7 +165,7 @@ module Dependabot
           }
         end
 
-        sig { params(block: String).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(block: String).returns(T::Hash[Symbol, Object]) }
         def build_revision(block)
           revision = block.match(REVISION_PATTERN)&.captures&.first
 

@@ -1,47 +1,47 @@
 PATH
   remote: ../bazel
   specs:
-    dependabot-bazel (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-bazel (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../bun
   specs:
-    dependabot-bun (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-bun (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../bundler
   specs:
-    dependabot-bundler (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-bundler (0.392.0)
+      dependabot-common (= 0.392.0)
       parallel (~> 1.24)
 
 PATH
   remote: ../cargo
   specs:
-    dependabot-cargo (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-cargo (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../common
   specs:
-    dependabot-common (0.367.0)
+    dependabot-common (0.392.0)
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
-      bundler (>= 1.16, < 3.0.0)
+      bundler (>= 2.4, < 5.0.0)
       commonmarker (~> 2.3)
-      docker_registry2 (~> 1.18)
+      docker_registry2 (~> 1.19)
       excon (~> 1.2)
       faraday (~> 2.7)
       faraday-retry (~> 2.2)
       gitlab (~> 6.0)
-      json (< 2.19)
+      json (< 2.20)
       nokogiri (~> 1.8)
       octokit (~> 10.0)
-      opentelemetry-api (~> 1.5)
-      opentelemetry-logs-api (~> 0.2)
-      opentelemetry-metrics-api (~> 0.3)
+      opentelemetry-api (~> 1.9)
+      opentelemetry-logs-api (~> 0.3)
+      opentelemetry-metrics-api (~> 0.5)
       parser (~> 3.3)
       psych (~> 5.0)
       sorbet-runtime (~> 0.6)
@@ -51,195 +51,204 @@ PATH
 PATH
   remote: ../composer
   specs:
-    dependabot-composer (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-composer (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../conda
   specs:
-    dependabot-conda (0.367.0)
-      dependabot-common (= 0.367.0)
-      dependabot-python (= 0.367.0)
+    dependabot-conda (0.392.0)
+      dependabot-common (= 0.392.0)
+      dependabot-python (= 0.392.0)
+
+PATH
+  remote: ../deno
+  specs:
+    dependabot-deno (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../devcontainers
   specs:
-    dependabot-devcontainers (0.367.0)
-      dependabot-common (= 0.367.0)
-
-PATH
-  remote: ../docker_compose
-  specs:
-    dependabot-docker_compose (0.367.0)
-      dependabot-common (= 0.367.0)
-      dependabot-docker (= 0.367.0)
+    dependabot-devcontainers (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../docker
   specs:
-    dependabot-docker (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-docker (0.392.0)
+      dependabot-common (= 0.392.0)
+    dependabot-docker_compose (0.392.0)
+      dependabot-common (= 0.392.0)
+      dependabot-docker (= 0.392.0)
 
 PATH
   remote: ../dotnet_sdk
   specs:
-    dependabot-dotnet_sdk (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-dotnet_sdk (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../elm
   specs:
-    dependabot-elm (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-elm (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../git_submodules
   specs:
-    dependabot-git_submodules (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-git_submodules (0.392.0)
+      dependabot-common (= 0.392.0)
       parseconfig (~> 1.0, < 1.2.0)
 
 PATH
   remote: ../github_actions
   specs:
-    dependabot-github_actions (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-github_actions (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../go_modules
   specs:
-    dependabot-go_modules (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-go_modules (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../gradle
   specs:
-    dependabot-gradle (0.367.0)
-      dependabot-common (= 0.367.0)
-      dependabot-maven (= 0.367.0)
+    dependabot-gradle (0.392.0)
+      dependabot-common (= 0.392.0)
+      dependabot-maven (= 0.392.0)
 
 PATH
   remote: ../helm
   specs:
-    dependabot-helm (0.367.0)
-      dependabot-common (= 0.367.0)
-      dependabot-docker (= 0.367.0)
+    dependabot-helm (0.392.0)
+      dependabot-common (= 0.392.0)
+      dependabot-docker (= 0.392.0)
 
 PATH
   remote: ../hex
   specs:
-    dependabot-hex (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-hex (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../julia
   specs:
-    dependabot-julia (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-julia (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../maven
   specs:
-    dependabot-maven (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-maven (0.392.0)
+      dependabot-common (= 0.392.0)
       rexml (~> 3.4.1)
 
 PATH
   remote: ../nix
   specs:
-    dependabot-nix (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-nix (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../npm_and_yarn
   specs:
-    dependabot-npm_and_yarn (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-npm_and_yarn (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../nuget
   specs:
-    dependabot-nuget (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-nuget (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../opentofu
   specs:
-    dependabot-opentofu (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-opentofu (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../pre_commit
   specs:
-    dependabot-pre_commit (0.367.0)
-      dependabot-bundler (= 0.367.0)
-      dependabot-cargo (= 0.367.0)
-      dependabot-common (= 0.367.0)
-      dependabot-go_modules (= 0.367.0)
-      dependabot-npm_and_yarn (= 0.367.0)
-      dependabot-python (= 0.367.0)
+    dependabot-pre_commit (0.392.0)
+      dependabot-bundler (= 0.392.0)
+      dependabot-cargo (= 0.392.0)
+      dependabot-common (= 0.392.0)
+      dependabot-go_modules (= 0.392.0)
+      dependabot-npm_and_yarn (= 0.392.0)
+      dependabot-python (= 0.392.0)
 
 PATH
   remote: ../pub
   specs:
-    dependabot-pub (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-pub (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../python
   specs:
-    dependabot-python (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-python (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../rust_toolchain
   specs:
-    dependabot-rust_toolchain (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-rust_toolchain (0.392.0)
+      dependabot-common (= 0.392.0)
+
+PATH
+  remote: ../sbt
+  specs:
+    dependabot-sbt (0.392.0)
+      dependabot-common (= 0.392.0)
+      dependabot-maven (= 0.392.0)
 
 PATH
   remote: ../silent
   specs:
-    dependabot-silent (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-silent (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../swift
   specs:
-    dependabot-swift (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-swift (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../terraform
   specs:
-    dependabot-terraform (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-terraform (0.392.0)
+      dependabot-common (= 0.392.0)
 
 PATH
   remote: ../uv
   specs:
-    dependabot-uv (0.367.0)
-      dependabot-common (= 0.367.0)
-      dependabot-python (= 0.367.0)
+    dependabot-uv (0.392.0)
+      dependabot-common (= 0.392.0)
+      dependabot-python (= 0.392.0)
 
 PATH
   remote: ../vcpkg
   specs:
-    dependabot-vcpkg (0.367.0)
-      dependabot-common (= 0.367.0)
+    dependabot-vcpkg (0.392.0)
+      dependabot-common (= 0.392.0)
 
 GEM
   remote: https://rubygems.org/
   specs:
-    addressable (2.8.8)
+    addressable (2.9.0)
       public_suffix (>= 2.0.2, < 8.0)
     ast (2.4.3)
     aws-eventstream (1.4.0)
-    aws-partitions (1.1220.0)
-    aws-sdk-codecommit (1.96.0)
-      aws-sdk-core (~> 3, >= 3.241.4)
+    aws-partitions (1.1277.0)
+    aws-sdk-codecommit (1.102.0)
+      aws-sdk-core (~> 3, >= 3.254.0)
       aws-sigv4 (~> 1.5)
-    aws-sdk-core (3.242.0)
+    aws-sdk-core (3.254.0)
       aws-eventstream (~> 1, >= 1.3.0)
       aws-partitions (~> 1, >= 1.992.0)
       aws-sigv4 (~> 1.9)
@@ -247,23 +256,24 @@ GEM
       bigdecimal
       jmespath (~> 1, >= 1.6.1)
       logger
-    aws-sdk-ecr (1.122.0)
-      aws-sdk-core (~> 3, >= 3.241.4)
+    aws-sdk-ecr (1.131.0)
+      aws-sdk-core (~> 3, >= 3.254.0)
       aws-sigv4 (~> 1.5)
     aws-sigv4 (1.12.1)
       aws-eventstream (~> 1, >= 1.0.2)
     base64 (0.3.0)
-    bigdecimal (4.0.1)
+    bigdecimal (4.1.2)
     citrus (3.0.2)
-    commonmarker (2.6.3)
+    commonmarker (2.9.0)
       rb_sys (~> 0.9)
-    commonmarker (2.6.3-aarch64-linux)
-    commonmarker (2.6.3-arm-linux)
-    commonmarker (2.6.3-arm64-darwin)
-    commonmarker (2.6.3-x86_64-darwin)
-    commonmarker (2.6.3-x86_64-linux)
-    commonmarker (2.6.3-x86_64-linux-musl)
-    concurrent-ruby (1.3.6)
+    commonmarker (2.9.0-aarch64-linux)
+    commonmarker (2.9.0-aarch64-linux-musl)
+    commonmarker (2.9.0-arm-linux)
+    commonmarker (2.9.0-arm64-darwin)
+    commonmarker (2.9.0-x86_64-darwin)
+    commonmarker (2.9.0-x86_64-linux)
+    commonmarker (2.9.0-x86_64-linux-musl)
+    concurrent-ruby (1.3.8)
     crack (1.0.1)
       bigdecimal
       rexml
@@ -274,17 +284,21 @@ GEM
       reline (>= 0.3.8)
     diff-lcs (1.6.2)
     docile (1.4.0)
-    docker_registry2 (1.18.2)
-      rest-client (>= 1.8.0)
+    docker_registry2 (1.19.0)
+      faraday (>= 2.0)
+      faraday-follow_redirects
+      faraday-net_http
     domain_name (0.6.20240107)
-    erb (6.0.1)
-    excon (1.3.2)
+    erb (6.0.1.1)
+    excon (1.6.0)
       logger
-    faraday (2.14.1)
+    faraday (2.14.3)
       faraday-net_http (>= 2.0, < 3.5)
       json
       logger
-    faraday-net_http (3.4.2)
+    faraday-follow_redirects (0.5.0)
+      faraday (>= 1, < 3)
+    faraday-net_http (3.4.4)
       net-http (~> 0.5)
     faraday-retry (2.4.0)
       faraday (~> 2.0)
@@ -307,34 +321,34 @@ GEM
       base64
       httparty (~> 0.20)
       terminal-table (>= 1.5.1)
-    google-protobuf (4.33.5)
+    google-protobuf (4.35.1)
       bigdecimal
-      rake (>= 13)
-    google-protobuf (4.33.5-aarch64-linux-gnu)
+      rake (~> 13.3)
+    google-protobuf (4.35.1-aarch64-linux-gnu)
       bigdecimal
-      rake (>= 13)
-    google-protobuf (4.33.5-aarch64-linux-musl)
+      rake (~> 13.3)
+    google-protobuf (4.35.1-aarch64-linux-musl)
       bigdecimal
-      rake (>= 13)
-    google-protobuf (4.33.5-arm64-darwin)
+      rake (~> 13.3)
+    google-protobuf (4.35.1-arm64-darwin)
       bigdecimal
-      rake (>= 13)
-    google-protobuf (4.33.5-x86-linux-gnu)
+      rake (~> 13.3)
+    google-protobuf (4.35.1-x86-linux-gnu)
       bigdecimal
-      rake (>= 13)
-    google-protobuf (4.33.5-x86-linux-musl)
+      rake (~> 13.3)
+    google-protobuf (4.35.1-x86-linux-musl)
       bigdecimal
-      rake (>= 13)
-    google-protobuf (4.33.5-x86_64-darwin)
+      rake (~> 13.3)
+    google-protobuf (4.35.1-x86_64-darwin)
       bigdecimal
-      rake (>= 13)
-    google-protobuf (4.33.5-x86_64-linux-gnu)
+      rake (~> 13.3)
+    google-protobuf (4.35.1-x86_64-linux-gnu)
       bigdecimal
-      rake (>= 13)
-    google-protobuf (4.33.5-x86_64-linux-musl)
+      rake (~> 13.3)
+    google-protobuf (4.35.1-x86_64-linux-musl)
       bigdecimal
-      rake (>= 13)
-    googleapis-common-protos-types (1.22.0)
+      rake (~> 13.3)
+    googleapis-common-protos-types (1.23.0)
       google-protobuf (~> 4.26)
     gpgme (2.0.26)
       mini_portile2 (~> 2.7)
@@ -344,8 +358,7 @@ GEM
       http-cookie (~> 1.0)
       http-form_data (~> 2.2)
       llhttp-ffi (~> 0.5.0)
-    http-accept (1.7.0)
-    http-cookie (1.1.0)
+    http-cookie (1.1.6)
       domain_name (~> 0.5)
     http-form_data (2.3.0)
     httparty (0.24.2)
@@ -359,61 +372,53 @@ GEM
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
     jmespath (1.6.2)
-    json (2.18.1)
-    json-schema (6.1.0)
-      addressable (~> 2.8)
-      bigdecimal (>= 3.1, < 5)
-    language_server-protocol (3.17.0.5)
+    json (2.19.9)
+    language_server-protocol (3.17.0.6)
     lint_roller (1.1.0)
     llhttp-ffi (0.5.1)
       ffi-compiler (~> 1.0)
       rake (~> 13.0)
     logger (1.7.0)
-    mcp (0.7.1)
-      json-schema (>= 4.1)
-    mime-types (3.4.1)
-      mime-types-data (~> 3.2015)
-    mime-types-data (3.2022.0105)
     mini_mime (1.1.5)
     mini_portile2 (2.8.9)
     multi_xml (0.8.1)
       bigdecimal (>= 3.1, < 5)
     net-http (0.9.1)
       uri (>= 0.11.1)
-    netrc (0.11.0)
-    nokogiri (1.19.1)
+    nokogiri (1.19.4)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
-    nokogiri (1.19.1-aarch64-linux-gnu)
+    nokogiri (1.19.4-aarch64-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.19.1-aarch64-linux-musl)
+    nokogiri (1.19.4-aarch64-linux-musl)
       racc (~> 1.4)
-    nokogiri (1.19.1-arm-linux-gnu)
+    nokogiri (1.19.4-arm-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.19.1-arm-linux-musl)
+    nokogiri (1.19.4-arm-linux-musl)
       racc (~> 1.4)
-    nokogiri (1.19.1-arm64-darwin)
+    nokogiri (1.19.4-arm64-darwin)
       racc (~> 1.4)
-    nokogiri (1.19.1-x86_64-darwin)
+    nokogiri (1.19.4-x86_64-darwin)
       racc (~> 1.4)
-    nokogiri (1.19.1-x86_64-linux-gnu)
+    nokogiri (1.19.4-x86_64-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.19.1-x86_64-linux-musl)
+    nokogiri (1.19.4-x86_64-linux-musl)
       racc (~> 1.4)
     octokit (10.0.0)
       faraday (>= 1, < 3)
       sawyer (~> 0.9)
-    opentelemetry-api (1.7.0)
-    opentelemetry-common (0.23.0)
+    opentelemetry-api (1.11.0)
+      logger
+    opentelemetry-common (0.25.1)
       opentelemetry-api (~> 1.0)
-    opentelemetry-exporter-otlp (0.31.1)
+    opentelemetry-exporter-otlp (0.34.1)
       google-protobuf (>= 3.18)
       googleapis-common-protos-types (~> 1.3)
       opentelemetry-api (~> 1.1)
       opentelemetry-common (~> 0.20)
       opentelemetry-sdk (~> 1.10)
       opentelemetry-semantic_conventions
-    opentelemetry-exporter-otlp-logs (0.2.2)
+    opentelemetry-exporter-otlp-logs (0.5.1)
       google-protobuf (>= 3.18)
       googleapis-common-protos-types (~> 1.3)
       opentelemetry-api (~> 1.1)
@@ -422,7 +427,7 @@ GEM
       opentelemetry-logs-sdk (~> 0.1)
       opentelemetry-sdk
       opentelemetry-semantic_conventions
-    opentelemetry-exporter-otlp-metrics (0.6.1)
+    opentelemetry-exporter-otlp-metrics (0.10.0)
       google-protobuf (>= 3.18, < 5.0)
       googleapis-common-protos-types (~> 1.3)
       opentelemetry-api (~> 1.1)
@@ -431,72 +436,68 @@ GEM
       opentelemetry-metrics-sdk (~> 0.5)
       opentelemetry-sdk (~> 1.2)
       opentelemetry-semantic_conventions
-    opentelemetry-instrumentation-base (0.25.0)
+    opentelemetry-instrumentation-base (0.26.0)
       opentelemetry-api (~> 1.7)
       opentelemetry-common (~> 0.21)
       opentelemetry-registry (~> 0.1)
-    opentelemetry-instrumentation-excon (0.27.0)
+    opentelemetry-instrumentation-excon (0.29.1)
       opentelemetry-instrumentation-base (~> 0.25)
-    opentelemetry-instrumentation-faraday (0.31.0)
+    opentelemetry-instrumentation-faraday (0.33.0)
       opentelemetry-instrumentation-base (~> 0.25)
-    opentelemetry-instrumentation-http (0.28.0)
+    opentelemetry-instrumentation-http (0.30.0)
       opentelemetry-instrumentation-base (~> 0.25)
-    opentelemetry-instrumentation-net_http (0.27.0)
+    opentelemetry-instrumentation-net_http (0.29.0)
       opentelemetry-instrumentation-base (~> 0.25)
-    opentelemetry-logs-api (0.2.0)
+    opentelemetry-logs-api (0.4.1)
       opentelemetry-api (~> 1.0)
-    opentelemetry-logs-sdk (0.4.0)
+    opentelemetry-logs-sdk (0.6.1)
       opentelemetry-api (~> 1.2)
       opentelemetry-logs-api (~> 0.1)
       opentelemetry-sdk (~> 1.3)
-    opentelemetry-metrics-api (0.4.0)
+    opentelemetry-metrics-api (0.6.1)
       opentelemetry-api (~> 1.0)
-    opentelemetry-metrics-sdk (0.12.0)
+    opentelemetry-metrics-sdk (0.15.0)
       opentelemetry-api (~> 1.1)
       opentelemetry-metrics-api (~> 0.2)
       opentelemetry-sdk (~> 1.2)
-    opentelemetry-registry (0.4.0)
+    opentelemetry-registry (0.6.3)
       opentelemetry-api (~> 1.1)
-    opentelemetry-sdk (1.10.0)
+    opentelemetry-sdk (1.13.0)
+      logger
       opentelemetry-api (~> 1.1)
       opentelemetry-common (~> 0.20)
       opentelemetry-registry (~> 0.2)
       opentelemetry-semantic_conventions
-    opentelemetry-semantic_conventions (1.36.0)
+    opentelemetry-semantic_conventions (1.43.0)
       opentelemetry-api (~> 1.0)
-    parallel (1.27.0)
+    parallel (1.28.0)
     parallel_tests (4.7.1)
       parallel
     parseconfig (1.1.2)
-    parser (3.3.10.2)
+    parser (3.3.12.0)
       ast (~> 2.4.1)
       racc
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
     prism (1.9.0)
-    psych (5.3.1)
+    psych (5.4.0)
       date
       stringio
-    public_suffix (7.0.2)
+    public_suffix (7.0.5)
     racc (1.8.1)
     rainbow (3.1.1)
-    rake (13.3.1)
-    rake-compiler-dock (1.11.0)
-    rb_sys (0.9.124)
-      rake-compiler-dock (= 1.11.0)
+    rake (13.4.2)
+    rake-compiler-dock (1.12.0)
+    rb_sys (0.9.128)
+      rake-compiler-dock (= 1.12.0)
     rdoc (7.2.0)
       erb
       psych (>= 4.0.0)
       tsort
-    regexp_parser (2.11.3)
+    regexp_parser (2.12.0)
     reline (0.6.3)
       io-console (~> 0.5)
-    rest-client (2.1.0)
-      http-accept (>= 1.7.0, < 2.0)
-      http-cookie (>= 1.0.2, < 2.0)
-      mime-types (>= 1.16, < 4.0)
-      netrc (~> 0.8)
     rexml (3.4.4)
     rspec (3.13.2)
       rspec-core (~> 3.13.0)
@@ -516,39 +517,39 @@ GEM
     rspec-sorbet (1.9.2)
       sorbet-runtime
     rspec-support (3.13.7)
-    rubocop (1.85.0)
+    rubocop (1.88.2)
       json (~> 2.3)
       language_server-protocol (~> 3.17.0.2)
       lint_roller (~> 1.1.0)
-      mcp (~> 0.6)
-      parallel (~> 1.10)
+      parallel (>= 1.10)
       parser (>= 3.3.0.2)
       rainbow (>= 2.2.2, < 4.0)
       regexp_parser (>= 2.9.3, < 3.0)
       rubocop-ast (>= 1.49.0, < 2.0)
       ruby-progressbar (~> 1.7)
       unicode-display_width (>= 2.4.0, < 4.0)
-    rubocop-ast (1.49.0)
+    rubocop-ast (1.50.0)
       parser (>= 3.3.7.2)
       prism (~> 1.7)
     rubocop-performance (1.26.1)
       lint_roller (~> 1.1)
       rubocop (>= 1.75.0, < 2.0)
       rubocop-ast (>= 1.47.1, < 2.0)
-    rubocop-rspec (3.9.0)
+    rubocop-rspec (3.10.2)
       lint_roller (~> 1.1)
-      rubocop (~> 1.81)
-    rubocop-sorbet (0.12.0)
+      regexp_parser (>= 2.0)
+      rubocop (~> 1.86, >= 1.86.2)
+    rubocop-sorbet (0.13.2)
       lint_roller
       rubocop (>= 1.75.2)
     ruby-progressbar (1.13.0)
     sawyer (0.9.3)
       addressable (>= 2.3.5)
       faraday (>= 0.17.3, < 3)
-    sentry-opentelemetry (6.4.0)
+    sentry-opentelemetry (6.6.2)
       opentelemetry-sdk (~> 1.0)
-      sentry-ruby (~> 6.4.0)
-    sentry-ruby (6.4.0)
+      sentry-ruby (~> 6.6.2)
+    sentry-ruby (6.6.2)
       bigdecimal
       concurrent-ruby (~> 1.0, >= 1.0.2)
       logger
@@ -558,12 +559,12 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.12.3)
     simplecov_json_formatter (0.1.4)
-    sorbet-runtime (0.6.12977)
+    sorbet-runtime (0.6.13371)
     stackprof (0.2.28)
     stringio (3.2.0)
     terminal-table (4.0.0)
       unicode-display_width (>= 1.1.1, < 4)
-    toml-rb (4.1.0)
+    toml-rb (4.2.0)
       citrus (~> 3.0, > 3.0)
       racc (~> 1.7)
     tsort (0.2.0)
@@ -575,12 +576,12 @@ GEM
     unicode-emoji (4.2.0)
     uri (1.1.1)
     vcr (6.4.0)
-    webmock (3.26.1)
+    webmock (3.26.2)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
     webrick (1.9.2)
-    zeitwerk (2.7.5)
+    zeitwerk (2.8.2)
 
 PLATFORMS
   aarch64-linux
@@ -606,6 +607,7 @@ DEPENDENCIES
   dependabot-common!
   dependabot-composer!
   dependabot-conda!
+  dependabot-deno!
   dependabot-devcontainers!
   dependabot-docker!
   dependabot-docker_compose!
@@ -627,6 +629,7 @@ DEPENDENCIES
   dependabot-pub!
   dependabot-python!
   dependabot-rust_toolchain!
+  dependabot-sbt!
   dependabot-silent!
   dependabot-swift!
   dependabot-terraform!
@@ -636,16 +639,16 @@ DEPENDENCIES
   gpgme (~> 2.0)
   http (~> 5.3)
   octokit (~> 10.0)
-  opentelemetry-exporter-otlp (~> 0.31)
-  opentelemetry-exporter-otlp-logs (~> 0.2)
-  opentelemetry-exporter-otlp-metrics (~> 0.6)
-  opentelemetry-instrumentation-excon (~> 0.27)
-  opentelemetry-instrumentation-faraday (~> 0.26)
-  opentelemetry-instrumentation-http (~> 0.24)
-  opentelemetry-instrumentation-net_http (~> 0.23)
-  opentelemetry-logs-sdk (~> 0.4)
-  opentelemetry-metrics-sdk (~> 0.12)
-  opentelemetry-sdk (~> 1.8)
+  opentelemetry-exporter-otlp (~> 0.34)
+  opentelemetry-exporter-otlp-logs (~> 0.5)
+  opentelemetry-exporter-otlp-metrics (~> 0.10)
+  opentelemetry-instrumentation-excon (~> 0.29)
+  opentelemetry-instrumentation-faraday (~> 0.33)
+  opentelemetry-instrumentation-http (~> 0.30)
+  opentelemetry-instrumentation-net_http (~> 0.29)
+  opentelemetry-logs-sdk (~> 0.6)
+  opentelemetry-metrics-sdk (~> 0.15)
+  opentelemetry-sdk (~> 1.13)
   rake (~> 13.2)
   rspec (~> 3.12)
   rspec-its (~> 2.0)
@@ -654,81 +657,86 @@ DEPENDENCIES
   rubocop-performance (~> 1.26)
   rubocop-rspec (~> 3.7)
   rubocop-sorbet (~> 0.10)
-  sentry-opentelemetry (~> 6.4)
-  sentry-ruby (~> 6.4)
+  sentry-opentelemetry (~> 6.6)
+  sentry-ruby (~> 6.5)
   simplecov (~> 0.22)
   terminal-table (~> 4.0)
   turbo_tests (~> 2.2.5)
   vcr (~> 6.1)
   webmock (~> 3.25)
   webrick (~> 1.9)
-  zeitwerk (~> 2.7)
+  zeitwerk (~> 2.8)
 
 CHECKSUMS
-  addressable (2.8.8) sha256=7c13b8f9536cf6364c03b9d417c19986019e28f7c00ac8132da4eb0fe393b057
+  addressable (2.9.0) sha256=7fdf6ac3660f7f4e867a0838be3f6cf722ace541dd97767fa42bc6cfa980c7af
   ast (2.4.3) sha256=954615157c1d6a382bc27d690d973195e79db7f55e9765ac7c481c60bdb4d383
   aws-eventstream (1.4.0) sha256=116bf85c436200d1060811e6f5d2d40c88f65448f2125bc77ffce5121e6e183b
-  aws-partitions (1.1220.0) sha256=1567da9ae45cba28e1d31f5e996928b2eb92ad01700000846d6d90043be8670f
-  aws-sdk-codecommit (1.96.0) sha256=4eb0cbd8a18c65856acd7ccb7fd73d9aab260da7557a2a7142b00e224c81a7d5
-  aws-sdk-core (3.242.0) sha256=c17b3003acc78d80c1a8437b285a1cfc5e4d7749ce7821cf3071e847535a29a0
-  aws-sdk-ecr (1.122.0) sha256=dc0fb76e3ddd9475e0d07a8eaa8e65db337f6f86e859d1f73496fb23ce6a0714
+  aws-partitions (1.1277.0) sha256=40bda996876a45a60c43fbf489b04b46216e98c1814c1ac6453b942e0df6501e
+  aws-sdk-codecommit (1.102.0) sha256=3afdf5825f2cad0333092a318b3e5976f8303550a892ef911b81ca2fc0c2063f
+  aws-sdk-core (3.254.0) sha256=ee3e3220b8468a3c9e59daba18e6ec897bf5c7ce8adcc0670cfa2f1f092112fe
+  aws-sdk-ecr (1.131.0) sha256=912b79fc66149d90416e2aca512876f81440adf5b4eaea0c296af6d430eba1cc
   aws-sigv4 (1.12.1) sha256=6973ff95cb0fd0dc58ba26e90e9510a2219525d07620c8babeb70ef831826c00
   base64 (0.3.0) sha256=27337aeabad6ffae05c265c450490628ef3ebd4b67be58257393227588f5a97b
-  bigdecimal (4.0.1) sha256=8b07d3d065a9f921c80ceaea7c9d4ae596697295b584c296fe599dd0ad01c4a7
+  bigdecimal (4.1.2) sha256=53d217666027eab4280346fba98e7d5b66baaae1b9c3c1c0ffe89d48188a3fbd
+  bundler (4.0.14) sha256=d09a0a965cf772266a7e49e83610be7c2f4e49e61134c42a56804bb383cc24b8
   citrus (3.0.2) sha256=4ec2412fc389ad186735f4baee1460f7900a8e130ffe3f216b30d4f9c684f650
-  commonmarker (2.6.3) sha256=6e303356552de951bf6c2a53e3d10118f888ab3ff4d53a3dee57e12d0a7836f8
-  commonmarker (2.6.3-aarch64-linux) sha256=73795e80ab5ef1e4b5b83ada6f082bccb0ed7eae0b910232e13af1b2d71b14d6
-  commonmarker (2.6.3-arm-linux) sha256=62b9f32d7d3f85d47988a4a98a2e66e60ca42b894687047db8332f1e80caff7b
-  commonmarker (2.6.3-arm64-darwin) sha256=d6c1e4955619da3f68fed22de99dec49a24925611770c039bf870823846c8b21
-  commonmarker (2.6.3-x86_64-darwin) sha256=cd8ab974bb24f675a250ea91a811b3ff70405be1c219f0052446995db6ca90c6
-  commonmarker (2.6.3-x86_64-linux) sha256=e861ba1812721113725ebd8e46e4fee20dc732842f5555db2cfb8dcd74056583
-  commonmarker (2.6.3-x86_64-linux-musl) sha256=2c62d2dc0d5c4efc6dde39bc5c5fac292169206601a3daf75e562d70b795d49e
-  concurrent-ruby (1.3.6) sha256=6b56837e1e7e5292f9864f34b69c5a2cbc75c0cf5338f1ce9903d10fa762d5ab
+  commonmarker (2.9.0) sha256=9cf7848393bd56f0c34407b81c147568994048922cb05a50caca464d680607d2
+  commonmarker (2.9.0-aarch64-linux) sha256=e2b4aadb9a2cfa4e206582641ce3a49465549ac1ed4c289fdd63b78d8f24579c
+  commonmarker (2.9.0-aarch64-linux-musl) sha256=1cf4d2821f2a7e64945f1ed7c4eeced586fdb27ea7fe7337788802cf8f57cfca
+  commonmarker (2.9.0-arm-linux) sha256=290a000947cf9d154d0480c33c0a36bcef49ce4c2e74bb75e9d06f5afe93f670
+  commonmarker (2.9.0-arm64-darwin) sha256=1748dbfa4f5813b0d2a14bb4bbfa65a4ec293aa1c825016d60029ee0e132b046
+  commonmarker (2.9.0-x86_64-darwin) sha256=0a9914ccfd2f5d2a59c7bd0dda4fe90eb084cf513b477e499008e09ec9d6edd6
+  commonmarker (2.9.0-x86_64-linux) sha256=8cfe92970eef585a19ddf6613224b91cab64d6029834661bda801f877c9c7f43
+  commonmarker (2.9.0-x86_64-linux-musl) sha256=293921398b839f79ceaf55010e061357e34f053822c3b003cd0be6686176335e
+  concurrent-ruby (1.3.8) sha256=b2f1be836e968ccc78ccfce277ea79c72a88633f22306782c16ff23fb415d1e1
   crack (1.0.1) sha256=ff4a10390cd31d66440b7524eb1841874db86201d5b70032028553130b6d4c7e
   csv (3.3.5) sha256=6e5134ac3383ef728b7f02725d9872934f523cb40b961479f69cf3afa6c8e73f
   date (3.5.1) sha256=750d06384d7b9c15d562c76291407d89e368dda4d4fff957eb94962d325a0dc0
   debug (1.11.1) sha256=2e0b0ac6119f2207a6f8ac7d4a73ca8eb4e440f64da0a3136c30343146e952b6
-  dependabot-bazel (0.367.0)
-  dependabot-bun (0.367.0)
-  dependabot-bundler (0.367.0)
-  dependabot-cargo (0.367.0)
-  dependabot-common (0.367.0)
-  dependabot-composer (0.367.0)
-  dependabot-conda (0.367.0)
-  dependabot-devcontainers (0.367.0)
-  dependabot-docker (0.367.0)
-  dependabot-docker_compose (0.367.0)
-  dependabot-dotnet_sdk (0.367.0)
-  dependabot-elm (0.367.0)
-  dependabot-git_submodules (0.367.0)
-  dependabot-github_actions (0.367.0)
-  dependabot-go_modules (0.367.0)
-  dependabot-gradle (0.367.0)
-  dependabot-helm (0.367.0)
-  dependabot-hex (0.367.0)
-  dependabot-julia (0.367.0)
-  dependabot-maven (0.367.0)
-  dependabot-nix (0.367.0)
-  dependabot-npm_and_yarn (0.367.0)
-  dependabot-nuget (0.367.0)
-  dependabot-opentofu (0.367.0)
-  dependabot-pre_commit (0.367.0)
-  dependabot-pub (0.367.0)
-  dependabot-python (0.367.0)
-  dependabot-rust_toolchain (0.367.0)
-  dependabot-silent (0.367.0)
-  dependabot-swift (0.367.0)
-  dependabot-terraform (0.367.0)
-  dependabot-uv (0.367.0)
-  dependabot-vcpkg (0.367.0)
+  dependabot-bazel (0.392.0)
+  dependabot-bun (0.392.0)
+  dependabot-bundler (0.392.0)
+  dependabot-cargo (0.392.0)
+  dependabot-common (0.392.0)
+  dependabot-composer (0.392.0)
+  dependabot-conda (0.392.0)
+  dependabot-deno (0.392.0)
+  dependabot-devcontainers (0.392.0)
+  dependabot-docker (0.392.0)
+  dependabot-docker_compose (0.392.0)
+  dependabot-dotnet_sdk (0.392.0)
+  dependabot-elm (0.392.0)
+  dependabot-git_submodules (0.392.0)
+  dependabot-github_actions (0.392.0)
+  dependabot-go_modules (0.392.0)
+  dependabot-gradle (0.392.0)
+  dependabot-helm (0.392.0)
+  dependabot-hex (0.392.0)
+  dependabot-julia (0.392.0)
+  dependabot-maven (0.392.0)
+  dependabot-nix (0.392.0)
+  dependabot-npm_and_yarn (0.392.0)
+  dependabot-nuget (0.392.0)
+  dependabot-opentofu (0.392.0)
+  dependabot-pre_commit (0.392.0)
+  dependabot-pub (0.392.0)
+  dependabot-python (0.392.0)
+  dependabot-rust_toolchain (0.392.0)
+  dependabot-sbt (0.392.0)
+  dependabot-silent (0.392.0)
+  dependabot-swift (0.392.0)
+  dependabot-terraform (0.392.0)
+  dependabot-uv (0.392.0)
+  dependabot-vcpkg (0.392.0)
   diff-lcs (1.6.2) sha256=9ae0d2cba7d4df3075fe8cd8602a8604993efc0dfa934cff568969efb1909962
   docile (1.4.0) sha256=5f1734bde23721245c20c3d723e76c104208e1aa01277a69901ce770f0ebb8d3
-  docker_registry2 (1.18.2) sha256=2ace909110fbca29d69dd1cdec99f555024aa6f6577798638139c8e8e556910f
+  docker_registry2 (1.19.0) sha256=e50fbe316422b33740c5c2c49b68d938314c2cf4367a381fa3277eb1c79b8623
   domain_name (0.6.20240107) sha256=5f693b2215708476517479bf2b3802e49068ad82167bcd2286f899536a17d933
-  erb (6.0.1) sha256=28ecdd99c5472aebd5674d6061e3c6b0a45c049578b071e5a52c2a7f13c197e5
-  excon (1.3.2) sha256=a089babe98638e58042a7d542b2bbd183304527e33d612b6dde22fa491a544a5
-  faraday (2.14.1) sha256=a43cceedc1e39d188f4d2cdd360a8aaa6a11da0c407052e426ba8d3fb42ef61c
-  faraday-net_http (3.4.2) sha256=f147758260d3526939bf57ecf911682f94926a3666502e24c69992765875906c
+  erb (6.0.1.1) sha256=ce5357460652a9a94667c5769eaffc551eea2b14a8531ac7c7b1d77b860758b9
+  excon (1.6.0) sha256=ebe2ab83c055ef8e117c62c91a3535b966a59a64868188219d49ab90cd83b65f
+  faraday (2.14.3) sha256=1882247e6766615c8220b4392bf1d27f6ebb63d8e28267587cef1fb0bf37f278
+  faraday-follow_redirects (0.5.0) sha256=5cde93c894b30943a5d2b93c2fe9284216a6b756f7af406a1e55f211d97d10ad
+  faraday-net_http (3.4.4) sha256=0e78af151747ed1b00f33e25973b4bc220d7f16c00c39676817c8b12331eb588
   faraday-retry (2.4.0) sha256=7b79c48fb7e56526faf247b12d94a680071ff40c9fda7cf1ec1549439ad11ebe
   ffi (1.17.3) sha256=0e9f39f7bb3934f77ad6feab49662be77e87eedcdeb2a3f5c0234c2938563d4c
   ffi (1.17.3-aarch64-linux-gnu) sha256=28ad573df26560f0aedd8a90c3371279a0b2bd0b4e834b16a2baa10bd7a97068
@@ -744,85 +752,78 @@ CHECKSUMS
   ffi-compiler (1.3.2) sha256=a94f3d81d12caf5c5d4ecf13980a70d0aeaa72268f3b9cc13358bcc6509184a0
   flamegraph (0.9.5) sha256=a683020637ffa0e14a72640fa41babf14d926bfeaed87e31907cfd06ab2de8dc
   gitlab (6.1.0) sha256=4ae1f866a1f5ae07aa1125e86c0a656b2ad0fe1d78d5ad91b8bc3b67d66063a5
-  google-protobuf (4.33.5) sha256=1b64fb774c101b23ac3f6923eca24be04fd971635d235c4cd4cfe0d752620da0
-  google-protobuf (4.33.5-aarch64-linux-gnu) sha256=f70ca066e37a7ac60b4f34a836bb48ca3fc41a9371310052e484d8c9f925ff39
-  google-protobuf (4.33.5-aarch64-linux-musl) sha256=d9ae90025f05db642e5603de5dbb2390cd1215bac7507fa575cc20b0db7e11a1
-  google-protobuf (4.33.5-arm64-darwin) sha256=996d4e93c4232cc42f0facd821a92b4f4a926c3c9c1a768e7d768b33d9ef72f9
-  google-protobuf (4.33.5-x86-linux-gnu) sha256=8d0d056743449221c723bffcf423ee8028a7028b4fca159db9692ec79fa4d185
-  google-protobuf (4.33.5-x86-linux-musl) sha256=08de722ce05e619dcfa75a1a998615694e7a0c4254d4bb1557834d98d5090851
-  google-protobuf (4.33.5-x86_64-darwin) sha256=173d1d6c9f0de93fd9ee25fde172d6fb6376099dca8844e19bc5782bbc7b93b0
-  google-protobuf (4.33.5-x86_64-linux-gnu) sha256=a782adf86bfba207740b49d7bb9ccdc25c4fb8f800fe222af62bce951149338a
-  google-protobuf (4.33.5-x86_64-linux-musl) sha256=d14feec9118f44cfdc3ee4a1d1baa4e6dd77fa418967ccf22ecbe76b8c1bacbf
-  googleapis-common-protos-types (1.22.0) sha256=f97492b77bd6da0018c860d5004f512fe7cd165554d7019a8f4df6a56fbfc4c7
+  google-protobuf (4.35.1) sha256=a3a6471331d918f58dfa4d014a8f6286f0af2cf4840216bde52fcf2ea3fe3726
+  google-protobuf (4.35.1-aarch64-linux-gnu) sha256=50ca44d0eeff3f8475e630a1accdd974256f3510694d574e2c9d6119ea8bc9e1
+  google-protobuf (4.35.1-aarch64-linux-musl) sha256=d5c65cef6bd6498a9e5ed5f88cf6cf7e341c10b0a005e32137d5d1a2b6e8c18a
+  google-protobuf (4.35.1-arm64-darwin) sha256=d9c957df04fa89c749fa9a72a7b383eb4296efc9b2303dc6fd6fbe39c698ad6b
+  google-protobuf (4.35.1-x86-linux-gnu) sha256=cc7492566b27ad8b5dfa3a7b6f9b11e905050cc53c2fa8ff22de375a9e7a70fb
+  google-protobuf (4.35.1-x86-linux-musl) sha256=ab403790b59e4dc588ffbed1eaacf05d4ca2f0d12ac9c13d6c64e69380d8c99e
+  google-protobuf (4.35.1-x86_64-darwin) sha256=66b62b4df00931018a692806df66393efa960d6d2b7da69735187249f950d3ee
+  google-protobuf (4.35.1-x86_64-linux-gnu) sha256=c786439087512a3fbd199e9897d265b855f951d4027e218ea55e858d45969edd
+  google-protobuf (4.35.1-x86_64-linux-musl) sha256=91890eb0002934a339fdb7d77a147c46b7474b6799db27872b747b905837f744
+  googleapis-common-protos-types (1.23.0) sha256=992e740a523794d9fc5f29a504465d8fc737aaa16c930fe7228e3346860faf0a
   gpgme (2.0.26) sha256=1aebfd2eb83b745341e6f416f318597568af5ad4d7d1f55bfab4f1078123abaa
   hashdiff (1.2.1) sha256=9c079dbc513dfc8833ab59c0c2d8f230fa28499cc5efb4b8dd276cf931457cd1
   http (5.3.1) sha256=c50802d8e9be3926cb84ac3b36d1a31fbbac383bc4cbecdce9053cb604231d7d
-  http-accept (1.7.0) sha256=c626860682bfbb3b46462f8c39cd470fd7b0584f61b3cc9df5b2e9eb9972a126
-  http-cookie (1.1.0) sha256=38a5e60d1527eebc396831b8c4b9455440509881219273a6c99943d29eadbb19
+  http-cookie (1.1.6) sha256=ba4b82be64de61dc281243dac70e3c382c45142f20268ed9276a3670c93feaa9
   http-form_data (2.3.0) sha256=cc4eeb1361d9876821e31d7b1cf0b68f1cf874b201d27903480479d86448a5f3
   httparty (0.24.2) sha256=8fca6a54aa0c4aa4303a0fd33e5e2156175d6a5334f714263b458abd7fda9c38
   io-console (0.8.2) sha256=d6e3ae7a7cc7574f4b8893b4fca2162e57a825b223a177b7afa236c5ef9814cc
   irb (1.17.0) sha256=168c4ddb93d8a361a045c41d92b2952c7a118fa73f23fe14e55609eb7a863aae
   jmespath (1.6.2) sha256=238d774a58723d6c090494c8879b5e9918c19485f7e840f2c1c7532cf84ebcb1
-  json (2.18.1) sha256=fe112755501b8d0466b5ada6cf50c8c3f41e897fa128ac5d263ec09eedc9f986
-  json-schema (6.1.0) sha256=6bf70a2cfb6dfd5a06da28093fa8190f324c88eabd36a7f47097f227321dc702
-  language_server-protocol (3.17.0.5) sha256=fd1e39a51a28bf3eec959379985a72e296e9f9acfce46f6a79d31ca8760803cc
+  json (2.19.9) sha256=9b9025b7cdddafa38d316eca0b2358488e42d417045c1b90d216a9fefe46b79a
+  language_server-protocol (3.17.0.6) sha256=5ef2c0c138f8267e1bc631d3328347d354f96724b0af22f2c79516120443b7f0
   lint_roller (1.1.0) sha256=2c0c845b632a7d172cb849cc90c1bce937a28c5c8ccccb50dfd46a485003cc87
   llhttp-ffi (0.5.1) sha256=9a25a7fc19311f691a78c9c0ac0fbf4675adbd0cca74310228fdf841018fa7bc
   logger (1.7.0) sha256=196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203
-  mcp (0.7.1) sha256=fa967895d6952bad0d981ea907731d8528d2c246d2079d56a9c8bae83d14f1c7
-  mime-types (3.4.1) sha256=6bcf8b0e656b6ae9977bdc1351ef211d0383252d2f759a59ef4bcf254542fc46
-  mime-types-data (3.2022.0105) sha256=d8c401ba9ea8b648b7145b90081789ec714e91fd625d82c5040079c5ea696f00
   mini_mime (1.1.5) sha256=8681b7e2e4215f2a159f9400b5816d85e9d8c6c6b491e96a12797e798f8bccef
   mini_portile2 (2.8.9) sha256=0cd7c7f824e010c072e33f68bc02d85a00aeb6fce05bb4819c03dfd3c140c289
   multi_xml (0.8.1) sha256=addba0290bac34e9088bfe73dc4878530297a82a7bbd66cb44dcd0a4b86edf5a
   net-http (0.9.1) sha256=25ba0b67c63e89df626ed8fac771d0ad24ad151a858af2cc8e6a716ca4336996
-  netrc (0.11.0) sha256=de1ce33da8c99ab1d97871726cba75151113f117146becbe45aa85cb3dabee3f
-  nokogiri (1.19.1) sha256=598b327f36df0b172abd57b68b18979a6e14219353bca87180c31a51a00d5ad3
-  nokogiri (1.19.1-aarch64-linux-gnu) sha256=cfdb0eafd9a554a88f12ebcc688d2b9005f9fce42b00b970e3dc199587b27f32
-  nokogiri (1.19.1-aarch64-linux-musl) sha256=1e2150ab43c3b373aba76cd1190af7b9e92103564063e48c474f7600923620b5
-  nokogiri (1.19.1-arm-linux-gnu) sha256=0a39ed59abe3bf279fab9dd4c6db6fe8af01af0608f6e1f08b8ffa4e5d407fa3
-  nokogiri (1.19.1-arm-linux-musl) sha256=3a18e559ee499b064aac6562d98daab3d39ba6cbb4074a1542781b2f556db47d
-  nokogiri (1.19.1-arm64-darwin) sha256=dfe2d337e6700eac47290407c289d56bcf85805d128c1b5a6434ddb79731cb9e
-  nokogiri (1.19.1-x86_64-darwin) sha256=7093896778cc03efb74b85f915a775862730e887f2e58d6921e3fa3d981e68bf
-  nokogiri (1.19.1-x86_64-linux-gnu) sha256=1a4902842a186b4f901078e692d12257678e6133858d0566152fe29cdb98456a
-  nokogiri (1.19.1-x86_64-linux-musl) sha256=4267f38ad4fc7e52a2e7ee28ed494e8f9d8eb4f4b3320901d55981c7b995fc23
+  nokogiri (1.19.4) sha256=50c951611c92bca05c51411aef45f1cbc50f2821c4802758c5c6d34696533ab5
+  nokogiri (1.19.4-aarch64-linux-gnu) sha256=1269fb644a6de405057a53dd5c762b1209b43ca7424f839454d3dbc677c31a8f
+  nokogiri (1.19.4-aarch64-linux-musl) sha256=35c65b9ce72b3bb03207bdbe7067915019dc18c1b9b59139684bd6690fdd01af
+  nokogiri (1.19.4-arm-linux-gnu) sha256=a301313e38bb065d68239e79734bcd6f56fb6efaacebde29e9abf2a4735340ca
+  nokogiri (1.19.4-arm-linux-musl) sha256=588923c101bcfa78869734d247d25b598674323e7f22474fc468f6e5647311eb
+  nokogiri (1.19.4-arm64-darwin) sha256=a46db9853286e6597b36ebc6953817d15acf3a299583eb3f89fdc6f91dd63527
+  nokogiri (1.19.4-x86_64-darwin) sha256=7fd17057d3e1f00e9954a74b3cd76595d3d4a5ef233b7ed9599047c204f70551
+  nokogiri (1.19.4-x86_64-linux-gnu) sha256=379fae440b28915e3f19d752ce2dcf8465ed2b2fbefd2a7ca0dd497bc981a06a
+  nokogiri (1.19.4-x86_64-linux-musl) sha256=17dfb7c1fa194ae02fbf7c51a7afc8d278045ab3fdacfd86f91d02d7b274470b
   octokit (10.0.0) sha256=82e99a539b7637b7e905e6d277bb0c1a4bed56735935cc33db6da7eae49a24e8
-  opentelemetry-api (1.7.0) sha256=ccfd264ea6f2db5bf4185e3c07a1297977b44a944e2ce65457c4fe63a697214f
-  opentelemetry-common (0.23.0) sha256=da721190479d57bae0ad2207468f47f3e2c3b9a91024b5bc32c9d280183eb32c
-  opentelemetry-exporter-otlp (0.31.1) sha256=5358be17d7849cbcc4f49e1fc24105edc780a6f96c8e57b64192ab9a8e47474a
-  opentelemetry-exporter-otlp-logs (0.2.2) sha256=23b79e339a46edb0f54447dd40bb40202e765183bd241032335df6ec188d6fcc
-  opentelemetry-exporter-otlp-metrics (0.6.1) sha256=70ae2b8aeec4efab21de16eb94c1b2428344d6ab62e9c43d024fa57e04781281
-  opentelemetry-instrumentation-base (0.25.0) sha256=642a3a7f08354e6e969423327a4fa67ed2cca7ac6fe5ee09e55b17d1c576da27
-  opentelemetry-instrumentation-excon (0.27.0) sha256=3d7e6e160f0328e1136646aabb23efefdb125854637d5bd57b849720f783b5bb
-  opentelemetry-instrumentation-faraday (0.31.0) sha256=1c00dc96d4c18890a34a20eef27eae536bf6558965e03e254bb7b84a4f09840b
-  opentelemetry-instrumentation-http (0.28.0) sha256=0946a9593d64740780d16e041f9441945c4970b17566ce98e1a63bd3b276cacd
-  opentelemetry-instrumentation-net_http (0.27.0) sha256=f7ad7c5887646a09043b5f4e73717d9a897272f8032b883b0fadffbcc27f8990
-  opentelemetry-logs-api (0.2.0) sha256=0e9241b9b53a315101a6a5f2efbfa80278a0d39f9220915871f8d6057c39b117
-  opentelemetry-logs-sdk (0.4.0) sha256=860a5a3916054bf8b37a8a0b565d7ebabc37691a7b505eb0d21b734619fe8074
-  opentelemetry-metrics-api (0.4.0) sha256=37f8b8440d644ca94dfe6a9d69ad9f8da3745c810d24cd9ca950c739483b5fe0
-  opentelemetry-metrics-sdk (0.12.0) sha256=67709a4887bd48bfe1c0123695849a11fd5f63e0e1c9ea06a0488bbd8b38f766
-  opentelemetry-registry (0.4.0) sha256=903fa6bfaa29eac1c1d73a4fdd29b850977b5353b84b8cdff11222c00ad2968f
-  opentelemetry-sdk (1.10.0) sha256=43719949be8df24dcaeb86ebbf75636cda87d51a01af2729499b92a48b80521a
-  opentelemetry-semantic_conventions (1.36.0) sha256=c1b1607dbc7853aac7f9e23f6e8b76969c45b07f2b812a4aa4383c19a3b0f617
-  parallel (1.27.0) sha256=4ac151e1806b755fb4e2dc2332cbf0e54f2e24ba821ff2d3dcf86bf6dc4ae130
+  opentelemetry-api (1.11.0) sha256=218c840170fa473974756668b32b6989570de07c7d3864627960209f189247e2
+  opentelemetry-common (0.25.1) sha256=38fe87c751e4e13fcd47a8290b4ad67bbedf76c4ed89aeced5ea5c620e66bfb1
+  opentelemetry-exporter-otlp (0.34.1) sha256=4697d81e03aff80ea6fbcc741b1c3c700d3624eddea14b453602ee23275450ca
+  opentelemetry-exporter-otlp-logs (0.5.1) sha256=68e7523bfae7ee107da571cc2c19e0a4873d2e7611613a3888a764ed44bcebec
+  opentelemetry-exporter-otlp-metrics (0.10.0) sha256=d8cbff9b8a3391eb61486b8be9b6ad74e3b9306a3c60fb4c906b28bc857167c8
+  opentelemetry-instrumentation-base (0.26.0) sha256=fdec8bff9a8de04d113bd4e8d490b17414c92d6c79dd457dfa079c97ba922be0
+  opentelemetry-instrumentation-excon (0.29.1) sha256=7a9f1c52f6c804e81db5b8e06ea7cbcd3c1dae803e46407727ce9f62e7fed3c6
+  opentelemetry-instrumentation-faraday (0.33.0) sha256=f4320bece35997b8ce2ba520eaf52499b89a0c048fce9ce0a10c1ae5d783f801
+  opentelemetry-instrumentation-http (0.30.0) sha256=36d2639eab81d386b25e99e0d91fe31888a255159a1213b9648e8359751055c8
+  opentelemetry-instrumentation-net_http (0.29.0) sha256=fae5eb6a794bbf87fb15752343b74d5cfd2bb830353f42cab3483fd2f3f84fe7
+  opentelemetry-logs-api (0.4.1) sha256=9db6c9a0c172df4e302e490c80697ea9fc1223501f4358acfc01dd4c2307ca4a
+  opentelemetry-logs-sdk (0.6.1) sha256=7fd1eccc6793948acff93bbea0dd1aa809a8579cb8fcdea8e0a6580a981a21c2
+  opentelemetry-metrics-api (0.6.1) sha256=e1785d317c0b4fe5bb128ab9dd4644486107fe28fba844f5329bf3db90aaa5ec
+  opentelemetry-metrics-sdk (0.15.0) sha256=611a9cd9f473c461095c7401b8c25f9774160d286a1acbfcbf044da2972aeada
+  opentelemetry-registry (0.6.3) sha256=568fa8eaea94394f29f4fce3f0339ab10c3bf6d6c8beed6b3cfee6fd37fcc608
+  opentelemetry-sdk (1.13.0) sha256=eea4ab625eb901ecfe1083049862d4853fd16d94029f3cdd16526c81332f0fff
+  opentelemetry-semantic_conventions (1.43.0) sha256=d96eb7da3bc89335786ea676b448701f566cf241a7ca56ae1e814b83816922af
+  parallel (1.28.0) sha256=33e6de1484baf2524792d178b0913fc8eb94c628d6cfe45599ad4458c638c970
   parallel_tests (4.7.1) sha256=98ad977f5e5a28df77c0364504bdea21f0a2a9ea86eae238668fdfec341ab860
   parseconfig (1.1.2) sha256=e52247d15070fb47f9e58f44f7888d1e7f65775274cd60f9ab4b7acd7943b291
-  parser (3.3.10.2) sha256=6f60c84aa4bdcedb6d1a2434b738fe8a8136807b6adc8f7f53b97da9bc4e9357
+  parser (3.3.12.0) sha256=21a6d7f755d5a24dfbdc6e6b772e4e879a52e7631a88bc5a3a134606052c9828
   pp (0.6.3) sha256=2951d514450b93ccfeb1df7d021cae0da16e0a7f95ee1e2273719669d0ab9df6
   prettyprint (0.2.0) sha256=2bc9e15581a94742064a3cc8b0fb9d45aae3d03a1baa6ef80922627a0766f193
   prism (1.9.0) sha256=7b530c6a9f92c24300014919c9dcbc055bf4cdf51ec30aed099b06cd6674ef85
-  psych (5.3.1) sha256=eb7a57cef10c9d70173ff74e739d843ac3b2c019a003de48447b2963d81b1974
-  public_suffix (7.0.2) sha256=9114090c8e4e7135c1fd0e7acfea33afaab38101884320c65aaa0ffb8e26a857
+  psych (5.4.0) sha256=14f72d69a611af663d7d70e4a7b67d9eb1f3ae9f8d916b478961d5a0075ba5b7
+  public_suffix (7.0.5) sha256=1a8bb08f1bbea19228d3bed6e5ed908d1cb4f7c2726d18bd9cadf60bc676f623
   racc (1.8.1) sha256=4a7f6929691dbec8b5209a0b373bc2614882b55fc5d2e447a21aaa691303d62f
   rainbow (3.1.1) sha256=039491aa3a89f42efa1d6dec2fc4e62ede96eb6acd95e52f1ad581182b79bc6a
-  rake (13.3.1) sha256=8c9e89d09f66a26a01264e7e3480ec0607f0c497a861ef16063604b1b08eb19c
-  rake-compiler-dock (1.11.0) sha256=eab51f2cd533eb35cea6b624a75281f047123e70a64c58b607471bb49428f8c2
-  rb_sys (0.9.124) sha256=513476557b12eaf73764b3da9f8746024558fe8699bda785fb548c9aa3877ae7
+  rake (13.4.2) sha256=cb825b2bd5f1f8e91ca37bddb4b9aaf345551b4731da62949be002fa89283701
+  rake-compiler-dock (1.12.0) sha256=f13205c2738f3d2053afcd03491a9e4541b22a59a0bfc53fc8bc883bd8188023
+  rb_sys (0.9.128) sha256=9ab81f4d6d4e1895de18762232362d1264475aa7035756b50441e442130538fd
   rdoc (7.2.0) sha256=8650f76cd4009c3b54955eb5d7e3a075c60a57276766ebf36f9085e8c9f23192
-  regexp_parser (2.11.3) sha256=ca13f381a173b7a93450e53459075c9b76a10433caadcb2f1180f2c741fc55a4
+  regexp_parser (2.12.0) sha256=35a916a1d63190ab5c9009457136ae5f3c0c7512d60291d0d1378ba18ce08ebb
   reline (0.6.3) sha256=1198b04973565b36ec0f11542ab3f5cfeeec34823f4e54cebde90968092b1835
-  rest-client (2.1.0) sha256=35a6400bdb14fae28596618e312776c158f7ebbb0ccad752ff4fa142bf2747e3
   rexml (3.4.4) sha256=19e0a2c3425dfbf2d4fc1189747bdb2f849b6c5e74180401b15734bc97b5d142
   rspec (3.13.2) sha256=206284a08ad798e61f86d7ca3e376718d52c0bc944626b2349266f239f820587
   rspec-core (3.13.6) sha256=a8823c6411667b60a8bca135364351dda34cd55e44ff94c4be4633b37d828b2d
@@ -831,32 +832,32 @@ CHECKSUMS
   rspec-mocks (3.13.7) sha256=0979034e64b1d7a838aaaddf12bf065ea4dc40ef3d4c39f01f93ae2c66c62b1c
   rspec-sorbet (1.9.2) sha256=28bf3969fa136ed22edd05b00d23aab52c276f2fcc89fccbb16b8fd0c48931c8
   rspec-support (3.13.7) sha256=0640e5570872aafefd79867901deeeeb40b0c9875a36b983d85f54fb7381c47c
-  rubocop (1.85.0) sha256=317407feb681a07d54f64d2f9e1d6b6af1ce7678e51cd658e3ad8bd66da48c01
-  rubocop-ast (1.49.0) sha256=49c3676d3123a0923d333e20c6c2dbaaae2d2287b475273fddee0c61da9f71fd
+  rubocop (1.88.2) sha256=8def251c90cd955feb4daa3edc0ab56893250c4ce90ef81e6c80c03f9a939bbf
+  rubocop-ast (1.50.0) sha256=b9ca88300da0803ee222ad20cdb30494c0a784eed06fdc35d254b06d662788db
   rubocop-performance (1.26.1) sha256=cd19b936ff196df85829d264b522fd4f98b6c89ad271fa52744a8c11b8f71834
-  rubocop-rspec (3.9.0) sha256=8fa70a3619408237d789aeecfb9beef40576acc855173e60939d63332fdb55e2
-  rubocop-sorbet (0.12.0) sha256=195521e132500555819313df5accaaf56bf721a63de3e5b7b1d0b25f696b1f39
+  rubocop-rspec (3.10.2) sha256=0b3e2ecc592cd10ecbf0095bb58d1e357905276e069643523cc19eb7495f65e2
+  rubocop-sorbet (0.13.2) sha256=7901e57b6b8e9e9b970d941dbdbb89f2c9de0183bfd2551460468f8aa9548655
   ruby-progressbar (1.13.0) sha256=80fc9c47a9b640d6834e0dc7b3c94c9df37f08cb072b7761e4a71e22cff29b33
   sawyer (0.9.3) sha256=0d0f19298408047037638639fe62f4794483fb04320269169bd41af2bdcf5e41
-  sentry-opentelemetry (6.4.0) sha256=e0f54eda8bf2b8941fcadad23a72ecc706f7350fa1991ba754790bf3738643bf
-  sentry-ruby (6.4.0) sha256=562bee79aea8f92825ac9df3ea01cc7788f9170d382f8d38947895280dc3be06
+  sentry-opentelemetry (6.6.2) sha256=9f72cc256012fa45cde8025d4096b34ebf282b5d4ee022c3767fea2cfa8219c5
+  sentry-ruby (6.6.2) sha256=a64aaf757d10058598fe5871de925b2a5a3d78273feb9bca23fff843accc6cd6
   simplecov (0.22.0) sha256=fe2622c7834ff23b98066bb0a854284b2729a569ac659f82621fc22ef36213a5
   simplecov-html (0.12.3) sha256=4b1aad33259ffba8b29c6876c12db70e5750cb9df829486e4c6e5da4fa0aa07b
   simplecov_json_formatter (0.1.4) sha256=529418fbe8de1713ac2b2d612aa3daa56d316975d307244399fa4838c601b428
-  sorbet-runtime (0.6.12977) sha256=67e659fd940cd3ea8022548fb49256e3d87f3353ea8657c5bd26110f54478387
+  sorbet-runtime (0.6.13371) sha256=d3662fc0ff0b97b29834ea8e6b2f743bc9bd367f5168bb9ac92a050b99a22843
   stackprof (0.2.28) sha256=4ec2ace02f386012b40ca20ef80c030ad711831f59511da12e83b34efb0f9a04
   stringio (3.2.0) sha256=c37cb2e58b4ffbd33fe5cd948c05934af997b36e0b6ca6fdf43afa234cf222e1
   terminal-table (4.0.0) sha256=f504793203f8251b2ea7c7068333053f0beeea26093ec9962e62ea79f94301d2
-  toml-rb (4.1.0) sha256=14456ec4549e4703881bf04b83a56f3264ef99884880092d83c98a2058d95846
+  toml-rb (4.2.0) sha256=10a48c91613e20cf63483a7a776767dfb3cd7d70e9327c0237443da601e13776
   tsort (0.2.0) sha256=9650a793f6859a43b6641671278f79cfead60ac714148aabe4e3f0060480089f
   turbo_tests (2.2.5) sha256=3fa31497d12976d11ccc298add29107b92bda94a90d8a0a5783f06f05102509f
   unicode-display_width (3.2.0) sha256=0cdd96b5681a5949cdbc2c55e7b420facae74c4aaf9a9815eee1087cb1853c42
   unicode-emoji (4.2.0) sha256=519e69150f75652e40bf736106cfbc8f0f73aa3fb6a65afe62fefa7f80b0f80f
   uri (1.1.1) sha256=379fa58d27ffb1387eaada68c749d1426738bd0f654d812fcc07e7568f5c57c6
   vcr (6.4.0) sha256=077ac92cc16efc5904eb90492a18153b5e6ca5398046d8a249a7c96a9ea24ae6
-  webmock (3.26.1) sha256=4f696fb57c90a827c20aadb2d4f9058bbff10f7f043bd0d4c3f58791143b1cd7
+  webmock (3.26.2) sha256=774556f2ea6371846cca68c01769b2eac0d134492d21f6d0ab5dd643965a4c90
   webrick (1.9.2) sha256=beb4a15fc474defed24a3bda4ffd88a490d517c9e4e6118c3edce59e45864131
-  zeitwerk (2.7.5) sha256=d8da92128c09ea6ec62c949011b00ed4a20242b255293dd66bf41545398f73dd
+  zeitwerk (2.8.2) sha256=7212a61311083c604184b1ea2574b9aa05cd14f855a0841c06985cabe9181d12
 
 BUNDLED WITH
-   2.7.2
+  4.0.14

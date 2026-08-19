@@ -1,7 +1,6 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
-require "open3"
 require "timeout"
 require "sorbet-runtime"
 require "shellwords"
@@ -20,13 +19,25 @@ module Dependabot
     end
 
     OutputObserver = T.type_alias do
-      T.nilable(T.proc.params(data: String).returns(T::Hash[Symbol, T.untyped]))
+      T.nilable(T.proc.params(data: String).returns(T::Hash[Symbol, T.anything]))
+    end
+
+    Environment = T.type_alias { T::Hash[String, String] }
+    SpawnOptions = T.type_alias { T::Hash[Symbol, T.anything] }
+
+    EnvCmdItem = T.type_alias do
+      T.any(
+        String,
+        T::Array[String],
+        Environment,
+        SpawnOptions
+      )
     end
 
     class ProcessStatus
       extend T::Sig
 
-      sig { params(process_status: Process::Status, custom_exitstatus: T.nilable(Integer)).void }
+      sig { params(process_status: T.nilable(Process::Status), custom_exitstatus: T.nilable(Integer)).void }
       def initialize(process_status, custom_exitstatus = nil)
         @process_status = process_status
         @custom_exitstatus = custom_exitstatus
@@ -35,24 +46,24 @@ module Dependabot
       # Return the exit status, either from the process status or the custom one
       sig { returns(Integer) }
       def exitstatus
-        @custom_exitstatus || @process_status.exitstatus || 0
+        @custom_exitstatus || @process_status&.exitstatus || 0
       end
 
       # Determine if the process was successful
       sig { returns(T::Boolean) }
       def success?
-        @custom_exitstatus.nil? ? @process_status.success? || false : @custom_exitstatus.zero?
+        @custom_exitstatus.nil? ? @process_status&.success? || false : @custom_exitstatus.zero?
       end
 
       # Return the PID of the process (if available)
       sig { returns(T.nilable(Integer)) }
       def pid
-        @process_status.pid
+        @process_status&.pid
       end
 
       sig { returns(T.nilable(Integer)) }
       def termsig
-        @process_status.termsig
+        @process_status&.termsig
       end
 
       # String representation of the status
@@ -61,7 +72,7 @@ module Dependabot
         if @custom_exitstatus
           "pid #{pid || 'unknown'}: exit #{@custom_exitstatus} (custom status)"
         else
-          @process_status.to_s
+          @process_status&.to_s || "unknown status"
         end
       end
     end
@@ -72,7 +83,7 @@ module Dependabot
     # rubocop:disable Metrics/CyclomaticComplexity
     sig do
       params(
-        env_cmd: T::Array[T.any(T::Hash[String, String], String)],
+        env_cmd: T::Array[EnvCmdItem],
         stdin_data: T.nilable(String),
         stderr_to_stdout: T::Boolean,
         timeout: Integer,
@@ -89,26 +100,35 @@ module Dependabot
       stdout = T.let("", String)
       stderr = T.let("", String)
       status = T.let(nil, T.nilable(ProcessStatus))
-      pid = T.let(nil, T.untyped)
+      pid = T.let(nil, T.nilable(Integer))
       start_time = Time.now
 
       begin
-        T.unsafe(Open3).popen3(*env_cmd) do |stdin, stdout_io, stderr_io, wait_thr| # rubocop:disable Metrics/BlockLength
+        stdout_io, stderr_io, wait_thr = open_process(env_cmd)
+        begin
           pid = wait_thr.pid
-          sanitized_env_cmd = if env_cmd.first.is_a?(Hash)
-                                [SharedHelpers.send(:sanitize_env_for_logging, env_cmd.first), *env_cmd[1..]]
-                              else
-                                env_cmd
-                              end
-          Dependabot.logger.info("Started process PID: #{pid} with command: #{sanitized_env_cmd.join(' ')}")
+          command_string = command_string_for_logging(env_cmd)
+          log_level = short_git_config_command?(command_string) ? :debug : :info
+          first_item = env_cmd.first
+          sanitized_env_cmd = T.let(
+            if first_item.is_a?(Hash)
+              environment = extract_environment(env_cmd.dup)
+              [T.must(SharedHelpers.sanitize_env_for_logging(environment)), *env_cmd.drop(1)]
+            else
+              env_cmd
+            end,
+            T::Array[EnvCmdItem]
+          )
+          command_for_log = sanitized_env_cmd.map { |item| item.is_a?(Array) ? item.first : item }.join(" ")
+          Dependabot.logger.public_send(log_level, "Started process PID: #{pid} with command: #{command_for_log}")
 
           # Write to stdin if input data is provided
           begin
-            stdin&.write(stdin_data) if stdin_data
+            stdout_io.write(stdin_data) if stdin_data
           rescue Errno::EPIPE
             # Process exited before reading stdin - continue to collect output
           end
-          stdin&.close
+          stdout_io.close_write
 
           stdout_io.sync = true
           stderr_io.sync = true
@@ -179,7 +199,11 @@ module Dependabot
           end
 
           status = ProcessStatus.new(wait_thr.value)
-          Dependabot.logger.info("Process PID: #{pid} completed with status: #{status}")
+          Dependabot.logger.public_send(log_level, "Process PID: #{pid} completed with status: #{status}")
+        ensure
+          stdout_io.close unless stdout_io.closed?
+          stderr_io.close unless stderr_io.closed?
+          wait_thr.join
         end
       rescue Timeout::Error => e
         Dependabot.logger.error("Process PID: #{pid} failed due to timeout: #{e.message}")
@@ -195,13 +219,69 @@ module Dependabot
       end
 
       elapsed_time = Time.now - start_time
-      Dependabot.logger.info("Total execution time: #{elapsed_time.round(2)} seconds")
+      log_level = short_git_config_command?(command_string_for_logging(env_cmd)) ? :debug : :info
+      Dependabot.logger.public_send(log_level, "Total execution time: #{elapsed_time.round(2)} seconds")
       [stdout, stderr, status, elapsed_time]
     end
     # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/MethodLength
     # rubocop:enable Metrics/PerceivedComplexity
     # rubocop:enable Metrics/CyclomaticComplexity
+
+    sig { params(env_cmd: T::Array[EnvCmdItem]).returns([IO, IO, Process::Waiter]) }
+    def self.open_process(env_cmd)
+      process_io = T.let(nil, T.nilable(IO))
+      stderr_io = T.let(nil, T.nilable(IO))
+      stderr_writer = T.let(nil, T.nilable(IO))
+      arguments = env_cmd.dup
+      environment = extract_environment(arguments)
+      options = extract_options(arguments)
+      command = command_for_popen(arguments)
+
+      stderr_io, stderr_writer = IO.pipe
+      options[:err] = stderr_writer
+      process_io = T.cast(IO.popen(environment, command, "r+", options), IO)
+      stderr_writer.close
+
+      wait_thread = T.cast(Process.detach(process_io.pid), Process::Waiter)
+      [process_io, stderr_io, wait_thread]
+    rescue StandardError
+      process_io.close if process_io && !process_io.closed?
+      stderr_io.close if stderr_io && !stderr_io.closed?
+      stderr_writer.close if stderr_writer && !stderr_writer.closed?
+      raise
+    end
+    private_class_method :open_process
+
+    sig { params(arguments: T::Array[EnvCmdItem]).returns(Environment) }
+    def self.extract_environment(arguments)
+      return {} unless arguments.first.is_a?(Hash)
+
+      T.cast(arguments.shift, Environment)
+    end
+    private_class_method :extract_environment
+
+    sig { params(arguments: T::Array[EnvCmdItem]).returns(SpawnOptions) }
+    def self.extract_options(arguments)
+      return {} unless arguments.last.is_a?(Hash)
+
+      T.cast(arguments.pop, SpawnOptions).dup
+    end
+    private_class_method :extract_options
+
+    sig do
+      params(arguments: T::Array[EnvCmdItem])
+        .returns(T.any(String, T::Array[T.any(String, T::Array[String])]))
+    end
+    def self.command_for_popen(arguments)
+      raise ArgumentError, "command must not be empty" if arguments.empty?
+
+      first_argument = arguments.first
+      return first_argument if arguments.one? && first_argument.is_a?(String)
+
+      T.cast(arguments, T::Array[T.any(String, T::Array[String])])
+    end
+    private_class_method :command_for_popen
 
     # Terminate a process by PID
     sig { params(pid: T.nilable(Integer)).void }
@@ -249,5 +329,26 @@ module Dependabot
       command_parts = command.split.map(&:strip).reject(&:empty?)
       Shellwords.join(command_parts)
     end
+
+    sig { params(env_cmd: T::Array[EnvCmdItem]).returns(T.nilable(String)) }
+    def self.command_string_for_logging(env_cmd)
+      command_parts = env_cmd.filter_map do |item|
+        case item
+        when Array then item.first
+        when String then item
+        end
+      end
+
+      command_parts.join(" ") unless command_parts.empty?
+    end
+    private_class_method :command_string_for_logging
+
+    sig { params(command: T.nilable(String)).returns(T::Boolean) }
+    def self.short_git_config_command?(command)
+      return false if command.nil?
+
+      command.start_with?("git config --global ")
+    end
+    private_class_method :short_git_config_command?
   end
 end

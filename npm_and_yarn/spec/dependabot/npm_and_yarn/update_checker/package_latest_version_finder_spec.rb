@@ -753,6 +753,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
       it { is_expected.to eq(Gem::Version.new("1.6.0")) }
     end
 
+    context "when the global registry socket closes unexpectedly" do
+      before do
+        stub_request(:get, registry_listing_url)
+          .to_raise(Excon::Error::Socket.new(EOFError.new))
+      end
+
+      it { is_expected.to be_nil }
+    end
+
     context "when the npm link resolves to a 403" do
       before do
         stub_request(:get, registry_listing_url)
@@ -1402,6 +1411,79 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::PackageLatestVersionFinder
 
       it "returns all versions" do
         expect(possible_previous_versions_with_details.count).to eq(13)
+      end
+    end
+  end
+
+  describe "JSR dependency handling" do
+    let(:dependency_name) { "@arendjr/text-clipper" }
+    let(:escaped_dependency_name) { "@arendjr%2Ftext-clipper" }
+    let(:unscoped_dependency_name) { "text-clipper" }
+    let(:dependency_version) { "3.0.0" }
+    let(:registry_base) { "https://npm.jsr.io" }
+    let(:registry_listing_url) { "#{registry_base}/#{escaped_dependency_name}" }
+    let(:target_version) { "3.2.0" }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: dependency_version,
+        requirements: [{
+          file: "package.json",
+          requirement: "jsr:^3.0.0",
+          groups: [],
+          source: { type: "registry", url: "https://npm.jsr.io" }
+        }],
+        package_manager: "npm_and_yarn"
+      )
+    end
+    let(:registry_response) do
+      {
+        "name" => "@arendjr/text-clipper",
+        "dist-tags" => { "latest" => "3.2.0" },
+        "versions" => {
+          "3.0.0" => { "version" => "3.0.0" },
+          "3.1.0" => { "version" => "3.1.0" },
+          "3.2.0" => { "version" => "3.2.0" }
+        }
+      }.to_json
+    end
+
+    before do
+      stub_request(:get, %r{https://npm\.jsr\.io/@arendjr%2Ftext-clipper/.*})
+        .to_return(status: 200)
+    end
+
+    describe "#latest_version_from_registry" do
+      subject(:latest_version) { version_finder.latest_version_from_registry }
+
+      it "finds the latest version from JSR registry" do
+        expect(latest_version).to eq(Gem::Version.new("3.2.0"))
+      end
+
+      it "does not treat the JSR requirement as a dist tag" do
+        expect(latest_version).not_to be_nil
+      end
+    end
+
+    describe "#latest_version_from_registry with long form" do
+      subject(:latest_version) { version_finder.latest_version_from_registry }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "@arendjr/text-clipper",
+          version: "3.0.0",
+          requirements: [{
+            file: "package.json",
+            requirement: "jsr:@arendjr/text-clipper@^3.0.0",
+            groups: [],
+            source: { type: "registry", url: "https://npm.jsr.io" }
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "finds the latest version from JSR registry" do
+        expect(latest_version).to eq(Gem::Version.new("3.2.0"))
       end
     end
   end

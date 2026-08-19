@@ -15,6 +15,26 @@ module PackageManagerHelper
   def self.bundler_version
     "2"
   end
+
+  # Returns the major version of the Bundler installed in the native helper's
+  # GEM_HOME, or nil when no helper-installed Bundler can be found. Lets specs
+  # gate behavior on the actual helper runtime instead of hard-coded paths or
+  # exact patch versions.
+  def self.helper_bundler_major_version
+    helpers_root = ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", "/opt")
+    gemspecs = Dir.glob("#{helpers_root}/bundler/v#{bundler_version}/.bundle/specifications/bundler-*.gemspec")
+    return nil if gemspecs.empty?
+
+    versions = gemspecs.map { |f| Gem::Version.new(File.basename(f).match(/bundler-(.*)\.gemspec/)[1]) }
+    versions.max.segments.first
+  end
+
+  # True when the native helper's runtime Bundler is a major version that
+  # cannot resolve `bundler < 3` constraints (i.e. Bundler 4+).
+  def self.helper_running_bundler_v4?
+    major = helper_bundler_major_version
+    !major.nil? && major >= 4
+  end
 end
 
 def bundler_project_dependency_files(project, directory: "/")

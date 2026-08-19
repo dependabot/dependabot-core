@@ -309,6 +309,12 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       it { is_expected.to eq(head_sha) }
 
+      it "only checks cloned_commit once" do
+        expect(file_fetcher_instance).to receive(:cloned_commit).once.and_call_original
+
+        commit
+      end
+
       context "with warnings from git rev-parse" do
         before do
           # Git no longer allows you to create a branch or symbolic ref named HEAD
@@ -341,6 +347,35 @@ RSpec.describe Dependabot::FileFetchers::Base do
           .to_return(status: 200,
                      body: fixture("github", "gemfile_content.json"),
                      headers: { "content-type" => "application/json" })
+      end
+
+      context "when the repository is empty" do
+        let(:repo_url) { "https://api.github.com/repos/#{repo}" }
+
+        before do
+          allow(file_fetcher_instance).to receive(:commit).and_call_original
+          stub_request(:get, repo_url)
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: fixture("github", "bump_repo.json"),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, "#{repo_url}/git/refs/heads/master")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 409,
+              body: fixture("github", "git_repo_empty.json"),
+              headers: { "content-type" => "application/json" }
+            )
+        end
+
+        it "raises a dependency file not found error" do
+          expect { file_fetcher_instance.files }
+            .to raise_error(Dependabot::DependencyFileNotFound) do |error|
+              expect(error.file_path).to eq("/requirements.txt")
+            end
+        end
       end
 
       its(:length) { is_expected.to eq(1) }
@@ -509,13 +544,15 @@ RSpec.describe Dependabot::FileFetchers::Base do
         end
 
         context "when the file is in a submodule (shallow)" do
+          let(:submodule_details) do
+            fixture("github", "submodule.json")
+              .gsub("d70e943e00a09a3c98c0e4ac9daab112b749cf62", "sha2")
+          end
+
           before do
             stub_request(:get, url + "some/dir/req.txt?ref=sha")
               .with(headers: { "Authorization" => "token token" })
               .to_return(status: 404)
-            submodule_details =
-              fixture("github", "submodule.json")
-              .gsub("d70e943e00a09a3c98c0e4ac9daab112b749cf62", "sha2")
             stub_request(:get, url + "some/dir?ref=sha")
               .with(headers: { "Authorization" => "token token" })
               .to_return(
@@ -568,6 +605,45 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
               it { is_expected.to be_a(Dependabot::DependencyFile) }
               its(:content) { is_expected.to include("octokit") }
+            end
+          end
+
+          context "when the submodule URL is missing" do
+            let(:child_class) do
+              Class.new(described_class) do
+                def fetch_files
+                  [
+                    fetch_file_from_host(
+                      "some/dir/req.txt",
+                      fetch_submodules: true
+                    )
+                  ]
+                end
+              end
+            end
+
+            before do
+              submodule_without_url = JSON.parse(submodule_details)
+              submodule_without_url["submodule_git_url"] = nil
+              stub_request(:get, url + "some/dir?ref=sha")
+                .with(headers: { "Authorization" => "token token" })
+                .to_return(
+                  status: 200,
+                  body: JSON.dump(submodule_without_url),
+                  headers: { "content-type" => "application/json" }
+                )
+              stub_request(:get, url + "some?ref=sha")
+                .with(headers: { "Authorization" => "token token" })
+                .to_return(status: 404)
+            end
+
+            it "skips the unavailable submodule" do
+              expect { file_fetcher_instance.files }
+                .to raise_error(Dependabot::DependencyFileNotFound) do |error|
+                  expect(error.file_path).to eq("/some/dir/req.txt")
+                end
+              expect(WebMock)
+                .to have_requested(:get, url + "some/dir?ref=sha")
             end
           end
         end
@@ -716,6 +792,41 @@ RSpec.describe Dependabot::FileFetchers::Base do
               its(:content) { is_expected.to include("octokit") }
             end
           end
+        end
+      end
+
+      context "when file metadata omits the content" do
+        let(:raw_content) { "raw requirements\n" }
+
+        before do
+          metadata = JSON.parse(fixture("github", "gemfile_content.json"))
+          metadata["content"] = ""
+          stub_request(:get, url + "requirements.txt?ref=sha")
+            .with(headers: { "Authorization" => "token token" })
+            .to_return(
+              status: 200,
+              body: JSON.dump(metadata),
+              headers: { "content-type" => "application/json" }
+            )
+          stub_request(:get, url + "requirements.txt?ref=sha")
+            .with(
+              headers: {
+                "Accept" => "application/vnd.github.v3.raw",
+                "Authorization" => "token token"
+              }
+            )
+            .to_return(
+              status: 200,
+              body: raw_content,
+              headers: { "content-type" => "text/plain" }
+            )
+        end
+
+        it "fetches the raw file content" do
+          expect(files.first.content).to eq(raw_content)
+          expect(WebMock)
+            .to have_requested(:get, url + "requirements.txt?ref=sha")
+            .with(headers: { "Accept" => "application/vnd.github.v3.raw" })
         end
       end
 

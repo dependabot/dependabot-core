@@ -25,9 +25,9 @@ module Dependabot
           ).void
         end
         def initialize(dependency_files:, credentials:, dependency:)
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials      = T.let(credentials, T::Array[Dependabot::Credential])
-          @dependency       = T.let(dependency, Dependabot::Dependency)
+          @dependency_files = dependency_files
+          @credentials      = credentials
+          @dependency       = dependency
         end
 
         sig { returns(T::Array[String]) }

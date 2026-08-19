@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -27,17 +27,62 @@ module Dependabot
         super(repo_contents_path: @repo_contents_path, target_directory: @vendor_dir)
       end
 
-      T.unsafe(self).alias_method :updated_vendor_cache_files, :updated_files
+      sig do
+        params(base_directory: String, only_paths: T.nilable(T::Array[String]))
+          .returns(T::Array[Dependabot::DependencyFile])
+      end
+      def updated_vendor_cache_files(base_directory:, only_paths: nil)
+        updated_files(base_directory: base_directory, only_paths: only_paths)
+      end
 
       private
 
+      # VendorUpdater always flags files as vendored, so it accepts but ignores
+      # the vendored_file argument. The parameter must stay to keep the override
+      # signature compatible with ArtifactUpdater#create_dependency_file.
       sig do
         override
-          .params(parameters: T::Hash[Symbol, T.untyped])
+          .params(
+            name: String,
+            content: T.nilable(String),
+            directory: String,
+            type: String,
+            support_file: T::Boolean,
+            vendored_file: T::Boolean,
+            symlink_target: T.nilable(String),
+            content_encoding: String,
+            deleted: T::Boolean,
+            operation: String,
+            mode: T.nilable(String)
+          )
           .returns(Dependabot::DependencyFile)
       end
-      def create_dependency_file(parameters)
-        Dependabot::DependencyFile.new(**T.unsafe({ **parameters, vendored_file: true }))
+      def create_dependency_file(
+        name:,
+        content: nil,
+        directory: "/",
+        type: "file",
+        support_file: false,
+        vendored_file: false, # rubocop:disable Lint/UnusedMethodArgument
+        symlink_target: nil,
+        content_encoding: Dependabot::DependencyFile::ContentEncoding::UTF_8,
+        deleted: false,
+        operation: Dependabot::DependencyFile::Operation::UPDATE,
+        mode: nil
+      )
+        super(
+          name: name,
+          content: content,
+          directory: directory,
+          type: type,
+          support_file: support_file,
+          vendored_file: true,
+          symlink_target: symlink_target,
+          content_encoding: content_encoding,
+          deleted: deleted,
+          operation: operation,
+          mode: mode
+        )
       end
     end
   end

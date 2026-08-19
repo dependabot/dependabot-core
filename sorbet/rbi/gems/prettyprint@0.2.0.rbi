@@ -53,14 +53,12 @@ class PrettyPrint
   # The block is used to generate spaces. {|width| ' ' * width} is used if it
   # is not given.
   #
-  # @return [PrettyPrint] a new instance of PrettyPrint
-  #
-  # source://prettyprint//lib/prettyprint.rb#84
+  # pkg:gem/prettyprint#lib/prettyprint.rb:84
   def initialize(output = T.unsafe(nil), maxwidth = T.unsafe(nil), newline = T.unsafe(nil), &genspace); end
 
   # Breaks the buffer into lines that are shorter than #maxwidth
   #
-  # source://prettyprint//lib/prettyprint.rb#162
+  # pkg:gem/prettyprint#lib/prettyprint.rb:162
   def break_outmost_groups; end
 
   # This says "you can break a line here if necessary", and a +width+\-column
@@ -71,7 +69,7 @@ class PrettyPrint
   # If +width+ is not specified, +sep.length+ is used. You will have to
   # specify this when +sep+ is a multibyte character, for example.
   #
-  # source://prettyprint//lib/prettyprint.rb#226
+  # pkg:gem/prettyprint#lib/prettyprint.rb:226
   def breakable(sep = T.unsafe(nil), width = T.unsafe(nil)); end
 
   # Returns the group most recently added to the stack.
@@ -104,7 +102,7 @@ class PrettyPrint
   #   #<PrettyPrint::Group:0x83541cc @depth=3, @breakables=[], @break=false>
   #   #<PrettyPrint::Group:0x8347e54 @depth=4, @breakables=[], @break=false>
   #
-  # source://prettyprint//lib/prettyprint.rb#157
+  # pkg:gem/prettyprint#lib/prettyprint.rb:157
   def current_group; end
 
   # This is similar to #breakable except
@@ -123,12 +121,12 @@ class PrettyPrint
   # If +width+ is not specified, +sep.length+ is used. You will have to
   # specify this when +sep+ is a multibyte character, for example.
   #
-  # source://prettyprint//lib/prettyprint.rb#214
+  # pkg:gem/prettyprint#lib/prettyprint.rb:214
   def fill_breakable(sep = T.unsafe(nil), width = T.unsafe(nil)); end
 
   # outputs buffered data.
   #
-  # source://prettyprint//lib/prettyprint.rb#290
+  # pkg:gem/prettyprint#lib/prettyprint.rb:290
   def flush; end
 
   # A lambda or Proc, that takes one argument, of an Integer, and returns
@@ -137,7 +135,7 @@ class PrettyPrint
   # By default this is:
   #   lambda {|n| ' ' * n}
   #
-  # source://prettyprint//lib/prettyprint.rb#120
+  # pkg:gem/prettyprint#lib/prettyprint.rb:120
   def genspace; end
 
   # Groups line break hints added in the block. The line break hints are all
@@ -150,56 +148,56 @@ class PrettyPrint
   # before grouping. If +close_obj+ is specified, <tt>text close_obj,
   # close_width</tt> is called after grouping.
   #
-  # source://prettyprint//lib/prettyprint.rb#251
+  # pkg:gem/prettyprint#lib/prettyprint.rb:251
   def group(indent = T.unsafe(nil), open_obj = T.unsafe(nil), close_obj = T.unsafe(nil), open_width = T.unsafe(nil), close_width = T.unsafe(nil)); end
 
   # The PrettyPrint::GroupQueue of groups in stack to be pretty printed
   #
-  # source://prettyprint//lib/prettyprint.rb#126
+  # pkg:gem/prettyprint#lib/prettyprint.rb:126
   def group_queue; end
 
   # Takes a block and queues a new group that is indented 1 level further.
   #
-  # source://prettyprint//lib/prettyprint.rb#262
+  # pkg:gem/prettyprint#lib/prettyprint.rb:262
   def group_sub; end
 
   # The number of spaces to be indented
   #
-  # source://prettyprint//lib/prettyprint.rb#123
+  # pkg:gem/prettyprint#lib/prettyprint.rb:123
   def indent; end
 
   # The maximum width of a line, before it is separated in to a newline
   #
   # This defaults to 79, and should be an Integer
   #
-  # source://prettyprint//lib/prettyprint.rb#108
+  # pkg:gem/prettyprint#lib/prettyprint.rb:108
   def maxwidth; end
 
   # Increases left margin after newline with +indent+ for line breaks added in
   # the block.
   #
-  # source://prettyprint//lib/prettyprint.rb#279
+  # pkg:gem/prettyprint#lib/prettyprint.rb:279
   def nest(indent); end
 
   # The value that is appended to +output+ to add a new line.
   #
   # This defaults to "\n", and should be String
   #
-  # source://prettyprint//lib/prettyprint.rb#113
+  # pkg:gem/prettyprint#lib/prettyprint.rb:113
   def newline; end
 
   # The output object.
   #
   # This defaults to '', and should accept the << method
   #
-  # source://prettyprint//lib/prettyprint.rb#103
+  # pkg:gem/prettyprint#lib/prettyprint.rb:103
   def output; end
 
   # This adds +obj+ as a text of +width+ columns in width.
   #
   # If +width+ is not specified, obj.length is used.
   #
-  # source://prettyprint//lib/prettyprint.rb#182
+  # pkg:gem/prettyprint#lib/prettyprint.rb:182
   def text(obj, width = T.unsafe(nil)); end
 
   class << self
@@ -212,9 +210,7 @@ class PrettyPrint
     #     output
     #   end
     #
-    # @yield [q]
-    #
-    # source://prettyprint//lib/prettyprint.rb#47
+    # pkg:gem/prettyprint#lib/prettyprint.rb:47
     def format(output = T.unsafe(nil), maxwidth = T.unsafe(nil), newline = T.unsafe(nil), genspace = T.unsafe(nil)); end
 
     # This is similar to PrettyPrint::format but the result has no breaks.
@@ -224,9 +220,7 @@ class PrettyPrint
     # The invocation of +breakable+ in the block doesn't break a line and is
     # treated as just an invocation of +text+.
     #
-    # @yield [q]
-    #
-    # source://prettyprint//lib/prettyprint.rb#61
+    # pkg:gem/prettyprint#lib/prettyprint.rb:61
     def singleline_format(output = T.unsafe(nil), maxwidth = T.unsafe(nil), newline = T.unsafe(nil), genspace = T.unsafe(nil)); end
   end
 end
@@ -242,23 +236,21 @@ class PrettyPrint::Breakable
   # * +width+ Integer width of the +sep+
   # * +q+ parent PrettyPrint object, to base from
   #
-  # @return [Breakable] a new instance of Breakable
-  #
-  # source://prettyprint//lib/prettyprint.rb#347
+  # pkg:gem/prettyprint#lib/prettyprint.rb:347
   def initialize(sep, width, q); end
 
   # The number of spaces to indent.
   #
   # This is inferred from +q+ within PrettyPrint, passed in ::new
   #
-  # source://prettyprint//lib/prettyprint.rb#367
+  # pkg:gem/prettyprint#lib/prettyprint.rb:367
   def indent; end
 
   # Holds the separator String
   #
   # The +sep+ argument from ::new
   #
-  # source://prettyprint//lib/prettyprint.rb#359
+  # pkg:gem/prettyprint#lib/prettyprint.rb:359
   def obj; end
 
   # Render the String text of the objects that have been added to this
@@ -266,12 +258,12 @@ class PrettyPrint::Breakable
   #
   # Output the text to +out+, and increment the width to +output_width+
   #
-  # source://prettyprint//lib/prettyprint.rb#373
+  # pkg:gem/prettyprint#lib/prettyprint.rb:373
   def output(out, output_width); end
 
   # The width of +obj+ / +sep+
   #
-  # source://prettyprint//lib/prettyprint.rb#362
+  # pkg:gem/prettyprint#lib/prettyprint.rb:362
   def width; end
 end
 
@@ -290,40 +282,34 @@ class PrettyPrint::Group
   # Arguments:
   # * +depth+ - this group's relation to previous groups
   #
-  # @return [Group] a new instance of Group
-  #
-  # source://prettyprint//lib/prettyprint.rb#401
+  # pkg:gem/prettyprint#lib/prettyprint.rb:401
   def initialize(depth); end
 
   # Makes a break for this Group, and returns true
   #
-  # source://prettyprint//lib/prettyprint.rb#414
+  # pkg:gem/prettyprint#lib/prettyprint.rb:414
   def break; end
 
   # Boolean of whether this Group has made a break
   #
-  # @return [Boolean]
-  #
-  # source://prettyprint//lib/prettyprint.rb#419
+  # pkg:gem/prettyprint#lib/prettyprint.rb:419
   def break?; end
 
   # Array to hold the Breakable objects for this Group
   #
-  # source://prettyprint//lib/prettyprint.rb#411
+  # pkg:gem/prettyprint#lib/prettyprint.rb:411
   def breakables; end
 
   # This group's relation to previous groups
   #
-  # source://prettyprint//lib/prettyprint.rb#408
+  # pkg:gem/prettyprint#lib/prettyprint.rb:408
   def depth; end
 
   # Boolean of whether this Group has been queried for being first
   #
   # This is used as a predicate, and ought to be called first.
   #
-  # @return [Boolean]
-  #
-  # source://prettyprint//lib/prettyprint.rb#426
+  # pkg:gem/prettyprint#lib/prettyprint.rb:426
   def first?; end
 end
 
@@ -339,19 +325,17 @@ class PrettyPrint::GroupQueue
   # Arguments:
   # * +groups+ - one or more PrettyPrint::Group objects
   #
-  # @return [GroupQueue] a new instance of GroupQueue
-  #
-  # source://prettyprint//lib/prettyprint.rb#447
+  # pkg:gem/prettyprint#lib/prettyprint.rb:447
   def initialize(*groups); end
 
   # Remote +group+ from this queue
   #
-  # source://prettyprint//lib/prettyprint.rb#479
+  # pkg:gem/prettyprint#lib/prettyprint.rb:479
   def delete(group); end
 
   # Returns the outer group of the queue
   #
-  # source://prettyprint//lib/prettyprint.rb#463
+  # pkg:gem/prettyprint#lib/prettyprint.rb:463
   def deq; end
 
   # Enqueue +group+
@@ -359,7 +343,7 @@ class PrettyPrint::GroupQueue
   # This does not strictly append the group to the end of the queue,
   # but instead adds it in line, base on the +group.depth+
   #
-  # source://prettyprint//lib/prettyprint.rb#456
+  # pkg:gem/prettyprint#lib/prettyprint.rb:456
   def enq(group); end
 end
 
@@ -384,28 +368,24 @@ class PrettyPrint::SingleLine
   # * +newline+ - Argument position expected to be here for compatibility.
   #               This argument is a noop.
   #
-  # @return [SingleLine] a new instance of SingleLine
-  #
-  # source://prettyprint//lib/prettyprint.rb#505
+  # pkg:gem/prettyprint#lib/prettyprint.rb:505
   def initialize(output, maxwidth = T.unsafe(nil), newline = T.unsafe(nil)); end
 
   # Appends +sep+ to the text to be output. By default +sep+ is ' '
   #
   # +width+ argument is here for compatibility. It is a noop argument.
   #
-  # source://prettyprint//lib/prettyprint.rb#520
+  # pkg:gem/prettyprint#lib/prettyprint.rb:520
   def breakable(sep = T.unsafe(nil), width = T.unsafe(nil)); end
 
   # This is used as a predicate, and ought to be called first.
   #
-  # @return [Boolean]
-  #
-  # source://prettyprint//lib/prettyprint.rb#552
+  # pkg:gem/prettyprint#lib/prettyprint.rb:552
   def first?; end
 
   # Method present for compatibility, but is a noop
   #
-  # source://prettyprint//lib/prettyprint.rb#548
+  # pkg:gem/prettyprint#lib/prettyprint.rb:548
   def flush; end
 
   # Opens a block for grouping objects to be pretty printed.
@@ -417,21 +397,21 @@ class PrettyPrint::SingleLine
   # * +open_width+ - noop argument. Present for compatibility.
   # * +close_width+ - noop argument. Present for compatibility.
   #
-  # source://prettyprint//lib/prettyprint.rb#539
+  # pkg:gem/prettyprint#lib/prettyprint.rb:539
   def group(indent = T.unsafe(nil), open_obj = T.unsafe(nil), close_obj = T.unsafe(nil), open_width = T.unsafe(nil), close_width = T.unsafe(nil)); end
 
   # Takes +indent+ arg, but does nothing with it.
   #
   # Yields to a block.
   #
-  # source://prettyprint//lib/prettyprint.rb#527
+  # pkg:gem/prettyprint#lib/prettyprint.rb:527
   def nest(indent); end
 
   # Add +obj+ to the text to be output.
   #
   # +width+ argument is here for compatibility. It is a noop argument.
   #
-  # source://prettyprint//lib/prettyprint.rb#513
+  # pkg:gem/prettyprint#lib/prettyprint.rb:513
   def text(obj, width = T.unsafe(nil)); end
 end
 
@@ -449,29 +429,27 @@ class PrettyPrint::Text
   # As there are objects, use PrettyPrint::Text#add to include the objects
   # and the width to utilized by the String version of this object.
   #
-  # @return [Text] a new instance of Text
-  #
-  # source://prettyprint//lib/prettyprint.rb#312
+  # pkg:gem/prettyprint#lib/prettyprint.rb:312
   def initialize; end
 
   # Include +obj+ in the objects to be pretty printed, and increment
   # this Text object's total width by +width+
   #
-  # source://prettyprint//lib/prettyprint.rb#330
+  # pkg:gem/prettyprint#lib/prettyprint.rb:330
   def add(obj, width); end
 
   # Render the String text of the objects that have been added to this Text object.
   #
   # Output the text to +out+, and increment the width to +output_width+
   #
-  # source://prettyprint//lib/prettyprint.rb#323
+  # pkg:gem/prettyprint#lib/prettyprint.rb:323
   def output(out, output_width); end
 
   # The total width of the objects included in this Text object.
   #
-  # source://prettyprint//lib/prettyprint.rb#318
+  # pkg:gem/prettyprint#lib/prettyprint.rb:318
   def width; end
 end
 
-# source://prettyprint//lib/prettyprint.rb#36
+# pkg:gem/prettyprint#lib/prettyprint.rb:36
 PrettyPrint::VERSION = T.let(T.unsafe(nil), String)

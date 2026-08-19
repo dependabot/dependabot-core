@@ -31,7 +31,7 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::Dependency]) }
         def parse
-          SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+          SharedHelpers.in_a_temporary_repo_directory(config_dependency_file.directory, repo_contents_path) do
             SharedHelpers.with_git_configured(credentials: credentials) do
               parse_cli_json(evaluate_with_cli)
             end
@@ -41,26 +41,16 @@ module Dependabot
         private
 
         sig { returns(String) }
-        def base_dir
-          File.dirname(config_dependency_file.path)
-        end
-
-        sig { returns(String) }
-        def config_name
-          File.basename(config_dependency_file.path)
-        end
-
-        sig { returns(T.nilable(String)) }
-        def config_contents
-          config_dependency_file.content
+        def config_file_path
+          config_dependency_file.name
         end
 
         # https://github.com/devcontainers/cli/blob/9444540283b236298c28f397dea879e7ec222ca1/src/spec-node/devContainersSpecCLI.ts#L1072
-        sig { returns(T::Hash[String, T.untyped]) }
+        sig { returns(T::Hash[String, T.anything]) }
         def evaluate_with_cli
-          raise "config_name must be a string" unless config_name.is_a?(String) && !config_name.empty?
+          raise "config_file_path must be a string" unless config_file_path.is_a?(String) && !config_file_path.empty?
 
-          cmd = "devcontainer outdated --workspace-folder . --config #{config_name} --output-format json"
+          cmd = "devcontainer outdated --workspace-folder . --config #{config_file_path} --output-format json"
           Dependabot.logger.info("Running command: #{cmd}")
 
           json = SharedHelpers.run_shell_command(
@@ -71,13 +61,14 @@ module Dependabot
           JSON.parse(json)
         end
 
-        sig { params(json: T::Hash[String, T.untyped]).returns(T::Array[Dependabot::Dependency]) }
+        sig { params(json: T::Hash[String, T.anything]).returns(T::Array[Dependabot::Dependency]) }
         def parse_cli_json(json)
           dependencies = []
 
-          features = json["features"]
+          features = T.cast(json["features"], T::Hash[String, T.anything])
           features.each do |feature, versions_object|
             name, requirement = feature.split(":")
+            next if name.nil?
 
             # Skip sha pinned tags for now. Ideally the devcontainers CLI would give us updated SHA info
             next if name.end_with?("@sha256")
@@ -86,7 +77,7 @@ module Dependabot
             # and `devcontainer upgrade` work with them. See https://github.com/devcontainers/cli/issues/712
             next unless name.include?("/")
 
-            current = versions_object["current"]
+            current = T.cast(T.cast(versions_object, T::Hash[String, T.anything])["current"], T.nilable(String))
 
             dep = Dependency.new(
               name: name,
