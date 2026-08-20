@@ -68,7 +68,7 @@ module Dependabot
       def dependency_manifest_requirements
         @dependency_manifest_requirements ||= T.let(
           updated_dependencies.flat_map do |dep|
-            dep.requirements.map { |requirement| requirement[:file] }
+            dep.requirements.filter_map(&:file)
           end,
           T.nilable(T::Array[String])
         )

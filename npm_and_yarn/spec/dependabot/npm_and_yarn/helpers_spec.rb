@@ -169,6 +169,26 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       )
       described_class.package_manager_install("npm", "7.0.0")
     end
+
+    it "retries once with COREPACK_INTEGRITY_KEYS when corepack signature verification fails" do
+      env = { "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm" }
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack install npm@11.9.0 --global --cache-only",
+        fingerprint: "corepack install <name>@<version> --global --cache-only",
+        env: env
+      ).ordered.and_raise(
+        StandardError.new("Internal Error: No compatible signature found in package metadata")
+      )
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack install npm@11.9.0 --global --cache-only",
+        fingerprint: "corepack install <name>@<version> --global --cache-only",
+        env: env.merge("COREPACK_INTEGRITY_KEYS" => "")
+      ).ordered.and_return("")
+
+      described_class.package_manager_install("npm", "11.9.0", env: env)
+    end
   end
 
   describe "::package_manager_activate" do
@@ -180,6 +200,30 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         env: {}
       )
       described_class.package_manager_activate("npm", "7.0.0")
+    end
+
+    it "retries once with COREPACK_INTEGRITY_KEYS when corepack signature verification fails" do
+      env = { "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm" }
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack prepare npm@11.9.0 --activate",
+        fingerprint: "corepack prepare <name>@<version> --activate",
+        env: env
+      ).ordered.and_raise(
+        StandardError.new(
+          "Preparing npm@11.9.0 for immediate activation...\n" \
+          "Internal Error: No compatible signature found in package metadata"
+        )
+      )
+
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack prepare npm@11.9.0 --activate",
+        fingerprint: "corepack prepare <name>@<version> --activate",
+        env: env.merge("COREPACK_INTEGRITY_KEYS" => "")
+      ).ordered.and_return("Preparing npm@11.9.0 for immediate activation...")
+
+      expect(described_class.package_manager_activate("npm", "11.9.0", env: env))
+        .to eq("Preparing npm@11.9.0 for immediate activation...")
     end
   end
 
@@ -238,6 +282,26 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       ).ordered.and_return("11.9.0\n")
 
       expect(described_class.package_manager_run_command("npm", "-v", env: env)).to eq("11.9.0")
+    end
+
+    it "fails closed without retrying when merged COREPACK_INTEGRITY_KEYS are present" do
+      merged_keys = JSON.generate("npm" => [{ "keyid" => "SHA256:merged", "key" => "abc" }])
+      env = {
+        "COREPACK_NPM_REGISTRY" => "https://packages.example.com/artifactory/api/npm/npm",
+        "COREPACK_INTEGRITY_KEYS" => merged_keys
+      }
+      error = StandardError.new("Internal Error: No compatible signature found in package metadata")
+
+      # Only one attempt: with merged keys already set we never disable verification.
+      expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        "corepack npm -v",
+        fingerprint: "corepack npm -v",
+        env: env
+      ).once.and_raise(error)
+
+      expect do
+        described_class.package_manager_run_command("npm", "-v", env: env)
+      end.to raise_error(StandardError, /No compatible signature found in package metadata/)
     end
 
     it "does not retry for signature errors when no private registry env is configured" do
@@ -356,6 +420,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         # Log expectations
         expect(Dependabot.logger).to receive(:info).with("Installing \"npm@8.0.0\"")
+        allow(Dependabot.logger).to receive(:error)
         expect(Dependabot.logger).to receive(:error).with(
           "Error activating npm@8.0.0: Unexpected error"
         )
@@ -403,6 +468,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
 
         # Log expectations
         expect(Dependabot.logger).to receive(:info).with("Installing \"npm@8.0.0\"")
+        allow(Dependabot.logger).to receive(:error)
         expect(Dependabot.logger).to receive(:error).with("Error activating npm@8.0.0: Corepack failed")
         expect(Dependabot.logger).to receive(:info).with(
           "Falling back to activate the currently installed version of npm."
@@ -426,68 +492,43 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         }
       end
 
-      it "passes private registry env vars to fallback activation" do
+      it "retries activation with COREPACK_INTEGRITY_KEYS disabled instead of falling back" do
+        retry_env = private_registry_env.merge("COREPACK_INTEGRITY_KEYS" => "")
+
         # First call: corepack prepare npm@10.0.0 --activate WITH private registry env
-        # Fails with signature error (Artifactory strips signatures)
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+        # Fails with signature error (Artifactory strips signatures from its version endpoint)
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
           "corepack prepare npm@10.0.0 --activate",
           fingerprint: "corepack prepare <name>@<version> --activate",
           env: private_registry_env
-        ).and_raise(
+        ).ordered.and_raise(
           StandardError,
           "Preparing npm@10.0.0 for immediate activation...\n" \
           "Internal Error: No compatible signature found in package metadata"
         )
 
-        # Fallback: npm -v returns the container's installed version
+        # Retry: same command with signature verification disabled succeeds
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack prepare npm@10.0.0 --activate",
+          fingerprint: "corepack prepare <name>@<version> --activate",
+          env: retry_env
+        ).ordered.and_return("Preparing npm@10.0.0 for immediate activation...")
+
+        # package_manager_version after successful activation
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack npm -v",
+          fingerprint: "corepack npm -v",
+          env: private_registry_env
+        ).and_return("10.0.0")
+
+        # It must not fall back to the locally installed npm version
+        expect(Dependabot::SharedHelpers).not_to receive(:run_shell_command).with(
           "npm -v",
           fingerprint: "npm -v"
-        ).and_return("11.9.0")
-
-        # Fallback must use the same private registry env vars
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack prepare npm@11.9.0 --activate",
-          fingerprint: "corepack prepare <name>@<version> --activate",
-          env: private_registry_env
-        ).and_return("Preparing npm@11.9.0 for immediate activation...")
-
-        # package_manager_version after fallback
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
-          "corepack npm -v",
-          fingerprint: "corepack npm -v",
-          env: private_registry_env
-        ).and_return("11.9.0")
-
-        # Log expectations
-        expect(Dependabot.logger).to receive(:info).with("Installing \"npm@10.0.0\"")
-        expect(Dependabot.logger).to receive(:error).with(
-          a_string_matching(/Error activating npm@10.0.0:.*No compatible signature found/m)
         )
-        expect(Dependabot.logger).to receive(:info).with(
-          "Falling back to activate the currently installed version of npm."
-        )
-        expect(Dependabot.logger).to receive(:info).with(
-          "Activating currently installed version of npm: 11.9.0"
-        )
-        expect(Dependabot.logger).to receive(:info).with("Fetching version for package manager: npm")
-        expect(Dependabot.logger).to receive(:info).with("Installed version of npm: 11.9.0")
 
         result = described_class.install("npm", "10.0.0", env: private_registry_env)
-        expect(result).to eq("11.9.0")
-
-        # Verify the fallback call received the private registry env
-        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
-          "corepack prepare npm@11.9.0 --activate",
-          fingerprint: "corepack prepare <name>@<version> --activate",
-          env: private_registry_env
-        )
-
-        expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
-          "corepack npm -v",
-          fingerprint: "corepack npm -v",
-          env: private_registry_env
-        )
+        expect(result).to eq("10.0.0")
       end
 
       it "passes private registry env vars to fallback on unexpected output" do
@@ -722,11 +763,22 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         .with(:enable_private_registry_for_corepack).and_return(true)
       allow(Dependabot::Experiments).to receive(:enabled?)
         .with(:enable_corepack_for_npm_and_yarn).and_return(true)
+      # Building env for a replaces-base registry fetches Corepack signing keys.
+      # Stub the endpoints so these examples stay hermetic and don't hit the network.
+      stub_request(:get, %r{/-/npm/v1/keys\z})
+        .to_return(
+          status: 200,
+          body: JSON.generate("keys" => [{ "keyid" => "SHA256:test", "key" => "test-key" }])
+        )
+      # Ensure a fresh integrity-keys cache so the stubs are exercised each example.
+      Dependabot::NpmAndYarn::RegistryHelper.instance_variable_set(:@integrity_keys_cache, {})
     end
 
     after do
       described_class.dependency_files = []
       described_class.credentials = []
+      # Clear fake keys so they don't leak into later randomized specs.
+      Dependabot::NpmAndYarn::RegistryHelper.instance_variable_set(:@integrity_keys_cache, {})
     end
 
     describe ".build_corepack_env_variables" do
@@ -910,6 +962,18 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         described_class.run_npm_command("install")
       end
 
+      it "injects corepack env variables into the npm version probe" do
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |cmd, options|
+          expect(cmd).to eq("corepack npm -v")
+          expect(options[:env]["COREPACK_NPM_REGISTRY"])
+            .to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+          expect(options[:env]["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
+          "11.10.0\n"
+        end
+
+        expect(described_class.npm_version).to eq(Dependabot::NpmAndYarn::Version.new("11.10.0"))
+      end
+
       it "preserves manually provided env variables" do
         expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |_cmd, options|
           expect(options[:env]["CUSTOM_VAR"]).to eq("custom-value")
@@ -935,6 +999,18 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         end
 
         described_class.run_pnpm_command("install")
+      end
+
+      it "injects corepack env variables into the pnpm version probe" do
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command) do |cmd, options|
+          expect(cmd).to eq("corepack pnpm -v")
+          expect(options[:env]["COREPACK_NPM_REGISTRY"])
+            .to eq("https://jfrogghdemo.jfrog.io/artifactory/api/npm/npm-virtual")
+          expect(options[:env]["COREPACK_NPM_TOKEN"]).to eq("test-token-123")
+          "11.0.0\n"
+        end
+
+        expect(described_class.pnpm_version).to eq(Dependabot::NpmAndYarn::Version.new("11.0.0"))
       end
 
       context "when .npmrc registry has a trailing slash (e.g. CodeArtifact)" do
@@ -1044,7 +1120,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
       it "logs version and support decision, returns true" do
         allow(described_class).to receive(:run_single_yarn_command).with("--version").and_return("4.10.0")
         expect(Dependabot.logger).to receive(:info)
-          .with(a_string_including("Yarn 4.10.0").and(including("bypass the release-age gate for security updates")))
+          .with(a_string_including("Yarn 4.10.0").and(including("supports npmMinimalAgeGate")))
         expect(described_class.yarn_berry_supports_minimal_age_gate?).to be(true)
       end
     end
@@ -1066,6 +1142,146 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
         expect(Dependabot.logger).to receive(:warn).with(a_string_including("command failed"))
         expect(described_class.yarn_berry_supports_minimal_age_gate?).to be(false)
       end
+
+      it "warns that a configured gate may still block security updates" do
+        allow(described_class).to receive(:run_single_yarn_command)
+          .with("--version")
+          .and_raise(StandardError, "command failed")
+        expect(Dependabot.logger).to receive(:warn)
+          .with(a_string_including("may still block security updates"))
+        described_class.yarn_berry_supports_minimal_age_gate?
+      end
+    end
+  end
+
+  describe "::higher_release_age_gate" do
+    it "returns the cooldown when no user gate is configured" do
+      expect(described_class.higher_release_age_gate(7, nil)).to eq(7)
+    end
+
+    it "returns nil when the cooldown is nil" do
+      expect(described_class.higher_release_age_gate(nil, 10)).to be_nil
+    end
+
+    it "returns nil when the cooldown is zero" do
+      expect(described_class.higher_release_age_gate(0, nil)).to be_nil
+    end
+
+    it "returns nil when the cooldown is negative" do
+      expect(described_class.higher_release_age_gate(-5, nil)).to be_nil
+    end
+
+    it "overrides with the cooldown when it exceeds the user gate" do
+      expect(described_class.higher_release_age_gate(14, 7)).to eq(14)
+    end
+
+    it "leaves the user gate untouched when it is equal or longer" do
+      expect(described_class.higher_release_age_gate(7, 7)).to be_nil
+      expect(described_class.higher_release_age_gate(7, 30)).to be_nil
+    end
+
+    it "never overrides a non-numeric (Float::INFINITY) user gate" do
+      expect(described_class.higher_release_age_gate(10_000, Float::INFINITY)).to be_nil
+    end
+  end
+
+  describe "::max_configured_release_age" do
+    def file(name, content)
+      Dependabot::DependencyFile.new(name: name, content: content)
+    end
+
+    let(:npmrc_setting) do
+      described_class::ReleaseAgeGateSetting.new(filename: ".npmrc", key: "min-release-age", separator: "=")
+    end
+    let(:pnpm_settings) do
+      [
+        described_class::ReleaseAgeGateSetting.new(
+          filename: "pnpm-workspace.yaml", key: "minimumReleaseAge", separator: ":"
+        ),
+        described_class::ReleaseAgeGateSetting.new(
+          filename: ".npmrc", key: "minimum-release-age", separator: "="
+        )
+      ]
+    end
+
+    it "returns nil when no file matches a setting" do
+      files = [file("package.json", "{}")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to be_nil
+    end
+
+    it "returns nil when the matching file does not set the key" do
+      files = [file(".npmrc", "registry=https://example.com\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to be_nil
+    end
+
+    it "parses a bare integer value" do
+      files = [file(".npmrc", "min-release-age=30\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(30)
+    end
+
+    it "returns Float::INFINITY for a present-but-non-numeric value" do
+      files = [file(".npmrc", "min-release-age=7d\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(Float::INFINITY)
+    end
+
+    it "returns the largest value across multiple matching files" do
+      files = [
+        file("pnpm-workspace.yaml", "minimumReleaseAge: 60\n"),
+        file(".npmrc", "minimum-release-age=120\n")
+      ]
+      expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(120)
+    end
+
+    it "matches the key/separator per setting (YAML colon vs npmrc equals)" do
+      files = [file("pnpm-workspace.yaml", "minimumReleaseAge: 45\n")]
+      expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(45)
+    end
+
+    it "uses the last occurrence within a file (npmrc/INI last-key-wins)" do
+      files = [file(".npmrc", "min-release-age=30\nmin-release-age=3\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(3)
+    end
+
+    it "resolves the effective value from the last occurrence, even when non-numeric" do
+      files = [file(".npmrc", "min-release-age=30\nmin-release-age=soon\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(Float::INFINITY)
+    end
+
+    it "parses a YAML value with a trailing inline comment" do
+      files = [file("pnpm-workspace.yaml", "minimumReleaseAge: 4320 # 3 days\n")]
+      expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(4320)
+    end
+
+    it "parses an npmrc value with a trailing inline comment" do
+      files = [file(".npmrc", "min-release-age=30 # about a month\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(30)
+    end
+
+    it "parses an optionally quoted YAML key and value" do
+      files = [file("pnpm-workspace.yaml", "\"minimumReleaseAge\": \"20160\"\n")]
+      expect(described_class.max_configured_release_age(files, pnpm_settings)).to eq(20_160)
+    end
+
+    it "parses an npmrc value with a trailing semicolon comment" do
+      files = [file(".npmrc", "min-release-age=3 ; temporary\n")]
+      expect(described_class.max_configured_release_age(files, [npmrc_setting])).to eq(3)
+    end
+  end
+
+  describe "::npm_supports_min_release_age?" do
+    it "is true for npm 11.10.0 and newer" do
+      allow(described_class).to receive(:npm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.16.0"))
+      expect(described_class.npm_supports_min_release_age?).to be(true)
+    end
+
+    it "is false for npm older than 11.10.0" do
+      allow(described_class).to receive(:npm_version).and_return(Dependabot::NpmAndYarn::Version.new("11.9.0"))
+      expect(described_class.npm_supports_min_release_age?).to be(false)
+    end
+
+    it "is false when the npm version cannot be determined" do
+      allow(described_class).to receive(:npm_version).and_return(nil)
+      expect(described_class.npm_supports_min_release_age?).to be(false)
     end
   end
 end

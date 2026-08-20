@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/metadata_finders"
@@ -33,9 +33,7 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_git_url
-        info = dependency.source_details
-
-        url = info&.fetch(:url, nil) || info&.fetch("url")
+        url = dependency.source_string("url")
         Source.from_url(url)
       end
 

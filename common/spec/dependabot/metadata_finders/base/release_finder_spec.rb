@@ -221,6 +221,42 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               end
             end
 
+            context "when the release name contains another dotted version" do
+              let(:github_response) do
+                releases = JSON.parse(fixture("github", "business_releases.json"))
+                releases.find { |release| release.fetch("tag_name") == "v1.8.0" }
+                        .store("name", "v1.8.0 - bump to Ruby 3.3")
+                releases.to_json
+              end
+
+              it "uses the release matched by the updated version" do
+                expect(releases_text)
+                  .to eq(
+                    "## v1.8.0 - bump to Ruby 3.3\n" \
+                    "- Add 2018-2027 TARGET holiday defintions\n" \
+                    "- Add 2018-2027 Bankgirot holiday defintions"
+                  )
+              end
+            end
+
+            context "when the release name looks like a different version" do
+              let(:github_response) do
+                releases = JSON.parse(fixture("github", "business_releases.json"))
+                releases.find { |release| release.fetch("tag_name") == "v1.8.0" }
+                        .store("name", "v1.8.0.1")
+                releases.to_json
+              end
+
+              it "uses the release matched by the updated version" do
+                expect(releases_text)
+                  .to eq(
+                    "## v1.8.0.1\n" \
+                    "- Add 2018-2027 TARGET holiday defintions\n" \
+                    "- Add 2018-2027 Bankgirot holiday defintions"
+                  )
+              end
+            end
+
             context "when the release is blank" do
               let(:dependency_version) { "1.7.0" }
               let(:dependency_previous_version) { "1.7.0.beta" }
@@ -303,6 +339,23 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
                   "## v1.7.0.alpha\n" \
                   "No release notes provided."
                 )
+            end
+
+            context "when an intermediate release name contains another dotted version" do
+              let(:dependency_previous_version) { "1.5.0" }
+              let(:github_response) do
+                releases = JSON.parse(fixture("github", "business_releases.json"))
+                releases.find { |release| release.fetch("tag_name") == "v1.6.0" }
+                        .store("name", "v1.6.0 - supports Ruby 3.3")
+                releases.to_json
+              end
+
+              it "uses the valid release tag when filtering" do
+                expect(releases_text).to include(
+                  "## v1.6.0 - supports Ruby 3.3",
+                  "Mad props to @greysteil and "
+                )
+              end
             end
 
             context "when all versions are blank or nil" do
@@ -587,6 +640,38 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             "## v1.4.0\n" \
             "Some release notes"
           )
+      end
+
+      context "with unordered and incomplete tag metadata" do
+        let(:dependency_previous_version) { "1.2.0" }
+        let(:gitlab_response) do
+          [
+            {
+              name: "v1.3.0",
+              commit: { authored_date: "2026-01-01T12:00:00Z" },
+              release: { tag_name: "v1.3.0", description: "Notes for 1.3.0" }
+            },
+            {
+              name: "v9.0.0",
+              commit: { authored_date: "2026-01-03T12:00:00Z" }
+            },
+            {
+              name: "v1.4.0",
+              commit: { authored_date: "2026-01-02T12:00:00Z" },
+              release: { tag_name: "v1.4.0", description: nil }
+            }
+          ].to_json
+        end
+
+        it "sorts releases and ignores tags without release metadata" do
+          expect(releases_text)
+            .to eq(
+              "## v1.4.0\n" \
+              "No release notes provided.\n\n" \
+              "## v1.3.0\n" \
+              "Notes for 1.3.0"
+            )
+        end
       end
     end
 

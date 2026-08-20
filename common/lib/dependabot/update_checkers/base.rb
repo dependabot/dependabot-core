@@ -177,7 +177,10 @@ module Dependabot
         [] # return an empty array for ecosystems that don't support this yet
       end
 
-      sig { params(_updated_version: String).returns(T.nilable(String)) }
+      sig do
+        params(_updated_version: T.any(String, Gem::Version))
+          .returns(T.nilable(T.any(String, Gem::Version)))
+      end
       def latest_resolvable_previous_version(_updated_version)
         dependency.version
       end
@@ -253,7 +256,7 @@ module Dependabot
       sig { returns(Dependabot::Dependency) }
       def updated_dependency_without_unlock
         version = latest_resolvable_version_with_no_unlock.to_s
-        previous_version = latest_resolvable_previous_version(version)
+        previous_version = latest_resolvable_previous_version(version)&.to_s
 
         Dependency.new(
           name: dependency.name,
@@ -270,7 +273,7 @@ module Dependabot
       sig { returns(Dependabot::Dependency) }
       def updated_dependency_with_own_req_unlock
         version = preferred_resolvable_version.to_s
-        previous_version = latest_resolvable_previous_version(version)
+        previous_version = latest_resolvable_previous_version(version)&.to_s
 
         Dependency.new(
           name: dependency.name,
@@ -379,7 +382,7 @@ module Dependabot
           return false
         end
 
-        updated_requirements.none? { |r| r[:requirement] == :unfixable }
+        updated_requirements.none? { |r| r.requirement == :unfixable }
       end
 
       sig { returns(T::Boolean) }
@@ -415,7 +418,7 @@ module Dependabot
       def version_from_requirements
         @version_from_requirements ||=
           T.let(
-            dependency.requirements.filter_map { |r| r.fetch(:requirement) }
+            dependency.requirements.filter_map(&:requirement_string)
                       .flat_map { |req_str| requirement_class.requirements_array(req_str) }
                       .flat_map(&:requirements)
                       .reject { |req_array| req_array.first.start_with?("<") }
@@ -429,7 +432,7 @@ module Dependabot
       def requirements_can_update?
         return false if changed_requirements.none?
 
-        changed_requirements.none? { |r| r[:requirement] == :unfixable }
+        changed_requirements.none? { |r| r.requirement == :unfixable }
       end
     end
   end

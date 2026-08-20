@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -10,7 +10,7 @@ require "dependabot/update_checkers/base"
 
 module Dependabot
   module Cargo
-    class UpdateChecker < Dependabot::UpdateCheckers::Base
+    class UpdateChecker < Dependabot::UpdateCheckers::Base # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
       require_relative "update_checker/latest_version_finder"
@@ -18,9 +18,49 @@ module Dependabot
       require_relative "update_checker/version_resolver"
       require_relative "update_checker/file_preparer"
 
+      sig { override.returns(T::Boolean) }
+      def up_to_date?
+        return super unless multiple_locked_versions?
+
+        raise Dependabot::AllVersionsIgnored if only_ignored_updates_remaining?
+
+        all_lines_current?
+      end
+
+      sig { override.params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Boolean) }
+      def can_update?(requirements_to_unlock:)
+        return super unless multiple_locked_versions?
+
+        results, ignored_count = locked_version_results(false) do |checker|
+          checker.can_update?(requirements_to_unlock: requirements_to_unlock)
+        end
+        updatable = results.any?
+        raise Dependabot::AllVersionsIgnored if ignored_count.positive? && !updatable
+
+        updatable
+      end
+
+      sig do
+        override.params(requirements_to_unlock: T.nilable(Symbol))
+                .returns(T::Array[Dependabot::Dependency])
+      end
+      def updated_dependencies(requirements_to_unlock:)
+        return super unless multiple_locked_versions?
+
+        results, ignored_count = locked_version_results([]) do |checker|
+          checker.updated_dependencies(requirements_to_unlock: requirements_to_unlock)
+        end
+        updates = results.flatten
+        raise Dependabot::AllVersionsIgnored if ignored_count.positive? && updates.empty?
+
+        updates
+      end
+
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_version
         return if path_dependency?
+
+        raise Dependabot::AllVersionsIgnored if multiple_locked_versions? && only_ignored_updates_remaining?
 
         @latest_version = T.let(
           if git_dependency?
@@ -57,6 +97,8 @@ module Dependabot
 
       sig { override.returns(T.nilable(Gem::Version)) }
       def lowest_security_fix_version
+        raise Dependabot::AllVersionsIgnored if multiple_locked_versions? && only_ignored_updates_remaining?
+
         latest_version_finder.lowest_security_fix_version
       end
 
@@ -179,7 +221,8 @@ module Dependabot
         # of the latest tag that looks like a version.
         if git_commit_checker.pinned_ref_looks_like_version?
           latest_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
-          return latest_tag&.fetch(:commit_sha) || dependency.version
+          commit_sha = latest_tag && tag_commit_sha(latest_tag)
+          return commit_sha || dependency.version
         end
 
         # If the dependency is pinned to a tag that doesn't look like a
@@ -199,7 +242,7 @@ module Dependabot
         if git_commit_checker.pinned_ref_looks_like_version? &&
            latest_git_tag_is_resolvable?
           new_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
-          return T.must(new_tag).fetch(:commit_sha)
+          return T.must(tag_commit_sha(T.must(new_tag)))
         end
 
         # If the dependency is pinned then there's nothing we can do.
@@ -228,7 +271,7 @@ module Dependabot
           dependency_files: dependency_files,
           dependency: dependency,
           unlock_requirement: true,
-          replacement_git_pin: replacement_tag.fetch(:tag)
+          replacement_git_pin: tag_name(replacement_tag)
         ).prepared_dependency_files
 
         VersionResolver.new(
@@ -311,7 +354,7 @@ module Dependabot
         latest_resolvable_version
       end
 
-      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.anything])) }
+      sig { returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash)) }
       def updated_source
         # Never need to update source, unless a git_dependency
         return dependency_source_details unless git_dependency?
@@ -320,16 +363,51 @@ module Dependabot
         if git_commit_checker.pinned_ref_looks_like_version? &&
            latest_git_tag_is_resolvable?
           new_tag = T.must(git_commit_checker.local_tag_for_latest_version(update_cooldown))
-          return T.must(dependency_source_details).merge(ref: new_tag.fetch(:tag))
+          return source_with_ref(T.must(dependency_source_details), tag_name(new_tag))
         end
 
         # Otherwise return the original source
         dependency_source_details
       end
 
-      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.anything])) }
+      sig { returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash)) }
       def dependency_source_details
         dependency.source_details
+      end
+
+      sig do
+        params(
+          source: Dependabot::DependencyRequirement::ObjectHash,
+          ref: String
+        ).returns(Dependabot::DependencyRequirement::ObjectHash)
+      end
+      def source_with_ref(source, ref)
+        updated_source = source.dup
+        key = if source.key?(:ref)
+                :ref
+              elsif source.key?("ref")
+                "ref"
+              elsif source.keys.any?(Symbol)
+                :ref
+              else
+                "ref"
+              end
+        updated_source[key] = ref
+        updated_source
+      end
+
+      sig { params(tag: T::Hash[Symbol, Object]).returns(String) }
+      def tag_name(tag)
+        return tag.tag if tag.is_a?(Dependabot::GitTagDetails)
+
+        T.cast(tag.fetch(:tag), String)
+      end
+
+      sig { params(tag: T::Hash[Symbol, Object]).returns(T.nilable(String)) }
+      def tag_commit_sha(tag)
+        return tag.commit_sha if tag.is_a?(Dependabot::GitTagDetails)
+
+        T.cast(tag[:commit_sha], T.nilable(String))
       end
 
       sig { returns(T::Boolean) }
@@ -347,6 +425,113 @@ module Dependabot
       sig { returns(T::Boolean) }
       def path_dependency?
         dependency.source_type == "path"
+      end
+
+      sig { returns(T::Boolean) }
+      def multiple_locked_versions?
+        sources = locked_version_dependencies.map { |candidate| candidate.metadata[:cargo_package_source] }.uniq
+        !dependency.top_level? && locked_version_dependencies.length > 1 && sources.one?
+      end
+
+      sig { returns(T::Array[Dependabot::Dependency]) }
+      def locked_version_dependencies
+        @locked_version_dependencies ||= T.let(
+          begin
+            all_versions = dependency.metadata[:all_versions]
+            candidates = all_versions.is_a?(Array) ? all_versions.grep(Dependabot::Dependency) : []
+            numeric_candidates = candidates.select do |candidate|
+              !candidate.top_level? && version_class.correct?(candidate.version)
+            end
+            numeric_candidates.uniq { |candidate| [candidate.version, candidate.metadata[:cargo_package_source]] }
+          end,
+          T.nilable(T::Array[Dependabot::Dependency])
+        )
+      end
+
+      sig { returns(T::Array[Dependabot::Cargo::UpdateChecker]) }
+      def locked_version_checkers
+        @locked_version_checkers ||= T.let(
+          locked_version_dependencies_to_check.map do |locked_dependency|
+            self.class.new(
+              dependency: locked_dependency,
+              dependency_files: dependency_files,
+              repo_contents_path: repo_contents_path,
+              credentials: credentials,
+              ignored_versions: ignored_versions,
+              security_advisories: security_advisories,
+              raise_on_ignored: raise_on_ignored,
+              requirements_update_strategy: requirements_update_strategy,
+              dependency_group: dependency_group,
+              update_cooldown: update_cooldown,
+              options: options
+            )
+          end,
+          T.nilable(T::Array[Dependabot::Cargo::UpdateChecker])
+        )
+      end
+
+      # The operations layer only rescues AllVersionsIgnored around its
+      # preflight probes (latest_version, and lowest_security_fix_version for
+      # security jobs); anywhere else the error halts the whole update run.
+      # These helpers let those probes raise when ignored lines leave nothing
+      # actionable, so a mixed ignored/at-ceiling dependency surfaces as a
+      # clean ignored skip, and the aggregate overrides below can never be
+      # the first place the error appears.
+      sig { returns(T::Boolean) }
+      def only_ignored_updates_remaining?
+        evaluate_locked_line_currency
+        T.must(@only_ignored_updates_remaining)
+      end
+
+      sig { returns(T::Boolean) }
+      def all_lines_current?
+        evaluate_locked_line_currency
+        T.must(@all_lines_current)
+      end
+
+      sig { void }
+      def evaluate_locked_line_currency
+        return if defined?(@all_lines_current)
+
+        results, ignored_count = locked_version_results(true) do |checker|
+          checker.up_to_date? || checker.latest_resolvable_version&.to_s == checker.dependency.version
+        end
+        @all_lines_current = T.let(results.all?, T.nilable(T::Boolean))
+        @only_ignored_updates_remaining = T.let(ignored_count.positive? && results.all?, T.nilable(T::Boolean))
+      end
+
+      # Evaluates the block for every locked-line checker, substituting
+      # ignored_result for lines whose updates are all ignored. Returns the
+      # results alongside the ignored-line count so callers can re-raise
+      # AllVersionsIgnored when ignored lines exist and no other line yields
+      # an actionable result.
+      sig do
+        type_parameters(:U)
+          .params(
+            ignored_result: T.type_parameter(:U),
+            _blk: T.proc.params(checker: Dependabot::Cargo::UpdateChecker).returns(T.type_parameter(:U))
+          ).returns([T::Array[T.type_parameter(:U)], Integer])
+      end
+      def locked_version_results(ignored_result, &_blk)
+        ignored_count = 0
+        results = locked_version_checkers.map do |checker|
+          yield(checker)
+        rescue Dependabot::AllVersionsIgnored
+          ignored_count += 1
+          ignored_result
+        end
+
+        [results, ignored_count]
+      end
+
+      sig { returns(T::Array[Dependabot::Dependency]) }
+      def locked_version_dependencies_to_check
+        return locked_version_dependencies if security_advisories.empty?
+
+        locked_version_dependencies.select do |candidate|
+          version = version_class.new(T.must(candidate.version))
+          security_advisories.any? { |advisory| advisory.vulnerable?(version) }
+        end
       end
 
       sig { returns(GitCommitChecker) }

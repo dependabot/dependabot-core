@@ -1,5 +1,1 @@
 inherit_from: ../.rubocop.yml
-
-Sorbet/ForbidTUnsafe:
-  Exclude:
-    - lib/dependabot/pub/helpers.rb

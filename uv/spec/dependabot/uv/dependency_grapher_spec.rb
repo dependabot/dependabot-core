@@ -46,6 +46,21 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
       expect(grapher.relevant_dependency_file).to eql(uv_lock_file)
     end
 
+    context "when uv.lock exists in a nested path" do
+      let(:nested_uv_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "projects/manufacturing/ops-assistant/uv.lock",
+          content: uv_lock_content,
+          directory: "/"
+        )
+      end
+      let(:dependency_files) { [pyproject_toml, nested_uv_lock_file] }
+
+      it "returns the nested uv.lock" do
+        expect(grapher.relevant_dependency_file).to eql(nested_uv_lock_file)
+      end
+    end
+
     context "when uv.lock is missing" do
       let(:dependency_files) { [pyproject_toml] }
 
@@ -63,6 +78,23 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
       it "raises a DependabotError" do
         expect { grapher.resolved_dependencies }
           .to raise_error(Dependabot::DependabotError, /No uv.lock present/)
+      end
+    end
+
+    context "when uv.lock exists in a nested path" do
+      let(:nested_uv_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "projects/manufacturing/ops-assistant/uv.lock",
+          content: uv_lock_content,
+          directory: "/"
+        )
+      end
+      let(:dependency_files) { [pyproject_toml, nested_uv_lock_file] }
+
+      it "extracts dependencies from the nested uv.lock" do
+        resolved_dependencies = grapher.resolved_dependencies
+
+        expect(resolved_dependencies).to include("pkg:pypi/flask@3.1.3")
       end
     end
 
@@ -303,6 +335,46 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
         # `not-a-member` has a virtual source but isn't in `[manifest] members`,
         # so it's treated as an ordinary (indirect) package rather than a root.
         expect(resolved.fetch("pkg:pypi/not-a-member@0.3.0").direct).to be(false)
+      end
+    end
+
+    context "when a pinned package also appears as a versionless back-reference (issue #15259)" do
+      # Regression test for https://github.com/dependabot/dependabot-core/issues/15259
+      #
+      # uv.lock records a package's resolved version only once, on its own
+      # `[[package]] version = …` table. Every dependent refers back to it
+      # without a version (`{ name = "authlib" }`), and the project metadata
+      # only carries a `specifier` (a range, not a pin). The grapher must emit
+      # exactly one versioned node for the package (from its `[[package]]`
+      # table) and never an unversioned node for the back-references or the
+      # `specifier` row — an unversioned node matches every advisory range and
+      # produces false-positive alerts.
+      #
+      # The fixture is real `uv lock` output for a project requiring
+      # `authlib>=1.6.12` and `starlette-authlib` (which itself requires
+      # `authlib<1.8`). authlib resolves to 1.7.2 and is back-referenced
+      # versionlessly by both the root and the transitive `starlette-authlib`.
+      let(:uv_lock_content) { fixture("dependency_grapher", "uv_lock_versionless_backreference.lock") }
+
+      it "emits authlib only at its locked version, with no unversioned node" do
+        resolved = grapher.resolved_dependencies
+
+        # authlib resolves to the single [[package]] version, so advisories
+        # whose range is entirely below 1.7.2 no longer match.
+        expect(resolved).to have_key("pkg:pypi/authlib@1.7.2")
+
+        # No unversioned authlib node is ever emitted.
+        expect(resolved.keys).not_to include("pkg:pypi/authlib")
+        expect(resolved.keys.grep(%r{pkg:pypi/authlib(@|$)})).to eq(["pkg:pypi/authlib@1.7.2"])
+      end
+
+      it "resolves versionless back-references to the locked authlib version" do
+        resolved = grapher.resolved_dependencies
+
+        # The transitive dependent's versionless `{ name = "authlib" }`
+        # back-reference resolves to the locked authlib version.
+        expect(resolved.fetch("pkg:pypi/starlette-authlib@0.3.20").dependencies)
+          .to include("pkg:pypi/authlib@1.7.2")
       end
     end
 

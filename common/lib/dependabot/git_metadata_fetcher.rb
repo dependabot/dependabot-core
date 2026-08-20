@@ -147,12 +147,6 @@ module Dependabot
         raise "Unexpected response: #{response_with_git.status} - #{response_with_git.body}"
       end
 
-      if uri.match?(/github\.com/i)
-        response = response_with_git.data
-        response[:response_headers] = response[:headers] unless response.nil?
-        raise Octokit::Error.from_response(response)
-      end
-
       raise "Server error at #{uri}: #{response_with_git.body}" if response_with_git.status >= 500
 
       raise Dependabot::GitDependenciesNotReachable, [uri]
@@ -213,7 +207,7 @@ module Dependabot
       )
     end
 
-    sig { params(uri: String).returns(T.untyped) }
+    sig { params(uri: String).returns(GitResponse) }
     def fetch_raw_upload_pack_with_git_for(uri)
       service_pack_uri = uri
       service_pack_uri += ".git" unless service_pack_uri.end_with?(".git") || skip_git_suffix(uri)
@@ -329,7 +323,7 @@ module Dependabot
       T.must(line.split.first).chars.last(40).join
     end
 
-    sig { returns(T::Hash[Symbol, T.untyped]) }
+    sig { returns(T::Hash[Symbol, Object]) }
     def excon_defaults
       # Some git hosts are slow when returning a large number of tags
       SharedHelpers.excon_defaults(read_timeout: 20)
@@ -344,7 +338,7 @@ module Dependabot
 
     # Added method to fetch tags with their creation dates from a git repository. In case
     # private registry is used, it will clone the repository and fetch tags with their creation dates.
-    sig { params(uri: String).returns(T.untyped) }
+    sig { params(uri: String).returns(GitResponse) }
     def fetch_tags_with_detail_from_git_for(uri)
       uri_ending_with_git = uri
       uri_ending_with_git += ".git" unless uri_ending_with_git.end_with?(".git") || skip_git_suffix(uri)

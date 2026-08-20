@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/utils"
+require "dependabot/dependency_requirement"
 require "dependabot/swift/requirement"
 require "sorbet-runtime"
 
@@ -11,35 +12,51 @@ module Dependabot
       extend T::Sig
 
       # TODO: Support pinning to specific revisions
-      REGEXP = T.let(
-        /(from.*|\.upToNextMajor.*|\.upToNextMinor.*|"[^"]*"\s*\.\.[\.<]\s*"[^"]*".*|exact.*|\.exact.*)/,
-        Regexp
-      )
+      REGEXP = /(from.*|\.upToNextMajor.*|\.upToNextMinor.*|"[^"]*"\s*\.\.[\.<]\s*"[^"]*".*|exact.*|\.exact.*)/
 
       sig { returns(String) }
       attr_reader :declaration
 
       sig do
-        type_parameters(:T)
-          .params(
-            requirements: T::Array[T::Hash[Symbol, T.untyped]],
-            _blk: T.proc.params(declaration: NativeRequirement).returns(String)
-          )
-          .returns(T::Array[T::Hash[Symbol, T.untyped]])
+        params(
+          requirements: T::Array[Dependabot::DependencyRequirement],
+          _blk: T.proc.params(declaration: NativeRequirement).returns(String)
+        )
+          .returns(T::Array[Dependabot::DependencyRequirement])
       end
       def self.map_requirements(requirements, &_blk)
         requirements.map do |requirement|
-          declaration = new(requirement[:metadata][:requirement_string])
+          metadata = requirement.metadata
+          next requirement unless metadata
+
+          requirement_string = requirement.metadata_string("requirement_string")
+          next requirement unless requirement_string
+
+          declaration = new(requirement_string)
 
           new_declaration = yield(declaration)
           new_requirement = new(new_declaration)
 
-          requirement.merge(
-            requirement: new_requirement.to_s,
-            metadata: { requirement_string: new_declaration }
+          Dependabot::DependencyRequirement.create(
+            requirement.merge(
+              requirement: new_requirement.to_s,
+              metadata: requirement_string_metadata(metadata, new_declaration)
+            )
           )
         end
       end
+
+      sig do
+        params(
+          metadata: Dependabot::DependencyRequirement::ObjectHash,
+          requirement_string: String
+        ).returns(Dependabot::DependencyRequirement::ObjectHash)
+      end
+      def self.requirement_string_metadata(metadata, requirement_string)
+        key = metadata.key?("requirement_string") ? "requirement_string" : :requirement_string
+        { key => requirement_string }
+      end
+      private_class_method :requirement_string_metadata
 
       sig { params(declaration: String).void }
       def initialize(declaration)

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -16,13 +16,13 @@ module Dependabot
       require_relative "file_parser"
       require_relative "file_fetcher/settings_file_parser"
 
-      SUPPORTED_LOCK_FILE_NAMES = T.let(%w(gradle.lockfile).freeze, T::Array[String])
+      SUPPORTED_LOCK_FILE_NAMES = %w(gradle.lockfile).freeze
 
       SUPPORTED_BUILD_FILE_NAMES =
-        T.let(%w(build.gradle build.gradle.kts).freeze, T::Array[String])
+        %w(build.gradle build.gradle.kts).freeze
 
       SUPPORTED_SETTINGS_FILE_NAMES =
-        T.let(%w(settings.gradle settings.gradle.kts).freeze, T::Array[String])
+        %w(settings.gradle settings.gradle.kts).freeze
 
       SUPPORTED_WRAPPER_FILES_PATH = %w(
         gradlew
@@ -33,7 +33,10 @@ module Dependabot
 
       # For now Gradle only supports library .toml files in the main gradle folder
       SUPPORTED_VERSION_CATALOG_FILE_PATH =
-        T.let(%w(/gradle/libs.versions.toml).freeze, T::Array[String])
+        %w(/gradle/libs.versions.toml).freeze
+
+      PLUGIN_SOURCE_SET_DIRS =
+        %w(src/main/java src/main/kotlin src/main/groovy src/main/resources).freeze
 
       sig do
         override
@@ -41,7 +44,7 @@ module Dependabot
             source: Dependabot::Source,
             credentials: T::Array[Dependabot::Credential],
             repo_contents_path: T.nilable(String),
-            options: T::Hash[String, String],
+            options: T::Hash[Symbol, Object],
             update_config: T.nilable(Dependabot::Config::UpdateConfig)
           )
           .void
@@ -49,7 +52,7 @@ module Dependabot
       def initialize(source:, credentials:, repo_contents_path: nil, options: {}, update_config: nil)
         super
 
-        @lockfile_name = T.let(T.must(SUPPORTED_LOCK_FILE_NAMES.first), String)
+        @lockfile_name = T.let(SUPPORTED_LOCK_FILE_NAMES.first, String)
         @buildfile_name = T.let(nil, T.nilable(String))
       end
 
@@ -88,8 +91,72 @@ module Dependabot
         files += subproject_buildfiles(root_dir)
         files += subproject_lockfiles(root_dir)
         files += dependency_script_plugins(root_dir)
+        files += convention_plugin_source_files(files, root_dir) if fetch_plugin_sources_for_lockfiles?
+
         files + included_builds(root_dir)
                 .flat_map { |dir| all_buildfiles_in_build(dir) }
+      end
+
+      sig { returns(T::Boolean) }
+      def fetch_plugin_sources_for_lockfiles?
+        Dependabot::Experiments.enabled?(:gradle_lockfile_updater)
+      end
+
+      # Only fetch source trees for *nested* project directories (e.g. "build-logic/convention"
+      # or "included/convention"), plus the root of a non-top-level build (e.g. "build-logic" or
+      # "buildSrc" itself), never the top-level repo root ("app" style modules of the outermost
+      # build). This targets the common convention-plugin module pattern - whether declared at an
+      # included/buildSrc build's own root or nested within it - without recursively scanning
+      # every ordinary top-level application module of the outermost build.
+      sig { params(files: T::Array[DependencyFile], root_dir: String).returns(T::Array[DependencyFile]) }
+      def convention_plugin_source_files(files, root_dir)
+        nested_plugin_project_dirs(files, root_dir).flat_map do |project_dir|
+          PLUGIN_SOURCE_SET_DIRS.flat_map do |relative_dir|
+            fetch_tree_support_files(clean_join([project_dir, relative_dir]))
+          end
+        end
+      end
+
+      sig { params(files: T::Array[DependencyFile], root_dir: String).returns(T::Array[String]) }
+      def nested_plugin_project_dirs(files, root_dir)
+        buildfile_dirs(files).select { |dir| plugin_source_eligible_dir?(dir, root_dir) }
+      end
+
+      # A directory is eligible for convention-plugin source scanning if it's nested below the
+      # outermost repo root (contains a "/"), or if it's the own root of a build that is itself
+      # nested (i.e. root_dir isn't the outermost "."), such as an included build or buildSrc.
+      sig { params(dir: String, root_dir: String).returns(T::Boolean) }
+      def plugin_source_eligible_dir?(dir, root_dir)
+        return true if root_dir != "." && dir == root_dir
+
+        dir.include?("/")
+      end
+
+      sig { params(files: T::Array[DependencyFile]).returns(T::Array[String]) }
+      def buildfile_dirs(files)
+        files.filter_map do |file|
+          next unless SUPPORTED_BUILD_FILE_NAMES.include?(File.basename(file.name))
+
+          clean_join([File.dirname(file.name)])
+        end
+      end
+
+      sig { params(dir: String).returns(T::Array[DependencyFile]) }
+      def fetch_tree_support_files(dir)
+        entries = repo_contents(dir: dir, raise_errors: false)
+        return [] if entries.empty?
+
+        entries.flat_map do |entry|
+          entry_path = clean_join([dir, entry.name])
+          if entry.type == "dir"
+            fetch_tree_support_files(entry_path)
+          else
+            file = fetch_support_file(entry_path)
+            file ? [file] : []
+          end
+        end
+      rescue Dependabot::DependencyFileNotFound
+        []
       end
 
       sig { params(root_dir: String).returns(T::Array[String]) }

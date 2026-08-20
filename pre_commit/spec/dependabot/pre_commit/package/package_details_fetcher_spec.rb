@@ -224,9 +224,18 @@ RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
       before do
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:local_tag_for_pinned_sha).and_return("v4.4.0")
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_tag_for_latest_version)
+          .and_return(
+            Dependabot::GitTagDetails.new(
+              tag: "v6.0.0",
+              version: Gem::Version.new("6.0.0"),
+              commit_sha: "latest_sha"
+            )
+          )
       end
 
-      it "returns the latest tagged version" do
+      it "converts the latest tagged version" do
         expect(commit_sha_release).to be_a(Dependabot::PreCommit::Version)
         expect(commit_sha_release.to_s).to eq("6.0.0")
       end
@@ -301,10 +310,34 @@ RSpec.describe Dependabot::PreCommit::Package::PackageDetailsFetcher do
 
     context "when pinned to a version tag" do
       let(:reference) { "v4.4.0" }
+      let(:latest_tag) do
+        Dependabot::GitTagDetails.new(
+          tag: "v6.0.0",
+          version: Gem::Version.new("6.0.0"),
+          commit_sha: "latest_sha"
+        )
+      end
 
-      it "returns the latest version" do
+      before do
+        allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
+          .to receive(:local_ref_for_latest_version_matching_existing_precision)
+          .and_return(latest_tag)
+      end
+
+      it "converts the latest version" do
         expect(version_tag_release).to be_a(Dependabot::PreCommit::Version)
         expect(version_tag_release.to_s).to eq("6.0.0")
+      end
+
+      context "when the latest version is a string" do
+        let(:latest_tag) do
+          { tag: "v6.0.0", version: "6.0.0", commit_sha: "latest_sha" }
+        end
+
+        it "converts the latest version" do
+          expect(version_tag_release).to be_a(Dependabot::PreCommit::Version)
+          expect(version_tag_release.to_s).to eq("6.0.0")
+        end
       end
     end
 

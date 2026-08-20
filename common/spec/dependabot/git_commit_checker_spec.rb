@@ -143,6 +143,20 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
+  describe "#dependency_source_details" do
+    subject(:source_details) { checker.dependency_source_details }
+
+    it "returns typed source details" do
+      expect(source_details).to be_a(described_class::SourceDetails)
+      expect(source_details).to have_attributes(
+        type: "git",
+        url: "https://github.com/gocardless/business",
+        branch: "master",
+        ref: "master"
+      )
+    end
+  end
+
   describe "#branch_or_ref_in_release?" do
     subject(:branch_or_ref_in_release?) { checker.branch_or_ref_in_release?(Dependabot::Version.new("1.5.0")) }
 
@@ -356,6 +370,47 @@ RSpec.describe Dependabot::GitCommitChecker do
           end
 
           it { is_expected.to be(true) }
+        end
+
+        context "when the source is GitLab" do
+          let(:source_url) { "https://gitlab.com/gocardless/business" }
+          let(:service_pack_url) do
+            "https://gitlab.com/gocardless/business.git/info/refs" \
+              "?service=git-upload-pack"
+          end
+          let(:comparison_commits) { [{}] }
+          let(:compare_same_ref) { false }
+          let(:comparison) do
+            Gitlab::ObjectifiedHash.new(
+              commits: comparison_commits,
+              compare_same_ref: compare_same_ref
+            )
+          end
+          let(:gitlab_client) do
+            double("GitlabWithRetries", compare: comparison)
+          end
+
+          before do
+            allow(Dependabot::Clients::GitlabWithRetries)
+              .to receive(:for_gitlab_dot_com)
+              .and_return(gitlab_client)
+          end
+
+          context "when the reference is behind the release" do
+            let(:comparison_commits) { [] }
+
+            it { is_expected.to be(true) }
+          end
+
+          context "when the reference is identical to the release" do
+            let(:compare_same_ref) { true }
+
+            it { is_expected.to be(true) }
+          end
+
+          context "when the reference is ahead of the release" do
+            it { is_expected.to be(false) }
+          end
         end
       end
     end
@@ -2281,10 +2336,8 @@ RSpec.describe Dependabot::GitCommitChecker do
         it "returns the releases" do
           releases = checker.send(:github_releases)
           expect(releases.length).to eq(2)
-          expect(releases.first[:tag_name]).to eq("v1.0.0")
-          expect(releases.first[:prerelease]).to be(false)
-          expect(releases.last[:tag_name]).to eq("v2.0.0-beta")
-          expect(releases.last[:prerelease]).to be(true)
+          expect(releases.first).to have_attributes(tag_name: "v1.0.0", prerelease: false)
+          expect(releases.last).to have_attributes(tag_name: "v2.0.0-beta", prerelease: true)
         end
 
         it "caches the result" do

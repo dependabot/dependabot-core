@@ -71,8 +71,8 @@ module Dependabot
           ).returns(String)
         end
         def replace_version_in_content(content:, dependency:, old_requirement:, new_requirement:)
-          old_version = T.must(old_requirement.requirement)
-          new_version = T.must(new_requirement.requirement)
+          old_version = string_requirement(old_requirement)
+          new_version = string_requirement(new_requirement)
 
           pattern = build_replacement_pattern(
             dependency_name: dependency.name,
@@ -85,6 +85,14 @@ module Dependabot
           )
 
           content.gsub(pattern, replacement)
+        end
+
+        sig { params(requirement: Dependabot::DependencyRequirement).returns(String) }
+        def string_requirement(requirement)
+          value = requirement.requirement
+          return value if value.is_a?(String)
+
+          raise TypeError, "pnpm workspace requirement must be a string"
         end
 
         sig { params(dependency_name: String, version: String).returns(Regexp) }

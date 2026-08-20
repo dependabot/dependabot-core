@@ -30,6 +30,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
       branch: nil
     }
   end
+  let(:source_details) { Dependabot::GitCommitChecker::SourceDetails.from_hash(dependency_source) }
   let(:dependency_version) do
     return unless Dependabot::PreCommit::Version.correct?(reference)
 
@@ -187,8 +188,7 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
           .and_return([v6_tag])
         allow_any_instance_of(Dependabot::GitCommitChecker) # rubocop:disable RSpec/AnyInstance
           .to receive(:dependency_source_details)
-          .and_return({ type: "git", url: "https://github.com/pre-commit/pre-commit-hooks",
-                        ref: reference, branch: nil })
+          .and_return(source_details)
         # Stub GitHub Releases (empty — forces git clone fallback)
         mock_client = instance_double(Octokit::Client, releases: [])
         allow(Dependabot::Clients::GithubWithRetries).to receive(:for_source).and_return(mock_client)
@@ -252,6 +252,55 @@ RSpec.describe Dependabot::PreCommit::UpdateChecker do
 
       it "updates the ref in the source" do
         expect(updated_requirements.first[:source][:ref]).not_to eq(reference)
+      end
+
+      context "when an earlier requirement has no source" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "https://github.com/#{dependency_name}",
+            version: dependency_version,
+            requirements: [
+              {
+                requirement: nil,
+                groups: [],
+                file: ".pre-commit-config.yaml",
+                source: nil
+              },
+              {
+                requirement: nil,
+                groups: [],
+                file: ".pre-commit-config.yaml",
+                source: dependency_source
+              }
+            ],
+            package_manager: "pre_commit"
+          )
+        end
+
+        it "leaves the source-less requirement unchanged" do
+          expect(updated_requirements.first).to eq(dependency.requirements.first)
+          expect(updated_requirements.last.source_string("ref")).not_to eq(reference)
+        end
+      end
+
+      context "with string-keyed source details" do
+        let(:dependency_source) do
+          {
+            "type" => "git",
+            "url" => "https://github.com/#{dependency_name}",
+            "ref" => reference,
+            "branch" => nil,
+            "custom" => "preserved"
+          }
+        end
+
+        it "preserves the source payload and key style" do
+          source = updated_requirements.first.source_hash
+
+          expect(source).to include("custom" => "preserved")
+          expect(source).to have_key("ref")
+          expect(source).not_to have_key(:ref)
+        end
       end
     end
 

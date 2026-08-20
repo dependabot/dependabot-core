@@ -12,15 +12,15 @@ module Dependabot
     class Requirement < Dependabot::Requirement
       extend T::Sig
 
-      AND_SEPARATOR = T.let(/(?<=[a-zA-Z0-9*])\s+(?:&+\s+)?(?!\s*[|-])/, Regexp)
-      OR_SEPARATOR = T.let(/(?<=[a-zA-Z0-9*])\s*\|+/, Regexp)
+      AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s+(?:&+\s+)?(?!\s*[|-])/
+      OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
 
       # Override the version pattern to allow a 'v' prefix
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
       version_pattern = "v?#{Bun::Version::VERSION_PATTERN}"
 
       PATTERN_RAW = T.let("\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze, String)
-      PATTERN = T.let(/\A#{PATTERN_RAW}\z/, Regexp)
+      PATTERN = /\A#{PATTERN_RAW}\z/
 
       sig do
         params(

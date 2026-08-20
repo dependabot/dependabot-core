@@ -25,10 +25,7 @@ module Dependabot
 
     class ConfigurationError < StandardError; end
 
-    PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE = T.let(
-      %w(bundler composer hex maven npm_and_yarn pip uv silent).freeze,
-      T::Array[String]
-    )
+    PACKAGE_MANAGERS_SUPPORTING_DEPENDENCY_TYPE = %w(bundler composer hex maven npm_and_yarn pip uv silent).freeze
 
     sig { params(job: Dependabot::Job).returns(Dependabot::DependencyGroupEngine) }
     def self.from_job_config(job:)
@@ -235,7 +232,10 @@ module Dependabot
         matching_deps = dependencies.select { |dep| parent_group.contains?(dep) }
 
         matching_deps.group_by(&:name).each do |dep_name, deps|
-          subgroup_name = "#{parent_group.name}/#{dep_name}"
+          subgroup_name = Dependabot::DependencyGroup.subgroup_name(
+            parent_name: parent_group.name,
+            dependency_name: dep_name
+          )
           existing_subgroup = @dependency_groups.find { |g| g.name == subgroup_name }
 
           if existing_subgroup

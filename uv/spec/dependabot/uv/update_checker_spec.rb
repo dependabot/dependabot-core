@@ -644,13 +644,66 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
           its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
 
-        context "when dealing with a non-library" do
+        context "when the project is not on PyPI but has library metadata" do
           before do
             stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
               .to_return(status: 404)
           end
 
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
+        context "when the project is on PyPI but description is dynamic" do
+          let(:pyproject_fixture_name) { "standard_python_dynamic_description.toml" }
+
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
+                status: 200,
+                body: fixture("pypi", "pypi_response_pendulum.json")
+              )
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
+        context "when dealing with a non-library" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
+                status: 200,
+                body: { info: { summary: "A completely different package" } }.to_json
+              )
+          end
+
           its([:requirement]) { is_expected.to eq("~=2.19.1") }
+        end
+
+        context "when the PyPI request raises Excon::Error::Timeout" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_raise(Excon::Error::Timeout.new("connection timeout"))
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
+        context "when the PyPI request raises Excon::Error::Socket" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_raise(Excon::Error::Socket.new(SocketError.new("getaddrinfo failed")))
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
+        context "when the PyPI request raises URI::InvalidURIError" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_raise(URI::InvalidURIError.new("bad URI"))
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
       end
 
@@ -701,10 +754,36 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
           its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
         end
 
-        context "when dealing with a non-library" do
+        context "when the project is not on PyPI but has library metadata" do
           before do
             stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
               .to_return(status: 404)
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
+        context "when the project is on PyPI but description is dynamic" do
+          let(:pyproject_fixture_name) { "build_system_dynamic_description.toml" }
+
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
+                status: 200,
+                body: fixture("pypi", "pypi_response_pendulum.json")
+              )
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1.0,<2.20") }
+        end
+
+        context "when dealing with a non-library" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
+              .to_return(
+                status: 200,
+                body: { info: { summary: "A completely different package" } }.to_json
+              )
           end
 
           its([:requirement]) { is_expected.to eq("~=2.19.1") }
@@ -782,8 +861,14 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
       end
 
       before do
+        # Stub a published package with a different summary so the project is
+        # treated as an application. This case is about resolving the workspace
+        # member's file path, not about library detection.
         stub_request(:get, "https://pypi.org/pypi/pendulum/json/")
-          .to_return(status: 404)
+          .to_return(
+            status: 200,
+            body: { info: { summary: "A completely different package" } }.to_json
+          )
       end
 
       it "updates the workspace member pyproject requirement" do

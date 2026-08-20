@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -17,7 +17,7 @@ module Dependabot
       PLUGINS_SBT_FILENAME = "project/plugins.sbt"
       BUILD_PROPERTIES_FILENAME = "project/build.properties"
       # Directories that are part of the SBT build structure, not subprojects
-      NON_SUBPROJECT_DIRS = T.let(%w(project target .git .github).freeze, T::Array[String])
+      NON_SUBPROJECT_DIRS = %w(project target .git .github).freeze
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
       def self.required_files_in?(filenames)

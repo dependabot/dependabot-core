@@ -55,8 +55,7 @@ public class SerializationTests : TestBase
                     "type": "git_source",
                     "replaces-base": false
                   }
-                ],
-                "max-updater-run-time": 0
+                                ]
               }
             }
             """);

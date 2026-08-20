@@ -22,7 +22,7 @@ module Dependabot
             dependency_files: T::Array[Dependabot::DependencyFile],
             credentials: T::Array[Dependabot::Credential],
             ignored_versions: T::Array[String],
-            target_version_details: T.nilable(T::Hash[T.untyped, T.untyped]),
+            target_version_details: T.nilable(UpdateChecker::VersionDetails),
             update_cooldown: T.nilable(Dependabot::Package::ReleaseCooldownOptions)
           ).void
         end
@@ -38,8 +38,10 @@ module Dependabot
           @dependency_files = dependency_files
           @credentials      = credentials
           @ignored_versions = ignored_versions
-          @target_version   = T.let(target_version_details&.fetch(:version), T.nilable(Dependabot::Maven::Version))
-          @source_url       = T.let(target_version_details&.fetch(:source_url), T.nilable(String))
+          target_version = target_version_details&.fetch(:version)
+          target_version = nil unless target_version.is_a?(Dependabot::Maven::Version)
+          @target_version = T.let(target_version, T.nilable(Dependabot::Maven::Version))
+          @source_url = T.let(target_version_details&.fetch(:source_url), T.nilable(String))
           @update_cooldown = update_cooldown
           @property_value_finder = T.let(nil, T.nilable(Dependabot::Maven::FileParser::PropertyValueFinder))
         end
@@ -120,9 +122,9 @@ module Dependabot
               source: nil
             ).parse.select do |dep|
               dep.requirements.any? do |r|
-                next unless r.dig(:metadata, :property_name) == property_name
+                next unless r.metadata_string("property_name") == property_name
 
-                r.dig(:metadata, :property_source) == property_source
+                r.metadata_string("property_source") == property_source
               end
             end,
             T.nilable(T::Array[Dependabot::Dependency])
@@ -133,8 +135,8 @@ module Dependabot
         def property_name
           @property_name ||= T.let(
             dependency.requirements
-                      .find { |r| r.dig(:metadata, :property_name) }
-                      &.dig(:metadata, :property_name),
+                      .find { |r| r.metadata_string("property_name") }
+                      &.metadata_string("property_name"),
             T.nilable(String)
           )
 
@@ -147,8 +149,8 @@ module Dependabot
         def property_source
           @property_source ||= T.let(
             dependency.requirements
-                      .find { |r| r.dig(:metadata, :property_name) == property_name }
-                      &.dig(:metadata, :property_source),
+                      .find { |r| r.metadata_string("property_name") == property_name }
+                      &.metadata_string("property_source"),
             T.nilable(String)
           )
         end
@@ -190,10 +192,10 @@ module Dependabot
         sig { params(dep: Dependabot::Dependency).returns(String) }
         def current_property_value(dep)
           declaring_requirement = declaring_property_requirement(dep)
-          callsite_pom = dependency_files.find { |f| f.name == declaring_requirement.fetch(:file) }
+          callsite_pom = dependency_files.find { |f| f.name == declaring_requirement.file }
           unless callsite_pom
             raise DependencyFileNotEvaluatable,
-                  "POM not found: #{declaring_requirement.fetch(:file)} for property #{property_name}"
+                  "POM not found: #{declaring_requirement.file} for property #{property_name}"
           end
 
           property_value =
@@ -206,13 +208,13 @@ module Dependabot
           raise DependencyFileNotEvaluatable, "Property not found: #{property_name}"
         end
 
-        sig { params(dep: Dependabot::Dependency).returns(T::Hash[Symbol, T.untyped]) }
+        sig { params(dep: Dependabot::Dependency).returns(Dependabot::DependencyRequirement) }
         def declaring_property_requirement(dep)
           declaring_requirement =
             dep.requirements.find do |r|
-              next false unless r.dig(:metadata, :property_name) == property_name
+              next false unless r.metadata_string("property_name") == property_name
 
-              r.dig(:metadata, :property_source) == property_source
+              r.metadata_string("property_source") == property_source
             end
 
           return declaring_requirement if declaring_requirement
@@ -221,9 +223,9 @@ module Dependabot
                 "Requirement not found for property #{property_name} from #{property_source || 'unknown source'}"
         end
 
-        sig { params(dep: Dependabot::Dependency).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { params(dep: Dependabot::Dependency).returns(T::Array[Dependabot::DependencyRequirement]) }
         def updated_requirements(dep)
-          @updated_requirements ||= T.let({}, T.nilable(T::Hash[String, T::Array[T::Hash[Symbol, T.untyped]]]))
+          @updated_requirements ||= T.let({}, T.nilable(T::Hash[String, T::Array[Dependabot::DependencyRequirement]]))
           @updated_requirements[dep.name] ||=
             RequirementsUpdater.new(
               requirements: dep.requirements,

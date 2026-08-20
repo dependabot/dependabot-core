@@ -109,6 +109,77 @@ RSpec.describe Dependabot::Julia::UpdateChecker do
     end
   end
 
+  describe "#latest_version with a cooldown configured" do
+    subject(:latest_version) { cooldown_checker.latest_version }
+
+    let(:cooldown_checker) do
+      described_class.new(
+        dependency: dependency,
+        dependency_files: dependency_files,
+        credentials: credentials,
+        ignored_versions: ignored_versions,
+        raise_on_ignored: false,
+        security_advisories: security_advisories,
+        update_cooldown: Dependabot::Package::ReleaseCooldownOptions.new(
+          default_days: 7,
+          include: include_patterns,
+          exclude: exclude_patterns
+        ),
+        options: {}
+      )
+    end
+
+    let(:include_patterns) { [] }
+    let(:exclude_patterns) { [] }
+
+    before do
+      allow_any_instance_of(Dependabot::Julia::Package::PackageDetailsFetcher)
+        .to receive(:fetch_package_releases)
+        .and_return(
+          [
+            Dependabot::Package::PackageRelease.new(
+              version: Dependabot::Julia::Version.new("0.5.0"),
+              released_at: released_at
+            )
+          ]
+        )
+    end
+
+    # ReleaseCooldownOptions stores include/exclude as Sets, so passing them
+    # through unconverted used to raise a TypeError from the finder's T.cast.
+    context "when the release is outside the cooldown window" do
+      let(:released_at) { Time.now - (30 * 24 * 60 * 60) }
+
+      it "returns the version" do
+        expect(latest_version).to eq(Dependabot::Julia::Version.new("0.5.0"))
+      end
+    end
+
+    context "when the release is inside the cooldown window" do
+      let(:released_at) { Time.now - (24 * 60 * 60) }
+
+      it "filters the version out" do
+        expect(latest_version).to be_nil
+      end
+
+      context "when the dependency is excluded from the cooldown" do
+        let(:exclude_patterns) { ["Example"] }
+
+        it "returns the version" do
+          expect(latest_version).to eq(Dependabot::Julia::Version.new("0.5.0"))
+        end
+      end
+
+      context "when the dependency is not in the include list" do
+        let(:include_patterns) { ["SomethingElse"] }
+
+        it "returns the version" do
+          expect(latest_version).to eq(Dependabot::Julia::Version.new("0.5.0"))
+        end
+      end
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
@@ -128,6 +199,83 @@ RSpec.describe Dependabot::Julia::UpdateChecker do
       it "respects version constraints" do
         result = latest_resolvable_version_with_no_unlock
         expect(result).to be_a(Gem::Version).or(be_nil)
+      end
+    end
+
+    context "with mocked releases" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Example",
+          version: current_version,
+          requirements: [{
+            file: "Project.toml",
+            requirement: current_requirement,
+            groups: ["dependencies"],
+            source: nil
+          }],
+          package_manager: "julia",
+          metadata: { julia_uuid: "7876af07-990d-54b4-ab0e-23690620f79a" }
+        )
+      end
+
+      before do
+        allow_any_instance_of(Dependabot::Julia::Package::PackageDetailsFetcher)
+          .to receive(:fetch_package_releases)
+          .and_return(
+            available_versions.map do |v|
+              Dependabot::Package::PackageRelease.new(version: Dependabot::Julia::Version.new(v))
+            end
+          )
+      end
+
+      context "with an implicit caret requirement" do
+        let(:current_version) { "1.2.0" }
+        let(:current_requirement) { "1.2" }
+        let(:available_versions) { %w(1.2.5 1.5.0 2.1.0) }
+
+        it "returns the highest version within the caret range, not just latest" do
+          expect(latest_resolvable_version_with_no_unlock).to eq(Dependabot::Julia::Version.new("1.5.0"))
+        end
+      end
+
+      context "with a tilde requirement" do
+        let(:current_version) { "1.2.0" }
+        let(:current_requirement) { "~1.2" }
+        let(:available_versions) { %w(1.2.5 1.3.0) }
+
+        it "returns the highest patch within the tilde range" do
+          expect(latest_resolvable_version_with_no_unlock).to eq(Dependabot::Julia::Version.new("1.2.5"))
+        end
+      end
+
+      context "with a union requirement" do
+        let(:current_version) { "0.34.1" }
+        let(:current_requirement) { "0.34, 0.35" }
+        let(:available_versions) { %w(0.34.2 0.35.3 0.36.0) }
+
+        it "does not raise and returns the highest version in the union" do
+          expect(latest_resolvable_version_with_no_unlock).to eq(Dependabot::Julia::Version.new("0.35.3"))
+        end
+      end
+
+      context "when no available version satisfies the requirement" do
+        let(:current_version) { "1.2.0" }
+        let(:current_requirement) { "1.2" }
+        let(:available_versions) { %w(2.1.0) }
+
+        it "returns nil" do
+          expect(latest_resolvable_version_with_no_unlock).to be_nil
+        end
+      end
+
+      context "with a wildcard requirement" do
+        let(:current_version) { "1.2.0" }
+        let(:current_requirement) { "*" }
+        let(:available_versions) { %w(1.2.5 3.0.0) }
+
+        it "returns the latest version" do
+          expect(latest_resolvable_version_with_no_unlock).to eq(Dependabot::Julia::Version.new("3.0.0"))
+        end
       end
     end
   end

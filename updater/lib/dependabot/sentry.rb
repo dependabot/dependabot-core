@@ -11,7 +11,7 @@ module Dependabot
 
     # The default processor chain.
     # This chain is applied in the order of the array.
-    sig { params(event: ::Sentry::Event, hint: T::Hash[Symbol, T.untyped]).returns(::Sentry::Event) }
+    sig { params(event: ::Sentry::Event, hint: T::Hash[Symbol, Object]).returns(::Sentry::Event) }
     def self.process_chain(event, hint)
       [ExceptionSanitizer, SentryContext].each(&:new).reduce(event) do |acc, processor|
         processor.new.process(acc, hint)

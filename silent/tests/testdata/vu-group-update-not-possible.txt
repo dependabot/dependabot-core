@@ -35,6 +35,8 @@ stdout -count=1 mark_as_processed
 -- input-up-to-date.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   source:
     directory: "/up-to-date"
     provider: example
@@ -76,6 +78,8 @@ THIS IS NOT JSON
 -- input-errored.yml --
 job:
   package-manager: "silent"
+  cooldown:
+    default-days: 0
   source:
     directory: "/errors"
     provider: example

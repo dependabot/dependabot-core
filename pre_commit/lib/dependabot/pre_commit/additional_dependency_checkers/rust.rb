@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "excon"
@@ -25,27 +25,29 @@ module Dependabot
           )
         end
 
-        sig { override.params(latest_version: String).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig do
+          override.params(latest_version: String)
+                  .returns(T::Array[Dependabot::DependencyRequirement])
+        end
         def updated_requirements(latest_version)
           requirements.map do |original_req|
-            original_source = original_req[:source]
-            next original_req unless original_source.is_a?(Hash)
-            next original_req unless original_source[:type] == "additional_dependency"
+            original_source = additional_dependency_source(original_req)
+            next original_req unless original_source
 
-            original_requirement = original_req[:requirement]
+            original_requirement = requirement_string(original_req)
             new_requirement = build_updated_requirement(original_requirement, latest_version)
 
             new_original_string = build_original_string(
-              package_name: original_source[:original_name] || original_source[:package_name],
+              package_name: source_string(original_source, "original_name") ||
+                            source_string(original_source, "package_name"),
               requirement: new_requirement,
-              cli: original_source[:extras] == "cli"
+              cli: source_string(original_source, "extras") == "cli"
             )
 
-            new_source = original_source.merge(original_string: new_original_string)
-
-            original_req.merge(
-              requirement: new_requirement,
-              source: new_source
+            build_requirement_entry(
+              original_req,
+              new_requirement: new_requirement,
+              original_string: new_original_string
             )
           end
         end
@@ -113,7 +115,7 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def extract_version_from_requirement
-          req_string = requirements.first&.dig(:requirement)
+          req_string = requirement_string(requirements.first)
           return nil unless req_string
 
           version_part = req_string.sub(/\A(?:[~^]|[><=]+)\s*/, "")

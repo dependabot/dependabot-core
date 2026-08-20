@@ -143,7 +143,7 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def lockfile_section
         if current_dependency.requirements.any?
-          T.must(current_dependency.requirements.first)[:groups].first
+          T.must(T.must(current_dependency.requirements.first).groups).first&.to_s
         else
           parsed_lockfile = JSON.parse(T.must(T.must(lockfile).content))
           Python::FileParser::DEPENDENCY_GROUP_KEYS.each do |keys|
@@ -175,7 +175,7 @@ module Dependabot
 
       sig { returns(String) }
       def dependency_name
-        current_dependency.metadata[:original_name] || current_dependency.name
+        current_dependency.metadata_string(:original_name) || current_dependency.name
       end
 
       sig { returns(T::Hash[String, String]) }

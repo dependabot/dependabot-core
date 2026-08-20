@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -147,7 +147,7 @@ module Dependabot
           return unless Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
           return unless current_version
 
-          all_versions = parsed_dep.metadata[:all_versions]
+          all_versions = parsed_dep.metadata_dependencies(:all_versions)
           return unless all_versions&.any?
 
           best_candidate_version(all_versions, current_version)
@@ -277,7 +277,7 @@ module Dependabot
 
         # First-tier fallback: try `pnpm update --depth Infinity <dep>` to
         # update transitive dependencies in the lockfile without modifying
-        # any package.json (unlike `pnpm audit --fix`).
+        # manifests or relying on older pnpm audit fixes that may add overrides.
         sig { void }
         def run_pnpm_deep_update_fallback
           recursive = Dir.glob("**/pnpm-workspace.yaml").any?
@@ -289,11 +289,10 @@ module Dependabot
           )
         end
 
-        # Runs `pnpm audit --fix` as a fallback when `pnpm update` is a no-op.
-        # `pnpm audit --fix` adds `overrides` to `package.json`, but this method
-        # only returns the lockfile. If audit-fix modifies any package.json we
-        # revert both the manifest(s) and lockfile so no inconsistent state is
-        # surfaced upstream.
+        # Runs the version-compatible `pnpm audit --fix` strategy when `pnpm update` is a no-op.
+        # pnpm 11 updates the lockfile directly, while older versions may add
+        # `overrides` to package.json. If any manifest changes, revert both the
+        # manifest(s) and lockfile so no inconsistent state is surfaced upstream.
         sig { params(lockfile_name: String, original_content: String).void }
         def run_pnpm_audit_fix_fallback(lockfile_name, original_content)
           package_json_snapshots = Dir.glob("**/package.json").to_h { |f| [f, File.read(f)] }
@@ -330,13 +329,15 @@ module Dependabot
 
               NativeHelpers.run_npm8_subdependency_update_command(
                 [dependency.name],
-                security_updates_only: security_updates_only?
+                min_release_age_arg: security_updates_only? ? "--min-release-age=0" : nil
               )
 
               updated_content = File.read(lockfile_name)
               if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
                 begin
-                  NativeHelpers.run_npm_audit_fix_command(security_updates_only: security_updates_only?)
+                  NativeHelpers.run_npm_audit_fix_command(
+                    min_release_age_arg: security_updates_only? ? "--min-release-age=0" : nil
+                  )
                   dependency.metadata[:audit_fix_used] = true
                 rescue SharedHelpers::HelperSubprocessFailed
                   Dependabot.logger.info("npm audit fix failed or partially fixed — continuing with any changes made")
@@ -351,15 +352,18 @@ module Dependabot
 
         sig { params(path: String, lockfile_name: String).returns(T::Hash[String, String]) }
         def run_npm6_updater(path, lockfile_name)
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            Dir.chdir(path) do
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
-                function: "npm6:updateSubdependency",
-                args: [Dir.pwd, lockfile_name, [dependency.to_h]]
-              )
-            end
-          end
+          T.cast(
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              Dir.chdir(path) do
+                SharedHelpers.run_helper_subprocess(
+                  command: NativeHelpers.helper_path,
+                  function: "npm6:updateSubdependency",
+                  args: [Dir.pwd, lockfile_name, [dependency.to_h]]
+                )
+              end
+            end,
+            T::Hash[String, String]
+          )
         end
 
         sig { returns(T.class_of(Dependabot::Version)) }

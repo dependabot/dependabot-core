@@ -214,9 +214,9 @@ module Dependabot
           return nil unless dependency&.requirements&.any?
 
           first_requirement = dependency.requirements.first
-          return nil unless first_requirement && first_requirement[:source]
+          return nil unless first_requirement
 
-          url = T.let(first_requirement[:source][:url], T.nilable(String))
+          url = first_requirement.source_string("url")
           return nil unless url
 
           url.end_with?("/") ? url.chop : url
@@ -242,9 +242,9 @@ module Dependabot
           return nil unless dependency.requirements.any?
 
           first_requirement = dependency.requirements.first
-          return nil unless first_requirement && first_requirement[:source]
+          return nil unless first_requirement
 
-          first_requirement[:source][:type]
+          first_requirement.source_string("type")
         end
 
         sig { override.returns(String) }

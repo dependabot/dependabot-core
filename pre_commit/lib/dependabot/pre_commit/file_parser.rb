@@ -37,7 +37,7 @@ module Dependabot
           "ruby" => ->(dep_string) { Dependabot::Bundler::Requirement.parse_dep_string(dep_string) },
           "dart" => ->(dep_string) { Dependabot::Pub::Requirement.parse_dep_string(dep_string) }
         }.freeze,
-        T::Hash[String, T.proc.params(dep_string: String).returns(T.nilable(T::Hash[Symbol, T.untyped]))]
+        T::Hash[String, T.proc.params(dep_string: String).returns(T.nilable(T::Hash[Symbol, Object]))]
       )
 
       sig { override.returns(Ecosystem) }
@@ -77,6 +77,8 @@ module Dependabot
         return dependency_set unless yaml.is_a?(Hash)
 
         repos = yaml.fetch("repos", [])
+        return dependency_set unless repos.is_a?(Array)
+
         repos.each do |repo|
           next unless repo.is_a?(Hash)
 
@@ -94,7 +96,7 @@ module Dependabot
 
       sig do
         params(
-          repo: T::Hash[String, T.untyped],
+          repo: T::Hash[String, Object],
           file: Dependabot::DependencyFile
         ).returns(T.nilable(Dependency))
       end
@@ -102,7 +104,7 @@ module Dependabot
         repo_url = repo["repo"]
         rev = repo["rev"]
 
-        return nil if repo_url.nil? || rev.nil?
+        return nil unless repo_url.is_a?(String) && rev.is_a?(String)
         return nil if %w(local meta).include?(repo_url)
 
         comment = rev_line_comment(file, repo_url)
@@ -128,7 +130,7 @@ module Dependabot
 
       sig do
         params(
-          repo: T::Hash[String, T.untyped],
+          repo: T::Hash[String, Object],
           file: Dependabot::DependencyFile
         ).returns(T::Array[Dependabot::Dependency])
       end
@@ -137,9 +139,14 @@ module Dependabot
         repo_url = repo["repo"]
         revision = repo["rev"]
 
-        return dependencies if repo_url.nil? || %w(local meta).include?(repo_url)
+        return dependencies unless repo_url.is_a?(String)
+        return dependencies if %w(local meta).include?(repo_url)
+
+        revision = nil unless revision.is_a?(String)
 
         hooks = repo.fetch("hooks", [])
+        return dependencies unless hooks.is_a?(Array)
+
         hooks.each do |hook|
           next unless hook.is_a?(Hash)
 
@@ -152,7 +159,7 @@ module Dependabot
 
       sig do
         params(
-          hook: T::Hash[String, T.untyped],
+          hook: T::Hash[String, Object],
           repo_url: String,
           revision: T.nilable(String),
           file: Dependabot::DependencyFile
@@ -162,9 +169,10 @@ module Dependabot
         dependencies = []
         hook_id = hook["id"]
 
-        return dependencies unless hook_id
+        return dependencies unless hook_id.is_a?(String)
 
         additional_deps = hook.fetch("additional_dependencies", [])
+        return dependencies unless additional_deps.is_a?(Array)
         return dependencies if additional_deps.empty?
 
         # Get language from local config first, then try fetching from hook source repo
@@ -178,28 +186,9 @@ module Dependabot
           next unless dep_string.is_a?(String)
 
           parsed = parser.call(dep_string)
-          next unless parsed
-
-          dependencies << Dependabot::Dependency.new(
-            name: parsed[:normalised_name],
-            version: parsed[:version],
-            requirements: [{
-              requirement: parsed[:requirement],
-              groups: ["additional_dependencies"],
-              file: file.name,
-              source: {
-                type: "additional_dependency",
-                language: language,
-                package_name: parsed[:normalised_name],
-                original_name: parsed[:name],
-                hook_id: hook_id,
-                hook_repo: repo_url,
-                extras: parsed[:extras],
-                original_string: dep_string
-              }
-            }],
-            package_manager: ECOSYSTEM
-          )
+          source_details = { language: language, hook_id: hook_id, repo_url: repo_url }
+          dependency = parsed && build_additional_dependency(parsed, dep_string, source_details, file)
+          dependencies << dependency if dependency
         end
 
         dependencies
@@ -207,7 +196,56 @@ module Dependabot
 
       sig do
         params(
-          hook: T::Hash[String, T.untyped],
+          parsed: T::Hash[Symbol, Object],
+          dep_string: String,
+          source_details: T::Hash[Symbol, String],
+          file: Dependabot::DependencyFile
+        ).returns(T.nilable(Dependabot::Dependency))
+      end
+      def build_additional_dependency(parsed, dep_string, source_details, file)
+        normalised_name = parsed[:normalised_name]
+        return unless normalised_name.is_a?(String)
+
+        version = parsed[:version]
+        return unless version.nil? || version.is_a?(String) || version.is_a?(Dependabot::Version)
+
+        Dependabot::Dependency.new(
+          name: normalised_name,
+          version: version,
+          requirements: [additional_dependency_requirement(parsed, dep_string, source_details, file)],
+          package_manager: ECOSYSTEM
+        )
+      end
+
+      sig do
+        params(
+          parsed: T::Hash[Symbol, Object],
+          dep_string: String,
+          source_details: T::Hash[Symbol, String],
+          file: Dependabot::DependencyFile
+        ).returns(T::Hash[Symbol, Object])
+      end
+      def additional_dependency_requirement(parsed, dep_string, source_details, file)
+        {
+          requirement: parsed[:requirement],
+          groups: ["additional_dependencies"],
+          file: file.name,
+          source: {
+            type: "additional_dependency",
+            language: source_details.fetch(:language),
+            package_name: parsed[:normalised_name],
+            original_name: parsed[:name],
+            hook_id: source_details.fetch(:hook_id),
+            hook_repo: source_details.fetch(:repo_url),
+            extras: parsed[:extras],
+            original_string: dep_string
+          }
+        }
+      end
+
+      sig do
+        params(
+          hook: T::Hash[String, Object],
           repo_url: String,
           revision: T.nilable(String),
           hook_id: String
@@ -216,7 +254,7 @@ module Dependabot
       def resolve_hook_language(hook, repo_url, revision, hook_id)
         # Use local language if explicitly specified
         local_language = hook["language"]
-        return local_language if local_language
+        return local_language if local_language.is_a?(String)
 
         # Otherwise fetch from the hook source repository
         return nil unless revision
