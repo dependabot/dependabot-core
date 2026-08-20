@@ -73,7 +73,7 @@ module Dependabot
         return result unless result.zero?
 
         other_version = T.cast(
-          other.is_a?(Dependabot::GoModules::Version) ? other : Dependabot::GoModules::Version.new(other.to_s),
+          other.is_a?(Dependabot::GoModules::Version) ? other : self.class.new(other.to_s),
           Dependabot::GoModules::Version
         )
         compare_prerelease(@prerelease_suffix || "", other_version.prerelease_suffix || "")

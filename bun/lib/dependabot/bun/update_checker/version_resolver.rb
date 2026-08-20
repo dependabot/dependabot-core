@@ -341,7 +341,9 @@ module Dependabot
           return false unless types_pkg
 
           latest_types_version = latest_types_package_version
-          return false unless latest_types_version.is_a?(Version)
+          return false unless latest_types_version
+
+          latest_types_version = T.cast(latest_types_version, Version)
 
           latest_allowable_ver = latest_allowable_version
           return false unless latest_allowable_ver.is_a?(Version) && latest_allowable_ver.backwards_compatible_with?(
