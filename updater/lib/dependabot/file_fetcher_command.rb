@@ -9,7 +9,6 @@ require "dependabot/opentelemetry"
 require "dependabot/updater"
 require "dependabot/file_fetcher_command_connectivity"
 require "fileutils"
-require "json"
 require "octokit"
 require "sorbet-runtime"
 
