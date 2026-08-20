@@ -869,6 +869,16 @@ module Dependabot
           .max_by(&:length)
       end
 
+      # True when a file tree has been staged on the shared volume by the fetch container
+      # (fetch/update split) and should be read in place instead of cloned. The staged tree has
+      # no .git directory and is only used under the isolate_fetch_update experiment.
+      sig { params(path: String).returns(T::Boolean) }
+      def staged_tree_present?(path)
+        return false unless Dependabot::Experiments.enabled?(:isolate_fetch_update)
+
+        Dir.exist?(path) && !Dir.empty?(path)
+      end
+
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/MethodLength
       # rubocop:disable Metrics/PerceivedComplexity
@@ -880,6 +890,11 @@ module Dependabot
           # Assume we're retrying the same branch, or that a `target_directory`
           # is specified when retrying a different branch.
           return path if Dir.exist?(File.join(path, ".git"))
+
+          # Fetch/update split: the fetch container stages the file tree on the shared volume
+          # without a .git directory. The update container has no repo token, so read the staged
+          # tree in place instead of cloning.
+          return path if staged_tree_present?(path)
 
           FileUtils.mkdir_p(path)
 

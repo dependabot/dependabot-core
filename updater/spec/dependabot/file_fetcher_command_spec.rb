@@ -80,21 +80,17 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
       after { FileUtils.remove_entry(repo_contents_path) }
 
-      it "writes content to the shared volume and a metadata-only manifest to the output path" do
+      it "stages content on the shared volume in the repo tree layout" do
         fetch_command.send(:persist_fetched_files_to_output)
 
-        output = JSON.parse(File.read(Dependabot::Environment.output_path))
-        expect(output["base_commit_sha"]).to eq("abc123")
+        staged_path = File.join(repo_contents_path, "Gemfile")
+        expect(File.read(staged_path)).to eq("source 'https://rubygems.org'")
+      end
 
-        entry = output["dependency_files"].find { |f| f["name"] == "Gemfile" }
-        expect(entry).not_to be_nil
+      it "does not write to the output path" do
+        fetch_command.send(:persist_fetched_files_to_output)
 
-        # The manifest carries metadata and the on-disk path, but not the content.
-        expect(entry).not_to have_key("content")
-        expect(entry["dependency_file_path"]).to eq(File.join(repo_contents_path, "Gemfile"))
-
-        # The content lives on the shared volume at the referenced path.
-        expect(File.read(entry["dependency_file_path"])).to eq("source 'https://rubygems.org'")
+        expect(File).not_to exist(Dependabot::Environment.output_path)
       end
     end
 
