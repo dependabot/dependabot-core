@@ -477,8 +477,10 @@ module Dependabot
         # are seen.
         sig { params(content: String).returns(T::Array[String]) }
         def workspace_setting_names(content)
-          parsed = YAML.safe_load(content, aliases: true)
-          parsed.is_a?(Hash) ? parsed.keys.map(&:to_s) : []
+          parsed = T.cast(YAML.safe_load(content, aliases: true), Object)
+          return [] unless parsed.is_a?(Hash)
+
+          parsed.keys.map { |key| T.cast(key, Object).to_s }
         end
 
         # pnpm 10.x ignores `minimumReleaseAge` when `shared-workspace-lockfile` is
