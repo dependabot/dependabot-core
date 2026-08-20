@@ -332,5 +332,204 @@ RSpec.describe Dependabot::Helm::FileUpdater::ImageUpdater do
         expect(updated_content).to include("- 1.20.0")
       end
     end
+
+    context "with v-prefixed version tags" do
+      let(:dependency_version) { "v1.21.0" }
+      let(:dependency_previous_version) { "v1.20.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "values.yaml",
+          requirement: dependency_version,
+          groups: [],
+          source: {
+            type: "docker_registry",
+            registry: "docker.io",
+            repository: "nginx",
+            tag: dependency_previous_version
+          },
+          metadata: { type: :docker_image }
+        }]
+      end
+      let(:dependency_previous_requirements) do
+        [{
+          file: "values.yaml",
+          requirement: dependency_previous_version,
+          groups: [],
+          source: {
+            type: "docker_registry",
+            registry: "docker.io",
+            repository: "nginx",
+            tag: dependency_previous_version
+          },
+          metadata: { type: :docker_image }
+        }]
+      end
+
+      let(:fixture_content) do
+        <<~YAML
+          image:
+            repository: nginx
+            tag: v1.20.0
+            pullPolicy: IfNotPresent
+        YAML
+      end
+
+      it "preserves the v prefix when updating the tag" do
+        updated_content = updater.updated_values_yaml_content("values.yaml")
+        expect(updated_content).to include("tag: v1.21.0")
+        expect(updated_content).not_to include("tag: v1.20.0")
+        expect(updated_content).not_to include("tag: 1.21.0") # should not drop the v prefix
+      end
+    end
+
+    context "with various v-prefixed tag formats" do
+      let(:dependency_name) { "ghcr.io/llm-d/llm-d-inference-sim" }
+      let(:dependency_version) { "v0.1.2" }
+      let(:dependency_previous_version) { "v0.1.1" }
+      let(:dependency_requirements) do
+        [{
+          file: "values.yaml",
+          requirement: dependency_version,
+          groups: [],
+          source: {
+            type: "docker_registry",
+            registry: "ghcr.io",
+            repository: "ghcr.io/llm-d/llm-d-inference-sim",
+            tag: dependency_previous_version
+          },
+          metadata: { type: :docker_image }
+        }]
+      end
+      let(:dependency_previous_requirements) do
+        [{
+          file: "values.yaml",
+          requirement: dependency_previous_version,
+          groups: [],
+          source: {
+            type: "docker_registry",
+            registry: "ghcr.io",
+            repository: "ghcr.io/llm-d/llm-d-inference-sim",
+            tag: dependency_previous_version
+          },
+          metadata: { type: :docker_image }
+        }]
+      end
+
+      let(:fixture_content) do
+        <<~YAML
+          test:
+            image:
+              repository: ghcr.io/llm-d/llm-d-inference-sim
+              tag: v0.1.1
+        YAML
+      end
+
+      it "preserves the v prefix for complex version tags" do
+        updated_content = updater.updated_values_yaml_content("values.yaml")
+        expect(updated_content).to include("tag: v0.1.2")
+        expect(updated_content).not_to include("tag: v0.1.1")
+        expect(updated_content).not_to include("tag: 0.1.2") # should not drop the v prefix
+      end
+    end
+    context "when dependency version lacks v-prefix but YAML tag has it" do
+      let(:dependency_name) { "ghcr.io/llm-d/llm-d-inference-sim" }
+      let(:dependency_version) { "0.1.2" } # No v prefix
+      let(:dependency_previous_version) { "0.1.1" } # No v prefix
+      let(:dependency_requirements) do
+        [{
+          file: "values.yaml",
+          requirement: dependency_version,
+          groups: [],
+          source: {
+            type: "docker_registry",
+            registry: "ghcr.io",
+            repository: "ghcr.io/llm-d/llm-d-inference-sim",
+            tag: "v0.1.1"  # Tag has v prefix
+          },
+          metadata: { type: :docker_image }
+        }]
+      end
+      let(:dependency_previous_requirements) do
+        [{
+          file: "values.yaml",
+          requirement: dependency_previous_version,
+          groups: [],
+          source: {
+            type: "docker_registry",
+            registry: "ghcr.io",
+            repository: "ghcr.io/llm-d/llm-d-inference-sim",
+            tag: "v0.1.1"  # Tag has v prefix
+          },
+          metadata: { type: :docker_image }
+        }]
+      end
+
+      let(:fixture_content) do
+        <<~YAML
+          test:
+            image:
+              repository: ghcr.io/llm-d/llm-d-inference-sim
+              tag: v0.1.1
+        YAML
+      end
+
+      it "should preserve the v prefix from the original tag format" do
+        updated_content = updater.updated_values_yaml_content("values.yaml")
+        # The expectation is that it should preserve the v prefix from the original format
+        expect(updated_content).to include("tag: v0.1.2")
+        expect(updated_content).not_to include("tag: v0.1.1")
+        expect(updated_content).not_to include("tag: 0.1.2") # should not drop the v prefix
+      end
+    end
+    context "when dependency version has v-prefix but YAML tag lacks it" do
+      let(:dependency_name) { "nginx" }
+      let(:dependency_version) { "v1.21.0" } # Has v prefix
+      let(:dependency_previous_version) { "v1.20.0" } # Has v prefix
+      let(:dependency_requirements) do
+        [{
+          file: "values.yaml",
+          requirement: dependency_version,
+          groups: [],
+          source: {
+            type: "docker_registry",
+            registry: "docker.io",
+            repository: "nginx",
+            tag: "1.20.0"  # Tag lacks v prefix
+          },
+          metadata: { type: :docker_image }
+        }]
+      end
+      let(:dependency_previous_requirements) do
+        [{
+          file: "values.yaml",
+          requirement: dependency_previous_version,
+          groups: [],
+          source: {
+            type: "docker_registry",
+            registry: "docker.io",
+            repository: "nginx",
+            tag: "1.20.0"  # Tag lacks v prefix
+          },
+          metadata: { type: :docker_image }
+        }]
+      end
+
+      let(:fixture_content) do
+        <<~YAML
+          image:
+            repository: nginx
+            tag: 1.20.0
+            pullPolicy: IfNotPresent
+        YAML
+      end
+
+      it "should preserve the lack of v prefix from the original tag format" do
+        updated_content = updater.updated_values_yaml_content("values.yaml")
+        # The expectation is that it should preserve the lack of v prefix from the original format
+        expect(updated_content).to include("tag: 1.21.0")
+        expect(updated_content).not_to include("tag: 1.20.0")
+        expect(updated_content).not_to include("tag: v1.21.0") # should not add v prefix
+      end
+    end
   end
 end
