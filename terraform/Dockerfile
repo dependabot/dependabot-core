@@ -3,13 +3,13 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
 
 # See https://github.com/hashicorp/terraform/releases or https://releases.hashicorp.com/terraform/
-ARG TERRAFORM_VERSION=1.15.8
+ARG TERRAFORM_VERSION=1.15.9
 
 # curl "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_SHA256SUMS" | grep "terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
-ARG TERRAFORM_AMD64_CHECKSUM=d25ce7b6902013ad905db3d2eab0be4cd905887fe88b81a6171b8d5503c31f3d
+ARG TERRAFORM_AMD64_CHECKSUM=76edd0b22d2f27d3d2e097cd793209646f719cf60f02ff3af626b07361137da1
 
 # curl "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_SHA256SUMS" | grep "terraform_${TERRAFORM_VERSION}_linux_arm64.zip"
-ARG TERRAFORM_ARM64_CHECKSUM=8891e9dcedc9e3b8950bc6af9d4d8af1f4cfade3062f53b9dc403a89f6ce8c9c
+ARG TERRAFORM_ARM64_CHECKSUM=0afa6c29f61ca5ea270e950e43e50ecf2418b598507bf580e8ae76e1e6699b19
 
 RUN cd /tmp \
   && curl -o terraform-${TARGETARCH}.tar.gz https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip \
