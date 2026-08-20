@@ -8,6 +8,7 @@ require "dependabot/git_metadata_fetcher"
 require "dependabot/opentelemetry"
 require "dependabot/updater"
 require "dependabot/file_fetcher_command_connectivity"
+require "fileutils"
 require "octokit"
 require "sorbet-runtime"
 
@@ -28,7 +29,7 @@ module Dependabot
     end
 
     sig { override.void }
-    def perform_job # rubocop:disable Metrics/AbcSize
+    def perform_job # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
       reset_job_state
 
       Dependabot.logger.info("Job definition: #{File.read(Environment.job_path)}") if Environment.job_path
@@ -51,6 +52,8 @@ module Dependabot
           else
             dependency_files
           end
+
+          persist_fetched_files_to_output
         rescue StandardError => e
           @base_commit_sha ||= "unknown"
           if Octokit::RATE_LIMITED_ERRORS.include?(e.class)
@@ -93,6 +96,25 @@ module Dependabot
       )
     end
 
+    # Re-runs the file fetcher in the update container against the tree staged on the shared
+    # volume by the fetch container (fetch/update split). No cloning or network access occurs:
+    # the base commit SHA is supplied out-of-band because the staged tree has no .git directory.
+    sig { params(base_commit_sha: String).returns(Dependabot::FetchedFiles) }
+    def fetch_from_staged_files(base_commit_sha:)
+      reset_job_state
+      normalize_single_directory
+      job.source.commit = base_commit_sha
+      @base_commit_sha = base_commit_sha
+
+      if job.source.directories
+        dependency_files_for_multi_directories
+      else
+        dependency_files
+      end
+
+      files
+    end
+
     private
 
     # Under isolate_fetch_update only files_to_persist may cross into the clone-less update phase.
@@ -105,6 +127,37 @@ module Dependabot
       else
         isolate ? file_fetcher.files_to_persist : T.must(dependency_files)
       end
+    end
+
+    # Hands the fetched files to a split update container via the shared volume: each file's
+    # content is written to its path under repo_contents_path so the update container can re-run
+    # the file fetcher against the staged tree. The base commit SHA is read from the job
+    # definition on the update side, so nothing is written to DEPENDABOT_OUTPUT_PATH. Only active
+    # under isolate_fetch_update; otherwise the combined run is unchanged and nothing is written.
+    sig { void }
+    def persist_fetched_files_to_output
+      return unless Experiments.enabled?(:isolate_fetch_update)
+
+      repo_contents_path = Environment.repo_contents_path
+      raise "repo_contents_path is required to persist fetched files" unless repo_contents_path
+
+      fetched = files
+      fetched.dependency_files.each do |file|
+        stage_file_to_shared_volume(file, repo_contents_path)
+      end
+
+      Dependabot.logger.info(
+        "[isolate_fetch_update] staged #{fetched.dependency_files.count} file(s) on #{repo_contents_path}"
+      )
+    end
+
+    # Writes a single file's content to its path on the shared volume so the update container
+    # can read the staged tree.
+    sig { params(file: Dependabot::DependencyFile, repo_contents_path: String).void }
+    def stage_file_to_shared_volume(file, repo_contents_path)
+      path = File.join(repo_contents_path, file.path)
+      FileUtils.mkdir_p(File.dirname(path))
+      File.binwrite(path, file.decoded_content)
     end
 
     # When only a single directory is specified via `directories:` (plural), normalize it to use

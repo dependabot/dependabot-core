@@ -62,6 +62,38 @@ RSpec.describe Dependabot::FileFetcherCommand do
       expect(dependency_file.content_encoding).to eq("utf-8")
     end
 
+    context "when isolate_fetch_update is enabled" do
+      # A dedicated instance so we can stub the fetched files boundary without stubbing the subject.
+      let(:fetch_command) { described_class.new }
+      let(:repo_contents_path) { Dir.mktmpdir }
+      let(:persisted_file) do
+        Dependabot::DependencyFile.new(name: "Gemfile", content: "source 'https://rubygems.org'", directory: "/")
+      end
+
+      before do
+        Dependabot::Experiments.register(:isolate_fetch_update, true)
+        allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(repo_contents_path)
+        allow(fetch_command).to receive(:files).and_return(
+          Dependabot::FetchedFiles.new(dependency_files: [persisted_file], base_commit_sha: "abc123")
+        )
+      end
+
+      after { FileUtils.remove_entry(repo_contents_path) }
+
+      it "stages content on the shared volume in the repo tree layout" do
+        fetch_command.send(:persist_fetched_files_to_output)
+
+        staged_path = File.join(repo_contents_path, "Gemfile")
+        expect(File.read(staged_path)).to eq("source 'https://rubygems.org'")
+      end
+
+      it "does not write to the output path" do
+        fetch_command.send(:persist_fetched_files_to_output)
+
+        expect(File).not_to exist(Dependabot::Environment.output_path)
+      end
+    end
+
     context "when empty directories are specified" do
       before do
         allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(Dir.mktmpdir)
