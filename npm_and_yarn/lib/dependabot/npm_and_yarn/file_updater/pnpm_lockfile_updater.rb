@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/npm_and_yarn/helpers"
@@ -477,8 +477,10 @@ module Dependabot
         # are seen.
         sig { params(content: String).returns(T::Array[String]) }
         def workspace_setting_names(content)
-          parsed = YAML.safe_load(content, aliases: true)
-          parsed.is_a?(Hash) ? parsed.keys.map(&:to_s) : []
+          parsed = T.cast(YAML.safe_load(content, aliases: true), Object)
+          return [] unless parsed.is_a?(Hash)
+
+          parsed.keys.map { |key| T.cast(key, Object).to_s }
         end
 
         # pnpm 10.x ignores `minimumReleaseAge` when `shared-workspace-lockfile` is
@@ -882,7 +884,7 @@ module Dependabot
         sig { params(pnpm_lock: Dependabot::DependencyFile).returns(String) }
         def npmrc_content(pnpm_lock)
           NpmrcBuilder.new(
-            credentials: T.unsafe(credentials),
+            credentials: credentials,
             dependency_files: dependency_files,
             dependencies: lockfile_dependencies(pnpm_lock)
           ).npmrc_content

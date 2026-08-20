@@ -455,12 +455,10 @@ module Dependabot
             SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
               function: "yarn:update",
-              args: T.unsafe(
-                [
-                  Dir.pwd,
-                  top_level_dependency_updates
-                ]
-              )
+              args: [
+                Dir.pwd,
+                top_level_dependency_updates
+              ]
             ),
             T::Hash[String, String]
           )
@@ -728,7 +726,7 @@ module Dependabot
             NpmAndYarn::FileParser.new(
               dependency_files: [lockfile, *package_files],
               source: nil,
-              credentials: T.unsafe(credentials)
+              credentials: credentials
             ).parse
         end
 
@@ -845,7 +843,7 @@ module Dependabot
         sig { returns(String) }
         def yarnrc_content
           NpmrcBuilder.new(
-            credentials: T.unsafe(credentials),
+            credentials: credentials,
             dependency_files: dependency_files
           ).yarnrc_content
         end
