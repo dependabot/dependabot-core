@@ -1586,7 +1586,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     describe "Helpers.build_corepack_env_variables" do
       let(:files) { project_dependency_files("npm8/simple") }
 
-      context "when experiment flag is enabled" do
+      context "when resolving Corepack environment variables" do
         context "with npm_registry credentials" do
           let(:test_credentials) do
             [
