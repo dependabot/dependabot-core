@@ -61,6 +61,34 @@ RSpec.describe Dependabot::Bun::FileParser do
 
         its(:length) { is_expected.to eq(0) }
       end
+
+      context "with an aliased dependency" do
+        let(:files) { project_dependency_files("bun/aliased_dependency") }
+
+        it "doesn't include the aliased dependency" do
+          expect(top_level_dependencies.map(&:name)).to eq(["etag"])
+          expect(dependencies.map(&:name)).not_to include("my-fetch-factory")
+        end
+
+        it "includes the real package from the lockfile" do
+          expect(dependencies.map(&:name)).to include("fetch-factory")
+        end
+      end
+    end
+  end
+
+  describe "alias detection" do
+    let(:files) { project_dependency_files("bun/aliased_dependency") }
+
+    it "detects the npm alias protocol in a requirement" do
+      expect(parser.send(:alias_package?, "npm:fetch-factory@0.0.1")).to be(true)
+      expect(parser.send(:alias_package?, "npm:@scope/pkg@^1.0.0")).to be(true)
+      expect(parser.send(:alias_package?, "^0.0.1")).to be(false)
+    end
+
+    it "detects a yarn-style alias in a name" do
+      expect(parser.send(:aliased_package_name?, "my-fetch-factory@npm:fetch-factory")).to be(true)
+      expect(parser.send(:aliased_package_name?, "fetch-factory")).to be(false)
     end
   end
 
