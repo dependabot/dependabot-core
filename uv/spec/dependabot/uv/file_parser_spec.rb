@@ -1076,7 +1076,7 @@ RSpec.describe Dependabot::Uv::FileParser do
             name = "pkg-b"
             version = "0.1.0"
             dependencies = [
-              "click>=8.4.1",
+              "only-in-b>=1.0.0",
             ]
           TOML
         )
@@ -1089,19 +1089,34 @@ RSpec.describe Dependabot::Uv::FileParser do
           pyproject_path = args.first
           parsed_files << pyproject_path
 
-          raise "Unexpected pyproject path: #{pyproject_path}" unless pyproject_path == "pyproject.toml"
-
-          [
-            {
-              "name" => "click",
-              "version" => nil,
-              "markers" => nil,
-              "file" => "pyproject.toml",
-              "requirement" => ">=8.4.1",
-              "extras" => [],
-              "requirement_type" => nil
-            }
-          ]
+          case pyproject_path
+          when "pyproject.toml"
+            [
+              {
+                "name" => "click",
+                "version" => nil,
+                "markers" => nil,
+                "file" => "pyproject.toml",
+                "requirement" => ">=8.4.1",
+                "extras" => [],
+                "requirement_type" => nil
+              }
+            ]
+          when "../../packages/b/pyproject.toml"
+            [
+              {
+                "name" => "only-in-b",
+                "version" => nil,
+                "markers" => nil,
+                "file" => "../../packages/b/pyproject.toml",
+                "requirement" => ">=1.0.0",
+                "extras" => [],
+                "requirement_type" => nil
+              }
+            ]
+          else
+            raise "Unexpected pyproject path: #{pyproject_path}"
+          end
         end
       end
 
@@ -1109,6 +1124,10 @@ RSpec.describe Dependabot::Uv::FileParser do
         dependencies
 
         expect(parsed_files).to contain_exactly("pyproject.toml")
+      end
+
+      it "excludes dependencies declared only in the editable package" do
+        expect(dependencies.map(&:name)).not_to include("only-in-b")
       end
 
       it "only records click's requirement from the consumer manifest" do
@@ -1154,7 +1173,7 @@ RSpec.describe Dependabot::Uv::FileParser do
             name = "pkg-b"
             version = "0.1.0"
             dependencies = [
-              "click>=8.4.1",
+              "only-in-b>=1.0.0",
             ]
           TOML
         )
@@ -1167,19 +1186,34 @@ RSpec.describe Dependabot::Uv::FileParser do
           pyproject_path = args.first
           parsed_files << pyproject_path
 
-          raise "Unexpected pyproject path: #{pyproject_path}" unless pyproject_path == "pyproject.toml"
-
-          [
-            {
-              "name" => "click",
-              "version" => nil,
-              "markers" => nil,
-              "file" => "pyproject.toml",
-              "requirement" => ">=8.4.1",
-              "extras" => [],
-              "requirement_type" => nil
-            }
-          ]
+          case pyproject_path
+          when "pyproject.toml"
+            [
+              {
+                "name" => "click",
+                "version" => nil,
+                "markers" => nil,
+                "file" => "pyproject.toml",
+                "requirement" => ">=8.4.1",
+                "extras" => [],
+                "requirement_type" => nil
+              }
+            ]
+          when "packages/b/pyproject.toml"
+            [
+              {
+                "name" => "only-in-b",
+                "version" => nil,
+                "markers" => nil,
+                "file" => "packages/b/pyproject.toml",
+                "requirement" => ">=1.0.0",
+                "extras" => [],
+                "requirement_type" => nil
+              }
+            ]
+          else
+            raise "Unexpected pyproject path: #{pyproject_path}"
+          end
         end
       end
 
@@ -1187,6 +1221,10 @@ RSpec.describe Dependabot::Uv::FileParser do
         dependencies
 
         expect(parsed_files).to contain_exactly("pyproject.toml")
+      end
+
+      it "excludes dependencies declared only in the excluded member" do
+        expect(dependencies.map(&:name)).not_to include("only-in-b")
       end
     end
   end
