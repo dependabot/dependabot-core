@@ -63,20 +63,38 @@ RSpec.describe Dependabot::FileFetcherCommand do
     end
 
     context "when isolate_fetch_update is enabled" do
-      before { Dependabot::Experiments.register(:isolate_fetch_update, true) }
+      # A dedicated instance so we can stub the fetched files boundary without stubbing the subject.
+      let(:fetch_command) { described_class.new }
+      let(:repo_contents_path) { Dir.mktmpdir }
+      let(:persisted_file) do
+        Dependabot::DependencyFile.new(name: "Gemfile", content: "source 'https://rubygems.org'", directory: "/")
+      end
 
-      it "writes the persisted files to the output path",
-         vcr: { cassette_name: "Dependabot_FileFetcherCommand/_perform_job/fetches_the_files" } do
-        perform_job
+      before do
+        Dependabot::Experiments.register(:isolate_fetch_update, true)
+        allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(repo_contents_path)
+        allow(fetch_command).to receive(:files).and_return(
+          Dependabot::FetchedFiles.new(dependency_files: [persisted_file], base_commit_sha: "abc123")
+        )
+      end
+
+      after { FileUtils.remove_entry(repo_contents_path) }
+
+      it "writes content to the shared volume and a metadata-only manifest to the output path" do
+        fetch_command.send(:persist_fetched_files_to_output)
 
         output = JSON.parse(File.read(Dependabot::Environment.output_path))
+        expect(output["base_commit_sha"]).to eq("abc123")
 
-        expect(output["base_commit_sha"]).to be_a(String)
+        entry = output["dependency_files"].find { |f| f["name"] == "Gemfile" }
+        expect(entry).not_to be_nil
 
-        gemspec = output["dependency_files"]
-                  .find { |f| f["name"] == "dependabot-test-ruby-package.gemspec" }
-        expect(gemspec).not_to be_nil
-        expect(gemspec["content"]).to include("Gem::Specification")
+        # The manifest carries metadata and the on-disk path, but not the content.
+        expect(entry).not_to have_key("content")
+        expect(entry["dependency_file_path"]).to eq(File.join(repo_contents_path, "Gemfile"))
+
+        # The content lives on the shared volume at the referenced path.
+        expect(File.read(entry["dependency_file_path"])).to eq("source 'https://rubygems.org'")
       end
     end
 

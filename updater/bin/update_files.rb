@@ -13,6 +13,7 @@ require "dependabot/service"
 require "dependabot/setup"
 require "dependabot/file_fetcher_command"
 require "dependabot/update_files_command"
+require "base64"
 require "json"
 require "debug" if ENV["DEBUG"]
 
@@ -50,15 +51,36 @@ begin
 
   fetched_files =
     if isolate_fetch_update
-      # The fetch container wrote the files to the shared volume as their raw DependencyFile
-      # hashes; rebuild the DependencyFile objects directly, no decoding required.
-      data = JSON.parse(File.read(Dependabot::Environment.output_path))
-      dependency_files = data.fetch("dependency_files").map do |attributes|
-        Dependabot::DependencyFile.new(**attributes.transform_keys(&:to_sym))
+      # The fetch container wrote each file's content to the shared volume and a metadata-only
+      # manifest to the output path. Rebuild the DependencyFile objects by reading the content
+      # back from disk and combining it with the manifest metadata.
+      manifest = JSON.parse(File.read(Dependabot::Environment.output_path))
+      dependency_files = manifest.fetch("dependency_files").map do |attributes|
+        path = attributes.fetch("dependency_file_path")
+        raw = File.binread(path)
+        content =
+          if attributes["content_encoding"] == Dependabot::DependencyFile::ContentEncoding::BASE64
+            Base64.encode64(raw)
+          else
+            raw.force_encoding(Encoding::UTF_8)
+          end
+        Dependabot::DependencyFile.new(
+          name: attributes.fetch("name"),
+          content: content,
+          directory: attributes.fetch("directory"),
+          type: attributes.fetch("type"),
+          support_file: attributes.fetch("support_file"),
+          vendored_file: attributes.fetch("vendored_file"),
+          symlink_target: attributes["symlink_target"],
+          content_encoding: attributes.fetch("content_encoding"),
+          operation: attributes.fetch("operation"),
+          mode: attributes["mode"],
+          dependency_file_path: path
+        )
       end
       Dependabot::FetchedFiles.new(
         dependency_files: dependency_files,
-        base_commit_sha: data.fetch("base_commit_sha")
+        base_commit_sha: manifest.fetch("base_commit_sha")
       )
     else
       fetcher = Dependabot::FileFetcherCommand.new

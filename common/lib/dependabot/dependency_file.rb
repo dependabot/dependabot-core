@@ -41,6 +41,12 @@ module Dependabot
     sig { returns(T.nilable(String)) }
     attr_accessor :mode
 
+    # Absolute path to the file's content on the shared volume. Set when files are
+    # handed from the fetch container to the update container so the content can be
+    # read back from disk instead of being embedded in the handoff manifest.
+    sig { returns(T.nilable(String)) }
+    attr_accessor :dependency_file_path
+
     class ContentEncoding
       UTF_8 = "utf-8"
       BASE64 = "base64"
@@ -78,7 +84,8 @@ module Dependabot
         content_encoding: String,
         deleted: T::Boolean,
         operation: String,
-        mode: T.nilable(String)
+        mode: T.nilable(String),
+        dependency_file_path: T.nilable(String)
       )
         .void
     end
@@ -93,7 +100,8 @@ module Dependabot
       content_encoding: ContentEncoding::UTF_8,
       deleted: false,
       operation: Operation::UPDATE,
-      mode: nil
+      mode: nil,
+      dependency_file_path: nil
     )
       @name = name
       @content = content
@@ -104,6 +112,7 @@ module Dependabot
       @content_encoding = content_encoding
       @operation = operation
       @mode = mode
+      @dependency_file_path = dependency_file_path
       raise ArgumentError, "Invalid Git mode: #{mode}" if mode && !VALID_MODES.include?(mode)
 
       # Make deleted override the operation. Deleted is kept when operation
@@ -138,6 +147,7 @@ module Dependabot
       details["mode"] = mode if mode
 
       details["symlink_target"] = symlink_target if symlink_target
+      details["dependency_file_path"] = dependency_file_path if dependency_file_path
       details
     end
 

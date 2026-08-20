@@ -111,29 +111,64 @@ module Dependabot
       end
     end
 
-    # Writes the fetched files to DEPENDABOT_OUTPUT_PATH on the shared volume so a split
-    # update container can read them instead of re-cloning the repo. The files are passed
-    # through as their raw DependencyFile hashes (binary content is already Base64-encoded
-    # via content_encoding). Only active under isolate_fetch_update; otherwise the combined
-    # run is unchanged and no artifact is written.
+    # Hands the fetched files to a split update container via the shared volume. Each file's
+    # content is written to repo_contents_path (its clone path) and a lightweight manifest of
+    # file metadata plus on-disk paths — but no content — is written to DEPENDABOT_OUTPUT_PATH.
+    # The update container reads the content back from disk. Only active under
+    # isolate_fetch_update; otherwise the combined run is unchanged and nothing is written.
     sig { void }
     def persist_fetched_files_to_output
       return unless Experiments.enabled?(:isolate_fetch_update)
 
+      repo_contents_path = Environment.repo_contents_path
+      raise "repo_contents_path is required to persist fetched files" unless repo_contents_path
+
       fetched = files
+      manifest_entries = fetched.dependency_files.map do |file|
+        persist_file_to_shared_volume(file, repo_contents_path)
+      end
+
       output_path = Environment.output_path
       FileUtils.mkdir_p(File.dirname(output_path))
       serialized = T.cast(
         JSON.dump(
-          dependency_files: fetched.dependency_files.map(&:to_h),
+          dependency_files: manifest_entries,
           base_commit_sha: fetched.base_commit_sha
         ),
         String
       )
       File.write(output_path, serialized)
       Dependabot.logger.info(
-        "[isolate_fetch_update] wrote #{fetched.dependency_files.count} persisted file(s) to #{output_path}"
+        "[isolate_fetch_update] wrote #{manifest_entries.count} persisted file(s) to " \
+        "#{repo_contents_path}, manifest at #{output_path}"
       )
+    end
+
+    # Writes a single file's content to its path on the shared volume and returns its manifest
+    # entry: the metadata needed to rebuild the DependencyFile plus the on-disk path, without
+    # the content itself.
+    sig do
+      params(file: Dependabot::DependencyFile, repo_contents_path: String)
+        .returns(T::Hash[String, T.nilable(T.any(String, T::Boolean))])
+    end
+    def persist_file_to_shared_volume(file, repo_contents_path)
+      path = File.join(repo_contents_path, file.path)
+      FileUtils.mkdir_p(File.dirname(path))
+      File.binwrite(path, file.decoded_content)
+      file.dependency_file_path = path
+
+      {
+        "name" => file.name,
+        "directory" => file.directory,
+        "type" => file.type,
+        "support_file" => file.support_file?,
+        "vendored_file" => file.vendored_file?,
+        "symlink_target" => file.symlink_target,
+        "content_encoding" => file.content_encoding,
+        "operation" => file.operation,
+        "mode" => file.mode,
+        "dependency_file_path" => path
+      }
     end
 
     # When only a single directory is specified via `directories:` (plural), normalize it to use
