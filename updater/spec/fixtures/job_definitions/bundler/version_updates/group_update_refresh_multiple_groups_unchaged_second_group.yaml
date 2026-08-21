@@ -74,5 +74,4 @@ job:
     python-3-8-deprecation-warning: true
     record-ecosystem-versions: true
     record-update-job-unknown-error: true
-    allow-refresh-for-existing-pr-dependencies: true
     allow_refresh_group_with_all_dependencies: true

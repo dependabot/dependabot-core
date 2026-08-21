@@ -128,10 +128,13 @@ module Dependabot
 
           # Preprocess to discover existing group PRs and add their dependencies to the handled list before processing
           # the refresh. This prevents multiple PRs from being created for the same dependency during the refresh.
-          existing_pr_dependencies = existing_pr_dependencies_by_directory
+          groups_with_existing_prs = dependency_snapshot.groups.select do |group|
+            pr_exists_for_dependency_group?(group)
+          end
+          existing_pr_dependencies = existing_pr_dependencies_by_directory(groups_with_existing_prs)
 
-          dependency_snapshot.groups.each do |group|
-            next unless group.name != job_group.name && pr_exists_for_dependency_group?(group)
+          groups_with_existing_prs.each do |group|
+            next if group.name == job_group.name
 
             dependency_snapshot.mark_group_handled(group, existing_pr_dependencies)
           end
@@ -146,20 +149,28 @@ module Dependabot
 
         private
 
-        sig { returns(T::Hash[String, T::Set[String]]) }
-        def existing_pr_dependencies_by_directory
-          dependency_snapshot.groups.each_with_object(
-            T.let({}, T::Hash[String, T::Set[String]])
-          ) do |group, dependencies|
+        sig do
+          params(groups: T::Array[Dependabot::DependencyGroup]).returns(T::Hash[String, T::Set[String]])
+        end
+        def existing_pr_dependencies_by_directory(groups)
+          dependencies = T.let(
+            Hash.new do |hash, directory|
+              hash[directory] = T.let(Set.new, T::Set[String])
+            end,
+            T::Hash[String, T::Set[String]]
+          )
+
+          groups.each do |group|
             dependency_snapshot.dependencies_in_existing_pr_for_group(group).each do |dependency|
               name = dependency.name
               next unless name
 
               directory = dependency.directory || "/"
-              dependencies[directory] ||= Set.new
-              T.must(dependencies[directory]).add(name)
+              dependencies[directory].add(name)
             end
           end
+
+          dependencies
         end
 
         sig { returns(T.nilable(Dependabot::DependencyChange)) }
