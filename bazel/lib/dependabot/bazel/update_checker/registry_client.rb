@@ -3,6 +3,7 @@
 
 require "json"
 require "base64"
+require "time"
 require "sorbet-runtime"
 require "dependabot/shared_helpers"
 require "dependabot/clients/github_with_retries"
@@ -66,10 +67,8 @@ module Dependabot
           file_path = "modules/#{module_name}/#{version}/source.json"
 
           begin
-            content = T.unsafe(github_client.contents(GITHUB_REPO, path: file_path))
-            return nil unless content
-
-            decoded_content = Base64.decode64(content.content)
+            content = github_file_content(file_path)
+            decoded_content = Base64.decode64(content)
             JSON.parse(decoded_content)
           rescue StandardError => e
             Dependabot.logger.warn("Failed to get source for #{module_name}@#{version}: #{e.message}")
@@ -82,10 +81,7 @@ module Dependabot
           file_path = "modules/#{module_name}/#{version}/MODULE.bazel"
 
           begin
-            content = T.unsafe(github_client.contents(GITHUB_REPO, path: file_path))
-            return nil unless content
-
-            Base64.decode64(content.content)
+            Base64.decode64(github_file_content(file_path))
           rescue StandardError => e
             Dependabot.logger.warn("Failed to get MODULE.bazel for #{module_name}@#{version}: #{e.message}")
             nil
@@ -102,17 +98,44 @@ module Dependabot
           file_path = "modules/#{module_name}/#{version}/MODULE.bazel"
 
           commits = begin
-            T.unsafe(github_client).commits("bazelbuild/bazel-central-registry", path: file_path, per_page: 1)
+            github_client.commits("bazelbuild/bazel-central-registry", path: file_path, per_page: 1)
           rescue StandardError => e
             Dependabot.logger.warn("Failed to get release date for #{module_name} #{version}: #{e.message}")
+            nil
           end
 
-          return nil unless commits&.any?
+          commit = commits&.first
+          return nil unless commit
 
-          T.unsafe(commits).first.commit.committer.date
+          commit_details = resource_field(commit, :commit, "commit details")
+          committer = resource_field(commit_details, :committer, "committer")
+          value = T.cast(committer[:date], Object)
+          return value if value.is_a?(Time)
+          return Time.parse(value) if value.is_a?(String)
+
+          raise TypeError, "committer date must be a time or string"
         end
 
         private
+
+        sig { params(file_path: String).returns(String) }
+        def github_file_content(file_path)
+          response = github_client.contents(GITHUB_REPO, path: file_path)
+          raise TypeError, "GitHub file response must be an object" unless response.is_a?(Sawyer::Resource)
+
+          value = T.cast(response[:content], Object)
+          return value if value.is_a?(String)
+
+          raise TypeError, "GitHub file content must be a string"
+        end
+
+        sig { params(resource: Sawyer::Resource, key: Symbol, context: String).returns(Sawyer::Resource) }
+        def resource_field(resource, key, context)
+          value = T.cast(resource[key], Object)
+          return value if value.is_a?(Sawyer::Resource)
+
+          raise TypeError, "#{context} must be an object"
+        end
 
         sig { returns(Dependabot::Clients::GithubWithRetries) }
         def github_client

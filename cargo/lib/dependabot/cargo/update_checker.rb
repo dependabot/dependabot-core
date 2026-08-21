@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -221,7 +221,8 @@ module Dependabot
         # of the latest tag that looks like a version.
         if git_commit_checker.pinned_ref_looks_like_version?
           latest_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
-          return latest_tag&.fetch(:commit_sha) || dependency.version
+          commit_sha = latest_tag && tag_commit_sha(latest_tag)
+          return commit_sha || dependency.version
         end
 
         # If the dependency is pinned to a tag that doesn't look like a
@@ -241,7 +242,7 @@ module Dependabot
         if git_commit_checker.pinned_ref_looks_like_version? &&
            latest_git_tag_is_resolvable?
           new_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
-          return T.must(new_tag).fetch(:commit_sha)
+          return T.must(tag_commit_sha(T.must(new_tag)))
         end
 
         # If the dependency is pinned then there's nothing we can do.
@@ -270,7 +271,7 @@ module Dependabot
           dependency_files: dependency_files,
           dependency: dependency,
           unlock_requirement: true,
-          replacement_git_pin: replacement_tag.fetch(:tag)
+          replacement_git_pin: tag_name(replacement_tag)
         ).prepared_dependency_files
 
         VersionResolver.new(
@@ -353,7 +354,7 @@ module Dependabot
         latest_resolvable_version
       end
 
-      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.anything])) }
+      sig { returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash)) }
       def updated_source
         # Never need to update source, unless a git_dependency
         return dependency_source_details unless git_dependency?
@@ -362,16 +363,51 @@ module Dependabot
         if git_commit_checker.pinned_ref_looks_like_version? &&
            latest_git_tag_is_resolvable?
           new_tag = T.must(git_commit_checker.local_tag_for_latest_version(update_cooldown))
-          return T.must(dependency_source_details).merge(ref: new_tag.fetch(:tag))
+          return source_with_ref(T.must(dependency_source_details), tag_name(new_tag))
         end
 
         # Otherwise return the original source
         dependency_source_details
       end
 
-      sig { returns(T.nilable(T::Hash[T.any(String, Symbol), T.anything])) }
+      sig { returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash)) }
       def dependency_source_details
         dependency.source_details
+      end
+
+      sig do
+        params(
+          source: Dependabot::DependencyRequirement::ObjectHash,
+          ref: String
+        ).returns(Dependabot::DependencyRequirement::ObjectHash)
+      end
+      def source_with_ref(source, ref)
+        updated_source = source.dup
+        key = if source.key?(:ref)
+                :ref
+              elsif source.key?("ref")
+                "ref"
+              elsif source.keys.any?(Symbol)
+                :ref
+              else
+                "ref"
+              end
+        updated_source[key] = ref
+        updated_source
+      end
+
+      sig { params(tag: T::Hash[Symbol, Object]).returns(String) }
+      def tag_name(tag)
+        return tag.tag if tag.is_a?(Dependabot::GitTagDetails)
+
+        T.cast(tag.fetch(:tag), String)
+      end
+
+      sig { params(tag: T::Hash[Symbol, Object]).returns(T.nilable(String)) }
+      def tag_commit_sha(tag)
+        return tag.commit_sha if tag.is_a?(Dependabot::GitTagDetails)
+
+        T.cast(tag[:commit_sha], T.nilable(String))
       end
 
       sig { returns(T::Boolean) }

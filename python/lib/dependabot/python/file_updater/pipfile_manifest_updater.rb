@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/python/file_updater"
@@ -53,15 +53,15 @@ module Dependabot
 
           # Loop through each changed requirement
           reqs.each do |new_req, old_req|
-            raise "Bad req match" unless new_req[:file] == T.must(old_req)[:file]
-            next if new_req[:requirement] == T.must(old_req)[:requirement]
-            next unless new_req[:file] == manifest.name
+            raise "Bad req match" unless new_req.file == T.must(old_req).file
+            next if new_req.requirement == T.must(old_req).requirement
+            next unless new_req.file == manifest.name
 
             updated_content = update_manifest_req(
               content: updated_content,
               dep: dependency,
-              old_req: T.must(old_req).fetch(:requirement),
-              new_req: new_req.fetch(:requirement)
+              old_req: T.must(T.must(old_req).requirement_string),
+              new_req: T.must(new_req.requirement_string)
             )
           end
 
@@ -118,7 +118,7 @@ module Dependabot
           changed_requirements =
             dependency.requirements - T.must(dependency.previous_requirements)
 
-          changed_requirements.any? { |f| f[:file] == manifest.name }
+          changed_requirements.any? { |f| f.file == manifest.name }
         end
       end
     end

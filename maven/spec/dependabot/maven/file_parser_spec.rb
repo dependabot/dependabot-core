@@ -1197,6 +1197,7 @@ RSpec.describe Dependabot::Maven::FileParser do
 
         allow(Dependabot::Maven::FileParser::MavenDependencyParser).to receive(:build_dependency_set)
           .and_return(dependency_set)
+        allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:maven_transitive_dependencies).and_return(true)
       end
@@ -1258,6 +1259,86 @@ RSpec.describe Dependabot::Maven::FileParser do
               }
             }]
           )
+        end
+      end
+    end
+
+    context "with maven wrapper files" do
+      let(:wrapper_content) { fixture("wrapper_files", "maven-wrapper-3.9.9-only-script.properties") }
+      let(:wrapper_file) do
+        Dependabot::DependencyFile.new(
+          name: ".mvn/wrapper/maven-wrapper.properties",
+          content: wrapper_content
+        )
+      end
+      let(:files) { [pom, wrapper_file] }
+
+      before do
+        allow(Dependabot::Experiments).to receive(:enabled?).and_return(false)
+        allow(Dependabot::Experiments).to receive(:enabled?)
+          .with(:maven_wrapper_updater).and_return(true)
+      end
+
+      it "includes apache-maven as a dependency" do
+        expect(dependencies.map(&:name)).to include("org.apache.maven:apache-maven")
+      end
+
+      it "includes maven-wrapper as a dependency" do
+        expect(dependencies.map(&:name)).to include("org.apache.maven.wrapper:maven-wrapper")
+      end
+
+      it "sets the correct version for apache-maven" do
+        dep = dependencies.find { |d| d.name == "org.apache.maven:apache-maven" }
+        expect(dep.version).to eq("3.9.9")
+      end
+
+      it "sets the correct version for maven-wrapper" do
+        dep = dependencies.find { |d| d.name == "org.apache.maven.wrapper:maven-wrapper" }
+        expect(dep.version).to eq("3.3.4")
+      end
+
+      it "uses maven-distribution as the source type" do
+        dep = dependencies.find { |d| d.name == "org.apache.maven:apache-maven" }
+        expect(dep.requirements.first[:source][:type]).to eq("maven-distribution")
+      end
+
+      context "when transitive dependency parsing is enabled" do
+        let(:wrapper_content) { fixture("wrapper_files", "maven-wrapper-3.9.6-bin.properties") }
+
+        before do
+          allow(Dependabot::Maven::FileParser::MavenDependencyParser).to receive(:build_dependency_set)
+            .and_return(Dependabot::FileParsers::Base::DependencySet.new)
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:maven_transitive_dependencies).and_return(true)
+        end
+
+        it "includes the wrapper dependencies" do
+          expect(dependencies.map(&:name)).to include(
+            "org.apache.maven:apache-maven",
+            "org.apache.maven.wrapper:maven-wrapper"
+          )
+        end
+
+        it "preserves every wrapper requirement" do
+          dependency = dependencies.find { |dep| dep.name == "org.apache.maven:apache-maven" }
+          properties = dependency.requirements.map { |requirement| requirement.dig(:source, :property) }
+
+          expect(properties).to contain_exactly("distributionUrl", "wrapperUrl")
+        end
+      end
+
+      context "when the maven_wrapper_updater experiment is disabled" do
+        before do
+          allow(Dependabot::Experiments).to receive(:enabled?)
+            .with(:maven_wrapper_updater).and_return(false)
+        end
+
+        it "does not include apache-maven as a dependency" do
+          expect(dependencies.map(&:name)).not_to include("org.apache.maven:apache-maven")
+        end
+
+        it "does not include maven-wrapper as a dependency" do
+          expect(dependencies.map(&:name)).not_to include("org.apache.maven.wrapper:maven-wrapper")
         end
       end
     end

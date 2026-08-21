@@ -1,5 +1,6 @@
 # shellcheck shell=bash
 export UPDATER_CORE_IMAGE="ghcr.io/dependabot/dependabot-updater-core"
+export UPDATER_CORE_LOCAL_IMAGE="dependabot-updater-core-local"
 export UPDATER_IMAGE="ghcr.io/dependabot/dependabot-updater-"
 export DOCKER_BUILDKIT=1
 
@@ -132,6 +133,7 @@ function docker_build() {
     --build-arg USER_GID=$DEPENDABOT_USER_GID \
     --build-arg DEPENDABOT_UPDATER_VERSION=$DEPENDABOT_UPDATER_VERSION \
     -t "$UPDATER_CORE_IMAGE" \
+    -t "$UPDATER_CORE_LOCAL_IMAGE" \
     -f Dockerfile.updater-core \
     .; then
     [[ -z "$core_oci_tempdir" ]] || rm -rf "$core_oci_tempdir"
@@ -166,6 +168,10 @@ function docker_build() {
   local -a ecosystem_context_args=()
   if [[ -n "$core_oci_layout" ]]; then
     ecosystem_context_args=(--build-context "$UPDATER_CORE_IMAGE=oci-layout://$core_oci_layout")
+  else
+    # Works around upstream bug https://github.com/moby/buildkit/issues/6956
+    # Remove when the bug is resolved.
+    ecosystem_context_args=(--build-context "$UPDATER_CORE_IMAGE=docker-image://$UPDATER_CORE_LOCAL_IMAGE")
   fi
 
   # shellcheck disable=SC2086  # word-splitting is intentional for build args

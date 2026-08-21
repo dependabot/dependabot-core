@@ -10,9 +10,9 @@ function Write-LogMessage([string] $message, [switch] $NoNewLine) {
     }
 }
 
-function Get-SdkVersionsToInstall([string] $repoRoot, [string[]] $updateDirectories, [string[]] $installedSdks) {
+function Get-SdkVersionsToInstall([string] $repoRoot, [string[]] $installedSdks) {
     $sdksToInstall = @()
-    $globalJsonPaths = Get-GlobalJsonForSdkInstall -repoRoot $repoRoot -updateDirectories $updateDirectories
+    $globalJsonPaths = Get-GlobalJsonForSdkInstall -repoRoot $repoRoot
     Write-LogMessage "Discovered global.json files: $globalJsonPaths"
     foreach ($globalJsonPath in $globalJsonPaths) {
         $resolvedGlobalJsonPath = Convert-Path "$repoRoot/$globalJsonPath"
@@ -54,117 +54,30 @@ function Get-SdkVersionsToInstall([string] $repoRoot, [string[]] $updateDirector
     return ,$sdksToInstall
 }
 
-function Get-DirectoriesMatchingPattern([string] $repoRoot, [string] $pattern) {
-    $repoRoot = $repoRoot.Replace("\", "/").TrimEnd("/")
-    $pattern = $pattern.Replace("\", "/").Trim("/")
-    if ($pattern -eq ".") {
-        # this handles a common scenario where `$pattern` is initially "/."
-        $pattern = ""
-    }
-    $normalizedDirectory = "$repoRoot/$pattern"
-    $directoryRegex = "^"
-    $includeAnchor = $true
-    for ($i = 0; $i -lt $normalizedDirectory.Length; $i++) {
-        # well-known patterns
-        if ($normalizedDirectory.Substring($i) -eq "/**") {
-            # /** at the end means just match everything and we're done _or_ the end of the path
-            $directoryRegex += "(/.*$|$)"
-            $includeAnchor = $false
-            break
-        }
-        elseif ($normalizedDirectory.Substring($i).StartsWith("**")) {
-            # match anything, directory separator or not
-            $directoryRegex += ".*"
-            $i++
-        }
-        else {
-            $ch = $normalizedDirectory[$i]
-            if ($ch -eq "*") {
-                # * => match anything except directory separator
-                $directoryRegex += "[^/]+"
-            }
-            elseif ($ch -eq "?") {
-                # ? => match any single character except directory separator
-                $directoryRegex += "[^/]"
-            }
-            elseif ("+()[]{}^$.|".Contains($ch)) {
-                $directoryRegex += "\" + $ch
-            }
-            else {
-                $directoryRegex += $ch
-            }
-        }
-    }
-
-    # remove trailing slash
-    $directoryRegex = $directoryRegex.TrimEnd("/")
-
-    if ($includeAnchor) {
-        $directoryRegex += "$"
-    }
-
-    return $directoryRegex
-}
-
-# Walk from each update directory to the root reporting all global.json files.
-function Get-GlobalJsonForSdkInstall([string] $repoRoot, [string[]] $updateDirectories) {
+function Get-GlobalJsonForSdkInstall([string] $repoRoot) {
     $repoRoot = Convert-Path $repoRoot
-    Write-LogMessage "Discovering global.json files for SDK install with repo root '$repoRoot' and update directories '$updateDirectories'"
-    $repoRootParent = Split-Path -Parent $repoRoot
-
+    Write-LogMessage "Discovering global.json files for SDK install under repo root '$repoRoot'"
     $resolvedGlobalJsonPaths = @()
-    # doing a wildcard recursive match just on directories isn't straightforward so instead we
-    #   1. list all subdirectories in the repo
-    #   2. convert the update directory to a regular expression
-    #   3. filter subdirectory list to those that match the pattern
-    # from there we check that directory and each of its parents for global.json files
-    $allSubdirectories = Get-ChildItem -Path $repoRoot -Recurse -Directory | Select-Object -ExpandProperty FullName
-    if ($null -eq $allSubdirectories) {
-        # if there are no subdirectories, Get-ChildItem returns $null instead of an empty array, so we need to handle that case
-        $allSubdirectories = @()
-    }
-    if ($allSubdirectories.GetType().Name -eq "String") {
-        # if only a single value was returned, then force it to an array
-        $allSubdirectories = @($allSubdirectories)
-    }
-    $allSubdirectories += $repoRoot # the previous line doesn't include the starting directory, so we manually include it here
-    $allSubdirectories = $allSubdirectories | ForEach-Object { $_.Replace("\", "/") }
-    foreach ($updateDirectory in $updateDirectories) {
-        $updateDirectoryRegex = Get-DirectoriesMatchingPattern -repoRoot $repoRoot -pattern $updateDirectory
-        Write-LogMessage "  Processing update directory '$updateDirectory' with regex '$updateDirectoryRegex'"
-        $matchingDirectories = $allSubdirectories | Where-Object { $_ -match $updateDirectoryRegex }
-        foreach ($candidateDir in $matchingDirectories) {
-            Write-LogMessage "    Candidate directory '$candidateDir' matches update directory pattern."
-            # directory matches the pattern, so now we can check this and every directory up to the root for global.json files
-            while ($true) {
-                $globalJsonPath = Join-Path $candidateDir "global.json"
-                Write-LogMessage "      Checking for file '$globalJsonPath' ... " -NoNewLine
-                if (Test-Path -LiteralPath $globalJsonPath -PathType Leaf) {
-                    Write-LogMessage "Found"
-                    $repoRelativeGlobalJsonPath = [System.IO.Path]::GetRelativePath($repoRoot, $globalJsonPath).Replace("\", "/")
-                    if ($repoRelativeGlobalJsonPath -in $resolvedGlobalJsonPaths) {
-                        Write-LogMessage "        '$repoRelativeGlobalJsonPath' already in list of global.json files to process, skipping"
-                    }
-                    else {
-                        Write-LogMessage "        Adding '$repoRelativeGlobalJsonPath' to list of global.json files to process"
-                        $resolvedGlobalJsonPaths += $repoRelativeGlobalJsonPath
-                    }
-                }
-                else {
-                    Write-LogMessage "Not found"
-                }
+    $directoriesToSearch = [System.Collections.Generic.Queue[string]]::new()
+    $directoriesToSearch.Enqueue($repoRoot)
+    while ($directoriesToSearch.Count -gt 0) {
+        $directory = $directoriesToSearch.Dequeue()
+        $globalJsonPath = Join-Path $directory "global.json"
+        if (Test-Path -LiteralPath $globalJsonPath -PathType Leaf) {
+            $resolvedGlobalJsonPaths += [System.IO.Path]::GetRelativePath($repoRoot, $globalJsonPath).Replace("\", "/")
+        }
 
-                $candidateDir = Split-Path -Parent $candidateDir
-                if ($null -eq $candidateDir -or `
-                    $candidateDir -eq $repoRootParent) {
-                    Write-LogMessage "      Reached filesystem root or parent of repo root, stopping search in this path"
-                    break
-                }
+        $childDirectories = Get-ChildItem -LiteralPath $directory -Directory -Force |
+            Where-Object {
+                $_.Name -ne ".git" -and
+                -not ($_.Attributes -band [System.IO.FileAttributes]::ReparsePoint)
             }
+        foreach ($childDirectory in $childDirectories) {
+            $directoriesToSearch.Enqueue($childDirectory.FullName)
         }
     }
 
-    return ,$resolvedGlobalJsonPaths
+    return ,($resolvedGlobalJsonPaths | Sort-Object)
 }
 
 function Get-Job([string]$jobFilePath) {
@@ -173,9 +86,7 @@ function Get-Job([string]$jobFilePath) {
     return $job
 }
 
-function Install-Sdks([string]$jobFilePath, [string]$repoContentsPath, [string]$dotnetInstallScriptPath, [string]$dotnetInstallDir) {
-    $job = Get-Job -jobFilePath $jobFilePath
-
+function Install-Sdks([string]$repoContentsPath, [string]$dotnetInstallScriptPath, [string]$dotnetInstallDir) {
     $installedSdks = dotnet --list-sdks | ForEach-Object { $_.Split(' ')[0] }
     if ($installedSdks.GetType().Name -eq "String") {
         # if only a single value was returned (expected in the container), then force it to an array
@@ -184,15 +95,7 @@ function Install-Sdks([string]$jobFilePath, [string]$repoContentsPath, [string]$
     Write-LogMessage "Currently installed SDKs: $installedSdks"
     $rootDir = Convert-Path $repoContentsPath
 
-    $candidateDirectories = @()
-    if ("directory" -in $job.source.PSobject.Properties.Name) {
-        $candidateDirectories += $job.source.directory
-    }
-    if ("directories" -in $job.source.PSobject.Properties.Name) {
-        $candidateDirectories += $job.source.directories
-    }
-
-    $sdksToInstall = Get-SdkVersionsToInstall -repoRoot $rootDir -updateDirectories $candidateDirectories -installedSdks $installedSdks
+    $sdksToInstall = Get-SdkVersionsToInstall -repoRoot $rootDir -installedSdks $installedSdks
     foreach ($sdkVersion in $sdksToInstall) {
         $versionParts = $sdkVersion.Split(".")
         if (($versionParts.Length -eq 2) -or ($versionParts.Length -eq 3 -and $versionParts[2] -eq "0")) {

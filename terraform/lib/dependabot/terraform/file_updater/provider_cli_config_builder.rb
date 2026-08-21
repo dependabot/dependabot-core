@@ -75,12 +75,10 @@ module Dependabot
         def target_provider_source
           req = dependency.requirements.first
           return unless req
+          return unless req.source_string("type") == "provider"
 
-          source = req[:source]
-          return unless source && source[:type] == "provider"
-
-          hostname = source[:registry_hostname] || DEFAULT_REGISTRY
-          identifier = source[:module_identifier]
+          hostname = req.source_string("registry_hostname") || DEFAULT_REGISTRY
+          identifier = req.source_string("module_identifier")
           return unless identifier
 
           "#{hostname}/#{identifier}".downcase

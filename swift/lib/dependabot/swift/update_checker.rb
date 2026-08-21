@@ -171,7 +171,10 @@ module Dependabot
         Version.new(lowest_resolvable_security_fix_version)
       end
 
-      sig { params(requirements: T::Array[T::Hash[Symbol, Object]]).returns(VersionResolver) }
+      sig do
+        params(requirements: T::Array[Dependabot::DependencyRequirement])
+          .returns(VersionResolver)
+      end
       def version_resolver_for(requirements)
         VersionResolver.new(
           dependency: dependency,
@@ -187,21 +190,24 @@ module Dependabot
         git_commit_checker.local_tag_for_latest_version(update_cooldown)
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def unlocked_requirements
         NativeRequirement.map_requirements(old_requirements) do |_old_requirement|
           "\"#{dependency.version}\"...\"#{latest_version}\""
         end
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def force_lowest_security_fix_requirements
         NativeRequirement.map_requirements(old_requirements) do |_old_requirement|
           "\"#{lowest_security_fix_version}\"...\"#{lowest_security_fix_version}\""
         end
       end
 
-      sig { params(new_requirements: T::Array[T::Hash[Symbol, Object]]).returns(Dependabot::DependencyFile) }
+      sig do
+        params(new_requirements: T::Array[Dependabot::DependencyRequirement])
+          .returns(Dependabot::DependencyFile)
+      end
       def prepare_manifest_for(new_requirements)
         manifest_file = T.must(manifest)
 
@@ -263,7 +269,10 @@ module Dependabot
         find_lowest_secure_version(tags)
       end
 
-      sig { params(tags: T::Array[T::Hash[Symbol, Object]]).returns(T.nilable(T::Hash[Symbol, Object])) }
+      sig do
+        params(tags: T::Array[T::Hash[Symbol, Object]])
+          .returns(T.nilable(T::Hash[Symbol, Object]))
+      end
       def find_lowest_secure_version(tags)
         relevant_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
           tags.filter_map { |tag| tag_version(tag) },
@@ -275,7 +284,10 @@ module Dependabot
         relevant_tags.min_by { |tag| T.must(tag_version(tag)) }
       end
 
-      sig { params(tags_array: T::Array[T::Hash[Symbol, Object]]).returns(T::Array[T::Hash[Symbol, Object]]) }
+      sig do
+        params(tags_array: T::Array[T::Hash[Symbol, Object]])
+          .returns(T::Array[T::Hash[Symbol, Object]])
+      end
       def filter_lower_tags(tags_array)
         return tags_array unless current_version
 
@@ -288,7 +300,7 @@ module Dependabot
 
       sig { params(tag: T::Hash[Symbol, Object]).returns(T.nilable(Dependabot::Version)) }
       def tag_version(tag)
-        version = tag[:version]
+        version = tag.is_a?(Dependabot::GitTagDetails) ? tag.version : tag[:version]
         Dependabot::Swift::Version.new(version.to_s) if version.is_a?(Gem::Version)
       end
 

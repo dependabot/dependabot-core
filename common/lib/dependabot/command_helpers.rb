@@ -1,7 +1,6 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
-require "open3"
 require "timeout"
 require "sorbet-runtime"
 require "shellwords"
@@ -23,10 +22,15 @@ module Dependabot
       T.nilable(T.proc.params(data: String).returns(T::Hash[Symbol, T.anything]))
     end
 
+    Environment = T.type_alias { T::Hash[String, String] }
+    SpawnOptions = T.type_alias { T::Hash[Symbol, T.anything] }
+
     EnvCmdItem = T.type_alias do
       T.any(
         String,
-        T::Hash[T.any(String, Symbol), T.anything]
+        T::Array[String],
+        Environment,
+        SpawnOptions
       )
     end
 
@@ -100,25 +104,31 @@ module Dependabot
       start_time = Time.now
 
       begin
-        T.unsafe(Open3).popen3(*env_cmd) do |stdin, stdout_io, stderr_io, wait_thr| # rubocop:disable Metrics/BlockLength
+        stdout_io, stderr_io, wait_thr = open_process(env_cmd)
+        begin
           pid = wait_thr.pid
           command_string = command_string_for_logging(env_cmd)
           log_level = short_git_config_command?(command_string) ? :debug : :info
-          sanitized_env_cmd = if env_cmd.first.is_a?(Hash)
-                                [SharedHelpers.send(:sanitize_env_for_logging, env_cmd.first), *env_cmd[1..]]
-                              else
-                                env_cmd
-                              end
-          command_for_log = sanitized_env_cmd.join(" ")
+          first_item = env_cmd.first
+          sanitized_env_cmd = T.let(
+            if first_item.is_a?(Hash)
+              environment = extract_environment(env_cmd.dup)
+              [T.must(SharedHelpers.sanitize_env_for_logging(environment)), *env_cmd.drop(1)]
+            else
+              env_cmd
+            end,
+            T::Array[EnvCmdItem]
+          )
+          command_for_log = sanitized_env_cmd.map { |item| item.is_a?(Array) ? item.first : item }.join(" ")
           Dependabot.logger.public_send(log_level, "Started process PID: #{pid} with command: #{command_for_log}")
 
           # Write to stdin if input data is provided
           begin
-            stdin&.write(stdin_data) if stdin_data
+            stdout_io.write(stdin_data) if stdin_data
           rescue Errno::EPIPE
             # Process exited before reading stdin - continue to collect output
           end
-          stdin&.close
+          stdout_io.close_write
 
           stdout_io.sync = true
           stderr_io.sync = true
@@ -190,6 +200,10 @@ module Dependabot
 
           status = ProcessStatus.new(wait_thr.value)
           Dependabot.logger.public_send(log_level, "Process PID: #{pid} completed with status: #{status}")
+        ensure
+          stdout_io.close unless stdout_io.closed?
+          stderr_io.close unless stderr_io.closed?
+          wait_thr.join
         end
       rescue Timeout::Error => e
         Dependabot.logger.error("Process PID: #{pid} failed due to timeout: #{e.message}")
@@ -213,6 +227,61 @@ module Dependabot
     # rubocop:enable Metrics/MethodLength
     # rubocop:enable Metrics/PerceivedComplexity
     # rubocop:enable Metrics/CyclomaticComplexity
+
+    sig { params(env_cmd: T::Array[EnvCmdItem]).returns([IO, IO, Process::Waiter]) }
+    def self.open_process(env_cmd)
+      process_io = T.let(nil, T.nilable(IO))
+      stderr_io = T.let(nil, T.nilable(IO))
+      stderr_writer = T.let(nil, T.nilable(IO))
+      arguments = env_cmd.dup
+      environment = extract_environment(arguments)
+      options = extract_options(arguments)
+      command = command_for_popen(arguments)
+
+      stderr_io, stderr_writer = IO.pipe
+      options[:err] = stderr_writer
+      process_io = T.cast(IO.popen(environment, command, "r+", options), IO)
+      stderr_writer.close
+
+      wait_thread = T.cast(Process.detach(process_io.pid), Process::Waiter)
+      [process_io, stderr_io, wait_thread]
+    rescue StandardError
+      process_io.close if process_io && !process_io.closed?
+      stderr_io.close if stderr_io && !stderr_io.closed?
+      stderr_writer.close if stderr_writer && !stderr_writer.closed?
+      raise
+    end
+    private_class_method :open_process
+
+    sig { params(arguments: T::Array[EnvCmdItem]).returns(Environment) }
+    def self.extract_environment(arguments)
+      return {} unless arguments.first.is_a?(Hash)
+
+      T.cast(arguments.shift, Environment)
+    end
+    private_class_method :extract_environment
+
+    sig { params(arguments: T::Array[EnvCmdItem]).returns(SpawnOptions) }
+    def self.extract_options(arguments)
+      return {} unless arguments.last.is_a?(Hash)
+
+      T.cast(arguments.pop, SpawnOptions).dup
+    end
+    private_class_method :extract_options
+
+    sig do
+      params(arguments: T::Array[EnvCmdItem])
+        .returns(T.any(String, T::Array[T.any(String, T::Array[String])]))
+    end
+    def self.command_for_popen(arguments)
+      raise ArgumentError, "command must not be empty" if arguments.empty?
+
+      first_argument = arguments.first
+      return first_argument if arguments.one? && first_argument.is_a?(String)
+
+      T.cast(arguments, T::Array[T.any(String, T::Array[String])])
+    end
+    private_class_method :command_for_popen
 
     # Terminate a process by PID
     sig { params(pid: T.nilable(Integer)).void }
@@ -263,7 +332,14 @@ module Dependabot
 
     sig { params(env_cmd: T::Array[EnvCmdItem]).returns(T.nilable(String)) }
     def self.command_string_for_logging(env_cmd)
-      T.cast(env_cmd.find { |item| item.is_a?(String) }, T.nilable(String))
+      command_parts = env_cmd.filter_map do |item|
+        case item
+        when Array then item.first
+        when String then item
+        end
+      end
+
+      command_parts.join(" ") unless command_parts.empty?
     end
     private_class_method :command_string_for_logging
 

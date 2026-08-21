@@ -441,6 +441,20 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
       end
 
       it { is_expected.to be(false) }
+
+      context "with string-keyed source details" do
+        let(:source) do
+          {
+            "type" => "git",
+            "url" => "https://github.com/cloudposse/terraform-null-label.git",
+            "branch" => nil,
+            "ref" => "tags/0.3.7",
+            "proxy_url" => "https://my.example.com"
+          }
+        end
+
+        it { is_expected.to be(false) }
+      end
     end
   end
 end
