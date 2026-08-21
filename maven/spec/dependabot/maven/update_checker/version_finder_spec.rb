@@ -775,6 +775,137 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
     end
 
+    context "with cooldown options and a repository without directory listings" do
+      let(:dependency_version) { "1.0.0" }
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 14)
+      end
+      let(:maven_metadata) do
+        <<~XML
+          <metadata>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <versioning>
+              <latest>1.2.0</latest>
+              <release>1.2.0</release>
+              <versions>
+                <version>1.0.0</version>
+                <version>1.1.0</version>
+                <version>1.2.0</version>
+              </versions>
+            </versioning>
+          </metadata>
+        XML
+      end
+      let(:version_1_2_pom_url) do
+        "https://repo.maven.apache.org/maven2/com/google/guava/guava/1.2.0/guava-1.2.0.pom"
+      end
+      let(:version_1_1_pom_url) do
+        "https://repo.maven.apache.org/maven2/com/google/guava/guava/1.1.0/guava-1.1.0.pom"
+      end
+      let(:version_1_0_pom_url) do
+        "https://repo.maven.apache.org/maven2/com/google/guava/guava/1.0.0/guava-1.0.0.pom"
+      end
+      let(:version_1_1_jar_url) do
+        "https://repo.maven.apache.org/maven2/com/google/guava/guava/1.1.0/guava-1.1.0.jar"
+      end
+      let(:version_1_2_jar_url) do
+        "https://repo.maven.apache.org/maven2/com/google/guava/guava/1.2.0/guava-1.2.0.jar"
+      end
+      let(:version_1_0_jar_url) do
+        "https://repo.maven.apache.org/maven2/com/google/guava/guava/1.0.0/guava-1.0.0.jar"
+      end
+
+      before do
+        allow(Time).to receive(:now).and_return(Time.utc(2026, 8, 17))
+        stub_request(:get, maven_central_metadata_url).to_return(status: 200, body: maven_metadata)
+        stub_request(:get, maven_central_base_url_with_slash).to_return(status: 404)
+        stub_request(:head, version_1_2_pom_url).to_return(
+          status: 200,
+          headers: { "Last-Modified" => "Mon, 10 Aug 2026 10:08:43 GMT" }
+        )
+        stub_request(:head, version_1_1_pom_url).to_return(
+          status: 200,
+          headers: { "Last-Modified" => "Wed, 01 Jul 2026 10:08:43 GMT" }
+        )
+        stub_request(:head, version_1_1_jar_url).to_return(status: 200)
+      end
+
+      it "selects the newest release outside the cooldown window" do
+        expect(latest_version_details[:version]).to eq(version_class.new("1.1.0"))
+      end
+
+      it "loads fallback metadata lazily" do
+        latest_version_details
+
+        expect(a_request(:head, version_1_2_pom_url)).to have_been_made.once
+        expect(a_request(:head, version_1_1_pom_url)).to have_been_made.once
+        expect(a_request(:head, version_1_0_pom_url)).not_to have_been_made
+      end
+
+      context "when the fallback cannot resolve a release date" do
+        before do
+          stub_request(:head, version_1_2_pom_url).to_return(status: 200, headers: {})
+          stub_request(:head, version_1_2_jar_url).to_return(status: 200)
+        end
+
+        it "treats the release as outside the cooldown window" do
+          expect(latest_version_details[:version]).to eq(version_class.new("1.2.0"))
+        end
+      end
+
+      context "when the dependency is not included in the cooldown configuration" do
+        let(:cooldown_options) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 14, include: ["org.example:*"])
+        end
+
+        before do
+          stub_request(:head, version_1_2_jar_url).to_return(status: 200)
+        end
+
+        it "selects the newest release without issuing fallback requests" do
+          expect(latest_version_details[:version]).to eq(version_class.new("1.2.0"))
+          expect(a_request(:head, version_1_2_pom_url)).not_to have_been_made
+          expect(a_request(:head, version_1_1_pom_url)).not_to have_been_made
+          expect(a_request(:head, version_1_0_pom_url)).not_to have_been_made
+        end
+      end
+
+      context "when the newest eligible release is not actually published" do
+        before do
+          stub_request(:head, version_1_1_pom_url).to_return(status: 404)
+          stub_request(:head, version_1_1_jar_url).to_return(status: 404)
+          stub_request(:head, version_1_0_pom_url).to_return(
+            status: 200,
+            headers: { "Last-Modified" => "Wed, 01 Jul 2026 10:08:43 GMT" }
+          )
+          stub_request(:head, version_1_0_jar_url).to_return(status: 200)
+        end
+
+        it "continues to the next released version" do
+          expect(latest_version_details[:version]).to eq(version_class.new("1.0.0"))
+        end
+      end
+
+      context "when every release is inside the cooldown window" do
+        before do
+          stub_request(:head, version_1_1_pom_url).to_return(
+            status: 200,
+            headers: { "Last-Modified" => "Mon, 10 Aug 2026 10:08:43 GMT" }
+          )
+          stub_request(:head, version_1_0_pom_url).to_return(
+            status: 200,
+            headers: { "Last-Modified" => "Mon, 10 Aug 2026 10:08:43 GMT" }
+          )
+          stub_request(:head, version_1_0_jar_url).to_return(status: 200)
+        end
+
+        it "falls back to the current version" do
+          expect(latest_version_details[:version]).to eq(version_class.new("1.0.0"))
+        end
+      end
+    end
+
     context "when the release has a nil version" do
       before do
         allow(finder).to receive(:fetch_latest_release).and_return(
