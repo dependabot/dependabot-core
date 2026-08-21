@@ -776,7 +776,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       end
 
       it "keeps the hashes returned by the working index in the generated file" do
-        expect(updated_files.first.content).to include("--hash=sha256:456def")
+        expect(updater.updated_dependency_files.first.content).to include("--hash=sha256:456def")
       end
     end
 
