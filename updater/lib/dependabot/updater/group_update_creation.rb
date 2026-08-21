@@ -188,12 +188,8 @@ module Dependabot
         handled_dependency = dependency_snapshot.handled_dependencies.include?(dependency.name)
 
         # Check if this is a group update
-        is_group_update = if Dependabot::Experiments.enabled?(:allow_refresh_group_with_all_dependencies)
-                            # this ensures dependency_group_to_refresh is set to the group name
-                            job.dependency_group_to_refresh == group.name
-                          else
-                            false
-                          end
+        # this ensures dependency_group_to_refresh is set to the group name
+        is_group_update = job.dependency_group_to_refresh == group.name
 
         # Include all dependencies when performing a group update.
         if handled_dependency && !is_group_update
