@@ -349,6 +349,70 @@ RSpec.describe Dependabot::Nix::FileUpdater do
       end
     end
 
+    context "with an indirect registry input" do
+      let(:flake_nix_content) do
+        <<~NIX
+          {
+            inputs.nixpkgs.url = "nixpkgs/nixos-24.11";
+            outputs = { self, nixpkgs }: { };
+          }
+        NIX
+      end
+      let(:dependency) do
+        git_dependency(
+          name: "nixpkgs",
+          version: "new_sha_abc123",
+          previous_version: "old_sha_abc123",
+          url: "https://github.com/NixOS/nixpkgs",
+          ref: "nixos-24.11"
+        )
+      end
+      let(:flake_lock_content) do
+        JSON.pretty_generate(
+          "nodes" => {
+            "nixpkgs" => {
+              "locked" => {
+                "lastModified" => 1_700_000_000,
+                "narHash" => "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+                "owner" => "NixOS",
+                "repo" => "nixpkgs",
+                "rev" => "old_sha_abc123",
+                "type" => "github"
+              },
+              "original" => {
+                "id" => "nixpkgs",
+                "ref" => "nixos-24.11",
+                "type" => "indirect"
+              }
+            },
+            "root" => {
+              "inputs" => {
+                "nixpkgs" => "nixpkgs"
+              }
+            }
+          },
+          "root" => "root",
+          "version" => 7
+        )
+      end
+      let(:updated_lock_content) do
+        flake_lock_content.gsub("old_sha_abc123", "new_sha_abc123")
+      end
+
+      it "uses the resolved source for the lock override" do
+        expect(updated_files.map(&:name)).to eq(["flake.lock"])
+        expect(Dependabot::SharedHelpers)
+          .to have_received(:run_shell_command)
+          .with(
+            lock_command(
+              input_path: "nixpkgs",
+              ref: "github:NixOS/nixpkgs/new_sha_abc123"
+            ),
+            fingerprint: "nix flake lock --override-input <input_path> <flake_ref>"
+          )
+      end
+    end
+
     context "with a root input that follows a nested input" do
       let(:dependency) do
         git_dependency(

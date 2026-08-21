@@ -23,6 +23,11 @@ RSpec.describe Dependabot::Nix::Lockfile do
         .to eq("3030f185ba6a4bf4f18b87f345f104e6a6961f34")
       expect(lockfile.original_source("nixpkgs"))
         .to include("type" => "github", "ref" => "nixos-unstable")
+      expect(lockfile.locked_source("nixpkgs"))
+        .to include(
+          "type" => "github",
+          "rev" => "3030f185ba6a4bf4f18b87f345f104e6a6961f34"
+        )
     end
 
     context "when a root input follows a nested input path" do

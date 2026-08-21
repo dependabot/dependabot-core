@@ -51,10 +51,16 @@ module Dependabot
         original if original.is_a?(Hash)
       end
 
+      sig { params(input_name: String).returns(T.nilable(Node)) }
+      def locked_source(input_name)
+        locked = input_node(input_name)&.fetch("locked", nil)
+        locked if locked.is_a?(Hash)
+      end
+
       sig { params(input_name: String).returns(T.nilable(String)) }
       def locked_revision(input_name)
-        locked = input_node(input_name)&.fetch("locked", nil)
-        return unless locked.is_a?(Hash)
+        locked = locked_source(input_name)
+        return unless locked
 
         revision = locked["rev"]
         revision if revision.is_a?(String)
