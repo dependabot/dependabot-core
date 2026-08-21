@@ -181,6 +181,15 @@ module Dependabot
         @files = files
       end
 
+      # The canonical set of files intended to cross the fetch/update trust
+      # boundary. Callers that persist fetched files should serialize exactly
+      # this set. Ecosystems may override this method to narrow the default
+      # full fetched set.
+      sig { overridable.returns(T::Array[DependencyFile]) }
+      def files_to_persist
+        files
+      end
+
       sig { returns(T.nilable(String)) }
       def commit
         resolved_cloned_commit = cloned_commit

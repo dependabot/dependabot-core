@@ -13,7 +13,7 @@ require "octokit"
 require "sorbet-runtime"
 
 module Dependabot
-  class FileFetcherCommand < BaseCommand
+  class FileFetcherCommand < BaseCommand # rubocop:disable Metrics/ClassLength
     extend T::Sig
     include FileFetcherCommandConnectivity
     include FileFetcherCommandLocalCheckout
@@ -93,13 +93,25 @@ module Dependabot
     sig { returns(Dependabot::FetchedFiles) }
     def files
       Dependabot::FetchedFiles.new(
-        dependency_files: T.must(job.source.directories ? dependency_files_for_multi_directories : dependency_files),
+        dependency_files: files_crossing_update_boundary,
         base_commit_sha: T.must(base_commit_sha),
         directory_fetch_errors: directory_fetch_errors
       )
     end
 
     private
+
+    # Under isolate_fetch_update only files_to_persist may cross into the clone-less update phase.
+    sig { returns(T::Array[Dependabot::DependencyFile]) }
+    def files_crossing_update_boundary
+      isolate = Experiments.enabled?(:isolate_fetch_update)
+      if job.source.directories
+        full_set = T.must(dependency_files_for_multi_directories)
+        isolate ? fetched_directory_fetchers.flat_map(&:files_to_persist) : full_set
+      else
+        isolate ? file_fetcher.files_to_persist : T.must(dependency_files)
+      end
+    end
 
     # When only a single directory is specified via `directories:` (plural), normalize it to use
     # `directory:` (singular) so the simpler, proven single-directory code path is used.
@@ -248,8 +260,14 @@ module Dependabot
           next
         end
         post_ecosystem_versions(ff) if should_record_ecosystem_versions?
+        fetched_directory_fetchers << ff
         files
       end&.compact
+    end
+
+    sig { returns(T::Array[Dependabot::FileFetchers::Base]) }
+    def fetched_directory_fetchers
+      @fetched_directory_fetchers ||= T.let([], T.nilable(T::Array[Dependabot::FileFetchers::Base]))
     end
 
     sig { returns(T.nilable(T::Array[Dependabot::DependencyFile])) }
