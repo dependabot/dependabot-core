@@ -138,19 +138,23 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
       end
     end
 
-    context "with non-shorthand URL" do
+    context "with a generic Git URL" do
       let(:content) do
         <<~NIX
           {
-            inputs.mylib.url = "git+https://example.com/repo.git?ref=main";
+            inputs.mylib.url = "git+https://example.com/repo.git?ref=main&dir=nix";
             outputs = { self, mylib }: { };
           }
         NIX
       end
 
-      it "returns nil for non-shorthand URLs" do
+      it "parses the ref and query" do
         result = described_class.find_input_url(content, "mylib")
-        expect(result).to be_nil
+
+        expect(result).not_to be_nil
+        expect(result.scheme).to eq("git")
+        expect(result.ref).to eq("main")
+        expect(result.query).to eq("ref=main&dir=nix")
       end
     end
 
@@ -303,6 +307,25 @@ RSpec.describe Dependabot::Nix::FlakeNixParser do
         updated = described_class.update_input_ref(content, "nixpkgs", "nixos-25.05")
 
         expect(updated).to include('"github:NixOS/nixpkgs/nixos-25.05?host=github.corp.example.com"')
+      end
+    end
+
+    context "with a generic Git URL" do
+      let(:content) do
+        <<~NIX
+          {
+            inputs.mylib.url = "git+https://example.com/repo.git?ref=v1.0.0&dir=nix";
+            outputs = { self, mylib }: { };
+          }
+        NIX
+      end
+
+      it "rewrites the ref and preserves other query parameters" do
+        updated = described_class.update_input_ref(content, "mylib", "v2.0.0")
+
+        expect(updated).to include(
+          '"git+https://example.com/repo.git?ref=v2.0.0&dir=nix"'
+        )
       end
     end
 

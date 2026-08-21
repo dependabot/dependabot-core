@@ -148,6 +148,67 @@ RSpec.describe Dependabot::Nix::FileParser do
       end
     end
 
+    context "with a root input that follows a nested input path" do
+      let(:flake_lock_content) do
+        <<~JSON
+          {
+            "nodes": {
+              "parent-node": {
+                "inputs": {
+                  "nested": "target-node"
+                },
+                "locked": {
+                  "rev": "parent-revision",
+                  "type": "github",
+                  "owner": "example",
+                  "repo": "parent"
+                },
+                "original": {
+                  "type": "github",
+                  "owner": "example",
+                  "repo": "parent"
+                }
+              },
+              "target-node": {
+                "locked": {
+                  "rev": "target-revision",
+                  "type": "gitlab",
+                  "owner": "example",
+                  "repo": "target"
+                },
+                "original": {
+                  "type": "gitlab",
+                  "owner": "example",
+                  "repo": "target",
+                  "ref": "main"
+                }
+              },
+              "root": {
+                "inputs": {
+                  "alias": ["parent", "nested"],
+                  "parent": "parent-node"
+                }
+              }
+            },
+            "root": "root",
+            "version": 7
+          }
+        JSON
+      end
+
+      it "parses the followed node as the root dependency" do
+        dependency = dependencies.find { |item| item.name == "alias" }
+
+        expect(dependency.version).to eq("target-revision")
+        expect(dependency.requirements.first[:source])
+          .to include(
+            type: "git",
+            url: "https://gitlab.com/example/target",
+            ref: "main"
+          )
+      end
+    end
+
     context "with a custom host (self-hosted GitHub Enterprise)" do
       let(:flake_lock_content) { fixture("flake_with_custom_host.lock") }
 
