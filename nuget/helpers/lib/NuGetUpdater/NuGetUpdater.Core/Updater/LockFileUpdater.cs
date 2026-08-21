@@ -33,13 +33,15 @@ internal static class LockFileUpdater
                 continue;
             }
 
+            var requiresWindowsTargeting = project.TargetFrameworks.Any(tfm => tfm.Contains("-windows", StringComparison.OrdinalIgnoreCase));
             logger.Info($"Regenerating lock file for project [{project.FilePath}]");
-            await UpdateLockFileAsync(projectPath, logger);
+            await UpdateLockFileAsync(projectPath, requiresWindowsTargeting, logger);
         }
     }
 
     private static async Task UpdateLockFileAsync(
         string projectPath,
+        bool requiresWindowsTargeting,
         ILogger logger)
     {
         var projectDirectory = Path.GetDirectoryName(projectPath)!;
@@ -47,12 +49,16 @@ internal static class LockFileUpdater
         {
             "restore",
             "--force-evaluate",
-            "-p:EnableWindowsTargeting=true",
             // if using CPM and a project also sets TreatWarningsAsErrors to true, this can cause the restore to fail; explicitly don't allow that
             "-p:TreatWarningsAsErrors=false",
             "-p:MSBuildTreatWarningsAsErrors=false",
-            projectPath,
         };
+        if (requiresWindowsTargeting)
+        {
+            args.Add("-p:EnableWindowsTargeting=true");
+        }
+
+        args.Add(projectPath);
         var (exitCode, stdout, stderr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(args, projectDirectory);
         if (exitCode != 0)
         {

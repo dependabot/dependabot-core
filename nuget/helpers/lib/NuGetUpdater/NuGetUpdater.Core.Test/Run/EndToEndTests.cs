@@ -1382,7 +1382,7 @@ public class EndToEndTests
     }
 
     [Fact]
-    public async Task LockFileIsRegeneratedWithCentralPackageManagementAndLockedMode()
+    public async Task LockFileIsRegeneratedForWindowsProjectWithCentralPackageManagementAndLockedMode()
     {
         // this test needs to do some dynamic checks so we have to set it up manually
         // the package version is managed centrally in `Directory.Packages.props` and the update is written through the
@@ -1427,12 +1427,17 @@ public class EndToEndTests
             ("src/app/app.csproj", """
                 <Project Sdk="Microsoft.NET.Sdk">
                   <PropertyGroup>
-                    <TargetFramework>net9.0</TargetFramework>
+                    <TargetFramework>net9.0-windows</TargetFramework>
                     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
                   </PropertyGroup>
                   <ItemGroup>
                     <PackageReference Include="Some.Package" />
                   </ItemGroup>
+                  <Target Name="FailIfWindowsTargetingIsMissing" BeforeTargets="Restore">
+                    <Error
+                      Condition="'$(EnableWindowsTargeting)' != 'true'"
+                      Text="EnableWindowsTargeting must be enabled for a Windows project." />
+                  </Target>
                 </Project>
                 """)
         );
@@ -1450,13 +1455,18 @@ public class EndToEndTests
         // builds are locked
         var appProjectPath = Path.Join(repoContentsPath, "src", "app", "app.csproj");
         var appLockFilePath = Path.Join(repoContentsPath, "src", "app", "packages.lock.json");
-        var (exitCode, stdout, stderr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["restore", appProjectPath], repoContentsPath);
+        var (exitCode, stdout, stderr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(
+            ["restore", "-p:EnableWindowsTargeting=true", appProjectPath],
+            repoContentsPath);
         Assert.True(exitCode == 0, $"Initial restore failed.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
 
         var initialLockFileJson = JsonDocument.Parse(await File.ReadAllTextAsync(appLockFilePath, TestContext.Current.CancellationToken));
-        var initialResolved = initialLockFileJson.RootElement
+        var initialLockFileDependencies = initialLockFileJson.RootElement
             .GetProperty("dependencies")
-            .GetProperty("net9.0")
+            .EnumerateObject()
+            .Single()
+            .Value;
+        var initialResolved = initialLockFileDependencies
             .GetProperty("Some.Package")
             .GetProperty("resolved")
             .GetString();
@@ -1465,19 +1475,24 @@ public class EndToEndTests
         await File.WriteAllTextAsync(appProjectPath, """
             <Project Sdk="Microsoft.NET.Sdk">
               <PropertyGroup>
-                <TargetFramework>net9.0</TargetFramework>
+                <TargetFramework>net9.0-windows</TargetFramework>
                 <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
                 <RestoreLockedMode>true</RestoreLockedMode>
               </PropertyGroup>
               <ItemGroup>
                 <PackageReference Include="Some.Package" />
               </ItemGroup>
+              <Target Name="FailIfWindowsTargetingIsMissing" BeforeTargets="Restore">
+                <Error
+                  Condition="'$(EnableWindowsTargeting)' != 'true'"
+                  Text="EnableWindowsTargeting must be enabled for a Windows project." />
+              </Target>
             </Project>
             """, TestContext.Current.CancellationToken);
 
         var jobId = "TEST-JOB-ID";
         var experimentsManager = new ExperimentsManager();
-        var logger = new TestLogger();
+        var logger = new StringLogger();
         var apiHandler = new TestApiHandler();
         var discoveryWorker = new DiscoveryWorker(jobId, experimentsManager, logger);
         var analyzeWorker = new AnalyzeWorker(jobId, experimentsManager, logger);
@@ -1495,6 +1510,10 @@ public class EndToEndTests
 
         // act
         await worker.RunAsync(job, new DirectoryInfo(repoContentsPath), null, "TEST-COMMIT-SHA", experimentsManager);
+
+        Assert.DoesNotContain(
+            logger.Messages,
+            message => message.Contains("EnableWindowsTargeting must be enabled for a Windows project.", StringComparison.Ordinal));
 
         // assert
         var createPr = (CreatePullRequest)apiHandler.ReceivedMessages.Single(m => m.Type == typeof(CreatePullRequest)).Object;
@@ -1518,13 +1537,15 @@ public class EndToEndTests
         // the lock file was regenerated despite the owning project being in locked mode
         var lockFileDependencies = JsonDocument.Parse(updatedFiles["/src/app/packages.lock.json"]).RootElement
             .GetProperty("dependencies")
-            .GetProperty("net9.0");
+            .EnumerateObject()
+            .Single()
+            .Value;
         Assert.Equal("2.0.0", lockFileDependencies.GetProperty("Some.Package").GetProperty("resolved").GetString());
         Assert.Equal("2.0.0", lockFileDependencies.GetProperty("Transitive.Package").GetProperty("resolved").GetString());
     }
 
     [Fact]
-    public async Task LockFileIsRegeneratedForSingleProjectWithCentralPackageManagementAndLockedMode()
+    public async Task LockFileIsRegeneratedForNonWindowsSingleProjectWithCentralPackageManagementAndLockedMode()
     {
         // this test needs to do some dynamic checks so we have to set it up manually
         // this is the single project shape of the scenario above: the one project both owns the `packages.lock.json`
@@ -1555,6 +1576,11 @@ public class EndToEndTests
                   <ItemGroup>
                     <PackageReference Include="Some.Package" />
                   </ItemGroup>
+                  <Target Name="FailIfWindowsTargetingIsForced" BeforeTargets="Restore">
+                    <Error
+                      Condition="'$(EnableWindowsTargeting)' == 'true'"
+                      Text="EnableWindowsTargeting must not be forced for a non-Windows project." />
+                  </Target>
                 </Project>
                 """)
         );
@@ -1576,9 +1602,12 @@ public class EndToEndTests
         Assert.True(exitCode == 0, $"Initial restore failed.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
 
         var initialLockFileJson = JsonDocument.Parse(await File.ReadAllTextAsync(appLockFilePath, TestContext.Current.CancellationToken));
-        var initialResolved = initialLockFileJson.RootElement
+        var initialLockFileDependencies = initialLockFileJson.RootElement
             .GetProperty("dependencies")
-            .GetProperty("net9.0")
+            .EnumerateObject()
+            .Single()
+            .Value;
+        var initialResolved = initialLockFileDependencies
             .GetProperty("Some.Package")
             .GetProperty("resolved")
             .GetString();
@@ -1594,12 +1623,17 @@ public class EndToEndTests
               <ItemGroup>
                 <PackageReference Include="Some.Package" />
               </ItemGroup>
+              <Target Name="FailIfWindowsTargetingIsForced" BeforeTargets="Restore">
+                <Error
+                  Condition="'$(EnableWindowsTargeting)' == 'true'"
+                  Text="EnableWindowsTargeting must not be forced for a non-Windows project." />
+              </Target>
             </Project>
             """, TestContext.Current.CancellationToken);
 
         var jobId = "TEST-JOB-ID";
         var experimentsManager = new ExperimentsManager();
-        var logger = new TestLogger();
+        var logger = new StringLogger();
         var apiHandler = new TestApiHandler();
         var discoveryWorker = new DiscoveryWorker(jobId, experimentsManager, logger);
         var analyzeWorker = new AnalyzeWorker(jobId, experimentsManager, logger);
@@ -1617,6 +1651,10 @@ public class EndToEndTests
 
         // act
         await worker.RunAsync(job, new DirectoryInfo(repoContentsPath), null, "TEST-COMMIT-SHA", experimentsManager);
+
+        Assert.DoesNotContain(
+            logger.Messages,
+            message => message.Contains("EnableWindowsTargeting must not be forced for a non-Windows project.", StringComparison.Ordinal));
 
         // assert
         var createPr = (CreatePullRequest)apiHandler.ReceivedMessages.Single(m => m.Type == typeof(CreatePullRequest)).Object;
