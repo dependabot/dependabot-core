@@ -466,6 +466,7 @@ module Dependabot
         end
 
         sig { params(name: String, version: String, algorithm: String).returns(T::Array[String]) }
+        # rubocop:disable Metrics/PerceivedComplexity
         def package_hashes_for(name:, version:, algorithm:)
           index_urls = @index_urls || [nil]
           hashes = []
@@ -503,6 +504,7 @@ module Dependabot
 
           hashes
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         sig { params(requirement_string: String).returns(T.nilable(String)) }
         def hash_separator(requirement_string)
