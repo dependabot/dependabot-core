@@ -41,34 +41,37 @@ module Dependabot
     TOP_LEVEL_DEPENDENCY_TYPES = %w(direct production development).freeze
     # Default cooldown period (in days) applied when `default-days` is not configured.
     DEFAULT_COOLDOWN_DAYS = 3
-    PERMITTED_KEYS = %i(
-      allowed_updates
-      command
-      commit_message_options
-      dependencies
-      exclude_paths
-      existing_pull_requests
-      existing_group_pull_requests
-      experiments
-      ignore_conditions
-      lockfile_only
-      package_manager
-      reject_external_code
-      repo_contents_path
-      requirements_update_strategy
-      security_advisories
-      security_updates_only
-      source
-      update_subdependencies
-      updating_a_pull_request
-      vendor_dependencies
-      dependency_groups
-      dependency_group_to_refresh
-      cooldown
-      repo_private
-      multi_ecosystem_update
-      blocked_versions
-    ).freeze
+    PERMITTED_KEYS = T.let(
+      %i(
+        allowed_updates
+        command
+        commit_message_options
+        dependencies
+        exclude_paths
+        existing_pull_requests
+        existing_group_pull_requests
+        experiments
+        ignore_conditions
+        lockfile_only
+        package_manager
+        reject_external_code
+        repo_contents_path
+        requirements_update_strategy
+        security_advisories
+        security_updates_only
+        source
+        update_subdependencies
+        updating_a_pull_request
+        vendor_dependencies
+        dependency_groups
+        dependency_group_to_refresh
+        cooldown
+        repo_private
+        multi_ecosystem_update
+        blocked_versions
+      ).freeze,
+      T::Array[Symbol]
+    )
 
     sig { returns(T::Array[Dependabot::Job::AllowedUpdate]) }
     attr_reader :allowed_updates

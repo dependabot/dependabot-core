@@ -86,6 +86,13 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
         .to match_array(%w(Gemfile Gemfile.lock .ruby-version))
     end
 
+    describe "#files_to_persist" do
+      it "persists the complete fetched set across the fetch/update boundary" do
+        expect(file_fetcher_instance.files_to_persist.map(&:path))
+          .to match_array(file_fetcher_instance.files.map(&:path))
+      end
+    end
+
     context "when the files can't be found" do
       before do
         stub_request(:get, url + "?ref=sha")

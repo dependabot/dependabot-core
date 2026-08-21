@@ -559,10 +559,10 @@ begin
           Dependabot::SharedHelpers.run_shell_command("git checkout #{$options[:commit]}")
         end
       end
-      fetcher.files
+      files_for_update(fetcher)
     else
       cached_dependency_files_read do
-        fetcher.files
+        files_for_update(fetcher)
       end
     end
   rescue Dependabot::RepoNotFound => e
@@ -576,6 +576,40 @@ begin
          "#{error_details.error_detail}"
 
     []
+  end
+
+  # Ecosystems whose update phase is verified to resolve from the persisted
+  # dependency files alone. Lives here rather than on Job because
+  # the real production drop happens at the fetch/update container split, not
+  # in-process; this only gates the dry-run demonstration.
+  CLONELESS_UPDATE_ECOSYSTEMS = %w(bundler).freeze
+
+  def isolate_fetch_update?
+    Dependabot::Experiments.enabled?(:isolate_fetch_update) &&
+      CLONELESS_UPDATE_ECOSYSTEMS.include?($package_manager)
+  end
+
+  # Returns the exact set of files that crosses the fetch/update trust boundary.
+  #
+  # With the :isolate_fetch_update experiment enabled this mirrors the
+  # container-split handoff: the fetch phase serialises only
+  # `fetcher.files_to_persist` (the explicit allowlist) and the update phase is
+  # later run with no repo clone (see $update_repo_contents_path). Any file the
+  # fetcher pulled but did not persist is withheld -- it would not exist for the
+  # update tools once the clone is gone.
+  def files_for_update(fetcher)
+    all_files = fetcher.files
+    return all_files unless isolate_fetch_update?
+
+    persisted = fetcher.files_to_persist
+    persisted_keys = persisted.map { |f| [f.directory, f.name] }
+    withheld = all_files.reject { |f| persisted_keys.include?([f.directory, f.name]) }
+
+    puts "=> [isolate_fetch_update] persisting #{persisted.count}/#{all_files.count} files across " \
+         "the fetch/update boundary; the update phase runs with no repo clone (no .git, no working tree)"
+    withheld.each { |f| puts "   withheld from update phase: #{f.path}" }
+
+    persisted
   end
 
   def parse_dependencies(parser)
@@ -664,6 +698,17 @@ begin
   $files = fetch_files(fetcher)
   return if $files.empty?
 
+  # The update phase's view of the repo. With :isolate_fetch_update enabled it
+  # runs with no clone (only $files, the persisted set, exist for update tools),
+  # mirroring the fetch/update container split. Otherwise it shares the clone.
+  $update_repo_contents_path =
+    if isolate_fetch_update?
+      puts "=> [isolate_fetch_update] update phase running without repo_contents_path (clone dropped)"
+      nil
+    else
+      $repo_contents_path
+    end
+
   ecosystem_versions = fetcher.ecosystem_versions
   puts "🎈 Ecosystem Versions log: #{ecosystem_versions}" unless ecosystem_versions.nil?
 
@@ -671,7 +716,7 @@ begin
   puts "=> parsing dependency files"
   parser = Dependabot::FileParsers.for_package_manager($package_manager).new(
     dependency_files: $files,
-    repo_contents_path: $repo_contents_path,
+    repo_contents_path: $update_repo_contents_path,
     source: $source,
     credentials: $options[:credentials],
     reject_external_code: $options[:reject_external_code]
@@ -692,7 +737,7 @@ begin
       dependency: dependency,
       dependency_files: $files,
       credentials: $options[:credentials],
-      repo_contents_path: $repo_contents_path,
+      repo_contents_path: $update_repo_contents_path,
       requirements_update_strategy: $options[:requirements_update_strategy],
       ignored_versions: ignored_versions_for(dependency),
       security_advisories: security_advisories,
@@ -777,7 +822,7 @@ begin
     Dependabot::FileUpdaters.for_package_manager($package_manager).new(
       dependencies: dependencies,
       dependency_files: $files,
-      repo_contents_path: $repo_contents_path,
+      repo_contents_path: $update_repo_contents_path,
       credentials: $options[:credentials],
       options: $options[:updater_options]
     )
