@@ -184,6 +184,16 @@ module Dependabot
           return true if dep_dir != source_dir
         end
 
+        # Skip dependencies explicitly ignored via "@dependabot ignore" PR commands
+        # in grouped security updates. These commands indicate the user wants the
+        # dependency removed from the group even for security fixes.
+        if job.security_updates_only? && job.dependency_ignored_by_pr_command?(dependency)
+          Dependabot.logger.info(
+            "Skipping #{dependency.name} in group #{group.name} as it has been ignored by a PR command"
+          )
+          return true
+        end
+
         # Check if dependency has already been handled
         handled_dependency = dependency_snapshot.handled_dependencies.include?(dependency.name)
 
