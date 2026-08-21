@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/updater/group_update_creation"
@@ -126,23 +126,15 @@ module Dependabot
         def process_group_dependencies(job_group)
           Dependabot.logger.info("Updating the '#{job_group.name}' group")
 
-          existing_pr_dependencies = {}
-
           # Preprocess to discover existing group PRs and add their dependencies to the handled list before processing
           # the refresh. This prevents multiple PRs from being created for the same dependency during the refresh.
-          dependency_snapshot.groups.each do |group|
-            if Dependabot::Experiments.enabled?(:allow_refresh_for_existing_pr_dependencies)
-              # Gather all dependencies in existing PRs so other groups will not consider them as handled when they
-              # are not also in the PR of the group being checked, preventing erroneous PR closures
-              group_pr_deps = dependency_snapshot.dependencies_in_existing_pr_for_group(group)
-              group_pr_deps.each do |dep|
-                dep_dir = dep.directory || "/"
-                existing_pr_dependencies[dep_dir] ||= Set.new
-                existing_pr_dependencies[dep_dir].add(dep.name)
-              end
-            end
+          groups_with_existing_prs = dependency_snapshot.groups.select do |group|
+            pr_exists_for_dependency_group?(group)
+          end
+          existing_pr_dependencies = existing_pr_dependencies_by_directory(groups_with_existing_prs)
 
-            next unless group.name != job_group.name && pr_exists_for_dependency_group?(group)
+          groups_with_existing_prs.each do |group|
+            next if group.name == job_group.name
 
             dependency_snapshot.mark_group_handled(group, existing_pr_dependencies)
           end
@@ -156,6 +148,30 @@ module Dependabot
         end
 
         private
+
+        sig do
+          params(groups: T::Array[Dependabot::DependencyGroup]).returns(T::Hash[String, T::Set[String]])
+        end
+        def existing_pr_dependencies_by_directory(groups)
+          dependencies = T.let(
+            Hash.new do |hash, directory|
+              hash[directory] = T.let(Set.new, T::Set[String])
+            end,
+            T::Hash[String, T::Set[String]]
+          )
+
+          groups.each do |group|
+            dependency_snapshot.dependencies_in_existing_pr_for_group(group).each do |dependency|
+              name = dependency.name
+              next unless name
+
+              directory = dependency.directory || "/"
+              T.must(dependencies[directory]).add(name)
+            end
+          end
+
+          dependencies
+        end
 
         sig { returns(T.nilable(Dependabot::DependencyChange)) }
         def dependency_change
