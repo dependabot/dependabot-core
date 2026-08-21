@@ -166,7 +166,7 @@ module Dependabot
               next unless name
 
               directory = dependency.directory || "/"
-              dependencies[directory].add(name)
+              T.must(dependencies[directory]).add(name)
             end
           end
 
