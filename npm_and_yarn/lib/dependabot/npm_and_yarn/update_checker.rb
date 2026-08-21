@@ -199,7 +199,7 @@ module Dependabot
         library? ? RequirementsUpdateStrategy::WidenRanges : RequirementsUpdateStrategy::BumpVersions
       end
 
-      sig { override.returns(T::Array[T::Hash[String, String]]) }
+      sig { override.returns(T::Array[Dependabot::UpdateCheckers::Conflict]) }
       def conflicting_dependencies
         conflicts = ConflictingDependencyResolver.new(
           dependency_files: dependency_files,
