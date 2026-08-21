@@ -67,9 +67,9 @@ RSpec.describe Dependabot::Bazel::FileParser do
       it "uses the default version for detected_version" do
         ecosystem = parser.ecosystem
 
-        expect(ecosystem.package_manager.detected_version.to_s).to eq("8.4.2")
+        expect(ecosystem.package_manager.detected_version.to_s).to eq("8.5.1")
         expect(ecosystem.package_manager.version).to be_nil
-        expect(ecosystem.language.version.to_s).to eq("8.4.2")
+        expect(ecosystem.language.version.to_s).to eq("8.5.1")
       end
     end
   end
