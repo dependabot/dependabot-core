@@ -182,8 +182,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with only dev dependencies" do
-          let(:npm_fallback_version_above_v6_enabled) { false }
-
           let(:files) { project_dependency_files("npm6/only_dev_dependencies") }
 
           describe "the first dependency" do
@@ -528,8 +526,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with a git-url dependency" do
-          let(:npm_fallback_version_above_v6_enabled) { false }
-
           let(:files) { project_dependency_files("npm6/git_dependency") }
 
           its(:length) { is_expected.to eq(4) }
@@ -561,8 +557,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             end
 
             context "when the lockfile has a branch for the version" do
-              let(:npm_fallback_version_above_v6_enabled) { false }
-
               let(:files) { project_dependency_files("npm6/git_dependency_branch_version") }
 
               it "is excluded" do
@@ -574,8 +568,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         end
 
         context "with a github dependency" do
-          let(:npm_fallback_version_above_v6_enabled) { false }
-
           let(:files) { project_dependency_files("npm6/github_dependency") }
 
           its(:length) { is_expected.to eq(1) }
@@ -608,8 +600,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
 
           context "when specifying a semver requirement" do
-            let(:npm_fallback_version_above_v6_enabled) { false }
-
             let(:files) { project_dependency_files("npm6/github_dependency_semver") }
             let(:git_pack_fixture_name) { "is-number" }
 
@@ -678,8 +668,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
 
           context "when not specifying a reference" do
-            let(:npm_fallback_version_above_v6_enabled) { false }
-
             let(:files) { project_dependency_files("npm6/github_dependency_no_ref") }
 
             its(:length) { is_expected.to eq(1) }
@@ -713,8 +701,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
 
           context "when specifying with its shortname" do
-            let(:npm_fallback_version_above_v6_enabled) { false }
-
             let(:files) { project_dependency_files("npm6/github_shortname") }
 
             its(:length) { is_expected.to eq(1) }
