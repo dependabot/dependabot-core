@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <Compile Include="$(NuGetSourceLocation)\src\NuGet.Core\NuGet.Protocol\**\*.cs" />
+    <Compile Include="$(SharedDirectory)\NuGetFeatureFlags.cs" />
   </ItemGroup>
 
   <ItemGroup>

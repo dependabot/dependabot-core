@@ -173,6 +173,9 @@ updates:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+    ignore:
+      # This revision must remain aligned with the SDK and assembly versions used by NuGetUpdater.
+      - dependency-name: "nuget/helpers/lib/NuGet.Client"
   - package-ecosystem: "maven"
     directory: "/maven/lib/dependabot/maven/"
     schedule:
