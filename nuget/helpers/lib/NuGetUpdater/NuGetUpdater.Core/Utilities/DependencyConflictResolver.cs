@@ -114,6 +114,12 @@ public class PackageManager
             }
 
             var metadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
+            if (metadataResource is null)
+            {
+                message.AppendLine($"    metadata resource for {source.Name} was null");
+                continue;
+            }
+
             var metadata = await metadataResource.GetMetadataAsync(packageIdentity, SourceCacheContext, Logger, cancellationToken);
             return metadata;
         }

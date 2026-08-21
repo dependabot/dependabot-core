@@ -118,19 +118,27 @@ internal record NuGetContext : IDisposable
             }
 
             var downloadResource = await sourceRepository.GetResourceAsync<DownloadResource>(cancellationToken);
-            using var downloadResult = await downloadResource.GetDownloadResourceResultAsync(packageIdentity, PackageDownloadContext, globalPackagesFolder, Logger, cancellationToken);
-            if (downloadResult.Status == DownloadResourceResultStatus.Available)
+            if (downloadResource is not null)
             {
-                var repositoryMetadata = downloadResult.PackageReader.NuspecReader.GetRepositoryMetadata();
-                message.AppendLine($"    repometadata: type=[{repositoryMetadata.Type}], url=[{repositoryMetadata.Url}], branch=[{repositoryMetadata.Branch}], commit=[{repositoryMetadata.Commit}]");
-                if (!string.IsNullOrEmpty(repositoryMetadata.Url))
+                using var downloadResult = await downloadResource.GetDownloadResourceResultAsync(packageIdentity, PackageDownloadContext, globalPackagesFolder, Logger, cancellationToken);
+                if (downloadResult.Status == DownloadResourceResultStatus.Available &&
+                    downloadResult.PackageReader is not null)
                 {
-                    return repositoryMetadata.Url;
+                    var repositoryMetadata = downloadResult.PackageReader.NuspecReader.GetRepositoryMetadata();
+                    message.AppendLine($"    repometadata: type=[{repositoryMetadata.Type}], url=[{repositoryMetadata.Url}], branch=[{repositoryMetadata.Branch}], commit=[{repositoryMetadata.Commit}]");
+                    if (!string.IsNullOrEmpty(repositoryMetadata.Url))
+                    {
+                        return repositoryMetadata.Url;
+                    }
+                }
+                else
+                {
+                    message.AppendLine($"    download result status: {downloadResult.Status}");
                 }
             }
             else
             {
-                message.AppendLine($"    download result status: {downloadResult.Status}");
+                message.AppendLine($"    download resource for {source.Name} was null");
             }
 
             var metadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
