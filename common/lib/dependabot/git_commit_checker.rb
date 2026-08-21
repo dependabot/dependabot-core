@@ -430,8 +430,12 @@ module Dependabot
 
     sig { params(commit_sha: T.nilable(String)).returns(T::Array[Dependabot::GitRef]) }
     def local_tags_matching_sha(commit_sha)
-      local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
-                .sort_by { |t| version_class.new(t.name) }
+      # Use version_tag? (VERSION_REGEX) rather than version_class.correct? so that
+      # monorepo-style tags like "component-name-v1.2.3" (Release Please format) are
+      # also recognised. version_class.correct? rejects them because the full tag name
+      # is not a valid Gem::Version, even though the trailing version segment is.
+      local_tags.select { |t| t.commit_sha == commit_sha && version_tag?(t.name) }
+                .sort_by { |t| version_from_tag(t) }
     end
 
     sig { params(version: T.any(String, Gem::Version)).returns(T::Boolean) }
