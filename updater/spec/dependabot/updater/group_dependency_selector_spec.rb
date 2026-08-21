@@ -75,16 +75,19 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
   end
 
   describe "#merge_per_directory!" do
-    let(:rails_dep) { create_dependency("rails", "7.0.0") }
-    let(:pg_dep) { create_dependency("pg", "1.4.0") }
-    let(:redis_dep) { create_dependency("redis", "4.8.0") }
-    let(:duplicate_rails_dep) { create_dependency("rails", "7.0.1") }
+    # Each dependency carries the directory it was resolved in, as DependencyChange's
+    # constructor stamps it per per-directory change.
+    let(:rails_dep) { create_dependency("rails", "7.0.0", directory: "/api") }
+    let(:pg_dep) { create_dependency("pg", "1.4.0", directory: "/api") }
+    let(:redis_dep) { create_dependency("redis", "4.8.0", directory: "/web") }
+    let(:duplicate_rails_dep) { create_dependency("rails", "7.0.1", directory: "/web") }
 
     let(:change1) do
       create_dependency_change(
         job: job,
         dependencies: [rails_dep, pg_dep],
-        files: [create_dependency_file("Gemfile", "/api")]
+        files: [create_dependency_file("Gemfile", "/api")],
+        dependency_group: dependency_group
       )
     end
 
@@ -92,7 +95,8 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       create_dependency_change(
         job: create_job("/web"),
         dependencies: [redis_dep, duplicate_rails_dep],
-        files: [create_dependency_file("Gemfile", "/web")]
+        files: [create_dependency_file("Gemfile", "/web")],
+        dependency_group: dependency_group
       )
     end
 
@@ -106,13 +110,52 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
     context "with multiple changes" do
       before do
         allow(Dependabot::DependencyChange).to receive(:new) do |args|
+          # Mirror the real constructor, which stamps every dependency with the directory
+          # of the first updated file.
+          first_directory = args[:updated_dependency_files].first&.directory
+          args[:updated_dependencies].each { |dep| dep.directory = first_directory }
+
           instance_double(
             Dependabot::DependencyChange,
             job: args[:job],
             updated_dependencies: args[:updated_dependencies],
-            updated_dependency_files: args[:updated_dependency_files]
+            updated_dependency_files: args[:updated_dependency_files],
+            dependency_group: args[:dependency_group],
+            notices: args[:notices] || []
           )
         end
+      end
+
+      it "carries the dependency group onto the merged change" do
+        result = selector.merge_per_directory!([change1, change2])
+
+        # Without this, DependencyChange#grouped_update? is false on the merged change and
+        # the group PR is reported to the service as an ungrouped one.
+        expect(result.dependency_group).to eq(dependency_group)
+      end
+
+      it "carries the notices from every merged change" do
+        notice = Dependabot::Notice.new(mode: "WARN", type: "test", package_manager_name: "bundler")
+        change_with_notice = create_dependency_change(
+          job: create_job("/web"),
+          dependencies: [redis_dep],
+          files: [create_dependency_file("Gemfile", "/web")],
+          dependency_group: dependency_group,
+          notices: [notice]
+        )
+
+        result = selector.merge_per_directory!([change1, change_with_notice])
+
+        expect(result.notices).to eq([notice])
+      end
+
+      it "leaves each dependency in the directory it was resolved in" do
+        result = selector.merge_per_directory!([change1, change2])
+
+        directories = result.updated_dependencies.map { |d| [d.name, d.directory] }
+        expect(directories).to contain_exactly(
+          ["rails", "/api"], ["pg", "/api"], ["redis", "/web"], ["rails", "/web"]
+        )
       end
 
       it "merges dependencies with directory-aware deduplication" do
@@ -182,6 +225,56 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
           )
 
           selector.merge_per_directory!([change1, change2])
+        end
+      end
+
+      # In production every per-directory change shares one Job, and the caller assigns
+      # job.source.directory as it walks the directories — so by merge time that field
+      # holds only the LAST directory. Deriving directories from it collapses them all
+      # onto that one value, which is why these fixtures share a single job double.
+      context "when every change shares one job whose source has advanced to the last directory" do
+        let(:shared_job) { create_job("/web") }
+
+        let(:change1) do
+          create_dependency_change(
+            job: shared_job,
+            dependencies: [rails_dep, pg_dep],
+            files: [create_dependency_file("Gemfile", "/api")],
+            dependency_group: dependency_group
+          )
+        end
+
+        let(:change2) do
+          create_dependency_change(
+            job: shared_job,
+            dependencies: [redis_dep, duplicate_rails_dep],
+            files: [create_dependency_file("Gemfile", "/web")],
+            dependency_group: dependency_group
+          )
+        end
+
+        context "when group_by_dependency_name? is true" do
+          before do
+            allow(dependency_group).to receive(:group_by_dependency_name?).and_return(true)
+          end
+
+          it "records every directory the dependency was updated in" do
+            result = selector.merge_per_directory!([change1, change2])
+
+            rails = result.updated_dependencies.find { |d| d.name == "rails" }
+            expect(rails.metadata[:updated_directories]).to contain_exactly("/api", "/web")
+          end
+        end
+
+        it "keeps a dependency that appears in more than one directory" do
+          result = selector.merge_per_directory!([change1, change2])
+
+          # Both rails entries must survive: collapsing the directory makes their
+          # [directory, name] dedup keys identical and silently drops one update.
+          directories = result.updated_dependencies.map { |d| [d.name, d.directory] }
+          expect(directories).to contain_exactly(
+            ["rails", "/api"], ["pg", "/api"], ["redis", "/web"], ["rails", "/web"]
+          )
         end
       end
 
@@ -1408,9 +1501,18 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
       requirements: requirements,
       directory: directory
     ).tap do |dep|
+      stub_directory_accessor(dep, directory)
       stub_production_check(dep, requirements)
       stub_attribution_methods(dep)
     end
+  end
+
+  # Dependabot::Dependency#directory is an attr_accessor, and DependencyChange's
+  # constructor writes to it, so the double needs to round-trip rather than only read.
+  def stub_directory_accessor(dep, directory)
+    current = directory
+    allow(dep).to receive(:directory) { current }
+    allow(dep).to receive(:directory=) { |value| current = value }
   end
 
   def stub_production_check(dep, requirements)
@@ -1439,12 +1541,14 @@ RSpec.describe Dependabot::Updater::GroupDependencySelector do
     allow(dep).to receive(:attribution_timestamp) { timestamp }
   end
 
-  def create_dependency_change(job:, dependencies:, files:)
+  def create_dependency_change(job:, dependencies:, files:, dependency_group: nil, notices: [])
     instance_double(
       Dependabot::DependencyChange,
       job: job,
       updated_dependencies: dependencies,
-      updated_dependency_files: files
+      updated_dependency_files: files,
+      dependency_group: dependency_group,
+      notices: notices
     ).tap do |change|
       allow(change.updated_dependencies).to receive(:clear)
       allow(change.updated_dependencies).to receive(:concat)

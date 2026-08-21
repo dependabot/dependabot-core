@@ -84,11 +84,23 @@ module Dependabot
       end
       def create_merged_change(changes_by_dir, merged_dependencies, all_updated_files)
         base_change = T.must(changes_by_dir.first)
-        DependencyChange.new(
+
+        # DependencyChange's constructor stamps every dependency with the directory of the
+        # first updated file. A merged change spans directories, so record what each
+        # dependency was resolved in and restore it afterwards.
+        directories = merged_dependencies.map(&:directory)
+
+        merged_change = DependencyChange.new(
           job: base_change.job,
           updated_dependencies: merged_dependencies,
-          updated_dependency_files: all_updated_files
+          updated_dependency_files: all_updated_files,
+          dependency_group: base_change.dependency_group,
+          notices: changes_by_dir.flat_map(&:notices)
         )
+
+        merged_dependencies.each_with_index { |dep, i| dep.directory = directories[i] }
+
+        merged_change
       end
 
       sig { params(dependency_change: Dependabot::DependencyChange).void }
@@ -147,10 +159,15 @@ module Dependabot
       def deduplicate_by_name_only(changes_by_dir)
         directories_by_name = T.let({}, T::Hash[String, T::Array[String]])
 
-        # Collect all directories per dependency name before deduplication
+        # Collect all directories per dependency name before deduplication.
+        #
+        # Every change shares one Job, and the caller reassigns job.source.directory as it
+        # walks the directories, so by the time the changes are merged that field holds only
+        # the last one. Each dependency carries the directory it was resolved in, stamped by
+        # DependencyChange's constructor, so read it from there instead.
         changes_by_dir.each do |change|
-          directory = change.job.source.directory || "."
           Array(change.updated_dependencies).each do |dep|
+            directory = dep.directory || change.job.source.directory || "."
             directories_by_name[dep.name] ||= []
             T.must(directories_by_name[dep.name]) << directory
           end
@@ -181,9 +198,11 @@ module Dependabot
         merged_dependencies = T.let([], T::Array[Dependabot::Dependency])
 
         changes_by_dir.each do |change|
-          directory = change.job.source.directory || "."
-
           Array(change.updated_dependencies).each do |dep|
+            # Read the directory off the dependency rather than job.source, which the caller
+            # has already advanced past this change — see deduplicate_by_name_only.
+            directory = dep.directory || change.job.source.directory || "."
+
             key = yield(directory, dep)
             next if seen_keys.include?(key)
 
