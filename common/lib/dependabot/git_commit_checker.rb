@@ -275,9 +275,11 @@ module Dependabot
 
     sig { returns(T.nilable(Gem::Version)) }
     def version_for_pinned_sha
-      return unless local_tag_for_pinned_sha && version_class.correct?(local_tag_for_pinned_sha)
+      tag = local_tag_for_pinned_sha
+      # Use version_tag?/version_from_ref so prefixed tags like resolve-gh-token-v2.1.0 resolve to a version, not nil.
+      return unless tag && version_tag?(tag)
 
-      version_class.new(local_tag_for_pinned_sha)
+      version_from_ref(tag)
     end
 
     sig { returns(T::Boolean) }
@@ -312,6 +314,14 @@ module Dependabot
     sig { params(commit_sha: T.nilable(String)).returns(T::Array[String]) }
     def most_specific_version_tags_for_sha(commit_sha)
       local_tags_matching_sha(commit_sha).map(&:name)
+    end
+
+    # Extracts the numeric version from a tag name, handling hyphen/slash-prefixed monorepo tags.
+    sig { params(tag_name: String).returns(T.nilable(String)) }
+    def version_string_for_tag(tag_name)
+      return unless version_tag?(tag_name)
+
+      scan_version(tag_name)
     end
 
     sig { params(tags: T::Array[Dependabot::GitRef]).returns(T.nilable(Dependabot::GitTagDetails)) }
@@ -430,8 +440,64 @@ module Dependabot
 
     sig { params(commit_sha: T.nilable(String)).returns(T::Array[Dependabot::GitRef]) }
     def local_tags_matching_sha(commit_sha)
-      local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }
-                .sort_by { |t| version_class.new(t.name) }
+      matching = local_tags.select { |t| t.commit_sha == commit_sha }
+
+      # Only path-scoped actions use family-aware selection; every other dependency
+      # (all non-Actions ecosystems and repo-root actions) keeps the original behavior.
+      unless action_subpath_segment
+        return matching.select { |t| version_class.correct?(t.name) }
+                       .sort_by { |t| version_class.new(t.name) }
+      end
+
+      # Sort ascending by [action-family match, repo-wide tag, prefix length, version]; last is best.
+      matching.select { |t| version_tag?(t.name) }
+              .sort_by do |t|
+                [matches_action_path?(t.name) ? 1 : 0,
+                 repo_wide_version_tag?(t.name) ? 1 : 0,
+                 t.name.gsub(VERSION_REGEX, "").length,
+                 version_from_tag(t)]
+              end
+    end
+
+    # True when a tag has no action-name prefix (e.g. "v1.0.3"/"1.0.3"), i.e. it versions the whole repo.
+    sig { params(tag_name: String).returns(T::Boolean) }
+    def repo_wide_version_tag?(tag_name)
+      tag_name.gsub(VERSION_REGEX, "").match?(/\Av?\z/i)
+    end
+
+    # Final segment of the action subpath (e.g. resolve-gh-token), or nil for non-subpath deps.
+    sig { returns(T.nilable(String)) }
+    def action_subpath_segment
+      return @action_subpath_segment if defined?(@action_subpath_segment)
+
+      @action_subpath_segment = T.let(compute_action_subpath_segment, T.nilable(String))
+    end
+
+    sig { returns(T.nilable(String)) }
+    def compute_action_subpath_segment
+      url = dependency_source_details&.url
+      return unless url
+
+      repo = Dependabot::Source.from_url(url)&.repo
+      return unless repo
+
+      prefix = "#{repo}/"
+      return unless dependency.name.start_with?(prefix)
+
+      subpath = dependency.name.delete_prefix(prefix)
+      return if subpath.empty?
+
+      subpath.split("/").last
+    end
+
+    # True when the tag's family prefix (minus trailing version and delimiter) exactly equals the action segment.
+    sig { params(tag_name: String).returns(T::Boolean) }
+    def matches_action_path?(tag_name)
+      segment = action_subpath_segment
+      return false unless segment
+
+      tag_prefix = tag_name.gsub(VERSION_REGEX, "").sub(%r{[-/]?v?\z}i, "")
+      tag_prefix == segment
     end
 
     sig { params(version: T.any(String, Gem::Version)).returns(T::Boolean) }
