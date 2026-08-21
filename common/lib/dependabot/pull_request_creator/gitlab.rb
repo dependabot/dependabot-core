@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "gitlab"
@@ -6,6 +6,7 @@ require "sorbet-runtime"
 
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/pull_request_creator"
+require "dependabot/errors"
 
 module Dependabot
   class PullRequestCreator
@@ -158,18 +159,19 @@ module Dependabot
             gitlab_client_for_source.commits(source.repo, ref_name: branch_name),
             T.nilable(::Gitlab::PaginatedResponse)
           )
-        T.unsafe(@commits).first.message == commit_message
+        commit = @commits.first
+        return false unless commit
+
+        gitlab_string(commit, "message", "commit") == commit_message
       end
 
       sig { returns(T::Boolean) }
       def merge_request_exists?
-        T.unsafe(
-          gitlab_client_for_source.merge_requests(
-            (target_project_id || source.repo).to_s,
-            source_branch: branch_name,
-            target_branch: source.branch || default_branch,
-            state: "all"
-          )
+        gitlab_client_for_source.merge_requests(
+          (target_project_id || source.repo).to_s,
+          source_branch: branch_name,
+          target_branch: source.branch || default_branch,
+          state: "all"
         ).any?
       end
 
@@ -240,7 +242,7 @@ module Dependabot
 
         gitlab_client_for_source.create_merge_request_level_rule(
           (target_project_id || source.repo).to_s,
-          T.unsafe(merge_request).iid,
+          gitlab_integer(merge_request, "iid", "merge request"),
           name: "dependency-updates",
           approvals_required: 1,
           user_ids: approvers_hash[:approvers],
@@ -260,9 +262,33 @@ module Dependabot
       def default_branch
         @default_branch ||=
           T.let(
-            T.unsafe(gitlab_client_for_source.project(source.repo)).default_branch,
+            gitlab_client_for_source.fetch_default_branch(source.repo),
             T.nilable(String)
           )
+      end
+
+      sig { params(resource: ::Gitlab::ObjectifiedHash, key: String, context: String).returns(String) }
+      def gitlab_string(resource, key, context)
+        value = T.cast(resource[key], Object)
+        return value if value.is_a?(String)
+
+        raise_bad_gitlab_response("#{context} #{key} must be a string")
+      end
+
+      sig { params(resource: ::Gitlab::ObjectifiedHash, key: String, context: String).returns(Integer) }
+      def gitlab_integer(resource, key, context)
+        value = T.cast(resource[key], Object)
+        return value if value.is_a?(Integer)
+
+        raise_bad_gitlab_response("#{context} #{key} must be an integer")
+      end
+
+      sig { params(message: String).returns(T.noreturn) }
+      def raise_bad_gitlab_response(message)
+        raise Dependabot::PrivateSourceBadResponse.new(
+          source.url,
+          "Malformed GitLab response: #{message}"
+        )
       end
     end
   end

@@ -95,7 +95,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
             "allowed-updates" => [{ "dependency-type" => "direct", "update-type" => "all" }],
             "credentials-metadata" => [{ "type" => "git_source", "host" => "github.com" }],
             "security-advisories" => [],
-            "max-updater-run-time" => 2700,
             "vendor-dependencies" => false,
             "experiments" => { "grouped-updates-prototype" => true },
             "reject-external-code" => false,

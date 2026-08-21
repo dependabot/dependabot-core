@@ -37,6 +37,17 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
 
     specify { expect(updater.updated_requirements.count).to eq(1) }
 
+    context "with a malformed requirement" do
+      let(:requirements) do
+        [{ file: "Cargo.toml", requirement: 123, groups: [], source: nil }]
+      end
+
+      it "raises a type error" do
+        expect { updater.updated_requirements }
+          .to raise_error(TypeError, "requirement must be a string, :unfixable, or nil")
+      end
+    end
+
     context "when there is no latest version" do
       let(:target_version) { nil }
 

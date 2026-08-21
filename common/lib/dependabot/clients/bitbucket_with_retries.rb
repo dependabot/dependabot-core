@@ -2,12 +2,13 @@
 # frozen_string_literal: true
 
 require "sorbet-runtime"
+require "delegate"
 
 require_relative "bitbucket"
 
 module Dependabot
   module Clients
-    class BitbucketWithRetries
+    class BitbucketWithRetries < SimpleDelegator
       extend T::Sig
 
       RETRYABLE_ERRORS = T.let(
@@ -37,24 +38,22 @@ module Dependabot
       def initialize(credentials:, max_retries: 3)
         @max_retries = T.let(max_retries || 3, Integer)
         @client = T.let(Bitbucket.new(credentials: credentials), Dependabot::Clients::Bitbucket)
+        super(@client)
       end
 
       sig do
         params(
           method_name: T.any(Symbol, String),
-          args: T.untyped,
-          block: T.nilable(T.proc.returns(T.untyped))
+          args: Object,
+          block: T.nilable(Proc)
         )
-          .returns(T.untyped)
+          .returns(T.anything)
       end
       def method_missing(method_name, *args, &block)
+        original_args = args
         retry_connection_failures do
-          if @client.respond_to?(method_name)
-            mutatable_args = args.map(&:dup)
-            T.unsafe(@client).public_send(method_name, *mutatable_args, &block)
-          else
-            super
-          end
+          args = original_args.map(&:dup)
+          super
         end
       end
 
@@ -66,7 +65,7 @@ module Dependabot
           .returns(T::Boolean)
       end
       def respond_to_missing?(method_name, include_private = false)
-        @client.respond_to?(method_name) || super
+        @client.respond_to?(method_name, include_private)
       end
 
       sig do
@@ -81,7 +80,7 @@ module Dependabot
           yield
         rescue *RETRYABLE_ERRORS
           retry_attempt += 1
-          retry_attempt <= @max_retries ? retry : raise
+          retry_attempt <= @max_retries ? retry : Kernel.raise
         end
       end
     end

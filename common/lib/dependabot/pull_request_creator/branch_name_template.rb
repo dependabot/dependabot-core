@@ -11,7 +11,7 @@ module Dependabot
     class BranchNameTemplate
       extend T::Sig
 
-      class Error < Dependabot::DependabotError; end
+      class Error < Dependabot::BranchNameFormattingError; end
 
       SOLO_PLACEHOLDERS = %w(prefix package_manager directory target_branch dependency version name).freeze
       GROUP_PLACEHOLDERS = %w(prefix package_manager directory target_branch group_name name).freeze

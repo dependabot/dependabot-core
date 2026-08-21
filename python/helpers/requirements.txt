@@ -1,5 +1,5 @@
 pip==26.1.2
-pip-tools==7.6.0
+pip-tools==7.6.1
 flake8==7.3.0
 hashin==1.0.5
 pipenv==2024.4.1

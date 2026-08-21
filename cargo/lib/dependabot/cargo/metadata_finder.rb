@@ -54,26 +54,15 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_git_url
-        info = T.cast(
-          dependency.requirements.filter_map { |r| r[:source] }.first,
-          T.nilable(T::Hash[T.any(String, Symbol), T.anything])
-        )
-        return unless info
-
-        url = info[:url] || info["url"]
-        Source.from_url(T.cast(url, T.nilable(String)))
+        Source.from_url(dependency.source_string("url", allowed_types: ["git"]))
       end
 
       sig { returns(T.nilable(T::Hash[String, T.anything])) }
       def crates_listing
         return @crates_listing unless @crates_listing.nil?
 
-        info = T.cast(
-          dependency.requirements.filter_map { |r| r[:source] }.first,
-          T.nilable(T::Hash[T.any(String, Symbol), T.anything])
-        )
-        index = T.cast((info && (info[:index] || info["index"])) || CRATES_IO_API, String)
-        hdrs = build_headers(index, info)
+        index = dependency.source_string("index") || CRATES_IO_API
+        hdrs = build_headers(index, dependency.source_string("name"))
 
         url = metadata_fetch_url(dependency, index)
         response = fetch_metadata(url, hdrs)
@@ -82,16 +71,14 @@ module Dependabot
       end
 
       sig do
-        params(index: String, info: T.nilable(T::Hash[T.any(String, Symbol), T.anything]))
+        params(index: String, registry_name: T.nilable(String))
           .returns(T::Hash[String, String])
       end
-      def build_headers(index, info)
+      def build_headers(index, registry_name)
         hdrs = { "User-Agent" => "Dependabot (dependabot.com)" }
         return hdrs if index == CRATES_IO_API
+        return hdrs if registry_name.nil?
 
-        return hdrs if info.nil?
-
-        registry_name = T.cast(info["name"] || info[:name], T.nilable(String))
         credentials.find { |cred| cred["type"] == "cargo_registry" && cred["registry"] == registry_name }&.tap do |cred|
           hdrs["Authorization"] = "Token #{cred['token']}"
         end

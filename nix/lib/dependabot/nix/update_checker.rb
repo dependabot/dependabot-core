@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -97,11 +97,16 @@ module Dependabot
         return dependency.requirements unless result
 
         dependency.requirements.map do |req|
-          source = req[:source]
-          next req unless source
+          next req unless req.source_hash
 
           Dependabot::DependencyRequirement.create(
-            req.merge(source: source.merge(ref: result[:channel], url: result[:url]))
+            req.merge(
+              source: source_with_values(
+                req,
+                "ref" => result[:channel],
+                "url" => result[:url]
+              )
+            )
           )
         end
       end
@@ -151,25 +156,39 @@ module Dependabot
         return dependency.requirements unless new_tag
 
         dependency.requirements.map do |req|
-          source = req[:source]
-          next req unless source
+          next req unless req.source_hash
 
-          Dependabot::DependencyRequirement.create(req.merge(source: source.merge(ref: new_tag[:tag], branch: nil)))
+          Dependabot::DependencyRequirement.create(
+            req.merge(
+              source: source_with_values(
+                req,
+                "ref" => T.cast(new_tag[:tag], String),
+                "branch" => nil
+              )
+            )
+          )
         end
       end
 
       sig { returns(T.nilable(String)) }
       def fetch_latest_version_for_tag
         tag = latest_version_tag
-        tag&.fetch(:commit_sha)
+        tag && tag_commit_sha(tag)
       end
 
-      sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+      sig { returns(T.nilable(T::Hash[Symbol, Object])) }
       def latest_version_tag
         @latest_version_tag ||= T.let(
           git_commit_checker.local_tag_for_latest_version(update_cooldown),
-          T.nilable(T::Hash[Symbol, T.untyped])
+          T.nilable(T::Hash[Symbol, Object])
         )
+      end
+
+      sig { params(tag: T::Hash[Symbol, Object]).returns(T.nilable(String)) }
+      def tag_commit_sha(tag)
+        return tag.commit_sha if tag.is_a?(Dependabot::GitTagDetails)
+
+        T.cast(tag[:commit_sha], T.nilable(String))
       end
 
       # --- Versioned branch support ---
@@ -180,10 +199,17 @@ module Dependabot
         return dependency.requirements unless result
 
         dependency.requirements.map do |req|
-          source = req[:source]
-          next req unless source
+          next req unless req.source_hash
 
-          Dependabot::DependencyRequirement.create(req.merge(source: source.merge(ref: result[:branch], branch: nil)))
+          Dependabot::DependencyRequirement.create(
+            req.merge(
+              source: source_with_values(
+                req,
+                "ref" => result[:branch],
+                "branch" => nil
+              )
+            )
+          )
         end
       end
 
@@ -199,6 +225,29 @@ module Dependabot
           versioned_branch_finder&.latest_versioned_branch,
           T.nilable(T::Hash[Symbol, String])
         )
+      end
+
+      sig do
+        params(
+          requirement: Dependabot::DependencyRequirement,
+          values: T::Hash[String, T.nilable(String)]
+        ).returns(Dependabot::DependencyRequirement::ObjectHash)
+      end
+      def source_with_values(requirement, values)
+        source = T.must(requirement.source_hash).dup
+        values.each do |key, value|
+          actual_key = if source.key?(key.to_sym)
+                         key.to_sym
+                       elsif source.key?(key)
+                         key
+                       elsif source.keys.any?(Symbol)
+                         key.to_sym
+                       else
+                         key
+                       end
+          source[actual_key] = value
+        end
+        source
       end
 
       # --- Commit-tracking (existing behavior) ---

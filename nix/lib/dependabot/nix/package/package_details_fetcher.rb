@@ -89,7 +89,7 @@ module Dependabot
 
           Dependabot.logger.info("Fetching branch-tip history for Nix flake input: #{dependency.name}")
           entries = fetch_activity_entries(T.must(url), T.must(ref))
-          return nil unless entries.is_a?(Array) && entries.any?
+          return nil unless entries.any?
 
           trim_entries_to_locked_sha(entries)
         rescue Octokit::Error => e
@@ -106,31 +106,34 @@ module Dependabot
           nil
         end
 
-        sig { params(url: String, ref: String).returns(T.untyped) }
+        sig { params(url: String, ref: String).returns(T::Array[Sawyer::Resource]) }
         def fetch_activity_entries(url, ref)
-          T.unsafe(github_client).get( # rubocop:disable Sorbet/ForbidTUnsafe
+          response = github_client.get(
             "/repos/#{github_repo_path(url)}/activity",
             ref: "refs/heads/#{ref}",
             activity_type: ACTIVITY_TYPES,
             per_page: 100
           )
+          raise TypeError, "GitHub activity response must be an array" unless response.is_a?(Array)
+
+          response
         end
 
         # Trim to entries up to and including the currently locked SHA, stopping
         # once that SHA is reached so we don't introduce candidates older than
         # `dependency.version`.
-        sig { params(entries: T::Array[T.untyped]).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+        sig { params(entries: T::Array[Sawyer::Resource]).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
         def trim_entries_to_locked_sha(entries)
           locked = dependency.version
           result = T.let([], T::Array[T::Hash[Symbol, T.untyped]])
           entries.each do |e|
-            after_sha = e[:after]
-            result << { tag: after_sha, release_date: format_timestamp(e[:timestamp]) }
+            after_sha = activity_string(e, :after)
+            result << { tag: after_sha, release_date: format_timestamp(T.cast(e[:timestamp], T.nilable(Object))) }
 
             next unless locked
             break if after_sha == locked
 
-            if e[:before] == locked
+            if T.cast(e[:before], Object) == locked
               result << { tag: locked, release_date: nil } unless result.last&.fetch(:tag) == locked
               break
             end
@@ -138,12 +141,20 @@ module Dependabot
           result
         end
 
-        sig { params(timestamp: T.untyped).returns(T.nilable(String)) }
+        sig { params(timestamp: T.nilable(Object)).returns(T.nilable(String)) }
         def format_timestamp(timestamp)
-          return nil if timestamp.nil?
-          return timestamp.iso8601 if timestamp.respond_to?(:iso8601)
+          return if timestamp.nil?
+          return timestamp.iso8601 if timestamp.is_a?(Time)
 
           timestamp.to_s
+        end
+
+        sig { params(entry: Sawyer::Resource, key: Symbol).returns(String) }
+        def activity_string(entry, key)
+          value = T.cast(entry[key], Object)
+          return value if value.is_a?(String)
+
+          raise TypeError, "GitHub activity #{key} must be a string"
         end
 
         sig { params(url: T.nilable(String), ref: T.nilable(String)).returns(T::Boolean) }

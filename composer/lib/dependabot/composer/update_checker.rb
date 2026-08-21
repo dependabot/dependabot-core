@@ -156,13 +156,13 @@ module Dependabot
 
       sig { returns(T::Boolean) }
       def path_dependency?
-        dependency.requirements.any? { |r| r.dig(:source, :type) == "path" }
+        dependency.requirements.any? { |r| r.source_string("type") == "path" }
       end
 
       # To be a true git dependency, it must have a branch.
       sig { returns(T::Boolean) }
       def git_dependency?
-        dependency.requirements.any? { |r| r.dig(:source, :branch) }
+        dependency.requirements.any? { |r| r.source_string("branch") }
       end
 
       sig { returns(Dependabot::DependencyFile) }
@@ -191,7 +191,7 @@ module Dependabot
         if git_commit_checker.pinned_ref_looks_like_version? &&
            git_commit_checker.local_tag_for_latest_version(update_cooldown)
           latest_tag = git_commit_checker.local_tag_for_latest_version(update_cooldown)
-          return latest_tag&.fetch(:commit_sha)
+          return latest_tag&.commit_sha
         end
 
         # If the dependency is pinned to a tag that doesn't look like a

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/dependency"
@@ -329,13 +329,15 @@ module Dependabot
 
               NativeHelpers.run_npm8_subdependency_update_command(
                 [dependency.name],
-                security_updates_only: security_updates_only?
+                min_release_age_arg: security_updates_only? ? "--min-release-age=0" : nil
               )
 
               updated_content = File.read(lockfile_name)
               if updated_content == original_content && Dependabot::Experiments.enabled?(:enable_audit_fix_fallback)
                 begin
-                  NativeHelpers.run_npm_audit_fix_command(security_updates_only: security_updates_only?)
+                  NativeHelpers.run_npm_audit_fix_command(
+                    min_release_age_arg: security_updates_only? ? "--min-release-age=0" : nil
+                  )
                   dependency.metadata[:audit_fix_used] = true
                 rescue SharedHelpers::HelperSubprocessFailed
                   Dependabot.logger.info("npm audit fix failed or partially fixed — continuing with any changes made")
@@ -350,15 +352,18 @@ module Dependabot
 
         sig { params(path: String, lockfile_name: String).returns(T::Hash[String, String]) }
         def run_npm6_updater(path, lockfile_name)
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            Dir.chdir(path) do
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
-                function: "npm6:updateSubdependency",
-                args: [Dir.pwd, lockfile_name, [dependency.to_h]]
-              )
-            end
-          end
+          T.cast(
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              Dir.chdir(path) do
+                SharedHelpers.run_helper_subprocess(
+                  command: NativeHelpers.helper_path,
+                  function: "npm6:updateSubdependency",
+                  args: [Dir.pwd, lockfile_name, [dependency.to_h]]
+                )
+              end
+            end,
+            T::Hash[String, String]
+          )
         end
 
         sig { returns(T.class_of(Dependabot::Version)) }
