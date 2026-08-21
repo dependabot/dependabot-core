@@ -141,6 +141,24 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
         )
       end
 
+      context "when only a prerelease is published above the current version" do
+        # Regression: only "1.0.130000-beta.1" exists above the current version, no
+        # stable release. Dependabot must not propose it (and, since it never
+        # reaches version_class, must not fabricate a nonexistent stable
+        # "1.0.130000" by dropping the "-beta.1" suffix).
+        before do
+          allow(Dependabot::Helm::Helpers).to receive(:fetch_oci_tags)
+            .with("registry.sweet.security/helm/frontierchart")
+            .and_return(
+              "1.0.119807+c2277fddd003556d4982b86ef4e77fc84a41ed79\n1.0.130000-beta.1"
+            )
+        end
+
+        it "does not propose the prerelease" do
+          expect(checker.latest_version).to be_nil
+        end
+      end
+
       context "when tags include non-version tags like SHA256 hashes and metadata files" do
         before do
           allow(Dependabot::Helm::Helpers).to receive(:fetch_oci_tags)
@@ -503,6 +521,21 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       end
     end
 
+    context "when releases include prerelease versions" do
+      let(:releases) do
+        [
+          { "version" => "18.0.0" },
+          { "version" => "19.0.0" },
+          { "version" => "20.0.0-beta.1" }
+        ]
+      end
+
+      it "excludes prerelease versions" do
+        result = checker.send(:filter_valid_releases, releases)
+        expect(result.map { |r| r["version"] }).to contain_exactly("18.0.0", "19.0.0")
+      end
+    end
+
     context "when the constraint is a range" do
       let(:releases) { [{ "version" => "0.5.0" }, { "version" => "1.5.0" }, { "version" => "2.5.0" }] }
 
@@ -600,6 +633,15 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
       end
     end
 
+    context "when versions include prerelease versions" do
+      let(:all_versions) { ["18.0.0", "19.0.0", "20.0.0-beta.1"] }
+
+      it "excludes prerelease versions" do
+        result = checker.send(:filter_valid_versions, all_versions)
+        expect(result).to contain_exactly("18.0.0", "19.0.0")
+      end
+    end
+
     context "when reproducing the original error scenario" do
       let(:version) { "17.7.1" } # The version that caused the original error
       let(:docker_requirement) { Dependabot::Docker::Requirement.new(">= 17.7.0") }
@@ -646,6 +688,26 @@ RSpec.describe Dependabot::Helm::UpdateChecker do
 
       it "returns the latest version from the index" do
         expect(latest_chart_version).to eq(Dependabot::Helm::Version.new("20.11.3"))
+      end
+
+      context "when the index only publishes a prerelease above the current version" do
+        # Regression: reproduces reports of Dependabot bumping a chart to a
+        # version like "0.2.2" when the registry only ever published
+        # "0.2.2-beta.0"/"0.2.2-beta.1" and no real "0.2.2" release.
+        let(:index_content) do
+          <<~YAML
+            apiVersion: v1
+            entries:
+              redis:
+              - version: "17.11.3"
+              - version: "20.11.4-beta.0"
+              - version: "20.11.4-beta.1"
+          YAML
+        end
+
+        it "does not propose the unpublished stable version" do
+          expect(latest_chart_version).to be_nil
+        end
       end
 
       context "when the request returns a string" do

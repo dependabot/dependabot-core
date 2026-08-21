@@ -236,15 +236,34 @@ module Dependabot
       sig { params(releases: T::Array[T::Hash[String, Object]]).returns(T::Array[T::Hash[String, Object]]) }
       def filter_valid_releases(releases)
         releases.reject do |release|
-          release_version = version_class.new(T.cast(release["version"], String))
+          release_version_string = T.cast(release["version"], String)
+          release_version = version_class.new(release_version_string)
           # Compare against current_version (the anchored floor) rather than
           # dependency.version: for a range constraint (">=1.0.0 <2.0.0") the raw
           # version string isn't a single parseable version.
           release_version <= current_version ||
+            chart_prerelease?(release_version_string) ||
             ignore_requirements.any? do |r|
               r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(release_version)
             end
         end
+      end
+
+      # Helm chart versions must be valid SemVer 2.0.0, where a hyphen before
+      # any build-metadata (`+...`) unambiguously marks a prerelease (e.g.
+      # "0.2.2-beta.1"). Unlike Docker image tags, there's no OS/variant-suffix
+      # convention to worry about here, so this check is exact, not a heuristic.
+      #
+      # Dependabot::Helm::Version can't be used for this: it borrows Docker's
+      # tag-suffix stripping, which discards everything after a hyphen (built for
+      # Docker suffixes like "-alpine") rather than treating it as a SemVer
+      # prerelease. That silently turns "0.2.2-beta.1" into "0.2.2", so
+      # pre-releases must be filtered out before a version ever reaches
+      # version_class.new — including when the current version is itself a
+      # prerelease, since letting one through would hit the same corruption.
+      sig { params(version_string: String).returns(T::Boolean) }
+      def chart_prerelease?(version_string)
+        version_string.split("+", 2).first.to_s.include?("-")
       end
 
       sig { params(repo_url: String).returns(String) }
@@ -445,6 +464,7 @@ module Dependabot
       def filter_valid_versions(all_versions)
         all_versions.reject do |version|
           version_class.new(version) <= current_version ||
+            chart_prerelease?(version) ||
             ignore_requirements.any? do |r|
               r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(version_class.new(version))
             end
