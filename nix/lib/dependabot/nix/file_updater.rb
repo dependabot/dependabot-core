@@ -110,7 +110,14 @@ module Dependabot
 
       sig { params(lockfile: Lockfile).returns(T.nilable(T::Hash[String, Object])) }
       def updated_git_source(lockfile)
-        source = lockfile.original_source(dependency.name)
+        original_source = lockfile.original_source(dependency.name)
+        return unless original_source
+
+        source = if original_source["type"] == "indirect"
+                   lockfile.locked_source(dependency.name)
+                 else
+                   original_source
+                 end
         return unless source
 
         ref = new_source_ref

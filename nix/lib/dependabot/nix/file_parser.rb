@@ -159,7 +159,7 @@ module Dependabot
           "https://#{host}/#{locked['owner']}/#{locked['repo']}"
         when "sourcehut"
           host = locked["host"] || DEFAULT_HOSTS["sourcehut"]
-          "https://#{host}/~#{locked['owner']}/#{locked['repo']}"
+          "https://#{host}/#{locked['owner']}/#{locked['repo']}"
         when "git"
           locked["url"]
         end

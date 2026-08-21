@@ -132,6 +132,47 @@ RSpec.describe Dependabot::Nix::FileParser do
       end
     end
 
+    context "with a SourceHut input" do
+      let(:flake_lock_content) do
+        <<~JSON
+          {
+            "nodes": {
+              "sourcehut-dep": {
+                "locked": {
+                  "lastModified": 1654847660,
+                  "narHash": "sha256-Mjdh3ackWoxkNBIcfXyqPlAc4mNe0EtZvb1cmgcyd+I=",
+                  "owner": "~user",
+                  "repo": "myrepo",
+                  "rev": "old_sha_abc123",
+                  "type": "sourcehut"
+                },
+                "original": {
+                  "owner": "~user",
+                  "ref": "main",
+                  "repo": "myrepo",
+                  "type": "sourcehut"
+                }
+              },
+              "root": {
+                "inputs": {
+                  "sourcehut-dep": "sourcehut-dep"
+                }
+              }
+            },
+            "root": "root",
+            "version": 7
+          }
+        JSON
+      end
+
+      it "uses the owner from the lockfile" do
+        dependency = dependencies.find { |item| item.name == "sourcehut-dep" }
+
+        expect(dependency.requirements.first[:source][:url])
+          .to eq("https://git.sr.ht/~user/myrepo")
+      end
+    end
+
     context "with follows inputs" do
       let(:flake_lock_content) { fixture("flake_with_follows.lock") }
 
