@@ -86,12 +86,38 @@ module Dependabot
               @current_dependency = dependency_to_update
               next if previous_line_already_replaced?
 
-              run_cargo_command(
-                "cargo update -p #{dependency_spec}",
-                fingerprint: "cargo update -p <dependency_spec>"
-              )
+              run_cargo_update
             end
           end
+        end
+
+        sig { void }
+        def run_cargo_update
+          run_cargo_command(
+            "cargo update -p #{dependency_spec} --precise #{dependency.version}",
+            fingerprint: "cargo update -p <dependency_spec> --precise <version>"
+          )
+        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+          raise unless split_graph_conflict?(e)
+
+          fallback_files = split_graph_manifest_files
+          raise if fallback_files.empty?
+
+          pin_split_graph_manifest_requirements(fallback_files)
+
+          # --precise cannot introduce a new direct version while retaining the selected old version for another edge.
+          run_cargo_command(
+            "cargo update -p #{dependency_spec}",
+            fingerprint: "cargo update -p <dependency_spec>"
+          )
+          raise e unless desired_version_present?(File.read("Cargo.lock"))
+        end
+
+        sig { params(error: Dependabot::SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
+        def split_graph_conflict?(error)
+          !git_dependency? &&
+            error.message.include?("failed to select a version") &&
+            error.message.include?(dependency.name)
         end
 
         # An earlier command in this run may already have resolved this
@@ -420,7 +446,6 @@ module Dependabot
         sig { params(file: Dependabot::DependencyFile).returns(String) }
         def prepared_manifest_content(file)
           content = updated_manifest_content(file)
-          content = pin_version(content) unless git_dependency?
           content = replace_ssh_urls(content)
           content = remove_binary_specifications(content)
           content = remove_default_run_specification(content)
@@ -442,52 +467,52 @@ module Dependabot
           ).updated_manifest_content
         end
 
+        sig { returns(T::Array[Dependabot::DependencyFile]) }
+        def split_graph_manifest_files
+          manifest_files.select do |file|
+            dependency.requirements.any? { |requirement| requirement[:file] == file.name }
+          end
+        end
+
+        sig { params(files: T::Array[Dependabot::DependencyFile]).void }
+        def pin_split_graph_manifest_requirements(files)
+          files.each do |file|
+            File.write(file.name, pin_version(prepared_manifest_content(file)))
+          end
+        end
+
         sig { params(content: String).returns(String) }
         def pin_version(content)
           parsed_manifest = TomlRB.parse(content)
 
           Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
-            next unless (req = parsed_manifest.dig(type, dependency.name))
+            next unless (requirement = parsed_manifest.dig(type, dependency.name))
 
-            updated_req = "=#{dependency.version}"
-
-            if req.is_a?(Hash)
-              parsed_manifest[type][dependency.name]["version"] = updated_req
+            if requirement.is_a?(Hash)
+              parsed_manifest[type][dependency.name]["version"] = "=#{dependency.version}"
             else
-              parsed_manifest[type][dependency.name] = updated_req
+              parsed_manifest[type][dependency.name] = "=#{dependency.version}"
             end
           end
 
           pin_target_specific_dependencies!(parsed_manifest)
-
           TomlRB.dump(parsed_manifest)
         end
 
         sig { params(parsed_manifest: T::Hash[String, T.anything]).void }
         def pin_target_specific_dependencies!(parsed_manifest)
-          toml_table_or_empty(parsed_manifest.fetch("target", {})).each do |target, t_details|
-            t_details = toml_table_or_empty(t_details)
+          toml_table_or_empty(parsed_manifest.fetch("target", {})).each do |target, target_details|
+            target_details = toml_table_or_empty(target_details)
             Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
-              toml_table_or_empty(t_details.fetch(type, {})).each do |name, requirement|
+              toml_table_or_empty(target_details.fetch(type, {})).each do |name, requirement|
                 next unless name == dependency.name
 
-                updated_req = "=#{dependency.version}"
-
+                dependencies = toml_table_or_empty(toml_table_or_empty(parsed_manifest["target"])[target])
                 if T.cast(requirement, T.nilable(Object)).is_a?(Hash)
-                  toml_table_or_empty(
-                    toml_table_or_empty(
-                      toml_table_or_empty(
-                        toml_table_or_empty(parsed_manifest["target"])[target]
-                      )[type]
-                    )[name]
-                  )["version"] =
-                    updated_req
+                  toml_table_or_empty(toml_table_or_empty(dependencies[type])[name])["version"] =
+                    "=#{dependency.version}"
                 else
-                  toml_table_or_empty(
-                    toml_table_or_empty(
-                      toml_table_or_empty(parsed_manifest["target"])[target]
-                    )[type]
-                  )[name] = updated_req
+                  toml_table_or_empty(dependencies[type])[name] = "=#{dependency.version}"
                 end
               end
             end
@@ -582,8 +607,8 @@ module Dependabot
 
         sig { params(value: T.anything).returns(T::Hash[String, T.anything]) }
         def toml_table_or_empty(value)
-          obj = T.cast(value, T.nilable(Object))
-          obj.is_a?(Hash) ? obj : {}
+          object = T.cast(value, T.nilable(Object))
+          object.is_a?(Hash) ? object : {}
         end
 
         sig { returns(String) }

@@ -60,6 +60,15 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         .not_to(change { Dir.entries(tmp_path) })
     end
 
+    it "asks Cargo to update to the exact dependency version" do
+      expect(updater).to receive(:run_cargo_command).with(
+        "cargo update -p time:0.1.38 --precise 0.1.40",
+        fingerprint: "cargo update -p <dependency_spec> --precise <version>"
+      ).and_call_original
+
+      updated_lockfile_content
+    end
+
     it { expect { updated_lockfile_content }.not_to output.to_stdout }
 
     context "when using a toolchain file that is too old" do
@@ -87,8 +96,8 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         expect { updater.updated_lockfile_content }
           .to raise_error do |error|
             expect(error)
-              .to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
-            expect(error.message).to include("failed to select a version")
+              .to be_a(Dependabot::DependencyFileNotResolvable)
+            expect(error.message).to eq("time")
           end
       end
 
@@ -201,6 +210,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
       context "with a target-specific dependency" do
         let(:manifest_fixture_name) { "target_dependency" }
         let(:lockfile_fixture_name) { "target_dependency" }
+        let(:dependency_version) { "0.1.38" }
         let(:dependency_previous_version) { "0.1.12" }
         let(:requirements) do
           [{
@@ -221,7 +231,39 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
 
         it "updates the dependency version in the lockfile" do
           expect(updated_lockfile_content)
-            .to include(%(name = "time"\nversion = "0.1.40"))
+            .to include(%(name = "time"\nversion = "0.1.38"))
+        end
+
+        context "when Cargo reports a split-graph conflict" do
+          let(:lockfile_body) do
+            super() + <<~LOCKFILE
+
+              [[package]]
+              name = "time"
+              version = "0.1.38"
+              source = "registry+https://github.com/rust-lang/crates.io-index"
+            LOCKFILE
+          end
+          let(:fallback_manifest_contents) { [] }
+
+          before do
+            allow(updater).to receive(:run_cargo_command) do |command, **|
+              if command.include?("--precise")
+                raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                  message: 'failed to select a version for the requirement `time = "<=0.1.12"`',
+                  error_context: {}
+                )
+              end
+
+              fallback_manifest_contents << File.read("Cargo.toml")
+            end
+          end
+
+          it "exact-pins the target-specific requirement before the fallback" do
+            updated_lockfile_content
+
+            expect(fallback_manifest_contents).to contain_exactly(a_string_including('time = "=0.1.38"'))
+          end
         end
       end
 
@@ -325,7 +367,10 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
             expect(updated_lockfile_content).to include(%(name = "getrandom"\nversion = "0.2.18"))
             expect(updated_lockfile_content).to include(%(name = "getrandom"\nversion = "0.4.3"))
             expect(commands).to eq(
-              ["cargo update -p getrandom:0.2.17", "cargo update -p getrandom:0.4.2"]
+              [
+                "cargo update -p getrandom:0.2.17 --precise 0.2.18",
+                "cargo update -p getrandom:0.4.2 --precise 0.4.3"
+              ]
             )
           end
 
@@ -351,7 +396,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
             it "skips the consumed package specification" do
               expect(updated_lockfile_content).to include(%(name = "getrandom"\nversion = "0.2.18"))
               expect(updated_lockfile_content).to include(%(name = "getrandom"\nversion = "0.4.3"))
-              expect(commands).to eq(["cargo update -p getrandom:0.2.17"])
+              expect(commands).to eq(["cargo update -p getrandom:0.2.17 --precise 0.2.18"])
             end
           end
         end
@@ -479,10 +524,66 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         let(:previous_requirements) do
           [{ file: "Cargo.toml", requirement: "=0.52.0", groups: ["dependencies"], source: nil }]
         end
+        let(:commands) { [] }
+
+        before do
+          allow(updater).to receive(:run_cargo_command).and_wrap_original do |method, command, fingerprint:|
+            commands << command
+            method.call(command, fingerprint: fingerprint)
+          end
+        end
 
         it "accepts the update when Cargo keeps the old line for other dependents" do
           expect(updated_lockfile_content).to include(%(name = "windows-sys"\nversion = "0.59.0"))
           expect(updated_lockfile_content).to include(%(name = "windows-sys"\nversion = "0.52.0"))
+          expect(commands).to eq(
+            [
+              "cargo update -p windows-sys:0.52.0 --precise 0.59.0",
+              "cargo update -p windows-sys:0.52.0"
+            ]
+          )
+        end
+
+        context "when the desired version is already locked for another dependent" do
+          let(:requirements) do
+            [{ file: "Cargo.toml", requirement: "0.59", groups: ["dependencies"], source: nil }]
+          end
+          let(:lockfile_body) do
+            super() + <<~LOCKFILE
+
+              [[package]]
+              name = "windows-sys"
+              version = "0.59.0"
+              source = "registry+https://github.com/rust-lang/crates.io-index"
+              checksum = "1e38bc4d79ed67fd075bcc251a1c39b32f1776a048167c60a3a49e89265ef463"
+            LOCKFILE
+          end
+          let(:fallback_manifest_contents) { [] }
+
+          before do
+            allow(updater).to receive(:run_cargo_command) do |command, **|
+              commands << command
+              if command.include?("--precise")
+                raise Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                  message: 'failed to select a version for the requirement `windows-sys = "^0.52"`',
+                  error_context: {}
+                )
+              end
+
+              fallback_manifest_contents << File.read("Cargo.toml")
+            end
+          end
+
+          it "exact-pins the updated edge before allowing Cargo to split the graph" do
+            expect(updated_lockfile_content).to include(%(name = "windows-sys"\nversion = "0.59.0"))
+            expect(fallback_manifest_contents).to contain_exactly(a_string_including('windows-sys = "=0.59.0"'))
+            expect(commands).to eq(
+              [
+                "cargo update -p windows-sys:0.52.0 --precise 0.59.0",
+                "cargo update -p windows-sys:0.52.0"
+              ]
+            )
+          end
         end
       end
 
@@ -562,6 +663,15 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
         it "updates the dependency version in the lockfile" do
           expect(updated_lockfile_content)
             .to include("utf8-ranges#be9b8dfcaf449453cbf83ac85260ee80323f4f77")
+        end
+
+        it "asks Cargo to update to the exact git revision" do
+          expect(updater).to receive(:run_cargo_command).with(
+            "cargo update -p utf8-ranges:1.0.0 --precise be9b8dfcaf449453cbf83ac85260ee80323f4f77",
+            fingerprint: "cargo update -p <dependency_spec> --precise <version>"
+          ).and_call_original
+
+          updated_lockfile_content
         end
 
         context "when the tracked reference resolves to a different commit" do
@@ -1160,8 +1270,8 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
             [{ file: "Cargo.toml", requirement: "99.0.0", groups: [], source: nil }]
           end
 
-          it "raises HelperSubprocessFailed" do
-            expect { result }.to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed)
+          it "raises DependencyFileNotResolvable" do
+            expect { result }.to raise_error(Dependabot::DependencyFileNotResolvable, "time")
           end
         end
       end
