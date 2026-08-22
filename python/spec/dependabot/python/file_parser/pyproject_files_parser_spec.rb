@@ -384,6 +384,40 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       end
     end
 
+    context "with a reserved PyPI source and a private source" do
+      subject(:dependency) { dependencies.find { |dep| dep.name == "requests" } }
+
+      let(:pyproject_body) do
+        <<~TOML
+          [tool.poetry]
+          name = "source-test"
+          version = "0.1.0"
+
+          [tool.poetry.dependencies]
+          python = "^3.12"
+          requests = { version = "^2.0", source = "private" }
+
+          [[tool.poetry.source]]
+          name = "pypi"
+          priority = "explicit"
+
+          [[tool.poetry.source]]
+          name = "private"
+          url = "https://private.example.com/simple"
+        TOML
+      end
+
+      it "resolves the referenced source without requiring a URL on PyPI" do
+        expect(dependency.requirements.first[:source]).to eq(
+          {
+            type: "registry",
+            url: "https://private.example.com/simple",
+            name: "private"
+          }
+        )
+      end
+    end
+
     describe "Poetry v2 fixtures" do
       let(:files) { [pyproject, poetry_lock] }
       let(:poetry_lock) do
