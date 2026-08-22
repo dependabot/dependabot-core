@@ -1412,6 +1412,12 @@ public class EndToEndTests
                   </ItemGroup>
                 </Project>
                 """),
+            ("src/solution.slnx", """
+                <Solution>
+                  <Project Path="app/app.csproj" />
+                  <Project Path="library/library.csproj" />
+                </Solution>
+                """),
             // this project has no lock file, so the update can be written through it
             ("src/library/library.csproj", """
                 <Project Sdk="Microsoft.NET.Sdk">
@@ -1487,6 +1493,11 @@ public class EndToEndTests
                   Condition="'$(EnableWindowsTargeting)' != 'true'"
                   Text="EnableWindowsTargeting must be enabled for a Windows project." />
               </Target>
+              <Target Name="FailIfSolutionDirIsIncorrect" BeforeTargets="Restore">
+                <Error
+                  Condition="'$(RestoreForceEvaluate)' == 'true' and !Exists('$(SolutionDir)app/app.csproj')"
+                  Text="SolutionDir must point to the solution directory during lock file regeneration." />
+              </Target>
             </Project>
             """, TestContext.Current.CancellationToken);
 
@@ -1514,6 +1525,9 @@ public class EndToEndTests
         Assert.DoesNotContain(
             logger.Messages,
             message => message.Contains("EnableWindowsTargeting must be enabled for a Windows project.", StringComparison.Ordinal));
+        Assert.DoesNotContain(
+            logger.Messages,
+            message => message.Contains("SolutionDir must point to the solution directory during lock file regeneration.", StringComparison.Ordinal));
 
         // assert
         var createPr = (CreatePullRequest)apiHandler.ReceivedMessages.Single(m => m.Type == typeof(CreatePullRequest)).Object;

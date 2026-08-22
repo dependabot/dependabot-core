@@ -18,6 +18,10 @@ internal static class LockFileUpdater
         WorkspaceDiscoveryResult discoveryResult,
         ILogger logger)
     {
+        var solutionDirectory = discoveryResult.SolutionDirectory is null
+            ? null
+            : Path.Join(repoContentsPath.FullName, discoveryResult.SolutionDirectory).FullyNormalizedRootedPath();
+
         foreach (var project in discoveryResult.Projects)
         {
             // `AdditionalFiles` entries are relative to the project's own directory
@@ -35,12 +39,13 @@ internal static class LockFileUpdater
 
             var requiresWindowsTargeting = project.TargetFrameworks.Any(tfm => tfm.Contains("-windows", StringComparison.OrdinalIgnoreCase));
             logger.Info($"Regenerating lock file for project [{project.FilePath}]");
-            await UpdateLockFileAsync(projectPath, requiresWindowsTargeting, logger);
+            await UpdateLockFileAsync(projectPath, solutionDirectory, requiresWindowsTargeting, logger);
         }
     }
 
     private static async Task UpdateLockFileAsync(
         string projectPath,
+        string? solutionDirectory,
         bool requiresWindowsTargeting,
         ILogger logger)
     {
@@ -53,6 +58,12 @@ internal static class LockFileUpdater
             "-p:TreatWarningsAsErrors=false",
             "-p:MSBuildTreatWarningsAsErrors=false",
         };
+        if (solutionDirectory is not null)
+        {
+            var normalizedSolutionDirectory = $"{solutionDirectory.TrimEnd('/', Path.DirectorySeparatorChar)}/";
+            args.Add($"-p:SolutionDir={normalizedSolutionDirectory}");
+        }
+
         if (requiresWindowsTargeting)
         {
             args.Add("-p:EnableWindowsTargeting=true");
