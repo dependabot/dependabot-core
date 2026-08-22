@@ -15,7 +15,7 @@ PATH
   specs:
     dependabot-bundler (0.392.0)
       dependabot-common (= 0.392.0)
-      parallel (~> 1.24)
+      parallel (>= 1.24, < 3.0)
 
 PATH
   remote: ../cargo
@@ -470,7 +470,7 @@ GEM
       opentelemetry-semantic_conventions
     opentelemetry-semantic_conventions (1.43.0)
       opentelemetry-api (~> 1.0)
-    parallel (1.28.0)
+    parallel (2.1.0)
     parallel_tests (4.7.1)
       parallel
     parseconfig (1.1.2)
@@ -807,7 +807,7 @@ CHECKSUMS
   opentelemetry-registry (0.6.3) sha256=568fa8eaea94394f29f4fce3f0339ab10c3bf6d6c8beed6b3cfee6fd37fcc608
   opentelemetry-sdk (1.13.0) sha256=eea4ab625eb901ecfe1083049862d4853fd16d94029f3cdd16526c81332f0fff
   opentelemetry-semantic_conventions (1.43.0) sha256=d96eb7da3bc89335786ea676b448701f566cf241a7ca56ae1e814b83816922af
-  parallel (1.28.0) sha256=33e6de1484baf2524792d178b0913fc8eb94c628d6cfe45599ad4458c638c970
+  parallel (2.1.0) sha256=b35258865c2e31134c5ecb708beaaf6772adf9d5efae28e93e99260877b09356
   parallel_tests (4.7.1) sha256=98ad977f5e5a28df77c0364504bdea21f0a2a9ea86eae238668fdfec341ab860
   parseconfig (1.1.2) sha256=e52247d15070fb47f9e58f44f7888d1e7f65775274cd60f9ab4b7acd7943b291
   parser (3.3.12.0) sha256=21a6d7f755d5a24dfbdc6e6b772e4e879a52e7631a88bc5a3a134606052c9828
