@@ -270,7 +270,6 @@ GEM
       irb (~> 1.10)
       reline (>= 0.3.8)
     diff-lcs (1.6.2)
-    docile (1.4.0)
     docker_registry2 (1.19.0)
       faraday (>= 2.0)
       faraday-follow_redirects
@@ -414,12 +413,7 @@ GEM
     sawyer (0.9.3)
       addressable (>= 2.3.5)
       faraday (>= 0.17.3, < 3)
-    simplecov (0.22.0)
-      docile (~> 1.1)
-      simplecov-html (~> 0.11)
-      simplecov_json_formatter (~> 0.1)
-    simplecov-html (0.12.3)
-    simplecov_json_formatter (0.1.4)
+    simplecov (1.1.1)
     sorbet (0.6.13386)
       sorbet-static (= 0.6.13386)
     sorbet-runtime (0.6.13386)
@@ -520,7 +514,7 @@ DEPENDENCIES
   rubocop-performance (~> 1.26)
   rubocop-rspec (~> 3.7)
   rubocop-sorbet (~> 0.10)
-  simplecov (~> 0.22)
+  simplecov (~> 1.1)
   sorbet (~> 0.6)
   tapioca (~> 0.19)
   turbo_tests (~> 2.2.5)
@@ -584,7 +578,6 @@ CHECKSUMS
   dependabot-uv (0.392.0)
   dependabot-vcpkg (0.392.0)
   diff-lcs (1.6.2) sha256=9ae0d2cba7d4df3075fe8cd8602a8604993efc0dfa934cff568969efb1909962
-  docile (1.4.0) sha256=5f1734bde23721245c20c3d723e76c104208e1aa01277a69901ce770f0ebb8d3
   docker_registry2 (1.19.0) sha256=e50fbe316422b33740c5c2c49b68d938314c2cf4367a381fa3277eb1c79b8623
   erb (6.0.1.1) sha256=ce5357460652a9a94667c5769eaffc551eea2b14a8531ac7c7b1d77b860758b9
   erubi (1.13.1) sha256=a082103b0885dbc5ecf1172fede897f9ebdb745a4b97a5e8dc63953db1ee4ad9
@@ -650,9 +643,7 @@ CHECKSUMS
   rubydex (0.3.0-arm64-darwin) sha256=19f685610216e4e7f488722ac90dfbc33113a384dd16db309cf939606f4c32dd
   rubydex (0.3.0-x86_64-linux) sha256=dfe4026591f226b4a1b53f82f86dc14fad2e7c221ee8a5be99a0a46bf2d58b04
   sawyer (0.9.3) sha256=0d0f19298408047037638639fe62f4794483fb04320269169bd41af2bdcf5e41
-  simplecov (0.22.0) sha256=fe2622c7834ff23b98066bb0a854284b2729a569ac659f82621fc22ef36213a5
-  simplecov-html (0.12.3) sha256=4b1aad33259ffba8b29c6876c12db70e5750cb9df829486e4c6e5da4fa0aa07b
-  simplecov_json_formatter (0.1.4) sha256=529418fbe8de1713ac2b2d612aa3daa56d316975d307244399fa4838c601b428
+  simplecov (1.1.1) sha256=25825ef13f0b2e74694d769817dad6ab8e90131dabdaa666e522fea105521e78
   sorbet (0.6.13386) sha256=8f9cb0771c0843f1f2610847bf38a976716459fbec87b040ba8897414a286aa3
   sorbet-runtime (0.6.13386) sha256=716aa0a47e75bba1167205d408d59b622db3648109854e9fd309fb901564df48
   sorbet-static (0.6.13386-universal-darwin) sha256=1d3cfdfd1c57a6108b322fe5d2657da2b4021aa1fed413634762d9c44d4ffea4
