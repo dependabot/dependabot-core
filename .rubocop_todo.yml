@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 743
+# Offense count: 730
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bun/lib/dependabot/bun.rb"
@@ -372,7 +372,6 @@ Sorbet/ForbidTUntyped:
     - "uv/lib/dependabot/uv/dependency_grapher.rb"
     - "uv/lib/dependabot/uv/file_fetcher/workspace_fetcher.rb"
     - "uv/lib/dependabot/uv/file_parser.rb"
-    - "uv/lib/dependabot/uv/file_parser/pyproject_files_parser.rb"
     - "uv/lib/dependabot/uv/file_updater/compile_file_updater.rb"
     - "uv/lib/dependabot/uv/file_updater/lock_file_error_handler.rb"
     - "uv/lib/dependabot/uv/file_updater/lock_file_updater.rb"
