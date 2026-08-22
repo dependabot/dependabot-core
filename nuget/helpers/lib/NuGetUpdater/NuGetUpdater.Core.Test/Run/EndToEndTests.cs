@@ -1382,6 +1382,321 @@ public class EndToEndTests
     }
 
     [Fact]
+    public async Task LockFileIsRegeneratedForWindowsProjectWithCentralPackageManagementAndLockedMode()
+    {
+        // this test needs to do some dynamic checks so we have to set it up manually
+        // the package version is managed centrally in `Directory.Packages.props` and the update is written through the
+        // project that has no lock file, but a sibling project that imports the same file owns a `packages.lock.json`
+        // and sets `RestoreLockedMode`; the restores performed during discovery report NU1004 and refuse to rewrite
+        // that now out-of-date lock file, so it has to be regenerated explicitly or the pull request will contain a
+        // `Directory.Packages.props` that no longer agrees with the lock file
+
+        // arrange
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("Directory.Packages.props", """
+                <Project>
+                  <PropertyGroup>
+                    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageVersion Include="Some.Package" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("src/dirs.proj", """
+                <Project>
+                  <ItemGroup>
+                    <ProjectFile Include="app\app.csproj" />
+                    <ProjectFile Include="library\library.csproj" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("src/solution.slnx", """
+                <Solution>
+                  <Project Path="app/app.csproj" />
+                  <Project Path="library/library.csproj" />
+                </Solution>
+                """),
+            // this project has no lock file, so the update can be written through it
+            ("src/library/library.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Package" />
+                  </ItemGroup>
+                </Project>
+                """),
+            // ...but this project's lock file has to be brought along with it
+            ("src/app/app.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0-windows</TargetFramework>
+                    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Package" />
+                  </ItemGroup>
+                  <Target Name="FailIfWindowsTargetingIsMissing" BeforeTargets="Restore">
+                    <Error
+                      Condition="'$(EnableWindowsTargeting)' != 'true'"
+                      Text="EnableWindowsTargeting must be enabled for a Windows project." />
+                  </Target>
+                </Project>
+                """)
+        );
+        var repoContentsPath = tempDirectory.DirectoryPath;
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0", [(null, [("Transitive.Package", "1.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net9.0", [(null, [("Transitive.Package", "2.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Transitive.Package", "1.0.0", "net9.0"),
+            MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net9.0"),
+        ], repoContentsPath);
+
+        // the lock file can't be hand-authored because the mock packages get a different `contentHash` on every run, so
+        // a real restore has to produce it; `RestoreLockedMode` is only turned on afterwards, which is also the order
+        // these repos are built in practice - the committed lock file comes from an ordinary restore and only later
+        // builds are locked
+        var appProjectPath = Path.Join(repoContentsPath, "src", "app", "app.csproj");
+        var appLockFilePath = Path.Join(repoContentsPath, "src", "app", "packages.lock.json");
+        var (exitCode, stdout, stderr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(
+            ["restore", "-p:EnableWindowsTargeting=true", appProjectPath],
+            repoContentsPath);
+        Assert.True(exitCode == 0, $"Initial restore failed.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
+
+        var initialLockFileJson = JsonDocument.Parse(await File.ReadAllTextAsync(appLockFilePath, TestContext.Current.CancellationToken));
+        var initialLockFileDependencies = initialLockFileJson.RootElement
+            .GetProperty("dependencies")
+            .EnumerateObject()
+            .Single()
+            .Value;
+        var initialResolved = initialLockFileDependencies
+            .GetProperty("Some.Package")
+            .GetProperty("resolved")
+            .GetString();
+        Assert.Equal("1.0.0", initialResolved);
+
+        await File.WriteAllTextAsync(appProjectPath, """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net9.0-windows</TargetFramework>
+                <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+                <RestoreLockedMode>true</RestoreLockedMode>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Some.Package" />
+              </ItemGroup>
+              <Target Name="FailIfWindowsTargetingIsMissing" BeforeTargets="Restore">
+                <Error
+                  Condition="'$(EnableWindowsTargeting)' != 'true'"
+                  Text="EnableWindowsTargeting must be enabled for a Windows project." />
+              </Target>
+              <Target Name="FailIfSolutionDirIsIncorrect" BeforeTargets="Restore">
+                <Error
+                  Condition="'$(RestoreForceEvaluate)' == 'true' and !Exists('$(SolutionDir)app/app.csproj')"
+                  Text="SolutionDir must point to the solution directory during lock file regeneration." />
+              </Target>
+            </Project>
+            """, TestContext.Current.CancellationToken);
+
+        var jobId = "TEST-JOB-ID";
+        var experimentsManager = new ExperimentsManager();
+        var logger = new StringLogger();
+        var apiHandler = new TestApiHandler();
+        var discoveryWorker = new DiscoveryWorker(jobId, experimentsManager, logger);
+        var analyzeWorker = new AnalyzeWorker(jobId, experimentsManager, logger);
+        var updaterWorker = new UpdaterWorker(jobId, experimentsManager, logger);
+        var worker = new RunWorker(jobId, apiHandler, discoveryWorker, analyzeWorker, updaterWorker, logger);
+        var job = new Job()
+        {
+            Source = new()
+            {
+                Provider = "github",
+                Repo = "test/repo",
+                Directory = "/src",
+            }
+        };
+
+        // act
+        await worker.RunAsync(job, new DirectoryInfo(repoContentsPath), null, "TEST-COMMIT-SHA", experimentsManager);
+
+        Assert.DoesNotContain(
+            logger.Messages,
+            message => message.Contains("EnableWindowsTargeting must be enabled for a Windows project.", StringComparison.Ordinal));
+        Assert.DoesNotContain(
+            logger.Messages,
+            message => message.Contains("SolutionDir must point to the solution directory during lock file regeneration.", StringComparison.Ordinal));
+
+        // assert
+        var createPr = (CreatePullRequest)apiHandler.ReceivedMessages.Single(m => m.Type == typeof(CreatePullRequest)).Object;
+        var updatedFiles = createPr.UpdatedDependencyFiles.ToDictionary(df => Path.Join(df.Directory, df.Name).NormalizePathToUnix(), df => df.Content.Replace("\r", ""));
+
+        // neither project is changed; the version only lives in the central package management file
+        Assert.False(updatedFiles.ContainsKey("/src/app/app.csproj"));
+        Assert.False(updatedFiles.ContainsKey("/src/library/library.csproj"));
+        Assert.Equal("""
+            <Project>
+              <PropertyGroup>
+                <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageVersion Include="Some.Package" Version="2.0.0" />
+              </ItemGroup>
+            </Project>
+            """.Replace("\r", ""), updatedFiles["/Directory.Packages.props"]);
+
+        // the lock file was regenerated despite the owning project being in locked mode
+        var lockFileDependencies = JsonDocument.Parse(updatedFiles["/src/app/packages.lock.json"]).RootElement
+            .GetProperty("dependencies")
+            .EnumerateObject()
+            .Single()
+            .Value;
+        Assert.Equal("2.0.0", lockFileDependencies.GetProperty("Some.Package").GetProperty("resolved").GetString());
+        Assert.Equal("2.0.0", lockFileDependencies.GetProperty("Transitive.Package").GetProperty("resolved").GetString());
+    }
+
+    [Fact]
+    public async Task LockFileIsRegeneratedForNonWindowsSingleProjectWithCentralPackageManagementAndLockedMode()
+    {
+        // this test needs to do some dynamic checks so we have to set it up manually
+        // this is the single project shape of the scenario above: the one project both owns the `packages.lock.json`
+        // and carries the `PackageReference` whose version comes from `Directory.Packages.props`; once the new version
+        // is written the lock file is out of date, so the verification discovery that follows the write reports NU1004,
+        // returns nothing, and the update is rolled back - the result being no pull request at all unless discovery's
+        // restore ignores locked mode
+
+        // arrange
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(
+            ("Directory.Packages.props", """
+                <Project>
+                  <PropertyGroup>
+                    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageVersion Include="Some.Package" Version="1.0.0" />
+                  </ItemGroup>
+                </Project>
+                """),
+            ("src/app/app.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>net9.0</TargetFramework>
+                    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="Some.Package" />
+                  </ItemGroup>
+                  <Target Name="FailIfWindowsTargetingIsForced" BeforeTargets="Restore">
+                    <Error
+                      Condition="'$(EnableWindowsTargeting)' == 'true'"
+                      Text="EnableWindowsTargeting must not be forced for a non-Windows project." />
+                  </Target>
+                </Project>
+                """)
+        );
+        var repoContentsPath = tempDirectory.DirectoryPath;
+        await UpdateWorkerTestBase.MockNuGetPackagesInDirectory([
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net9.0", [(null, [("Transitive.Package", "1.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Some.Package", "2.0.0", "net9.0", [(null, [("Transitive.Package", "2.0.0")])]),
+            MockNuGetPackage.CreateSimplePackage("Transitive.Package", "1.0.0", "net9.0"),
+            MockNuGetPackage.CreateSimplePackage("Transitive.Package", "2.0.0", "net9.0"),
+        ], repoContentsPath);
+
+        // the lock file can't be hand-authored because the mock packages get a different `contentHash` on every run, so
+        // a real restore has to produce it; `RestoreLockedMode` is only turned on afterwards, which is also the order
+        // these repos are built in practice - the committed lock file comes from an ordinary restore and only later
+        // builds are locked
+        var appProjectPath = Path.Join(repoContentsPath, "src", "app", "app.csproj");
+        var appLockFilePath = Path.Join(repoContentsPath, "src", "app", "packages.lock.json");
+        var (exitCode, stdout, stderr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["restore", appProjectPath], repoContentsPath);
+        Assert.True(exitCode == 0, $"Initial restore failed.\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}");
+
+        var initialLockFileJson = JsonDocument.Parse(await File.ReadAllTextAsync(appLockFilePath, TestContext.Current.CancellationToken));
+        var initialLockFileDependencies = initialLockFileJson.RootElement
+            .GetProperty("dependencies")
+            .EnumerateObject()
+            .Single()
+            .Value;
+        var initialResolved = initialLockFileDependencies
+            .GetProperty("Some.Package")
+            .GetProperty("resolved")
+            .GetString();
+        Assert.Equal("1.0.0", initialResolved);
+
+        await File.WriteAllTextAsync(appProjectPath, """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net9.0</TargetFramework>
+                <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+                <RestoreLockedMode>true</RestoreLockedMode>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Some.Package" />
+              </ItemGroup>
+              <Target Name="FailIfWindowsTargetingIsForced" BeforeTargets="Restore">
+                <Error
+                  Condition="'$(EnableWindowsTargeting)' == 'true'"
+                  Text="EnableWindowsTargeting must not be forced for a non-Windows project." />
+              </Target>
+            </Project>
+            """, TestContext.Current.CancellationToken);
+
+        var jobId = "TEST-JOB-ID";
+        var experimentsManager = new ExperimentsManager();
+        var logger = new StringLogger();
+        var apiHandler = new TestApiHandler();
+        var discoveryWorker = new DiscoveryWorker(jobId, experimentsManager, logger);
+        var analyzeWorker = new AnalyzeWorker(jobId, experimentsManager, logger);
+        var updaterWorker = new UpdaterWorker(jobId, experimentsManager, logger);
+        var worker = new RunWorker(jobId, apiHandler, discoveryWorker, analyzeWorker, updaterWorker, logger);
+        var job = new Job()
+        {
+            Source = new()
+            {
+                Provider = "github",
+                Repo = "test/repo",
+                Directory = "/src/app",
+            }
+        };
+
+        // act
+        await worker.RunAsync(job, new DirectoryInfo(repoContentsPath), null, "TEST-COMMIT-SHA", experimentsManager);
+
+        Assert.DoesNotContain(
+            logger.Messages,
+            message => message.Contains("EnableWindowsTargeting must not be forced for a non-Windows project.", StringComparison.Ordinal));
+
+        // assert
+        var createPr = (CreatePullRequest)apiHandler.ReceivedMessages.Single(m => m.Type == typeof(CreatePullRequest)).Object;
+        var updatedFiles = createPr.UpdatedDependencyFiles.ToDictionary(df => Path.Join(df.Directory, df.Name).NormalizePathToUnix(), df => df.Content.Replace("\r", ""));
+
+        // the project isn't changed; the version only lives in the central package management file
+        Assert.False(updatedFiles.ContainsKey("/src/app/app.csproj"));
+        Assert.Equal("""
+            <Project>
+              <PropertyGroup>
+                <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageVersion Include="Some.Package" Version="2.0.0" />
+              </ItemGroup>
+            </Project>
+            """.Replace("\r", ""), updatedFiles["/Directory.Packages.props"]);
+
+        // the lock file was regenerated despite the project being in locked mode
+        var lockFileDependencies = JsonDocument.Parse(updatedFiles["/src/app/packages.lock.json"]).RootElement
+            .GetProperty("dependencies")
+            .GetProperty("net9.0");
+        Assert.Equal("2.0.0", lockFileDependencies.GetProperty("Some.Package").GetProperty("resolved").GetString());
+        Assert.Equal("2.0.0", lockFileDependencies.GetProperty("Transitive.Package").GetProperty("resolved").GetString());
+    }
+
+    [Fact]
     public async Task FindRootDirectory_ExpandsDirectoryThroughProjChain()
     {
         // Job starts at /src/client, but a .proj chain leads up to the repo root.
