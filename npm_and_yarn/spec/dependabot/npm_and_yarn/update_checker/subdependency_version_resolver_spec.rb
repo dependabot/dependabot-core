@@ -34,8 +34,6 @@ RSpec.describe namespace::SubdependencyVersionResolver do
 
   before do
     allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_private_registry_for_corepack).and_return(true)
-    allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_audit_fix_fallback).and_return(true)
   end
 
