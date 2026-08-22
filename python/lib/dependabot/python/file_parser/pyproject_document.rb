@@ -95,7 +95,7 @@ module Dependabot
 
         class PoetrySource < T::ImmutableStruct
           const :name, String
-          const :url, String
+          const :url, T.nilable(String), default: nil
         end
 
         sig { params(data: PyprojectValueParser::ObjectHash).void }
@@ -218,7 +218,7 @@ module Dependabot
             source = PyprojectValueParser.object_hash(source, "tool.poetry.source entry")
             PoetrySource.new(
               name: PyprojectValueParser.string(source["name"], "Poetry source name"),
-              url: PyprojectValueParser.string(source["url"], "Poetry source url")
+              url: PyprojectValueParser.optional_string(source["url"], "Poetry source url")
             )
           end
         end

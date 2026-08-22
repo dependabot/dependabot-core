@@ -68,6 +68,28 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectDocument do
     expect(document.workspace_globs("exclude")).to eq(["packages/ignored"])
   end
 
+  context "with Poetry's reserved PyPI source" do
+    let(:content) do
+      <<~TOML
+        [[tool.poetry.source]]
+        name = "pypi"
+        priority = "explicit"
+
+        [[tool.poetry.source]]
+        name = "private"
+        url = "https://example.com/simple"
+      TOML
+    end
+
+    it "allows the reserved source to omit its URL" do
+      expect(document.poetry_source("pypi")).to have_attributes(name: "pypi", url: nil)
+      expect(document.poetry_source("private")).to have_attributes(
+        name: "private",
+        url: "https://example.com/simple"
+      )
+    end
+  end
+
   it "ignores unknown keys" do
     file.content = "#{content}\n[tool.unknown]\nvalue = 1\n"
 
