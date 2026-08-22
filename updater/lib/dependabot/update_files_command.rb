@@ -42,6 +42,8 @@ module Dependabot
           return service.mark_job_as_processed(base_commit_sha)
         end
 
+        dependency_snapshot.parse_errors.each { |error| handle_parser_error(error) }
+
         # Update the service's metadata about this project
         service.update_dependency_list(dependency_snapshot: dependency_snapshot)
 

@@ -231,6 +231,28 @@ RSpec.describe Dependabot::DependencySnapshot do
         create_dependency_snapshot
       end
 
+      context "when the file parser reports non-fatal errors" do
+        let(:parse_error) do
+          Dependabot::DependencyFileNotParseable.new("/unparseable.yaml", "invalid YAML")
+        end
+        let(:file_parser) do
+          instance_double(
+            Dependabot::Bundler::FileParser,
+            ecosystem: nil,
+            parse: [],
+            parse_errors: [parse_error]
+          )
+        end
+
+        before do
+          allow(Dependabot::Bundler::FileParser).to receive(:new).and_return(file_parser)
+        end
+
+        it "retains the errors on the dependency snapshot" do
+          expect(create_dependency_snapshot.parse_errors).to contain_exactly(parse_error)
+        end
+      end
+
       it "correctly instantiates any configured dependency groups" do
         snapshot = create_dependency_snapshot
 

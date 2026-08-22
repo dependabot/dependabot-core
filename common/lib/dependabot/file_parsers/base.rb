@@ -28,6 +28,9 @@ module Dependabot
       sig { returns(T::Hash[Symbol, T.anything]) }
       attr_reader :options
 
+      sig { returns(T::Array[StandardError]) }
+      attr_reader :parse_errors
+
       sig { returns(T::Boolean) }
       def reject_external_code?
         @reject_external_code
@@ -58,6 +61,7 @@ module Dependabot
         @source = source
         @reject_external_code = reject_external_code
         @options = options
+        @parse_errors = T.let([], T::Array[StandardError])
 
         check_required_files
       end

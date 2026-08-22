@@ -80,6 +80,36 @@ RSpec.describe Dependabot::UpdateFilesCommand do
           dependency_snapshot: an_object_having_attributes(base_commit_sha: base_commit_sha)
         )
     end
+
+    context "when parsing completed with a non-fatal error" do
+      let(:error) { Dependabot::DependencyFileNotParseable.new("unparseable.yaml", "invalid YAML") }
+      let(:snapshot) do
+        instance_double(
+          Dependabot::DependencySnapshot,
+          base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848",
+          parse_errors: [error]
+        )
+      end
+      let(:updater) { instance_double(Dependabot::Updater, run: nil) }
+
+      before do
+        allow(Dependabot::DependencySnapshot).to receive(:create_from_job_definition).and_return(snapshot)
+        allow(Dependabot::Updater).to receive(:new).and_return(updater)
+      end
+
+      it "records the error and continues the update" do
+        expect(service).to receive(:record_update_job_error).with(
+          error_type: "dependency_file_not_parseable",
+          error_details: {
+            "file-path": "unparseable.yaml",
+            message: "invalid YAML"
+          }
+        )
+        expect(updater).to receive(:run)
+
+        perform_job
+      end
+    end
   end
 
   describe "#perform_job when there is an error parsing the dependency files" do
@@ -293,7 +323,8 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       let(:snapshot) do
         instance_double(
           Dependabot::DependencySnapshot,
-          base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848"
+          base_commit_sha: "1c6331732c41e4557a16dacb82534f1d1c831848",
+          parse_errors: []
         )
       end
 

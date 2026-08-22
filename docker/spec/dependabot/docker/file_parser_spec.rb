@@ -1171,6 +1171,46 @@ RSpec.describe Dependabot::Docker::FileParser do
         end
       end
     end
+
+    context "when one YAML file cannot be parsed" do
+      let(:podfiles) { [unparseable_file, valid_file] }
+      let(:unparseable_file) do
+        Dependabot::DependencyFile.new(
+          name: "unparseable.yaml",
+          directory: "/",
+          content: <<~YAML
+            metadata:
+              annotations:
+                a.b/c: "true"
+               invalid: yaml
+          YAML
+        )
+      end
+      let(:valid_file) do
+        Dependabot::DependencyFile.new(
+          name: "valid.yaml",
+          directory: "/",
+          content: fixture("kubernetes", "yaml", "pod.yaml")
+        )
+      end
+
+      it "parses dependencies from the valid file" do
+        expect(dependencies.length).to eq(1)
+        expect(dependencies.first.name).to eq("nginx")
+        expect(dependencies.first.version).to eq("1.14.2")
+        expect(dependencies.first.requirements).to eq(
+          [{
+            requirement: nil,
+            groups: [],
+            file: "valid.yaml",
+            source: { tag: "1.14.2" }
+          }]
+        )
+        expect(yaml_parser.parse_errors.length).to eq(1)
+        expect(yaml_parser.parse_errors.first).to be_a(Dependabot::DependencyFileNotParseable)
+        expect(yaml_parser.parse_errors.first&.file_path).to eq("/unparseable.yaml")
+      end
+    end
   end
 
   describe "YAML parse" do

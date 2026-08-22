@@ -43,6 +43,9 @@ module Dependabot
       @dependency_files
     end
 
+    sig { returns(T::Array[StandardError]) }
+    attr_reader :parse_errors
+
     sig { returns(T::Array[Dependabot::Dependency]) }
     def all_dependencies
       @dependencies.values.flatten
@@ -222,6 +225,7 @@ module Dependabot
       @dependencies = T.let({}, T::Hash[String, T::Array[Dependabot::Dependency]])
       @ecosystem = T.let({}, T::Hash[String, T.nilable(Dependabot::Ecosystem)])
       @notices = T.let({}, T::Hash[String, T::Array[Dependabot::Notice]])
+      @parse_errors = T.let([], T::Array[StandardError])
 
       directories.each do |dir|
         @current_directory = dir
@@ -267,7 +271,10 @@ module Dependabot
 
     sig { returns(T::Array[Dependabot::Dependency]) }
     def parse_files!
-      dependency_file_parser.parse
+      parser = dependency_file_parser
+      dependencies = parser.parse
+      parse_errors.concat(parser.parse_errors)
+      dependencies
     end
 
     sig { returns(Dependabot::FileParsers::Base) }
