@@ -958,4 +958,44 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       end
     end
   end
+
+  describe "malformed parsed data" do
+    context "with a malformed Poetry dependency" do
+      let(:pyproject_body) do
+        <<~TOML
+          [tool.poetry.dependencies]
+          requests = 123
+        TOML
+      end
+
+      it "raises at the TOML boundary" do
+        expect { parser.dependency_set }
+          .to raise_error(TypeError, "Poetry dependency requests must be a string, object, or array")
+      end
+    end
+
+    context "with a malformed successful helper result" do
+      let(:pyproject_body) do
+        <<~TOML
+          [project]
+          dependencies = ["requests>=2"]
+        TOML
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers)
+          .to receive(:run_helper_subprocess)
+          .and_return([{
+            "file" => "pyproject.toml",
+            "requirement" => ">=2",
+            "extras" => []
+          }])
+      end
+
+      it "raises at the helper boundary" do
+        expect { parser.dependency_set }
+          .to raise_error(TypeError, "PEP dependency name must be a string")
+      end
+    end
+  end
 end
