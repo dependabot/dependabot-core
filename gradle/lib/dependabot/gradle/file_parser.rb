@@ -38,7 +38,13 @@ module Dependabot
 
       PART = %r{[^\s,@'":/\\]+}
       VSN_PART = %r{[^\s,'":/\\]+}
-      DEPENDENCY_DECLARATION_REGEX = /(?:\(|\s)\s*['"](?<declaration>#{PART}:#{PART}:#{VSN_PART})['"]/o
+      DEPENDENCY_DECLARATION_REGEX = /
+        (?:
+          (?<dependency_substitution>\b(?:substitute|using)\s*(?:\(\s*)?module\s*\(\s*)|
+          (?:\(|\s)\s*
+        )
+        ['"](?<declaration>#{PART}:#{PART}:#{VSN_PART})['"]
+      /ox
 
       DEPENDENCY_SET_DECLARATION_REGEX = /(?:^|\s)dependencySet\((?<arguments>[^\)]+)\)\s*\{/
       DEPENDENCY_SET_ENTRY_REGEX = /entry\s+['"](?<name>#{PART})['"]/o
@@ -270,11 +276,17 @@ module Dependabot
         dependency_set = DependencySet.new
 
         prepared_content(buildfile).scan(DEPENDENCY_DECLARATION_REGEX) do
-          declaration = T.must(Regexp.last_match).named_captures.fetch("declaration")
+          match = T.must(Regexp.last_match)
+          captures = match.named_captures
+          declaration = captures.fetch("declaration")
 
           group, name, version = T.must(declaration).split(":")
           version, _packaging_type = T.must(version).split("@")
           details = { group: group, name: name, version: version }
+          if captures.fetch("dependency_substitution")
+            details[:declaration_type] =
+              Dependabot::DependencyRequirement::DEPENDENCY_SUBSTITUTION_DECLARATION_TYPE
+          end
 
           dep = dependency_from(details_hash: details, buildfile: buildfile)
           dependency_set << dep if dep
@@ -465,11 +477,13 @@ module Dependabot
           T.cast(details_hash[:version], String)
            .match(PROPERTY_REGEX)
            &.named_captures&.fetch("property_name")
+        declaration_type = T.cast(details_hash[:declaration_type], T.nilable(String))
 
-        return unless version_property_name || in_dependency_set
+        return unless version_property_name || in_dependency_set || declaration_type
 
         metadata = T.let({}, T::Hash[Symbol, T.any(String, T::Hash[Symbol, String])])
         metadata[:property_name] = version_property_name if version_property_name
+        metadata[:declaration_type] = declaration_type if declaration_type
         if in_dependency_set
           metadata[:dependency_set] = T.let(
             {
