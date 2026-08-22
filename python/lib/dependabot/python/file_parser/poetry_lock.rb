@@ -81,11 +81,11 @@ module Dependabot
         sig do
           params(
             name: String,
-            normalizer: T.proc.params(name: String).returns(String)
+            _normalizer: T.proc.params(name: String).returns(String)
           )
             .returns(T.nilable(String))
         end
-        def version_for(name, &normalizer)
+        def version_for(name, &_normalizer)
           normalized_name = yield(name)
           packages.find { |package| yield(package.name) == normalized_name }&.version
         end
