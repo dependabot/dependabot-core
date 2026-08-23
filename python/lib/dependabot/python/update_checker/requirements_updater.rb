@@ -358,7 +358,7 @@ module Dependabot
           new_segments
             .first(count)
             .map.with_index { |s, i| i < precision ? s : "*" }
-                .join(".")
+            .join(".")
         end
 
         sig { params(requirement_strings: T::Array[String]).returns(String) }

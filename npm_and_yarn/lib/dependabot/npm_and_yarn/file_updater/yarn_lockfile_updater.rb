@@ -829,7 +829,7 @@ module Dependabot
           yarnrc_global_registry =
             T.must(T.must(yarnrc_file).content)
              .lines.find { |line| line.match?(regex) }
-                   &.match(regex)
+             &.match(regex)
              &.named_captures
              &.fetch("registry")
 
