@@ -110,9 +110,7 @@ module Dependabot
                  .filter_map { |h| h["url"] }
                  .map { |url| url.gsub(%r{\/$}, "") + "/packages.json" }
 
-          unless repositories.any? { |rep| rep["packagist.org"] == false }
-            urls << "https://repo.packagist.org/p2/#{dependency.name.downcase}.json"
-          end
+          urls << "https://repo.packagist.org/p2/#{dependency.name.downcase}.json" unless repositories.any? { |rep| rep["packagist.org"] == false }
 
           @registry_version_details = []
           urls.each do |url|
