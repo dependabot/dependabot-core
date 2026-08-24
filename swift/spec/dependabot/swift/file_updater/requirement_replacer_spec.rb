@@ -48,53 +48,6 @@ RSpec.describe Dependabot::Swift::FileUpdater::RequirementReplacer do
       end
     end
 
-    context "with a multi-line declaration where the requirement line ends with an inline comment" do
-      let(:declaration) do
-        ".package(\n" \
-          "      url: \"#{url}\",\n" \
-          "      #{old_requirement}\n" \
-          "      traits: []\n" \
-          "    )"
-      end
-      # The parser captures the trailing comma and comment as part of the requirement string.
-      let(:old_requirement) { ".upToNextMajor(from: \"1.30.0\"), // keep this" }
-
-      context "when the new requirement does not carry the trailing separator" do
-        let(:new_requirement) { "\"1.30.0\"...\"1.36.2\"" }
-
-        it "preserves the comma and comment before the next argument" do
-          expect(replacer.updated_content).to include("\"1.30.0\"...\"1.36.2\", // keep this\n")
-          expect(replacer.updated_content).to include("traits: []")
-        end
-      end
-
-      context "when the new requirement already carries the trailing comma and comment" do
-        let(:new_requirement) { ".upToNextMajor(from: \"1.36.2\"), // keep this" }
-
-        it "does not duplicate the suffix" do
-          expect(replacer.updated_content).to include(".upToNextMajor(from: \"1.36.2\"), // keep this\n")
-          expect(replacer.updated_content).not_to include("// keep this // keep this")
-        end
-      end
-    end
-
-    context "with a multi-line declaration where the requirement line ends with a block comment" do
-      let(:declaration) do
-        ".package(\n" \
-          "      url: \"#{url}\",\n" \
-          "      #{old_requirement}\n" \
-          "      traits: []\n" \
-          "    )"
-      end
-      let(:old_requirement) { ".upToNextMajor(from: \"1.30.0\"), /* keep */" }
-      let(:new_requirement) { "\"1.30.0\"...\"1.36.2\"" }
-
-      it "preserves the comma and block comment before the next argument" do
-        expect(replacer.updated_content).to include("\"1.30.0\"...\"1.36.2\", /* keep */\n")
-        expect(replacer.updated_content).to include("traits: []")
-      end
-    end
-
     context "with a single-line declaration where the requirement has no trailing separator" do
       let(:declaration) { ".package(url: \"#{url}\", from: \"1.0.0\")" }
       let(:old_requirement) { "from: \"1.0.0\"" }

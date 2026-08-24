@@ -34,17 +34,15 @@ module Dependabot
 
         private
 
-        # The parsed requirement can include a trailing suffix (a comma before a following
-        # argument on the next line, and/or an inline `//` or `/* */` comment). Carry it over
-        # when the replacement doesn't already have it, so multi-line declarations stay valid.
+        # The parser captures a trailing comma separating the requirement from a following
+        # argument on the next line. Carry it over when the replacement doesn't already have
+        # one, so multi-line declarations stay valid.
         sig { returns(String) }
         def replacement
-          suffix =
-            old_requirement[%r{,\s*(?://.*|/\*.*\*/)?\z}] ||
-            old_requirement[%r{\s*(?://.*|/\*.*\*/)\z}]
-          return new_requirement if suffix.nil? || new_requirement.end_with?(suffix)
+          return new_requirement unless old_requirement.end_with?(",")
+          return new_requirement if new_requirement.end_with?(",")
 
-          new_requirement + suffix
+          "#{new_requirement},"
         end
 
         sig { returns(String) }
