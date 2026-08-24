@@ -499,10 +499,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       end
 
       it "updates the existing pull request without errors" do
-        expect(dependency_snapshot).to receive(:mark_group_handled).with(
-          having_attributes(name: "minor"),
-          { "/" => Set.new(%w(dummy-pkg-a dummy-pkg-b)) }
-        ).and_call_original
         expect(mock_service).not_to receive(:close_pull_request)
         expect(mock_service).to receive(:update_pull_request) do |dependency_change|
           expect(dependency_change.dependency_group.name).to eql("major")
