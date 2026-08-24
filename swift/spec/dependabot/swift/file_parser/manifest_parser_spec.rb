@@ -136,6 +136,29 @@ RSpec.describe Dependabot::Swift::FileParser::ManifestParser do
           expect(requirements.first[:metadata][:requirement_string]).to eq("exact: \"1.0.0\",")
         end
       end
+
+      context "with a trailing comma after the final labeled argument" do
+        let(:content) do
+          <<~SWIFT
+            let package = Package(
+              name: "example",
+              dependencies: [
+                .package(
+                  url: "#{url}",
+                  .upToNextMajor(from: "1.0.0"),
+                  traits: [],
+                )
+              ]
+            )
+          SWIFT
+        end
+
+        it "parses the requirement" do
+          expect(requirements.length).to eq(1)
+          expect(requirements.first[:requirement]).to eq(">= 1.0.0, < 2.0.0")
+          expect(requirements.first[:metadata][:requirement_string]).to eq(".upToNextMajor(from: \"1.0.0\"),")
+        end
+      end
     end
 
     context "with sibling declarations on their own lines" do

@@ -13,11 +13,12 @@ module Dependabot
         extend T::Helpers
 
         # After the version requirement there may be additional labeled arguments (e.g. `traits: []`)
-        # that can span onto following lines before the closing `)` of `.package(`.
+        # that can span onto following lines before the closing `)` of `.package(`, optionally with a
+        # trailing comma after the final argument.
         DEPENDENCY =
           /(?<declaration>\.package\(\s*
             (?:name:\s+"[^"]+",\s*)?url:\s+"(?<url>[^"]+)",\s*(?<requirement>#{NativeRequirement::REGEXP})
-            (?:\s*,?\s*\w+\s*:\s*(?:\[[^\]]*\]|"[^"]*"|[^\s,)]+))*\s*
+            (?:\s*,?\s*\w+\s*:\s*(?:\[[^\]]*\]|"[^"]*"|[^\s,)]+))*\s*,?\s*
            \))/x
 
         sig do
