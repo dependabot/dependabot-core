@@ -76,6 +76,26 @@ RSpec.describe Dependabot::FileFetcherCommand do
       end
     end
 
+    context "when the isolate_fetch_update experiment is enabled" do
+      let(:job_definition) do
+        definition = JSON.parse(fixture("jobs/job_without_credentials.json"))
+        definition["job"]["experiments"]["isolate_fetch_update"] = true
+        definition
+      end
+
+      it "prints the base commit SHA as a JSON line on stdout",
+         vcr: { cassette_name: "Dependabot_FileFetcherCommand/_perform_job/fetches_the_files" } do
+        expect { perform_job }.to output(/\{"base_commit_sha":"[0-9a-f]{40}"\}/).to_stdout_from_any_process
+      end
+    end
+
+    context "when the isolate_fetch_update experiment is disabled" do
+      it "does not print the base commit SHA to stdout",
+         vcr: { cassette_name: "Dependabot_FileFetcherCommand/_perform_job/fetches_the_files" } do
+        expect { perform_job }.not_to output(/"base_commit_sha"/).to_stdout_from_any_process
+      end
+    end
+
     context "when only a local checkout may be used" do
       let(:repo_contents_path) { Dir.mktmpdir }
 

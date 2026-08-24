@@ -48,6 +48,14 @@ module Dependabot
       @repo_contents_path ||= T.let(environment_variable("DEPENDABOT_REPO_CONTENTS_PATH", nil), T.nilable(String))
     end
 
+    # The base commit SHA handed off from the fetch container. In the split-container flow the
+    # update container has no clone to resolve it from, so the orchestrator captures the value the
+    # fetch container prints and passes it in via this environment variable.
+    sig { returns(T.nilable(String)) }
+    def self.base_commit_sha
+      @base_commit_sha ||= T.let(environment_variable("DEPENDABOT_BASE_COMMIT_SHA", nil), T.nilable(String))
+    end
+
     sig { returns(T::Boolean) }
     def self.github_actions?
       b = T.cast(environment_variable("GITHUB_ACTIONS", false), T::Boolean)

@@ -89,6 +89,13 @@ module Dependabot
 
     sig { override.returns(T.nilable(String)) }
     def base_commit_sha
+      # In the split-container flow the base commit SHA is handed off from the fetch container
+      # instead of being resolved from a local clone. Fall back to the fetched files otherwise.
+      if Experiments.enabled?(:isolate_fetch_update)
+        handed_off_sha = Environment.base_commit_sha
+        return handed_off_sha if handed_off_sha
+      end
+
       @fetched_files.base_commit_sha
     end
 

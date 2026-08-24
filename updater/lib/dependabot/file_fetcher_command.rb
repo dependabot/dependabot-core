@@ -9,11 +9,12 @@ require "dependabot/opentelemetry"
 require "dependabot/updater"
 require "dependabot/file_fetcher_command_connectivity"
 require "dependabot/file_fetcher_command_local_checkout"
+require "json"
 require "octokit"
 require "sorbet-runtime"
 
 module Dependabot
-  class FileFetcherCommand < BaseCommand
+  class FileFetcherCommand < BaseCommand # rubocop:disable Metrics/ClassLength
     extend T::Sig
     include FileFetcherCommandConnectivity
     include FileFetcherCommandLocalCheckout
@@ -75,6 +76,7 @@ module Dependabot
         end
 
         Dependabot.logger.info("Base commit SHA: #{@base_commit_sha}")
+        emit_base_commit_sha
       end
     end
 
@@ -146,6 +148,16 @@ module Dependabot
     sig { returns(T::Hash[String, Dependabot::DependabotError]) }
     def directory_fetch_errors
       @directory_fetch_errors ||= T.let({}, T.nilable(T::Hash[String, Dependabot::DependabotError]))
+    end
+
+    # In the split-container flow the update container has no clone to resolve the base commit SHA
+    # from, so the fetch container prints it as a JSON line on stdout for the orchestrator to
+    # capture and hand to the update container.
+    sig { void }
+    def emit_base_commit_sha
+      return unless Experiments.enabled?(:isolate_fetch_update)
+
+      puts(JSON.generate({ base_commit_sha: @base_commit_sha }))
     end
 
     sig { params(directory: T.nilable(String)).returns(Dependabot::FileFetchers::Base) }
