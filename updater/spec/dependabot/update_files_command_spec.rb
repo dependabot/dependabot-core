@@ -82,6 +82,36 @@ RSpec.describe Dependabot::UpdateFilesCommand do
     end
   end
 
+  describe "#base_commit_sha" do
+    after { Dependabot::Experiments.reset! }
+
+    context "when the isolate_fetch_update experiment is disabled" do
+      it "returns the base commit SHA from the fetched files" do
+        expect(job.base_commit_sha).to eq("1c6331732c41e4557a16dacb82534f1d1c831848")
+      end
+    end
+
+    context "when the isolate_fetch_update experiment is enabled" do
+      before { Dependabot::Experiments.register(:isolate_fetch_update, true) }
+
+      context "when a handed-off base commit SHA is present" do
+        before { allow(Dependabot::Environment).to receive(:base_commit_sha).and_return("handed-off-sha") }
+
+        it "returns the handed-off base commit SHA" do
+          expect(job.base_commit_sha).to eq("handed-off-sha")
+        end
+      end
+
+      context "when no handed-off base commit SHA is present" do
+        before { allow(Dependabot::Environment).to receive(:base_commit_sha).and_return(nil) }
+
+        it "falls back to the fetched files base commit SHA" do
+          expect(job.base_commit_sha).to eq("1c6331732c41e4557a16dacb82534f1d1c831848")
+        end
+      end
+    end
+  end
+
   describe "#perform_job when there is an error parsing the dependency files" do
     subject(:perform_job) { job.perform_job }
 
