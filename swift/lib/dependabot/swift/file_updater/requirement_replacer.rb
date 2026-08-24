@@ -28,11 +28,23 @@ module Dependabot
         sig { returns(String) }
         def updated_content
           content.gsub(declaration) do |match|
-            match.to_s.sub(old_requirement, new_requirement)
+            match.to_s.sub(old_requirement, replacement)
           end
         end
 
         private
+
+        # The parsed requirement can include a trailing separator (e.g. a comma before a
+        # following argument on the next line). Carry it over when the replacement doesn't
+        # already have one, so multi-line declarations stay valid.
+        sig { returns(String) }
+        def replacement
+          trailing_separator = old_requirement[/,\s*\z/]
+          return new_requirement if trailing_separator.nil?
+          return new_requirement if new_requirement.match?(/,\s*\z/)
+
+          new_requirement + trailing_separator
+        end
 
         sig { returns(String) }
         attr_reader :content
