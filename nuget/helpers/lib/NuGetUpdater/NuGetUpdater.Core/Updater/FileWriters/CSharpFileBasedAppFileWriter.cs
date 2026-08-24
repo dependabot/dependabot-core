@@ -1,6 +1,6 @@
 using System.Collections.Immutable;
-using System.Text;
-using System.Text.RegularExpressions;
+
+using Microsoft.CodeAnalysis.Text;
 
 using NuGet.Versioning;
 
@@ -8,12 +8,9 @@ using NuGetUpdater.Core.Discover;
 
 namespace NuGetUpdater.Core.Updater.FileWriters;
 
-public sealed partial class CSharpFileBasedAppFileWriter : IFileWriter
+public sealed class CSharpFileBasedAppFileWriter : IFileWriter
 {
     public const string SupportedFileExtension = ".cs";
-
-    private static readonly Encoding Utf8WithBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
-    private static readonly Encoding Utf8WithoutBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
     private readonly ILogger _logger;
 
@@ -27,118 +24,164 @@ public sealed partial class CSharpFileBasedAppFileWriter : IFileWriter
         ImmutableArray<string> relativeFilePaths,
         ImmutableArray<Dependency> originalDependencies,
         ImmutableArray<Dependency> requiredPackageVersions,
-        PackageManagementKind packageManagementKind)
+        PackageManagementKind packageManagementKind,
+        string? packageManagementSpecialFileRelativePath)
     {
-        var originalDependencyVersions = GetParsedDependencyVersions(originalDependencies)
-            .GroupBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.First().Version, StringComparer.OrdinalIgnoreCase);
-        var requiredDependencyVersions = GetParsedDependencyVersions(requiredPackageVersions)
-            .GroupBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.First().Version, StringComparer.OrdinalIgnoreCase);
-
-        var foundVersionedDirective = false;
-        var allMatchedDirectivesUpdated = true;
-        foreach (var relativeFilePath in relativeFilePaths.Where(IsSupportedFilePath))
+        var csharpFilePaths = relativeFilePaths.Where(IsSupportedFilePath).ToImmutableArray();
+        if (csharpFilePaths.Length != 1)
         {
-            var fullPath = Path.Join(repoContentsPath.FullName, relativeFilePath);
-            var originalFile = await ReadTextFileAsync(fullPath);
-            var updatedContents = UpdateFileContents(
-                originalFile.Contents,
-                originalDependencyVersions,
-                requiredDependencyVersions,
-                ref foundVersionedDirective,
-                ref allMatchedDirectivesUpdated);
-            if (updatedContents != originalFile.Contents)
-            {
-                await File.WriteAllTextAsync(fullPath, updatedContents, originalFile.Encoding);
-            }
+            _logger.Warn($"Expected one C# file-based app to update, but found {csharpFilePaths.Length}.");
+            return false;
         }
 
-        return foundVersionedDirective && allMatchedDirectivesUpdated;
+        if (!TryGetRequiredDependencyVersions(requiredPackageVersions, out var requiredDependencyVersions) ||
+            requiredDependencyVersions.Count == 0)
+        {
+            return false;
+        }
+
+        var originalDependencyVersions = GetParsedDependencyVersions(originalDependencies);
+
+        var fullPath = Path.Join(repoContentsPath.FullName, csharpFilePaths[0]);
+        var originalContents = await File.ReadAllTextAsync(fullPath);
+        var syntax = CSharpFileBasedAppDiscovery.Parse(originalContents);
+        if (syntax.PackageDirectives.IsEmpty)
+        {
+            _logger.Warn($"No package directives found in C# file-based app {csharpFilePaths[0]}.");
+            return false;
+        }
+
+        var changes = new List<TextChange>();
+        var representedDependencies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var directive in syntax.PackageDirectives)
+        {
+            if (!requiredDependencyVersions.TryGetValue(directive.Name, out var requiredVersion))
+            {
+                continue;
+            }
+
+            if (directive.Version is null)
+            {
+                changes.Add(new TextChange(
+                    new TextSpan(directive.NameSpan.End, 0),
+                    $"@{requiredVersion}"));
+                representedDependencies.Add(directive.Name);
+                continue;
+            }
+
+            if (directive.VersionSpan is null ||
+                !originalDependencyVersions.TryGetValue(directive.Name, out var oldVersion) ||
+                !TryGetUpdatedVersion(directive.Version, oldVersion, requiredVersion, out var updatedVersion))
+            {
+                _logger.Warn($"Unable to update C# file-based app package directive for {directive.Name} to {requiredVersion}.");
+                return false;
+            }
+
+            if (updatedVersion != directive.Version)
+            {
+                changes.Add(new TextChange(directive.VersionSpan.Value, updatedVersion));
+            }
+
+            representedDependencies.Add(directive.Name);
+        }
+
+        var missingDependencies = requiredDependencyVersions
+            .Where(kvp => !representedDependencies.Contains(kvp.Key))
+            .OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase)
+            .ToImmutableArray();
+        if (!missingDependencies.IsEmpty)
+        {
+            changes.Add(CreateMissingDirectivesChange(originalContents, syntax.PackageDirectives, missingDependencies));
+        }
+
+        var updatedContents = SourceText.From(originalContents).WithChanges(changes).ToString();
+        if (updatedContents != originalContents)
+        {
+            await File.WriteAllTextAsync(fullPath, updatedContents);
+        }
+
+        return true;
     }
 
     public static bool IsSupportedFilePath(string filePath)
         => Path.GetExtension(filePath).Equals(SupportedFileExtension, StringComparison.OrdinalIgnoreCase);
 
-    private string UpdateFileContents(
-        string contents,
-        IReadOnlyDictionary<string, NuGetVersion> originalDependencyVersions,
-        IReadOnlyDictionary<string, NuGetVersion> requiredDependencyVersions,
-        ref bool foundVersionedDirective,
-        ref bool allMatchedDirectivesUpdated)
+    private bool TryGetRequiredDependencyVersions(
+        ImmutableArray<Dependency> dependencies,
+        out IReadOnlyDictionary<string, NuGetVersion> versions)
     {
-        var updatedContents = new StringBuilder(contents.Length);
-        var inDirectiveBlock = true;
-        var inBlockComment = false;
-        foreach (Match lineMatch in LineRegex().Matches(contents))
+        var parsedVersions = new Dictionary<string, NuGetVersion>(StringComparer.OrdinalIgnoreCase);
+        foreach (var dependency in dependencies)
         {
-            if (lineMatch.Length == 0)
+            if (dependency.Version is null || !NuGetVersion.TryParse(dependency.Version, out var version))
             {
-                continue;
+                _logger.Warn($"Unable to parse required dependency version for {dependency.Name}: {dependency.Version}.");
+                versions = parsedVersions;
+                return false;
             }
 
-            var line = lineMatch.Groups["Line"].Value;
-            var eol = lineMatch.Groups["EndOfLine"].Value;
-            if (inDirectiveBlock && !CSharpFileBasedAppDiscovery.IsDirectiveBlockLine(line, ref inBlockComment))
-            {
-                inDirectiveBlock = false;
-            }
-
-            if (!inDirectiveBlock)
-            {
-                updatedContents.Append(line).Append(eol);
-                continue;
-            }
-
-            var directiveMatch = PackageDirectiveRegex().Match(line);
-            if (!directiveMatch.Success)
-            {
-                updatedContents.Append(line).Append(eol);
-                continue;
-            }
-
-            var packageName = directiveMatch.Groups["PackageName"].Value;
-            if (!originalDependencyVersions.TryGetValue(packageName, out var oldVersion) ||
-                !requiredDependencyVersions.TryGetValue(packageName, out var requiredVersion))
-            {
-                updatedContents.Append(line).Append(eol);
-                continue;
-            }
-
-            foundVersionedDirective = true;
-            var versionText = directiveMatch.Groups["Version"].Value;
-            if (!TryGetUpdatedVersion(versionText, oldVersion, requiredVersion, out var updatedVersion))
-            {
-                allMatchedDirectivesUpdated = false;
-                _logger.Warn($"Unable to update C# file-based app package directive for {packageName} from version {versionText} to {requiredVersion}.");
-                updatedContents.Append(line).Append(eol);
-                continue;
-            }
-
-            var updatedLine = string.Concat(
-                directiveMatch.Groups["Prefix"].Value,
-                packageName,
-                "@",
-                updatedVersion,
-                directiveMatch.Groups["Suffix"].Value);
-            updatedContents.Append(updatedLine).Append(eol);
+            parsedVersions.TryAdd(dependency.Name, version);
         }
 
-        return updatedContents.ToString();
+        versions = parsedVersions;
+        return true;
     }
 
-    private static IEnumerable<(string Name, NuGetVersion Version)> GetParsedDependencyVersions(ImmutableArray<Dependency> dependencies)
+    private static IReadOnlyDictionary<string, NuGetVersion> GetParsedDependencyVersions(
+        ImmutableArray<Dependency> dependencies)
     {
+        var parsedVersions = new Dictionary<string, NuGetVersion>(StringComparer.OrdinalIgnoreCase);
         foreach (var dependency in dependencies)
         {
             if (dependency.Version is not null && NuGetVersion.TryParse(dependency.Version, out var version))
             {
-                yield return (dependency.Name, version);
+                parsedVersions.TryAdd(dependency.Name, version);
             }
         }
+
+        return parsedVersions;
     }
 
-    private static bool TryGetUpdatedVersion(string versionText, NuGetVersion oldVersion, NuGetVersion requiredVersion, out string updatedVersion)
+    private static TextChange CreateMissingDirectivesChange(
+        string contents,
+        ImmutableArray<CSharpFileBasedAppPackageDirective> packageDirectives,
+        ImmutableArray<KeyValuePair<string, NuGetVersion>> missingDependencies)
+    {
+        var sourceText = SourceText.From(contents);
+        var lastDirective = packageDirectives.OrderBy(d => d.LineSpan.End).Last();
+        var line = sourceText.Lines.GetLineFromPosition(lastDirective.LineSpan.Start);
+        var hasLineBreak = line.EndIncludingLineBreak > line.End;
+        var endOfLine = hasLineBreak
+            ? sourceText.ToString(TextSpan.FromBounds(line.End, line.EndIncludingLineBreak))
+            : GetFirstEndOfLine(sourceText) ?? "\n";
+        var insertionPosition = line.EndIncludingLineBreak;
+        var insertedLines = missingDependencies
+            .Select(kvp => $"{lastDirective.Indentation}#:package {kvp.Key}@{kvp.Value}");
+        var insertion = string.Concat(
+            hasLineBreak ? string.Empty : endOfLine,
+            string.Join(endOfLine, insertedLines),
+            hasLineBreak ? endOfLine : string.Empty);
+        return new TextChange(new TextSpan(insertionPosition, 0), insertion);
+    }
+
+    private static string? GetFirstEndOfLine(SourceText sourceText)
+    {
+        foreach (var line in sourceText.Lines)
+        {
+            if (line.EndIncludingLineBreak > line.End)
+            {
+                return sourceText.ToString(TextSpan.FromBounds(line.End, line.EndIncludingLineBreak));
+            }
+        }
+
+        return null;
+    }
+
+    private static bool TryGetUpdatedVersion(
+        string versionText,
+        NuGetVersion oldVersion,
+        NuGetVersion requiredVersion,
+        out string updatedVersion)
     {
         if (NuGetVersion.TryParse(versionText, out var directiveVersion))
         {
@@ -166,26 +209,4 @@ public sealed partial class CSharpFileBasedAppFileWriter : IFileWriter
         updatedVersion = versionText;
         return false;
     }
-
-    private static async Task<TextFileContents> ReadTextFileAsync(string fullPath)
-    {
-        var bytes = await File.ReadAllBytesAsync(fullPath);
-        var hasUtf8Bom = bytes.AsSpan().StartsWith(Utf8WithBom.GetPreamble());
-        using var stream = new MemoryStream(bytes);
-        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
-        var contents = await reader.ReadToEndAsync();
-        var encoding = reader.CurrentEncoding.CodePage == Encoding.UTF8.CodePage
-            ? hasUtf8Bom ? Utf8WithBom : Utf8WithoutBom
-            : reader.CurrentEncoding;
-
-        return new TextFileContents(contents, encoding);
-    }
-
-    [GeneratedRegex(@"(?<Line>[^\r\n]*)(?<EndOfLine>\r\n|\n|\r|$)")]
-    private static partial Regex LineRegex();
-
-    [GeneratedRegex(@"^(?<Prefix>\s*#:package\s+)(?<PackageName>[^\s@]+)@(?<Version>[^\s/]+)(?<Suffix>.*)$")]
-    private static partial Regex PackageDirectiveRegex();
-
-    private readonly record struct TextFileContents(string Contents, Encoding Encoding);
 }

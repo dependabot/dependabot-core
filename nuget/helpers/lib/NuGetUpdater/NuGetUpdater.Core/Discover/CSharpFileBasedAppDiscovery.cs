@@ -1,15 +1,23 @@
 using System.Collections.Immutable;
-using System.Text.RegularExpressions;
+
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
 
 using NuGetUpdater.Core.Utilities;
 
 namespace NuGetUpdater.Core.Discover;
 
-internal static partial class CSharpFileBasedAppDiscovery
+internal static class CSharpFileBasedAppDiscovery
 {
     internal const string FileExtension = ".cs";
 
-    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(string repoRootPath, string workspacePath, ILogger logger)
+    public static async Task<ImmutableArray<ProjectDiscoveryResult>> DiscoverAsync(
+        string repoRootPath,
+        string workspacePath,
+        ExperimentsManager experimentsManager,
+        ILogger logger)
     {
         if (!Directory.Exists(workspacePath))
         {
@@ -50,11 +58,34 @@ internal static partial class CSharpFileBasedAppDiscovery
                 continue;
             }
 
-            var relativeFilePath = Path.GetRelativePath(workspacePath, csharpFilePath).NormalizePathToUnix();
-            var packageDependencies = GetPackageDependencies(csharpFilePath, targetFramework);
-            if (packageDependencies.IsEmpty && !StartsWithShebang(csharpFilePath))
+            var contents = await File.ReadAllTextAsync(csharpFilePath);
+            var syntax = Parse(contents);
+            if (!syntax.IsFileBasedApp)
             {
                 continue;
+            }
+
+            var relativeFilePath = Path.GetRelativePath(workspacePath, csharpFilePath).NormalizePathToUnix();
+            var topLevelDependencies = syntax.PackageDirectives
+                .DistinctBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(d => new Dependency(
+                    Name: d.Name,
+                    Version: d.Version ?? "*",
+                    Type: DependencyType.PackageReference,
+                    TargetFrameworks: [targetFramework]))
+                .OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
+                .ToImmutableArray();
+
+            ProjectDiscoveryResult? resolvedProject = null;
+            if (!topLevelDependencies.IsEmpty)
+            {
+                resolvedProject = await ResolveDependenciesAsync(
+                    repoRootPath,
+                    csharpFilePath,
+                    targetFramework,
+                    topLevelDependencies,
+                    experimentsManager,
+                    logger);
             }
 
             var additionalFiles = ProjectHelper.GetAdditionalFilesFromProjectLocation(csharpFilePath, ProjectHelper.PathFormat.Relative);
@@ -62,55 +93,158 @@ internal static partial class CSharpFileBasedAppDiscovery
             fileBasedApps.Add(new ProjectDiscoveryResult
             {
                 FilePath = relativeFilePath,
-                TargetFrameworks = [targetFramework],
-                Dependencies = packageDependencies,
+                TargetFrameworks = resolvedProject?.TargetFrameworks ?? [targetFramework],
+                Dependencies = resolvedProject?.Dependencies ?? [],
                 ImportedFiles = [],
                 AdditionalFiles = additionalFiles,
-                DependencyGraph = packageDependencies
-                    .Where(d => d.Version is not null)
-                    .ToImmutableDictionary(
-                        d => $"{d.Name}/{d.Version}",
-                        _ => ImmutableArray<string>.Empty,
-                        StringComparer.OrdinalIgnoreCase),
+                DependencyGraph = resolvedProject?.DependencyGraph ??
+                    ImmutableDictionary<string, ImmutableArray<string>>.Empty.WithComparers(StringComparer.OrdinalIgnoreCase),
             });
         }
 
         return [.. fileBasedApps];
     }
 
-    internal static ImmutableArray<Dependency> GetPackageDependencies(string csharpFilePath, string targetFramework)
+    internal static CSharpFileBasedAppSyntax Parse(string contents)
     {
-        var dependencies = new Dictionary<string, Dependency>(StringComparer.OrdinalIgnoreCase);
-        var inBlockComment = false;
-        foreach (var line in File.ReadLines(csharpFilePath))
-        {
-            if (!TryGetDirectiveBlockLine(line, ref inBlockComment, out var uncommentedLine))
-            {
-                break;
-            }
+        var sourceText = SourceText.From(contents);
+        var syntaxTree = CSharpSyntaxTree.ParseText(
+            sourceText,
+            CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview));
+        var root = syntaxTree.GetRoot();
+        var leadingTrivia = root.GetFirstToken(includeZeroWidth: true).LeadingTrivia;
+        var isFileBasedApp = leadingTrivia.Any(t =>
+            t.IsKind(SyntaxKind.IgnoredDirectiveTrivia) ||
+            t.IsKind(SyntaxKind.ShebangDirectiveTrivia));
 
-            var match = PackageDirectiveRegex().Match(uncommentedLine);
-            if (!match.Success)
-            {
-                continue;
-            }
+        var packageDirectives = leadingTrivia
+            .Where(t => t.IsKind(SyntaxKind.IgnoredDirectiveTrivia))
+            .Select(t => t.GetStructure())
+            .OfType<IgnoredDirectiveTriviaSyntax>()
+            .Select(d => TryParsePackageDirective(sourceText, d))
+            .Where(d => d is not null)
+            .Select(d => d!.Value)
+            .ToImmutableArray();
 
-            var packageName = match.Groups["PackageName"].Value;
-            var version = match.Groups["Version"].Success
-                ? match.Groups["Version"].Value
-                : null;
-            dependencies.TryAdd(packageName, new Dependency(
-                Name: packageName,
-                Version: string.IsNullOrWhiteSpace(version) ? null : version,
-                Type: DependencyType.PackageReference,
-                TargetFrameworks: [targetFramework]));
-        }
-
-        return [.. dependencies.Values.OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase)];
+        return new CSharpFileBasedAppSyntax(isFileBasedApp, packageDirectives);
     }
 
-    internal static bool IsDirectiveBlockLine(string line, ref bool inBlockComment)
-        => TryGetDirectiveBlockLine(line, ref inBlockComment, out _);
+    private static async Task<ProjectDiscoveryResult> ResolveDependenciesAsync(
+        string repoRootPath,
+        string csharpFilePath,
+        string targetFramework,
+        ImmutableArray<Dependency> topLevelDependencies,
+        ExperimentsManager experimentsManager,
+        ILogger logger)
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory("file_based_app_discovery_");
+        try
+        {
+            var tempProjectPath = await MSBuildHelper.CreateTempProjectAsync(
+                tempDirectory,
+                repoRootPath,
+                csharpFilePath,
+                targetFramework,
+                topLevelDependencies,
+                logger,
+                importDependencyTargets: false);
+            var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(
+                ["restore", tempProjectPath],
+                tempDirectory.FullName);
+            if (exitCode != 0)
+            {
+                throw new InvalidOperationException(
+                    $"Unable to restore temporary project for C# file-based app {csharpFilePath}." +
+                    $"\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
+            }
+
+            var projects = await SdkProjectDiscovery.DiscoverAsync(
+                repoRootPath,
+                tempDirectory.FullName,
+                tempProjectPath,
+                experimentsManager,
+                solutionDir: null,
+                logger);
+            if (projects.Length != 1)
+            {
+                throw new InvalidOperationException(
+                    $"Unable to resolve C# file-based app dependencies for {csharpFilePath}. " +
+                    $"Expected one temporary project result, but found [{string.Join(", ", projects.Select(p => p.FilePath))}].");
+            }
+
+            return projects[0];
+        }
+        finally
+        {
+            tempDirectory.Delete(recursive: true);
+        }
+    }
+
+    private static CSharpFileBasedAppPackageDirective? TryParsePackageDirective(
+        SourceText sourceText,
+        IgnoredDirectiveTriviaSyntax directive)
+    {
+        var contentText = directive.Content.Text;
+        var content = contentText.AsSpan();
+        var index = 0;
+        SkipWhitespace(content, ref index);
+
+        const string packageKeyword = "package";
+        if (!content[index..].StartsWith(packageKeyword, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        index += packageKeyword.Length;
+        if (index >= content.Length || !char.IsWhiteSpace(content[index]))
+        {
+            return null;
+        }
+
+        SkipWhitespace(content, ref index);
+        var nameStart = index;
+        while (index < content.Length && !char.IsWhiteSpace(content[index]) && content[index] != '@')
+        {
+            index++;
+        }
+
+        if (index == nameStart)
+        {
+            return null;
+        }
+
+        var name = content[nameStart..index].ToString();
+        var nameSpan = new TextSpan(directive.Content.Span.Start + nameStart, index - nameStart);
+        string? version = null;
+        TextSpan? versionSpan = null;
+        if (index < content.Length && content[index] == '@')
+        {
+            index++;
+            var versionStart = index;
+            while (index < content.Length && !char.IsWhiteSpace(content[index]))
+            {
+                index++;
+            }
+
+            if (index > versionStart)
+            {
+                version = content[versionStart..index].ToString();
+                versionSpan = new TextSpan(directive.Content.Span.Start + versionStart, index - versionStart);
+            }
+        }
+
+        var line = sourceText.Lines.GetLineFromPosition(directive.FullSpan.Start);
+        var indentation = sourceText.ToString(TextSpan.FromBounds(line.Start, directive.HashToken.SpanStart));
+        return new CSharpFileBasedAppPackageDirective(name, version, nameSpan, versionSpan, line.SpanIncludingLineBreak, indentation);
+    }
+
+    private static void SkipWhitespace(ReadOnlySpan<char> value, ref int index)
+    {
+        while (index < value.Length && char.IsWhiteSpace(value[index]))
+        {
+            index++;
+        }
+    }
 
     private static bool IsInProjectCone(string csharpFilePath, ImmutableArray<DirectoryInfo> projectDirectories)
     {
@@ -151,10 +285,13 @@ internal static partial class CSharpFileBasedAppDiscovery
     private static async Task<string> GetDefaultTargetFrameworkFromSdkVersionAsync(string workspacePath, ILogger logger)
     {
         var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(["--version"], workspacePath);
-        var match = SdkMajorVersionRegex().Match(stdOut);
-        if (exitCode == 0 && match.Success)
+        var versionText = stdOut.Trim();
+        var separatorIndex = versionText.IndexOf('.');
+        if (exitCode == 0 &&
+            separatorIndex > 0 &&
+            int.TryParse(versionText.AsSpan(0, separatorIndex), out var majorVersion))
         {
-            var targetFramework = $"net{match.Groups["Major"].Value}.0";
+            var targetFramework = $"net{majorVersion}.0";
             logger.Warn($"Falling back to default target framework {targetFramework} based on the .NET SDK version.");
             return targetFramework;
         }
@@ -164,77 +301,16 @@ internal static partial class CSharpFileBasedAppDiscovery
         logger.Warn($"Falling back to default target framework {runtimeTargetFramework} based on the current runtime version.");
         return runtimeTargetFramework;
     }
-
-    private static bool StartsWithShebang(string csharpFilePath)
-    {
-        using var stream = File.OpenRead(csharpFilePath);
-        Span<byte> buffer = stackalloc byte[5];
-        var bytesRead = stream.Read(buffer);
-        if (bytesRead >= 5 &&
-            buffer[0] == 0xEF &&
-            buffer[1] == 0xBB &&
-            buffer[2] == 0xBF)
-        {
-            return buffer[3] == (byte)'#' && buffer[4] == (byte)'!';
-        }
-
-        return bytesRead >= 2 &&
-            buffer[0] == (byte)'#' &&
-            buffer[1] == (byte)'!';
-    }
-
-    private static bool TryGetDirectiveBlockLine(string line, ref bool inBlockComment, out string uncommentedLine)
-    {
-        uncommentedLine = RemoveComments(line.TrimStart('\uFEFF'), ref inBlockComment);
-        var trimmedLine = uncommentedLine.TrimStart();
-        return trimmedLine.Length == 0 ||
-            trimmedLine.StartsWith("#!", StringComparison.Ordinal) ||
-            trimmedLine.StartsWith("#:", StringComparison.Ordinal);
-    }
-
-    private static string RemoveComments(string line, ref bool inBlockComment)
-    {
-        var remaining = line;
-        var result = string.Empty;
-        while (remaining.Length > 0)
-        {
-            if (inBlockComment)
-            {
-                var blockCommentEndIndex = remaining.IndexOf("*/", StringComparison.Ordinal);
-                if (blockCommentEndIndex < 0)
-                {
-                    return result;
-                }
-
-                remaining = remaining[(blockCommentEndIndex + 2)..];
-                inBlockComment = false;
-                continue;
-            }
-
-            var lineCommentIndex = remaining.IndexOf("//", StringComparison.Ordinal);
-            var blockCommentStartIndex = remaining.IndexOf("/*", StringComparison.Ordinal);
-            if (lineCommentIndex >= 0 && (blockCommentStartIndex < 0 || lineCommentIndex < blockCommentStartIndex))
-            {
-                return result + remaining[..lineCommentIndex];
-            }
-
-            if (blockCommentStartIndex >= 0)
-            {
-                result += remaining[..blockCommentStartIndex];
-                remaining = remaining[(blockCommentStartIndex + 2)..];
-                inBlockComment = true;
-                continue;
-            }
-
-            return result + remaining;
-        }
-
-        return result;
-    }
-
-    [GeneratedRegex(@"^\s*#:package\s+(?<PackageName>[^\s@]+)(?:@(?<Version>[^\s]+))?(?:\s+.*)?$")]
-    private static partial Regex PackageDirectiveRegex();
-
-    [GeneratedRegex(@"^(?<Major>\d+)\.")]
-    private static partial Regex SdkMajorVersionRegex();
 }
+
+internal readonly record struct CSharpFileBasedAppSyntax(
+    bool IsFileBasedApp,
+    ImmutableArray<CSharpFileBasedAppPackageDirective> PackageDirectives);
+
+internal readonly record struct CSharpFileBasedAppPackageDirective(
+    string Name,
+    string? Version,
+    TextSpan NameSpan,
+    TextSpan? VersionSpan,
+    TextSpan LineSpan,
+    string Indentation);

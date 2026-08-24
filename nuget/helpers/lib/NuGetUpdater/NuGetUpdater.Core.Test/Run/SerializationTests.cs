@@ -194,7 +194,7 @@ public class SerializationTests : TestBase
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
         Assert.True(experimentsManager.GenerateSimplePrBody);
-        Assert.True(experimentsManager.UpdateFileBasedApps);
+        Assert.False(experimentsManager.UpdateFileBasedApps);
     }
 
     [Fact]
@@ -221,7 +221,7 @@ public class SerializationTests : TestBase
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
         Assert.False(experimentsManager.GenerateSimplePrBody);
-        Assert.True(experimentsManager.UpdateFileBasedApps);
+        Assert.False(experimentsManager.UpdateFileBasedApps);
     }
 
     [Fact]
@@ -246,7 +246,7 @@ public class SerializationTests : TestBase
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
         Assert.False(experimentsManager.GenerateSimplePrBody);
-        Assert.True(experimentsManager.UpdateFileBasedApps);
+        Assert.False(experimentsManager.UpdateFileBasedApps);
     }
 
     [Fact]
@@ -280,7 +280,7 @@ public class SerializationTests : TestBase
     [Theory]
     [InlineData("nuget_update_file_based_apps")]
     [InlineData("nuget-update-file-based-apps")]
-    public void DeserializeExperimentsManager_DisablesFileBasedApps(string experimentName)
+    public void DeserializeExperimentsManager_EnablesFileBasedApps(string experimentName)
     {
         var jobWrapper = RunWorker.Deserialize($$"""
             {
@@ -297,13 +297,13 @@ public class SerializationTests : TestBase
                   "directory": "some-dir"
                 },
                 "experiments": {
-                  "{{experimentName}}": false
+                  "{{experimentName}}": true
                 }
               }
             }
             """);
         var experimentsManager = ExperimentsManager.GetExperimentsManager(jobWrapper.Job.Experiments);
-        Assert.False(experimentsManager.UpdateFileBasedApps);
+        Assert.True(experimentsManager.UpdateFileBasedApps);
     }
 
     [Theory]

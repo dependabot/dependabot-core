@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Test.Utilities;
 
@@ -9,20 +11,34 @@ public partial class DiscoveryWorkerTests
 {
     public class FileBasedApps : DiscoveryWorkerTestBase
     {
+        private static readonly ExperimentsManager FileBasedAppsEnabled = new() { UpdateFileBasedApps = true };
+
         [Fact]
-        public async Task DiscoversCSharpFileBasedAppPackageDirectives()
+        public async Task DiscoversResolvedCSharpFileBasedAppDependencies()
         {
             var targetFramework = await GetFileBasedAppDefaultTargetFrameworkAsync();
 
             await TestDiscoveryAsync(
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage(
+                        "FileApp.TopLevel.Package",
+                        "1.0.0",
+                        targetFramework,
+                        [(null, [("FileApp.Transitive.Package", "2.0.0")])]),
+                    MockNuGetPackage.CreateSimplePackage("FileApp.Transitive.Package", "2.0.0", targetFramework),
+                    MockNuGetPackage.CreateSimplePackage("FileApp.Floating.Package", "1.0.0", targetFramework),
+                    MockNuGetPackage.CreateSimplePackage("FileApp.Floating.Package", "2.0.0", targetFramework),
+                    MockNuGetPackage.CreateSimplePackage("FileApp.Versionless.Package", "3.0.0", targetFramework),
+                ],
                 workspacePath: "",
                 files:
                 [
                     ("app.cs", """
                         #:sdk Microsoft.NET.Sdk
-                        #:package Humanizer@2.14.1
-                        #:package Microsoft.Extensions.Configuration@* PrivateAssets=all
-                        #:package Newtonsoft.Json
+                        #:package FileApp.TopLevel.Package@1.0.0
+                        #:package FileApp.Floating.Package@* PrivateAssets=all
+                        #:package FileApp.Versionless.Package
 
                         Console.WriteLine("Hello");
                         """),
@@ -37,17 +53,29 @@ public partial class DiscoveryWorkerTests
                             FilePath = "app.cs",
                             Dependencies =
                             [
-                                new("Humanizer", "2.14.1", DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
-                                new("Microsoft.Extensions.Configuration", "*", DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
-                                new("Newtonsoft.Json", null, DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
+                                new("FileApp.Floating.Package", "2.0.0", DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
+                                new("FileApp.TopLevel.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
+                                new("FileApp.Transitive.Package", "2.0.0", DependencyType.Unknown, TargetFrameworks: [targetFramework], IsTopLevel: false),
+                                new("FileApp.Versionless.Package", "3.0.0", DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
                             ],
                             TargetFrameworks = [targetFramework],
                             ReferencedProjectPaths = [],
                             ImportedFiles = [],
                             AdditionalFiles = [],
+                            ExpectedDependencyGraph = new Dictionary<string, string[]>
+                            {
+                                ["FileApp.Floating.Package/2.0.0"] = [],
+                                ["FileApp.TopLevel.Package/1.0.0"] = ["FileApp.Transitive.Package/2.0.0"],
+                                ["FileApp.Transitive.Package/2.0.0"] = [],
+                                ["FileApp.Versionless.Package/3.0.0"] = [],
+                            }.ToImmutableDictionary(
+                                kvp => kvp.Key,
+                                kvp => kvp.Value.ToImmutableArray(),
+                                StringComparer.OrdinalIgnoreCase),
                         },
                     ],
-                });
+                },
+                experimentsManager: FileBasedAppsEnabled);
         }
 
         [Fact]
@@ -56,11 +84,15 @@ public partial class DiscoveryWorkerTests
             var targetFramework = await GetFileBasedAppDefaultTargetFrameworkAsync();
 
             await TestDiscoveryAsync(
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("FileApp.Real.Package", "1.0.0", targetFramework),
+                ],
                 workspacePath: "",
                 files:
                 [
                     ("app.cs", """"
-                        #:package Real.Package@1.0.0
+                        #:package FileApp.Real.Package@1.0.0
 
                         var text = """
                         #:package Phantom.Package@9.9.9
@@ -77,7 +109,7 @@ public partial class DiscoveryWorkerTests
                             FilePath = "app.cs",
                             Dependencies =
                             [
-                                new("Real.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
+                                new("FileApp.Real.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
                             ],
                             TargetFrameworks = [targetFramework],
                             ReferencedProjectPaths = [],
@@ -85,7 +117,8 @@ public partial class DiscoveryWorkerTests
                             AdditionalFiles = [],
                         },
                     ],
-                });
+                },
+                experimentsManager: FileBasedAppsEnabled);
         }
 
         [Fact]
@@ -106,7 +139,7 @@ public partial class DiscoveryWorkerTests
                         """),
                     ("src/app.cs", "#:package Ignored.Package@1.0.0"),
                     ("src/subdir/also-ignored.cs", "#:package Also.Ignored@1.0.0"),
-                    ("tools/app.cs", "#:package Discovered.Package@2.0.0"),
+                    ("tools/app.cs", "#!/usr/bin/env dotnet run\nConsole.WriteLine();"),
                 ],
                 expectedResult: new()
                 {
@@ -116,17 +149,15 @@ public partial class DiscoveryWorkerTests
                         new()
                         {
                             FilePath = "tools/app.cs",
-                            Dependencies =
-                            [
-                                new("Discovered.Package", "2.0.0", DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
-                            ],
+                            Dependencies = [],
                             TargetFrameworks = [targetFramework],
                             ReferencedProjectPaths = [],
                             ImportedFiles = [],
                             AdditionalFiles = [],
                         },
                     ],
-                });
+                },
+                experimentsManager: FileBasedAppsEnabled);
         }
 
         [Fact]
@@ -149,7 +180,8 @@ public partial class DiscoveryWorkerTests
                 {
                     Path = "src",
                     Projects = [],
-                });
+                },
+                experimentsManager: FileBasedAppsEnabled);
         }
 
         [Fact]
@@ -178,7 +210,8 @@ public partial class DiscoveryWorkerTests
                             AdditionalFiles = [],
                         },
                     ],
-                });
+                },
+                experimentsManager: FileBasedAppsEnabled);
         }
 
         [Fact]
@@ -199,7 +232,7 @@ public partial class DiscoveryWorkerTests
                     Path = "",
                     Projects = [],
                 },
-                experimentsManager: new() { UpdateFileBasedApps = false });
+                experimentsManager: new ExperimentsManager());
         }
 
         [Fact]
@@ -208,12 +241,16 @@ public partial class DiscoveryWorkerTests
             var targetFramework = await GetFileBasedAppDefaultTargetFrameworkAsync();
 
             await TestDiscoveryAsync(
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("FileApp.Locked.Package", "2.14.1", targetFramework),
+                ],
                 workspacePath: "",
                 files:
                 [
                     ("app.cs", """
                         #:property RestorePackagesWithLockFile=true
-                        #:package Humanizer@2.14.1
+                        #:package FileApp.Locked.Package@2.14.1
 
                         Console.WriteLine("Hello");
                         """),
@@ -229,7 +266,7 @@ public partial class DiscoveryWorkerTests
                             FilePath = "app.cs",
                             Dependencies =
                             [
-                                new("Humanizer", "2.14.1", DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
+                                new("FileApp.Locked.Package", "2.14.1", DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
                             ],
                             TargetFrameworks = [targetFramework],
                             ReferencedProjectPaths = [],
@@ -237,7 +274,8 @@ public partial class DiscoveryWorkerTests
                             AdditionalFiles = ["packages.lock.json"],
                         },
                     ],
-                });
+                },
+                experimentsManager: FileBasedAppsEnabled);
         }
 
         private static async Task<string> GetFileBasedAppDefaultTargetFrameworkAsync()

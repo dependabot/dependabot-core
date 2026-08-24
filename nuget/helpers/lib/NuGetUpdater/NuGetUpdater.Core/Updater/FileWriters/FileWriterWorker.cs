@@ -265,10 +265,7 @@ public class FileWriterWorker
                     continue;
                 }
 
-                var projectDiscoveryForFileWrite = CSharpFileBasedAppFileWriter.IsSupportedFilePath(projectRelativePath)
-                    ? ReplaceDependencyVersion(rerunProjectDiscovery, dependencyName, oldDependencyVersion)
-                    : rerunProjectDiscovery;
-                var updatedFiles = await TryPerformFileWritesAsync(_fileWriter, repoContentsPath, projectDirectory, projectDiscoveryForFileWrite, resolvedDependenciesInThisproject.Value);
+                var updatedFiles = await TryPerformFileWritesAsync(_fileWriter, repoContentsPath, projectDirectory, rerunProjectDiscovery, resolvedDependenciesInThisproject.Value);
                 if (updatedFiles.Length == 0)
                 {
                     _logger.Info("  Files were unable to be updated.");
@@ -373,16 +370,6 @@ public class FileWriterWorker
 
         return VersionRange.TryParse(versionText, out var versionRange) &&
             versionRange.Satisfies(expectedVersion);
-    }
-
-    private static ProjectDiscoveryResult ReplaceDependencyVersion(ProjectDiscoveryResult projectDiscovery, string dependencyName, NuGetVersion dependencyVersion)
-    {
-        var dependencies = projectDiscovery.Dependencies
-            .Select(d => d.Name.Equals(dependencyName, StringComparison.OrdinalIgnoreCase)
-                ? d with { Version = dependencyVersion.ToString() }
-                : d)
-            .ToImmutableArray();
-        return projectDiscovery with { Dependencies = dependencies };
     }
 
     internal static async Task<Dictionary<string, string>> GetOriginalFileContentsAsync(DirectoryInfo repoContentsPath, DirectoryInfo initialStartingDirectory, IEnumerable<ProjectDiscoveryResult> projectDiscoveryResults)

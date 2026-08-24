@@ -11,7 +11,7 @@ namespace NuGetUpdater.Core.Test.Run;
 public class RunWorkerTests
 {
     [Fact]
-    public async Task RunAsync_DisablesFileBasedAppsFromJobFile()
+    public async Task RunAsync_DisablesFileBasedAppsByDefault()
     {
         using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(
             ("app.cs", """
@@ -31,8 +31,7 @@ public class RunWorkerTests
                       "provider": "github",
                       "repo": "test/repo",
                       "directory": "/"
-                    },
-                    "update-file-based-apps": false
+                    }
                   }
                 }
                 """));

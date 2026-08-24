@@ -20,7 +20,8 @@ public sealed class NuGetFileWriter : IFileWriter
         ImmutableArray<string> relativeFilePaths,
         ImmutableArray<Dependency> originalDependencies,
         ImmutableArray<Dependency> requiredPackageVersions,
-        PackageManagementKind packageManagementKind)
+        PackageManagementKind packageManagementKind,
+        string? packageManagementSpecialFileRelativePath)
     {
         var csharpFilePaths = relativeFilePaths
             .Where(CSharpFileBasedAppFileWriter.IsSupportedFilePath)
@@ -43,7 +44,8 @@ public sealed class NuGetFileWriter : IFileWriter
                 xmlFilePaths,
                 originalDependencies,
                 requiredPackageVersions,
-                packageManagementKind);
+                packageManagementKind,
+                packageManagementSpecialFileRelativePath);
         }
 
         if (csharpFilePaths.Length > 0)
@@ -53,7 +55,8 @@ public sealed class NuGetFileWriter : IFileWriter
                 csharpFilePaths,
                 originalDependencies,
                 requiredPackageVersions,
-                packageManagementKind);
+                packageManagementKind,
+                packageManagementSpecialFileRelativePath);
         }
 
         return succeeded;
