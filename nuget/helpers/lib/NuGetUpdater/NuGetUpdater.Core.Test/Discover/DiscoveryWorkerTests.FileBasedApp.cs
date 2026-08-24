@@ -29,7 +29,6 @@ public partial class DiscoveryWorkerTests
                     MockNuGetPackage.CreateSimplePackage("FileApp.Transitive.Package", "2.0.0", targetFramework),
                     MockNuGetPackage.CreateSimplePackage("FileApp.Floating.Package", "1.0.0", targetFramework),
                     MockNuGetPackage.CreateSimplePackage("FileApp.Floating.Package", "2.0.0", targetFramework),
-                    MockNuGetPackage.CreateSimplePackage("FileApp.Versionless.Package", "3.0.0", targetFramework),
                 ],
                 workspacePath: "",
                 files:
@@ -56,7 +55,6 @@ public partial class DiscoveryWorkerTests
                                 new("FileApp.Floating.Package", "2.0.0", DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
                                 new("FileApp.TopLevel.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
                                 new("FileApp.Transitive.Package", "2.0.0", DependencyType.Unknown, TargetFrameworks: [targetFramework], IsTopLevel: false),
-                                new("FileApp.Versionless.Package", "3.0.0", DependencyType.PackageReference, TargetFrameworks: [targetFramework]),
                             ],
                             TargetFrameworks = [targetFramework],
                             ReferencedProjectPaths = [],
@@ -67,11 +65,50 @@ public partial class DiscoveryWorkerTests
                                 ["FileApp.Floating.Package/2.0.0"] = [],
                                 ["FileApp.TopLevel.Package/1.0.0"] = ["FileApp.Transitive.Package/2.0.0"],
                                 ["FileApp.Transitive.Package/2.0.0"] = [],
-                                ["FileApp.Versionless.Package/3.0.0"] = [],
                             }.ToImmutableDictionary(
                                 kvp => kvp.Key,
                                 kvp => kvp.Value.ToImmutableArray(),
                                 StringComparer.OrdinalIgnoreCase),
+                        },
+                    ],
+                },
+                experimentsManager: FileBasedAppsEnabled);
+        }
+
+        [Fact]
+        public async Task DiscoversCSharpFileBasedAppTargetFrameworkProperty()
+        {
+            await TestDiscoveryAsync(
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("FileApp.TargetFramework.Package", "1.0.0", "net8.0"),
+                ],
+                workspacePath: "",
+                files:
+                [
+                    ("app.cs", """
+                        #:property TargetFramework=net8.0
+                        #:package FileApp.TargetFramework.Package@1.0.0
+
+                        Console.WriteLine("Hello");
+                        """),
+                ],
+                expectedResult: new()
+                {
+                    Path = "",
+                    Projects =
+                    [
+                        new()
+                        {
+                            FilePath = "app.cs",
+                            Dependencies =
+                            [
+                                new("FileApp.TargetFramework.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net8.0"]),
+                            ],
+                            TargetFrameworks = ["net8.0"],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [],
+                            AdditionalFiles = [],
                         },
                     ],
                 },

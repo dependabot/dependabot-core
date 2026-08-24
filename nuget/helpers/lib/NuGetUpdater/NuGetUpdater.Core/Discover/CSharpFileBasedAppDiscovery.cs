@@ -47,8 +47,6 @@ internal static class CSharpFileBasedAppDiscovery
             return [];
         }
 
-        var targetFramework = await GetDefaultTargetFrameworkAsync(workspacePath, logger);
-
         var fileBasedApps = new List<ProjectDiscoveryResult>();
         foreach (var csharpFilePath in csharpFilePaths)
         {
@@ -65,12 +63,16 @@ internal static class CSharpFileBasedAppDiscovery
                 continue;
             }
 
+            var targetFramework = await GetTargetFrameworkAsync(csharpFilePath, logger);
             var relativeFilePath = Path.GetRelativePath(workspacePath, csharpFilePath).NormalizePathToUnix();
             var topLevelDependencies = syntax.PackageDirectives
+                // Versionless directives use Central Package Management. Leave them untouched until
+                // file-based app discovery can evaluate their inherited Directory.Packages.props.
+                .Where(d => d.Version is not null)
                 .DistinctBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
                 .Select(d => new Dependency(
                     Name: d.Name,
-                    Version: d.Version ?? "*",
+                    Version: d.Version,
                     Type: DependencyType.PackageReference,
                     TargetFrameworks: [targetFramework]))
                 .OrderBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
@@ -250,6 +252,23 @@ internal static class CSharpFileBasedAppDiscovery
     {
         var fileInfo = new FileInfo(csharpFilePath);
         return projectDirectories.Any(projectDirectory => PathHelper.IsFileUnderDirectory(projectDirectory, fileInfo));
+    }
+
+    private static async Task<string> GetTargetFrameworkAsync(string csharpFilePath, ILogger logger)
+    {
+        var projectDirectory = Path.GetDirectoryName(csharpFilePath)!;
+        var (exitCode, stdOut, stdErr) = await ProcessEx.RunDotnetWithoutMSBuildEnvironmentVariablesAsync(
+            ["build", csharpFilePath, "-getProperty:TargetFramework"],
+            projectDirectory);
+        var targetFramework = GetTargetFrameworkFromOutput(stdOut);
+        if (exitCode == 0 && targetFramework is not null)
+        {
+            return targetFramework;
+        }
+
+        logger.Warn($"Unable to determine the target framework for C# file-based app {csharpFilePath}." +
+            $"\nSTDOUT:\n{stdOut}\nSTDERR:\n{stdErr}");
+        return await GetDefaultTargetFrameworkAsync(projectDirectory, logger);
     }
 
     internal static async Task<string> GetDefaultTargetFrameworkAsync(string workspacePath, ILogger logger)

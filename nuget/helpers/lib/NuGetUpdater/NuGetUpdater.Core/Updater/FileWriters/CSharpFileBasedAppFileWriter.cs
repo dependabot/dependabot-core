@@ -62,9 +62,7 @@ public sealed class CSharpFileBasedAppFileWriter : IFileWriter
 
             if (directive.Version is null)
             {
-                changes.Add(new TextChange(
-                    new TextSpan(directive.NameSpan.End, 0),
-                    $"@{requiredVersion}"));
+                // Versionless directives get their version from Central Package Management.
                 representedDependencies.Add(directive.Name);
                 continue;
             }

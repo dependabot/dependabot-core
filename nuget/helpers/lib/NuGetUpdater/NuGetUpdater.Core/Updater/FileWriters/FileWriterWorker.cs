@@ -216,6 +216,7 @@ public class FileWriterWorker
             var originalFileContents = await GetOriginalFileContentsAsync(repoContentsPath, initialProjectDirectory, orderedProjectDiscovery);
 
             var allUpdatedFiles = new List<string>();
+            var fileUpdateFailed = false;
             foreach (var projectDiscovery in orderedProjectDiscovery)
             {
                 var projectFullPath = Path.Join(repoContentsPath.FullName, initialDiscoveryResult.Path, projectDiscovery.FilePath).FullyNormalizedRootedPath();
@@ -273,15 +274,27 @@ public class FileWriterWorker
                 else
                 {
                     _logger.Info($"  Successfully updated the following files: {string.Join(", ", updatedFiles)}");
-                    allUpdatedFiles.AddRange(updatedFiles);
                     var updatedLockFiles = await TryUpdateFileBasedAppLockFilesAsync(
                         repoContentsPath,
                         projectFullPath,
                         projectDiscovery,
                         originalFileContents,
                         _logger);
-                    allUpdatedFiles.AddRange(updatedLockFiles);
+                    if (updatedLockFiles is null)
+                    {
+                        fileUpdateFailed = true;
+                        break;
+                    }
+
+                    allUpdatedFiles.AddRange(updatedFiles);
+                    allUpdatedFiles.AddRange(updatedLockFiles.Value);
                 }
+            }
+
+            if (fileUpdateFailed)
+            {
+                await RestoreOriginalFileContentsAsync(originalFileContents);
+                continue;
             }
 
             if (allUpdatedFiles.Count == 0)
@@ -475,7 +488,7 @@ public class FileWriterWorker
         return sortedUpdatedFiles;
     }
 
-    private static async Task<ImmutableArray<string>> TryUpdateFileBasedAppLockFilesAsync(
+    private static async Task<ImmutableArray<string>?> TryUpdateFileBasedAppLockFilesAsync(
         DirectoryInfo repoContentsPath,
         string projectFullPath,
         ProjectDiscoveryResult projectDiscovery,
@@ -496,7 +509,10 @@ public class FileWriterWorker
             return [];
         }
 
-        await LockFileUpdater.UpdateLockFileAsync(repoContentsPath.FullName, projectFullPath, logger);
+        if (!await LockFileUpdater.UpdateLockFileAsync(repoContentsPath.FullName, projectFullPath, logger))
+        {
+            return null;
+        }
 
         var projectDirectory = Path.GetDirectoryName(projectFullPath)!;
         var updatedLockFiles = new List<string>();

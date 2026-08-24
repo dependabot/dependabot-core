@@ -178,7 +178,7 @@ public class CSharpFileBasedAppFileWriterTests : FileWriterTestsBase
     }
 
     [Fact]
-    public async Task PinsUpdatedVersionlessPackageDirective()
+    public async Task LeavesVersionlessPackageDirectiveUnchanged()
     {
         await TestAsync(
             files:
@@ -194,7 +194,7 @@ public class CSharpFileBasedAppFileWriterTests : FileWriterTestsBase
             expectedFiles:
             [
                 ("app.cs", """
-                    #:package Some.Dependency@2.0.0
+                    #:package Some.Dependency
 
                     Console.WriteLine("Hello");
                     """),

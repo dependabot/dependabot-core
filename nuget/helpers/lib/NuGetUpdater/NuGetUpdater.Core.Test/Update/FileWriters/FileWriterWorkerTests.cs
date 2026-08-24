@@ -1137,6 +1137,18 @@ public class FileWriterWorkerTests : TestBase
         );
     }
 
+    [Fact]
+    public async Task FileBasedAppLockFileRestoreFailureIsReported()
+    {
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync();
+        var result = await LockFileUpdater.UpdateLockFileAsync(
+            tempDirectory.DirectoryPath,
+            Path.Combine(tempDirectory.DirectoryPath, "missing.cs"),
+            new TestLogger());
+
+        Assert.False(result);
+    }
+
     private static async Task<string> GetFileBasedAppDefaultTargetFrameworkAsync()
     {
         using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync();
