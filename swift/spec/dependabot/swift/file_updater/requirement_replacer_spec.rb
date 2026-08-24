@@ -78,6 +78,23 @@ RSpec.describe Dependabot::Swift::FileUpdater::RequirementReplacer do
       end
     end
 
+    context "with a multi-line declaration where the requirement line ends with a block comment" do
+      let(:declaration) do
+        ".package(\n" \
+          "      url: \"#{url}\",\n" \
+          "      #{old_requirement}\n" \
+          "      traits: []\n" \
+          "    )"
+      end
+      let(:old_requirement) { ".upToNextMajor(from: \"1.30.0\"), /* keep */" }
+      let(:new_requirement) { "\"1.30.0\"...\"1.36.2\"" }
+
+      it "preserves the comma and block comment before the next argument" do
+        expect(replacer.updated_content).to include("\"1.30.0\"...\"1.36.2\", /* keep */\n")
+        expect(replacer.updated_content).to include("traits: []")
+      end
+    end
+
     context "with a single-line declaration where the requirement has no trailing separator" do
       let(:declaration) { ".package(url: \"#{url}\", from: \"1.0.0\")" }
       let(:old_requirement) { "from: \"1.0.0\"" }
