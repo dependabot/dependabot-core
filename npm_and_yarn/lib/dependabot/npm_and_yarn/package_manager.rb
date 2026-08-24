@@ -289,9 +289,7 @@ module Dependabot
               :current_engine_version
 
       # rubocop:disable Metrics/CyclomaticComplexity
-      # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/PerceivedComplexity
-      # rubocop:disable Metrics/MethodLength
       sig { params(name: String).returns(T.nilable(T.any(Integer, String))) }
       def setup(name)
         # we prioritize version mentioned in "packageManager" instead of "engines"
@@ -325,36 +323,23 @@ module Dependabot
           )
         end
 
-        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          version ||= requested_version(name) || guessed_version(name)
+        version ||= requested_version(name)
 
-          if version
-            raise_if_unsupported!(name, version.to_s)
-            install(name, version.to_s)
-          end
+        if version
+          raise_if_unsupported!(name, version.to_s)
+          install(name, version)
         else
-          version ||= requested_version(name)
+          version = guessed_version(name)
 
           if version
             raise_if_unsupported!(name, version.to_s)
-
-            install(name, version)
-          else
-            version = guessed_version(name)
-
-            if version
-              raise_if_unsupported!(name, version.to_s)
-
-              install(name, version.to_s) if name == PNPMPackageManager::NAME
-            end
+            install(name, version.to_s) if name == PNPMPackageManager::NAME
           end
         end
         version
       end
       # rubocop:enable Metrics/CyclomaticComplexity
-      # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
-      # rubocop:enable Metrics/MethodLength
 
       sig { params(name: String).returns(T.nilable(String)) }
       def detect_version(name)
@@ -457,15 +442,6 @@ module Dependabot
 
       sig { params(name: String, version: T.nilable(String)).void }
       def install(name, version)
-        if Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-          env = {}
-          if Dependabot::Experiments.enabled?(:enable_private_registry_for_corepack)
-            env = @registry_helper.find_corepack_env_variables
-          end
-          # Use the Helpers.install method to install the package manager
-          return Helpers.install(name, version.to_s, env: env)
-        end
-
         Dependabot.logger.info("Installing \"#{name}@#{version}\"")
 
         begin
