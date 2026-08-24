@@ -39,8 +39,11 @@ module Dependabot
 
       sig { params(dependency: Dependency, security_updates_only: T::Boolean).returns(T::Array[String]) }
       def ignored_versions(dependency, security_updates_only)
-        return versions if security_updates_only
+        # When no versions and no update_types are specified, the dependency is
+        # completely ignored (e.g., via "@dependabot ignore <dep>"). Respect this
+        # even for security updates.
         return [ALL_VERSIONS] if versions.empty? && transformed_update_types.empty?
+        return versions if security_updates_only
 
         versions_by_type(dependency) + versions
       end
