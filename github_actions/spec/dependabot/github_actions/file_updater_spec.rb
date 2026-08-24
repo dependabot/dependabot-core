@@ -478,6 +478,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
               ref_looks_like_commit_sha?: true,
               most_specific_version_tags_for_sha: ["v2.1.0"]
             )
+            allow(git_checker).to receive(:version_string_for_tag) { |t| t[/[0-9]+(?:\.[0-9]+)*\z/] }
             allow(git_checker).to receive(:most_specific_version_tag_for_sha).and_return(nil, nil)
             old_version = dependency.previous_requirements[1].dig(:source, :ref)
             expect(updated_workflow_file.content).not_to match(/@#{old_version}\s+#.*#{dependency.version}/)
@@ -539,12 +540,81 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
           allow(git_checker).to receive(:most_specific_version_tag_for_sha)
             .with("2da736ff05ef065cb2894ac6892e47b5eac2c3c0")
             .and_return("v1.1")
+          allow(git_checker).to receive(:version_string_for_tag) { |t| t[/[0-9]+(?:\.[0-9]+)*\z/] }
 
           expect(updated_workflow_file.content).to include(
             "advanced-security/filter-sarif@2da736ff05ef065cb2894ac6892e47b5eac2c3c0 # v1.1"
           )
           # Must NOT contain the buggy result where gsub("1", "1.1") mangled the comment
           expect(updated_workflow_file.content).not_to include("v1.1.0.1.1")
+        end
+      end
+
+      context "with a SHA-pinned monorepo action that has hyphen-prefixed version tags" do
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+        let(:workflow_file_body) do
+          <<~YAML
+            name: Workflow
+            on: push
+            jobs:
+              build:
+                runs-on: ubuntu-latest
+                steps:
+                  - uses: example/monorepo-actions/resolve-gh-token@ae04af1234567890123456789012345678901234 # resolve-gh-token-v2.1.0
+          YAML
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "example/monorepo-actions/resolve-gh-token",
+            version: "371c4bd812345678901234567890123456789012",
+            previous_version: "ae04af1234567890123456789012345678901234",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/example/monorepo-actions",
+                ref: "371c4bd812345678901234567890123456789012",
+                branch: nil
+              },
+              metadata: {
+                declaration_string:
+                  "example/monorepo-actions/resolve-gh-token@ae04af1234567890123456789012345678901234"
+              }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/example/monorepo-actions",
+                ref: "ae04af1234567890123456789012345678901234",
+                branch: nil
+              },
+              metadata: {
+                declaration_string:
+                  "example/monorepo-actions/resolve-gh-token@ae04af1234567890123456789012345678901234"
+              }
+            }],
+            package_manager: "github_actions"
+          )
+        end
+
+        it "updates the hyphen-prefixed version comment" do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?).and_return(true)
+          allow(git_checker).to receive(:most_specific_version_tags_for_sha)
+            .with("ae04af1234567890123456789012345678901234")
+            .and_return(["resolve-gh-token-v2.1.0"])
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha)
+            .with("371c4bd812345678901234567890123456789012")
+            .and_return("resolve-gh-token-v2.1.1")
+          allow(git_checker).to receive(:version_string_for_tag) { |t| t[/[0-9]+(?:\.[0-9]+)*\z/] }
+
+          expect(updated_workflow_file.content).to include("# resolve-gh-token-v2.1.1")
+          expect(updated_workflow_file.content).not_to include("# resolve-gh-token-v2.1.0")
         end
       end
 
@@ -782,6 +852,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
               "get-vault-secrets/v1.3.1"
             end
           end
+          allow(git_checker).to receive(:version_string_for_tag) { |t| t[/[0-9]+(?:\.[0-9]+)*\z/] }
         end
 
         it "updates each declaration independently" do
