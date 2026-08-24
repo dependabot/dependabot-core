@@ -6,7 +6,7 @@
     <MSBuildPackageVersion>18.3.3</MSBuildPackageVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="DiffPlex" Version="1.8.0" />
+    <PackageVersion Include="DiffPlex" Version="1.9.0" />
     <PackageVersion Include="GuiLabs.Language.Xml" Version="1.2.93" />
     <PackageVersion Include="Microsoft.Build.Locator" Version="1.9.1" />
     <PackageVersion Include="Microsoft.Build" Version="$(MSBuildPackageVersion)" />

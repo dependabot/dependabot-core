@@ -9,6 +9,7 @@ require "dependabot/security_advisory"
 require "dependabot/utils"
 require "dependabot/package/release_cooldown_options"
 require "dependabot/file_filtering"
+require "dependabot/update_checkers/vulnerability_audit"
 
 module Dependabot
   module UpdateCheckers
@@ -168,11 +169,11 @@ module Dependabot
 
       # Finds any dependencies in the lockfile that have a subdependency on the
       # given dependency that do not satisfy the target_version.
-      # @return [Array<Hash{String => String}]
+      # @return [Array<Hash{String => Object}]
       #   name [String] the blocking dependencies name
       #   version [String] the version of the blocking dependency
       #   requirement [String] the requirement on the target_dependency
-      sig { overridable.returns(T::Array[T::Hash[String, String]]) }
+      sig { overridable.returns(T::Array[Dependabot::UpdateCheckers::Conflict]) }
       def conflicting_dependencies
         [] # return an empty array for ecosystems that don't support this yet
       end

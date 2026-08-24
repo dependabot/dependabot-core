@@ -37,7 +37,7 @@ module Dependabot
         #
         # @param dependency [Dependabot::Dependency] the dependency to check
         # @param target_version [String] the version to check
-        # @return [Array<Hash{String => String}]
+        # @return [Array<Hash{String => Object}]
         #   * name [String] the blocking dependencies name
         #   * version [String] the version of the blocking dependency
         #   * requirement [String] the requirement on the target_dependency
@@ -46,7 +46,7 @@ module Dependabot
             dependency: Dependabot::Dependency,
             target_version: T.nilable(T.any(String, Dependabot::Version))
           )
-            .returns(T::Array[T::Hash[String, String]])
+            .returns(T::Array[Dependabot::UpdateCheckers::Conflict])
         end
         def conflicting_dependencies(dependency:, target_version:)
           SharedHelpers.in_a_temporary_directory do
@@ -70,7 +70,7 @@ module Dependabot
                   function: "npm:findConflictingDependencies",
                   args: [Dir.pwd, dependency.name, target_version.to_s]
                 ),
-                T::Array[T::Hash[String, String]]
+                T::Array[Dependabot::UpdateCheckers::Conflict]
               )
             else
               T.cast(
@@ -79,7 +79,7 @@ module Dependabot
                   function: "yarn:findConflictingDependencies",
                   args: [Dir.pwd, dependency.name, target_version.to_s]
                 ),
-                T::Array[T::Hash[String, String]]
+                T::Array[Dependabot::UpdateCheckers::Conflict]
               )
             end
           end
