@@ -80,6 +80,18 @@ RSpec.describe Dependabot::Julia::RequirementsUpdater do
     end
 
     context "with special cases" do
+      context "with a malformed requirement" do
+        let(:requirements) do
+          [{ requirement: 123, file: "Project.toml", groups: ["dependencies"], source: nil }]
+        end
+        let(:target_version) { "0.35.0" }
+
+        it "raises a type error" do
+          expect { updater.updated_requirements }
+            .to raise_error(TypeError, "requirement must be a string, :unfixable, or nil")
+        end
+      end
+
       context "with nil requirement (no compat entry)" do
         let(:requirements) { [{ requirement: nil, file: "Project.toml", groups: ["dependencies"], source: nil }] }
         let(:target_version) { "0.35.0" }

@@ -18,32 +18,41 @@ jobs:
       contents: read
       id-token: write
       packages: write
+      attestations: write
+      artifact-metadata: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           persist-credentials: false
 
-      - uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
 
-      - name: Build dependabot-updater-core image
-        run: script/build common
-
-      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push latest image
-        run: |
-          docker push "$UPDATER_CORE_IMAGE:latest"
-          cosign sign --yes $(cosign triangulate --type=digest "$UPDATER_CORE_IMAGE:latest")
-
-      - name: Push tagged image
+      - name: Determine version tag
         if: contains(github.ref, 'refs/tags')
         run: |
           VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot.rb)"
-          docker tag "$UPDATER_CORE_IMAGE:latest" "$UPDATER_CORE_IMAGE:$VERSION"
-          docker push "$UPDATER_CORE_IMAGE:$VERSION"
+          echo "UPDATER_CORE_VERSION_TAG=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Build and push updater-core image
+        id: build
+        uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
+        with:
+          source: .
+          targets: updater-core-publish
+          provenance: false
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ env.UPDATER_CORE_IMAGE }}
+          subject-digest: ${{ fromJSON(steps.build.outputs.metadata)['updater-core-publish']['containerimage.digest'] }}
+          push-to-registry: true

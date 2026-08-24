@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -26,16 +26,16 @@ module Dependabot
           ).void
         end
         def initialize(dependencies:, dependency_files:, credentials:)
-          @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @credentials = T.let(credentials, T::Array[Dependabot::Credential])
+          @dependencies = dependencies
+          @dependency_files = dependency_files
+          @credentials = credentials
+          @updated_lockfile_content = T.let(nil, T.nilable(String))
         end
 
         sig { returns(String) }
         def updated_lockfile_content
-          @updated_lockfile_content = T.let(@updated_lockfile_content, T.nilable(String))
-          @updated_lockfile_content ||=
-            SharedHelpers.in_a_temporary_directory do
+          unless @updated_lockfile_content
+            result = SharedHelpers.in_a_temporary_directory do
               write_temporary_dependency_files
               FileUtils.cp(elixir_helper_do_update_path, "do_update.exs")
 
@@ -48,6 +48,9 @@ module Dependabot
                 )
               end
             end
+            content = T.cast(result, String)
+            @updated_lockfile_content = content
+          end
 
           post_process_lockfile(@updated_lockfile_content)
         rescue SharedHelpers::HelperSubprocessFailed => e
@@ -139,7 +142,7 @@ module Dependabot
             .reduce(mixfile_content.dup) do |content, dep|
               # Run on the updated mixfile content, so we're updating from the
               # updated requirements
-              req_details = dep.requirements.find { |r| r[:file] == filename }
+              req_details = dep.requirements.find { |r| r.file == filename }
 
               next content unless req_details
               next content unless Hex::Version.correct?(dep.version)
@@ -147,7 +150,7 @@ module Dependabot
               MixfileRequirementUpdater.new(
                 dependency_name: dep.name,
                 mixfile_content: content,
-                previous_requirement: req_details.fetch(:requirement),
+                previous_requirement: req_details.requirement_string,
                 updated_requirement: dep.version,
                 insert_if_bare: true
               ).updated_content

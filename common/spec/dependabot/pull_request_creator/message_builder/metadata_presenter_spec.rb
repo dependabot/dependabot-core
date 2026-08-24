@@ -56,6 +56,61 @@ RSpec.describe namespace::MetadataPresenter do
   let(:github_redirection_service) { "redirect.github.com" }
 
   describe "#to_s" do
+    context "with metadata from multiple providers" do
+      before do
+        allow(metadata_finder)
+          .to receive_messages(
+            releases_url: "https://gitlab.com/org/business/-/releases",
+            releases_text: "Thanks @release.author!",
+            changelog_url: "https://github.com/org/business/blob/main/CHANGELOG.md",
+            changelog_text: "Thanks @changelog-author!"
+          )
+      end
+
+      it "uses each section's metadata source for mention links" do
+        expect(presenter.to_s)
+          .to include('href="https://gitlab.com/release.author"')
+          .and include('href="https://github.com/changelog-author"')
+      end
+    end
+
+    context "with generated metadata" do
+      before do
+        allow(metadata_finder)
+          .to receive_messages(
+            source_url: "https://gitlab.com/org/business",
+            maintainer_changes: "New maintainer: @release_manager"
+          )
+      end
+
+      it "uses the dependency source for mention links" do
+        expect(presenter.to_s).to include('href="https://gitlab.com/release_manager"')
+      end
+    end
+
+    context "with vulnerabilities from multiple providers" do
+      let(:vulnerabilities_fixed) do
+        [
+          {
+            "source_name" => "GitLab Advisory Database",
+            "source_url" => "https://gitlab.com/security/advisories/1",
+            "description" => "Reported by @security.researcher"
+          },
+          {
+            "source_name" => "GitHub Advisory Database",
+            "source_url" => "https://github.com/advisories/GHSA-1234",
+            "description" => "Reported by @github-researcher"
+          }
+        ]
+      end
+
+      it "uses each advisory source for mention links" do
+        expect(presenter.to_s)
+          .to include('href="https://gitlab.com/security.researcher"')
+          .and include('href="https://github.com/github-researcher"')
+      end
+    end
+
     context "with a changelog that requires truncation" do
       before do
         allow(metadata_finder)

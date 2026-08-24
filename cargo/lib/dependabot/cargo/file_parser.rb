@@ -42,7 +42,7 @@ module Dependabot
         # TODO: Currently, Dependabot can't handle dependencies that have
         # multiple sources. Fix that!
         dependencies.reject do |dep|
-          dep.requirements.map { |r| r.fetch(:source) }.uniq.count > 1
+          dep.requirements.map(&:source).uniq.count > 1
         end
       end
 

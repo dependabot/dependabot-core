@@ -9,37 +9,25 @@ module Dependabot
     module Helpers
       extend T::Sig
 
-      V1 = T.let("1", String)
-      V2 = T.let("2", String)
+      V1 = "1"
+      V2 = "2"
 
       # If we are updating a project with no lock file then the default should be the newest version
       DEFAULT = T.let(V2, String)
 
       # From composers json-schema: https://getcomposer.org/schema.json
-      COMPOSER_V2_NAME_REGEX = T.let(
-        %r{^[a-z0-9]([_.-]?[a-z0-9]++)*/[a-z0-9](([_.]?|-{0,2})[a-z0-9]++)*$},
-        Regexp
-      )
+      COMPOSER_V2_NAME_REGEX = %r{^[a-z0-9]([_.-]?[a-z0-9]++)*/[a-z0-9](([_.]?|-{0,2})[a-z0-9]++)*$}
 
       # From https://github.com/composer/composer/blob/b7d770659b4e3ef21423bd67ade935572913a4c1/src/Composer/Repository/PlatformRepository.php#L33
-      PLATFORM_PACKAGE_REGEX = T.let(
-        /
+      PLATFORM_PACKAGE_REGEX = /
         ^(?:php(?:-64bit|-ipv6|-zts|-debug)?|hhvm|(?:ext|lib)-[a-z0-9](?:[_.-]?[a-z0-9]+)*
         |composer-(?:plugin|runtime)-api)$
-        /x,
-        Regexp
-      )
+        /x
 
-      FAILED_GIT_CLONE_WITH_MIRROR = T.let(
-        /^Failed to execute git clone --(mirror|checkout)[^']*'(?<url>[^']*?)'/,
-        Regexp
-      )
-      FAILED_GIT_CLONE = T.let(/^Failed to clone (?<url>.*?)/, Regexp)
+      FAILED_GIT_CLONE_WITH_MIRROR = /^Failed to execute git clone --(mirror|checkout)[^']*'(?<url>[^']*?)'/
+      FAILED_GIT_CLONE = /^Failed to clone (?<url>.*?)/
 
-      GIT_REPO_URL = T.let(
-        %r{((git|ssh|http(s)?)|(git@[\w\.]+))(:(//)?)([\w\.@\:/\-~]+)(/)?},
-        Regexp
-      )
+      GIT_REPO_URL = %r{((git|ssh|http(s)?)|(git@[\w\.]+))(:(//)?)([\w\.@\:/\-~]+)(/)?}
 
       sig do
         params(

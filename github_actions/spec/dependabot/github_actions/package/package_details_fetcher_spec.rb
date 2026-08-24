@@ -156,6 +156,30 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
             expect(fetcher.latest_version_tag.fetch(:tag)).to eq("v1.1")
           end
         end
+
+        context "when a higher lower-precision ref is available" do
+          let(:reference) { "v1.1.2" }
+          let(:dependency_version) { "1.1.2" }
+
+          before do
+            checker = instance_double(
+              Dependabot::GitCommitChecker,
+              local_ref_for_latest_version_matching_existing_precision: Dependabot::GitTagDetails.new(
+                tag: "v1.1.2",
+                version: Dependabot::GithubActions::Version.new("1.1.2")
+              ),
+              local_ref_for_latest_version_lower_precision: Dependabot::GitTagDetails.new(
+                tag: "v1.2",
+                version: Dependabot::GithubActions::Version.new("1.2")
+              )
+            )
+            allow(fetcher).to receive(:git_commit_checker).and_return(checker)
+          end
+
+          it "prefers the higher lower-precision ref over the unchanged matching-precision ref" do
+            expect(fetcher.latest_version_tag.fetch(:tag)).to eq("v1.2")
+          end
+        end
       end
 
       context "when the latest version is being ignored" do
@@ -309,11 +333,11 @@ RSpec.describe Dependabot::GithubActions::Package::PackageDetailsFetcher do
       it "updates to the least new supported version" do
         expect(lowest_security_fix_version).to eq(
           (
-                    { tag: "v1",
-                      version: Dependabot::GithubActions::Version.new("1.0.0"),
-                      commit_sha: "d0b521928fa734513b5cd9c7d9d8e09db50e884a",
-                      tag_sha: "d0b521928fa734513b5cd9c7d9d8e09db50e884a" }
-                  )
+            { tag: "v1",
+              version: Dependabot::GithubActions::Version.new("1.0.0"),
+              commit_sha: "d0b521928fa734513b5cd9c7d9d8e09db50e884a",
+              tag_sha: "d0b521928fa734513b5cd9c7d9d8e09db50e884a" }
+          )
         )
       end
     end

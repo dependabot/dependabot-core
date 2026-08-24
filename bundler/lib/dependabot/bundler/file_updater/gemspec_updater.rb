@@ -13,8 +13,8 @@ module Dependabot
 
         sig { params(dependencies: T::Array[Dependabot::Dependency], gemspec: Dependabot::DependencyFile).void }
         def initialize(dependencies:, gemspec:)
-          @dependencies = T.let(dependencies, T::Array[Dependabot::Dependency])
-          @gemspec = T.let(gemspec, Dependabot::DependencyFile)
+          @dependencies = dependencies
+          @gemspec = gemspec
         end
 
         sig { returns(String) }

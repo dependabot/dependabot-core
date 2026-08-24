@@ -178,6 +178,9 @@ internal static class SdkProjectDiscovery
                     args.Add($"/p:InnerTargets=\"{string.Join(";", requiredTargets)}\"");
                 }
 
+                // only execute the desired targets on transitive project references
+                args.Add($"/p:ProjectReferenceBuildTargets=\"{string.Join(";", requiredTargets)}\"");
+
                 // inject various props and targets to help with discovery
                 var dependencyDiscoveryTargetingPacksPropsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscoveryTargetingPacks.props");
                 var dependencyDiscoveryTargetsPath = MSBuildHelper.GetFileFromRuntimeDirectory("DependencyDiscovery.targets");

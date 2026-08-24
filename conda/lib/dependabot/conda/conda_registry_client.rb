@@ -14,10 +14,7 @@ module Dependabot
       extend T::Sig
 
       # Supported public conda channels (user-facing names from environment.yml)
-      SUPPORTED_CHANNELS = T.let(
-        %w(anaconda conda-forge defaults bioconda main).freeze,
-        T::Array[String]
-      )
+      SUPPORTED_CHANNELS = %w(anaconda conda-forge defaults bioconda main).freeze
 
       # Channel aliases: maps user-facing channel names to API channel names
       # 'defaults' is a Conda client alias that doesn't exist on anaconda.org API
@@ -26,11 +23,11 @@ module Dependabot
         T::Hash[String, String]
       )
       # anaconda.org API configuration
-      DEFAULT_CHANNEL = T.let("anaconda", String)
-      API_BASE_URL = T.let("https://api.anaconda.org", String)
-      CONNECTION_TIMEOUT = T.let(5, Integer)
-      READ_TIMEOUT = T.let(30, Integer)
-      MAX_RETRIES = T.let(1, Integer)
+      DEFAULT_CHANNEL = "anaconda"
+      API_BASE_URL = "https://api.anaconda.org"
+      CONNECTION_TIMEOUT = 5
+      READ_TIMEOUT = 30
+      MAX_RETRIES = 1
 
       sig { void }
       def initialize

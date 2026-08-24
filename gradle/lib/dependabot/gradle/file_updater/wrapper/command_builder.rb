@@ -85,18 +85,19 @@ module Dependabot
 
           sig { returns(String) }
           def version
-            T.let(T.must(@requirements[0])[:requirement], String)
+            T.must(T.must(@requirements[0]).requirement_string)
           end
 
           sig { returns(T.nilable(String)) }
           def checksum
             return nil unless @requirements.size > 1
 
-            T.let(T.must(@requirements[1])[:requirement], String)
+            T.must(T.must(@requirements[1]).requirement_string)
           end
 
           sig { returns(T.nilable(String)) }
           def distribution_type
+            url = T.must(@requirements[0]).source_string("url")
             # Anchor to the `-bin.zip` / `-all.zip` filename suffix so a path segment such as a
             # mirror host (e.g. https://binaries.example.com/...) can't false-match `bin`/`all`.
             distribution_url&.match(/-(bin|all)\.zip/)&.captures&.first

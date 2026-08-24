@@ -43,7 +43,6 @@ public sealed record Job
     public bool RepoPrivate { get; init; } = false;
     public CommitOptions? CommitMessageOptions { get; init; } = null;
     public ImmutableArray<Dictionary<string, object>>? CredentialsMetadata { get; init; } = null;
-    public int MaxUpdaterRunTime { get; init; } = 0;
     public Cooldown? Cooldown { get; init; } = null;
 
     public ImmutableArray<string> GetRawDirectories()

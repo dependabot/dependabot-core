@@ -73,6 +73,7 @@ public partial class DiscoveryWorkerTests
                 [
                     MockNuGetPackage.CreateSimplePackage("Package.A", "1.2.3", "net8.0"),
                     MockNuGetPackage.CreateSimplePackage("Package.B", "4.5.6", "net8.0"),
+                    MockNuGetPackage.WellKnownHostPackage("Microsoft.NETCore.App", "net8.0"),
                 ],
                 workspacePath: "",
                 files: [
@@ -954,6 +955,105 @@ public partial class DiscoveryWorkerTests
                     ],
                 }
             );
+        }
+
+        [Fact]
+        public async Task RestoreDoesNotCallBuildOnTransitiveProjectReference()
+        {
+            // Ensure the `Build` target isn't invoked in transitive project references.
+
+            // To test this a custom target is added with `BeforeTargets="Build"` which writes a sentinel file to disk
+            // so we have to ensure that file doesn't get created.
+            using var tempDir = new TemporaryDirectory();
+            var sentinelFile1 = Path.Combine(tempDir.DirectoryPath, "sentinel1.txt");
+            var sentinelFile2 = Path.Combine(tempDir.DirectoryPath, "sentinel2.txt");
+
+            await TestDiscoveryAsync(
+                packages:
+                [
+                    MockNuGetPackage.CreateSimplePackage("Some.Package", "1.0.0", "net10.0"),
+                ],
+                workspacePath: "src/client",
+                files: [
+                    ("Directory.Build.props", "<Project />"),
+                    ("Directory.Build.targets", "<Project />"),
+                    ("Directory.Packages.props", """
+                        <Project>
+                          <PropertyGroup>
+                            <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+                          </PropertyGroup>
+                        </Project>
+                        """),
+                    ("src/client/client.csproj", $$"""
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net10.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <ProjectReference Include="..\common\common.csproj" />
+                          </ItemGroup>
+                          <Target Name="BuildSentinel" BeforeTargets="Build">
+                            <WriteLinesToFile File="{{sentinelFile1}}" Lines="Build target was called" Overwrite="true" />
+                          </Target>
+                        </Project>
+                        """),
+                    ("src/common/common.csproj", $$"""
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <PropertyGroup>
+                            <TargetFramework>net10.0</TargetFramework>
+                          </PropertyGroup>
+                          <ItemGroup>
+                            <PackageReference Include="Some.Package" Version="1.0.0" />
+                          </ItemGroup>
+                          <Target Name="BuildSentinel" BeforeTargets="Build">
+                            <WriteLinesToFile File="{{sentinelFile2}}" Lines="Build target was called" Overwrite="true" />
+                          </Target>
+                        </Project>
+                        """),
+                ],
+                expectedResult: new()
+                {
+                    Path = "src/client",
+                    Projects = [
+                        new()
+                        {
+                            FilePath = "client.csproj",
+                            TargetFrameworks = ["net10.0"],
+                            Dependencies = [
+                                new("Some.Package", "1.0.0", DependencyType.Unknown, TargetFrameworks: ["net10.0"], IsTopLevel: false),
+                            ],
+                            ReferencedProjectPaths = [
+                                "../common/common.csproj"
+                            ],
+                            ImportedFiles = [
+                                "../../Directory.Build.props",
+                                "../../Directory.Build.targets",
+                                "../../Directory.Packages.props"
+                            ],
+                            AdditionalFiles = [],
+                        },
+                        new()
+                        {
+                            FilePath = "../common/common.csproj",
+                            TargetFrameworks = ["net10.0"],
+                            Dependencies = [
+                                new("Some.Package", "1.0.0", DependencyType.PackageReference, TargetFrameworks: ["net10.0"], IsTopLevel: true),
+                            ],
+                            ReferencedProjectPaths = [],
+                            ImportedFiles = [
+                                "../../Directory.Build.props",
+                                "../../Directory.Build.targets",
+                                "../../Directory.Packages.props"
+                            ],
+                            AdditionalFiles = [],
+                        }
+                    ],
+                }
+            );
+
+            // Verify that the Build target was not called (and BeforeTargets="Build") by checking that the sentinel file was not created
+            Assert.False(File.Exists(sentinelFile1), "Build target should not have been called on primary project");
+            Assert.False(File.Exists(sentinelFile2), "Build target should not have been called on referenced project");
         }
     }
 }

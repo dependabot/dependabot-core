@@ -19,6 +19,9 @@ when "useful_error"
 when "hard_error"
   puts "Oh no!"
   exit 0
+when "malformed_error"
+  $stdout.write(JSON.dump(error: nil))
+  exit 1
 when "killed"
   # SIGKILL the helper, which is what the kernel OOMKiller might do.
   Process.kill("KILL", Process.pid)

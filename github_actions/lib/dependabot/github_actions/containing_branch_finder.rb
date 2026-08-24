@@ -12,10 +12,7 @@ module Dependabot
 
       # A missing commit has no containing branch, so callers can handle it like
       # an empty branch lookup without masking unrelated subprocess failures.
-      COMMIT_NOT_FOUND_REGEX = T.let(
-        /no such commit|malformed object name|bad object|not a valid object name/i,
-        Regexp
-      )
+      COMMIT_NOT_FOUND_REGEX = /no such commit|malformed object name|bad object|not a valid object name/i
 
       sig { params(sha: String).returns(T.nilable(String)) }
       def self.find(sha)

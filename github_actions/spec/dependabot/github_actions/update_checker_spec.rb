@@ -820,6 +820,26 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       it { is_expected.to eq(dependency.requirements) }
     end
 
+    context "with string-keyed source details" do
+      let(:reference) { "v1.0.1" }
+      let(:dependency_source) do
+        {
+          "type" => "git",
+          "url" => "https://github.com/#{dependency_name}",
+          "ref" => reference,
+          "branch" => nil,
+          "custom" => "preserved"
+        }
+      end
+
+      it "preserves the source payload and key style" do
+        source = updated_requirements.first.source_hash
+
+        expect(source).to include("ref" => "v1.1.0", "custom" => "preserved")
+        expect(source).not_to have_key(:ref)
+      end
+    end
+
     context "when a root composite action is fetched with an invalid workflow lockfile" do
       let(:dependency_files) do
         [
@@ -1359,9 +1379,9 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
       end
 
-      it "keeps metadata and rewritten version tag aligned to cooled-down target" do
-        expect(checker.latest_version).to eq(Dependabot::GithubActions::Version.new("2.7.0"))
-        expect(updated_requirements.first.dig(:source, :ref)).to eq("v2.7.0")
+      it "keeps the major-only precision instead of rewriting to a full version tag" do
+        expect(checker.latest_version).to eq(Dependabot::GithubActions::Version.new("2"))
+        expect(updated_requirements.first.dig(:source, :ref)).to eq("v2")
       end
     end
 

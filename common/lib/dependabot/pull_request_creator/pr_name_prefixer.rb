@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -10,29 +10,30 @@ require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/commit_message_options"
+require "dependabot/errors"
 
 module Dependabot
   class PullRequestCreator
     class PrNamePrefixer # rubocop:disable Metrics/ClassLength
       extend T::Sig
 
-      ANGULAR_PREFIXES = T.let(
-        %w(build chore ci docs feat fix perf refactor style test).freeze,
-        T::Array[String]
-      )
-      ESLINT_PREFIXES = T.let(
-        %w(Breaking Build Chore Docs Fix New Update Upgrade).freeze,
-        T::Array[String]
-      )
-      GITMOJI_PREFIXES = T.let(
-        %w(alien ambulance apple arrow_down arrow_up art beers bento bookmark boom bug building_construction bulb
-           busts_in_silhouette camera_flash card_file_box chart_with_upwards_trend checkered_flag children_crossing
-           clown_face construction construction_worker egg fire globe_with_meridians green_apple green_heart hankey
-           heavy_minus_sign heavy_plus_sign iphone lipstick lock loud_sound memo mute ok_hand package page_facing_up
-           pencil2 penguin pushpin recycle rewind robot rocket rotating_light see_no_evil sparkles speech_balloon tada
-           truck twisted_rightwards_arrows whale wheelchair white_check_mark wrench zap).freeze,
-        T::Array[String]
-      )
+      ANGULAR_PREFIXES = %w(build chore ci docs feat fix perf refactor style test).freeze
+      ESLINT_PREFIXES = %w(Breaking Build Chore Docs Fix New Update Upgrade).freeze
+      GITMOJI_PREFIXES = %w(
+        alien ambulance apple arrow_down arrow_up art beers bento bookmark boom bug building_construction
+        bulb busts_in_silhouette camera_flash card_file_box chart_with_upwards_trend checkered_flag children_crossing
+        clown_face construction construction_worker egg fire globe_with_meridians green_apple green_heart hankey
+        heavy_minus_sign heavy_plus_sign iphone lipstick lock loud_sound memo mute ok_hand package page_facing_up
+        pencil2 penguin pushpin recycle rewind robot rocket rotating_light see_no_evil sparkles speech_balloon tada
+        truck twisted_rightwards_arrows whale wheelchair white_check_mark wrench zap
+      ).freeze
+
+      class RecentCommit < T::ImmutableStruct
+        const :message, T.nilable(String)
+        const :author_email, T.nilable(String), default: nil
+        const :author_name, T.nilable(String), default: nil
+        const :author_type, T.nilable(String), default: nil
+      end
 
       sig do
         params(
@@ -59,6 +60,11 @@ module Dependabot
           commit_message_options && CommitMessageOptions.from_hash(commit_message_options),
           T.nilable(CommitMessageOptions)
         )
+        @recent_github_commits = T.let(nil, T.nilable(T::Array[RecentCommit]))
+        @recent_gitlab_commits = T.let(nil, T.nilable(T::Array[RecentCommit]))
+        @recent_azure_commits = T.let(nil, T.nilable(T::Array[RecentCommit]))
+        @recent_bitbucket_commits = T.let(nil, T.nilable(T::Array[RecentCommit]))
+        @recent_codecommit_commits = T.let(nil, T.nilable(T::Array[RecentCommit]))
       end
 
       sig { returns(String) }
@@ -341,58 +347,46 @@ module Dependabot
       sig { returns(T::Array[String]) }
       def recent_github_commit_messages
         recent_github_commits
-          .reject { |c| c.author&.type == "Bot" }
-          .reject { |c| c.commit&.message&.start_with?("Merge") }
-          .map(&:commit)
+          .reject { |commit| commit.author_type == "Bot" }
+          .reject { |commit| commit.message&.start_with?("Merge") }
           .filter_map(&:message)
           .map(&:strip)
       end
 
       sig { returns(T::Array[String]) }
       def recent_gitlab_commit_messages
-        @recent_gitlab_commit_messages ||=
-          gitlab_client_for_source.commits(source.repo)
-
-        @recent_gitlab_commit_messages
-          .reject { |c| c.author_email == dependabot_email }
-          .reject { |c| c.message&.start_with?("merge !") }
+        recent_gitlab_commits
+          .reject { |commit| commit.author_email == dependabot_email }
+          .reject { |commit| commit.message&.start_with?("merge !") }
           .filter_map(&:message)
           .map(&:strip)
       end
 
       sig { returns(T::Array[String]) }
       def recent_azure_commit_messages
-        @recent_azure_commit_messages ||=
-          azure_client_for_source.commits
-
-        @recent_azure_commit_messages
-          .reject { |c| azure_commit_author_email(c) == dependabot_email }
-          .reject { |c| c.fetch("comment")&.start_with?("Merge") }
-          .filter_map { |c| c.fetch("comment") }
+        recent_azure_commits
+          .reject { |commit| commit.author_email == dependabot_email }
+          .reject { |commit| commit.message&.start_with?("Merge") }
+          .filter_map(&:message)
           .map(&:strip)
       end
 
       sig { returns(T::Array[String]) }
       def recent_bitbucket_commit_messages
-        @recent_bitbucket_commit_messages ||=
-          bitbucket_client_for_source.commits(source.repo)
-
-        @recent_bitbucket_commit_messages
-          .reject { |c| bitbucket_commit_author_email(c) == dependabot_email }
-          .filter_map { |c| c.fetch("message", nil) }
+        recent_bitbucket_commits
+          .reject { |commit| commit.author_email == dependabot_email }
+          .filter_map(&:message)
           .reject { |m| m.start_with?("Merge") }
           .map(&:strip)
       end
 
       sig { returns(T::Array[String]) }
       def recent_codecommit_commit_messages
-        @recent_codecommit_commit_messages ||=
-          T.unsafe(codecommit_client_for_source).commits
-        @recent_codecommit_commit_messages.commits
-                                          .reject { |c| c.author.email == dependabot_email }
-                                          .reject { |c| c.message&.start_with?("Merge") }
-                                          .filter_map(&:message)
-                                          .map(&:strip)
+        recent_codecommit_commits
+          .reject { |commit| commit.author_email == dependabot_email }
+          .reject { |commit| commit.message&.start_with?("Merge") }
+          .filter_map(&:message)
+          .map(&:strip)
       end
 
       sig { returns(T.nilable(String)) }
@@ -424,89 +418,189 @@ module Dependabot
       sig { returns(T.nilable(String)) }
       def last_github_dependabot_commit_message
         recent_github_commits
-          .reject { |c| c.commit&.message&.start_with?("Merge") }
-          .find { |c| c.commit.author&.name&.include?("dependabot") }
-          &.commit
+          .reject { |commit| commit.message&.start_with?("Merge") }
+          .find { |commit| commit.author_name&.include?("dependabot") }
           &.message
           &.strip
       end
 
-      sig { returns(T.untyped) }
+      sig { returns(T::Array[RecentCommit]) }
       def recent_github_commits
         @recent_github_commits ||=
-          T.let(
-            github_client_for_source.commits(source.repo, per_page: 100),
-            T.untyped
-          )
+          github_client_for_source
+          .commits(source.repo, per_page: 100)
+          .map { |commit| parse_github_commit(commit) }
       rescue Octokit::Conflict, Octokit::NotFound
         @recent_github_commits ||= []
       end
 
       sig { returns(T.nilable(String)) }
       def last_gitlab_dependabot_commit_message
-        @recent_gitlab_commit_messages ||=
-          T.let(
-            gitlab_client_for_source.commits(source.repo),
-            T.untyped
-          )
-
-        @recent_gitlab_commit_messages
-          .find { |c| c.author_email == dependabot_email }
+        recent_gitlab_commits
+          .find { |commit| commit.author_email == dependabot_email }
           &.message
           &.strip
       end
 
       sig { returns(T.nilable(String)) }
       def last_azure_dependabot_commit_message
-        @recent_azure_commit_messages ||=
-          T.let(
-            azure_client_for_source.commits,
-            T.untyped
-          )
-
-        @recent_azure_commit_messages
-          .find { |c| azure_commit_author_email(c) == dependabot_email }
+        recent_azure_commits
+          .find { |commit| commit.author_email == dependabot_email }
           &.message
           &.strip
       end
 
       sig { returns(T.nilable(String)) }
       def last_bitbucket_dependabot_commit_message
-        @recent_bitbucket_commit_messages ||=
-          T.let(
-            bitbucket_client_for_source.commits(source.repo),
-            T.untyped
-          )
-
-        @recent_bitbucket_commit_messages
-          .find { |c| bitbucket_commit_author_email(c) == dependabot_email }
-          &.fetch("message", nil)
+        recent_bitbucket_commits
+          .find { |commit| commit.author_email == dependabot_email }
+          &.message
           &.strip
       end
 
       sig { returns(T.nilable(String)) }
       def last_codecommit_dependabot_commit_message
-        @recent_codecommit_commit_messages ||=
-          T.let(
-            codecommit_client_for_source.commits(source.repo),
-            T.untyped
+        recent_codecommit_commits
+          .find { |commit| commit.author_email == dependabot_email }
+          &.message
+          &.strip
+      end
+
+      sig { returns(T::Array[RecentCommit]) }
+      def recent_gitlab_commits
+        @recent_gitlab_commits ||= gitlab_client_for_source
+                                   .commits(source.repo)
+                                   .map { |commit| parse_gitlab_commit(commit) }
+      end
+
+      sig { returns(T::Array[RecentCommit]) }
+      def recent_azure_commits
+        @recent_azure_commits ||= azure_client_for_source.commits.map { |commit| parse_azure_commit(commit) }
+      end
+
+      sig { returns(T::Array[RecentCommit]) }
+      def recent_bitbucket_commits
+        @recent_bitbucket_commits ||= bitbucket_client_for_source
+                                      .commits(source.repo)
+                                      .map { |commit| parse_bitbucket_commit(commit) }
+      end
+
+      sig { returns(T::Array[RecentCommit]) }
+      def recent_codecommit_commits
+        return @recent_codecommit_commits if @recent_codecommit_commits
+
+        response = codecommit_client_for_source.commits(source.repo)
+        output = T.cast(response.data, Aws::CodeCommit::Types::BatchGetCommitsOutput)
+        @recent_codecommit_commits = (output.commits || []).map do |commit|
+          RecentCommit.new(
+            message: commit.message,
+            author_email: commit.author&.email
           )
-
-        @recent_codecommit_commit_messages.commits
-                                          .find { |c| c.author.email == dependabot_email }
-                                          &.message
-                                          &.strip
+        end
       end
 
-      sig { params(commit: T::Hash[String, T::Hash[String, String]]).returns(String) }
-      def azure_commit_author_email(commit)
-        commit.fetch("author").fetch("email", "")
+      sig { params(commit: Sawyer::Resource).returns(RecentCommit) }
+      def parse_github_commit(commit)
+        details = sawyer_resource(commit, :commit, "commit details")
+        author = sawyer_optional_resource(commit, :author, "author")
+        commit_author = sawyer_optional_resource(details, :author, "commit author")
+        RecentCommit.new(
+          message: sawyer_optional_string(details, :message, "commit message"),
+          author_email: commit_author && sawyer_optional_string(commit_author, :email, "author email"),
+          author_name: commit_author && sawyer_optional_string(commit_author, :name, "author name"),
+          author_type: author && sawyer_optional_string(author, :type, "author type")
+        )
       end
 
-      sig { params(commit: T::Hash[String, T::Hash[String, String]]).returns(String) }
-      def bitbucket_commit_author_email(commit)
-        matches = commit.fetch("author").fetch("raw").match(/<(.*)>/)
-        matches ? T.must(matches[1]) : ""
+      sig { params(commit: ::Gitlab::ObjectifiedHash).returns(RecentCommit) }
+      def parse_gitlab_commit(commit)
+        RecentCommit.new(
+          message: gitlab_optional_string(commit, "message", "commit message"),
+          author_email: gitlab_optional_string(commit, "author_email", "author email")
+        )
+      end
+
+      sig { params(commit: Dependabot::Clients::Azure::JsonObject).returns(RecentCommit) }
+      def parse_azure_commit(commit)
+        author = object_hash(commit, "author", "Azure author")
+        RecentCommit.new(
+          message: object_optional_string(commit, "comment", "Azure commit message"),
+          author_email: object_optional_string(author, "email", "Azure author email")
+        )
+      end
+
+      sig { params(commit: Dependabot::Clients::Bitbucket::JsonObject).returns(RecentCommit) }
+      def parse_bitbucket_commit(commit)
+        author = object_hash(commit, "author", "Bitbucket author")
+        raw_author = object_optional_string(author, "raw", "Bitbucket author")
+        matches = raw_author&.match(/<(.*)>/)
+        RecentCommit.new(
+          message: object_optional_string(commit, "message", "Bitbucket commit message"),
+          author_email: matches ? T.must(matches[1]) : nil
+        )
+      end
+
+      sig { params(resource: Sawyer::Resource, key: Symbol, context: String).returns(Sawyer::Resource) }
+      def sawyer_resource(resource, key, context)
+        value = T.cast(resource[key], Object)
+        return value if value.is_a?(Sawyer::Resource)
+
+        raise_bad_commit_response("GitHub", "#{context} must be an object")
+      end
+
+      sig { params(resource: Sawyer::Resource, key: Symbol, context: String).returns(T.nilable(Sawyer::Resource)) }
+      def sawyer_optional_resource(resource, key, context)
+        value = T.cast(resource[key], Object)
+        return if value.nil?
+        return value if value.is_a?(Sawyer::Resource)
+
+        raise_bad_commit_response("GitHub", "#{context} must be an object or nil")
+      end
+
+      sig { params(resource: Sawyer::Resource, key: Symbol, context: String).returns(T.nilable(String)) }
+      def sawyer_optional_string(resource, key, context)
+        value = T.cast(resource[key], Object)
+        return if value.nil?
+        return value if value.is_a?(String)
+
+        raise_bad_commit_response("GitHub", "#{context} must be a string or nil")
+      end
+
+      sig { params(resource: ::Gitlab::ObjectifiedHash, key: String, context: String).returns(T.nilable(String)) }
+      def gitlab_optional_string(resource, key, context)
+        value = T.cast(resource[key], Object)
+        return if value.nil?
+        return value if value.is_a?(String)
+
+        raise_bad_commit_response("GitLab", "#{context} must be a string or nil")
+      end
+
+      sig do
+        params(object: T::Hash[String, Object], key: String, context: String)
+          .returns(T::Hash[String, Object])
+      end
+      def object_hash(object, key, context)
+        value = object[key]
+        return T.let(value, T::Hash[String, Object]) if value.is_a?(Hash)
+
+        raise_bad_commit_response(source.provider, "#{context} must be an object")
+      end
+
+      sig { params(object: T::Hash[String, Object], key: String, context: String).returns(T.nilable(String)) }
+      def object_optional_string(object, key, context)
+        value = object[key]
+        return if value.nil?
+        return value if value.is_a?(String)
+
+        raise_bad_commit_response(source.provider, "#{context} must be a string or nil")
+      end
+
+      sig { params(provider: String, message: String).returns(T.noreturn) }
+      def raise_bad_commit_response(provider, message)
+        raise Dependabot::PrivateSourceBadResponse.new(
+          source.url,
+          "Malformed #{provider} commit response: #{message}"
+        )
       end
 
       sig { returns(Dependabot::Clients::GithubWithRetries) }

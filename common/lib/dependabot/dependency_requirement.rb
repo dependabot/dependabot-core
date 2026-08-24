@@ -16,7 +16,7 @@ module Dependabot
   #
   # Subclasses Hash so it is a drop-in replacement at call sites (and in
   # type annotations) that treat requirement entries as
-  # T::Hash[Symbol, T.untyped], while exposing typed readers for the
+  # T::Hash[Symbol, Object], while exposing typed readers for the
   # well-known keys. New code should prefer the typed readers; hash-style
   # access remains supported while call sites are migrated gradually.
   #
@@ -37,15 +37,11 @@ module Dependabot
     ObjectHash = T.type_alias { T::Hash[T.any(Symbol, String), Object] }
     Requirement = T.type_alias { T.any(String, Symbol) }
     Source = T.type_alias { T.any(String, ObjectHash) }
-    Input = T.type_alias { T.any(DependencyRequirement, ObjectHash) }
+    Input = T.type_alias { T::Hash[T.any(Symbol, String), T.anything] }
 
     K = type_member { { fixed: Symbol } }
-    # Hash-style access remains dynamic until ecosystem callers migrate to the
-    # typed readers. Keeping that compatibility here avoids a flag-day change.
-    # rubocop:disable Sorbet/ForbidTUntyped
-    V = type_member { { fixed: T.untyped } }
-    Elem = type_member { { fixed: [Symbol, T.untyped] } }
-    # rubocop:enable Sorbet/ForbidTUntyped
+    V = type_member { { fixed: Object } }
+    Elem = type_member { { fixed: [Symbol, Object] } }
 
     # Builds a DependencyRequirement from a requirement hash, symbolising
     # top-level keys. Accepts both plain hashes and existing
@@ -53,7 +49,12 @@ module Dependabot
     sig { params(hash: Input).returns(DependencyRequirement) }
     def self.create(hash)
       requirement = new
-      requirement.replace(hash.keys.to_h { |k| [k.to_sym, hash[k]] })
+      hash.each do |key, value|
+        case value
+        when Object then requirement[key.to_sym] = value
+        else raise TypeError, "requirement values must inherit Object"
+        end
+      end
       requirement
     end
 
@@ -62,7 +63,7 @@ module Dependabot
     # or :unfixable when no valid updated requirement can be generated.
     sig { returns(T.nilable(Requirement)) }
     def requirement
-      value = T.cast(self[:requirement], T.nilable(Object))
+      value = self[:requirement]
       return if value.nil?
       return value if value.is_a?(String) || value == :unfixable
 
@@ -82,7 +83,7 @@ module Dependabot
     # the underlying hash access under sorbet-runtime.
     sig { returns(T.nilable(T::Array[Group])) }
     def groups
-      value = T.cast(self[:groups], T.nilable(Object))
+      value = self[:groups]
       return if value.nil?
       raise TypeError, "groups must be an array of strings or symbols, or nil" unless value.is_a?(Array)
 
@@ -101,7 +102,7 @@ module Dependabot
     # parser or deserialised from a job definition.
     sig { returns(T.nilable(Source)) }
     def source
-      value = T.cast(self[:source], T.nilable(Object))
+      value = self[:source]
       return if value.nil?
       return value if value.is_a?(String)
 
@@ -153,11 +154,76 @@ module Dependabot
       raise TypeError, "requirement must be a string or nil"
     end
 
+    # Reads a known metadata field such as "property_name". Accepts either key
+    # style for the same reason as `source_string`. Returns nil when the
+    # requirement carries no metadata or the key is absent.
+    sig { params(key: String).returns(T.nilable(String)) }
+    def metadata_string(key)
+      value = metadata_value(key)
+      return if value.nil?
+      return value if value.is_a?(String)
+
+      raise TypeError, "metadata #{key} must be a string or nil"
+    end
+
+    # Reads a known symbol-valued metadata field such as Helm's "type".
+    sig { params(key: String).returns(T.nilable(Symbol)) }
+    def metadata_symbol(key)
+      value = metadata_value(key)
+      return if value.nil?
+      return value if value.is_a?(Symbol)
+
+      raise TypeError, "metadata #{key} must be a symbol or nil"
+    end
+
+    # Reads a boolean metadata field such as "include_debug_script".
+    sig { params(key: String).returns(T.nilable(T::Boolean)) }
+    def metadata_boolean(key)
+      value = metadata_value(key)
+      return if value.nil?
+      return value if value == true || value == false
+
+      raise TypeError, "metadata #{key} must be a boolean or nil"
+    end
+
+    # Reads a nested metadata hash whose values are all strings, such as
+    # "dependency_set" (`{ group: "my.group", version: "1.4.0" }`). Keys are
+    # symbolised so callers can read them with symbols regardless of how the
+    # requirement was built.
+    sig { params(key: String).returns(T.nilable(T::Hash[Symbol, String])) }
+    def metadata_string_hash(key)
+      value = metadata_value(key)
+      return if value.nil?
+      raise TypeError, "metadata #{key} must be a hash of strings or nil" unless value.is_a?(Hash)
+
+      value.to_h do |raw_entry_key, raw_entry_value|
+        entry_key = T.cast(raw_entry_key, Object)
+        entry_value = T.cast(raw_entry_value, Object)
+        unless (entry_key.is_a?(Symbol) || entry_key.is_a?(String)) && entry_value.is_a?(String)
+          raise TypeError, "metadata #{key} must be a hash of strings or nil"
+        end
+
+        [entry_key.to_sym, entry_value]
+      end
+    end
+
     private
+
+    # Reads a raw metadata field, accepting either key style. Nil when the
+    # requirement carries no metadata or the key is absent.
+    sig { params(key: String).returns(T.nilable(Object)) }
+    def metadata_value(key)
+      details = metadata
+      return if details.nil?
+
+      return details[key.to_sym] if details.key?(key.to_sym)
+
+      details[key]
+    end
 
     sig { params(key: Symbol).returns(T.nilable(String)) }
     def optional_string(key)
-      value = T.cast(self[key], T.nilable(Object))
+      value = self[key]
       return if value.nil?
       return value if value.is_a?(String)
 
@@ -166,7 +232,7 @@ module Dependabot
 
     sig { params(key: Symbol).returns(T.nilable(ObjectHash)) }
     def optional_object_hash(key)
-      value = T.cast(self[key], T.nilable(Object))
+      value = self[key]
       return if value.nil?
 
       object_hash(value, key)

@@ -22,7 +22,7 @@ module Dependabot
                         "(?:-#{pre_id}(?:\\.#{pre_id})*)?" \
                         '(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?'
 
-      PATTERN = T.let(/\A\s*(#{quoted})?\s*(#{version_pattern})\s*\z/, Regexp)
+      PATTERN = /\A\s*(#{quoted})?\s*(#{version_pattern})\s*\z/
 
       # Parse each boundary into a Swift::Version so prerelease boundaries use SemVer section 11 ordering.
       sig { override.params(obj: T.any(Gem::Version, String)).returns([String, Gem::Version]) }

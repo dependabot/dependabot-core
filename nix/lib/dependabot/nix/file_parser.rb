@@ -17,7 +17,7 @@ module Dependabot
       extend T::Sig
 
       # Updatable source types: git-backed sources plus NixOS channel tarballs.
-      SUPPORTED_SOURCE_TYPES = T.let(%w(github gitlab sourcehut git tarball).freeze, T::Array[String])
+      SUPPORTED_SOURCE_TYPES = %w(github gitlab sourcehut git tarball).freeze
 
       SUPPORTED_LOCK_VERSION = 7
 
