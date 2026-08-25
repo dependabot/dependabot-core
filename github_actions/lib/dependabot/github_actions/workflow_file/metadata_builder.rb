@@ -38,6 +38,15 @@ module Dependabot
           metadata
         end
 
+        sig { params(sequence: Psych::Nodes::Sequence).returns(T::Boolean) }
+        def declarations_share_comment_line?(sequence)
+          nodes = workflow_file.declarations_in_sequence(sequence).filter_map do |item|
+            item.mapping_node || item.value_node
+          end
+          lines = nodes.map { |node| workflow_file.node_end_line(node) }
+          lines.length != lines.uniq.length
+        end
+
         private
 
         sig { returns(WorkflowFile) }

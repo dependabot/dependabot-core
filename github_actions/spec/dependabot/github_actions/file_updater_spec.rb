@@ -1191,6 +1191,120 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         end
       end
 
+      context "with actions sharing a line in a multiline flow sequence" do
+        let(:workflow_file_body) { fixture("workflow_files", "workflow_multiline_flow_collision.yml") }
+        let(:checkout_sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:setup_node_sha) { "5273d0df9c603edc4284ac8402cf650b4f1f6686" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/checkout", "v2.1.0", ["jobs", "inline", "steps", 0, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/checkout", checkout_sha, ["jobs", "inline", "steps", 0, "uses"])
+            ]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?) do |ref|
+            [checkout_sha, setup_node_sha].include?(ref)
+          end
+          allow(git_checker).to receive(:head_commit_for_local_branch).and_return(nil)
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha) do |ref|
+            ref == checkout_sha ? "v2.2.0" : "v3.1.0"
+          end
+        end
+
+        it "expands the sequence and preserves comments across successive updates" do
+          first_content = T.must(updated_workflow_file.content)
+
+          expect(first_content).to include(
+            "steps: [\n" \
+            "      { uses: actions/checkout@#{checkout_sha} }, # v2.2.0\n" \
+            "      { uses: actions/setup-node@v3.0.0 },\n" \
+            "      { run: echo done }\n" \
+            "    ]"
+          )
+
+          second_file = Dependabot::DependencyFile.new(
+            content: first_content,
+            name: ".github/workflows/workflow.yml"
+          )
+          second_dependency = Dependabot::Dependency.new(
+            name: "actions/setup-node",
+            version: "3.1.0",
+            previous_version: "3.0.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/setup-node", "v3.0.0", ["jobs", "inline", "steps", 1, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/setup-node", setup_node_sha, ["jobs", "inline", "steps", 1, "uses"])
+            ]
+          )
+          second_updater = described_class.new(
+            dependency_files: [second_file],
+            dependencies: [second_dependency],
+            credentials: credentials
+          )
+          second_content = T.must(second_updater.updated_dependency_files.first.content)
+
+          expect(second_content).to include(
+            "{ uses: actions/checkout@#{checkout_sha} }, # v2.2.0"
+          )
+          expect(second_content).to include(
+            "{ uses: actions/setup-node@#{setup_node_sha} }, # v3.1.0"
+          )
+          expect { YAML.safe_load(second_content, aliases: true) }.not_to raise_error
+        end
+      end
+
+      context "with actions on separate lines in a multiline flow sequence" do
+        let(:workflow_file_body) { fixture("workflow_files", "workflow_multiline_flow_separate.yml") }
+        let(:sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/checkout", "v2.1.0", ["jobs", "inline", "steps", 0, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/checkout", sha, ["jobs", "inline", "steps", 0, "uses"])
+            ]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?) { |ref| ref == sha }
+          allow(git_checker).to receive(:head_commit_for_local_branch).and_return(nil)
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(sha).and_return("v2.2.0")
+        end
+
+        it "keeps the existing multiline flow layout" do
+          content = T.must(updated_workflow_file.content)
+
+          expect(content).to include(
+            "steps: [\n" \
+            "      { uses: actions/checkout@#{sha} }, # v2.2.0\n" \
+            "      { uses: actions/setup-node@v3.0.0 }\n" \
+            "    ]"
+          )
+          expect { YAML.safe_load(content, aliases: true) }.not_to raise_error
+        end
+      end
+
       context "with a reused anchor name" do
         let(:workflow_file_body) { fixture("workflow_files", "workflow_reused_anchors.yml") }
         let(:sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }

@@ -59,6 +59,11 @@ module Dependabot
         uses_declarations.select { |declaration| declaration.steps_sequence.equal?(sequence) }
       end
 
+      sig { params(sequence: Psych::Nodes::Sequence).returns(T::Boolean) }
+      def declarations_share_comment_line?(sequence)
+        MetadataBuilder.new(self).declarations_share_comment_line?(sequence)
+      end
+
       sig { params(declaration: UsesDeclaration).returns(T::Boolean) }
       def source_metadata_required?(declaration)
         return true if declaration.value_node.is_a?(Psych::Nodes::Alias)

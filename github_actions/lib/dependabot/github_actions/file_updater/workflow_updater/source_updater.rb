@@ -88,8 +88,7 @@ module Dependabot
           sig { params(sequence: Psych::Nodes::Sequence, update: SourceUpdate).returns(T::Boolean) }
           def expand_flow_sequence?(sequence, update)
             workflow_file.sequence_node_style(sequence) == Psych::Nodes::Sequence::FLOW &&
-              workflow_file.node_start_line(sequence) == workflow_file.node_end_line(sequence) &&
-              workflow_file.declarations_in_sequence(sequence).length > 1 &&
+              workflow_file.declarations_share_comment_line?(sequence) &&
               commenter.sha?(update.new_ref)
           end
 
@@ -324,7 +323,11 @@ module Dependabot
 
           sig { params(update: SourceUpdate).returns([Integer, Integer]) }
           def comment_anchor(update)
-            declaration = update.declaration
+            declaration_comment_anchor(update.declaration)
+          end
+
+          sig { params(declaration: WorkflowFile::UsesDeclaration).returns([Integer, Integer]) }
+          def declaration_comment_anchor(declaration)
             source_node = T.must(declaration.source_node)
             return block_scalar_comment_anchor(source_node) if block_scalar?(source_node)
 
