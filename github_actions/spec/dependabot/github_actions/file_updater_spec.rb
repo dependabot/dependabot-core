@@ -100,6 +100,17 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
 
       its(:content) { is_expected.to include "actions/checkout@master\n" }
 
+      context "with multiple matching declarations on one line" do
+        let(:workflow_file_body) { fixture("workflow_files", "multiple_uses_same_line.yml") }
+
+        it "updates every uses value without changing unrelated matching text" do
+          expect(updated_workflow_file.content).to include(
+            "steps: [{ uses: actions/setup-node@v1.1.0 }, " \
+            "{ uses: actions/setup-node@v1.1.0, with: { source: actions/setup-node@master } }]"
+          )
+        end
+      end
+
       context "with a path" do
         let(:workflow_file_body) do
           fixture("workflow_files", "workflow_monorepo.yml")
@@ -885,6 +896,35 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
           )
           expect(updated_workflow_file.content).to include(
             '- { name: Checkout, uses: "actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713" } # v2.2.0'
+          )
+        end
+
+        it "ignores hashes inside quoted flow-style values when detecting comments" do
+          expect(updated_workflow_file.content).to include(
+            '- { uses: actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713, name: "Checkout #1" } # v2.2.0'
+          )
+          expect(updated_workflow_file.content).to include(
+            "- { uses: actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713, " \
+            'name: "Checkout \"#1\"" } # v2.2.0'
+          )
+          expect(updated_workflow_file.content).to include(
+            "- { uses: actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713, " \
+            "name: 'Checkout #1' } # v2.2.0"
+          )
+        end
+
+        it "only rewrites the matched declaration in a flow-style mapping" do
+          expect(updated_workflow_file.content).to include(
+            "- { uses: actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713, " \
+            "with: { source: actions/checkout@v2.1.0 } } # v2.2.0"
+          )
+        end
+
+        it "updates every uses declaration on a flow-style line" do
+          expect(updated_workflow_file.content).to include(
+            "steps: [{ uses: actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713 }, " \
+            "{ uses: actions/checkout@aabbfeb2ce60b5bd82389903509092c4648a9713, " \
+            "with: { source: actions/checkout@v2.1.0 } }] # v2.2.0"
           )
         end
 
