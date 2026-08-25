@@ -93,7 +93,7 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
       end
 
       context "when the index returns PEP 691 JSON" do
-        let(:api_version) { "1.0" }
+        let(:api_version) { "1.1" }
         let(:registry_request_url) { registry_url }
 
         before do
@@ -110,7 +110,8 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
                     "filename" => "requests-2.32.3-py3-none-any.whl",
                     "url" => "../files/requests-2.32.3-py3-none-any.whl",
                     "requires-python" => ">=3.8",
-                    "yanked" => false
+                    "yanked" => false,
+                    "upload-time" => "2026-08-24T12:34:56Z"
                   }
                 ]
               )
@@ -121,6 +122,7 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
           result = fetch
 
           expect(result.releases.map { |release| release.version.to_s }).to eq(["2.32.3"])
+          expect(result.releases.first.released_at).to eq(Time.utc(2026, 8, 24, 12, 34, 56))
           expect(result.releases.first.url)
             .to eq("https://registry.example.com/simple/files/requests-2.32.3-py3-none-any.whl")
           expect(a_request(:get, registry_url)).to have_been_made.once
@@ -144,6 +146,19 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
             expect { fetch }
               .to raise_error(Dependabot::DependencyFileNotResolvable, "Unsupported PEP 691 API version: 2.0")
           end
+        end
+      end
+
+      context "when the request times out" do
+        before do
+          stub_request(:get, registry_url).to_raise(Excon::Error::Timeout)
+        end
+
+        it "preserves the error without retrying as HTML" do
+          expect { fetch }.to raise_error(Dependabot::PrivateSourceTimedOut)
+          expect(
+            a_request(:get, registry_url).with(headers: { "Accept" => "text/html" })
+          ).not_to have_been_made
         end
       end
 

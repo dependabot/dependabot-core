@@ -94,17 +94,19 @@ module Dependabot
         def fetch_from_registry(index_url)
           return fetch_from_simple_registry(index_url) unless MAIN_PYPI_INDEXES.include?(index_url)
 
-          metadata = fetch_from_json_registry(index_url)
+          begin
+            metadata = fetch_from_json_registry(index_url)
 
-          return metadata if metadata&.any?
+            return metadata if metadata&.any?
 
-          Dependabot.logger.warn("No valid versions found via JSON API. Falling back to HTML.")
-          fetch_from_html_registry(index_url)
-        rescue Dependabot::DependencyFileNotResolvable
-          raise
-        rescue StandardError => e
-          Dependabot.logger.warn("Unexpected error in JSON fetch: #{e.message}. Falling back to HTML.")
-          fetch_from_html_registry(index_url)
+            Dependabot.logger.warn("No valid versions found via JSON API. Falling back to HTML.")
+            fetch_from_html_registry(index_url)
+          rescue Dependabot::DependencyFileNotResolvable
+            raise
+          rescue StandardError => e
+            Dependabot.logger.warn("Unexpected error in JSON fetch: #{e.message}. Falling back to HTML.")
+            fetch_from_html_registry(index_url)
+          end
         end
 
         sig { params(index_url: String).returns(T::Array[Dependabot::Package::PackageRelease]) }

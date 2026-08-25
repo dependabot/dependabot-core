@@ -12,11 +12,19 @@ require "dependabot/python/update_checker/latest_version_finder"
 RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
   before do
     stub_request(:get, pypi_url)
-      .with(headers: { "Accept" => "text/html" })
+      .with(headers: { "Accept" => registry_accept })
       .to_return(status: 200, body: pypi_response)
   end
 
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
+  let(:registry_accept) do
+    if pypi_url.start_with?("https://pypi.org/", "https://pypi.python.org/")
+      "text/html"
+    else
+      "application/vnd.pypi.simple.v1+json, " \
+        "application/vnd.pypi.simple.v1+html;q=0.2, text/html;q=0.01"
+    end
+  end
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:finder) do
     described_class.new(

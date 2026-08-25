@@ -42,6 +42,7 @@ module Dependabot
               "requires_python" => file["requires-python"],
               "yanked" => !!yanked,
               "yanked_reason" => yanked.is_a?(String) ? yanked : nil,
+              "upload_time" => file["upload-time"],
               "url" => resolve_url(file["url"])
             }
             releases[version] ||= []
