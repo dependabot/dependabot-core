@@ -1,4 +1,5 @@
 # Runs all ecosystems cached and concurrently.
+# This no-op change verifies regenerated smoke tests in CI.
 name: Smoke
 
 on: # yamllint disable-line rule:truthy
