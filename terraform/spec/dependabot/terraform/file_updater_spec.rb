@@ -405,6 +405,53 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         end
       end
 
+      context "with string-keyed source details" do
+        let(:project_name) { "git_tags_012" }
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "origin_label",
+              version: "0.4.1",
+              previous_version: "0.3.7",
+              requirements: [{
+                requirement: nil,
+                groups: [],
+                file: "main.tf",
+                source: {
+                  "type" => "git",
+                  "url" => "https://github.com/cloudposse/terraform-null-label.git",
+                  "branch" => nil,
+                  "ref" => "tags/0.4.1"
+                }
+              }],
+              previous_requirements: [{
+                requirement: nil,
+                groups: [],
+                file: "main.tf",
+                source: {
+                  "type" => "git",
+                  "url" => "https://github.com/cloudposse/terraform-null-label.git",
+                  "branch" => nil,
+                  "ref" => "tags/0.3.7"
+                }
+              }],
+              package_manager: "terraform"
+            )
+          ]
+        end
+
+        it "updates the requirement" do
+          updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
+
+          expect(updated_file.content).to include(
+            <<~DEP
+              module "origin_label" {
+                source     = "git::https://github.com/cloudposse/terraform-null-label.git?ref=tags/0.4.1"
+            DEP
+          )
+        end
+      end
+
       context "with an up-to-date hcl2-based git dependency" do
         let(:project_name) { "hcl2" }
 
@@ -1751,29 +1798,33 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
 
   describe "#update_registry_declaration" do
     let(:new_req) do
-      {
-        requirement: "~> 6.6.0",
-        groups: [],
-        file: "main.tf",
-        source: {
-          type: "provider",
-          registry_hostname: "registry.terraform.io",
-          module_identifier: "integrations/github"
+      Dependabot::DependencyRequirement.create(
+        {
+          requirement: "~> 6.6.0",
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "provider",
+            registry_hostname: "registry.terraform.io",
+            module_identifier: "integrations/github"
+          }
         }
-      }
+      )
     end
 
     let(:old_req) do
-      {
-        requirement: "~> 4.28.0",
-        groups: [],
-        file: "main.tf",
-        source: {
-          type: "provider",
-          registry_hostname: "registry.terraform.io",
-          module_identifier: "integrations/github"
+      Dependabot::DependencyRequirement.create(
+        {
+          requirement: "~> 4.28.0",
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "provider",
+            registry_hostname: "registry.terraform.io",
+            module_identifier: "integrations/github"
+          }
         }
-      }
+      )
     end
 
     let(:updated_content) do

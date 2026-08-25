@@ -20,24 +20,24 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         groups: [],
         file: ".github/workflows/workflow.yml",
         source: {
-          type: "git",
-          url: "https://github.com/actions/setup-node",
-          ref: "v1.1.0",
-          branch: nil
+          "type" => "git",
+          "url" => "https://github.com/actions/setup-node",
+          "ref" => "v1.1.0",
+          "branch" => nil
         },
-        metadata: { declaration_string: "actions/setup-node@master" }
+        metadata: { "declaration_string" => "actions/setup-node@master" }
       }],
       previous_requirements: [{
         requirement: nil,
         groups: [],
         file: ".github/workflows/workflow.yml",
         source: {
-          type: "git",
-          url: "https://github.com/actions/setup-node",
-          ref: "master",
-          branch: nil
+          "type" => "git",
+          "url" => "https://github.com/actions/setup-node",
+          "ref" => "master",
+          "branch" => nil
         },
-        metadata: { declaration_string: "actions/setup-node@master" }
+        metadata: { "declaration_string" => "actions/setup-node@master" }
       }],
       package_manager: "github_actions"
     )

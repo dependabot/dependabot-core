@@ -3,15 +3,17 @@
 
 require "octokit"
 require "sorbet-runtime"
+require "delegate"
 require "dependabot/credential"
 
 module Dependabot
   module Clients
-    class GithubWithRetries
+    class GithubWithRetries < SimpleDelegator
       extend T::Sig
 
       DEFAULT_OPEN_TIMEOUT_IN_SECONDS = 2
       DEFAULT_READ_TIMEOUT_IN_SECONDS = 5
+      ClientOptions = T.type_alias { T::Hash[Symbol, Object] }
 
       sig { returns(Integer) }
       def self.open_timeout_in_seconds
@@ -32,7 +34,7 @@ module Dependabot
             }
           }
         }.freeze,
-        T::Hash[Symbol, T.untyped]
+        ClientOptions
       )
 
       RETRYABLE_ERRORS = T.let(
@@ -88,30 +90,35 @@ module Dependabot
 
       sig { params(repo: String, branch: String).returns(String) }
       def fetch_commit(repo, branch)
-        response = T.unsafe(ref(repo, "heads/#{branch}"))
+        response = ref(repo, "heads/#{branch}")
 
-        raise Octokit::NotFound if response.is_a?(Array)
+        Kernel.raise Octokit::NotFound if response.is_a?(Array)
 
-        response.object.sha
+        object = T.cast(response[:object], Sawyer::Resource)
+        T.cast(object[:sha], String)
       end
 
       sig { params(repo: String).returns(String) }
       def fetch_default_branch(repo)
-        T.unsafe(repository(repo)).default_branch
+        T.cast(repository(repo)[:default_branch], String)
+      end
+
+      sig { params(repo: String, path: String, ref: String).returns(String) }
+      def raw_contents(repo, path:, ref:)
+        T.cast(
+          contents(repo, path: path, ref: ref, accept: "application/vnd.github.v3.raw"),
+          String
+        )
       end
 
       ############
       # Proxying #
       ############
 
-      sig { params(max_retries: T.nilable(Integer), args: T.untyped).void }
+      sig { params(max_retries: T.nilable(Integer), args: Object).void }
       def initialize(max_retries: 3, **args)
         args = DEFAULT_CLIENT_ARGS.merge(args)
-
-        access_tokens = args.delete(:access_tokens) || []
-        access_tokens << args[:access_token] if args[:access_token]
-        access_tokens << nil if access_tokens.empty?
-        access_tokens.uniq!
+        access_tokens = extract_access_tokens(args)
 
         # Explicitly set the proxy if one is set in the environment
         # as Faraday's find_proxy is very slow.
@@ -135,30 +142,29 @@ module Dependabot
           end,
           T::Array[Octokit::Client]
         )
+        super(T.must(@clients.last))
       end
 
       # TODO: Create all the methods that are called on the client
       sig do
         params(
           method_name: T.any(Symbol, String),
-          args: T.untyped,
-          block: T.nilable(T.proc.returns(T.untyped))
+          args: Object,
+          block: T.nilable(Proc)
         )
-          .returns(T.untyped)
+          .returns(T.anything)
       end
       def method_missing(method_name, *args, &block)
+        original_args = args
         untried_clients = @clients.dup
         client = untried_clients.pop
 
         begin
-          if client.respond_to?(method_name)
-            mutatable_args = args.map(&:dup)
-            T.unsafe(client).public_send(method_name, *mutatable_args, &block)
-          else
-            super
-          end
+          __setobj__(T.must(client))
+          args = original_args.map(&:dup)
+          super
         rescue Octokit::NotFound, Octokit::Unauthorized, Octokit::Forbidden
-          raise unless (client = untried_clients.pop)
+          Kernel.raise unless (client = untried_clients.pop)
 
           retry
         end
@@ -172,7 +178,41 @@ module Dependabot
           .returns(T::Boolean)
       end
       def respond_to_missing?(method_name, include_private = false)
-        @clients.first.respond_to?(method_name) || super
+        @clients.first.respond_to?(method_name, include_private)
+      end
+
+      private
+
+      sig { params(args: ClientOptions).returns(T::Array[T.nilable(String)]) }
+      def extract_access_tokens(args)
+        access_tokens = T.let([], T::Array[T.nilable(String)])
+        case (raw_access_tokens = args.delete(:access_tokens))
+        when nil
+          nil
+        when Array
+          raw_access_tokens.each do |raw_token|
+            token = T.cast(raw_token, Object)
+            case token
+            when nil, String then access_tokens << token
+            else Kernel.raise TypeError, "access_tokens must contain only strings or nil"
+            end
+          end
+        else
+          Kernel.raise TypeError, "access_tokens must be an array or nil"
+        end
+
+        access_token = args[:access_token]
+        case access_token
+        when nil
+          nil
+        when String
+          access_tokens << access_token
+        else
+          Kernel.raise TypeError, "access_token must be a string or nil"
+        end
+
+        access_tokens << nil if access_tokens.empty?
+        access_tokens.uniq
       end
     end
   end

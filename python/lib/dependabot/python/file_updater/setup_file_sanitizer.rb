@@ -61,10 +61,9 @@ module Dependabot
           @install_requires_array ||=
             parsed_setup_file.dependencies.filter_map do |dep|
               first = T.must(dep.requirements.first)
-              next unless first[:groups]
-                          .include?("install_requires")
+              next unless first.groups&.include?("install_requires")
 
-              name_with_extras(dep) + first[:requirement].to_s
+              name_with_extras(dep) + first.requirement.to_s
             end
         end
 
@@ -73,10 +72,9 @@ module Dependabot
           @setup_requires_array ||=
             parsed_setup_file.dependencies.filter_map do |dep|
               first = T.must(dep.requirements.first)
-              next unless first[:groups]
-                          .include?("setup_requires")
+              next unless first.groups&.include?("setup_requires")
 
-              name_with_extras(dep) + first[:requirement].to_s
+              name_with_extras(dep) + first.requirement.to_s
             end
         end
 
@@ -87,12 +85,13 @@ module Dependabot
               hash = {}
               parsed_setup_file.dependencies.each do |dep|
                 first = T.must(dep.requirements.first)
-                first[:groups].each do |group|
+                T.must(first.groups).each do |group|
                   next unless group.start_with?("extras_require:")
 
-                  hash[group.split(":").last] ||= []
-                  hash[group.split(":").last] <<
-                    (name_with_extras(dep) + first[:requirement].to_s)
+                  group_name = group.to_s
+                  hash[group_name.split(":").last] ||= []
+                  hash[group_name.split(":").last] <<
+                    (name_with_extras(dep) + first.requirement.to_s)
                 end
               end
 

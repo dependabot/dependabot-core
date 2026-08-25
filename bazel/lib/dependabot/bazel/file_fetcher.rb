@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/file_fetchers"
@@ -73,7 +73,7 @@ module Dependabot
         files = T.let([], T::Array[DependencyFile])
 
         module_file_items.each do |item|
-          file = fetch_file_if_present(T.must(item.name))
+          file = fetch_file_if_present(item.name)
           files << file if file
         end
 

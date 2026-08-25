@@ -147,12 +147,12 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               groups: [],
               file: "main.tf",
               source: {
-                type: "oci",
-                artifact_identifier: "example.com/repository-name",
-                subdirectory: nil,
-                tag: "v2.0.0",
-                digest: nil,
-                version: "v2.0.0"
+                "type" => "oci",
+                "artifact_identifier" => "example.com/repository-name",
+                "subdirectory" => nil,
+                "tag" => "v2.0.0",
+                "digest" => nil,
+                "version" => "v2.0.0"
               }
             }],
             previous_requirements: [{
@@ -160,12 +160,12 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               groups: [],
               file: "main.tf",
               source: {
-                type: "oci",
-                artifact_identifier: "example.com/repository-name",
-                subdirectory: nil,
-                tag: "v1.0.0",
-                digest: nil,
-                version: "v1.0.0"
+                "type" => "oci",
+                "artifact_identifier" => "example.com/repository-name",
+                "subdirectory" => nil,
+                "tag" => "v1.0.0",
+                "digest" => nil,
+                "version" => "v1.0.0"
               }
             }],
             package_manager: "opentofu"
@@ -462,6 +462,53 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
             <<~DEP
               module "duplicate_label" {
                 source     = "git::https://github.com/cloudposse/terraform-null-label.git?ref=tags/0.3.7"
+            DEP
+          )
+        end
+      end
+
+      context "with string-keyed source details" do
+        let(:project_name) { "git_tags_012" }
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "origin_label",
+              version: "0.4.1",
+              previous_version: "0.3.7",
+              requirements: [{
+                requirement: nil,
+                groups: [],
+                file: "main.tf",
+                source: {
+                  "type" => "git",
+                  "url" => "https://github.com/cloudposse/terraform-null-label.git",
+                  "branch" => nil,
+                  "ref" => "tags/0.4.1"
+                }
+              }],
+              previous_requirements: [{
+                requirement: nil,
+                groups: [],
+                file: "main.tf",
+                source: {
+                  "type" => "git",
+                  "url" => "https://github.com/cloudposse/terraform-null-label.git",
+                  "branch" => nil,
+                  "ref" => "tags/0.3.7"
+                }
+              }],
+              package_manager: "opentofu"
+            )
+          ]
+        end
+
+        it "updates the requirement" do
+          updated_file = updated_dependency_files.find { |file| file.name == "main.tf" }
+
+          expect(updated_file.content).to include(
+            <<~DEP
+              module "origin_label" {
+                source     = "git::https://github.com/cloudposse/terraform-null-label.git?ref=tags/0.4.1"
             DEP
           )
         end
@@ -779,10 +826,10 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               groups: [],
               file: "main.tf",
               source: {
-                type: "registry",
-                registry_hostname: "registry.opentofu.org",
-                module_identifier: "hashicorp/consul/aws",
-                local_variable: "module_version"
+                "type" => "registry",
+                "registry_hostname" => "registry.opentofu.org",
+                "module_identifier" => "hashicorp/consul/aws",
+                "local_variable" => "module_version"
               }
             }],
             previous_requirements: [{
@@ -790,10 +837,10 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
               groups: [],
               file: "main.tf",
               source: {
-                type: "registry",
-                registry_hostname: "registry.opentofu.org",
-                module_identifier: "hashicorp/consul/aws",
-                local_variable: "module_version"
+                "type" => "registry",
+                "registry_hostname" => "registry.opentofu.org",
+                "module_identifier" => "hashicorp/consul/aws",
+                "local_variable" => "module_version"
               }
             }],
             package_manager: "opentofu"
@@ -2116,29 +2163,33 @@ RSpec.describe Dependabot::Opentofu::FileUpdater do
 
   describe "#update_registry_declaration" do
     let(:new_req) do
-      {
-        requirement: "~> 6.6.0",
-        groups: [],
-        file: "main.tf",
-        source: {
-          type: "provider",
-          registry_hostname: "registry.opentofu.org",
-          module_identifier: "integrations/github"
+      Dependabot::DependencyRequirement.create(
+        {
+          requirement: "~> 6.6.0",
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "provider",
+            registry_hostname: "registry.opentofu.org",
+            module_identifier: "integrations/github"
+          }
         }
-      }
+      )
     end
 
     let(:old_req) do
-      {
-        requirement: "~> 4.28.0",
-        groups: [],
-        file: "main.tf",
-        source: {
-          type: "provider",
-          registry_hostname: "registry.opentofu.org",
-          module_identifier: "integrations/github"
+      Dependabot::DependencyRequirement.create(
+        {
+          requirement: "~> 4.28.0",
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "provider",
+            registry_hostname: "registry.opentofu.org",
+            module_identifier: "integrations/github"
+          }
         }
-      }
+      )
     end
 
     let(:updated_content) do

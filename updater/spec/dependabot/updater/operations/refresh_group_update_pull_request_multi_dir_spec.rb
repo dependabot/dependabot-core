@@ -95,7 +95,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
             "allowed-updates" => [{ "dependency-type" => "direct", "update-type" => "all" }],
             "credentials-metadata" => [{ "type" => "git_source", "host" => "github.com" }],
             "security-advisories" => [],
-            "max-updater-run-time" => 2700,
             "vendor-dependencies" => false,
             "experiments" => { "grouped-updates-prototype" => true },
             "reject-external-code" => false,
@@ -203,7 +202,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       Dependabot::Utils.register_requirement_class("terraform", Dependabot::Requirement)
 
       Dependabot::Experiments.reset!
-      Dependabot::Experiments.register(:allow_refresh_group_with_all_dependencies, true)
 
       allow(dependency_snapshot).to receive(:ecosystem).and_return(ecosystem)
       allow(job).to receive(:package_manager).and_return("terraform")
