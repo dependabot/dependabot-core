@@ -98,14 +98,14 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
             .with(headers: { "Accept" => simple_api_accept })
             .to_return(
               status: 200,
-              headers: { "Content-Type" => "application/vnd.pypi.simple.v1+json" },
+              headers: { "Content-Type" => "Application/Vnd.Pypi.Simple.V1+Json ; charset=utf-8" },
               body: JSON.dump(
                 "meta" => { "api-version" => "1.0" },
                 "name" => dependency_name,
                 "files" => [
                   {
                     "filename" => "requests-2.32.3-py3-none-any.whl",
-                    "url" => "https://registry.example.com/files/requests-2.32.3-py3-none-any.whl",
+                    "url" => "../files/requests-2.32.3-py3-none-any.whl",
                     "requires-python" => ">=3.8",
                     "yanked" => false
                   }
@@ -118,6 +118,8 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
           result = fetch
 
           expect(result.releases.map { |release| release.version.to_s }).to eq(["2.32.3"])
+          expect(result.releases.first.url)
+            .to eq("https://registry.example.com/simple/files/requests-2.32.3-py3-none-any.whl")
           expect(a_request(:get, registry_url)).to have_been_made.once
           expect(a_request(:get, json_url)).not_to have_been_made
         end

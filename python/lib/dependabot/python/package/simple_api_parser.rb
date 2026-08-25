@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "json"
+require "uri"
 require "sorbet-runtime"
 require "dependabot/python/name_normaliser"
 
@@ -13,9 +14,10 @@ module Dependabot
 
         ReleaseDetail = T.type_alias { T::Hash[String, T.nilable(T.any(String, T::Boolean))] }
 
-        sig { params(dependency: Dependabot::Dependency).void }
-        def initialize(dependency:)
+        sig { params(dependency: Dependabot::Dependency, project_url: String).void }
+        def initialize(dependency:, project_url:)
           @dependency = dependency
+          @project_url = project_url
         end
 
         sig do
@@ -36,7 +38,7 @@ module Dependabot
               "requires_python" => file["requires-python"],
               "yanked" => !!yanked,
               "yanked_reason" => yanked.is_a?(String) ? yanked : nil,
-              "url" => file["url"]
+              "url" => resolve_url(file["url"])
             }
             releases[version] ||= []
             releases[version] << details
@@ -47,6 +49,14 @@ module Dependabot
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
+        sig { returns(String) }
+        attr_reader :project_url
+
+        sig { params(url: T.nilable(String)).returns(T.nilable(String)) }
+        def resolve_url(url)
+          URI.join(project_url, url).to_s if url
+        end
 
         sig { returns(Regexp) }
         def name_regex

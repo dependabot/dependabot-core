@@ -110,11 +110,15 @@ module Dependabot
           Dependabot.logger.info(
             "Fetching release information from simple registry at #{sanitized_url(index_url)} for #{dependency.name}"
           )
+          project_url = index_url + normalised_name + "/"
           response = registry_response_for_dependency(index_url, accept: simple_api_accept)
           check_authentication_response(response, index_url)
 
           version_releases = if simple_json_response?(response)
-                               SimpleApiParser.new(dependency: dependency).parse(response.body)
+                               SimpleApiParser.new(
+                                 dependency: dependency,
+                                 project_url: project_url
+                               ).parse(response.body)
                              else
                                extract_release_details_json_from_html(response.body)
                              end
@@ -238,7 +242,7 @@ module Dependabot
 
         sig { params(response: Excon::Response).returns(T::Boolean) }
         def simple_json_response?(response)
-          response.headers["Content-Type"].to_s.split(";").first == APPLICATION_PYPI_SIMPLE_JSON
+          response.headers["Content-Type"].to_s.split(";", 2).first.to_s.strip.downcase == APPLICATION_PYPI_SIMPLE_JSON
         end
 
         sig { returns(String) }
