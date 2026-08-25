@@ -93,14 +93,17 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
       end
 
       context "when the index returns PEP 691 JSON" do
+        let(:api_version) { "1.0" }
+        let(:registry_request_url) { registry_url }
+
         before do
-          stub_request(:get, registry_url)
+          stub_request(:get, registry_request_url)
             .with(headers: { "Accept" => simple_api_accept })
             .to_return(
               status: 200,
               headers: { "Content-Type" => "Application/Vnd.Pypi.Simple.V1+Json ; charset=utf-8" },
               body: JSON.dump(
-                "meta" => { "api-version" => "1.0" },
+                "meta" => { "api-version" => api_version },
                 "name" => dependency_name,
                 "files" => [
                   {
@@ -122,6 +125,25 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
             .to eq("https://registry.example.com/simple/files/requests-2.32.3-py3-none-any.whl")
           expect(a_request(:get, registry_url)).to have_been_made.once
           expect(a_request(:get, json_url)).not_to have_been_made
+        end
+
+        context "with an authenticated index" do
+          let(:registry_base) { "https://user:pass@registry.example.com/simple" }
+          let(:registry_request_url) { "https://registry.example.com/simple/#{dependency_name}/" }
+
+          it "does not expose credentials in the release URL" do
+            expect(fetch.releases.first.url)
+              .to eq("https://registry.example.com/simple/files/requests-2.32.3-py3-none-any.whl")
+          end
+        end
+
+        context "with an unsupported API major version" do
+          let(:api_version) { "2.0" }
+
+          it "rejects the response" do
+            expect { fetch }
+              .to raise_error(Dependabot::DependencyFileNotResolvable, "Unsupported PEP 691 API version: 2.0")
+          end
         end
       end
 

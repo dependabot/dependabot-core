@@ -4,6 +4,7 @@
 require "json"
 require "uri"
 require "sorbet-runtime"
+require "dependabot/errors"
 require "dependabot/python/name_normaliser"
 
 module Dependabot
@@ -25,7 +26,10 @@ module Dependabot
             .returns(T::Hash[String, T::Array[ReleaseDetail]])
         end
         def parse(json_body)
-          JSON.parse(json_body).fetch("files", []).each_with_object({}) do |file, releases|
+          data = JSON.parse(json_body)
+          validate_api_version!(data.dig("meta", "api-version").to_s)
+
+          data.fetch("files", []).each_with_object({}) do |file, releases|
             filename = file["filename"]
             next unless filename&.match?(name_regex)
 
@@ -55,7 +59,19 @@ module Dependabot
 
         sig { params(url: T.nilable(String)).returns(T.nilable(String)) }
         def resolve_url(url)
-          URI.join(project_url, url).to_s if url
+          return unless url
+
+          resolved_url = URI.join(project_url, url)
+          resolved_url.user = nil
+          resolved_url.password = nil
+          resolved_url.to_s
+        end
+
+        sig { params(api_version: String).void }
+        def validate_api_version!(api_version)
+          return unless api_version.split(".").first.to_i > 1
+
+          raise Dependabot::DependencyFileNotResolvable, "Unsupported PEP 691 API version: #{api_version}"
         end
 
         sig { returns(Regexp) }

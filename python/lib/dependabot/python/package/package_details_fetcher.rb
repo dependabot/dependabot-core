@@ -100,6 +100,8 @@ module Dependabot
 
           Dependabot.logger.warn("No valid versions found via JSON API. Falling back to HTML.")
           fetch_from_html_registry(index_url)
+        rescue Dependabot::DependencyFileNotResolvable
+          raise
         rescue StandardError => e
           Dependabot.logger.warn("Unexpected error in JSON fetch: #{e.message}. Falling back to HTML.")
           fetch_from_html_registry(index_url)
