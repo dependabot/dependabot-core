@@ -17,8 +17,15 @@ module Dependabot
           const :new_ref, String
         end
 
+        class ContentEdit < T::Struct
+          const :start_offset, Integer
+          const :end_offset, Integer
+          const :replacement, String
+        end
+
         require_relative "workflow_updater/version_commenter"
         require_relative "workflow_updater/yaml_comment_finder"
+        require_relative "workflow_updater/flow_sequence_comments"
         require_relative "workflow_updater/source_updater"
 
         sig do

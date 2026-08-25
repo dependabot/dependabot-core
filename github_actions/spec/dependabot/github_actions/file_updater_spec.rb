@@ -1305,6 +1305,130 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         end
       end
 
+      context "with comments between flow sequence items" do
+        let(:workflow_file_body) { fixture("workflow_files", "workflow_flow_trivia.yml") }
+        let(:sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:setup_node_sha) { "5273d0df9c603edc4284ac8402cf650b4f1f6686" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/checkout", "v2.1.0", ["jobs", "inline", "steps", 0, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/checkout", sha, ["jobs", "inline", "steps", 0, "uses"])
+            ]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?) do |ref|
+            [sha, setup_node_sha].include?(ref)
+          end
+          allow(git_checker).to receive(:head_commit_for_local_branch).and_return(nil)
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha) do |ref|
+            ref == sha ? "v2.2.0" : "v3.1.0"
+          end
+        end
+
+        it "preserves custom, standalone, and final-item comments" do
+          content = T.must(updated_workflow_file.content)
+
+          expect(content).to include(
+            "steps: [\n" \
+            "      { uses: actions/checkout@#{sha} }, # v2.2.0\n" \
+            "      { uses: actions/setup-node@v3.0.0 }, # keep this note\n" \
+            "      # keep this standalone note\n" \
+            "      { run: echo done } # keep this final note\n" \
+            "    ]"
+          )
+          expect { YAML.safe_load(content, aliases: true) }.not_to raise_error
+
+          second_file = Dependabot::DependencyFile.new(
+            content: content,
+            name: ".github/workflows/workflow.yml"
+          )
+          second_dependency = Dependabot::Dependency.new(
+            name: "actions/setup-node",
+            version: "3.1.0",
+            previous_version: "3.0.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/setup-node", "v3.0.0", ["jobs", "inline", "steps", 1, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/setup-node", setup_node_sha, ["jobs", "inline", "steps", 1, "uses"])
+            ]
+          )
+          second_updater = described_class.new(
+            dependency_files: [second_file],
+            dependencies: [second_dependency],
+            credentials: credentials
+          )
+          second_content = T.must(second_updater.updated_dependency_files.first.content)
+
+          expect(second_content).to include(
+            "{ uses: actions/setup-node@#{setup_node_sha} }, # keep this note"
+          )
+          expect(second_content).not_to include("# v3.1.0")
+        end
+      end
+
+      context "with an existing version comment between flow sequence items" do
+        let(:workflow_file_body) { fixture("workflow_files", "workflow_flow_version_comment.yml") }
+        let(:sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/checkout",
+            version: "2.2.0",
+            previous_version: "2.1.0",
+            package_manager: "github_actions",
+            previous_requirements: [
+              flow_requirement("actions/checkout", "v2.1.0", ["jobs", "inline", "steps", 0, "uses"]),
+              flow_requirement("actions/checkout", "v2.1.0", ["jobs", "inline", "steps", 1, "uses"])
+            ],
+            requirements: [
+              flow_requirement("actions/checkout", sha, ["jobs", "inline", "steps", 0, "uses"]),
+              flow_requirement("actions/checkout", sha, ["jobs", "inline", "steps", 1, "uses"])
+            ]
+          )
+        end
+        let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+        before do
+          allow(Dependabot::GitCommitChecker).to receive(:new).and_return(git_checker)
+          allow(git_checker).to receive(:ref_looks_like_commit_sha?) { |ref| ref == sha }
+          allow(git_checker).to receive(:head_commit_for_local_branch).and_return(nil)
+          allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(sha).and_return("v2.2.0")
+        end
+
+        it "updates the existing comment without adding a duplicate" do
+          content = T.must(updated_workflow_file.content)
+
+          expect(content.scan("# v2.2.0").length).to eq(2)
+          expect(content).not_to include("# v2.1.0")
+          expect { YAML.safe_load(content, aliases: true) }.not_to raise_error
+        end
+
+        context "when the new SHA has no version tag" do
+          before do
+            allow(git_checker).to receive(:most_specific_version_tag_for_sha).with(sha).and_return(nil)
+          end
+
+          it "removes the stale version comment" do
+            content = T.must(updated_workflow_file.content)
+
+            expect(content).not_to include("# v2.1.0")
+            expect(content).not_to include("# v2.2.0")
+          end
+        end
+      end
+
       context "with a reused anchor name" do
         let(:workflow_file_body) { fixture("workflow_files", "workflow_reused_anchors.yml") }
         let(:sha) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }

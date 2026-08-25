@@ -10,12 +10,6 @@ module Dependabot
         class SourceUpdater
           extend T::Sig
 
-          class ContentEdit < T::Struct
-            const :start_offset, Integer
-            const :end_offset, Integer
-            const :replacement, String
-          end
-
           sig do
             params(
               workflow_file: WorkflowFile,
@@ -117,6 +111,13 @@ module Dependabot
             children = workflow_file.node_children(sequence)
             item_indent = " " * (workflow_file.node_start_column(key_node) + 2)
             closing_indent = " " * workflow_file.node_start_column(key_node)
+            sequence_comments = FlowSequenceComments.new(
+              workflow_file: workflow_file,
+              sequence: sequence,
+              commenter: commenter,
+              comment_finder: comment_finder,
+              item_indent: item_indent
+            )
 
             lines = children.each_with_index.map do |child, index|
               render_flow_sequence_child(
@@ -124,7 +125,7 @@ module Dependabot
                 index,
                 children.length,
                 grouped_updates,
-                item_indent
+                sequence_comments
               )
             end
 
@@ -135,7 +136,7 @@ module Dependabot
                 replacement: flow_sequence_replacement(sequence, lines, closing_indent)
               )
             ]
-            trailing_comment_edit = sequence_trailing_comment_edit(sequence, grouped_updates)
+            trailing_comment_edit = sequence_comments.trailing_comment_edit(grouped_updates)
             edits << trailing_comment_edit if trailing_comment_edit
             edits
           end
@@ -146,10 +147,16 @@ module Dependabot
               index: Integer,
               item_count: Integer,
               grouped_updates: T::Array[SourceUpdate],
-              item_indent: String
+              sequence_comments: FlowSequenceComments
             ).returns(String)
           end
-          def render_flow_sequence_child(child, index, item_count, grouped_updates, item_indent)
+          def render_flow_sequence_child(
+            child,
+            index,
+            item_count,
+            grouped_updates,
+            sequence_comments
+          )
             source_updates = updates.select do |update|
               source_node = T.must(update.declaration.source_node)
               node_within?(source_node, child)
@@ -161,11 +168,12 @@ module Dependabot
             child_source = workflow_file.node_source(child).strip
             child_source = replace_declarations_in_node_source(child, child_source, source_updates)
 
-            comments = comment_updates.filter_map { |update| commenter.comment_for_ref(update.new_ref) }.uniq
-            raise "Conflicting version comments for one workflow step" if comments.length > 1
-
-            comma = index == item_count - 1 ? "" : ","
-            "#{item_indent}#{child_source}#{comma}#{comments.first}"
+            sequence_comments.render_item(
+              index: index,
+              item_count: item_count,
+              source: child_source,
+              updates: comment_updates
+            )
           end
 
           sig do
@@ -187,32 +195,6 @@ module Dependabot
               "#{closing_indent}]"
             ].join(workflow_file.newline)
             prefix + expanded + suffix
-          end
-
-          sig do
-            params(
-              sequence: Psych::Nodes::Sequence,
-              grouped_updates: T::Array[SourceUpdate]
-            ).returns(T.nilable(ContentEdit))
-          end
-          def sequence_trailing_comment_edit(sequence, grouped_updates)
-            line = workflow_file.node_end_line(sequence)
-            column = workflow_file.node_end_column(sequence)
-            byte_column = workflow_file.byte_column(line, column)
-            suffix = workflow_file.line_body(line).byteslice(byte_column..) || ""
-            comment = comment_finder.find(suffix)
-            return unless comment
-            return unless grouped_updates.any? do |update|
-              commenter.recognized_comment?(comment, update.old_ref, update.new_ref)
-            end
-
-            relative_start = T.must(suffix.b.index(comment.b))
-            start_offset = workflow_file.offset(line, column) + relative_start
-            ContentEdit.new(
-              start_offset: start_offset,
-              end_offset: start_offset + comment.bytesize,
-              replacement: ""
-            )
           end
 
           sig do
