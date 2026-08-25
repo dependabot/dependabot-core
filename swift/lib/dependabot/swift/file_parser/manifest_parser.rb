@@ -12,13 +12,26 @@ module Dependabot
         extend T::Sig
         extend T::Helpers
 
-        # After the version requirement there may be additional labeled arguments (e.g. `traits: []`)
-        # that can span onto following lines before the closing `)` of `.package(`, optionally with a
-        # trailing comma after the final argument.
+        # An optional `name:` label may precede the `url:` argument.
+        NAME_ARGUMENT = /(?:name:\s+"[^"]+",\s*)?/
+
+        # The `url:` argument identifies the dependency's source.
+        URL_ARGUMENT = /url:\s+"(?<url>[^"]+)",\s*/
+
+        # The version requirement (e.g. `from: "1.0.0"`, `.upToNextMajor(from: "1.0.0")`, a range).
+        REQUIREMENT_ARGUMENT = /(?<requirement>#{NativeRequirement::REGEXP})/
+
+        # A single additional labeled argument (e.g. `traits: []`) whose value may be an array, a
+        # string, or a bare token. The leading comma is optional so the final argument matches too.
+        TRAILING_ARGUMENT = /\s*,?\s*\w+\s*:\s*(?:\[[^\]]*\]|"[^"]*"|[^\s,)]+)/
+
+        # After the requirement there may be any number of trailing arguments (which can span onto
+        # following lines) before the closing `)`, optionally followed by a trailing comma.
+        TRAILING_ARGUMENTS = /(?:#{TRAILING_ARGUMENT})*\s*,?\s*/
+
         DEPENDENCY =
           /(?<declaration>\.package\(\s*
-            (?:name:\s+"[^"]+",\s*)?url:\s+"(?<url>[^"]+)",\s*(?<requirement>#{NativeRequirement::REGEXP})
-            (?:\s*,?\s*\w+\s*:\s*(?:\[[^\]]*\]|"[^"]*"|[^\s,)]+))*\s*,?\s*
+            #{NAME_ARGUMENT}#{URL_ARGUMENT}#{REQUIREMENT_ARGUMENT}#{TRAILING_ARGUMENTS}
            \))/x
 
         sig do
