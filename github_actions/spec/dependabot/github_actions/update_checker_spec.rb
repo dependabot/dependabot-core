@@ -862,6 +862,28 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
+    context "with YAML source metadata" do
+      let(:reference) { "v1.0.1" }
+      let(:yaml_source) do
+        {
+          path: ["jobs", "build", "steps", 0, "uses"],
+          value: { kind: "scalar", start_line: 5, start_column: 14 },
+          target: { kind: "scalar", style: "plain", start_line: 5, start_column: 14 }
+        }
+      end
+
+      before do
+        dependency.requirements.first[:metadata] = {
+          declaration_string: "#{dependency_name}@#{reference}",
+          yaml_source: yaml_source
+        }
+      end
+
+      it "preserves the metadata when updating the ref" do
+        expect(updated_requirements.first.metadata&.fetch(:yaml_source)).to eq(yaml_source)
+      end
+    end
+
     context "when a root composite action is fetched with an invalid workflow lockfile" do
       let(:dependency_files) do
         [

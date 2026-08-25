@@ -11,6 +11,7 @@ require "dependabot/file_parsers/base"
 require "dependabot/github_actions/constants"
 require "dependabot/github_actions/version"
 require "dependabot/github_actions/package_manager"
+require "dependabot/github_actions/workflow_file"
 
 # For docs, see
 # https://help.github.com/en/articles/configuring-a-workflow#referencing-actions-in-your-workflow
@@ -54,62 +55,106 @@ module Dependabot
       sig { params(file: Dependabot::DependencyFile).returns(Dependabot::FileParsers::Base::DependencySet) }
       def workfile_file_dependencies(file)
         dependency_set = DependencySet.new
-
-        json = YAML.safe_load(T.must(file.content), aliases: true, permitted_classes: [Date, Time, Symbol])
-        return dependency_set if json.nil?
-
-        uses_strings = deep_fetch_uses(json.fetch("jobs", json.fetch("runs", nil))).uniq
-
-        uses_strings.each do |string|
-          # TODO: Support Docker references and path references
-          next if string.start_with?(".", "docker://")
-          next unless string.match?(GITHUB_REPO_REFERENCE)
-
-          dep = build_github_dependency(file, string)
-          git_checker = Dependabot::GitCommitChecker.new(
-            dependency: dep,
-            credentials: credentials,
-            consider_version_branches_pinned: true
-          )
-          if git_checker.git_repo_reachable?
-            next unless git_checker.pinned?
-
-            # If dep does not have an assigned (semver) version, look for a commit that references a semver tag
-            unless dep.version
-              resolved = git_checker.version_for_pinned_sha
-
-              if resolved
-                dep = Dependency.new(
-                  name: dep.name,
-                  version: resolved.to_s,
-                  requirements: dep.requirements,
-                  package_manager: dep.package_manager
-                )
-              end
-            end
-          end
+        workflow_file = WorkflowFile.new(T.must(file.content))
+        workflow_file.uses_declarations.group_by(&:value).each do |string, declarations|
+          dep = dependency_for_declarations(file, workflow_file, string, declarations)
+          next unless dep
 
           dependency_set << dep
         end
-
         dependency_set
       rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias
         raise Dependabot::DependencyFileNotParseable, file.path
       end
 
-      sig { params(file: Dependabot::DependencyFile, string: String).returns(Dependabot::Dependency) }
-      def build_github_dependency(file, string)
+      sig do
+        params(
+          file: Dependabot::DependencyFile,
+          workflow_file: WorkflowFile,
+          string: String,
+          declarations: T::Array[WorkflowFile::UsesDeclaration]
+        ).returns(T.nilable(Dependabot::Dependency))
+      end
+      def dependency_for_declarations(file, workflow_file, string, declarations)
+        # TODO: Support Docker references and path references
+        return if string.start_with?(".", "docker://")
+        return unless string.match?(GITHUB_REPO_REFERENCE)
+
+        metadata = declarations.map do |declaration|
+          declaration_metadata(workflow_file, declaration)
+        end
+        dep = build_github_dependency(file, string, metadata)
+        git_checker = Dependabot::GitCommitChecker.new(
+          dependency: dep,
+          credentials: credentials,
+          consider_version_branches_pinned: true
+        )
+        return dep unless git_checker.git_repo_reachable?
+        return unless git_checker.pinned?
+
+        dependency_with_resolved_version(dep, git_checker) || dep
+      end
+
+      sig do
+        params(
+          workflow_file: WorkflowFile,
+          declaration: WorkflowFile::UsesDeclaration
+        ).returns(T::Hash[Symbol, Object])
+      end
+      def declaration_metadata(workflow_file, declaration)
+        metadata = T.let({ declaration_string: declaration.value }, T::Hash[Symbol, Object])
+        if workflow_file.source_metadata_required?(declaration)
+          metadata[:yaml_source] = workflow_file.source_metadata(declaration)
+        end
+        metadata
+      end
+
+      sig do
+        params(
+          dep: Dependabot::Dependency,
+          git_checker: Dependabot::GitCommitChecker
+        ).returns(T.nilable(Dependabot::Dependency))
+      end
+      def dependency_with_resolved_version(dep, git_checker)
+        return if dep.version
+
+        resolved = git_checker.version_for_pinned_sha
+        return unless resolved
+
+        Dependency.new(
+          name: dep.name,
+          version: resolved.to_s,
+          requirements: dep.requirements,
+          package_manager: dep.package_manager
+        )
+      end
+
+      sig do
+        params(
+          file: Dependabot::DependencyFile,
+          string: String,
+          metadata: T::Array[T::Hash[Symbol, Object]]
+        ).returns(Dependabot::Dependency)
+      end
+      def build_github_dependency(file, string, metadata)
         unless source&.hostname == GITHUB_COM
-          dep = github_dependency(file, string, T.must(source).hostname)
+          dep = github_dependency(file, string, T.must(source).hostname, metadata)
           git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
           return dep if git_checker.git_repo_reachable?
         end
 
-        github_dependency(file, string, GITHUB_COM)
+        github_dependency(file, string, GITHUB_COM, metadata)
       end
 
-      sig { params(file: Dependabot::DependencyFile, string: String, hostname: String).returns(Dependabot::Dependency) }
-      def github_dependency(file, string, hostname)
+      sig do
+        params(
+          file: Dependabot::DependencyFile,
+          string: String,
+          hostname: String,
+          metadata: T::Array[T::Hash[Symbol, Object]]
+        ).returns(Dependabot::Dependency)
+      end
+      def github_dependency(file, string, hostname, metadata)
         details = T.must(string.match(GITHUB_REPO_REFERENCE)).named_captures
         repo_name = "#{details.fetch(OWNER_KEY)}/#{details.fetch(REPO_KEY)}"
         path = details[PATH_KEY]
@@ -130,43 +175,22 @@ module Dependabot
         Dependency.new(
           name: name,
           version: version,
-          requirements: [{
-            requirement: nil,
-            groups: [],
-            source: {
-              type: "git",
-              url: "https://#{hostname}/#{repo_name}".downcase,
-              ref: ref,
-              branch: nil
-            },
-            file: file.name,
-            metadata: { declaration_string: string }
-          }],
+          requirements: metadata.map do |details|
+            {
+              requirement: nil,
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://#{hostname}/#{repo_name}".downcase,
+                ref: ref,
+                branch: nil
+              },
+              file: file.name,
+              metadata: details
+            }
+          end,
           package_manager: PackageManager::NAME
         )
-      end
-
-      sig { params(json_obj: T.untyped, found_uses: T::Array[String]).returns(T::Array[String]) }
-      def deep_fetch_uses(json_obj, found_uses = [])
-        case json_obj
-        when Hash then deep_fetch_uses_from_hash(json_obj, found_uses)
-        when Array then json_obj.flat_map { |o| deep_fetch_uses(o, found_uses) }
-        else []
-        end
-      end
-
-      sig { params(json_object: T::Hash[String, T.untyped], found_uses: T::Array[String]).returns(T::Array[String]) }
-      def deep_fetch_uses_from_hash(json_object, found_uses)
-        if json_object.key?(USES_KEY)
-          found_uses << json_object[USES_KEY]
-        elsif json_object.key?(STEPS_KEY)
-          # Bypass other fields as uses are under steps if they exist
-          deep_fetch_uses(json_object[STEPS_KEY], found_uses)
-        else
-          json_object.values.flat_map { |obj| deep_fetch_uses(obj, found_uses) }
-        end
-
-        found_uses
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }

@@ -1,0 +1,112 @@
+# typed: strict
+# frozen_string_literal: true
+
+require "dependabot/github_actions/workflow_file"
+
+module Dependabot
+  module GithubActions
+    class WorkflowFile
+      class MetadataBuilder
+        extend T::Sig
+
+        sig { params(workflow_file: WorkflowFile).void }
+        def initialize(workflow_file)
+          @workflow_file = workflow_file
+        end
+
+        sig { params(declaration: UsesDeclaration).returns(Metadata) }
+        def build(declaration)
+          metadata = T.let(
+            {
+              path: declaration.path,
+              value: node_metadata(declaration.value_node),
+              target: node_metadata(declaration.source_node),
+              mapping: node_metadata(declaration.mapping_node)
+            },
+            Metadata
+          )
+
+          sequence = declaration.steps_sequence
+          if sequence
+            metadata[:sequence] = sequence_metadata(
+              sequence,
+              declaration.steps_key_node,
+              declaration.sequence_item_index
+            )
+          end
+
+          metadata
+        end
+
+        private
+
+        sig { returns(WorkflowFile) }
+        attr_reader :workflow_file
+
+        sig { params(node: T.nilable(Psych::Nodes::Node)).returns(Metadata) }
+        def node_metadata(node)
+          return {} unless node
+
+          metadata = T.let(
+            {
+              kind: node_kind(node),
+              start_line: workflow_file.node_start_line(node),
+              start_column: workflow_file.node_start_column(node),
+              end_line: workflow_file.node_end_line(node),
+              end_column: workflow_file.node_end_column(node)
+            },
+            Metadata
+          )
+
+          if node.is_a?(Psych::Nodes::Scalar)
+            metadata[:style] = scalar_style(workflow_file.scalar_node_style(node))
+            metadata[:anchor] = node.anchor if node.anchor
+          elsif node.is_a?(Psych::Nodes::Alias)
+            metadata[:anchor] = node.anchor
+          end
+
+          metadata
+        end
+
+        sig do
+          params(
+            sequence: Psych::Nodes::Sequence,
+            key_node: T.nilable(Psych::Nodes::Scalar),
+            item_index: T.nilable(Integer)
+          ).returns(Metadata)
+        end
+        def sequence_metadata(sequence, key_node, item_index)
+          metadata = node_metadata(sequence)
+          metadata[:style] =
+            workflow_file.sequence_node_style(sequence) == Psych::Nodes::Sequence::FLOW ? "flow" : "block"
+          metadata[:item_index] = item_index if item_index
+          metadata[:item_count] = workflow_file.node_children(sequence).length
+          metadata[:key_start_column] = workflow_file.node_start_column(key_node) if key_node
+          metadata
+        end
+
+        sig { params(node: Psych::Nodes::Node).returns(String) }
+        def node_kind(node)
+          case node
+          when Psych::Nodes::Alias then "alias"
+          when Psych::Nodes::Scalar then "scalar"
+          when Psych::Nodes::Mapping then "mapping"
+          when Psych::Nodes::Sequence then "sequence"
+          else "node"
+          end
+        end
+
+        sig { params(style: Integer).returns(String) }
+        def scalar_style(style)
+          case style
+          when Psych::Nodes::Scalar::SINGLE_QUOTED then "single_quoted"
+          when Psych::Nodes::Scalar::DOUBLE_QUOTED then "double_quoted"
+          when Psych::Nodes::Scalar::LITERAL then "literal"
+          when Psych::Nodes::Scalar::FOLDED then "folded"
+          else "plain"
+          end
+        end
+      end
+    end
+  end
+end
