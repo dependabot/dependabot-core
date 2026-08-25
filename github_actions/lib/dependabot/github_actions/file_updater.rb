@@ -163,22 +163,20 @@ module Dependabot
             old_declaration
             .gsub(/@.*+/, "@#{new_ref}")
 
-          # Replace the old declaration that's preceded by a non-word character (unless it's a hyphen)
-          # and followed by a whitespace character (comments) or EOL.
-          # If the declaration is followed by a comment that lists the version associated
-          # with the SHA source ref, then update the comment to the human-readable new version.
-          # However, if the comment includes additional text beyond the version, for safety
-          # we skip updating the comment in case it's a custom note, todo, warning etc of some kind.
-          # See the related unit tests for examples.
+          # Include the rest of the line so a new comment is appended after any
+          # flow-style mapping syntax, rather than inside the mapping.
           updated_content =
             updated_content
             .gsub(
-              /(?<=[^a-zA-Z_-]|"|')#{Regexp.escape(old_declaration)}["']?(?<comment>\s+#.*)?(?=\s|$)/
+              /(?<=[^a-zA-Z_-]|"|')#{Regexp.escape(old_declaration)}["']?(?=\s|$|[,}])(?<suffix>[^\r\n]*)/
             ) do |match|
-              comment = Regexp.last_match(:comment)
+              suffix = T.must(Regexp.last_match(:suffix))
+              comment = suffix[/\s+#.*\z/]
               match.gsub!(old_declaration, new_declaration)
               if comment && (updated_comment = updated_version_comment(comment, old_ref, new_ref))
                 match.gsub!(comment, updated_comment)
+              elsif !comment && (new_comment = new_version_comment(old_ref, new_ref))
+                match << new_comment
               end
               match
             end
@@ -193,18 +191,7 @@ module Dependabot
         raise "No comment!" unless comment
 
         comment = comment.rstrip
-        git_checker = Dependabot::GitCommitChecker.new(dependency: dependency, credentials: credentials)
-        return unless git_checker.ref_looks_like_commit_sha?(old_ref)
-
-        previous_version_tags = git_checker.most_specific_version_tags_for_sha(old_ref)
-        return unless previous_version_tags.any? # There's no tag for this commit
-
-        # Use the most specific (longest) matching version to avoid partial replacements.
-        # Tags are sorted ascending, so ["v1", "v1.0", "v1.0.1"] maps to ["1", "1.0", "1.0.1"].
-        # Without this, "1" could match the end of "v1.0.1", causing gsub("1", "1.1") => "v1.1.0.1.1".
-        previous_version = previous_version_tags.map { |tag| version_class.new(tag).to_s }
-                                                .select { |version| comment.end_with?(version) }
-                                                .max_by(&:length)
+        previous_version = previous_version_from_comment(comment, old_ref, new_ref)
         return unless previous_version
 
         new_version_tag = git_checker.most_specific_version_tag_for_sha(new_ref)
@@ -212,6 +199,54 @@ module Dependabot
 
         new_version = version_class.new(new_version_tag).to_s
         comment.gsub(previous_version, new_version)
+      end
+
+      sig { params(comment: String, old_ref: String, new_ref: String).returns(T.nilable(String)) }
+      def previous_version_from_comment(comment, old_ref, new_ref)
+        version_tags = if git_checker.ref_looks_like_commit_sha?(old_ref)
+                         git_checker.most_specific_version_tags_for_sha(old_ref)
+                       elsif tag_to_sha?(old_ref, new_ref)
+                         version_tags_for_ref(old_ref)
+                       else
+                         []
+                       end
+
+        # Prefer the longest matching version so "1" does not partially replace "1.0.1".
+        version_tags
+          .filter_map { |tag| version_class.new(tag).to_s if version_class.correct?(tag) }
+          .select { |version| comment.end_with?(version) }
+          .max_by(&:length)
+      end
+
+      sig { params(ref: String).returns(T::Array[String]) }
+      def version_tags_for_ref(ref)
+        tags = [ref]
+        commit_sha = git_checker.head_commit_for_local_branch(ref)
+        tags.concat(git_checker.most_specific_version_tags_for_sha(commit_sha)) if commit_sha
+        tags.uniq
+      end
+
+      sig { params(old_ref: String, new_ref: String).returns(T.nilable(String)) }
+      def new_version_comment(old_ref, new_ref)
+        return unless tag_to_sha?(old_ref, new_ref)
+
+        new_version_tag = git_checker.most_specific_version_tag_for_sha(new_ref)
+        return unless new_version_tag
+
+        " # #{new_version_tag}"
+      end
+
+      sig { params(old_ref: String, new_ref: String).returns(T::Boolean) }
+      def tag_to_sha?(old_ref, new_ref)
+        version_class.correct?(old_ref) && git_checker.ref_looks_like_commit_sha?(new_ref)
+      end
+
+      sig { returns(Dependabot::GitCommitChecker) }
+      def git_checker
+        @git_checker ||= T.let(
+          Dependabot::GitCommitChecker.new(dependency: dependency, credentials: credentials),
+          T.nilable(Dependabot::GitCommitChecker)
+        )
       end
 
       sig { returns(T.class_of(Dependabot::GithubActions::Version)) }

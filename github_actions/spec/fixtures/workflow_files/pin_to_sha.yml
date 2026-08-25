@@ -1,0 +1,16 @@
+on: [push]
+
+name: Pin actions
+jobs:
+  pin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.1.0
+      - uses: "actions/checkout@v2.1.0"
+      - uses: 'actions/checkout@v2.1.0'
+      - uses: actions/checkout@v2.1.0 # v2.1.0
+      - uses: actions/checkout@v2.1.0 # keep this custom note
+      - { uses: actions/checkout@v2.1.0 }
+      - { name: Checkout, uses: "actions/checkout@v2.1.0" }
+      - { uses: actions/checkout@v2.1.0 } # v2.1.0
+      - uses: actions/checkout@v2 # v2.7.0
