@@ -34,15 +34,6 @@ RSpec.describe Dependabot::Service do
     api_client
   end
 
-  let(:enable_enhanced_error_details_for_updater) { false }
-
-  before do
-    Dependabot::Experiments.register(
-      :enable_enhanced_error_details_for_updater,
-      enable_enhanced_error_details_for_updater
-    )
-  end
-
   shared_context "with a created pr" do
     let(:source) do
       instance_double(Dependabot::Source, provider: "github", repo: "dependabot/dependabot-core", directory: "/")
@@ -314,19 +305,11 @@ RSpec.describe Dependabot::Service do
     end
 
     it "memoizes a shorthand summary of the error" do
-      expect(service.errors).to eql([["epoch_error", nil]])
-    end
-
-    context "when enable_enhanced_error_details_for_updater is enabled" do
-      let(:enable_enhanced_error_details_for_updater) { true }
-
-      it "memoizes a shorthand summary of the error" do
-        expect(service.errors).to eql(
-          [["epoch_error", {
-            message: "What is fortran doing here?!"
-          }, nil]]
-        )
-      end
+      expect(service.errors).to eql(
+        [["epoch_error", {
+          message: "What is fortran doing here?!"
+        }, nil]]
+      )
     end
   end
 
@@ -667,19 +650,15 @@ RSpec.describe Dependabot::Service do
           .to include("epoch_error")
       end
 
-      context "when enable_enhanced_error_details_for_updater is enabled" do
-        let(:enable_enhanced_error_details_for_updater) { true }
-
-        it "includes an error summary" do
-          expect(service.summary)
-            .to include("epoch_error")
-          expect(service.summary)
-            .to include("Type")
-          expect(service.summary)
-            .to include("Details")
-          expect(service.summary)
-            .to include("\"message\": \"What is fortran doing here?!\"")
-        end
+      it "includes enhanced error details" do
+        expect(service.summary)
+          .to include("epoch_error")
+        expect(service.summary)
+          .to include("Type")
+        expect(service.summary)
+          .to include("Details")
+        expect(service.summary)
+          .to include("\"message\": \"What is fortran doing here?!\"")
       end
     end
 
@@ -698,23 +677,19 @@ RSpec.describe Dependabot::Service do
           .to include("dependabot-cobol")
       end
 
-      context "when enable_enhanced_error_details_for_updater is enabled" do
-        let(:enable_enhanced_error_details_for_updater) { true }
-
-        it "includes an error summary" do
-          expect(service.summary)
-            .to include("unknown_error")
-          expect(service.summary)
-            .to include("dependabot-cobol")
-          expect(service.summary)
-            .to include("Dependency")
-          expect(service.summary)
-            .to include("Error Type")
-          expect(service.summary)
-            .to include("Error Details")
-          expect(service.summary)
-            .to include("\"message\": \"0001 Undefined error. Inform Technical Support\"")
-        end
+      it "includes enhanced error details" do
+        expect(service.summary)
+          .to include("unknown_error")
+        expect(service.summary)
+          .to include("dependabot-cobol")
+        expect(service.summary)
+          .to include("Dependency")
+        expect(service.summary)
+          .to include("Error Type")
+        expect(service.summary)
+          .to include("Error Details")
+        expect(service.summary)
+          .to include("\"message\": \"0001 Undefined error. Inform Technical Support\"")
       end
     end
 

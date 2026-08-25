@@ -129,7 +129,9 @@ module Dependabot
               return ref if ref&.version && T.must(ref.version) > current_version
 
               lower_precision_ref = git_commit_checker.local_ref_for_latest_version_lower_precision
-              return ref if ref&.version == current_version
+              # Keep the matching-precision ref when no newer lower-precision tag exists
+              return ref if ref&.version == current_version &&
+                            (lower_precision_ref.nil? || T.must(lower_precision_ref.version) <= current_version)
 
               lower_precision_ref
             end,

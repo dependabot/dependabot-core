@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "toml-rb"
@@ -25,7 +25,8 @@ module Dependabot
         sig { params(dependency_files: T::Array[Dependabot::DependencyFile]).void }
         def initialize(dependency_files:)
           @dependency_files = dependency_files
-          @dynamic_fields = T.let(nil, T.nilable(T::Array[String]))
+          @pyproject_document = T.let(nil, T.nilable(PyprojectDocument))
+          @poetry_lock_document = T.let(nil, T.nilable(PoetryLock))
         end
 
         sig { returns(Dependabot::FileParsers::Base::DependencySet) }
@@ -63,16 +64,11 @@ module Dependabot
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           POETRY_DEPENDENCY_TYPES.each do |type|
-            deps_hash = T.must(poetry_root)[type] || {}
-            dependencies += parse_poetry_dependency_group(type, deps_hash)
+            dependencies += parse_poetry_dependency_group(type, pyproject_document.poetry_dependencies(type))
           end
 
-          groups = T.must(poetry_root)["group"] || {}
-          groups.each do |group, group_spec|
-            deps = group_spec["dependencies"]
-            next unless deps
-
-            dependencies += parse_poetry_dependency_group(group, deps)
+          pyproject_document.poetry_groups.each do |group, dependencies_by_name|
+            dependencies += parse_poetry_dependency_group(group, dependencies_by_name)
           end
           dependencies
         end
@@ -92,17 +88,17 @@ module Dependabot
 
             dependencies <<
               Dependency.new(
-                name: normalise(dep["name"]),
-                version: dep["version"]&.include?("*") ? nil : dep["version"],
+                name: normalise(dep.name),
+                version: dep.version&.include?("*") ? nil : dep.version,
                 requirements: [{
-                  requirement: dep["requirement"],
-                  file: Pathname.new(dep["file"]).cleanpath.to_path,
+                  requirement: dep.requirement,
+                  file: Pathname.new(dep.file).cleanpath.to_path,
                   source: nil,
-                  groups: [dep["requirement_type"]].compact
+                  groups: [dep.requirement_type].compact
                 }],
                 package_manager: "pip",
-                metadata: extras_metadata(dep["extras"]).merge(
-                  source_requirement: dep["source_requirement"]
+                metadata: extras_metadata(dep.extras).merge(
+                  source_requirement: dep.source_requirement
                 ).compact
               )
           end
@@ -113,17 +109,16 @@ module Dependabot
         sig do
           params(
             type: String,
-            deps_hash: T.nilable(T::Hash[String, T.untyped])
+            deps_hash: PyprojectDocument::PoetryDependencyMap
           ).returns(Dependabot::FileParsers::Base::DependencySet)
         end
         def parse_poetry_dependency_group(type, deps_hash)
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
-          return dependencies if deps_hash.nil?
 
-          deps_hash.each do |name, req|
+          deps_hash.each do |name, requirements_data|
             next if normalise(name) == "python"
 
-            requirements = parse_requirements_from(req, type)
+            requirements = parse_requirements_from(requirements_data, type)
             next if requirements.empty?
 
             dependencies << Dependency.new(
@@ -151,102 +146,108 @@ module Dependabot
           { extras: extras.join(",") }
         end
 
-        # @param req can be an Array, Hash or String that represents the constraints for a dependency
-        sig { params(req: T.untyped, type: String).returns(T::Array[T::Hash[Symbol, T.nilable(String)]]) }
-        # rubocop:disable Metrics/PerceivedComplexity
-        def parse_requirements_from(req, type)
-          [req].flatten.compact.filter_map do |requirement|
-            # Skip unsupported dependency types (path, url), but allow git
-            next if requirement.is_a?(Hash) && UNSUPPORTED_DEPENDENCY_TYPES.intersect?(requirement.keys)
-            # Skip git dependencies without tags (e.g., with branch, rev)
-            next if requirement.is_a?(Hash) && requirement["git"] && !requirement["tag"]
-
-            # Handle git dependencies with tags
-            if requirement.is_a?(Hash) && requirement["git"] && requirement["tag"]
-              {
-                requirement: nil,
-                file: T.must(pyproject).name,
-                source: {
-                  type: "git",
-                  url: requirement["git"],
-                  ref: requirement["tag"],
-                  branch: nil
-                },
-                groups: [type]
-              }
-            elsif requirement.is_a?(String)
-              check_requirements(requirement)
-              {
-                requirement: requirement,
-                file: T.must(pyproject).name,
-                source: nil,
-                groups: [type]
-              }
-            else
-              check_requirements(requirement)
-              # String sources are registry name references (e.g., "custom") that reference
-              # [[tool.poetry.source]] definitions. Resolve them to proper hashes.
-              source_value = requirement.fetch("source", nil)
-              source = resolve_source(source_value)
-              {
-                requirement: requirement["version"],
-                file: T.must(pyproject).name,
-                source: source,
-                groups: [type]
-              }
-            end
-          end
+        sig do
+          params(
+            requirements_data: T::Array[PyprojectDocument::PoetryRequirement],
+            type: String
+          ).returns(T::Array[Dependabot::Dependency::RequirementInput])
         end
-        # rubocop:enable Metrics/PerceivedComplexity
+        def parse_requirements_from(requirements_data, type)
+          requirements_data.filter_map { |requirement| poetry_requirement(requirement, type) }
+        end
 
-        sig { returns(T.nilable(T::Boolean)) }
+        sig do
+          params(
+            requirement: PyprojectDocument::PoetryRequirement,
+            type: String
+          ).returns(T.nilable(Dependabot::Dependency::RequirementInput))
+        end
+        def poetry_requirement(requirement, type)
+          if requirement.is_a?(String)
+            check_requirements(requirement)
+            return {
+              requirement: requirement,
+              file: T.must(pyproject).name,
+              source: nil,
+              groups: [type]
+            }
+          end
+
+          return if UNSUPPORTED_DEPENDENCY_TYPES.intersect?(requirement.keys)
+
+          git = requirement_string(requirement, "git")
+          tag = requirement_string(requirement, "tag")
+          return if git && !tag
+
+          return git_requirement(git, tag, type) if git && tag
+
+          check_requirements(requirement)
+          {
+            requirement: requirement_string(requirement, "version"),
+            file: T.must(pyproject).name,
+            source: resolve_source(requirement["source"]),
+            groups: [type]
+          }
+        end
+
+        sig { params(git: String, tag: String, type: String).returns(Dependabot::Dependency::RequirementInput) }
+        def git_requirement(git, tag, type)
+          {
+            requirement: nil,
+            file: T.must(pyproject).name,
+            source: {
+              type: "git",
+              url: git,
+              ref: tag,
+              branch: nil
+            },
+            groups: [type]
+          }
+        end
+
+        sig { returns(T::Boolean) }
         def using_poetry?
-          !poetry_root.nil?
+          pyproject_document.poetry?
         end
 
         sig { returns(T::Boolean) }
         def using_pep621?
-          !parsed_pyproject.dig("project", "dependencies").nil? ||
-            !parsed_pyproject.dig("project", "optional-dependencies").nil? ||
-            !parsed_pyproject.dig("build-system", "requires").nil?
+          pyproject_document.pep621?
         end
 
         sig { returns(T::Boolean) }
         def using_pep735?
-          parsed_pyproject.key?("dependency-groups")
+          pyproject_document.pep735?
         end
 
-        sig { returns(T.nilable(T::Hash[String, T.untyped])) }
-        def poetry_root
-          parsed_pyproject.dig("tool", "poetry")
-        end
-
-        sig { returns(T.untyped) }
+        sig { returns(T::Boolean) }
         def using_pdm?
-          using_pep621? && pdm_lock
+          using_pep621? && !pdm_lock.nil?
         end
 
         sig { returns(T::Array[String]) }
         def dynamic_fields
-          @dynamic_fields ||= parsed_pyproject.dig("project", "dynamic") || []
+          pyproject_document.dynamic_fields
         end
 
-        sig { params(dep: T::Hash[String, T.untyped]).returns(T::Boolean) }
+        sig { params(dep: PepDependency).returns(T::Boolean) }
         def skip_pep621_dep?(dep)
           # If a requirement has a `<` or `<=` marker then updating it is
           # probably blocked. Ignore it.
-          return true if dep["markers"]&.include?("<")
+          return true if dep.markers&.include?("<")
 
           # If no requirement, don't add it
-          return true if dep["requirement"].empty?
+          requirement = dep.requirement
+          raise TypeError, "Python PEP dependency requirement must be a string" unless requirement
+          return true if requirement.empty?
 
           # Skip build-system.requires dependencies when using Poetry
           # Poetry manages its own build system dependencies
-          return true if using_poetry? && dep["requirement_type"] == "build-system.requires"
+          return true if using_poetry? && dep.requirement_type == "build-system.requires"
 
           # When dependencies or optional-dependencies are listed in project.dynamic,
           # they are managed by the build backend (e.g. Poetry) — skip the PEP 621 path
-          dynamic_pep621_dep?(dep["requirement_type"])
+          dynamic_pep621_dep?(dep.requirement_type)
         end
 
         sig { params(requirement_type: T.nilable(String)).returns(T::Boolean) }
@@ -256,7 +257,7 @@ module Dependabot
 
           if requirement_type == "dependencies"
             dynamic_fields.include?("dependencies")
-          elsif parsed_pyproject.dig("project", "optional-dependencies")&.key?(requirement_type)
+          elsif pyproject_document.optional_dependency_group?(requirement_type)
             dynamic_fields.include?("optional-dependencies")
           else
             false
@@ -271,15 +272,15 @@ module Dependabot
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           source_types = %w(directory git url)
-          parsed_lockfile.fetch("package", []).each do |details|
-            next if source_types.include?(details.dig("source", "type"))
+          poetry_lock_document.packages.each do |package|
+            next if source_types.include?(package.source_type)
 
-            name = normalise(details.fetch("name"))
+            name = normalise(package.name)
 
             dependencies <<
               Dependency.new(
                 name: name,
-                version: details.fetch("version"),
+                version: package.version,
                 requirements: [],
                 package_manager: "pip",
                 subdependency_metadata: [{
@@ -302,8 +303,10 @@ module Dependabot
         sig { returns(T::Array[T.nilable(String)]) }
         def parse_production_dependency_names
           SharedHelpers.in_a_temporary_directory do
-            File.write(T.must(pyproject).name, T.must(pyproject).content)
-            File.write(lockfile.name, lockfile.content)
+            pyproject_file = T.must(pyproject)
+            lockfile_file = T.must(lockfile)
+            File.write(pyproject_file.name, pyproject_file.content)
+            File.write(lockfile_file.name, lockfile_file.content)
 
             begin
               output = SharedHelpers.run_shell_command("pyenv exec poetry show --only main")
@@ -322,18 +325,19 @@ module Dependabot
           end
         end
 
-        sig { params(dep_name: String).returns(T.untyped) }
+        sig { params(dep_name: String).returns(T.nilable(String)) }
         def version_from_lockfile(dep_name)
-          return unless parsed_lockfile
+          return unless poetry_lock
 
-          parsed_lockfile.fetch("package", [])
-                         .find { |p| normalise(p.fetch("name")) == normalise(dep_name) }
-                         &.fetch("version", nil)
+          poetry_lock_document.version_for(dep_name) { |name| normalise(name) }
         end
 
-        sig { params(req: T.untyped).returns(T::Array[Dependabot::Python::Requirement]) }
+        sig do
+          params(req: PyprojectDocument::PoetryRequirement)
+            .returns(T::Array[Dependabot::Python::Requirement])
+        end
         def check_requirements(req)
-          requirement = req.is_a?(String) ? req : req["version"]
+          requirement = req.is_a?(String) ? req : requirement_string(req, "version")
           Python::Requirement.requirements_array(requirement)
         rescue Gem::Requirement::BadRequirementError => e
           raise Dependabot::DependencyFileNotEvaluatable, e.message
@@ -344,21 +348,23 @@ module Dependabot
           NameNormaliser.normalise(name)
         end
 
-        sig { params(source_value: T.untyped).returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig do
+          params(source_value: T.nilable(Object))
+            .returns(T.nilable(Dependabot::DependencyRequirement::Source))
+        end
         def resolve_source(source_value)
           # Return nil if no source specified
           return nil if source_value.nil?
 
           # If already a hash, return as-is (handles git sources)
-          return source_value if source_value.is_a?(Hash)
+          return PyprojectValueParser.object_hash(source_value, "Poetry dependency source") if source_value.is_a?(Hash)
 
           # String sources are references to [[tool.poetry.source]] definitions
           # Look up the source definition and create a hash
           return nil unless source_value.is_a?(String)
 
           source_name = source_value
-          poetry_sources = parsed_pyproject.dig("tool", "poetry", "source") || []
-          source_def = poetry_sources.find { |s| s["name"] == source_name }
+          source_def = pyproject_document.poetry_source(source_name)
 
           # If source definition not found, return nil
           return nil unless source_def
@@ -367,26 +373,19 @@ module Dependabot
           # Use "registry" as the type since these are package index sources
           {
             type: "registry",
-            url: source_def["url"],
+            url: source_def.url,
             name: source_name
           }
         end
 
-        sig { returns(T::Hash[String, T.untyped]) }
-        def parsed_pyproject
-          @parsed_pyproject ||= T.let(TomlRB.parse(T.must(pyproject).content), T.nilable(T::Hash[String, T.untyped]))
-        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-          raise Dependabot::DependencyFileNotParseable, T.must(pyproject).path
+        sig { returns(PyprojectDocument) }
+        def pyproject_document
+          @pyproject_document ||= PyprojectDocument.from_file(T.must(pyproject))
         end
 
-        sig { returns(T::Hash[String, T.untyped]) }
-        def parsed_poetry_lock
-          @parsed_poetry_lock ||= T.let(
-            TomlRB.parse(T.must(poetry_lock).content),
-            T.nilable(T::Hash[String, T.untyped])
-          )
-        rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-          raise Dependabot::DependencyFileNotParseable, T.must(poetry_lock).path
+        sig { returns(PoetryLock) }
+        def poetry_lock_document
+          @poetry_lock_document ||= PoetryLock.from_file(T.must(poetry_lock))
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
@@ -397,20 +396,22 @@ module Dependabot
           )
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def lockfile
           poetry_lock
         end
 
-        sig { returns(T.untyped) }
+        sig { returns(T::Array[PepDependency]) }
         def parse_pep621_pep735_dependencies
           SharedHelpers.in_a_temporary_directory do
             write_temporary_pyproject
 
-            SharedHelpers.run_helper_subprocess(
-              command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
-              function: "parse_pep621_pep735_dependencies",
-              args: [T.must(pyproject).name]
+            PepDependency.from_helper_result(
+              SharedHelpers.run_helper_subprocess(
+                command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
+                function: "parse_pep621_pep735_dependencies",
+                args: [T.must(pyproject).name]
+              )
             )
           end
         end
@@ -422,17 +423,22 @@ module Dependabot
           File.write(path, T.must(pyproject).content)
         end
 
-        sig { returns(T.untyped) }
-        def parsed_lockfile
-          parsed_poetry_lock if poetry_lock
-        end
-
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def poetry_lock
           @poetry_lock ||= T.let(
             dependency_files.find { |f| f.name == "poetry.lock" },
             T.nilable(Dependabot::DependencyFile)
           )
+        end
+
+        sig do
+          params(
+            requirement: PyprojectValueParser::ObjectHash,
+            key: String
+          ).returns(T.nilable(String))
+        end
+        def requirement_string(requirement, key)
+          PyprojectValueParser.optional_string(requirement[key], "Poetry dependency #{key}")
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }

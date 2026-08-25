@@ -1046,6 +1046,187 @@ RSpec.describe Dependabot::Uv::FileParser do
         )
       end
     end
+
+    context "with an editable path dependency that is not a workspace member" do
+      let(:files) { [pyproject, editable_path_pyproject] }
+      let(:parsed_files) { [] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: <<~TOML
+            [project]
+            name = "service-c"
+            version = "0.1.0"
+            dependencies = [
+              "click>=8.4.1",
+              "pkg-b",
+            ]
+
+            [tool.uv.sources]
+            pkg-b = { path = "../../packages/b", editable = true }
+          TOML
+        )
+      end
+      let(:editable_path_pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "../../packages/b/pyproject.toml",
+          support_file: true,
+          content: <<~TOML
+            [project]
+            name = "pkg-b"
+            version = "0.1.0"
+            dependencies = [
+              "only-in-b>=1.0.0",
+            ]
+          TOML
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess) do |function:, args:, **|
+          raise "Unexpected helper function: #{function}" unless function == "parse_pep621_pep735_dependencies"
+
+          pyproject_path = args.first
+          parsed_files << pyproject_path
+
+          case pyproject_path
+          when "pyproject.toml"
+            [
+              {
+                "name" => "click",
+                "version" => nil,
+                "markers" => nil,
+                "file" => "pyproject.toml",
+                "requirement" => ">=8.4.1",
+                "extras" => [],
+                "requirement_type" => nil
+              }
+            ]
+          when "../../packages/b/pyproject.toml"
+            [
+              {
+                "name" => "only-in-b",
+                "version" => nil,
+                "markers" => nil,
+                "file" => "../../packages/b/pyproject.toml",
+                "requirement" => ">=1.0.0",
+                "extras" => [],
+                "requirement_type" => nil
+              }
+            ]
+          else
+            raise "Unexpected pyproject path: #{pyproject_path}"
+          end
+        end
+      end
+
+      it "does not parse the editable package's manifest" do
+        dependencies
+
+        expect(parsed_files).to contain_exactly("pyproject.toml")
+      end
+
+      it "excludes dependencies declared only in the editable package" do
+        expect(dependencies.map(&:name)).not_to include("only-in-b")
+      end
+
+      it "only records click's requirement from the consumer manifest" do
+        dependency = dependencies.find { |dep| dep.name == "click" }
+
+        expect(dependency&.requirements).to eq(
+          [{
+            requirement: ">=8.4.1",
+            file: "pyproject.toml",
+            groups: [],
+            source: nil
+          }]
+        )
+      end
+    end
+
+    context "with a workspace member that is excluded from the workspace" do
+      let(:files) { [pyproject, excluded_member_pyproject] }
+      let(:parsed_files) { [] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: <<~TOML
+            [project]
+            name = "workspace-root"
+            version = "0.1.0"
+            dependencies = [
+              "click>=8.4.1",
+            ]
+
+            [tool.uv.workspace]
+            members = ["packages/*"]
+            exclude = ["packages/b"]
+          TOML
+        )
+      end
+      let(:excluded_member_pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "packages/b/pyproject.toml",
+          support_file: true,
+          content: <<~TOML
+            [project]
+            name = "pkg-b"
+            version = "0.1.0"
+            dependencies = [
+              "only-in-b>=1.0.0",
+            ]
+          TOML
+        )
+      end
+
+      before do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess) do |function:, args:, **|
+          raise "Unexpected helper function: #{function}" unless function == "parse_pep621_pep735_dependencies"
+
+          pyproject_path = args.first
+          parsed_files << pyproject_path
+
+          case pyproject_path
+          when "pyproject.toml"
+            [
+              {
+                "name" => "click",
+                "version" => nil,
+                "markers" => nil,
+                "file" => "pyproject.toml",
+                "requirement" => ">=8.4.1",
+                "extras" => [],
+                "requirement_type" => nil
+              }
+            ]
+          when "packages/b/pyproject.toml"
+            [
+              {
+                "name" => "only-in-b",
+                "version" => nil,
+                "markers" => nil,
+                "file" => "packages/b/pyproject.toml",
+                "requirement" => ">=1.0.0",
+                "extras" => [],
+                "requirement_type" => nil
+              }
+            ]
+          else
+            raise "Unexpected pyproject path: #{pyproject_path}"
+          end
+        end
+      end
+
+      it "does not parse the excluded member's manifest" do
+        dependencies
+
+        expect(parsed_files).to contain_exactly("pyproject.toml")
+      end
+
+      it "excludes dependencies declared only in the excluded member" do
+        expect(dependencies.map(&:name)).not_to include("only-in-b")
+      end
+    end
   end
 
   describe "#run_in_parsed_context" do

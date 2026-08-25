@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 790
+# Offense count: 730
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bun/lib/dependabot/bun.rb"
@@ -259,7 +259,6 @@ Sorbet/ForbidTUntyped:
     - "bun/lib/dependabot/bun/update_checker/latest_version_finder.rb"
     - "bun/lib/dependabot/bun/update_checker/library_detector.rb"
     - "bun/lib/dependabot/bun/update_checker/version_resolver.rb"
-    - "bun/lib/dependabot/bun/update_checker/vulnerability_auditor.rb"
     - "bun/lib/dependabot/bun/version_selector.rb"
     - "bundler/lib/dependabot/bundler/file_parser.rb"
     - "bundler/lib/dependabot/bundler/file_updater/lockfile_updater.rb"
@@ -333,7 +332,6 @@ Sorbet/ForbidTUntyped:
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/latest_version_finder.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/library_detector.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/version_resolver.rb"
-    - "npm_and_yarn/lib/dependabot/npm_and_yarn/update_checker/vulnerability_auditor.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/version_selector.rb"
     - "opentofu/lib/dependabot/opentofu/file_parser.rb"
     - "opentofu/lib/dependabot/opentofu/package/package_details_fetcher.rb"
@@ -348,7 +346,6 @@ Sorbet/ForbidTUntyped:
     - "python/lib/dependabot/python/file_fetcher.rb"
     - "python/lib/dependabot/python/file_parser.rb"
     - "python/lib/dependabot/python/file_parser/pipfile_files_parser.rb"
-    - "python/lib/dependabot/python/file_parser/pyproject_files_parser.rb"
     - "python/lib/dependabot/python/file_parser/setup_file_parser.rb"
     - "python/lib/dependabot/python/file_updater/pip_compile_file_updater.rb"
     - "python/lib/dependabot/python/file_updater/pipfile_file_updater.rb"
@@ -375,7 +372,6 @@ Sorbet/ForbidTUntyped:
     - "uv/lib/dependabot/uv/dependency_grapher.rb"
     - "uv/lib/dependabot/uv/file_fetcher/workspace_fetcher.rb"
     - "uv/lib/dependabot/uv/file_parser.rb"
-    - "uv/lib/dependabot/uv/file_parser/pyproject_files_parser.rb"
     - "uv/lib/dependabot/uv/file_updater/compile_file_updater.rb"
     - "uv/lib/dependabot/uv/file_updater/lock_file_error_handler.rb"
     - "uv/lib/dependabot/uv/file_updater/lock_file_updater.rb"
