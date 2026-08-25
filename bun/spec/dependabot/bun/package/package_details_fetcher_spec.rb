@@ -148,6 +148,19 @@ RSpec.describe Dependabot::Bun::Package::PackageDetailsFetcher do
       end
     end
 
+    context "when a version key is not valid semantic versioning" do
+      before do
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: JSON.dump("versions" => { "not-a-version" => { "custom" => { "nested" => true } } })
+        )
+      end
+
+      it "skips the release" do
+        expect(details.releases).to eq([])
+      end
+    end
+
     [
       ["time", { "versions" => { "1.0.0" => {} }, "time" => { "1.0.0" => 1 } }],
       ["dist-tags", { "dist-tags" => { "latest" => 1 } }],
