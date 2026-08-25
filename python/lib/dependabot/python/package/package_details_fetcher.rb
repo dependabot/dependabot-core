@@ -12,6 +12,7 @@ require "dependabot/python/name_normaliser"
 require "dependabot/package/package_release"
 require "dependabot/package/package_details"
 require "dependabot/python/package/package_registry_finder"
+require "dependabot/python/package/simple_api_parser"
 
 # Stores metadata for a package, including all its available versions
 module Dependabot
@@ -21,6 +22,7 @@ module Dependabot
       CREDENTIALS_PASSWORD = "password"
 
       APPLICATION_JSON = "application/json"
+      APPLICATION_PYPI_SIMPLE_JSON = "application/vnd.pypi.simple.v1+json"
       APPLICATION_TEXT = "text/html"
       CPYTHON = "cpython"
       PYTHON = "python"
@@ -90,6 +92,8 @@ module Dependabot
             .returns(T.nilable(T::Array[Dependabot::Package::PackageRelease]))
         end
         def fetch_from_registry(index_url)
+          return fetch_from_simple_registry(index_url) unless MAIN_PYPI_INDEXES.include?(index_url)
+
           metadata = fetch_from_json_registry(index_url)
 
           return metadata if metadata&.any?
@@ -99,6 +103,26 @@ module Dependabot
         rescue StandardError => e
           Dependabot.logger.warn("Unexpected error in JSON fetch: #{e.message}. Falling back to HTML.")
           fetch_from_html_registry(index_url)
+        end
+
+        sig { params(index_url: String).returns(T::Array[Dependabot::Package::PackageRelease]) }
+        def fetch_from_simple_registry(index_url)
+          Dependabot.logger.info(
+            "Fetching release information from simple registry at #{sanitized_url(index_url)} for #{dependency.name}"
+          )
+          response = registry_response_for_dependency(index_url, accept: simple_api_accept)
+          check_authentication_response(response, index_url)
+
+          version_releases = if simple_json_response?(response)
+                               SimpleApiParser.new(dependency: dependency).parse(response.body)
+                             else
+                               extract_release_details_json_from_html(response.body)
+                             end
+
+          format_version_releases(version_releases).sort_by(&:version).reverse
+        rescue JSON::ParserError
+          Dependabot.logger.warn("JSON parsing error for #{sanitized_url(index_url)}.")
+          []
         end
 
         # Example JSON Response Format:
@@ -203,19 +227,34 @@ module Dependabot
           Dependabot.logger.info(
             "Fetching release information from html registry at #{sanitized_url(index_url)} for #{dependency.name}"
           )
-          index_response = registry_response_for_dependency(index_url)
-          if index_response.status == 401 || index_response.status == 403
-            registry_index_response = registry_index_response(index_url)
-
-            if registry_index_response.status == 401 || registry_index_response.status == 403
-              raise PrivateSourceAuthenticationFailure, sanitized_url(index_url)
-            end
-          end
+          index_response = registry_response_for_dependency(index_url, accept: APPLICATION_TEXT)
+          check_authentication_response(index_response, index_url)
 
           version_releases = extract_release_details_json_from_html(index_response.body)
           releases = format_version_releases(version_releases)
 
           releases.sort_by(&:version).reverse
+        end
+
+        sig { params(response: Excon::Response).returns(T::Boolean) }
+        def simple_json_response?(response)
+          response.headers["Content-Type"].to_s.split(";").first == APPLICATION_PYPI_SIMPLE_JSON
+        end
+
+        sig { returns(String) }
+        def simple_api_accept
+          "application/vnd.pypi.simple.v1+json, " \
+            "application/vnd.pypi.simple.v1+html;q=0.2, text/html;q=0.01"
+        end
+
+        sig { params(response: Excon::Response, index_url: String).void }
+        def check_authentication_response(response, index_url)
+          return unless [401, 403].include?(response.status)
+
+          index_response = registry_index_response(index_url)
+          return unless [401, 403].include?(index_response.status)
+
+          raise PrivateSourceAuthenticationFailure, sanitized_url(index_url)
         end
 
         sig do
@@ -397,11 +436,11 @@ module Dependabot
           )
         end
 
-        sig { params(index_url: String).returns(Excon::Response) }
-        def registry_response_for_dependency(index_url)
+        sig { params(index_url: String, accept: String).returns(Excon::Response) }
+        def registry_response_for_dependency(index_url, accept:)
           Dependabot::RegistryClient.get(
             url: index_url + normalised_name + "/",
-            headers: { "Accept" => APPLICATION_TEXT }
+            headers: { "Accept" => accept }
           )
         end
 
