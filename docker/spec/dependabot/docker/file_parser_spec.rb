@@ -77,6 +77,18 @@ RSpec.describe Dependabot::Docker::FileParser do
       its(:length) { is_expected.to eq(0) }
     end
 
+    context "when a Dockerfile cannot be parsed" do
+      let(:error) { Dependabot::DependencyFileNotParseable.new("/Dockerfile") }
+
+      before do
+        allow(dockerfile).to receive(:content).and_raise(error)
+      end
+
+      it "raises the unparseable file error" do
+        expect { dependencies }.to raise_error(error)
+      end
+    end
+
     context "with a name" do
       let(:dockerfile_fixture_name) { "name" }
 
@@ -1168,6 +1180,80 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency.name).to eq("my-repo/nginx")
           expect(dependency.version).to eq("1.14.2")
           expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    context "when a YAML file cannot be parsed" do
+      let(:unparseable_file) do
+        Dependabot::DependencyFile.new(
+          name: "unparseable.yaml",
+          directory: "/",
+          content: <<~YAML
+            metadata:
+              annotations:
+                a.b/c: "true"
+               invalid: yaml
+          YAML
+        )
+      end
+
+      before do
+        allow(Dependabot.logger).to receive(:warn)
+      end
+
+      context "with a valid Dockerfile" do
+        let(:podfiles) { [dockerfile, unparseable_file] }
+
+        it "warns and parses dependencies from the Dockerfile" do
+          expect(dependencies.length).to eq(1)
+          expect(dependencies.first.name).to eq("ubuntu")
+          expect(dependencies.first.version).to eq("17.04")
+          expect(Dependabot.logger).to have_received(:warn).with(
+            a_string_including("Failed to parse YAML file /unparseable.yaml")
+          )
+        end
+      end
+
+      context "with another valid YAML file" do
+        let(:podfiles) { [unparseable_file, valid_file] }
+        let(:valid_file) do
+          Dependabot::DependencyFile.new(
+            name: "valid.yaml",
+            directory: "/",
+            content: fixture("kubernetes", "yaml", "pod.yaml")
+          )
+        end
+
+        it "warns and parses dependencies from the valid file" do
+          expect(dependencies.length).to eq(1)
+          expect(dependencies.first.name).to eq("nginx")
+          expect(dependencies.first.version).to eq("1.14.2")
+          expect(dependencies.first.requirements).to eq(
+            [{
+              requirement: nil,
+              groups: [],
+              file: "valid.yaml",
+              source: { tag: "1.14.2" }
+            }]
+          )
+          expect(Dependabot.logger).to have_received(:warn).with(
+            a_string_including("Failed to parse YAML file /unparseable.yaml")
+          )
+        end
+      end
+
+      context "without a Dockerfile or parseable YAML file" do
+        let(:podfiles) { [unparseable_file] }
+
+        it "raises a missing dependency file error" do
+          expect { dependencies }.to raise_error(
+            Dependabot::DependencyFileNotFound,
+            "No parseable Dockerfiles or YAML files found"
+          )
+          expect(Dependabot.logger).to have_received(:warn).with(
+            a_string_including("Failed to parse YAML file /unparseable.yaml")
+          )
         end
       end
     end
