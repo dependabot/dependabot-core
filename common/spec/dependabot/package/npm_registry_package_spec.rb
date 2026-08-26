@@ -1,4 +1,4 @@
-# typed: false
+# typed: strict
 # frozen_string_literal: true
 
 require "spec_helper"
@@ -6,7 +6,14 @@ require "dependabot/package/npm_registry_package"
 
 RSpec.describe Dependabot::Package::NpmRegistryPackage do
   describe ".from_json" do
-    subject(:package) { described_class.from_json(JSON.dump(payload)) }
+    subject(:package) do
+      described_class.from_json(
+        JSON.dump(payload),
+        &version_filter
+      )
+    end
+
+    let(:version_filter) { ->(_version) { true } }
 
     let(:payload) do
       {
@@ -71,13 +78,58 @@ RSpec.describe Dependabot::Package::NpmRegistryPackage do
           "versions" => {
             "1.0.0" => { "repository" => "https://example.com/package" },
             "2.0.0" => { "repository" => { "type" => "npm" } },
-            "3.0.0" => {}
+            "3.0.0" => { "repository" => { "url" => "git+https://example.com/package.git" } },
+            "4.0.0" => {
+              "repository" => {
+                "type" => "npm",
+                "url" => "git+https://example.com/package.git"
+              }
+            },
+            "5.0.0" => {}
           }
         }
       end
 
       it "defaults package type to npm" do
-        expect(package.releases.values.map(&:package_type)).to eq(%w(npm npm npm))
+        expect(package.releases.values.map(&:package_type)).to eq(%w(npm npm npm npm npm))
+      end
+    end
+
+    context "with legacy engines metadata" do
+      let(:payload) do
+        {
+          "versions" => {
+            "1.0.0" => { "engines" => %w(node rhino) }
+          }
+        }
+      end
+
+      it "treats an engines array as having no Node requirement" do
+        expect(package.releases.fetch("1.0.0").node_requirement).to be_nil
+      end
+    end
+
+    context "when the version filter rejects a release" do
+      let(:version_filter) { ->(_version) { false } }
+      let(:payload) do
+        {
+          "versions" => {
+            "not-a-version" => "invalid",
+            "also-not-a-version" => {
+              "engines" => "invalid",
+              "repository" => []
+            }
+          },
+          "time" => {
+            "not-a-version" => 1,
+            "also-not-a-version" => "not a timestamp",
+            "created" => "2024-01-01T00:00:00Z"
+          }
+        }
+      end
+
+      it "skips the release before parsing its metadata" do
+        expect(package.releases).to eq({})
       end
     end
 
@@ -113,7 +165,9 @@ RSpec.describe Dependabot::Package::NpmRegistryPackage do
 
     context "with invalid JSON" do
       it "preserves the JSON parser error" do
-        expect { described_class.from_json("{") }.to raise_error(JSON::ParserError)
+        expect do
+          described_class.from_json("{", &version_filter)
+        end.to raise_error(JSON::ParserError)
       end
     end
 
