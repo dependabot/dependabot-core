@@ -263,28 +263,28 @@ module Dependabot
         content = T.must(buildfile.content)
         substitution_ranges = substitution_block_line_ranges(content)
 
-        content.lines.each_with_index.select do |line, index|
-          next false if substitution_ranges.any? { |range| range.cover?(index) }
+        content.lines.each_with_index.filter_map do |line, index|
+          next if substitution_ranges.any? { |range| range.cover?(index) }
 
-          line = evaluate_properties(line, buildfile)
-          line = line.gsub(%r{(?<=^|\s)//.*$}, "")
+          evaluated = evaluate_properties(line, buildfile)
+          evaluated = evaluated.gsub(%r{(?<=^|\s)//.*$}, "")
 
           if dependency.name.include?(":")
             dep_parts = dependency.name.split(":")
-            next false unless line.include?(T.must(dep_parts.first)) || line.include?(T.must(dep_parts.last))
+            next unless evaluated.include?(T.must(dep_parts.first)) || evaluated.include?(T.must(dep_parts.last))
           elsif file.end_with?(".properties")
             property = requirement.source_string("property")
-            next false unless property && line.start_with?(property)
+            next unless property && evaluated.start_with?(property)
           elsif file.end_with?(".toml")
-            next false unless line.include?(dependency.name)
+            next unless evaluated.include?(dependency.name)
           else
             name_regex_value = /['"]#{Regexp.quote(dependency.name)}['"]/
             name_regex = /(id|kotlin)(\s+#{name_regex_value}|\(#{name_regex_value}\))/
-            next false unless line.match?(name_regex)
+            next unless evaluated.match?(name_regex)
           end
 
-          line.include?(T.must(requirement.requirement_string))
-        end.map { |line, _index| line }
+          line if evaluated.include?(T.must(requirement.requirement_string))
+        end
       end
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
