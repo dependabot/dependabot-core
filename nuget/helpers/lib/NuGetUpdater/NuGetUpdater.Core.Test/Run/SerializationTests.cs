@@ -381,7 +381,8 @@ public class SerializationTests : TestBase
                         {
                             "name": "Some.Dependency",
                             "rules": {
-                                "patterns": ["1.2.3", "4.5.6"]
+                                "patterns": ["1.2.3", "4.5.6"],
+                                "group-by": "dependency-name"
                             }
                         },
                         {
@@ -397,8 +398,9 @@ public class SerializationTests : TestBase
 
         Assert.Equal("Some.Dependency", jobWrapper.Job.DependencyGroups[0].Name);
         Assert.Null(jobWrapper.Job.DependencyGroups[0].AppliesTo);
-        Assert.Single(jobWrapper.Job.DependencyGroups[0].Rules);
+        Assert.Equal(2, jobWrapper.Job.DependencyGroups[0].Rules.Count);
         Assert.Equal("[\"1.2.3\", \"4.5.6\"]", jobWrapper.Job.DependencyGroups[0].Rules["patterns"].ToString());
+        Assert.True(jobWrapper.Job.DependencyGroups[0].IsGroupedByDependencyName);
 
         Assert.Equal("Some.Other.Dependency", jobWrapper.Job.DependencyGroups[1].Name);
         Assert.Equal("something", jobWrapper.Job.DependencyGroups[1].AppliesTo);

@@ -54,7 +54,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
             throw new InvalidOperationException($"{nameof(job.DependencyGroupToRefresh)} must be non-null.");
         }
 
-        var group = job.DependencyGroups.FirstOrDefault(g => g.Name == job.DependencyGroupToRefresh);
+        var group = job.ResolveDependencyGroupToRefresh();
         if (group is null)
         {
             throw new InvalidOperationException($"Dependency group {job.DependencyGroupToRefresh} not found.");
@@ -63,11 +63,15 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
         logger.Info($"Starting update for group {group.Name}");
         await this.ReportUpdaterStarted(apiHandler);
 
+        var isDynamicSubgroup = group.IsGroupedByDependencyName &&
+            !job.DependencyGroups.Any(
+                g => g.Name.Equals(job.DependencyGroupToRefresh, StringComparison.OrdinalIgnoreCase));
         var groupMatcher = group.GetGroupMatcher();
         var jobDependencies = job.Dependencies.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var updateOperationsPerformed = new List<UpdateOperationBase>();
         var updatedDependencies = new List<ReportedDependency>();
         var allUpdatedDependencyFiles = ImmutableArray.Create<DependencyFile>();
+        var updatedGroupDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var initialFiles = ModifiedFilesTracker.GetInitiallyExistingFiles(repoContentsPath);
         foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
         {
@@ -139,6 +143,7 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
 
                     updatedDependencies.AddRange(updatedDependenciesForThis);
                     updateOperationsPerformed.AddRange(patchedUpdateOperations);
+                    updatedGroupDirectories.Add(directory);
                     foreach (var o in patchedUpdateOperations)
                     {
                         logger.Info($"Update operation performed: {o.GetReport(includeFileNames: true)}");
@@ -159,10 +164,23 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
             return;
         }
 
-        var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], null);
-        var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], null);
+        var textGroupName = isDynamicSubgroup ? group.Name : null;
+        var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(
+            job,
+            [.. updateOperationsPerformed],
+            textGroupName,
+            group.DependencyNameGroupTarget,
+            updatedGroupDirectories);
+        var prTitle = PullRequestTextGenerator.GetPullRequestTitle(
+            job,
+            [.. updateOperationsPerformed],
+            textGroupName,
+            group.DependencyNameGroupTarget,
+            updatedGroupDirectories);
         var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
-        var existingPullRequest = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: true);
+        var existingPullRequest = isDynamicSubgroup
+            ? job.GetExistingGroupPullRequestForDependencies(rawDependencies, considerVersions: true, group.Name)
+            : job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: true);
         if (existingPullRequest is not null)
         {
             await apiHandler.UpdatePullRequest(new UpdatePullRequest()
@@ -178,7 +196,9 @@ internal class RefreshGroupUpdatePullRequestHandler : IUpdateHandler
         }
         else
         {
-            var existingPrButDifferent = job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: false);
+            var existingPrButDifferent = isDynamicSubgroup
+                ? job.GetExistingGroupPullRequestForDependencies(rawDependencies, considerVersions: false, group.Name)
+                : job.GetExistingPullRequestForDependencies(rawDependencies, considerVersions: false);
             if (existingPrButDifferent is not null)
             {
                 await apiHandler.ClosePullRequest(ClosePullRequest.WithDependenciesChanged(job));
