@@ -291,17 +291,20 @@ module Dependabot
 
       # Returns the (0-based) line-index ranges covered by dependencySubstitution
       # blocks, so lines inside them can be excluded regardless of formatting.
+      # Braces inside strings/comments are masked so the matching closing brace
+      # is located correctly.
       sig { params(content: String).returns(T::Array[T::Range[Integer]]) }
       def substitution_block_line_ranges(content)
         ranges = T.let([], T::Array[T::Range[Integer]])
+        masked = Gradle::FileParser.mask_literals_and_comments(content)
 
-        content.to_enum(:scan, SUBSTITUTION_BLOCK_START_REGEX).each do
+        masked.to_enum(:scan, SUBSTITUTION_BLOCK_START_REGEX).each do
           match = T.must(Regexp.last_match)
           start_offset = match.begin(0)
-          close_offset = match.end(0) + closing_bracket_index(match.post_match)
+          close_offset = match.end(0) + closing_bracket_index(T.must(masked[match.end(0)..]))
 
-          start_line = T.must(content[0...start_offset]).count("\n")
-          end_line = T.must(content[0..close_offset]).count("\n")
+          start_line = T.must(masked[0...start_offset]).count("\n")
+          end_line = T.must(masked[0..close_offset]).count("\n")
           ranges << (start_line..end_line)
         end
 

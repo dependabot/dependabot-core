@@ -14,7 +14,12 @@ configurations.all {
         substitute module("io.airlift:aircompressor:2.0.2") using module("io.airlift:aircompressor:2.0.3")
         substitute(module("com.google.guava:guava:30.0-jre"))
             .using(module("com.google.guava:guava:31.0-jre"))
+            .because("tracking issue {")
     }
+}
+
+configurations.all {
+    resolutionStrategy.dependencySubstitution {}
 }
 
 dependencies {
