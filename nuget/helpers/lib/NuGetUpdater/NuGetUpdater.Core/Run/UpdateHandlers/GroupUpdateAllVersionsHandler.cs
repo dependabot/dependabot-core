@@ -11,6 +11,12 @@ namespace NuGetUpdater.Core.Run.UpdateHandlers;
 
 internal class GroupUpdateAllVersionsHandler : IUpdateHandler
 {
+    private sealed record DirectoryDiscovery(
+        string Directory,
+        WorkspaceDiscoveryResult DiscoveryResult,
+        UpdatedDependencyList UpdatedDependencyList,
+        ImmutableArray<(string ProjectPath, Dependency Dependency)> UpdateOperations);
+
     public static IUpdateHandler Instance { get; } = new GroupUpdateAllVersionsHandler();
 
     public string TagName => "group_update_all_versions";
@@ -61,10 +67,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
         foreach (var group in job.DependencyGroups)
         {
             logger.Info($"Starting update for group {group.Name}");
-            var groupMatcher = group.GetGroupMatcher();
-            var updateOperationsPerformed = new List<UpdateOperationBase>();
-            var updatedDependencies = new List<ReportedDependency>();
-            var allUpdatedDependencyFiles = ImmutableArray.Create<DependencyFile>();
+            var directoryDiscoveries = new List<DirectoryDiscovery>();
             foreach (var directory in job.GetAllDirectories(repoContentsPath.FullName))
             {
                 var discoveryResult = await discoveryWorker.RunAsync(repoContentsPath.FullName, directory);
@@ -75,14 +78,119 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     return;
                 }
 
-                var tracker = new ModifiedFilesTracker(originalRepoContentsPath, initialFiles, logger);
-                await tracker.StartTrackingAsync(discoveryResult);
-
                 var updatedDependencyList = RunWorker.GetUpdatedDependencyListFromDiscovery(discoveryResult, originalRepoContentsPath.FullName, logger, initialFiles);
                 await apiHandler.UpdateDependencyList(updatedDependencyList);
+                var updateOperations = RunWorker.GetUpdateOperations(discoveryResult).ToImmutableArray();
+                directoryDiscoveries.Add(new(directory, discoveryResult, updatedDependencyList, updateOperations));
+            }
 
-                var updateOperationsToPerform = RunWorker.GetUpdateOperations(discoveryResult).ToArray();
-                foreach (var (projectPath, dependency) in updateOperationsToPerform)
+            if (group.IsGroupedByDependencyName)
+            {
+                var groupMatcher = group.GetGroupMatcher();
+                var directoryDiscoveriesByDependencyName = new Dictionary<string, List<DirectoryDiscovery>>(StringComparer.OrdinalIgnoreCase);
+                foreach (var directoryDiscovery in directoryDiscoveries)
+                {
+                    var matchingOperationsByDependencyName = directoryDiscovery.UpdateOperations
+                        .Where(o => job.IsUpdatePermitted(o.Dependency))
+                        .Where(o => groupMatcher.IsMatch(o.Dependency.Name))
+                        .Where(o => !job.IsDependencyIgnoredByNameOnly(o.Dependency.Name))
+                        .GroupBy(o => o.Dependency.Name, StringComparer.OrdinalIgnoreCase);
+                    foreach (var matchingOperations in matchingOperationsByDependencyName)
+                    {
+                        if (!directoryDiscoveriesByDependencyName.TryGetValue(matchingOperations.Key, out var subgroupDiscoveries))
+                        {
+                            subgroupDiscoveries = [];
+                            directoryDiscoveriesByDependencyName.Add(matchingOperations.Key, subgroupDiscoveries);
+                        }
+
+                        subgroupDiscoveries.Add(directoryDiscovery with
+                        {
+                            UpdateOperations = [.. matchingOperations],
+                        });
+                    }
+                }
+
+                foreach (var (dependencyName, subgroupDiscoveries) in directoryDiscoveriesByDependencyName)
+                {
+                    var subgroup = group.CreateDependencyNameSubgroup(dependencyName);
+                    var configuredGroup = job.FindConfiguredDependencyGroup(subgroup.Name);
+                    if (configuredGroup is not null)
+                    {
+                        logger.Info($"Skipping dynamic subgroup {subgroup.Name} because configured group {configuredGroup.Name} has precedence.");
+                        continue;
+                    }
+
+                    var succeeded = await RunEffectiveGroupUpdate(
+                        job,
+                        subgroup,
+                        subgroupDiscoveries,
+                        originalRepoContentsPath,
+                        repoContentsPath,
+                        initialFiles,
+                        baseCommitSha,
+                        analyzeWorker,
+                        updaterWorker,
+                        apiHandler,
+                        experimentsManager,
+                        logger);
+                    if (!succeeded)
+                    {
+                        return;
+                    }
+                }
+            }
+            else
+            {
+                var succeeded = await RunEffectiveGroupUpdate(
+                    job,
+                    group,
+                    directoryDiscoveries,
+                    originalRepoContentsPath,
+                    repoContentsPath,
+                    initialFiles,
+                    baseCommitSha,
+                    analyzeWorker,
+                    updaterWorker,
+                    apiHandler,
+                    experimentsManager,
+                    logger);
+                if (!succeeded)
+                {
+                    return;
+                }
+            }
+        }
+    }
+
+    private static async Task<bool> RunEffectiveGroupUpdate(
+        Job job,
+        DependencyGroup group,
+        IEnumerable<DirectoryDiscovery> directoryDiscoveries,
+        DirectoryInfo originalRepoContentsPath,
+        DirectoryInfo repoContentsPath,
+        HashSet<string> initialFiles,
+        string baseCommitSha,
+        IAnalyzeWorker analyzeWorker,
+        IUpdaterWorker updaterWorker,
+        IApiHandler apiHandler,
+        ExperimentsManager experimentsManager,
+        ILogger logger)
+    {
+        logger.Info($"Starting update for effective group {group.Name}");
+        var groupMatcher = group.GetGroupMatcher();
+        var updateOperationsPerformed = new List<UpdateOperationBase>();
+        var updatedDependencies = new List<ReportedDependency>();
+        var allUpdatedDependencyFiles = ImmutableArray.Create<DependencyFile>();
+        var updatedGroupDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var directoryDiscovery in directoryDiscoveries)
+        {
+            var discoveryResult = directoryDiscovery.DiscoveryResult;
+            var updatedDependencyList = directoryDiscovery.UpdatedDependencyList;
+            var tracker = new ModifiedFilesTracker(originalRepoContentsPath, initialFiles, logger);
+            await tracker.StartTrackingAsync(discoveryResult);
+            try
+            {
+                foreach (var (projectPath, dependency) in directoryDiscovery.UpdateOperations)
                 {
                     if (!job.IsUpdatePermitted(dependency))
                     {
@@ -106,7 +214,7 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
                     {
                         logger.Error($"Error analyzing {dependency.Name} in {projectPath}: {analysisResult.Error.GetReport()}");
                         await apiHandler.RecordUpdateJobError(analysisResult.Error, logger);
-                        return;
+                        return false;
                     }
 
                     if (!analysisResult.CanUpdate)
@@ -143,43 +251,59 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
 
                     updatedDependencies.AddRange(updatedDependenciesForThis);
                     updateOperationsPerformed.AddRange(patchedUpdateOperations);
+                    updatedGroupDirectories.Add(directoryDiscovery.Directory);
                     foreach (var o in patchedUpdateOperations)
                     {
                         logger.Info($"Update operation performed: {o.GetReport(includeFileNames: true)}");
                     }
                 }
-
+            }
+            finally
+            {
                 var updatedDependencyFiles = await tracker.StopTrackingAsync(restoreOriginalContents: true);
                 allUpdatedDependencyFiles = ModifiedFilesTracker.MergeUpdatedFileSet(allUpdatedDependencyFiles, updatedDependencyFiles);
             }
+        }
 
-            if (updateOperationsPerformed.Count > 0)
+        if (updateOperationsPerformed.Count > 0)
+        {
+            var dependencies = updatedDependencies.Select(d => new Dependency(d.Name, d.Version, DependencyType.Unknown));
+            var existingPullRequest = group.IsGroupedByDependencyName
+                ? job.GetExistingGroupPullRequestForDependencies(dependencies, considerVersions: true, group.Name)
+                : job.GetExistingPullRequestForDependencies(dependencies, considerVersions: true);
+            if (existingPullRequest is not null)
             {
-                var existingPullRequest = job.GetExistingPullRequestForDependencies(
-                        dependencies: updatedDependencies.Select(d => new Dependency(d.Name, d.Version, DependencyType.Unknown)),
-                        considerVersions: true);
-                if (existingPullRequest is not null)
+                logger.Info($"Pull request already exists for {string.Join(", ", existingPullRequest!.Item2.Select(d => $"{d.DependencyName}/{d.DependencyVersion}"))}");
+            }
+            else
+            {
+                var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(
+                    job,
+                    [.. updateOperationsPerformed],
+                    group.Name,
+                    group.DependencyNameGroupTarget,
+                    updatedGroupDirectories);
+                var prTitle = PullRequestTextGenerator.GetPullRequestTitle(
+                    job,
+                    [.. updateOperationsPerformed],
+                    group.Name,
+                    group.DependencyNameGroupTarget,
+                    updatedGroupDirectories);
+                var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
+                await apiHandler.CreatePullRequest(new CreatePullRequest()
                 {
-                    logger.Info($"Pull request already exists for {string.Join(", ", existingPullRequest!.Item2.Select(d => $"{d.DependencyName}/{d.DependencyVersion}"))}");
-                }
-                else
-                {
-                    var commitMessage = PullRequestTextGenerator.GetPullRequestCommitMessage(job, [.. updateOperationsPerformed], group.Name);
-                    var prTitle = PullRequestTextGenerator.GetPullRequestTitle(job, [.. updateOperationsPerformed], group.Name);
-                    var prBody = await PullRequestTextGenerator.GetPullRequestBodyAsync(job, [.. updateOperationsPerformed], [.. updatedDependencies], experimentsManager);
-                    await apiHandler.CreatePullRequest(new CreatePullRequest()
-                    {
-                        Dependencies = [.. updatedDependencies],
-                        UpdatedDependencyFiles = [.. allUpdatedDependencyFiles],
-                        BaseCommitSha = baseCommitSha,
-                        CommitMessage = commitMessage,
-                        PrTitle = prTitle,
-                        PrBody = prBody,
-                        DependencyGroup = group.Name,
-                    });
-                }
+                    Dependencies = [.. updatedDependencies],
+                    UpdatedDependencyFiles = [.. allUpdatedDependencyFiles],
+                    BaseCommitSha = baseCommitSha,
+                    CommitMessage = commitMessage,
+                    PrTitle = prTitle,
+                    PrBody = prBody,
+                    DependencyGroup = group.Name,
+                });
             }
         }
+
+        return true;
     }
 
     private async Task RunUngroupedDependencyUpdates(Job job, DirectoryInfo originalRepoContentsPath, DirectoryInfo? caseInsensitiveRepoContentsPath, string baseCommitSha, IDiscoveryWorker discoveryWorker, IAnalyzeWorker analyzeWorker, IUpdaterWorker updaterWorker, IApiHandler apiHandler, ExperimentsManager experimentsManager, ILogger logger)
@@ -316,6 +440,17 @@ internal class GroupUpdateAllVersionsHandler : IUpdateHandler
             .ToImmutableArray();
         if (matcherGroups.Length > 0)
         {
+            var dynamicGroupNames = dependencyGroups
+                .Where(group => group.IsGroupedByDependencyName)
+                .Where(group => group.GetGroupMatcher().IsMatch(dependency.Name))
+                .Select(group => group.Name)
+                .ToArray();
+            if (dynamicGroupNames.Length > 0)
+            {
+                logger.Info($"Dependency {dependency.Name} skipped for ungrouped updates because it's owned by the following dependency-name groups: {string.Join(", ", dynamicGroupNames)}");
+                return true;
+            }
+
             // update matches a group by name
             // if any group allows the proposed version range, then it's not allowed in an ungrouped update
             var oldVersion = NuGetVersion.Parse(dependency.Version!);
