@@ -210,16 +210,25 @@ RSpec.describe Dependabot::Gradle::FileParser do
       let(:buildfile_fixture_name) { "dependency_substitution.gradle" }
 
       # Only the real dependencies are parsed; the substitution rules are ignored
-      its(:length) { is_expected.to eq(2) }
+      its(:length) { is_expected.to eq(3) }
 
       it "parses the real dependencies and ignores the substitution targets" do
         expect(dependencies.map(&:name))
-          .to contain_exactly("io.airlift:aircompressor", "org.apache.commons:commons-lang3")
+          .to contain_exactly(
+            "io.airlift:aircompressor",
+            "org.apache.commons:commons-lang3",
+            "com.google.guava:guava"
+          )
       end
 
       it "does not pick up the substituted version for aircompressor" do
         dependency = dependencies.find { |d| d.name == "io.airlift:aircompressor" }
         expect(dependency.version).to eq("2.0.2")
+      end
+
+      it "does not pick up the multiline substituted version for guava" do
+        dependency = dependencies.find { |d| d.name == "com.google.guava:guava" }
+        expect(dependency.version).to eq("30.0-jre")
       end
     end
 
