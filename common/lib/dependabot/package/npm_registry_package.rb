@@ -11,16 +11,18 @@ module Dependabot
       extend T::Sig
 
       ObjectHash = T.type_alias { T::Hash[String, Object] }
+      VersionFilter = T.type_alias { T.proc.params(version: String).returns(T::Boolean) }
 
       class Repository < T::ImmutableStruct
         extend T::Sig
 
+        const :git, T::Boolean
         const :url, T.nilable(String), default: nil
         const :type, T.nilable(String), default: nil
 
         sig { returns(T::Boolean) }
         def git?
-          type == "git" || !!url&.start_with?("git+")
+          git
         end
       end
 
@@ -42,8 +44,8 @@ module Dependabot
       const :releases, T::Hash[String, Release]
       const :dist_tags, T.nilable(T::Hash[String, String]), default: nil
 
-      sig { params(json: String).returns(NpmRegistryPackage) }
-      def self.from_json(json)
+      sig { params(json: String, version_filter: VersionFilter).returns(NpmRegistryPackage) }
+      def self.from_json(json, &version_filter)
         parsed = T.cast(JSON.parse(json), Object)
         package = object_hash(parsed, "npm registry package")
 
@@ -52,17 +54,26 @@ module Dependabot
         dist_tags = package["dist-tags"]
 
         release_details = versions.nil? ? {} : object_hash(versions, "versions")
-        release_times = times.nil? ? {} : string_map(times, "time")
+        rejected_versions = T.let({}, T::Hash[String, T::Boolean])
+        release_details.each_key do |version|
+          rejected_versions[version] = true unless yield(version)
+        end
 
-        releases = release_details.to_h do |version, details|
-          [
-            version,
-            parse_release(
-              version: version,
-              details: details,
-              released_at: release_times[version]
-            )
-          ]
+        release_times = if times.nil?
+                          {}
+                        else
+                          string_map(times, "time", skipped_keys: rejected_versions)
+                        end
+
+        releases = T.let({}, T::Hash[String, Release])
+        release_details.each do |version, details|
+          next if rejected_versions.key?(version)
+
+          releases[version] = parse_release(
+            version: version,
+            details: details,
+            released_at: release_times[version]
+          )
         end
 
         new(
@@ -95,6 +106,7 @@ module Dependabot
       def self.parse_node_requirement(details, version)
         engines = details["engines"]
         return if engines.nil?
+        return if engines.is_a?(Array)
 
         engines_hash = object_hash(engines, "version #{version} engines")
         optional_string(
@@ -110,12 +122,16 @@ module Dependabot
         when nil
           nil
         when String
-          Repository.new(url: value)
+          Repository.new(url: value, git: value.start_with?("git+"))
         when Hash
           repository = object_hash(value, "version #{version} repository")
+          url = optional_string(repository["url"], "version #{version} repository.url")
+          type = optional_string(repository["type"], "version #{version} repository.type")
+
           Repository.new(
-            url: optional_string(repository["url"], "version #{version} repository.url"),
-            type: optional_string(repository["type"], "version #{version} repository.type")
+            url: url,
+            type: type,
+            git: type == "git"
           )
         else
           raise TypeError, "version #{version} repository must be a string or object"
@@ -138,13 +154,23 @@ module Dependabot
       end
       private_class_method :object_hash
 
-      sig { params(value: Object, context: String).returns(T::Hash[String, String]) }
-      def self.string_map(value, context)
-        object_hash(value, context).to_h do |key, raw_value|
+      sig do
+        params(
+          value: Object,
+          context: String,
+          skipped_keys: T.nilable(T::Hash[String, T::Boolean])
+        ).returns(T::Hash[String, String])
+      end
+      def self.string_map(value, context, skipped_keys: nil)
+        result = T.let({}, T::Hash[String, String])
+        object_hash(value, context).each do |key, raw_value|
+          next if skipped_keys&.key?(key)
+
           raise TypeError, "#{context} values must be strings" unless raw_value.is_a?(String)
 
-          [key, raw_value]
+          result[key] = raw_value
         end
+        result
       end
       private_class_method :string_map
 
