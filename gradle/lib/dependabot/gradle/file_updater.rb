@@ -19,9 +19,11 @@ module Dependabot
 
       SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
 
-      # Matches a Gradle dependency substitution rule, e.g.
-      #   substitute module("group:name:1.0") using module("group:name:2.0")
-      SUBSTITUTION_LINE_REGEX = /\bsubstitute\b.*\bmodule\s*\(/
+      # Matches the start of a Gradle dependency substitution block, e.g.
+      #   resolutionStrategy.dependencySubstitution {
+      # Coordinates inside such a block are substitution targets, not real
+      # dependency declarations, and must never be rewritten.
+      SUBSTITUTION_BLOCK_START_REGEX = /dependencySubstitution\s*\{/
 
       sig { override.returns(T::Array[::Dependabot::DependencyFile]) }
       def updated_dependency_files
@@ -258,12 +260,14 @@ module Dependabot
         # single line.
         file = T.must(requirement.file)
         buildfile = T.must(buildfiles.find { |f| f.name == file })
+        content = T.must(buildfile.content)
+        substitution_ranges = substitution_block_line_ranges(content)
 
-        T.must(buildfile.content).lines.select do |line|
+        content.lines.each_with_index.select do |line, index|
+          next false if substitution_ranges.any? { |range| range.cover?(index) }
+
           line = evaluate_properties(line, buildfile)
           line = line.gsub(%r{(?<=^|\s)//.*$}, "")
-
-          next false if line.match?(SUBSTITUTION_LINE_REGEX)
 
           if dependency.name.include?(":")
             dep_parts = dependency.name.split(":")
@@ -280,10 +284,42 @@ module Dependabot
           end
 
           line.include?(T.must(requirement.requirement_string))
-        end
+        end.map { |line, _index| line }
       end
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
+
+      # Returns the (0-based) line-index ranges covered by dependencySubstitution
+      # blocks, so lines inside them can be excluded regardless of formatting.
+      sig { params(content: String).returns(T::Array[T::Range[Integer]]) }
+      def substitution_block_line_ranges(content)
+        ranges = T.let([], T::Array[T::Range[Integer]])
+
+        content.to_enum(:scan, SUBSTITUTION_BLOCK_START_REGEX).each do
+          match = T.must(Regexp.last_match)
+          start_offset = match.begin(0)
+          close_offset = match.end(0) + closing_bracket_index(match.post_match)
+
+          start_line = T.must(content[0...start_offset]).count("\n")
+          end_line = T.must(content[0..close_offset]).count("\n")
+          ranges << (start_line..end_line)
+        end
+
+        ranges
+      end
+
+      sig { params(string: String).returns(Integer) }
+      def closing_bracket_index(string)
+        closes_required = 1
+
+        string.chars.each_with_index do |char, index|
+          closes_required += 1 if char == "{"
+          closes_required -= 1 if char == "}"
+          return index if closes_required.zero?
+        end
+
+        0
+      end
 
       sig { params(string: String, buildfile: Dependabot::DependencyFile).returns(String) }
       def evaluate_properties(string, buildfile)
