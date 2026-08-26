@@ -44,6 +44,7 @@ module Dependabot
       DEPENDENCY_SET_ENTRY_REGEX = /entry\s+['"](?<name>#{PART})['"]/o
       PLUGIN_BLOCK_DECLARATION_REGEX = /(?:^|\s)plugins\s*\{/
       PLUGIN_ID_REGEX = /['"](?<id>#{PART})['"]/o
+      DEPENDENCY_SUBSTITUTION_DECLARATION_REGEX = /dependencySubstitution\s*\{/
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
@@ -519,6 +520,15 @@ module Dependabot
         # Remove the dependencyVerification section added by Gradle Witness
         # (TODO: Support updating this in the FileUpdater)
         prepared_content.dup.scan(/dependencyVerification\s*{/) do
+          mtch = T.must(Regexp.last_match)
+          block = mtch.post_match[0..closing_bracket_index(mtch.post_match)]
+          prepared_content.gsub!(T.must(block), "")
+        end
+
+        # Remove any dependencySubstitution blocks. The coordinates inside
+        # `substitute module(...) using module(...)` rules are substitution
+        # targets, not real dependency declarations, and must not be updated.
+        prepared_content.dup.scan(DEPENDENCY_SUBSTITUTION_DECLARATION_REGEX) do
           mtch = T.must(Regexp.last_match)
           block = mtch.post_match[0..closing_bracket_index(mtch.post_match)]
           prepared_content.gsub!(T.must(block), "")

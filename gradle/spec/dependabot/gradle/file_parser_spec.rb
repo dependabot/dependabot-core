@@ -206,6 +206,23 @@ RSpec.describe Dependabot::Gradle::FileParser do
       its(:length) { is_expected.to eq(34) }
     end
 
+    context "with a dependencySubstitution block" do
+      let(:buildfile_fixture_name) { "dependency_substitution.gradle" }
+
+      # Only the real dependencies are parsed; the substitution rules are ignored
+      its(:length) { is_expected.to eq(2) }
+
+      it "parses the real dependencies and ignores the substitution targets" do
+        expect(dependencies.map(&:name))
+          .to contain_exactly("io.airlift:aircompressor", "org.apache.commons:commons-lang3")
+      end
+
+      it "does not pick up the substituted version for aircompressor" do
+        dependency = dependencies.find { |d| d.name == "io.airlift:aircompressor" }
+        expect(dependency.version).to eq("2.0.2")
+      end
+    end
+
     context "when the build file is specified in a dependencySet" do
       let(:buildfile_fixture_name) { "dependency_set.gradle" }
 
