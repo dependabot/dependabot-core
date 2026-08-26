@@ -425,6 +425,54 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
         it { is_expected.to eq(Gem::Version.new("2.3.6")) }
       end
+
+      # Regression test: Release Please monorepo tags (e.g. "component-vX.Y.Z") must
+      # be recognised when the action is SHA-pinned.  Previously Dependabot returned
+      # the branch HEAD SHA instead of the version of the latest tagged release.
+      context "when in a Release Please monorepo with component-prefixed tags" do
+        let(:upload_pack_fixture) { "github-monorepo-release-please" }
+        let(:service_pack_url) do
+          "https://github.com/org/actions.git/info/refs?service=git-upload-pack"
+        end
+        # test-setup-action-v1.0.0 commit SHA
+        let(:old_sha) { "0a8c683233cfc1ec4b0a07dcb1b9ed3818859608" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org/actions/test-setup-action",
+            version: nil,
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/org/actions",
+                ref: old_sha,
+                branch: nil
+              },
+              metadata: { declaration_string: "org/actions/test-setup-action@#{old_sha}" }
+            }],
+            package_manager: "github_actions"
+          )
+        end
+
+        before do
+          stub_request(:get, service_pack_url)
+            .to_return(
+              status: 200,
+              body: fixture("git", "upload_packs", upload_pack_fixture),
+              headers: { "content-type" => "application/x-git-upload-pack-advertisement" }
+            )
+        end
+
+        it "returns the latest version for that specific action's tag prefix" do
+          expect(latest_version).to eq(Dependabot::GithubActions::Version.new("1.1.0"))
+        end
+
+        it "does not return the branch HEAD SHA" do
+          expect(latest_version).not_to eq("77d1e35a23ae35a45337a1f0fed07944ecbdf2f9")
+        end
+      end
     end
 
     context "when a git commit SHA pointing to the tip of a version tag with cooldown" do
@@ -1769,6 +1817,76 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
 
       it { is_expected.to eq(expected_requirements) }
+    end
+
+    # Tests for SHA-pinned monorepo actions using Release Please tag format
+    # (component-name-vX.Y.Z), e.g. `uses: org/actions/test-setup-action@<sha>`.
+    context "when a dependency in a Release Please monorepo is SHA-pinned" do
+      let(:service_pack_url) do
+        "https://github.com/org/actions.git/info/refs" \
+          "?service=git-upload-pack"
+      end
+      let(:upload_pack_fixture) { "github-monorepo-release-please" }
+      # old_sha is the commit tagged test-setup-action-v1.0.0 in the fixture
+      let(:old_sha) { "0a8c683233cfc1ec4b0a07dcb1b9ed3818859608" }
+      # new_sha is the commit tagged test-setup-action-v1.1.0 in the fixture
+      let(:new_sha) { "80bca66fe332536f0283085a6239cd9d968d531a" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "org/actions/test-setup-action",
+          version: nil,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/org/actions",
+              ref: old_sha,
+              branch: nil
+            },
+            metadata: { declaration_string: "org/actions/test-setup-action@#{old_sha}" }
+          }],
+          package_manager: "github_actions"
+        )
+      end
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          source: {
+            type: "git",
+            url: "https://github.com/org/actions",
+            ref: new_sha,
+            branch: nil
+          },
+          metadata: { declaration_string: "org/actions/test-setup-action@#{old_sha}" }
+        }]
+      end
+
+      before do
+        stub_request(:get, service_pack_url)
+          .to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", upload_pack_fixture),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+
+      it "updates the SHA to the commit for the latest test-setup-action tag, not the branch HEAD" do
+        expect(updated_requirements).to eq(expected_requirements)
+      end
+
+      it "does not use the branch HEAD SHA (which would be the wrong answer)" do
+        branch_head_sha = "77d1e35a23ae35a45337a1f0fed07944ecbdf2f9"
+        updated_ref = updated_requirements.first[:source][:ref]
+        expect(updated_ref).not_to eq(branch_head_sha)
+      end
     end
   end
 end
