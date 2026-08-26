@@ -125,6 +125,30 @@ RSpec.describe Dependabot::NpmAndYarn::Package::PackageDetailsFetcher do
       end
     end
 
+    context "when time includes unpublished metadata" do
+      before do
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: JSON.dump(
+            "versions" => { "1.0.0" => {} },
+            "time" => {
+              "1.0.0" => "2024-01-01T00:00:00Z",
+              "unpublished" => {
+                "time" => "2024-01-02T00:00:00Z",
+                "versions" => ["0.9.0"]
+              }
+            }
+          )
+        )
+      end
+
+      it "ignores the metadata while parsing release timestamps" do
+        release = details.releases.find { |candidate| candidate.version.to_s == "1.0.0" }
+
+        expect(release&.released_at).to eq(Time.utc(2024, 1, 1))
+      end
+    end
+
     context "when successful JSON has the wrong top-level shape" do
       before do
         stub_request(:get, registry_url).to_return(status: 200, body: "[]")
