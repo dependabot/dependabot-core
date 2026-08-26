@@ -38,19 +38,110 @@ module Dependabot
           metadata
         end
 
-        sig { params(sequence: Psych::Nodes::Sequence).returns(T::Boolean) }
-        def declarations_share_comment_line?(sequence)
-          nodes = workflow_file.declarations_in_sequence(sequence).filter_map do |item|
-            item.mapping_node || item.value_node
+        sig { params(declaration: UsesDeclaration).returns(T::Array[UsesDeclaration]) }
+        def collision_declarations_for(declaration)
+          anchor = comment_anchor(declaration)
+          return [] unless anchor
+
+          workflow_file.uses_declarations.select do |item|
+            item_anchor = comment_anchor(item)
+            item_anchor && item_anchor.first == anchor.first
           end
-          lines = nodes.map { |node| workflow_file.node_end_line(node) }
-          lines.length != lines.uniq.length
+        end
+
+        sig { params(declaration: UsesDeclaration).returns(T::Boolean) }
+        def comment_line_collision?(declaration)
+          anchor = comment_anchor(declaration)
+          return false unless anchor
+          return true if collision_declarations_for(declaration).length > 1
+
+          line = anchor.first
+          anchor_offset = workflow_file.offset(anchor.first, anchor.last)
+          workflow_file.steps_sequences.any? do |sequence|
+            sequence_starts_after_anchor?(sequence, line, anchor_offset) ||
+              child_starts_after_anchor?(sequence, line, anchor_offset)
+          end
+        end
+
+        sig { params(declaration: UsesDeclaration).returns(T::Array[Psych::Nodes::Sequence]) }
+        def collision_sequences_for(declaration)
+          anchor = comment_anchor(declaration)
+          return [] unless anchor
+
+          line = anchor.first
+          workflow_file.steps_sequences.select do |sequence|
+            line.between?(
+              workflow_file.node_start_line(sequence),
+              workflow_file.node_end_line(sequence)
+            )
+          end
+        end
+
+        sig { params(declaration: UsesDeclaration).returns(T.nilable([Integer, Integer])) }
+        def comment_anchor(declaration)
+          source_node = declaration.source_node
+          return unless source_node
+
+          if source_node.is_a?(Psych::Nodes::Scalar) && block_scalar?(source_node)
+            return [
+              workflow_file.node_start_line(source_node),
+              workflow_file.node_start_column(source_node)
+            ]
+          end
+
+          mapping = declaration.mapping_node
+          if mapping && workflow_file.mapping_node_style(mapping) == Psych::Nodes::Mapping::FLOW
+            return [workflow_file.node_end_line(mapping), workflow_file.node_end_column(mapping)]
+          end
+
+          value_node = declaration.value_node
+          return unless value_node
+
+          [workflow_file.node_end_line(value_node), workflow_file.node_end_column(value_node)]
         end
 
         private
 
         sig { returns(WorkflowFile) }
         attr_reader :workflow_file
+
+        sig do
+          params(
+            sequence: Psych::Nodes::Sequence,
+            line: Integer,
+            anchor_offset: Integer
+          ).returns(T::Boolean)
+        end
+        def sequence_starts_after_anchor?(sequence, line, anchor_offset)
+          workflow_file.node_start_line(sequence) == line && node_start_offset(sequence) > anchor_offset
+        end
+
+        sig do
+          params(
+            sequence: Psych::Nodes::Sequence,
+            line: Integer,
+            anchor_offset: Integer
+          ).returns(T::Boolean)
+        end
+        def child_starts_after_anchor?(sequence, line, anchor_offset)
+          workflow_file.node_children(sequence).any? do |child|
+            workflow_file.node_start_line(child) == line && node_start_offset(child) > anchor_offset
+          end
+        end
+
+        sig { params(node: Psych::Nodes::Node).returns(Integer) }
+        def node_start_offset(node)
+          workflow_file.offset(
+            workflow_file.node_start_line(node),
+            workflow_file.node_start_column(node)
+          )
+        end
+
+        sig { params(node: Psych::Nodes::Scalar).returns(T::Boolean) }
+        def block_scalar?(node)
+          style = workflow_file.scalar_node_style(node)
+          [Psych::Nodes::Scalar::LITERAL, Psych::Nodes::Scalar::FOLDED].include?(style)
+        end
 
         sig { params(node: T.nilable(Psych::Nodes::Node)).returns(Metadata) }
         def node_metadata(node)

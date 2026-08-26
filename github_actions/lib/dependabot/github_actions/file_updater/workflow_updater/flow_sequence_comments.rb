@@ -27,16 +27,17 @@ module Dependabot
               workflow_file: WorkflowFile,
               sequence: Psych::Nodes::Sequence,
               commenter: VersionCommenter,
-              comment_finder: YamlCommentFinder,
+              comment_locator: SourceCommentLocator,
               item_indent: String
             ).void
           end
-          def initialize(workflow_file:, sequence:, commenter:, comment_finder:, item_indent:)
+          def initialize(workflow_file:, sequence:, commenter:, comment_locator:, item_indent:)
             @workflow_file = workflow_file
             @sequence = sequence
             @commenter = commenter
-            @comment_finder = comment_finder
+            @comment_locator = comment_locator
             @item_indent = item_indent
+            @leading_comments = T.let(build_leading_comments, T::Array[String])
             @source_comments = T.let(build_source_comments, T::Hash[Integer, ItemComments])
           end
 
@@ -69,22 +70,30 @@ module Dependabot
             ([line] + standalone).join(workflow_file.newline)
           end
 
-          sig { params(updates: T::Array[SourceUpdate]).returns(T.nilable(ContentEdit)) }
-          def trailing_comment_edit(updates)
-            line = workflow_file.node_end_line(sequence)
-            column = workflow_file.node_end_column(sequence)
-            suffix = workflow_file.line_body(line).byteslice(workflow_file.byte_column(line, column)..) || ""
-            comment = comment_finder.find(suffix)
-            return unless comment
-            return unless updates.any? do |update|
-              commenter.recognized_comment?(comment, update.old_ref, update.new_ref)
-            end
+          sig { returns(T::Array[String]) }
+          def leading_lines
+            @leading_comments.map { |comment| "#{item_indent}#{comment}" }
+          end
 
-            relative_start = T.must(suffix.b.index(comment.b))
-            start_offset = workflow_file.offset(line, column) + relative_start
+          sig { params(updates: T::Array[SourceUpdate]).returns(T.nilable(ContentEdit)) }
+          def claim_trailing_comment(updates)
+            located_comment = comment_locator.for_sequence(sequence)
+            return unless located_comment
+
+            update = updates.find do |candidate|
+              commenter.recognized_comment?(
+                located_comment.comment,
+                candidate.old_ref,
+                candidate.new_ref
+              )
+            end
+            return unless update
+            return unless update.declaration.sequence_item_index
+
+            add_source_comment(T.must(update.declaration.sequence_item_index), located_comment.comment)
             ContentEdit.new(
-              start_offset: start_offset,
-              end_offset: start_offset + comment.bytesize,
+              start_offset: located_comment.start_offset,
+              end_offset: located_comment.end_offset,
               replacement: ""
             )
           end
@@ -100,8 +109,8 @@ module Dependabot
           sig { returns(VersionCommenter) }
           attr_reader :commenter
 
-          sig { returns(YamlCommentFinder) }
-          attr_reader :comment_finder
+          sig { returns(SourceCommentLocator) }
+          attr_reader :comment_locator
 
           sig { returns(String) }
           attr_reader :item_indent
@@ -118,6 +127,15 @@ module Dependabot
             end
           end
 
+          sig { returns(T::Array[String]) }
+          def build_leading_comments
+            first_child = workflow_file.node_children(sequence).first
+            return [] unless first_child
+
+            gap = workflow_file.content.byteslice((opening_bracket_offset + 1)...node_start_offset(first_child)) || ""
+            gap.lines.filter_map { |line| find_comment(line, trailing: false) }
+          end
+
           sig { params(gap: String).returns(ItemComments) }
           def comments_from_gap(gap)
             lines = gap.lines
@@ -131,10 +149,27 @@ module Dependabot
           sig { params(line: String, trailing: T::Boolean).returns(T.nilable(String)) }
           def find_comment(line, trailing:)
             body = line.delete_suffix("\n").delete_suffix("\r")
-            comment = comment_finder.find(body)
+            comment = comment_locator.find_line(body)
             return unless comment
 
             trailing ? " #{comment.lstrip}" : comment.lstrip
+          end
+
+          sig { params(index: Integer, comment: String).void }
+          def add_source_comment(index, comment)
+            existing = @source_comments.fetch(index, ItemComments.new(trailing: nil, standalone: []))
+            @source_comments[index] =
+              if existing.trailing
+                ItemComments.new(
+                  trailing: existing.trailing,
+                  standalone: existing.standalone + [comment.lstrip]
+                )
+              else
+                ItemComments.new(
+                  trailing: " #{comment.lstrip}",
+                  standalone: existing.standalone
+                )
+              end
           end
 
           sig do
@@ -167,10 +202,17 @@ module Dependabot
 
           sig { params(updates: T::Array[SourceUpdate]).returns(ItemComments) }
           def generated_comments(updates)
-            comments = updates.filter_map { |update| commenter.comment_for_ref(update.new_ref) }.uniq
+            comments = updates.filter_map { |update| commenter.new_comment(update.old_ref, update.new_ref) }.uniq
             raise "Conflicting version comments for one workflow step" if comments.length > 1
 
             ItemComments.new(trailing: comments.first, standalone: [])
+          end
+
+          sig { returns(Integer) }
+          def opening_bracket_offset
+            source = workflow_file.node_source(sequence)
+            opening_bracket = T.must(source.b.index("["))
+            node_start_offset(sequence) + opening_bracket
           end
 
           sig { returns(Integer) }

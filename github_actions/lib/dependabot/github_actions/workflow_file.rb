@@ -33,6 +33,8 @@ module Dependabot
         @contexts = T.let({}, T::Hash[Path, NodeContext])
         @anchors = T.let({}, T::Hash[String, Psych::Nodes::Node])
         @alias_targets = T.let({}, T::Hash[Path, Psych::Nodes::Node])
+        @sequences = T.let([], T::Array[Psych::Nodes::Sequence])
+        @steps_key_nodes = T.let({}, T::Hash[Psych::Nodes::Sequence, Psych::Nodes::Scalar])
         @lines = T.let(content.lines, T::Array[String])
         @line_offsets = T.let(line_offsets(content), T::Array[Integer])
 
@@ -49,20 +51,20 @@ module Dependabot
       sig { returns(String) }
       attr_reader :content
 
+      sig { returns(T::Array[Psych::Nodes::Sequence]) }
+      attr_reader :sequences
+
+      sig { returns(T::Array[Psych::Nodes::Sequence]) }
+      def steps_sequences = @steps_key_nodes.keys
+
+      sig { params(sequence: Psych::Nodes::Sequence).returns(T.nilable(Psych::Nodes::Scalar)) }
+      def steps_key_node_for(sequence) = @steps_key_nodes[sequence]
+
       sig { params(path: Path).returns(T.nilable(UsesDeclaration)) }
-      def declaration_at(path)
-        uses_declarations.find { |declaration| declaration.path == path }
-      end
+      def declaration_at(path) = uses_declarations.find { |declaration| declaration.path == path }
 
       sig { params(sequence: Psych::Nodes::Sequence).returns(T::Array[UsesDeclaration]) }
-      def declarations_in_sequence(sequence)
-        uses_declarations.select { |declaration| declaration.steps_sequence.equal?(sequence) }
-      end
-
-      sig { params(sequence: Psych::Nodes::Sequence).returns(T::Boolean) }
-      def declarations_share_comment_line?(sequence)
-        MetadataBuilder.new(self).declarations_share_comment_line?(sequence)
-      end
+      def declarations_in_sequence(sequence) = uses_declarations.select { |item| item.steps_sequence.equal?(sequence) }
 
       sig { params(declaration: UsesDeclaration).returns(T::Boolean) }
       def source_metadata_required?(declaration)
@@ -75,16 +77,13 @@ module Dependabot
         end
 
         sequence = declaration.steps_sequence
-        return false unless sequence
+        return true if sequence && sequence_node_style(sequence) == Psych::Nodes::Sequence::FLOW
 
-        sequence_node_style(sequence) == Psych::Nodes::Sequence::FLOW &&
-          declarations_in_sequence(sequence).length > 1
+        MetadataBuilder.new(self).comment_line_collision?(declaration)
       end
 
       sig { params(declaration: UsesDeclaration).returns(Metadata) }
-      def source_metadata(declaration)
-        MetadataBuilder.new(self).build(declaration)
-      end
+      def source_metadata(declaration) = MetadataBuilder.new(self).build(declaration)
 
       sig { params(node: Psych::Nodes::Node).returns(String) }
       def node_source(node)
@@ -271,6 +270,7 @@ module Dependabot
 
         anchor = node_anchor(node)
         @anchors[anchor] = node if anchor
+        @sequences << node if node.is_a?(Psych::Nodes::Sequence)
       end
 
       sig do
@@ -343,6 +343,7 @@ module Dependabot
           if raw_key_node.value == STEPS_KEY && value_node.is_a?(Psych::Nodes::Sequence)
             child_steps_sequence = value_node
             child_steps_key_node = raw_key_node
+            @steps_key_nodes[value_node] = raw_key_node
           end
 
           index_node(

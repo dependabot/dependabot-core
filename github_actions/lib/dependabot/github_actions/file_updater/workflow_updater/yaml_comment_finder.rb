@@ -31,6 +31,24 @@ module Dependabot
             nil
           end
 
+          sig { params(suffix: String).returns(T.nilable(String)) }
+          def find_immediate(suffix)
+            comment = find(suffix)
+            return unless comment
+
+            comment_start = T.must(suffix.b.index(comment.b))
+            prefix = suffix.byteslice(0...comment_start) || ""
+            comment if prefix.match?(/\A[ \t]*,?[ \t]*\z/)
+          end
+
+          sig { params(line: String).returns(T.nilable(String)) }
+          def find_line(line)
+            stripped = line.lstrip
+            return stripped if stripped.start_with?("#")
+
+            find(line)
+          end
+
           private
 
           sig { params(character: String, previous_non_whitespace: T.nilable(String)).returns(T::Boolean) }

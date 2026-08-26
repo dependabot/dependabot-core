@@ -209,6 +209,30 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       end
     end
 
+    context "with separate flow sequences sharing one line" do
+      let(:workflow_file_fixture_name) { "workflow_cross_sequence_collision.yml" }
+
+      it "records source metadata for both declarations" do
+        checkout = dependencies.find { |dependency| dependency.name == "actions/checkout" }
+        setup_node = dependencies.find { |dependency| dependency.name == "actions/setup-node" }
+        checkout_source = checkout&.requirements&.first&.metadata&.fetch(:yaml_source)
+        setup_node_source = setup_node&.requirements&.first&.metadata&.fetch(:yaml_source)
+
+        expect(checkout_source&.dig(:sequence, :style)).to eq("flow")
+        expect(setup_node_source&.dig(:sequence, :style)).to eq("flow")
+        expect(checkout_source&.dig(:mapping, :end_line)).to eq(setup_node_source&.dig(:mapping, :end_line))
+      end
+    end
+
+    context "with an aliased whole step" do
+      let(:workflow_file_fixture_name) { "workflow_step_alias.yml" }
+
+      it "parses without requiring a physical uses node for the alias" do
+        expect { dependencies }.not_to raise_error
+        expect(dependencies.map(&:name)).to include("actions/checkout")
+      end
+    end
+
     context "with repeated actions in one flow sequence" do
       subject(:requirements) { dependencies.first.requirements }
 

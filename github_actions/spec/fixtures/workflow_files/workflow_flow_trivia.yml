@@ -5,7 +5,9 @@ jobs:
   inline:
     runs-on: ubuntu-latest
     steps: [
+# keep this leading note
       { uses: actions/checkout@v2.1.0 }, { uses: actions/setup-node@v3.0.0 }, # keep this note
-      # keep this standalone note
+# keep this standalone note
       { run: echo done } # keep this final note
+# keep this closing note
     ]

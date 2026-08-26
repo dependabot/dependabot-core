@@ -25,6 +25,8 @@ module Dependabot
 
         require_relative "workflow_updater/version_commenter"
         require_relative "workflow_updater/yaml_comment_finder"
+        require_relative "workflow_updater/source_comment_locator"
+        require_relative "workflow_updater/source_comment_updater"
         require_relative "workflow_updater/flow_sequence_comments"
         require_relative "workflow_updater/source_updater"
 

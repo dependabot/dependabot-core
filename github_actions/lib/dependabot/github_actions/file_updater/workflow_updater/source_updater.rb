@@ -22,7 +22,24 @@ module Dependabot
             @workflow_file = workflow_file
             @updates = updates
             @commenter = commenter
-            @comment_finder = comment_finder
+            @metadata_builder = T.let(WorkflowFile::MetadataBuilder.new(workflow_file), WorkflowFile::MetadataBuilder)
+            @comment_locator = T.let(
+              SourceCommentLocator.new(
+                workflow_file: workflow_file,
+                comment_finder: comment_finder,
+                metadata_builder: @metadata_builder
+              ),
+              SourceCommentLocator
+            )
+            @comment_updater = T.let(
+              SourceCommentUpdater.new(
+                workflow_file: workflow_file,
+                commenter: commenter,
+                metadata_builder: @metadata_builder,
+                comment_locator: @comment_locator
+              ),
+              SourceCommentUpdater
+            )
           end
 
           sig { returns(String) }
@@ -44,8 +61,7 @@ module Dependabot
 
               next if sequence
 
-              edit = comment_edit(update)
-              edits << edit if edit
+              edits.concat(comment_updater.edits_for(update))
             end
 
             apply_content_edits(edits)
@@ -62,28 +78,53 @@ module Dependabot
           sig { returns(VersionCommenter) }
           attr_reader :commenter
 
-          sig { returns(YamlCommentFinder) }
-          attr_reader :comment_finder
+          sig { returns(WorkflowFile::MetadataBuilder) }
+          attr_reader :metadata_builder
+
+          sig { returns(SourceCommentLocator) }
+          attr_reader :comment_locator
+
+          sig { returns(SourceCommentUpdater) }
+          attr_reader :comment_updater
 
           sig { returns(T::Hash[Psych::Nodes::Sequence, T::Array[SourceUpdate]]) }
           def grouped_flow_sequence_updates
+            sequences = updates.flat_map { |update| sequences_to_expand(update) }
             groups = T.let({}, T::Hash[Psych::Nodes::Sequence, T::Array[SourceUpdate]])
+            sequences.uniq.each { |sequence| groups[sequence] = [] }
+
             updates.each do |update|
               sequence = update.declaration.steps_sequence
-              next unless sequence
-              next unless expand_flow_sequence?(sequence, update)
-
-              groups[sequence] ||= []
-              T.must(groups[sequence]) << update
+              T.must(groups[sequence]) << update if sequence && groups.key?(sequence)
             end
             groups
           end
 
-          sig { params(sequence: Psych::Nodes::Sequence, update: SourceUpdate).returns(T::Boolean) }
-          def expand_flow_sequence?(sequence, update)
-            workflow_file.sequence_node_style(sequence) == Psych::Nodes::Sequence::FLOW &&
-              workflow_file.declarations_share_comment_line?(sequence) &&
-              commenter.sha?(update.new_ref)
+          sig { params(update: SourceUpdate).returns(T::Array[Psych::Nodes::Sequence]) }
+          def sequences_to_expand(update)
+            return [] unless commenter.sha?(update.new_ref)
+
+            sequences = metadata_builder.collision_sequences_for(update.declaration)
+            collision = metadata_builder.comment_line_collision?(update.declaration)
+            own_sequence = update.declaration.steps_sequence
+            sequence_comment = sequence_comment_requires_expansion?(update)
+            sequences << own_sequence if own_sequence && sequence_comment
+            return [] unless collision || sequence_comment
+
+            sequences.uniq.select do |sequence|
+              workflow_file.sequence_node_style(sequence) == Psych::Nodes::Sequence::FLOW
+            end
+          end
+
+          sig { params(update: SourceUpdate).returns(T::Boolean) }
+          def sequence_comment_requires_expansion?(update)
+            sequence = update.declaration.steps_sequence
+            return false unless sequence
+
+            located_comment = comment_locator.for_sequence(sequence)
+            return false unless located_comment
+
+            commenter.recognized_comment?(located_comment.comment, update.old_ref, update.new_ref)
           end
 
           sig do
@@ -106,8 +147,7 @@ module Dependabot
             ).returns(T::Array[ContentEdit])
           end
           def expanded_flow_sequence_edits(sequence, grouped_updates)
-            declaration = T.must(grouped_updates.first).declaration
-            key_node = T.must(declaration.steps_key_node)
+            key_node = T.must(workflow_file.steps_key_node_for(sequence))
             children = workflow_file.node_children(sequence)
             item_indent = " " * (workflow_file.node_start_column(key_node) + 2)
             closing_indent = " " * workflow_file.node_start_column(key_node)
@@ -115,11 +155,12 @@ module Dependabot
               workflow_file: workflow_file,
               sequence: sequence,
               commenter: commenter,
-              comment_finder: comment_finder,
+              comment_locator: comment_locator,
               item_indent: item_indent
             )
+            trailing_comment_edit = sequence_comments.claim_trailing_comment(grouped_updates)
 
-            lines = children.each_with_index.map do |child, index|
+            lines = sequence_comments.leading_lines + children.each_with_index.map do |child, index|
               render_flow_sequence_child(
                 child,
                 index,
@@ -136,7 +177,6 @@ module Dependabot
                 replacement: flow_sequence_replacement(sequence, lines, closing_indent)
               )
             ]
-            trailing_comment_edit = sequence_comments.trailing_comment_edit(grouped_updates)
             edits << trailing_comment_edit if trailing_comment_edit
             edits
           end
@@ -274,65 +314,6 @@ module Dependabot
             return value.gsub("'", "''") if quote == "'"
 
             value.gsub("\\", "\\\\").gsub('"', '\\"')
-          end
-
-          sig { params(update: SourceUpdate).returns(T.nilable(ContentEdit)) }
-          def comment_edit(update)
-            line, column = comment_anchor(update)
-            line_body = workflow_file.line_body(line)
-            suffix = line_body.byteslice(workflow_file.byte_column(line, column)..) || ""
-            comment = comment_finder.find(suffix)
-
-            if comment
-              updated_comment = commenter.updated_comment(comment, update.old_ref, update.new_ref)
-              return unless updated_comment
-
-              relative_start = T.must(suffix.b.index(comment.b))
-              start_offset = workflow_file.offset(line, column) + relative_start
-              return ContentEdit.new(
-                start_offset: start_offset,
-                end_offset: start_offset + comment.bytesize,
-                replacement: updated_comment
-              )
-            end
-
-            new_comment = commenter.comment_for_ref(update.new_ref)
-            return unless new_comment
-
-            line_end = workflow_file.line_end_offset(line)
-            ContentEdit.new(start_offset: line_end, end_offset: line_end, replacement: new_comment)
-          end
-
-          sig { params(update: SourceUpdate).returns([Integer, Integer]) }
-          def comment_anchor(update)
-            declaration_comment_anchor(update.declaration)
-          end
-
-          sig { params(declaration: WorkflowFile::UsesDeclaration).returns([Integer, Integer]) }
-          def declaration_comment_anchor(declaration)
-            source_node = T.must(declaration.source_node)
-            return block_scalar_comment_anchor(source_node) if block_scalar?(source_node)
-
-            mapping = declaration.mapping_node
-            if mapping && workflow_file.mapping_node_style(mapping) == Psych::Nodes::Mapping::FLOW
-              return [workflow_file.node_end_line(mapping), workflow_file.node_end_column(mapping)]
-            end
-
-            value_node = T.must(declaration.value_node)
-            [workflow_file.node_end_line(value_node), workflow_file.node_end_column(value_node)]
-          end
-
-          sig { params(node: Psych::Nodes::Node).returns([Integer, Integer]) }
-          def block_scalar_comment_anchor(node)
-            [workflow_file.node_start_line(node), workflow_file.node_start_column(node)]
-          end
-
-          sig { params(node: Psych::Nodes::Node).returns(T::Boolean) }
-          def block_scalar?(node)
-            return false unless node.is_a?(Psych::Nodes::Scalar)
-
-            style = workflow_file.scalar_node_style(node)
-            [Psych::Nodes::Scalar::LITERAL, Psych::Nodes::Scalar::FOLDED].include?(style)
           end
 
           sig { params(child: Psych::Nodes::Node, parent: Psych::Nodes::Node).returns(T::Boolean) }
