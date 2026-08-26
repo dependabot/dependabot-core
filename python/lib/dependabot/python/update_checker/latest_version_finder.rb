@@ -42,6 +42,19 @@ module Dependabot
             cooldown.semver_minor_days.to_i.positive? ||
             cooldown.semver_patch_days.to_i.positive?
         end
+
+        sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
+        def eligible_releases
+          releases = available_versions
+          return unless releases
+
+          releases = filter_yanked_versions(releases)
+          releases = filter_by_cooldown(releases)
+          releases = filter_unsupported_versions(releases, nil)
+          releases = filter_prerelease_versions(releases)
+          releases = filter_ignored_versions(releases)
+          apply_post_fetch_latest_versions_filter(releases)
+        end
       end
     end
   end

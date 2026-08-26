@@ -708,6 +708,17 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LatestVersionFinder do
     end
   end
 
+  describe "#eligible_releases" do
+    subject(:eligible_versions) { finder.eligible_releases&.map(&:version) }
+
+    let(:ignored_versions) { ["== 2.4.0"] }
+
+    it "applies the same release filters used for latest_version" do
+      expect(eligible_versions).to include(Gem::Version.new("2.6.0"))
+      expect(eligible_versions).not_to include(Gem::Version.new("2.4.0"))
+    end
+  end
+
   describe "#lowest_security_fix_version" do
     subject(:lowest_security_fix_version) { finder.lowest_security_fix_version }
 

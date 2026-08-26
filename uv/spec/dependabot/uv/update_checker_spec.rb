@@ -406,6 +406,13 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
     end
 
     context "with a uv.lock file" do
+      let(:lock_file_resolver) do
+        instance_double(
+          Dependabot::Uv::UpdateChecker::LockFileResolver,
+          latest_resolvable_version: Dependabot::Uv::Version.new("2.2.0"),
+          lowest_resolvable_security_fix_version: Dependabot::Uv::Version.new("2.2.0")
+        )
+      end
       let(:dependency_files) { [uv_lock_file, pyproject_file] }
       let(:uv_lock_file) do
         Dependabot::DependencyFile.new(
@@ -444,11 +451,22 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
         ]
       end
 
+      before do
+        allow(checker).to receive(:lock_file_resolver).and_return(lock_file_resolver)
+      end
+
       it "returns the lowest security fix version from the lock file resolver" do
         expect(checker.preferred_resolvable_version).to eq(Gem::Version.new("2.2.0"))
       end
 
       context "when no security fix version is found" do
+        let(:lock_file_resolver) do
+          instance_double(
+            Dependabot::Uv::UpdateChecker::LockFileResolver,
+            latest_resolvable_version: Dependabot::Uv::Version.new("2.2.0"),
+            lowest_resolvable_security_fix_version: nil
+          )
+        end
         let(:security_advisories) do
           [
             Dependabot::SecurityAdvisory.new(
@@ -471,6 +489,12 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
     subject { checker.lowest_resolvable_security_fix_version }
 
     context "with a uv.lock file and security advisory" do
+      let(:lock_file_resolver) do
+        instance_double(
+          Dependabot::Uv::UpdateChecker::LockFileResolver,
+          lowest_resolvable_security_fix_version: Dependabot::Uv::Version.new("2.2.0")
+        )
+      end
       let(:dependency_files) { [uv_lock_file, pyproject_file] }
       let(:uv_lock_file) do
         Dependabot::DependencyFile.new(
@@ -507,6 +531,10 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
             vulnerable_versions: ["<= 2.1.0"]
           )
         ]
+      end
+
+      before do
+        allow(checker).to receive(:lock_file_resolver).and_return(lock_file_resolver)
       end
 
       it "returns the lowest non-vulnerable version" do
