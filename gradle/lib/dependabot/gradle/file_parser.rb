@@ -86,6 +86,73 @@ module Dependabot
                   .filter_map { |f| dependency_files.find { |bf| bf.name == f } }
       end
 
+      # Replaces the contents of string literals and comments with spaces,
+      # preserving the overall length and newline positions. This lets callers
+      # locate structural `{`/`}` braces without being confused by braces that
+      # appear inside quoted strings (e.g. `because("see issue {")`) or comments.
+      sig { params(content: String).returns(String) }
+      def self.mask_literals_and_comments(content) # rubocop:disable Metrics/PerceivedComplexity
+        masked = content.dup
+        index = 0
+        length = content.length
+
+        while index < length
+          three = content[index, 3]
+          two = content[index, 2]
+          char = T.must(content[index])
+
+          if three == '"""' || three == "'''"
+            close = content.index(three, index + 3)
+            stop = close ? close + 3 : length
+            mask_region!(masked, content, index, stop)
+            index = stop
+          elsif char == '"' || char == "'"
+            stop = single_quote_string_end(content, index, char, length)
+            mask_region!(masked, content, index, stop)
+            index = stop
+          elsif two == "//"
+            close = content.index("\n", index)
+            stop = close || length
+            mask_region!(masked, content, index, stop)
+            index = stop
+          elsif two == "/*"
+            close = content.index("*/", index + 2)
+            stop = close ? close + 2 : length
+            mask_region!(masked, content, index, stop)
+            index = stop
+          else
+            index += 1
+          end
+        end
+
+        masked
+      end
+
+      # Finds the index just past the closing quote of a single-quoted (`'` or
+      # `"`) string literal starting at `start_index`, honouring backslash escapes.
+      sig { params(content: String, start_index: Integer, quote: String, length: Integer).returns(Integer) }
+      def self.single_quote_string_end(content, start_index, quote, length)
+        stop = start_index + 1
+        while stop < length
+          char = content[stop]
+          if char == "\\"
+            stop += 2
+          elsif char == quote
+            return stop + 1
+          else
+            stop += 1
+          end
+        end
+        stop
+      end
+
+      sig { params(masked: String, original: String, start_index: Integer, stop_index: Integer).void }
+      def self.mask_region!(masked, original, start_index, stop_index)
+        (start_index...stop_index).each do |position|
+          masked[position] = original[position] == "\n" ? "\n" : " "
+        end
+      end
+
       sig { returns(Ecosystem) }
       def ecosystem
         @ecosystem ||= T.let(
@@ -528,11 +595,18 @@ module Dependabot
         # Remove any dependencySubstitution blocks. The coordinates inside
         # `substitute module(...) using module(...)` rules are substitution
         # targets, not real dependency declarations, and must not be updated.
-        prepared_content.dup.scan(DEPENDENCY_SUBSTITUTION_DECLARATION_REGEX) do
+        # Braces inside strings/comments are masked so the matching closing
+        # brace is located correctly, and each block is deleted by its exact
+        # offsets rather than a global replacement.
+        masked = FileParser.mask_literals_and_comments(prepared_content)
+        block_ranges = T.let([], T::Array[T::Range[Integer]])
+        masked.to_enum(:scan, DEPENDENCY_SUBSTITUTION_DECLARATION_REGEX).each do
           mtch = T.must(Regexp.last_match)
-          block = mtch.post_match[0..closing_bracket_index(mtch.post_match)]
-          prepared_content.gsub!(T.must(block), "")
+          start_index = mtch.begin(0)
+          end_index = mtch.end(0) + closing_bracket_index(T.must(masked[mtch.end(0)..]))
+          block_ranges << (start_index..end_index)
         end
+        block_ranges.reverse_each { |range| prepared_content[range] = "" }
 
         prepared_content
       end
