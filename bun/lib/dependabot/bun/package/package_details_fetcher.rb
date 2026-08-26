@@ -201,7 +201,9 @@ module Dependabot
         def fetch_npm_details
           npm_response = fetch_npm_response
           check_npm_response(npm_response) if npm_response
-          Dependabot::Package::NpmRegistryPackage.from_json(npm_response.body)
+          Dependabot::Package::NpmRegistryPackage.from_json(npm_response.body) do |version|
+            Dependabot::Bun::Version.correct?(version)
+          end
         rescue JSON::ParserError, Excon::Error::Timeout, Excon::Error::Socket, RegistryError => e
           if git_dependency?
             nil

@@ -152,12 +152,39 @@ RSpec.describe Dependabot::Bun::Package::PackageDetailsFetcher do
       before do
         stub_request(:get, registry_url).to_return(
           status: 200,
-          body: JSON.dump("versions" => { "not-a-version" => { "custom" => { "nested" => true } } })
+          body: JSON.dump(
+            "versions" => {
+              "not-a-version" => "invalid",
+              "also-not-a-version" => {
+                "engines" => "invalid",
+                "repository" => []
+              }
+            },
+            "time" => {
+              "not-a-version" => 1,
+              "also-not-a-version" => "invalid"
+            }
+          )
         )
       end
 
-      it "skips the release" do
+      it "skips the release before parsing its metadata" do
         expect(details.releases).to eq([])
+      end
+    end
+
+    context "when registry metadata uses a legacy engines array" do
+      before do
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: fixture("npm_responses", "lodash.json")
+        )
+      end
+
+      it "returns the release without a Node requirement" do
+        release = details.releases.find { |candidate| candidate.version.to_s == "0.1.0" }
+
+        expect(release&.language).to be_nil
       end
     end
 
