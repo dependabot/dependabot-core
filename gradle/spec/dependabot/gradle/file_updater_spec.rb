@@ -255,6 +255,41 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         end
       end
 
+      context "with a dependencySubstitution block sharing a coordinate" do
+        let(:buildfile_fixture_name) { "dependency_substitution.gradle" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "io.airlift:aircompressor",
+            version: "2.0.4",
+            requirements: [{
+              file: "build.gradle",
+              requirement: "2.0.4",
+              groups: [],
+              source: nil,
+              metadata: nil
+            }],
+            previous_requirements: [{
+              file: "build.gradle",
+              requirement: "2.0.2",
+              groups: [],
+              source: nil,
+              metadata: nil
+            }],
+            package_manager: "gradle"
+          )
+        end
+
+        it "updates the real dependency but leaves the substitution rule untouched" do
+          expect(updated_buildfile.content).to include(
+            "implementation group: 'io.airlift', name: 'aircompressor', version: '2.0.4'"
+          )
+          expect(updated_buildfile.content).to include(
+            'substitute module("io.airlift:aircompressor:2.0.2") using ' \
+            'module("io.airlift:aircompressor:2.0.3")'
+          )
+        end
+      end
+
       context "with multiple buildfiles" do
         let(:dependency_files) { [buildfile, subproject_buildfile] }
         let(:subproject_buildfile) do

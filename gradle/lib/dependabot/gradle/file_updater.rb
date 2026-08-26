@@ -19,6 +19,10 @@ module Dependabot
 
       SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
 
+      # Matches a Gradle dependency substitution rule, e.g.
+      #   substitute module("group:name:1.0") using module("group:name:2.0")
+      SUBSTITUTION_LINE_REGEX = /\bsubstitute\b.*\bmodule\s*\(/
+
       sig { override.returns(T::Array[::Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = buildfiles.dup
@@ -258,6 +262,8 @@ module Dependabot
         T.must(buildfile.content).lines.select do |line|
           line = evaluate_properties(line, buildfile)
           line = line.gsub(%r{(?<=^|\s)//.*$}, "")
+
+          next false if line.match?(SUBSTITUTION_LINE_REGEX)
 
           if dependency.name.include?(":")
             dep_parts = dependency.name.split(":")

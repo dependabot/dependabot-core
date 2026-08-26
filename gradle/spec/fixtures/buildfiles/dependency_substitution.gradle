@@ -1,0 +1,22 @@
+plugins {
+    id 'java'
+}
+
+group 'com.example'
+version '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+configurations.all {
+    resolutionStrategy.dependencySubstitution {
+        substitute module("io.airlift:aircompressor:2.0.2") using module("io.airlift:aircompressor:2.0.3")
+        substitute module("com.google.guava:guava:30.0-jre") using module("com.google.guava:guava:31.0-jre")
+    }
+}
+
+dependencies {
+    implementation group: 'io.airlift', name: 'aircompressor', version: '2.0.2'
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+}
