@@ -1,0 +1,5 @@
+packages:
+  - packages/*
+
+catalog:
+  globals: ^17.11.0
