@@ -11,10 +11,14 @@ repositories {
 
 configurations.all {
     resolutionStrategy.dependencySubstitution {
+        // upstream regression tracked in JIRA }
         substitute module("io.airlift:aircompressor:2.0.2") using module("io.airlift:aircompressor:2.0.3")
+            .because(/see ticket {/)
         substitute(module("com.google.guava:guava:30.0-jre"))
             .using(module("com.google.guava:guava:31.0-jre"))
             .because("tracking issue {")
+        substitute module("commons-io:commons-io:2.11.0") using module("commons-io:commons-io:2.12.0")
+            .because($/legacy issue {/$)
     }
 }
 

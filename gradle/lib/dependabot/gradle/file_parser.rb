@@ -89,35 +89,17 @@ module Dependabot
       # Replaces the contents of string literals and comments with spaces,
       # preserving the overall length and newline positions. This lets callers
       # locate structural `{`/`}` braces without being confused by braces that
-      # appear inside quoted strings (e.g. `because("see issue {")`) or comments.
+      # appear inside quoted strings (e.g. `because("see issue {")`), Groovy
+      # slashy/dollar-slashy strings (`/.../`, `$/.../$`) or comments.
       sig { params(content: String).returns(String) }
-      def self.mask_literals_and_comments(content) # rubocop:disable Metrics/PerceivedComplexity
+      def self.mask_literals_and_comments(content)
         masked = content.dup
         index = 0
         length = content.length
 
         while index < length
-          three = content[index, 3]
-          two = content[index, 2]
-          char = T.must(content[index])
-
-          if three == '"""' || three == "'''"
-            close = content.index(three, index + 3)
-            stop = close ? close + 3 : length
-            mask_region!(masked, content, index, stop)
-            index = stop
-          elsif char == '"' || char == "'"
-            stop = single_quote_string_end(content, index, char, length)
-            mask_region!(masked, content, index, stop)
-            index = stop
-          elsif two == "//"
-            close = content.index("\n", index)
-            stop = close || length
-            mask_region!(masked, content, index, stop)
-            index = stop
-          elsif two == "/*"
-            close = content.index("*/", index + 2)
-            stop = close ? close + 2 : length
+          stop = literal_or_comment_end(content, index, length)
+          if stop
             mask_region!(masked, content, index, stop)
             index = stop
           else
@@ -126,6 +108,31 @@ module Dependabot
         end
 
         masked
+      end
+
+      # Returns the index just past a string literal or comment that starts at
+      # `index`, or `nil` when `index` is not the start of one.
+      sig { params(content: String, index: Integer, length: Integer).returns(T.nilable(Integer)) }
+      def self.literal_or_comment_end(content, index, length) # rubocop:disable Metrics/PerceivedComplexity
+        three = content[index, 3]
+        two = content[index, 2]
+        char = T.must(content[index])
+
+        if three == '"""' || three == "'''"
+          close = content.index(three, index + 3)
+          close ? close + 3 : length
+        elsif two == "$/"
+          dollar_slashy_string_end(content, index, length)
+        elsif char == '"' || char == "'"
+          single_quote_string_end(content, index, char, length)
+        elsif two == "//"
+          content.index("\n", index) || length
+        elsif two == "/*"
+          close = content.index("*/", index + 2)
+          close ? close + 2 : length
+        elsif char == "/" && slashy_string_start?(content, index)
+          slashy_string_end(content, index, length)
+        end
       end
 
       # Finds the index just past the closing quote of a single-quoted (`'` or
@@ -144,6 +151,53 @@ module Dependabot
           end
         end
         stop
+      end
+
+      # Finds the index just past the closing `/` of a Groovy slashy string
+      # (`/.../`) starting at `start_index`. Only `\/` escapes the delimiter.
+      sig { params(content: String, start_index: Integer, length: Integer).returns(Integer) }
+      def self.slashy_string_end(content, start_index, length)
+        stop = start_index + 1
+        while stop < length
+          if content[stop] == "\\" && content[stop + 1] == "/"
+            stop += 2
+          elsif content[stop] == "/"
+            return stop + 1
+          else
+            stop += 1
+          end
+        end
+        stop
+      end
+
+      # Finds the index just past the closing `/$` of a Groovy dollar-slashy
+      # string (`$/.../$`) starting at `start_index`. `$$` and `$/` are escapes.
+      sig { params(content: String, start_index: Integer, length: Integer).returns(Integer) }
+      def self.dollar_slashy_string_end(content, start_index, length)
+        stop = start_index + 2
+        while stop < length
+          pair = content[stop, 2]
+          if pair == "$$" || pair == "$/"
+            stop += 2
+          elsif pair == "/$"
+            return stop + 2
+          else
+            stop += 1
+          end
+        end
+        stop
+      end
+
+      # A `/` begins a slashy string (rather than a division operator) only when
+      # a value is expected, i.e. the previous non-space character is not the end
+      # of an identifier, number, or closing bracket.
+      sig { params(content: String, index: Integer).returns(T::Boolean) }
+      def self.slashy_string_start?(content, index)
+        position = index - 1
+        position -= 1 while position >= 0 && (content[position] == " " || content[position] == "\t")
+        return true if position.negative?
+
+        !T.must(content[position]).match?(/[\w)\]}]/)
       end
 
       sig { params(masked: String, original: String, start_index: Integer, stop_index: Integer).void }
