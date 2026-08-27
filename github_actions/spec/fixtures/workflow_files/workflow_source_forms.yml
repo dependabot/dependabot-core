@@ -1,0 +1,24 @@
+on: [push]
+
+name: Source forms
+env:
+  CHECKOUT_ACTION: &checkout "actions\x2Fcheckout@v2.1.0"
+jobs:
+  alias:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: *checkout
+  block:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: >-
+          actions/checkout@v2.1.0
+  literal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: |
+          actions/checkout@v2.1.0
+  escaped:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: "actions\x2Fcheckout@v2.1.0"
