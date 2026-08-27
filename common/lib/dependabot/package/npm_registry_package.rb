@@ -105,8 +105,7 @@ module Dependabot
       sig { params(details: ObjectHash, version: String).returns(T.nilable(String)) }
       def self.parse_node_requirement(details, version)
         engines = details["engines"]
-        return if engines.nil?
-        return if engines.is_a?(Array)
+        return unless engines.is_a?(Hash)
 
         engines_hash = object_hash(engines, "version #{version} engines")
         optional_string(

@@ -147,6 +147,23 @@ RSpec.describe Dependabot::Package::NpmRegistryPackage do
       end
     end
 
+    context "with string engines metadata" do
+      let(:payload) do
+        {
+          "versions" => {
+            "5.1.0" => { "engines" => ">=0.10.40" }
+          }
+        }
+      end
+
+      it "preserves the release without a Node requirement" do
+        release = package.releases.fetch("5.1.0")
+
+        expect(release.node_requirement).to be_nil
+        expect(release.details["engines"]).to eq(">=0.10.40")
+      end
+    end
+
     context "when the version filter rejects a release" do
       let(:version_filter) { ->(_version) { false } }
       let(:payload) do
@@ -179,9 +196,6 @@ RSpec.describe Dependabot::Package::NpmRegistryPackage do
       [{ "versions" => { "1.0.0" => {} }, "time" => { "1.0.0" => 1 } }, "time values must be strings"],
       [{ "dist-tags" => [] }, "dist-tags must be an object"],
       [{ "dist-tags" => { "latest" => 1 } }, "dist-tags values must be strings"],
-      [{
-        "versions" => { "1.0.0" => { "engines" => "invalid" } }
-      }, "version 1.0.0 engines must be an object"],
       [{
         "versions" => { "1.0.0" => { "engines" => { "node" => 18 } } }
       }, "version 1.0.0 engines.node must be a string"],
