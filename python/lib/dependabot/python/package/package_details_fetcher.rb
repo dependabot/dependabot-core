@@ -28,10 +28,6 @@ module Dependabot
       PYTHON = "python"
       UNKNOWN = "unknown"
 
-      MAIN_PYPI_INDEXES = %w(
-        https://pypi.python.org/simple/
-        https://pypi.org/simple/
-      ).freeze
       VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
 
       class PackageDetailsFetcher
@@ -123,7 +119,8 @@ module Dependabot
                                extract_release_details_json_from_html(response.body)
                              end
 
-          format_version_releases(version_releases).sort_by(&:version).reverse
+          format_version_releases(version_releases, preserve_distributions: simple_json_response?(response))
+            .sort_by(&:version).reverse
         rescue JSON::ParserError
           Dependabot.logger.warn("JSON parsing error for #{sanitized_url(index_url)}.")
           []
@@ -309,23 +306,17 @@ module Dependabot
 
         sig do
           params(
-            releases_json: T.nilable(T::Hash[String, T::Array[T::Hash[String, T.untyped]]])
+            releases_json: T.nilable(T::Hash[String, T::Array[T::Hash[String, T.untyped]]]),
+            preserve_distributions: T::Boolean
           )
             .returns(T::Array[Dependabot::Package::PackageRelease])
         end
-        def format_version_releases(releases_json)
+        def format_version_releases(releases_json, preserve_distributions: false)
           return [] unless releases_json
 
           releases_json.each_with_object([]) do |(version, release_data_array), versions|
-            release_data = release_data_array.last
-
-            next unless release_data
-
-            release = format_version_release(version, release_data)
-
-            next unless release
-
-            versions << release
+            release_data_array = [release_data_array.last].compact unless preserve_distributions
+            versions.concat(release_data_array.filter_map { |data| format_version_release(version, data) })
           end
         end
 
@@ -532,8 +523,9 @@ module Dependabot
 
         sig { params(index_url: String).returns(T::Boolean) }
         def main_pypi_index?(index_url)
-          uri = URI.parse(index_url).tap { |url| url.user = url.password = nil }
-          MAIN_PYPI_INDEXES.include?(uri.to_s)
+          uri = URI.parse(index_url)
+          uri.scheme&.casecmp?("https") && uri.port == 443 && uri.path.split("/").reject(&:empty?) == ["simple"] &&
+            %w(pypi.org pypi.python.org).any? { |host| uri.host&.casecmp?(host) }
         end
 
         sig { params(dep_name: String).returns(String) }

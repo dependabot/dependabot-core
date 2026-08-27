@@ -252,6 +252,23 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
           expect(a_request(:get, registry_url)).not_to have_been_made
         end
       end
+
+      ["https://PYPI.org/simple/", "https://pypi.org:443/simple/"].each do |equivalent_index_url|
+        context "with the equivalent index URL #{equivalent_index_url}" do
+          let(:dependency_files) do
+            [Dependabot::DependencyFile.new(
+              name: "requirements.txt",
+              content: "--index-url #{equivalent_index_url}\nrequests==2.4.1\n"
+            )]
+          end
+
+          it "retains the legacy JSON-first strategy" do
+            fetch
+
+            expect(a_request(:get, json_url)).to have_been_made.once
+          end
+        end
+      end
     end
 
     context "when JSON response is empty" do

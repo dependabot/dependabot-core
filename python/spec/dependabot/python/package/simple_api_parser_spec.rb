@@ -74,12 +74,17 @@ RSpec.describe Dependabot::Python::Package::SimpleApiParser do
       }
     end
 
-    it "marks the version yanked only when all distributions are yanked" do
+    it "preserves each distribution's metadata" do
       expect(parsed_releases.fetch("2.32.3")).to contain_exactly(
         hash_including(
           "yanked" => false,
           "yanked_reason" => nil,
           "url" => "https://registry.example.com/simple/files/requests-2.32.3.tar.gz"
+        ),
+        hash_including(
+          "yanked" => true,
+          "yanked_reason" => "Broken wheel",
+          "url" => "https://registry.example.com/simple/files/requests-2.32.3-py3-none-any.whl"
         )
       )
     end
