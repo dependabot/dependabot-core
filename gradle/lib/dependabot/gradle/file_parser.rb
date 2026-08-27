@@ -128,11 +128,32 @@ module Dependabot
         elsif two == "//"
           content.index("\n", index) || length
         elsif two == "/*"
-          close = content.index("*/", index + 2)
-          close ? close + 2 : length
+          block_comment_end(content, index, length)
         elsif char == "/" && slashy_string_start?(content, index)
           slashy_string_end(content, index, length)
         end
+      end
+
+      # Finds the index just past the closing `*/` of a block comment starting at
+      # `start_index`, tracking nested `/*`/`*/` pairs (allowed in Kotlin `.kts`).
+      sig { params(content: String, start_index: Integer, length: Integer).returns(Integer) }
+      def self.block_comment_end(content, start_index, length)
+        depth = 1
+        stop = start_index + 2
+        while stop < length
+          pair = content[stop, 2]
+          if pair == "/*"
+            depth += 1
+            stop += 2
+          elsif pair == "*/"
+            depth -= 1
+            stop += 2
+            return stop if depth.zero?
+          else
+            stop += 1
+          end
+        end
+        length
       end
 
       # Finds the index just past the closing quote of a single-quoted (`'` or
@@ -632,11 +653,19 @@ module Dependabot
 
       sig { params(buildfile: Dependabot::DependencyFile).returns(String) }
       def prepared_content(buildfile)
+        # Remove any dependencySubstitution blocks first, before the comment
+        # regexes below run. The coordinates inside `substitute module(...) using
+        # module(...)` rules are substitution targets, not real dependency
+        # declarations, and must not be updated. Braces inside strings/comments
+        # are masked so the matching closing brace is located correctly, and each
+        # block is deleted by its exact offsets. Doing this before the comment
+        # stripping keeps string literals intact so the masker can see them.
+        prepared_content = remove_dependency_substitution_blocks(T.must(buildfile.content))
+
         # Remove any comments
-        prepared_content =
-          T.must(buildfile.content)
-           .gsub(%r{(?<=^|\s)//.*$}, "\n")
-           .gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
+        prepared_content = prepared_content
+                           .gsub(%r{(?<=^|\s)//.*$}, "\n")
+                           .gsub(%r{(?<=^|\s)/\*.*?\*/}m, "")
 
         # Remove the dependencyVerification section added by Gradle Witness
         # (TODO: Support updating this in the FileUpdater)
@@ -646,13 +675,13 @@ module Dependabot
           prepared_content.gsub!(T.must(block), "")
         end
 
-        # Remove any dependencySubstitution blocks. The coordinates inside
-        # `substitute module(...) using module(...)` rules are substitution
-        # targets, not real dependency declarations, and must not be updated.
-        # Braces inside strings/comments are masked so the matching closing
-        # brace is located correctly, and each block is deleted by its exact
-        # offsets rather than a global replacement.
-        masked = FileParser.mask_literals_and_comments(prepared_content)
+        prepared_content
+      end
+
+      sig { params(content: String).returns(String) }
+      def remove_dependency_substitution_blocks(content)
+        result = content.dup
+        masked = FileParser.mask_literals_and_comments(content)
         block_ranges = T.let([], T::Array[T::Range[Integer]])
         masked.to_enum(:scan, DEPENDENCY_SUBSTITUTION_DECLARATION_REGEX).each do
           mtch = T.must(Regexp.last_match)
@@ -660,9 +689,8 @@ module Dependabot
           end_index = mtch.end(0) + closing_bracket_index(T.must(masked[mtch.end(0)..]))
           block_ranges << (start_index..end_index)
         end
-        block_ranges.reverse_each { |range| prepared_content[range] = "" }
-
-        prepared_content
+        block_ranges.reverse_each { |range| result[range] = "" }
+        result
       end
 
       sig { params(string: String).returns(Integer) }
