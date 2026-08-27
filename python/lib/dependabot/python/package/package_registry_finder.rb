@@ -203,7 +203,7 @@ module Dependabot
               *config_variable_index_urls[:extra]
             ]
             .compact
-            .map { |u| u.strip.gsub(%r{/*$}, "") + "/" }
+            .map { |u| u.strip.sub(%r{/+$}, "") + "/" }
 
           regexp = url
                    .sub(%r{(?<=://).+@}, "")
@@ -226,7 +226,7 @@ module Dependabot
           cred = credential_for(base_url)
           return base_url unless cred
 
-          AuthedUrlBuilder.authed_url(credential: cred).gsub(%r{/*$}, "") + "/"
+          AuthedUrlBuilder.authed_url(credential: cred).sub(%r{/+$}, "") + "/"
         end
 
         sig { params(url: String).returns(T.nilable(Dependabot::Credential)) }
@@ -234,7 +234,7 @@ module Dependabot
           credentials
             .select { |c| c["type"] == "python_index" }
             .find do |c|
-              cred_url = c.fetch("index-url").gsub(%r{/*$}, "") + "/"
+              cred_url = c.fetch("index-url").sub(%r{/+$}, "") + "/"
               cred_url.include?(url)
             end
         end
