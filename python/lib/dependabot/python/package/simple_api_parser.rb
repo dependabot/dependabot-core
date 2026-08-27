@@ -29,7 +29,7 @@ module Dependabot
           data = JSON.parse(json_body)
           validate_api_version!(data.dig("meta", "api-version").to_s)
 
-          data.fetch("files", []).each_with_object({}) do |file, releases|
+          releases = data.fetch("files", []).each_with_object({}) do |file, grouped_releases|
             filename = file["filename"]
             next unless filename&.match?(name_regex)
 
@@ -40,14 +40,16 @@ module Dependabot
             details = {
               "version" => version,
               "requires_python" => file["requires-python"],
-              "yanked" => !!yanked,
+              "yanked" => yanked != false,
               "yanked_reason" => yanked.is_a?(String) ? yanked : nil,
               "upload_time" => file["upload-time"],
               "url" => resolve_url(file["url"])
             }
-            releases[version] ||= []
-            releases[version] << details
+            grouped_releases[version] ||= []
+            grouped_releases[version] << details
           end
+
+          releases.transform_values { |details| [aggregate_release_details(details)] }
         end
 
         private
@@ -73,6 +75,19 @@ module Dependabot
           return unless api_version.split(".").first.to_i > 1
 
           raise Dependabot::DependencyFileNotResolvable, "Unsupported PEP 691 API version: #{api_version}"
+        end
+
+        sig { params(details: T::Array[ReleaseDetail]).returns(ReleaseDetail) }
+        def aggregate_release_details(details)
+          usable_details = details.reject { |detail| detail["yanked"] }
+          all_yanked = usable_details.empty?
+          usable_details = details if all_yanked
+          selected_details = T.must(usable_details.min_by { |detail| detail["url"].to_s })
+
+          selected_details.merge(
+            "yanked" => all_yanked,
+            "yanked_reason" => all_yanked ? selected_details["yanked_reason"] : nil
+          )
         end
 
         sig { returns(Regexp) }

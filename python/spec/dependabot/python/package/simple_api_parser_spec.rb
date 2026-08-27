@@ -55,6 +55,36 @@ RSpec.describe Dependabot::Python::Package::SimpleApiParser do
     )
   end
 
+  context "with multiple distributions for the same version" do
+    let(:response) do
+      {
+        "meta" => { "api-version" => api_version },
+        "files" => [
+          {
+            "filename" => "requests-2.32.3.tar.gz",
+            "url" => "../files/requests-2.32.3.tar.gz",
+            "yanked" => false
+          },
+          {
+            "filename" => "requests-2.32.3-py3-none-any.whl",
+            "url" => "../files/requests-2.32.3-py3-none-any.whl",
+            "yanked" => "Broken wheel"
+          }
+        ]
+      }
+    end
+
+    it "marks the version yanked only when all distributions are yanked" do
+      expect(parsed_releases.fetch("2.32.3")).to contain_exactly(
+        hash_including(
+          "yanked" => false,
+          "yanked_reason" => nil,
+          "url" => "https://registry.example.com/simple/files/requests-2.32.3.tar.gz"
+        )
+      )
+    end
+  end
+
   context "with an unsupported API major version" do
     let(:api_version) { "2.0" }
 
