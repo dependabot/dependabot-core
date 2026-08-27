@@ -193,7 +193,7 @@ module Dependabot
 
         sig { params(url: String).returns(String) }
         def clean_check_and_remove_environment_variables(url)
-          url = url.strip.sub(%r{/+$}, "") + "/"
+          url = with_single_trailing_slash(url.strip)
 
           return authed_base_url(url) unless url.match?(ENVIRONMENT_VARIABLE_REGEX)
 
@@ -203,7 +203,7 @@ module Dependabot
               *config_variable_index_urls[:extra]
             ]
             .compact
-            .map { |u| u.strip.sub(%r{/+$}, "") + "/" }
+            .map { |u| with_single_trailing_slash(u.strip) }
 
           regexp = url
                    .sub(%r{(?<=://).+@}, "")
@@ -226,7 +226,7 @@ module Dependabot
           cred = credential_for(base_url)
           return base_url unless cred
 
-          AuthedUrlBuilder.authed_url(credential: cred).sub(%r{/+$}, "") + "/"
+          with_single_trailing_slash(AuthedUrlBuilder.authed_url(credential: cred))
         end
 
         sig { params(url: String).returns(T.nilable(Dependabot::Credential)) }
@@ -234,9 +234,16 @@ module Dependabot
           credentials
             .select { |c| c["type"] == "python_index" }
             .find do |c|
-              cred_url = c.fetch("index-url").sub(%r{/+$}, "") + "/"
+              cred_url = with_single_trailing_slash(c.fetch("index-url"))
               cred_url.include?(url)
             end
+        end
+
+        sig { params(url: String).returns(String) }
+        def with_single_trailing_slash(url)
+          normalized_url = url.dup
+          normalized_url.chop! while normalized_url.end_with?("/")
+          normalized_url + "/"
         end
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
