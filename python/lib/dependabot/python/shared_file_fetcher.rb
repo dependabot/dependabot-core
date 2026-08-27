@@ -29,8 +29,8 @@ module Dependabot
       #   file several times slower.
       # * The separator is matched possessively so a line of nothing but `-r` and spaces cannot
       #   backtrack through the trailing `.*`, which would be quadratic in the number of spaces.
-      CHILD_REQUIREMENT_REGEX = /^-(?:r\s?|-requirement(?:\s++|=))(?<path>.*\.(?:txt|in))/
-      CONSTRAINT_REGEX = /^-(?:c\s?|-constraint(?:\s++|=))(?<path>.*\.(?:txt|in))/
+      CHILD_REQUIREMENT_REGEX = /^-(?:r\s*+|-requirement(?:\s++|=))(?<path>.*\.(?:txt|in))/
+      CONSTRAINT_REGEX = /^-(?:c\s*+|-constraint(?:\s++|=))(?<path>.*\.(?:txt|in))/
       EDITABLE_REGEX = /^-(?:e\s++|-editable(?:\s++|=))/
       EDITABLE_PATH_REGEX = /(?<name>#{EDITABLE_REGEX}['"]?(?:file:)?(?<path>[^\[#'"\n;]*))/
       DEPENDENCY_TYPES = %w(packages dev-packages).freeze

@@ -8,6 +8,7 @@ RSpec.describe Dependabot::Python::SharedFileFetcher do
   describe "CHILD_REQUIREMENT_REGEX" do
     {
       "-r base.txt" => "base.txt",
+      "-r  base.txt" => "base.txt",
       "-rbase.txt" => "base.txt",
       "-r base.in" => "base.in",
       "-r ../base.txt" => "../base.txt",
@@ -39,6 +40,7 @@ RSpec.describe Dependabot::Python::SharedFileFetcher do
   describe "CONSTRAINT_REGEX" do
     {
       "-c constraints.txt" => "constraints.txt",
+      "-c  constraints.txt" => "constraints.txt",
       "-cconstraints.txt" => "constraints.txt",
       "-c constraints.in" => "constraints.in",
       "-c ../constraints.txt" => "../constraints.txt",
