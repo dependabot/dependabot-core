@@ -110,8 +110,8 @@ module Dependabot
           Dependabot.logger.info(
             "Fetching release information from simple registry at #{sanitized_url(index_url)} for #{dependency.name}"
           )
-          project_url = index_url + normalised_name + "/"
           response = registry_response_for_dependency(index_url, accept: simple_api_accept)
+          project_url = response.path ? Excon::Utils.request_uri(response.data) : index_url + normalised_name + "/"
           check_authentication_response(response, index_url)
 
           version_releases = if simple_json_response?(response)

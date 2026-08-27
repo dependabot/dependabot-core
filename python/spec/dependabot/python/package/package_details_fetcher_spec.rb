@@ -95,6 +95,21 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
       context "when the index returns PEP 691 JSON" do
         let(:api_version) { "1.1" }
         let(:registry_request_url) { registry_url }
+        let(:simple_api_response) do
+          JSON.dump(
+            "meta" => { "api-version" => api_version },
+            "name" => dependency_name,
+            "files" => [
+              {
+                "filename" => "requests-2.32.3-py3-none-any.whl",
+                "url" => "../files/requests-2.32.3-py3-none-any.whl",
+                "requires-python" => ">=3.8",
+                "yanked" => false,
+                "upload-time" => "2026-08-24T12:34:56Z"
+              }
+            ]
+          )
+        end
 
         before do
           stub_request(:get, registry_request_url)
@@ -102,19 +117,7 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
             .to_return(
               status: 200,
               headers: { "Content-Type" => "Application/Vnd.Pypi.Simple.V1+Json ; charset=utf-8" },
-              body: JSON.dump(
-                "meta" => { "api-version" => api_version },
-                "name" => dependency_name,
-                "files" => [
-                  {
-                    "filename" => "requests-2.32.3-py3-none-any.whl",
-                    "url" => "../files/requests-2.32.3-py3-none-any.whl",
-                    "requires-python" => ">=3.8",
-                    "yanked" => false,
-                    "upload-time" => "2026-08-24T12:34:56Z"
-                  }
-                ]
-              )
+              body: simple_api_response
             )
         end
 
@@ -127,6 +130,31 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
             .to eq("https://registry.example.com/simple/files/requests-2.32.3-py3-none-any.whl")
           expect(a_request(:get, registry_url)).to have_been_made.once
           expect(a_request(:get, json_url)).not_to have_been_made
+        end
+
+        context "when the project endpoint redirects" do
+          let(:redirect_response) do
+            Excon::Response.new(
+              status: 200,
+              headers: { "Content-Type" => "application/vnd.pypi.simple.v1+json" },
+              body: simple_api_response,
+              scheme: "https",
+              host: "cdn.example.com",
+              port: 443,
+              path: "/packages/requests/",
+              query: nil,
+              omit_default_port: true
+            )
+          end
+
+          before do
+            allow(Dependabot::RegistryClient).to receive(:get).and_return(redirect_response)
+          end
+
+          it "resolves relative file URLs against the redirect target" do
+            expect(fetch.releases.first.url)
+              .to eq("https://cdn.example.com/packages/files/requests-2.32.3-py3-none-any.whl")
+          end
         end
 
         context "with an authenticated index" do
