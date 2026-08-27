@@ -10,7 +10,7 @@ module Dependabot
   module Bazel
     ECOSYSTEM = "bazel"
     PACKAGE_MANAGER = "bazel"
-    DEFAULT_BAZEL_VERSION = "8.4.2"
+    DEFAULT_BAZEL_VERSION = "8.5.1"
 
     # Keep versions in ascending order
     SUPPORTED_BAZEL_VERSIONS = T.let([Version.new("6"), Version.new("7")].freeze, T::Array[Dependabot::Version])
