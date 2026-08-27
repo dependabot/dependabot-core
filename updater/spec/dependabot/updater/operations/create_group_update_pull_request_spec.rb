@@ -151,6 +151,71 @@ RSpec.describe Dependabot::Updater::Operations::CreateGroupUpdatePullRequest do
     Dependabot::Experiments.reset!
   end
 
+  describe "#perform" do
+    let(:failed_dependency) do
+      Dependabot::Dependency.new(
+        name: "dummy-pkg-b",
+        version: "1.0.0",
+        requirements: [],
+        package_manager: "bundler"
+      )
+    end
+
+    let(:dependency_group) do
+      instance_double(
+        Dependabot::DependencyGroup,
+        name: "dummy-group",
+        dependencies: [dependency, failed_dependency]
+      )
+    end
+
+    let(:dependency_change) do
+      instance_double(Dependabot::DependencyChange, updated_dependencies: updated_dependencies)
+    end
+
+    before do
+      allow(job).to receive_messages(
+        dependencies: [dependency.name, failed_dependency.name],
+        security_updates_only?: true
+      )
+      allow(create_group_update_pull_request).to receive(:dependency_change).and_return(dependency_change)
+    end
+
+    context "when the group has an updated dependency" do
+      let(:updated_dependencies) { [dependency] }
+
+      it "reports unhandled dependencies that failed to update" do
+        expect(mock_error_handler).to receive(:handle_dependency_error)
+          .with(
+            error: kind_of(Dependabot::DependabotError),
+            dependency: failed_dependency,
+            dependency_group: dependency_group
+          )
+
+        perform
+      end
+    end
+
+    context "when the group has no updated dependencies" do
+      let(:updated_dependencies) { [] }
+
+      before do
+        allow(dependency_snapshot).to receive(:handled_dependencies).and_return([dependency.name])
+      end
+
+      it "reports unhandled dependencies that failed to update" do
+        expect(mock_error_handler).to receive(:handle_dependency_error)
+          .with(
+            error: kind_of(Dependabot::DependabotError),
+            dependency: failed_dependency,
+            dependency_group: dependency_group
+          )
+
+        perform
+      end
+    end
+  end
+
   describe "#dependency_change" do
     before do
       allow(dependency).to receive(:all_versions).and_return(["4.0.0", "4.1.0", "4.2.0"])
