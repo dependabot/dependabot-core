@@ -419,7 +419,7 @@ module Dependabot
 
         file.content.lines
             .reject { |l| l.match?(/^['"]?(?<path>\..*?)(?=\[|#|'|"|$)/) }
-            .reject { |l| l.match?(/^(?:-e)\s+['"]?(?<path>.*?)(?=\[|#|'|"|$)/) }
+            .reject { |l| l.match?(Python::SharedFileFetcher::EDITABLE_REGEX) }
             .join
       end
 
