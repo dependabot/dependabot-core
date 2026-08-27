@@ -44,11 +44,7 @@ module Dependabot
             credentials: T::Array[Dependabot::Credential]
           ).void
         end
-        def initialize(
-          dependency:,
-          dependency_files:,
-          credentials:
-        )
+        def initialize(dependency:, dependency_files:, credentials:)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
@@ -72,7 +68,7 @@ module Dependabot
                              .flat_map do |index_url|
             fetch_from_registry(index_url) || [] # Ensure it always returns an array
           rescue Excon::Error::Timeout, Excon::Error::Socket
-            raise if MAIN_PYPI_INDEXES.include?(index_url)
+            raise if main_pypi_index?(index_url)
 
             raise PrivateSourceTimedOut, sanitized_url(index_url)
           rescue URI::InvalidURIError
@@ -92,7 +88,7 @@ module Dependabot
             .returns(T.nilable(T::Array[Dependabot::Package::PackageRelease]))
         end
         def fetch_from_registry(index_url)
-          return fetch_from_simple_registry(index_url) unless MAIN_PYPI_INDEXES.include?(index_url)
+          return fetch_from_simple_registry(index_url) unless main_pypi_index?(index_url)
 
           begin
             metadata = fetch_from_json_registry(index_url)
@@ -532,6 +528,12 @@ module Dependabot
         sig { params(index_url: String).returns(String) }
         def sanitized_url(index_url)
           index_url.sub(%r{//([^/@]+)@}, "//redacted@")
+        end
+
+        sig { params(index_url: String).returns(T::Boolean) }
+        def main_pypi_index?(index_url)
+          uri = URI.parse(index_url).tap { |url| url.user = url.password = nil }
+          MAIN_PYPI_INDEXES.include?(uri.to_s)
         end
 
         sig { params(dep_name: String).returns(String) }

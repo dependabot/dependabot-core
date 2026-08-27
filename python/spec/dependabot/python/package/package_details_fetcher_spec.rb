@@ -204,6 +204,26 @@ RSpec.describe Dependabot::Python::Package::PackageDetailsFetcher do
 
         expect(result.releases.map(&:version)).to match_array(expected_releases.map(&:version))
       end
+
+      context "with credentials for PyPI" do
+        let(:credentials) do
+          [Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://pypi.org/simple/",
+              "token" => "user:pass",
+              "replaces-base" => true
+            }
+          )]
+        end
+
+        it "retains the legacy JSON-first strategy" do
+          fetch
+
+          expect(a_request(:get, json_url)).to have_been_made.once
+          expect(a_request(:get, registry_url)).not_to have_been_made
+        end
+      end
     end
 
     context "when JSON response is empty" do
