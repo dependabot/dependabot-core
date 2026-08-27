@@ -14,7 +14,7 @@ concurrency:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  SMOKE_TEST_BRANCH: ${{ vars.SMOKE_TEST_BRANCH || 'dev/brettfo/nuget-dep-dir' }}
+  SMOKE_TEST_BRANCH: ${{ vars.SMOKE_TEST_BRANCH || 'main' }}
 permissions: {}
 
 jobs:
