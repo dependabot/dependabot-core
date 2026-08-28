@@ -17,7 +17,8 @@ internal sealed class ProjectBuildFile : XmlBuildFile
 
     public static XmlDocumentSyntax Parse(string contents) => Parser.ParseText(contents);
 
-    public IXmlElementSyntax ProjectNode => Contents.RootSyntax;
+    public IXmlElementSyntax ProjectNode => Contents.RootSyntax
+        ?? throw new UnparseableFileException("Project file does not contain a root element", Path);
 
     public IEnumerable<IXmlElementSyntax> SdkNodes => ProjectNode
         .GetElements("Sdk", StringComparison.OrdinalIgnoreCase);
@@ -142,7 +143,9 @@ internal sealed class ProjectBuildFile : XmlBuildFile
         .Where(e =>
             e.Name.Equals("ProjectReference", StringComparison.OrdinalIgnoreCase) ||
             e.Name.Equals("ProjectFile", StringComparison.OrdinalIgnoreCase))
-        .Select(e => PathHelper.GetFullPathFromRelative(System.IO.Path.GetDirectoryName(Path)!, e.GetAttribute("Include").Value));
+        .Select(e => e.GetAttributeValueCaseInsensitive("Include"))
+        .OfType<string>()
+        .Select(include => PathHelper.GetFullPathFromRelative(System.IO.Path.GetDirectoryName(Path)!, include));
 
     public void NormalizeDirectorySeparatorsInProject()
     {
@@ -169,11 +172,13 @@ internal sealed class ProjectBuildFile : XmlBuildFile
         updatedXml = Contents.ReplaceNodes(errorsWithConditions,
             (_, n) =>
             {
-                var conditionAttr = n.GetAttribute("Condition");
+                var conditionAttr = n.GetAttribute("Condition")
+                    ?? throw new InvalidOperationException("Expected Error element to have a Condition attribute");
                 var newConditionAttr = conditionAttr.WithValue(conditionAttr.Value.Replace("/", "\\"));
                 n = (XmlEmptyElementSyntax)n.ReplaceAttribute(conditionAttr, newConditionAttr).AsNode;
 
-                var textAttr = n.GetAttribute("Text");
+                var textAttr = n.GetAttribute("Text")
+                    ?? throw new InvalidOperationException("Expected Error element to have a Text attribute");
                 var newTextAttr = textAttr.WithValue(textAttr.Value.Replace("/", "\\"));
                 return n.ReplaceAttribute(textAttr, newTextAttr).AsNode;
             });
@@ -191,11 +196,13 @@ internal sealed class ProjectBuildFile : XmlBuildFile
         updatedXml = Contents.ReplaceNodes(importsWithConditions,
             (_, n) =>
             {
-                var projectAttr = n.GetAttribute("Project");
+                var projectAttr = n.GetAttribute("Project")
+                    ?? throw new InvalidOperationException("Expected Import element to have a Project attribute");
                 var newProjectAttr = projectAttr.WithValue(projectAttr.Value.Replace("/", "\\"));
                 n = (XmlEmptyElementSyntax)n.ReplaceAttribute(projectAttr, newProjectAttr).AsNode;
 
-                var conditionAttr = n.GetAttribute("Condition");
+                var conditionAttr = n.GetAttribute("Condition")
+                    ?? throw new InvalidOperationException("Expected Import element to have a Condition attribute");
                 var newConditionAttr = conditionAttr.WithValue(conditionAttr.Value.Replace("/", "\\"));
                 return n.ReplaceAttribute(conditionAttr, newConditionAttr).AsNode;
             });

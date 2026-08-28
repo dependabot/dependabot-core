@@ -260,7 +260,7 @@ internal static partial class PackagesConfigUpdater
     private static bool IsHintPathNode(this IXmlElementSyntax element)
     {
         if (element.Name.Equals("HintPath", StringComparison.OrdinalIgnoreCase) &&
-            element.Parent.Name.Equals("Reference", StringComparison.OrdinalIgnoreCase))
+            element.Parent?.Name.Equals("Reference", StringComparison.OrdinalIgnoreCase) == true)
         {
             return true;
         }
