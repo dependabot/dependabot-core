@@ -54,20 +54,20 @@ module Dependabot
         dist_tags = package["dist-tags"]
 
         release_details = versions.nil? ? {} : object_hash(versions, "versions")
-        rejected_versions = T.let({}, T::Hash[String, T::Boolean])
+        accepted_versions = T.let({}, T::Hash[String, T::Boolean])
         release_details.each_key do |version|
-          rejected_versions[version] = true unless yield(version)
+          accepted_versions[version] = true if yield(version)
         end
 
         release_times = if times.nil?
                           {}
                         else
-                          string_map(times, "time", skipped_keys: rejected_versions)
+                          string_map(times, "time", included_keys: accepted_versions)
                         end
 
         releases = T.let({}, T::Hash[String, Release])
         release_details.each do |version, details|
-          next if rejected_versions.key?(version)
+          next unless accepted_versions.key?(version)
 
           releases[version] = parse_release(
             version: version,
@@ -105,8 +105,7 @@ module Dependabot
       sig { params(details: ObjectHash, version: String).returns(T.nilable(String)) }
       def self.parse_node_requirement(details, version)
         engines = details["engines"]
-        return if engines.nil?
-        return if engines.is_a?(Array)
+        return unless engines.is_a?(Hash)
 
         engines_hash = object_hash(engines, "version #{version} engines")
         optional_string(
@@ -158,13 +157,13 @@ module Dependabot
         params(
           value: Object,
           context: String,
-          skipped_keys: T.nilable(T::Hash[String, T::Boolean])
+          included_keys: T.nilable(T::Hash[String, T::Boolean])
         ).returns(T::Hash[String, String])
       end
-      def self.string_map(value, context, skipped_keys: nil)
+      def self.string_map(value, context, included_keys: nil)
         result = T.let({}, T::Hash[String, String])
         object_hash(value, context).each do |key, raw_value|
-          next if skipped_keys&.key?(key)
+          next if included_keys && !included_keys.key?(key)
 
           raise TypeError, "#{context} values must be strings" unless raw_value.is_a?(String)
 

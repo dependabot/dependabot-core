@@ -72,6 +72,44 @@ RSpec.describe Dependabot::Package::NpmRegistryPackage do
       end
     end
 
+    context "with unpublished time metadata" do
+      let(:payload) do
+        {
+          "versions" => { "1.0.0" => {} },
+          "time" => {
+            "1.0.0" => "2024-01-01T00:00:00Z",
+            "unpublished" => {
+              "time" => "2024-01-02T00:00:00Z",
+              "versions" => ["0.9.0"]
+            }
+          }
+        }
+      end
+
+      it "ignores the metadata while parsing release timestamps" do
+        expect(package.releases.fetch("1.0.0").released_at).to eq(Time.utc(2024, 1, 1))
+      end
+    end
+
+    context "when the package is fully unpublished" do
+      let(:payload) do
+        {
+          "time" => {
+            "created" => "2024-01-01T00:00:00Z",
+            "modified" => "2024-01-02T00:00:00Z",
+            "unpublished" => {
+              "time" => "2024-01-02T00:00:00Z",
+              "versions" => ["1.0.0"]
+            }
+          }
+        }
+      end
+
+      it "returns no releases" do
+        expect(package.releases).to eq({})
+      end
+    end
+
     context "with an npm repository" do
       let(:payload) do
         {
@@ -109,6 +147,23 @@ RSpec.describe Dependabot::Package::NpmRegistryPackage do
       end
     end
 
+    context "with string engines metadata" do
+      let(:payload) do
+        {
+          "versions" => {
+            "5.1.0" => { "engines" => ">=0.10.40" }
+          }
+        }
+      end
+
+      it "preserves the release without a Node requirement" do
+        release = package.releases.fetch("5.1.0")
+
+        expect(release.node_requirement).to be_nil
+        expect(release.details["engines"]).to eq(">=0.10.40")
+      end
+    end
+
     context "when the version filter rejects a release" do
       let(:version_filter) { ->(_version) { false } }
       let(:payload) do
@@ -138,12 +193,9 @@ RSpec.describe Dependabot::Package::NpmRegistryPackage do
       [{ "versions" => [] }, "versions must be an object"],
       [{ "versions" => { "1.0.0" => "invalid" } }, "version 1.0.0 details must be an object"],
       [{ "time" => [] }, "time must be an object"],
-      [{ "time" => { "1.0.0" => 1 } }, "time values must be strings"],
+      [{ "versions" => { "1.0.0" => {} }, "time" => { "1.0.0" => 1 } }, "time values must be strings"],
       [{ "dist-tags" => [] }, "dist-tags must be an object"],
       [{ "dist-tags" => { "latest" => 1 } }, "dist-tags values must be strings"],
-      [{
-        "versions" => { "1.0.0" => { "engines" => "invalid" } }
-      }, "version 1.0.0 engines must be an object"],
       [{
         "versions" => { "1.0.0" => { "engines" => { "node" => 18 } } }
       }, "version 1.0.0 engines.node must be a string"],

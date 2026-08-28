@@ -125,6 +125,30 @@ RSpec.describe Dependabot::NpmAndYarn::Package::PackageDetailsFetcher do
       end
     end
 
+    context "when time includes unpublished metadata" do
+      before do
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: JSON.dump(
+            "versions" => { "1.0.0" => {} },
+            "time" => {
+              "1.0.0" => "2024-01-01T00:00:00Z",
+              "unpublished" => {
+                "time" => "2024-01-02T00:00:00Z",
+                "versions" => ["0.9.0"]
+              }
+            }
+          )
+        )
+      end
+
+      it "ignores the metadata while parsing release timestamps" do
+        release = details.releases.find { |candidate| candidate.version.to_s == "1.0.0" }
+
+        expect(release&.released_at).to eq(Time.utc(2024, 1, 1))
+      end
+    end
+
     context "when successful JSON has the wrong top-level shape" do
       before do
         stub_request(:get, registry_url).to_return(status: 200, body: "[]")
@@ -184,14 +208,34 @@ RSpec.describe Dependabot::NpmAndYarn::Package::PackageDetailsFetcher do
       it "returns the release without a Node requirement" do
         release = details.releases.find { |candidate| candidate.version.to_s == "0.1.0" }
 
-        expect(release&.language).to be_nil
+        expect(release).not_to be_nil
+        expect(release.language).to be_nil
+      end
+    end
+
+    context "when registry metadata uses a legacy engines string" do
+      before do
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: JSON.dump(
+            "versions" => {
+              "5.1.0" => { "engines" => ">=0.10.40" }
+            }
+          )
+        )
+      end
+
+      it "returns the release without a Node requirement" do
+        release = details.releases.find { |candidate| candidate.version.to_s == "5.1.0" }
+
+        expect(release).not_to be_nil
+        expect(release.language).to be_nil
       end
     end
 
     [
       ["time", { "versions" => { "1.0.0" => {} }, "time" => { "1.0.0" => 1 } }],
       ["dist-tags", { "dist-tags" => { "latest" => 1 } }],
-      ["engines", { "versions" => { "1.0.0" => { "engines" => "invalid" } } }],
       ["repository", { "versions" => { "1.0.0" => { "repository" => 1 } } }]
     ].each do |field, response_body|
       context "when #{field} has the wrong shape" do

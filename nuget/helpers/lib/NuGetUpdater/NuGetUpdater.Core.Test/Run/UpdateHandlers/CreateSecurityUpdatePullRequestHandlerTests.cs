@@ -117,6 +117,7 @@ public class CreateSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsBa
                         new()
                         {
                             Name = "Some.Dependency",
+                            Directory = "/src",
                             Version = "2.0.0",
                             Requirements = [
                                 new() { Requirement = "2.0.0", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -264,6 +265,7 @@ public class CreateSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsBa
                         new()
                         {
                             Name = "Some.Dependency",
+                            Directory = "/src",
                             Version = "2.0.0",
                             Requirements = [
                                 new() { Requirement = "2.0.0", File = "/src/project1.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -968,6 +970,7 @@ public class CreateSecurityUpdatePullRequestHandlerTests : UpdateHandlersTestsBa
                         new()
                         {
                             Name = "Some.Dependency",
+                            Directory = "/src/client",
                             Version = "2.0.0",
                             Requirements = [
                                 new() { Requirement = "2.0.0", File = "/src/client/client.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
