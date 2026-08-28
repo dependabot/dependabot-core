@@ -158,7 +158,7 @@ module Dependabot
           updated_dependencies: group_changes.updated_dependencies,
           updated_dependency_files: group_changes.updated_dependency_files,
           dependency_group: group,
-          notices: notices
+          notices: notices + group_changes.notices
         )
 
         unless dependency_change.all_have_previous_version?
