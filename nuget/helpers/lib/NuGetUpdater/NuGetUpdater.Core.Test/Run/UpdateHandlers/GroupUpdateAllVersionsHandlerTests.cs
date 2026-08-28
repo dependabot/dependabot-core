@@ -164,6 +164,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         new()
                         {
                             Name = "Production.Dependency.1",
+                            Directory = "/src",
                             Version = "2.0.0",
                             Requirements = [
                                 new() { Requirement = "2.0.0", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -195,6 +196,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         new()
                         {
                             Name = "Production.Dependency.2",
+                            Directory = "/src",
                             Version = "4.0.0",
                             Requirements = [
                                 new() { Requirement = "4.0.0", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -240,6 +242,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         new()
                         {
                             Name = "Test.Dependency",
+                            Directory = "/test",
                             Version = "6.0.0",
                             Requirements = [
                                 new() { Requirement = "6.0.0", File = "/test/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -444,6 +447,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         new()
                         {
                             Name = "Some.Dependency",
+                            Directory = "/src",
                             Version = "2.0.0",
                             Requirements = [
                                 new() { Requirement = "2.0.0", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -456,6 +460,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         new()
                         {
                             Name = "Some.Other.Dependency",
+                            Directory = "/src",
                             Version = "4.0.0",
                             Requirements = [
                                 new() { Requirement = "4.0.0", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -468,6 +473,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         new()
                         {
                             Name = "Some.Dependency",
+                            Directory = "/test",
                             Version = "2.0.0",
                             Requirements = [
                                 new() { Requirement = "2.0.0", File = "/test/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -480,6 +486,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         new()
                         {
                             Name = "Some.Other.Dependency",
+                            Directory = "/test",
                             Version = "4.0.0",
                             Requirements = [
                                 new() { Requirement = "4.0.0", File = "/test/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -548,6 +555,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         new()
                         {
                             Name = "Ungrouped.Dependency",
+                            Directory = "/src",
                             Version = "6.0.0",
                             Requirements = [
                                 new() { Requirement = "6.0.0", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -609,6 +617,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         new()
                         {
                             Name = "Ungrouped.Dependency",
+                            Directory = "/test",
                             Version = "6.0.0",
                             Requirements = [
                                 new() { Requirement = "6.0.0", File = "/test/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -762,6 +771,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         new()
                         {
                             Name = "Some.Dependency",
+                            Directory = "/src",
                             Version = "2.0.0",
                             Requirements = [
                                 new() { Requirement = "2.0.0", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -948,6 +958,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         new()
                         {
                             Name = "Package.For.Group.One",
+                            Directory = "/src",
                             Version = "1.0.1",
                             Requirements = [
                                 new() { Requirement = "1.0.1", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -1122,6 +1133,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         new()
                         {
                             Name = "Some.Dependency",
+                            Directory = "/src",
                             Version = "1.1.0",
                             Requirements = [
                                 new() { Requirement = "1.1.0", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -1467,6 +1479,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         new()
                         {
                             Name = "Some.Dependency",
+                            Directory = "/src",
                             Version = "1.0.0.3",
                             Requirements = [
                                 new() { Requirement = "1.0.0.3", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
@@ -1628,6 +1641,7 @@ public class GroupUpdateAllVersionsHandlerTests : UpdateHandlersTestsBase
                         new()
                         {
                             Name = "Some.Dependency",
+                            Directory = "/src",
                             Version = "2.0.0",
                             Requirements = [
                                 new() { Requirement = "2.0.0", File = "/src/project.csproj", Groups = ["dependencies"], Source = new() { SourceUrl = null } },
