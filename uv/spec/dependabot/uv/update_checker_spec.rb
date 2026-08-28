@@ -5,6 +5,7 @@ require "spec_helper"
 
 require "dependabot/dependency_file"
 require "dependabot/dependency"
+require "dependabot/uv/file_updater"
 require "dependabot/uv/update_checker"
 require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
@@ -340,6 +341,81 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
         end
       end
     end
+
+    context "with an indirect dependency in uv.lock" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "certifi",
+          version: "2025.1.31",
+          requirements: [],
+          package_manager: "uv"
+        )
+      end
+      let(:dependency_files) { [pyproject, uv_lock_file] }
+      let(:pyproject_fixture_name) { "uv_simple.toml" }
+      let(:uv_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "uv.lock",
+          content: fixture("uv_locks", "simple.lock")
+        )
+      end
+      let(:pypi_url) { "https://pypi.org/simple/certifi/" }
+      let(:pypi_response) do
+        <<~HTML
+          <!DOCTYPE html>
+          <html>
+            <body>
+              <a href="https://files.pythonhosted.org/certifi-2025.1.31.tar.gz">certifi-2025.1.31.tar.gz</a>
+              <a href="https://files.pythonhosted.org/certifi-2025.2.0.tar.gz">certifi-2025.2.0.tar.gz</a>
+            </body>
+          </html>
+        HTML
+      end
+      let(:uv_commands) { [] }
+
+      before do
+        language_version_manager = instance_double(
+          Dependabot::Uv::LanguageVersionManager,
+          install_required_python: nil,
+          python_version: "3.11.0",
+          python_major_minor: "3.11"
+        )
+        allow(Dependabot::Uv::LanguageVersionManager)
+          .to receive(:new).and_return(language_version_manager)
+        allow(Dependabot::SharedHelpers).to receive(:with_git_configured).and_yield
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, **_args|
+          next "" if command.start_with?("pyenv local ")
+
+          raise "Unexpected command: #{command}" unless command.include?("uv lock --upgrade-package certifi")
+
+          uv_commands << command
+          updated_lockfile = File.read("uv.lock").sub(
+            'version = "2025.1.31"',
+            'version = "2025.2.0"'
+          )
+          File.write("uv.lock", updated_lockfile)
+          ""
+        end
+      end
+
+      it "updates through the public checker and file updater path" do
+        updated_dependency = checker.updated_dependencies(requirements_to_unlock: :own).first
+        updated_files = Dependabot::Uv::FileUpdater.new(
+          dependencies: [updated_dependency],
+          dependency_files: dependency_files,
+          credentials: credentials
+        ).updated_dependency_files
+
+        updated_lockfile = updated_files.find { |file| file.name == "uv.lock" }
+        expect(updated_dependency.version).to eq("2025.2.0")
+        expect(updated_lockfile&.content).to include("certifi", 'version = "2025.2.0"')
+        expect(uv_commands).to include(
+          a_string_including("certifi>=2025.1.31,<=2025.2.0"),
+          a_string_including("certifi==2025.2.0")
+        )
+        expect(uv_commands.count { |command| command.include?("certifi==2025.2.0") }).to eq(2)
+      end
+    end
   end
 
   describe "#preferred_resolvable_version" do
@@ -406,6 +482,13 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
     end
 
     context "with a uv.lock file" do
+      let(:lock_file_resolver) do
+        instance_double(
+          Dependabot::Uv::UpdateChecker::LockFileResolver,
+          latest_resolvable_version: Dependabot::Uv::Version.new("2.2.0"),
+          lowest_resolvable_security_fix_version: Dependabot::Uv::Version.new("2.2.0")
+        )
+      end
       let(:dependency_files) { [uv_lock_file, pyproject_file] }
       let(:uv_lock_file) do
         Dependabot::DependencyFile.new(
@@ -444,11 +527,22 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
         ]
       end
 
+      before do
+        allow(checker).to receive(:lock_file_resolver).and_return(lock_file_resolver)
+      end
+
       it "returns the lowest security fix version from the lock file resolver" do
         expect(checker.preferred_resolvable_version).to eq(Gem::Version.new("2.2.0"))
       end
 
       context "when no security fix version is found" do
+        let(:lock_file_resolver) do
+          instance_double(
+            Dependabot::Uv::UpdateChecker::LockFileResolver,
+            latest_resolvable_version: Dependabot::Uv::Version.new("2.2.0"),
+            lowest_resolvable_security_fix_version: nil
+          )
+        end
         let(:security_advisories) do
           [
             Dependabot::SecurityAdvisory.new(
@@ -471,6 +565,12 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
     subject { checker.lowest_resolvable_security_fix_version }
 
     context "with a uv.lock file and security advisory" do
+      let(:lock_file_resolver) do
+        instance_double(
+          Dependabot::Uv::UpdateChecker::LockFileResolver,
+          lowest_resolvable_security_fix_version: Dependabot::Uv::Version.new("2.2.0")
+        )
+      end
       let(:dependency_files) { [uv_lock_file, pyproject_file] }
       let(:uv_lock_file) do
         Dependabot::DependencyFile.new(
@@ -507,6 +607,10 @@ RSpec.describe Dependabot::Uv::UpdateChecker do
             vulnerable_versions: ["<= 2.1.0"]
           )
         ]
+      end
+
+      before do
+        allow(checker).to receive(:lock_file_resolver).and_return(lock_file_resolver)
       end
 
       it "returns the lowest non-vulnerable version" do
