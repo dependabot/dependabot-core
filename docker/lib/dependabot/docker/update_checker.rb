@@ -508,17 +508,14 @@ module Dependabot
       sig { params(headers: T::Hash[Symbol, String], tag_name: String).returns(T.nilable(Time)) }
       def published_date_from_response_headers(headers, tag_name)
         last_modified = headers[:last_modified]
-        published_date = begin
-          Time.parse(last_modified) if last_modified
-        rescue ArgumentError, TypeError => e
-          Dependabot.logger.info(
-            "Invalid Last-Modified header for #{docker_repo_name}:#{tag_name}: #{e.message}"
-          )
-          nil
-        end
-        # Fall back to the image config blob's "created" timestamp when Last-Modified
-        # is absent (e.g., Docker Hub multi-arch manifest lists).
-        published_date || fetch_image_config_created(tag_name)
+        return nil unless last_modified
+
+        Time.parse(last_modified)
+      rescue ArgumentError, TypeError => e
+        Dependabot.logger.info(
+          "Invalid Last-Modified header for #{docker_repo_name}:#{tag_name}: #{e.message}"
+        )
+        nil
       end
 
       sig do

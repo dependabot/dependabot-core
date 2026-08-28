@@ -1789,18 +1789,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
                 .and_return(Time.now - (2 * 86_400))
             end
 
-            it "falls back to the config created date and respects cooldown" do
-              expect(can_update).to be false
-            end
-          end
-
-          context "when the config blob created date is outside the cooldown window" do
-            before do
-              allow(checker).to receive(:fetch_image_config_created)
-                .and_return(Time.now - (30 * 86_400))
-            end
-
-            it "falls back to the config created date and proposes the update" do
+            it "ignores the publisher-controlled created date and fails open" do
               expect(can_update).to be true
             end
           end
@@ -3533,10 +3522,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         allow(checker).to receive(:fetch_image_config_created).with("1.0.0").and_return(config_created)
       end
 
-      it "falls back to the image config blob created timestamp" do
+      it "does not fall back to the publisher-controlled config blob created timestamp" do
         result = get_tag_publication_details
         expect(result).to be_a(Dependabot::Package::PackageRelease)
-        expect(result.released_at).to eq(config_created)
+        expect(result.released_at).to be_nil
+        expect(checker).not_to have_received(:fetch_image_config_created)
       end
     end
 
