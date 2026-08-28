@@ -28,6 +28,10 @@ module Dependabot
       PYTHON = "python"
       UNKNOWN = "unknown"
 
+      MAIN_PYPI_INDEXES = %w(
+        https://pypi.python.org/simple/
+        https://pypi.org/simple/
+      ).freeze
       VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
 
       class PackageDetailsFetcher
