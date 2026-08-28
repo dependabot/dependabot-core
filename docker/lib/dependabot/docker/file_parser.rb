@@ -54,6 +54,8 @@ module Dependabot
 
         manifest_files.each do |file|
           dependency_set += workfile_file_dependencies(file)
+        rescue Dependabot::DependencyFileNotParseable => e
+          Dependabot.logger.warn("Failed to parse YAML file #{file.path}: #{e.message}")
         end
 
         dependency_set.dependencies
@@ -107,7 +109,6 @@ module Dependabot
 
         dependency_set
       rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias => e
-        Dependabot.logger.error("Failed to parse file #{file.path}: #{e.message}")
         raise Dependabot::DependencyFileNotParseable.new(file.path, e.message)
       end
 

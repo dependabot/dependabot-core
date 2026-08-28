@@ -534,6 +534,43 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
           )
       end
     end
+
+    context "with string-keyed git source details" do
+      let(:requirements) do
+        [{
+          file: "Cargo.toml",
+          requirement: nil,
+          groups: [],
+          source: {
+            "type" => "git",
+            "url" => "https://github.com/BurntSushi/utf8-ranges",
+            "ref" => "v1.0.0",
+            "custom" => "preserved"
+          }
+        }]
+      end
+      let(:git_checker) { instance_double(Dependabot::GitCommitChecker) }
+
+      before do
+        allow(checker).to receive_messages(
+          target_version: "v1.5.0",
+          git_dependency?: true,
+          latest_git_tag_is_resolvable?: true,
+          git_commit_checker: git_checker
+        )
+        allow(git_checker).to receive_messages(
+          pinned_ref_looks_like_version?: true,
+          local_tag_for_latest_version: { tag: "v1.5.0" }
+        )
+      end
+
+      it "preserves the source payload and key style" do
+        source = checker.updated_requirements.first.source_hash
+
+        expect(source).to include("ref" => "v1.5.0", "custom" => "preserved")
+        expect(source).not_to have_key(:ref)
+      end
+    end
   end
 
   describe "#requirements_unlocked_or_can_be?" do

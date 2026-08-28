@@ -72,10 +72,11 @@ module Dependabot
 
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_requirement(req)
-          return req unless req[:requirement]
-          return req if ["", "*"].include?(req[:requirement])
+          requirement = req.requirement_string
+          return req unless requirement
+          return req if ["", "*"].include?(requirement)
 
-          requirement_strings = req[:requirement].split(",").map(&:strip)
+          requirement_strings = requirement.split(",").map(&:strip)
           new_req = calculate_updated_requirement(req, requirement_strings)
 
           Dependabot::DependencyRequirement.create(
@@ -121,7 +122,7 @@ module Dependabot
           # For BumpVersions strategy, always update to the new version
           if update_strategy == RequirementsUpdateStrategy::BumpVersionsIfNecessary &&
              new_version_satisfies?(req)
-            return req[:requirement]
+            return T.must(req.requirement)
           end
 
           update_requirements_range(requirement_strings)
@@ -133,10 +134,10 @@ module Dependabot
           # For BumpVersions strategy, always update to the new version
           if update_strategy == RequirementsUpdateStrategy::BumpVersionsIfNecessary &&
              new_version_satisfies?(req)
-            return req[:requirement]
+            return T.must(req.requirement)
           end
 
-          bump_version_string(req[:requirement], T.must(latest_resolvable_version).to_s)
+          bump_version_string(T.must(req.requirement_string), T.must(latest_resolvable_version).to_s)
         end
 
         sig do
@@ -174,21 +175,23 @@ module Dependabot
 
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def widen_requirement(req)
-          return req unless req[:requirement]
-          return req if ["", "*"].include?(req[:requirement])
+          requirement = req.requirement_string
+          return req unless requirement
+          return req if ["", "*"].include?(requirement)
 
           # For WidenRanges, always widen to ensure proper upper bounds
           # Don't return early even if version satisfies - we want to add/update bounds
-          new_requirement = widen_requirement_string(req[:requirement])
+          new_requirement = widen_requirement_string(requirement)
           Dependabot::DependencyRequirement.create(req.merge(requirement: new_requirement))
         end
 
         sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
         def new_version_satisfies?(req)
-          return false unless req[:requirement]
+          requirement = req.requirement_string
+          return false unless requirement
 
           Conda::Requirement
-            .requirements_array(req[:requirement])
+            .requirements_array(requirement)
             .all? { |r| r.satisfied_by?(T.must(latest_resolvable_version)) }
         end
 

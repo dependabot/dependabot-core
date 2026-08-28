@@ -163,14 +163,14 @@ module Dependabot
         params(
           checker: Dependabot::UpdateCheckers::Base,
           latest_allowed_version: String,
-          conflicting_dependencies: T::Array[T::Hash[String, String]]
+          conflicting_dependencies: T::Array[Dependabot::UpdateCheckers::Conflict]
         )
           .returns(String)
       end
       def security_update_not_possible_message(checker, latest_allowed_version, conflicting_dependencies)
         if conflicting_dependencies.any?
           dep_messages = conflicting_dependencies.map do |dep|
-            "  #{dep['explanation']}"
+            "  #{T.cast(dep['explanation'], String)}"
           end.join("\n")
 
           dependencies_pluralized =

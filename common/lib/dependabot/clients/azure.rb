@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
+require "dependabot/clients/json_response_parser"
 require "excon"
 require "sorbet-runtime"
 
@@ -10,6 +11,10 @@ module Dependabot
     # rubocop:disable Metrics/ClassLength
     class Azure
       extend T::Sig
+      include JsonResponseParser
+
+      JsonObject = T.type_alias { JsonResponseParser::JsonObject }
+      JsonObjects = T.type_alias { T::Array[JsonObject] }
 
       class NotFound < StandardError; end
 
@@ -74,7 +79,9 @@ module Dependabot
 
         raise NotFound if response.status == 400
 
-        JSON.parse(response.body).fetch("commit").fetch("commitId")
+        root = parse_json_object(response.body, "branch stats")
+        commit = object_field(root, "commit", "branch stats")
+        string_field(commit, "commitId", "branch stats")
       end
 
       sig { params(_repo: String).returns(String) }
@@ -85,7 +92,8 @@ module Dependabot
                     "/_apis/git/repositories/" + source.unscoped_repo
         )
 
-        JSON.parse(response.body).fetch("defaultBranch").gsub("refs/heads/", "")
+        root = parse_json_object(response.body, "repository")
+        string_field(root, "defaultBranch", "repository").gsub("refs/heads/", "")
       end
 
       sig do
@@ -93,7 +101,7 @@ module Dependabot
           commit: T.nilable(String),
           path: T.nilable(String)
         )
-          .returns(T::Array[T::Hash[String, T.untyped]])
+          .returns(JsonObjects)
       end
       def fetch_repo_contents(commit = nil, path = nil)
         tree = fetch_repo_contents_treeroot(commit, path)
@@ -105,7 +113,8 @@ module Dependabot
                     "/trees/" + tree + "?recursive=false"
         )
 
-        JSON.parse(response.body).fetch("treeEntries")
+        root = parse_json_object(response.body, "repository tree")
+        object_array_field(root, "treeEntries", "repository tree")
       end
 
       sig { params(commit: T.nilable(String), path: T.nilable(String)).returns(String) }
@@ -125,7 +134,8 @@ module Dependabot
 
         tree_response = get(tree_url)
 
-        JSON.parse(tree_response.body).fetch("objectId")
+        root = parse_json_object(tree_response.body, "repository item")
+        string_field(root, "objectId", "repository item")
       end
 
       sig { params(commit: String, path: String).returns(String) }
@@ -142,7 +152,7 @@ module Dependabot
         response.body
       end
 
-      sig { params(branch_name: T.nilable(String)).returns(T::Array[T::Hash[String, T.untyped]]) }
+      sig { params(branch_name: T.nilable(String)).returns(JsonObjects) }
       def commits(branch_name = nil)
         commits_url = T.must(source.api_endpoint) +
                       source.organization + "/" + source.project +
@@ -153,10 +163,11 @@ module Dependabot
 
         response = get(commits_url)
 
-        JSON.parse(response.body).fetch("value")
+        root = parse_json_object(response.body, "commits")
+        object_array_field(root, "value", "commits")
       end
 
-      sig { params(branch_name: String).returns(T.nilable(T::Hash[String, T.untyped])) }
+      sig { params(branch_name: String).returns(T.nilable(JsonObject)) }
       def branch(branch_name)
         response = get(
           T.must(source.api_endpoint) +
@@ -165,10 +176,11 @@ module Dependabot
                     "/refs?filter=heads/" + branch_name
         )
 
-        JSON.parse(response.body).fetch("value").first
+        root = parse_json_object(response.body, "branch")
+        object_array_field(root, "value", "branch").first
       end
 
-      sig { params(source_branch: String, target_branch: String).returns(T::Array[T::Hash[String, T.untyped]]) }
+      sig { params(source_branch: String, target_branch: String).returns(JsonObjects) }
       def pull_requests(source_branch, target_branch)
         response = get(
           T.must(source.api_endpoint) +
@@ -179,7 +191,8 @@ module Dependabot
                     "&searchCriteria.targetRefName=refs/heads/" + target_branch
         )
 
-        JSON.parse(response.body).fetch("value")
+        root = parse_json_object(response.body, "pull requests")
+        object_array_field(root, "value", "pull requests")
       end
 
       sig do
@@ -190,7 +203,7 @@ module Dependabot
           files: T::Array[Dependabot::DependencyFile],
           author_details: T.nilable(T::Hash[Symbol, String])
         )
-          .returns(T.untyped)
+          .returns(Excon::Response)
       end
       def create_commit(
         branch_name,
@@ -241,7 +254,7 @@ module Dependabot
           assignees: T.nilable(T::Array[String]),
           work_item: T.nilable(Integer)
         )
-          .returns(T.untyped)
+          .returns(Excon::Response)
       end
       def create_pull_request(
         pr_name,
@@ -283,7 +296,7 @@ module Dependabot
           trans_work_items: T::Boolean,
           ignore_config_ids: T::Array[String]
         )
-          .returns(T.untyped)
+          .returns(JsonObject)
       end
       def autocomplete_pull_request(
         pull_request_id,
@@ -317,10 +330,10 @@ module Dependabot
           content.to_json
         )
 
-        JSON.parse(response.body)
+        parse_json_object(response.body, "pull request autocomplete")
       end
 
-      sig { params(pull_request_id: String).returns(T::Hash[String, T.untyped]) }
+      sig { params(pull_request_id: String).returns(JsonObject) }
       def pull_request(pull_request_id)
         response = get(
           T.must(source.api_endpoint) +
@@ -328,10 +341,10 @@ module Dependabot
                     "/_apis/git/pullrequests/" + pull_request_id
         )
 
-        JSON.parse(response.body)
+        parse_json_object(response.body, "pull request")
       end
 
-      sig { params(branch_name: String, old_commit: String, new_commit: String).returns(T::Hash[String, T.untyped]) }
+      sig { params(branch_name: String, old_commit: String, new_commit: String).returns(JsonObject) }
       def update_ref(branch_name, old_commit, new_commit)
         content = [
           {
@@ -348,7 +361,8 @@ module Dependabot
           content.to_json
         )
 
-        JSON.parse(response.body).fetch("value").first
+        root = parse_json_object(response.body, "updated ref")
+        first_object_field(root, "value", "updated ref")
       end
       # rubocop:enable Metrics/ParameterLists
 
@@ -358,7 +372,7 @@ module Dependabot
           new_tag: T.nilable(String),
           type: String
         )
-          .returns(T::Array[T::Hash[String, T.untyped]])
+          .returns(JsonObjects)
       end
       def compare(previous_tag, new_tag, type)
         response = get(
@@ -371,7 +385,8 @@ module Dependabot
                                    "&searchCriteria.compareVersion.version=#{new_tag}"
         )
 
-        JSON.parse(response.body).fetch("value")
+        root = parse_json_object(response.body, "commit comparison")
+        object_array_field(root, "value", "commit comparison")
       end
 
       sig { params(url: String).returns(Excon::Response) }
@@ -472,6 +487,11 @@ module Dependabot
 
       private
 
+      sig { returns([String, String]) }
+      def response_identity
+        ["Azure", source.url]
+      end
+
       sig { params(blk: T.proc.void).void }
       def retry_connection_failures(&blk)
         retry_attempt = 0
@@ -512,7 +532,7 @@ module Dependabot
           reviewers: T.nilable(T::Array[String]),
           assignees: T.nilable(T::Array[String])
         )
-          .returns(T::Array[T::Hash[Symbol, T.untyped]])
+          .returns(T::Array[T::Hash[Symbol, Object]])
       end
       def pr_reviewers(reviewers, assignees)
         return [] unless reviewers || assignees

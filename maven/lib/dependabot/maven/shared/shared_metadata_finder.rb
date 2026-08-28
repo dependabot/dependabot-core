@@ -67,11 +67,24 @@ module Dependabot
 
         sig { params(pom: Nokogiri::XML::Document).returns(T.nilable(Dependabot::Source)) }
         def look_up_source_in_pom(pom)
-          potential_source_urls = [
-            pom.at_css("project > url")&.content,
-            pom.at_css("project > scm > url")&.content,
-            pom.at_css("project > issueManagement > url")&.content
-          ].compact
+          source_selectors =
+            if Dependabot::Experiments.enabled?(:prioritize_scm_source)
+              # Prefer scm url, followed by project url, and finally issue management url (#2084)
+              [
+                "project > scm > url",
+                "project > url",
+                "project > issueManagement > url"
+              ]
+            else
+              [
+                "project > url",
+                "project > scm > url",
+                "project > issueManagement > url"
+              ]
+            end
+          potential_source_urls = source_selectors.filter_map do |selector|
+            pom.at_css(selector)&.content
+          end
 
           source_url = potential_source_urls.find { |url| Source.from_url(url) }
           source_url ||= source_from_anywhere_in_pom(pom)
@@ -170,12 +183,12 @@ module Dependabot
 
         sig { overridable.returns(String) }
         def maven_repo_url
-          source = dependency.requirements
-                             .find { |r| r.fetch(:source) }&.fetch(:source)
+          requirement = dependency.requirements.find(&:source)
+          return central_repo_url unless requirement
 
-          source&.fetch(:url, nil) ||
-            source&.fetch("url", nil) ||
-            central_repo_url
+          raise TypeError, "Maven repository source must be a hash" if requirement.source_hash.nil?
+
+          requirement.source_string("url") || central_repo_url
         end
 
         sig { overridable.returns(String) }

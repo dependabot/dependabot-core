@@ -58,6 +58,20 @@ module Dependabot
           @package_details ||= package_details_fetcher.fetch
         end
 
+        protected
+
+        sig { override.params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
+        def in_cooldown_period?(release)
+          return super if release.released_at
+          return false if Dependabot::UpdateCheckers::CooldownCalculation.skip_cooldown?(
+            cooldown_options,
+            dependency.name,
+            cooldown_enabled: cooldown_enabled?
+          )
+
+          super(package_details_fetcher.fetch_release_metadata(release: release))
+        end
+
         private
 
         sig { override.params(version: Dependabot::Version).returns(T::Boolean) }

@@ -405,6 +405,67 @@ RSpec.describe Dependabot::NpmAndYarn::PackageManagerHelper do
       end
     end
 
+    context "when npm has an explicitly requested version" do
+      let(:package_json) { { "packageManager" => "npm@10.2.3" } }
+
+      before do
+        allow(helper).to receive(:package_manager).and_return(
+          Dependabot::NpmAndYarn::NpmPackageManager.new(detected_version: "10.2.3")
+        )
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
+          .with("npm").and_return(nil, "10.2.3")
+      end
+
+      it "installs the requested version" do
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack install npm@10.2.3 --global --cache-only",
+          fingerprint: "corepack install <name>@<version> --global --cache-only"
+        )
+
+        expect(helper.installed_version("npm")).to eq("10.2.3")
+      end
+    end
+
+    context "when the npm version is inferred from the lockfile" do
+      let(:package_json) { {} }
+
+      before do
+        allow(helper).to receive(:package_manager).and_return(
+          Dependabot::NpmAndYarn::NpmPackageManager.new(detected_version: "7")
+        )
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
+          .with("npm").and_return(nil)
+      end
+
+      it "uses the inferred version without installing it" do
+        expect(Dependabot::SharedHelpers).not_to receive(:run_shell_command)
+          .with(/corepack install npm/, anything)
+
+        expect(helper.installed_version("npm")).to eq("7")
+      end
+    end
+
+    context "when the pnpm version is inferred from the lockfile" do
+      let(:package_json) { {} }
+
+      before do
+        allow(helper).to receive(:package_manager).and_return(
+          Dependabot::NpmAndYarn::PNPMPackageManager.new(detected_version: "7")
+        )
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:package_manager_version)
+          .with("pnpm").and_return(nil, "7.1.0")
+      end
+
+      it "installs the inferred version" do
+        expect(Dependabot::SharedHelpers).to receive(:run_shell_command).with(
+          "corepack install pnpm@7 --global --cache-only",
+          fingerprint: "corepack install <name>@<version> --global --cache-only"
+        )
+
+        expect(helper.installed_version("pnpm")).to eq("7.1.0")
+      end
+    end
+
     context "when the installed version not found returns inferred version" do
       before do
         allow(Dependabot::SharedHelpers).to receive(:run_shell_command)

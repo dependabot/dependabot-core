@@ -439,6 +439,13 @@ RSpec.shared_examples "a Docker update checker" do
 
         it { is_expected.to eq("3.7.0a2") }
       end
+
+      context "when a stable version is available after the pre-release" do
+        let(:version) { "3.7.0a2" }
+        let(:tags_fixture_name) { "python_with_stable_37.json" }
+
+        it { is_expected.to eq("3.7.0") }
+      end
     end
 
     context "when the latest tag points to an older version" do

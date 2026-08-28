@@ -345,10 +345,19 @@ module Dependabot
         def pipfile_hash_for(pipfile_content)
           SharedHelpers.in_a_temporary_directory do |dir|
             File.write(File.join(dir, "Pipfile"), pipfile_content)
-            SharedHelpers.run_helper_subprocess(
-              command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
-              function: "get_pipfile_hash",
-              args: [T.cast(dir, Pathname).to_s]
+            T.cast(
+              SharedHelpers.run_helper_subprocess(
+                command: "pyenv exec python3 #{NativeHelpers.python_helper_path}",
+                function: "get_pipfile_hash",
+                args: [T.cast(dir, Pathname).to_s]
+              ),
+              T.nilable(
+                T.any(
+                  T::Hash[String, T.untyped],
+                  String,
+                  T::Array[T::Hash[String, T.untyped]]
+                )
+              )
             )
           end
         end

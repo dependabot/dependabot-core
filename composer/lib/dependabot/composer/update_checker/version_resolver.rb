@@ -13,6 +13,7 @@ require "dependabot/composer/requirement"
 require "dependabot/composer/native_helpers"
 require "dependabot/composer/file_parser"
 require "dependabot/composer/helpers"
+require "dependabot/composer/composer_error_handler"
 
 module Dependabot
   module Composer
@@ -188,19 +189,22 @@ module Dependabot
 
         sig { returns(T.nilable(String)) }
         def run_update_checker
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            SharedHelpers.run_helper_subprocess(
-              command: "php -d memory_limit=-1 #{php_helper_path}",
-              allow_unsafe_shell_command: true,
-              function: "get_latest_resolvable_version",
-              args: [
-                Dir.pwd,
-                dependency.name.downcase,
-                git_credentials,
-                registry_credentials
-              ]
-            )
-          end
+          T.cast(
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              SharedHelpers.run_helper_subprocess(
+                command: "php -d memory_limit=-1 #{php_helper_path}",
+                allow_unsafe_shell_command: true,
+                function: "get_latest_resolvable_version",
+                args: [
+                  Dir.pwd,
+                  dependency.name.downcase,
+                  git_credentials,
+                  registry_credentials
+                ]
+              )
+            end,
+            T.nilable(String)
+          )
         end
 
         sig { params(unlock_requirement: T::Boolean).returns(String) }
@@ -265,22 +269,22 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/AbcSize
         sig { returns(String) }
         def updated_version_requirement_string
           lower_bound =
             if requirements_to_unlock == :none
-              dependency.requirements.first&.fetch(:requirement) || ">= 0"
+              dependency.requirements.first&.requirement_string || ">= 0"
             elsif dependency.version
               ">= #{dependency.version}"
             else
               version_for_requirement =
-                dependency.requirements.filter_map { |r| r[:requirement] }
-                                       .reject { |req_string| req_string.start_with?("<") }
-                                       .select { |req_string| req_string.match?(VERSION_REGEX) }
-                                       .map { |req_string| req_string.match(VERSION_REGEX) }
-                                       .select { |version| requirement_valid?(">= #{version}") }
-                                       .max_by { |version| Composer::Version.new(version.to_s) }
+                dependency.requirements
+                          .filter_map(&:requirement_string)
+                          .reject { |req_string| req_string.start_with?("<") }
+                          .select { |req_string| req_string.match?(VERSION_REGEX) }
+                          .map { |req_string| req_string.match(VERSION_REGEX) }
+                          .select { |version| requirement_valid?(">= #{version}") }
+                          .max_by { |version| Composer::Version.new(version.to_s) }
 
               ">= #{version_for_requirement || 0}"
             end
@@ -301,7 +305,6 @@ module Dependabot
           lower_bound + ", == #{latest_allowable_version}"
         end
         # rubocop:enable Metrics/PerceivedComplexity
-        # rubocop:enable Metrics/AbcSize
 
         # TODO: Extract error handling and share between the lockfile updater
         #
@@ -320,8 +323,6 @@ module Dependabot
           dependency_url = Helpers.dependency_url_from_git_clone_error(error.message)
           if dependency_url
             raise Dependabot::GitDependenciesNotReachable, dependency_url
-          elsif unresolvable_error?(error)
-            raise Dependabot::DependencyFileNotResolvable, error.message
           elsif error.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
             # These errors occur when platform requirements declared explicitly
             # in the composer.json aren't met.
@@ -417,14 +418,6 @@ module Dependabot
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/MethodLength
-
-        sig { params(error: SharedHelpers::HelperSubprocessFailed).returns(T::Boolean) }
-        def unresolvable_error?(error)
-          error.message.start_with?("Could not parse version") ||
-            error.message.include?("does not allow connections to http://") ||
-            error.message.match?(/The `url` supplied for the path .* does not exist/) ||
-            error.message.start_with?("Invalid version string")
-        end
 
         sig { returns(T::Boolean) }
         def library?
@@ -631,58 +624,6 @@ module Dependabot
             .select { |cred| cred["type"] == PackageManager::REPOSITORY_KEY }
             .select { |cred| cred["password"] }
         end
-      end
-    end
-
-    class ComposerErrorHandler
-      extend T::Sig
-
-      # Private source errors
-      CURL_ERROR = /curl error 52 while downloading (?<url>.*): Empty reply from server/
-
-      PRIVATE_SOURCE_AUTH_FAIL = T.let(
-        [
-          /Could not authenticate against (?<url>.*)/,
-          /The '(?<url>.*)' URL could not be accessed \(HTTP 403\)/,
-          /The "(?<url>.*)" file could not be downloaded/
-        ].freeze,
-        T::Array[Regexp]
-      )
-
-      REQUIREMENT_ERROR = /^(?<req>.*) is invalid, it should not contain uppercase characters/
-
-      NO_URL = "No URL specified"
-
-      sig { params(url: String).returns(String) }
-      def sanitize_uri(url)
-        url = "http://#{url}" unless url.start_with?("http")
-        uri = URI.parse(url)
-        host = T.must(uri.host).downcase
-        host.start_with?("www.") ? T.must(host[4..-1]) : host
-      end
-
-      # Handles errors with specific to composer error codes
-      sig { params(error: SharedHelpers::HelperSubprocessFailed).void }
-      def handle_composer_error(error)
-        # private source auth errors
-        PRIVATE_SOURCE_AUTH_FAIL.each do |regex|
-          next unless error.message.match?(regex)
-
-          url = T.must(error.message.match(regex)).named_captures["url"]
-          sanitized_url = sanitize_uri(T.must(url))
-          raise Dependabot::PrivateSourceAuthenticationFailure, sanitized_url.empty? ? NO_URL : sanitized_url
-        end
-
-        # invalid requirement mentioned in manifest file
-        if error.message.match?(REQUIREMENT_ERROR)
-          raise DependencyFileNotResolvable,
-                "Invalid requirement: #{T.must(error.message.match(REQUIREMENT_ERROR)).named_captures['req']}"
-        end
-
-        return unless error.message.match?(CURL_ERROR)
-
-        url = T.must(error.message.match(CURL_ERROR)).named_captures["url"]
-        raise PrivateSourceBadResponse, T.must(url)
       end
     end
   end

@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -206,34 +206,30 @@ module Dependabot
             next false if dep.name == dependency.name
 
             dep.requirements.any? do |req|
-              req.dig(:metadata, :property_name) == property_name
+              req.metadata_string("property_name") == property_name
             end
           end
         end
       end
 
-      sig { params(requirement: T::Hash[Symbol, Object]).returns(T.nilable(String)) }
+      sig { params(requirement: Dependabot::DependencyRequirement).returns(T.nilable(String)) }
       def property_name_from_requirement(requirement)
-        metadata = requirement[:metadata]
-        return unless metadata.is_a?(Hash)
-
-        property_name = metadata[:property_name]
-        property_name if property_name.is_a?(String)
+        requirement.metadata_string("property_name")
       end
 
       sig { returns(T::Boolean) }
       def version_comes_from_dependency_set?
         dependency.requirements.any? do |req|
-          req.dig(:metadata, :dependency_set)
+          req.metadata_string_hash("dependency_set")
         end
       end
 
-      sig { returns(T::Array[T::Hash[Symbol, Object]]) }
+      sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def declarations_using_a_property
         @declarations_using_a_property ||= T.let(
           dependency.requirements
-                    .select { |req| req.dig(:metadata, :property_name) },
-          T.nilable(T::Array[T::Hash[Symbol, Object]])
+                    .select { |req| req.metadata_string("property_name") },
+          T.nilable(T::Array[Dependabot::DependencyRequirement])
         )
       end
 
@@ -244,7 +240,7 @@ module Dependabot
             dependency_files: dependency_files,
             source: nil
           ).parse.select do |dep|
-            dep.requirements.any? { |req| req.dig(:metadata, :property_name) }
+            dep.requirements.any? { |req| req.metadata_string("property_name") }
           end,
           T.nilable(T::Array[Dependabot::Dependency])
         )

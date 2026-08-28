@@ -232,7 +232,10 @@ module Dependabot
         matching_deps = dependencies.select { |dep| parent_group.contains?(dep) }
 
         matching_deps.group_by(&:name).each do |dep_name, deps|
-          subgroup_name = "#{parent_group.name}/#{dep_name}"
+          subgroup_name = Dependabot::DependencyGroup.subgroup_name(
+            parent_name: parent_group.name,
+            dependency_name: dep_name
+          )
           existing_subgroup = @dependency_groups.find { |g| g.name == subgroup_name }
 
           if existing_subgroup

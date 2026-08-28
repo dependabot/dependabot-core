@@ -157,23 +157,25 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
       def updated_requirements
-        updated = dependency.requirements.map do |req|
-          updated_source = req.fetch(:source).dup
-
-          tag = req[:source][:tag]
-          digest = req[:source][:digest]
+        dependency.requirements.map do |req|
+          updated_source = T.must(req.source_hash).dup
+          source = docker_source(req)
+          tag = source[:tag]
+          digest = source[:digest]
 
           if tag
             updated_tag = latest_version_from(tag)
-            updated_source[:tag] = updated_tag
-            updated_source[:digest] = resolved_digest_for(tag, updated_tag, digest) if digest || pin_digests?
+            set_source_string(updated_source, "tag", updated_tag)
+            if digest || pin_digests?
+              set_source_string(updated_source, "digest", resolved_digest_for(tag, updated_tag, digest))
+            end
           elsif digest
-            updated_source[:digest] = digest_within_cooldown?("latest") ? digest : digest_of("latest")
+            updated_digest = digest_within_cooldown?("latest") ? digest : digest_of("latest")
+            set_source_string(updated_source, "digest", updated_digest)
           end
 
-          req.merge(source: updated_source)
+          Dependabot::DependencyRequirement.create(req.merge(source: updated_source))
         end
-        wrap_requirements(updated)
       end
 
       private
@@ -236,8 +238,8 @@ module Dependabot
 
       sig { params(req: Dependabot::DependencyRequirement).returns(T::Boolean) }
       def digest_requirement_up_to_date?(req)
-        source = req.fetch(:source)
-        source_digest = source.fetch(:digest)
+        source = docker_source(req)
+        source_digest = T.must(source[:digest])
         source_tag = source[:tag]
 
         if source_tag
@@ -441,7 +443,10 @@ module Dependabot
 
           # If we can't determine publication details, skip cooldown for this tag and use it
           # rather than blocking the update when the registry doesn't support the required API calls
-          return [tag] if !details || !details.released_at
+          if !details || !details.released_at
+            mark_cooldown_date_unavailable if cooldown_days_for(tag).positive?
+            return [tag]
+          end
 
           return [tag] unless cooldown_period?(T.must(details.released_at), tag)
 
@@ -506,17 +511,14 @@ module Dependabot
       sig { params(headers: T::Hash[Symbol, String], tag_name: String).returns(T.nilable(Time)) }
       def published_date_from_response_headers(headers, tag_name)
         last_modified = headers[:last_modified]
-        published_date = begin
-          Time.parse(last_modified) if last_modified
-        rescue ArgumentError, TypeError => e
-          Dependabot.logger.info(
-            "Invalid Last-Modified header for #{docker_repo_name}:#{tag_name}: #{e.message}"
-          )
-          nil
-        end
-        # Fall back to the image config blob's "created" timestamp when Last-Modified
-        # is absent (e.g., Docker Hub multi-arch manifest lists).
-        published_date || fetch_image_config_created(tag_name)
+        return nil unless last_modified
+
+        Time.parse(last_modified)
+      rescue ArgumentError, TypeError => e
+        Dependabot.logger.info(
+          "Invalid Last-Modified header for #{docker_repo_name}:#{tag_name}: #{e.message}"
+        )
+        nil
       end
 
       sig do
@@ -858,11 +860,7 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def registry_hostname
-        if dependency.requirements.first&.dig(:source, :registry)
-          return T.must(dependency.requirements.first).dig(:source, :registry)
-        end
-
-        credentials_finder.base_registry
+        dependency.requirements.first&.source_string("registry") || credentials_finder.base_registry
       end
 
       sig { returns(T::Boolean) }
@@ -994,7 +992,35 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyRequirement]) }
       def digest_requirements
         dependency.requirements.select do |requirement|
-          requirement.dig(:source, :digest)
+          requirement.source_string("digest")
+        end
+      end
+
+      sig { params(requirement: Dependabot::DependencyRequirement).returns(DockerSource) }
+      def docker_source(requirement)
+        raise TypeError, "Docker source must be a hash" if requirement.source_hash.nil?
+
+        {
+          registry: requirement.source_string("registry"),
+          tag: requirement.source_string("tag"),
+          digest: requirement.source_string("digest"),
+          platform: requirement.source_string("platform")
+        }
+      end
+
+      sig do
+        params(
+          source: Dependabot::DependencyRequirement::ObjectHash,
+          key: String,
+          value: T.nilable(String)
+        ).void
+      end
+      def set_source_string(source, key, value)
+        symbol_key = key.to_sym
+        if source.key?(key) && !source.key?(symbol_key)
+          source[key] = value
+        else
+          source[symbol_key] = value
         end
       end
 
@@ -1025,15 +1051,26 @@ module Dependabot
 
       sig { params(release_date: Time, candidate_tag: Dependabot::Docker::Tag).returns(T::Boolean) }
       def cooldown_period?(release_date, candidate_tag)
+        Dependabot::UpdateCheckers::CooldownCalculation.within_cooldown_window?(
+          release_date, cooldown_days_for(candidate_tag)
+        )
+      end
+
+      sig { params(candidate_tag: Dependabot::Docker::Tag).returns(Integer) }
+      def cooldown_days_for(candidate_tag)
         cooldown = @update_cooldown
-        return false unless cooldown
+        return 0 unless cooldown
 
         current_version = dependency.version ? comparable_version_from(version_tag) : nil
         new_version = comparable_version_from(candidate_tag)
-        days = Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(
+        Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(
           cooldown, current_version, new_version
         )
-        Dependabot::UpdateCheckers::CooldownCalculation.within_cooldown_window?(release_date, days)
+      end
+
+      sig { void }
+      def mark_cooldown_date_unavailable
+        dependency.metadata[:docker_cooldown_date_unavailable] = true
       end
 
       # Builds the PackageRelease version for a tag. Non-comparable tags (e.g.
@@ -1063,7 +1100,10 @@ module Dependabot
         return false unless cooldown
 
         released_at = publication_detail(Tag.new(tag_name))&.released_at
-        return false unless released_at
+        unless released_at
+          mark_cooldown_date_unavailable if cooldown.default_days.positive?
+          return false
+        end
 
         Dependabot::UpdateCheckers::CooldownCalculation.within_cooldown_window?(
           released_at, cooldown.default_days

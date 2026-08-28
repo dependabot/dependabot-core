@@ -139,6 +139,32 @@ RSpec.describe Dependabot::Docker::FileUpdater do
     )
   end
 
+  describe "#notices" do
+    subject(:notices) { updater.notices }
+
+    context "when cooldown could not be applied" do
+      before do
+        dependency.metadata[:docker_cooldown_date_unavailable] = true
+      end
+
+      it "returns a warning for the pull request" do
+        expect(notices.map(&:to_h)).to contain_exactly(
+          mode: Dependabot::Notice::NoticeMode::WARN,
+          type: "docker_cooldown_date_unavailable",
+          package_manager_name: "docker",
+          title: "Docker cooldown was not applied",
+          description: "Cooldown could not be applied because no publication date was available from the registry.",
+          show_in_pr: true,
+          show_alert: false
+        )
+      end
+    end
+
+    context "when cooldown was applied" do
+      it { is_expected.to be_empty }
+    end
+  end
+
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
@@ -156,6 +182,34 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       its(:content) { is_expected.to include "FROM ubuntu:17.10\n" }
       its(:content) { is_expected.to include "FROM python:3.6.3\n" }
       its(:content) { is_expected.to include "RUN apt-get update" }
+    end
+
+    context "when nested source keys are strings" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "ubuntu",
+          version: "17.10",
+          previous_version: "17.04",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { "tag" => "17.10" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { "tag" => "17.04" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      it "updates the image tag" do
+        expect(updated_files.find { |f| f.name == "Dockerfile" }&.content)
+          .to include("FROM ubuntu:17.10\n")
+      end
     end
 
     context "when the old tag is a prefix of the new tag" do

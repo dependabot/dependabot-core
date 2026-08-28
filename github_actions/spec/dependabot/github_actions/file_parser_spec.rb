@@ -166,6 +166,103 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       end
     end
 
+    context "with aliases and block scalars" do
+      subject(:requirements) { dependencies.first.requirements }
+
+      let(:workflow_file_fixture_name) { "workflow_source_forms.yml" }
+
+      it "records each source form separately" do
+        expect(requirements.length).to eq(4)
+
+        alias_source = requirements.find do |requirement|
+          requirement.metadata&.dig(:yaml_source, :path) == ["jobs", "alias", "steps", 0, "uses"]
+        end
+        block_source = requirements.find do |requirement|
+          requirement.metadata&.dig(:yaml_source, :path) == ["jobs", "block", "steps", 0, "uses"]
+        end
+        literal_source = requirements.find do |requirement|
+          requirement.metadata&.dig(:yaml_source, :path) == ["jobs", "literal", "steps", 0, "uses"]
+        end
+        escaped_source = requirements.find do |requirement|
+          requirement.metadata&.dig(:yaml_source, :path) == ["jobs", "escaped", "steps", 0, "uses"]
+        end
+
+        expect(alias_source&.metadata&.dig(:yaml_source, :value, :kind)).to eq("alias")
+        expect(alias_source&.metadata&.dig(:yaml_source, :target, :anchor)).to eq("checkout")
+        expect(block_source&.metadata&.dig(:yaml_source, :target, :style)).to eq("folded")
+        expect(literal_source&.metadata&.dig(:yaml_source, :target, :style)).to eq("literal")
+        expect(escaped_source&.metadata&.dig(:yaml_source, :target, :style)).to eq("double_quoted")
+      end
+    end
+
+    context "with different actions in one flow sequence" do
+      let(:workflow_file_fixture_name) { "workflow_multiple_actions_flow.yml" }
+
+      it "records the enclosing sequence and item index" do
+        checkout = dependencies.find { |dependency| dependency.name == "actions/checkout" }
+        setup_node = dependencies.find { |dependency| dependency.name == "actions/setup-node" }
+
+        checkout_sources = checkout&.requirements&.map { |requirement| requirement.metadata&.fetch(:yaml_source) }
+        expect(checkout_sources&.map { |source| source&.dig(:sequence, :style) }).to eq(%w(flow flow))
+        expect(checkout_sources&.map { |source| source&.dig(:sequence, :item_index) }).to eq([1, 2])
+        expect(setup_node&.requirements&.first&.metadata&.dig(:yaml_source, :sequence, :item_index)).to eq(3)
+      end
+    end
+
+    context "with separate flow sequences sharing one line" do
+      let(:workflow_file_fixture_name) { "workflow_cross_sequence_collision.yml" }
+
+      it "records source metadata for both declarations" do
+        checkout = dependencies.find { |dependency| dependency.name == "actions/checkout" }
+        setup_node = dependencies.find { |dependency| dependency.name == "actions/setup-node" }
+        checkout_source = checkout&.requirements&.first&.metadata&.fetch(:yaml_source)
+        setup_node_source = setup_node&.requirements&.first&.metadata&.fetch(:yaml_source)
+
+        expect(checkout_source&.dig(:sequence, :style)).to eq("flow")
+        expect(setup_node_source&.dig(:sequence, :style)).to eq("flow")
+        expect(checkout_source&.dig(:mapping, :end_line)).to eq(setup_node_source&.dig(:mapping, :end_line))
+      end
+    end
+
+    context "with an aliased whole step" do
+      let(:workflow_file_fixture_name) { "workflow_step_alias.yml" }
+
+      it "parses without requiring a physical uses node for the alias" do
+        expect { dependencies }.not_to raise_error
+        expect(dependencies.map(&:name)).to include("actions/checkout")
+      end
+    end
+
+    context "with repeated actions in one flow sequence" do
+      subject(:requirements) { dependencies.first.requirements }
+
+      let(:workflow_file_fixture_name) { "workflow_repeated_actions_flow.yml" }
+
+      it "keeps one requirement per YAML path" do
+        expect(requirements.map { |requirement| requirement.metadata&.dig(:yaml_source, :path) }).to eq(
+          [
+            ["jobs", "update", "steps", 0, "uses"],
+            ["jobs", "update", "steps", 1, "uses"]
+          ]
+        )
+        expect(
+          a_request(:get, "https://github.com/actions/checkout.git/info/refs?service=git-upload-pack")
+        ).to have_been_made.once
+      end
+    end
+
+    context "with a reused anchor name" do
+      let(:workflow_file_fixture_name) { "workflow_reused_anchors.yml" }
+
+      it "links each alias to the preceding anchor definition" do
+        checkout = dependencies.find { |dependency| dependency.name == "actions/checkout" }
+        setup_node = dependencies.find { |dependency| dependency.name == "actions/setup-node" }
+
+        expect(checkout&.requirements&.first&.metadata&.dig(:yaml_source, :target, :start_line)).to eq(6)
+        expect(setup_node&.requirements&.first&.metadata&.dig(:yaml_source, :target, :start_line)).to eq(10)
+      end
+    end
+
     describe "with multiple sources pinned to different refs, and newest ref parsed first" do
       subject(:dependency) { dependencies.first }
 

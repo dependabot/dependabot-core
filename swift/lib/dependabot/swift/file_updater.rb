@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/file_updaters"
@@ -141,7 +141,7 @@ module Dependabot
 
       sig { params(dep: Dependabot::Dependency).returns(T::Set[String]) }
       def requirement_files_for(dep)
-        files = dep.requirements.map { |req| req[:file] } + (dep.previous_requirements || []).map { |req| req[:file] }
+        files = dep.requirements.map(&:file) + (dep.previous_requirements || []).map(&:file)
         files.compact.to_set
       end
 
