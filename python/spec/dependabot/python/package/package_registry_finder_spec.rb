@@ -176,7 +176,7 @@ RSpec.describe Dependabot::Python::Package::PackageRegistryFinder do
             [Dependabot::Credential.new(
               {
                 "type" => "python_index",
-                "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple",
+                "index-url" => "https://pypi.weasyldev.com/weasyl/source/+simple///",
                 "token" => "user:pass",
                 "replaces-base" => true
               }
