@@ -1,0 +1,5 @@
+on: [push]
+
+name: Reusable and run collision
+jobs: { reusable: { uses: actions/checkout/.github/workflows/test.yml@v2.1.0 }, first: { runs-on: ubuntu-latest, steps: [{ run: echo first }] }, second: { runs-on: ubuntu-latest, steps: [{ run: echo second }, # keep second note
+      { run: echo third }] } }

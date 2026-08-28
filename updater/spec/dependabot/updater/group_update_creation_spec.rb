@@ -8,6 +8,7 @@ require "dependabot/updater/error_handler"
 require "dependabot/job"
 require "dependabot/dependency_group"
 require "dependabot/dependency"
+require "dependabot/notices"
 require "dependabot/update_checkers/base"
 require "dependabot/experiments"
 require "dependabot/service"
@@ -60,6 +61,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       security_advisories_for: security_advisories,
       updating_a_pull_request?: false,
       blocked_versions_for?: false,
+      dependency_group_to_refresh: nil,
       source: source
     )
   end
@@ -109,9 +111,6 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
   before do
     # Stub all experiment flags to avoid unexpected argument errors
     allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:allow_refresh_group_with_all_dependencies)
-      .and_return(false)
 
     # Stub common methods that would be called
     allow(test_instance).to receive_messages(
@@ -141,9 +140,6 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
         allow(Dependabot::Experiments).to receive(:enabled?)
           .with(:enhanced_grouped_security_error_reporting)
           .and_return(true)
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:allow_refresh_group_with_all_dependencies)
-          .and_return(false)
       end
 
       context "when dependency has security advisories" do
@@ -365,6 +361,8 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
   end
 
   describe "feature flag behavior in compile_all_dependency_changes_for" do
+    let(:group_notices) { [] }
+
     before do
       # Stub all the complex methods that would be called during the method
       allow(test_instance).to receive_messages(
@@ -380,6 +378,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           current_dependency_files: dependency_files,
           updated_dependencies: [],
           updated_dependency_files: dependency_files,
+          notices: group_notices,
           add_updated_dependency: nil,
           merge: nil
         )
@@ -387,6 +386,30 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       allow(Dependabot::DependencyChange).to receive(:new).and_return(
         instance_double(Dependabot::DependencyChange, all_have_previous_version?: true)
       )
+    end
+
+    context "when dependency changes generate notices" do
+      let(:notice) do
+        Dependabot::Notice.new(
+          mode: Dependabot::Notice::NoticeMode::WARN,
+          type: "docker_cooldown_date_unavailable",
+          package_manager_name: "docker",
+          description: "Cooldown was not applied.",
+          show_in_pr: true,
+          show_alert: false
+        )
+      end
+      let(:group_notices) { [notice] }
+
+      it "passes the notices to the grouped dependency change" do
+        allow(Dependabot::DependencyChange).to receive(:new)
+          .and_return(instance_double(Dependabot::DependencyChange, all_have_previous_version?: true))
+
+        test_instance.compile_all_dependency_changes_for(group)
+
+        expect(Dependabot::DependencyChange).to have_received(:new)
+          .with(hash_including(notices: [notice]))
+      end
     end
 
     context "when enhanced security reporting is enabled" do
@@ -472,6 +495,7 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
           current_dependency_files: dependency_files,
           updated_dependencies: [],
           updated_dependency_files: dependency_files,
+          notices: [],
           add_updated_dependency: nil,
           merge: nil
         )
@@ -900,12 +924,6 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       )
     end
 
-    before do
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:allow_refresh_group_with_all_dependencies)
-        .and_return(false)
-    end
-
     context "when dependency directory matches the job source directory" do
       let(:source_directory) { "/app" }
       let(:dependency) do
@@ -978,12 +996,6 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       )
     end
 
-    before do
-      allow(Dependabot::Experiments).to receive(:enabled?)
-        .with(:allow_refresh_group_with_all_dependencies)
-        .and_return(false)
-    end
-
     context "when dependency directory matches root '/'" do
       let(:dependency) do
         instance_double(Dependabot::Dependency, name: "dep1", version: "1.0.0", directory: "/")
@@ -1028,9 +1040,6 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
 
       before do
         allow(dependency_snapshot).to receive(:handled_dependencies).and_return(Set.new(["dep1"]))
-        allow(Dependabot::Experiments).to receive(:enabled?)
-          .with(:allow_refresh_group_with_all_dependencies)
-          .and_return(true)
         allow(job).to receive(:dependency_group_to_refresh).and_return("test-group")
       end
 

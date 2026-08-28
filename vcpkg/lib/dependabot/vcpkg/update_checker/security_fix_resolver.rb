@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "sorbet-runtime"
@@ -253,8 +253,8 @@ module Dependabot
         def declared_constraint_version
           return @declared_constraint_version if @declared_constraint_version
 
-          constraint = dependency.requirements.filter_map { |req| req[:requirement] }.first
-          return nil unless constraint.is_a?(String)
+          constraint = dependency.requirements.filter_map(&:requirement_string).first
+          return nil unless constraint
 
           text = constraint.delete_prefix(">=").strip
           return nil unless Dependabot::Vcpkg::Version.correct?(text)

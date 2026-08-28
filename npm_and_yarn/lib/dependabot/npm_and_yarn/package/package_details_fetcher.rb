@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "json"
@@ -6,6 +6,7 @@ require "excon"
 require "time"
 require "dependabot/package/package_release"
 require "dependabot/package/package_details"
+require "dependabot/package/npm_registry_package"
 require "dependabot/npm_and_yarn/package/registry_finder"
 require "dependabot/npm_and_yarn/package/registry_credential_helpers"
 
@@ -23,17 +24,8 @@ module Dependabot
         API_AUTHORIZATION_VALUE_BASIC_PREFIX = "Basic"
         API_RESPONSE_STATUS_SUCCESS_PREFIX = "2"
 
-        RELEASE_TIME_KEY = "time"
-        RELEASE_VERSIONS_KEY = "versions"
-        RELEASE_DIST_TAGS_KEY = "dist-tags"
         RELEASE_DIST_TAGS_LATEST_KEY = "latest"
-        RELEASE_ENGINES_KEY = "engines"
         RELEASE_LANGUAGE_KEY = "node"
-        RELEASE_DEPRECATION_KEY = "deprecated"
-        RELEASE_REPOSITORY_KEY = "repository"
-        RELEASE_PACKAGE_TYPE_KEY = "type"
-        RELEASE_PACKAGE_TYPE_GIT = "git"
-        RELEASE_PACKAGE_TYPE_NPM = "npm"
 
         REGISTRY_FILE_NPMRC = ".npmrc"
         REGISTRY_FILE_YARNRC = ".yarnrc"
@@ -55,7 +47,7 @@ module Dependabot
           @dependency_files = dependency_files
           @credentials = credentials
 
-          @npm_details = T.let(nil, T.nilable(T::Hash[String, T.untyped]))
+          @npm_details = T.let(nil, T.nilable(Dependabot::Package::NpmRegistryPackage))
           @dist_tags = T.let(nil, T.nilable(T::Hash[String, String]))
           @registry_finder = T.let(nil, T.nilable(Package::RegistryFinder))
           @version_endpoint_working = T.let(nil, T.nilable(T::Boolean))
@@ -86,7 +78,7 @@ module Dependabot
           !dist_tags.nil?
         end
 
-        sig { returns(T.nilable(T::Hash[String, T.untyped])) }
+        sig { returns(T.nilable(Dependabot::Package::NpmRegistryPackage)) }
         def npm_details
           @npm_details ||= fetch_npm_details
         end
@@ -165,32 +157,26 @@ module Dependabot
 
         sig do
           params(
-            npm_data: T::Hash[String, T.untyped]
+            npm_data: Dependabot::Package::NpmRegistryPackage
           ).returns(T::Array[Dependabot::Package::PackageRelease])
         end
         def parse_versions(npm_data)
-          time_data = fetch_value_from_hash(npm_data, RELEASE_TIME_KEY) || {}
-          versions_data = fetch_value_from_hash(npm_data, RELEASE_VERSIONS_KEY) || {}
+          latest_version = npm_data.dist_tags&.[](RELEASE_DIST_TAGS_LATEST_KEY)
 
-          dist_tags = fetch_value_from_hash(npm_data, RELEASE_DIST_TAGS_KEY)
-          latest_version = fetch_value_from_hash(dist_tags, RELEASE_DIST_TAGS_LATEST_KEY)
-
-          versions_data.filter_map do |version, details|
-            next unless Dependabot::NpmAndYarn::Version.correct?(version)
-
-            package_type = infer_package_type(details)
+          npm_data.releases.values.filter_map do |release|
+            next unless Dependabot::NpmAndYarn::Version.correct?(release.version)
 
             Dependabot::Package::PackageRelease.new(
-              version: Version.new(version),
-              released_at: time_data[version] ? Time.parse(time_data[version]) : nil,
+              version: Version.new(release.version),
+              released_at: release.released_at,
               yanked: false,
               yanked_reason: nil,
               downloads: nil,
-              latest: latest_version.to_s == version,
-              url: package_version_url(version),
-              package_type: package_type,
-              language: package_language(details),
-              details: details
+              latest: latest_version == release.version,
+              url: package_version_url(release.version),
+              package_type: release.package_type,
+              language: package_language(release.node_requirement),
+              details: release.details
             )
           end.sort_by(&:version).reverse
         end
@@ -200,39 +186,31 @@ module Dependabot
           "#{dependency_registry}/#{@dependency.name}/v/#{version}"
         end
 
-        sig do
-          params(version_details: T::Hash[String, T.untyped])
-            .returns(T.nilable(Dependabot::Package::PackageLanguage))
-        end
-        def package_language(version_details)
-          # Fetch the engines hash from the version details
-          engines = version_details.is_a?(Hash) ? version_details[RELEASE_ENGINES_KEY] : nil
-          # Check if engines is a hash and fetch the node requirement
-          node_requirement = engines.is_a?(Hash) ? engines.fetch(RELEASE_LANGUAGE_KEY, nil) : nil
-
+        sig { params(node_requirement: T.nilable(String)).returns(T.nilable(Dependabot::Package::PackageLanguage)) }
+        def package_language(node_requirement)
           return nil unless node_requirement
 
-          if node_requirement
-            Dependabot::Package::PackageLanguage.new(
-              name: RELEASE_LANGUAGE_KEY,
-              version: nil,
-              requirement: Requirement.new(node_requirement)
-            )
-          end
+          Dependabot::Package::PackageLanguage.new(
+            name: RELEASE_LANGUAGE_KEY,
+            version: nil,
+            requirement: Requirement.new(node_requirement)
+          )
         rescue Gem::Requirement::BadRequirementError
           nil
         end
 
         sig { returns(T.nilable(T::Hash[String, String])) }
         def dist_tags
-          @dist_tags ||= fetch_value_from_hash(npm_details, RELEASE_DIST_TAGS_KEY)
+          @dist_tags ||= npm_details&.dist_tags
         end
 
-        sig { returns(T.nilable(T::Hash[String, T.untyped])) }
+        sig { returns(T.nilable(Dependabot::Package::NpmRegistryPackage)) }
         def fetch_npm_details
           npm_response = fetch_npm_response
           check_npm_response(npm_response) if npm_response
-          JSON.parse(npm_response.body)
+          Dependabot::Package::NpmRegistryPackage.from_json(npm_response.body) do |version|
+            Dependabot::NpmAndYarn::Version.correct?(version)
+          end
         rescue JSON::ParserError, Excon::Error::Timeout, Excon::Error::Socket, RegistryError => e
           if git_dependency?
             nil
@@ -257,10 +235,10 @@ module Dependabot
           # If a private registry returns a 500 error, check authentication
           return response unless response.status == 500
 
-          auth = fetch_value_from_hash(registry_auth_headers, API_AUTHORIZATION_KEY)
+          auth = registry_auth_headers[API_AUTHORIZATION_KEY]
           return response unless auth
 
-          return response unless auth&.start_with?(API_AUTHORIZATION_VALUE_BASIC_PREFIX)
+          return response unless auth.start_with?(API_AUTHORIZATION_VALUE_BASIC_PREFIX)
 
           decoded_token = Base64.decode64(auth.gsub("#{API_AUTHORIZATION_VALUE_BASIC_PREFIX} ", "")).strip
 
@@ -280,29 +258,6 @@ module Dependabot
           )
         rescue URI::InvalidURIError => e
           raise DependencyFileNotResolvable, e.message
-        end
-
-        sig do
-          params(
-            details: T::Hash[String, T.untyped],
-            git_dependency: T::Boolean
-          )
-            .returns(String)
-        end
-        def infer_package_type(details, git_dependency: false)
-          return RELEASE_PACKAGE_TYPE_GIT if git_dependency
-
-          repository = fetch_value_from_hash(details, RELEASE_REPOSITORY_KEY)
-
-          case repository
-          when String
-            return repository.start_with?("git+") ? RELEASE_PACKAGE_TYPE_GIT : RELEASE_PACKAGE_TYPE_NPM
-          when Hash
-            type = fetch_value_from_hash(repository, RELEASE_PACKAGE_TYPE_KEY)
-            return RELEASE_PACKAGE_TYPE_GIT if type == RELEASE_PACKAGE_TYPE_GIT
-          end
-
-          RELEASE_PACKAGE_TYPE_NPM
         end
 
         sig { params(npm_response: Excon::Response).void }
@@ -339,7 +294,7 @@ module Dependabot
           raise RegistryError.new(status, msg)
         end
 
-        sig { params(error: StandardError).void }
+        sig { params(error: StandardError).returns(T.noreturn) }
         def raise_npm_details_error(error)
           raise if dependency_registry == GLOBAL_REGISTRY
           raise unless error.is_a?(Excon::Error::Timeout) || error.is_a?(Excon::Error::Socket)
@@ -379,8 +334,7 @@ module Dependabot
 
         sig { params(npm_response: Excon::Response).returns(T::Boolean) }
         def response_invalid_json?(npm_response)
-          result = JSON.parse(npm_response.body)
-          result.is_a?(Hash) || result.is_a?(Array)
+          T.cast(JSON.parse(npm_response.body), Object)
           false
         rescue JSON::ParserError, TypeError
           true
@@ -437,15 +391,6 @@ module Dependabot
             dependency: dependency,
             credentials: credentials
           ).git_dependency?
-        end
-
-        # This function safely retrieves a value for a given key from a Hash.
-        # If the hash is valid and the key exists, it will return the value, otherwise nil.
-        sig { params(hash: T.untyped, key: T.untyped).returns(T.untyped) }
-        def fetch_value_from_hash(hash, key)
-          return nil unless hash.is_a?(Hash) # Return nil if the hash is not a Hash
-
-          hash.fetch(key, nil) # Fetch the value for the given key, defaulting to nil if not found
         end
       end
     end

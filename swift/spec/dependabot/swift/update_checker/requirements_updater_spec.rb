@@ -58,6 +58,50 @@ RSpec.describe Dependabot::Swift::UpdateChecker::RequirementsUpdater do
         updated = updater.updated_requirements
         expect(updated.first[:metadata][:requirement_string]).to eq("from: \"7.0.2\"")
       end
+
+      context "with string-keyed source and metadata" do
+        let(:requirements) do
+          [{
+            file: "MyApp.xcodeproj/project.pbxproj",
+            requirement: ">= 7.0.0, < 8.0.0",
+            groups: [],
+            source: {
+              "type" => "git",
+              "url" => "https://github.com/Quick/Quick.git",
+              "ref" => "7.0.0",
+              "custom" => "source"
+            },
+            metadata: {
+              "kind" => "upToNextMajorVersion",
+              "requirement_string" => "from: \"7.0.0\"",
+              "custom" => "metadata"
+            }
+          }]
+        end
+
+        it "preserves payloads and nested key styles" do
+          requirement = updater.updated_requirements.first
+          source = requirement.source_hash
+          metadata = requirement.metadata
+
+          expect(source).to include("ref" => "7.0.2", "custom" => "source")
+          expect(source).not_to have_key(:ref)
+          expect(metadata).to include(
+            "requirement_string" => "from: \"7.0.2\"",
+            "custom" => "metadata"
+          )
+          expect(metadata).not_to have_key(:requirement_string)
+        end
+      end
+
+      context "with a malformed requirement kind" do
+        before { requirements.first.fetch(:metadata)[:kind] = 123 }
+
+        it "raises a type error" do
+          expect { updater.updated_requirements }
+            .to raise_error(TypeError, "metadata kind must be a string or nil")
+        end
+      end
     end
   end
 

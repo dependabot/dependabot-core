@@ -9,7 +9,7 @@ require "dependabot/composer/version"
 require "dependabot/composer/requirement"
 require "dependabot/composer/native_helpers"
 require "dependabot/composer/helpers"
-require "dependabot/composer/update_checker/version_resolver"
+require "dependabot/composer/composer_error_handler"
 require "sorbet-runtime"
 
 # rubocop:disable Metrics/ClassLength
@@ -59,6 +59,7 @@ module Dependabot
           @credentials = credentials
           @composer_platform_extensions = T.let(initial_platform, T::Hash[String, T::Array[String]])
           @lock_git_deps = T.let(true, T::Boolean)
+          @error_handler = T.let(ComposerErrorHandler.new, ComposerErrorHandler)
         end
 
         sig { returns(String) }
@@ -88,6 +89,9 @@ module Dependabot
 
         sig { returns(T::Hash[String, T::Array[String]]) }
         attr_reader :composer_platform_extensions
+
+        sig { returns(ComposerErrorHandler) }
+        attr_reader :error_handler
 
         sig { returns(String) }
         def generate_updated_lockfile_content
@@ -122,21 +126,24 @@ module Dependabot
 
         sig { returns(T::Hash[String, String]) }
         def run_update_helper
-          SharedHelpers.with_git_configured(credentials: T.unsafe(credentials)) do
-            SharedHelpers.run_helper_subprocess(
-              command: "php -d memory_limit=-1 #{php_helper_path}",
-              allow_unsafe_shell_command: true,
-              function: "update",
-              env: credentials_env,
-              args: [
-                Dir.pwd,
-                dependency.name,
-                dependency.version,
-                git_credentials,
-                registry_credentials
-              ]
-            )
-          end
+          T.cast(
+            SharedHelpers.with_git_configured(credentials: credentials) do
+              SharedHelpers.run_helper_subprocess(
+                command: "php -d memory_limit=-1 #{php_helper_path}",
+                allow_unsafe_shell_command: true,
+                function: "update",
+                env: credentials_env,
+                args: [
+                  Dir.pwd,
+                  dependency.name,
+                  dependency.version,
+                  git_credentials,
+                  registry_credentials
+                ]
+              )
+            end,
+            T::Hash[String, String]
+          )
         end
 
         sig { returns(String) }
@@ -161,8 +168,6 @@ module Dependabot
           error.message.start_with?("Could not authenticate against")
         end
 
-        # TODO: Extract error handling and share between the version resolver
-        #
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/MethodLength
@@ -244,6 +249,8 @@ module Dependabot
             raise DependencyFileNotResolvable, error.message
           end
 
+          error_handler.handle_composer_error(error)
+
           raise error
         end
         # rubocop:enable Metrics/AbcSize
@@ -320,8 +327,8 @@ module Dependabot
             next content unless Composer::Version.correct?(updated_req)
 
             old_req =
-              dep.requirements.find { |r| r[:file] == PackageManager::MANIFEST_FILENAME }
-                              &.fetch(:requirement)
+              dep.requirements.find { |r| r.file == PackageManager::MANIFEST_FILENAME }
+                              &.requirement_string
 
             # When updating a subdep there won't be an old requirement
             next content unless old_req
@@ -418,13 +425,15 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do
             File.write(PackageManager::MANIFEST_FILENAME, updated_composer_json_content)
 
-            content_hash =
+            content_hash = T.cast(
               SharedHelpers.run_helper_subprocess(
                 command: "#{Language::NAME} #{php_helper_path}",
                 function: "get_content_hash",
                 env: credentials_env,
                 args: [Dir.pwd]
-              )
+              ),
+              String
+            )
 
             content.gsub(existing_hash, content_hash)
           end

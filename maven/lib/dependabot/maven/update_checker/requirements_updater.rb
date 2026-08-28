@@ -11,6 +11,7 @@ require "dependabot/requirements_updater/base"
 require "dependabot/maven/update_checker"
 require "dependabot/maven/version"
 require "dependabot/maven/requirement"
+require "dependabot/maven/distributions"
 
 module Dependabot
   module Maven
@@ -38,7 +39,10 @@ module Dependabot
           source_url:,
           properties_to_update:
         )
-          @requirements = requirements
+          @requirements = T.let(
+            requirements.map { |req| Dependabot::DependencyRequirement.create(req) },
+            T::Array[Dependabot::DependencyRequirement]
+          )
           @source_url = source_url
           @properties_to_update = properties_to_update
           return unless latest_version
@@ -54,6 +58,15 @@ module Dependabot
           # requirement at index `i` to correspond to the previous requirement
           # at the same index.
           requirements.map do |req|
+            # Wrapper property requirements (distributionUrl, wrapperVersion,
+            # wrapperUrl) live in maven-wrapper.properties, not in a pom.xml.
+            # They must not go through POM XML update logic; instead we bump the
+            # requirement and keep the version metadata / artifact URL the
+            # FileUpdater reads in sync with it.
+            if req.source_string("type") == Distributions::DISTRIBUTION_DEPENDENCY_TYPE
+              next bump_distribution_requirement(req)
+            end
+
             requirement = req.requirement_string
             next req if requirement.nil?
             next req if requirement.include?(",")
@@ -72,6 +85,59 @@ module Dependabot
 
         sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :requirements
+
+        # Bumps a wrapper (maven-wrapper.properties) requirement. As well as the requirement
+        # string, it updates the fields the FileUpdater actually reads so a real update regenerates
+        # the *new* release rather than the old one:
+        #   - distributionUrl  -> metadata[:distribution_version] and the versioned source url
+        #   - wrapperVersion   -> metadata[:wrapper_version]
+        # The wrapperUrl tag-along requirement (present only on the distribution dependency) is left
+        # otherwise untouched, since bumping the distribution does not change the wrapper JAR.
+        sig do
+          params(req: Dependabot::DependencyRequirement)
+            .returns(Dependabot::DependencyRequirement)
+        end
+        def bump_distribution_requirement(req)
+          new_version = T.must(latest_version).to_s
+          old_version = req.requirement_string
+
+          case req.source_string("property")
+          when "distributionUrl"
+            updated = Dependabot::DependencyRequirement.create(req.merge(requirement: new_version))
+            updated = merge_metadata_version(updated, :distribution_version, new_version)
+            merge_source_url(updated, old_version, new_version)
+          when "wrapperVersion"
+            updated = Dependabot::DependencyRequirement.create(req.merge(requirement: new_version))
+            merge_metadata_version(updated, :wrapper_version, new_version)
+          else
+            req
+          end
+        end
+
+        sig do
+          params(req: Dependabot::DependencyRequirement, key: Symbol, new_version: String)
+            .returns(Dependabot::DependencyRequirement)
+        end
+        def merge_metadata_version(req, key, new_version)
+          metadata = req.metadata
+          return req unless metadata
+
+          Dependabot::DependencyRequirement.create(req.merge(metadata: metadata.merge(key => new_version)))
+        end
+
+        sig do
+          params(req: Dependabot::DependencyRequirement, old_version: T.nilable(String), new_version: String)
+            .returns(Dependabot::DependencyRequirement)
+        end
+        def merge_source_url(req, old_version, new_version)
+          source = req.source_hash
+          url = req.source_string("url")
+          return req unless source && url && old_version && !old_version.empty?
+
+          Dependabot::DependencyRequirement.create(
+            req.merge(source: source.merge(url: url.gsub(old_version, new_version)))
+          )
+        end
 
         sig { returns(T.nilable(Version)) }
         attr_reader :latest_version

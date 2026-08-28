@@ -349,12 +349,15 @@ module Dependabot
         julia_project_dir = File.dirname(julia_helper_script)
         julia_command = "julia --project=#{julia_project_dir} #{julia_helper_script}"
 
-        SharedHelpers.run_helper_subprocess(
-          command: julia_command,
-          function: function,
-          args: args,
-          env: julia_env,
-          allow_unsafe_shell_command: true
+        T.cast(
+          SharedHelpers.run_helper_subprocess(
+            command: julia_command,
+            function: function,
+            args: args,
+            env: julia_env,
+            allow_unsafe_shell_command: true
+          ),
+          T::Hash[String, T.untyped]
         )
       end
 

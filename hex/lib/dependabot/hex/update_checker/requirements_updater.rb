@@ -23,7 +23,7 @@ module Dependabot
           params(
             requirements: T::Array[Dependabot::DependencyRequirement],
             latest_resolvable_version: T.nilable(String),
-            updated_source: T.nilable(T::Hash[Symbol, T.nilable(String)])
+            updated_source: T.nilable(Dependabot::DependencyRequirement::ObjectHash)
           ).void
         end
         def initialize(
@@ -57,7 +57,7 @@ module Dependabot
         sig { returns(T.nilable(Dependabot::Version)) }
         attr_reader :latest_resolvable_version
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.nilable(String)])) }
+        sig { returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash)) }
         attr_reader :updated_source
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -65,25 +65,27 @@ module Dependabot
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def updated_mixfile_requirement(req)
           req = update_source(req)
-          return req unless latest_resolvable_version && req[:requirement]
-          return req if req_satisfied_by_latest_resolvable?(req[:requirement])
+          requirement_string = req.requirement_string
+          return req unless latest_resolvable_version && requirement_string
+          return req if req_satisfied_by_latest_resolvable?(requirement_string)
 
-          or_string_reqs = req[:requirement].split(OR_SEPARATOR)
-          last_string_reqs = or_string_reqs.last.split(AND_SEPARATOR)
-                                           .map(&:strip)
+          or_string_reqs = requirement_string.split(OR_SEPARATOR)
+          last_string_reqs = T.must(or_string_reqs.last)
+                              .split(AND_SEPARATOR)
+                              .map(&:strip)
 
           new_requirement =
             if last_string_reqs.any? { |r| r.match(/^(?:\d|=)/) }
               exact_req = last_string_reqs.find { |r| r.match(/^(?:\d|=)/) }
-              update_exact_version(exact_req, T.must(latest_resolvable_version)).to_s
+              update_exact_version(T.must(exact_req), T.must(latest_resolvable_version)).to_s
             elsif last_string_reqs.any? { |r| r.start_with?("~>") }
               tw_req = last_string_reqs.find { |r| r.start_with?("~>") }
-              update_twiddle_version(tw_req, T.must(latest_resolvable_version)).to_s
+              update_twiddle_version(T.must(tw_req), T.must(latest_resolvable_version)).to_s
             else
               update_mixfile_range(last_string_reqs).join(" and ")
             end
 
-          new_requirement = req[:requirement] + " or " + new_requirement if or_string_reqs.count > 1
+          new_requirement = requirement_string + " or " + new_requirement if or_string_reqs.count > 1
 
           Dependabot::DependencyRequirement.create(req.merge(requirement: new_requirement))
         end
@@ -96,7 +98,7 @@ module Dependabot
         def update_source(requirement_hash)
           # Only git sources ever need to be updated. Anything else should be
           # left alone.
-          return requirement_hash unless requirement_hash.dig(:source, :type) == "git"
+          return requirement_hash unless requirement_hash.source_string("type") == "git"
 
           Dependabot::DependencyRequirement.create(requirement_hash.merge(source: updated_source))
         end

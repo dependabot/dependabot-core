@@ -32,14 +32,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
   end
   let(:ignored_versions) { [] }
 
-  # Variable to control the enabling feature flag for the corepack fix
-  let(:enable_corepack_for_npm_and_yarn) { true }
-
   before do
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_private_registry_for_corepack).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_audit_fix_fallback).and_return(true)
   end
@@ -321,7 +314,7 @@ RSpec.describe namespace::SubdependencyVersionResolver do
 
           expect(Dependabot::NpmAndYarn::NativeHelpers)
             .to have_received(:run_npm8_subdependency_update_command)
-            .with(["acorn"], security_updates_only: true)
+            .with(["acorn"], min_release_age_arg: "--min-release-age=0")
         end
       end
 
