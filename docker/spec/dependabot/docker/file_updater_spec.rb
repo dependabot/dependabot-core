@@ -139,6 +139,32 @@ RSpec.describe Dependabot::Docker::FileUpdater do
     )
   end
 
+  describe "#notices" do
+    subject(:notices) { updater.notices }
+
+    context "when cooldown could not be applied" do
+      before do
+        dependency.metadata[:docker_cooldown_date_unavailable] = true
+      end
+
+      it "returns a warning for the pull request" do
+        expect(notices.map(&:to_h)).to contain_exactly(
+          mode: Dependabot::Notice::NoticeMode::WARN,
+          type: "docker_cooldown_date_unavailable",
+          package_manager_name: "docker",
+          title: "Docker cooldown was not applied",
+          description: "Cooldown was not applied because the registry did not provide a publication date.",
+          show_in_pr: true,
+          show_alert: false
+        )
+      end
+    end
+
+    context "when cooldown was applied" do
+      it { is_expected.to be_empty }
+    end
+  end
+
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 

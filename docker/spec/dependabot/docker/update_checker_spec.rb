@@ -1716,6 +1716,24 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it "still returns the latest version instead of crashing" do
         expect(latest_version).to eq("17.10")
       end
+
+      it "marks the dependency with the missing cooldown date" do
+        latest_version
+
+        expect(dependency.metadata[:docker_cooldown_date_unavailable]).to be(true)
+      end
+
+      context "when no cooldown days are configured" do
+        let(:update_cooldown) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 0)
+        end
+
+        it "does not mark the dependency" do
+          latest_version
+
+          expect(dependency.metadata).not_to include(:docker_cooldown_date_unavailable)
+        end
+      end
     end
 
     describe "with cooldown options when digest request raises authentication error" do
@@ -1808,6 +1826,12 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
             it "fails open and proposes the update" do
               expect(can_update).to be true
+            end
+
+            it "marks the dependency with the missing cooldown date" do
+              can_update
+
+              expect(dependency.metadata[:docker_cooldown_date_unavailable]).to be(true)
             end
           end
         end
