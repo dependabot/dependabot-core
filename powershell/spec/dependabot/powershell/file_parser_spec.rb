@@ -390,6 +390,35 @@ RSpec.describe Dependabot::Powershell::FileParser do
         expect(names).to contain_exactly("Az.Real")
       end
     end
+
+    context "when NestedModules contains external module specifications and local components" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "NestedModules.psd1",
+          content: fixture("psd1", "nested_modules_manifest.psd1")
+        )
+      end
+
+      it "parses only the versioned external module specifications" do
+        expect(parser.parse.map(&:name)).to contain_exactly("Pester", "PSScriptAnalyzer")
+      end
+
+      it "preserves NestedModules declaration metadata" do
+        pester = parser.parse.find { |dependency| dependency.name == "Pester" }
+        analyzer = parser.parse.find { |dependency| dependency.name == "PSScriptAnalyzer" }
+
+        expect(pester.version).to eq("5.0.0")
+        expect(pester.requirements.first.fetch(:metadata)).to include(
+          declaration_type: :nested_modules,
+          version_key: "RequiredVersion"
+        )
+        expect(analyzer.requirements.first.fetch(:requirement)).to eq(">= 1.21.0")
+        expect(analyzer.requirements.first.fetch(:metadata)).to include(
+          declaration_type: :nested_modules,
+          version_key: "ModuleVersion"
+        )
+      end
+    end
   end
 
   describe "parsing a .ps1 script" do
@@ -478,6 +507,61 @@ RSpec.describe Dependabot::Powershell::FileParser do
         names = parser.parse.map(&:name)
 
         expect(names).to contain_exactly("Az.Real")
+      end
+    end
+  end
+
+  describe "parsing using module statements" do
+    context "when a script uses an exact module specification and a local path" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "UsingModuleScript.ps1",
+            content: fixture("ps1", "using_module_script.ps1")
+          )
+        ]
+      end
+
+      it "parses the multiline external module specification" do
+        dependency = parser.parse.find { |candidate| candidate.name == "Pester" }
+
+        expect(dependency.version).to eq("5.0.0")
+        expect(dependency.requirements.first.fetch(:requirement)).to eq("= 5.0.0")
+        expect(dependency.requirements.first.fetch(:metadata)).to eq(
+          declaration_type: :using_module,
+          style: :hashtable,
+          guid: "11111111-1111-1111-1111-111111111111",
+          version_key: "RequiredVersion"
+        )
+      end
+
+      it "excludes the local module path" do
+        expect(parser.parse.map(&:name)).to contain_exactly("Pester")
+      end
+    end
+
+    context "when a script module uses a range and a bare module name" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "UsingModule.psm1",
+            content: fixture("psm1", "using_module.psm1")
+          )
+        ]
+      end
+
+      it "parses both registry-resolvable declarations" do
+        expect(parser.parse.map(&:name)).to contain_exactly("Pester", "Microsoft.PowerShell.Management")
+      end
+
+      it "parses the bounded module specification" do
+        dependency = parser.parse.find { |candidate| candidate.name == "Pester" }
+
+        expect(dependency.requirements.first.fetch(:requirement)).to eq(">= 5.0.0, <= 5.99.99")
+        expect(dependency.requirements.first.fetch(:metadata)).to include(
+          declaration_type: :using_module,
+          version_key: "ModuleVersion+MaximumVersion"
+        )
       end
     end
   end

@@ -17,6 +17,7 @@ module Dependabot
       require_relative "file_parser/module_declaration"
       require_relative "file_parser/module_specification_parser"
       require_relative "file_parser/requires_directive_parser"
+      require_relative "file_parser/using_module_parser"
       require_relative "file_parser/psd1_manifest_parser"
 
       # The only registry currently supported for PowerShell module resolution.
@@ -49,7 +50,7 @@ module Dependabot
         when ".psd1"
           Psd1ManifestParser.new(file: file).parse
         when ".ps1", ".psm1"
-          RequiresDirectiveParser.new(file: file).parse
+          RequiresDirectiveParser.new(file: file).parse + UsingModuleParser.new(file: file).parse
         else
           []
         end

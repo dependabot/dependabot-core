@@ -58,7 +58,7 @@ RSpec.describe Dependabot::Powershell::FileFetcher do
     it "returns an appropriate message" do
       expect(described_class.required_files_message).to eq(
         "Repo must contain a PowerShell module manifest (.psd1) file, or a .ps1/.psm1 script " \
-        "with a '#Requires -Modules' directive."
+        "with a '#Requires -Modules' directive or 'using module' statement."
       )
     end
   end
@@ -119,6 +119,19 @@ RSpec.describe Dependabot::Powershell::FileFetcher do
       it "fetches the script file" do
         expect(files.count).to eq(1)
         expect(files.first.name).to eq("Deploy.ps1")
+      end
+    end
+
+    context "when a .ps1 script with using module exists" do
+      let(:repo_contents_json) do
+        JSON.dump([{ "name" => "UsingModule.ps1", "type" => "file" }])
+      end
+
+      before { stub_content("UsingModule.ps1", fixture("ps1", "using_module_script.ps1")) }
+
+      it "fetches the script file" do
+        expect(files.count).to eq(1)
+        expect(files.first.name).to eq("UsingModule.ps1")
       end
     end
 

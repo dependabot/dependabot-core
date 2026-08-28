@@ -12,12 +12,12 @@ module Dependabot
 
       MANIFEST_EXTENSION = ".psd1"
       SCRIPT_EXTENSIONS = T.let(%w(.ps1 .psm1).freeze, T::Array[String])
-      REQUIRES_MODULES_LINE = /^\s*#Requires\s+-Modules\b/i
+      MODULE_DECLARATION_LINE = /^(?:[ \t]*#Requires\s+-Modules\b|[ \t]*using\s+module\b)/i
 
       sig { override.returns(String) }
       def self.required_files_message
         "Repo must contain a PowerShell module manifest (.psd1) file, or a .ps1/.psm1 script " \
-          "with a '#Requires -Modules' directive."
+          "with a '#Requires -Modules' directive or 'using module' statement."
       end
 
       sig { override.params(filenames: T::Array[String]).returns(T::Boolean) }
@@ -35,7 +35,7 @@ module Dependabot
           )
         end
 
-        fetched_files = manifest_files + script_files_with_requires
+        fetched_files = manifest_files + script_files_with_module_declarations
 
         return fetched_files if fetched_files.any?
 
@@ -76,22 +76,22 @@ module Dependabot
       end
 
       sig { returns(T::Array[Dependabot::DependencyFile]) }
-      def script_files_with_requires
-        @script_files_with_requires ||= T.let(
+      def script_files_with_module_declarations
+        @script_files_with_module_declarations ||= T.let(
           repo_contents(raise_errors: false)
             .select { |f| f.type == "file" && self.class.script_file?(f.name) }
             .map { |f| fetch_file_from_host(f.name) }
-            .select { |f| requires_modules?(f) },
+            .select { |f| module_declarations?(f) },
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
       end
 
       sig { params(file: Dependabot::DependencyFile).returns(T::Boolean) }
-      def requires_modules?(file)
+      def module_declarations?(file)
         content = file.content
         return false unless content
 
-        ContentMasker.mask(content).match?(REQUIRES_MODULES_LINE)
+        ContentMasker.mask(content).match?(MODULE_DECLARATION_LINE)
       end
     end
   end

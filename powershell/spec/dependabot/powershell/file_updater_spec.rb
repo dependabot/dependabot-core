@@ -471,6 +471,166 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
     end
   end
 
+  describe "updating using module statements" do
+    context "when an exact GUID-qualified module specification is bumped" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "UsingModuleScript.ps1",
+            content: fixture("ps1", "using_module_script.ps1")
+          )
+        ]
+      end
+
+      let(:dependencies) do
+        [
+          build_dependency(
+            name: "Pester",
+            version: "6.0.1",
+            previous_version: "5.0.0",
+            requirements: [
+              hashtable_requirement(
+                "= 6.0.1",
+                file: "UsingModuleScript.ps1",
+                version_key: "RequiredVersion",
+                guid: "11111111-1111-1111-1111-111111111111",
+                updated_guid: "a699dea5-2c73-4616-a270-1f7abb777e71",
+                declaration_type: :using_module
+              )
+            ],
+            previous_requirements: [
+              hashtable_requirement(
+                "= 5.0.0",
+                file: "UsingModuleScript.ps1",
+                version_key: "RequiredVersion",
+                guid: "11111111-1111-1111-1111-111111111111",
+                declaration_type: :using_module
+              )
+            ]
+          )
+        ]
+      end
+
+      it "rewrites the version and GUID while preserving the local path" do
+        content = updater.updated_dependency_files.first.content
+
+        expect(content).to include("RequiredVersion = '6.0.1'")
+        expect(content).to include("GUID = 'a699dea5-2c73-4616-a270-1f7abb777e71'")
+        expect(content).to include("using module './LocalTypes.psm1'")
+      end
+    end
+
+    context "when a bounded module specification is bumped" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "UsingModule.psm1",
+            content: fixture("psm1", "using_module.psm1")
+          )
+        ]
+      end
+
+      let(:dependencies) do
+        [
+          build_dependency(
+            name: "Pester",
+            requirements: [
+              hashtable_requirement(
+                ">= 5.0.0, <= 6.0.1",
+                file: "UsingModule.psm1",
+                version_key: "ModuleVersion+MaximumVersion",
+                declaration_type: :using_module
+              )
+            ],
+            previous_requirements: [
+              hashtable_requirement(
+                ">= 5.0.0, <= 5.99.99",
+                file: "UsingModule.psm1",
+                version_key: "ModuleVersion+MaximumVersion",
+                declaration_type: :using_module
+              )
+            ]
+          )
+        ]
+      end
+
+      it "raises only the maximum and preserves the bare module name" do
+        content = updater.updated_dependency_files.first.content
+
+        expect(content).to include(
+          "using module @{ ModuleName = 'Pester'; ModuleVersion = '5.0.0'; MaximumVersion = '6.0.1' }"
+        )
+        expect(content).to include("using module Microsoft.PowerShell.Management")
+      end
+    end
+  end
+
+  describe "updating versioned external NestedModules" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "NestedModules.psd1",
+          content: fixture("psd1", "nested_modules_manifest.psd1")
+        )
+      ]
+    end
+
+    let(:dependencies) do
+      [
+        build_dependency(
+          name: "Pester",
+          version: "6.0.1",
+          previous_version: "5.0.0",
+          requirements: [
+            hashtable_requirement(
+              "= 6.0.1",
+              file: "NestedModules.psd1",
+              version_key: "RequiredVersion",
+              declaration_type: :nested_modules
+            )
+          ],
+          previous_requirements: [
+            hashtable_requirement(
+              "= 5.0.0",
+              file: "NestedModules.psd1",
+              version_key: "RequiredVersion",
+              declaration_type: :nested_modules
+            )
+          ]
+        ),
+        build_dependency(
+          name: "PSScriptAnalyzer",
+          requirements: [
+            hashtable_requirement(
+              ">= 1.24.0",
+              file: "NestedModules.psd1",
+              version_key: "ModuleVersion",
+              declaration_type: :nested_modules
+            )
+          ],
+          previous_requirements: [
+            hashtable_requirement(
+              ">= 1.21.0",
+              file: "NestedModules.psd1",
+              version_key: "ModuleVersion",
+              declaration_type: :nested_modules
+            )
+          ]
+        )
+      ]
+    end
+
+    it "rewrites external versions while preserving every local component" do
+      content = updater.updated_dependency_files.first.content
+
+      expect(content).to include("@{ ModuleName = 'Pester'; RequiredVersion = '6.0.1' }")
+      expect(content).to include("@{ ModuleName = 'PSScriptAnalyzer'; ModuleVersion = '1.24.0' }")
+      expect(content).to include("'./LocalNested.psm1'")
+      expect(content).to include("'LocalNested.psm1'")
+      expect(content).to include("'LocalNested.dll'")
+    end
+  end
+
   describe "updating multiple declarations of the same module in one file" do
     let(:dependency_files) do
       [

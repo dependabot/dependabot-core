@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 require "dependabot/powershell/file_updater"
 require "dependabot/powershell/file_parser/module_specification_parser"
+require "dependabot/powershell/file_parser/using_module_parser"
 require "dependabot/powershell/content_masker"
 
 module Dependabot
@@ -33,6 +34,7 @@ module Dependabot
         # (`'RequiredModules' = @(...)`), so an optional matching quote
         # around it is recognized too - mirroring Psd1ManifestParser.
         REQUIRED_MODULES_KEY = /(?<![A-Za-z0-9_])(?:(['"])RequiredModules\1|RequiredModules)\s*=\s*/i
+        NESTED_MODULES_KEY = /(?<![A-Za-z0-9_])(?:(['"])NestedModules\1|NestedModules)\s*=\s*/i
 
         sig { params(file: Dependabot::DependencyFile).void }
         def initialize(file:)
@@ -50,9 +52,10 @@ module Dependabot
         def locate
           case File.extname(@file.name).downcase
           when ".psd1"
-            locate_required_modules
+            locate_manifest_modules(REQUIRED_MODULES_KEY, declaration_type: :required_modules) +
+              locate_manifest_modules(NESTED_MODULES_KEY, declaration_type: :nested_modules, versioned_only: true)
           when ".ps1", ".psm1"
-            locate_requires_directives
+            locate_requires_directives + locate_using_modules
           else
             []
           end
@@ -70,13 +73,43 @@ module Dependabot
         end
 
         sig { returns(T::Array[Occurrence]) }
-        def locate_required_modules
-          assignment = ContentMasker.top_level_hashtable_assignment(@content, REQUIRED_MODULES_KEY)
+        def locate_using_modules
+          FileParser::UsingModuleParser.statements(@content).filter_map do |statement|
+            occurrence_for(
+              statement.text,
+              statement.start_index,
+              statement.end_index,
+              declaration_type: :using_module
+            )
+          end
+        end
+
+        sig do
+          params(
+            key_pattern: Regexp,
+            declaration_type: Symbol,
+            versioned_only: T::Boolean
+          ).returns(T::Array[Occurrence])
+        end
+        def locate_manifest_modules(key_pattern, declaration_type:, versioned_only: false)
+          assignment = ContentMasker.top_level_hashtable_assignment(@content, key_pattern)
           return [] unless assignment
 
           value_start = assignment[1]
-          return locate_required_modules_array(value_start) if @content[value_start..].to_s.start_with?("@(")
-          return locate_required_modules_hashtable(value_start) if @content[value_start..].to_s.start_with?("@{")
+          if @content[value_start..].to_s.start_with?("@(")
+            return locate_manifest_modules_array(
+              value_start,
+              declaration_type: declaration_type,
+              versioned_only: versioned_only
+            )
+          end
+          if @content[value_start..].to_s.start_with?("@{")
+            return locate_manifest_modules_hashtable(
+              value_start,
+              declaration_type: declaration_type,
+              versioned_only: versioned_only
+            )
+          end
 
           []
         end
@@ -84,13 +117,24 @@ module Dependabot
         # Handles `RequiredModules = @( ... )`: each top-level entry inside
         # the array (bare string or `@{...}` hashtable) becomes its own
         # Occurrence.
-        sig { params(value_start: Integer).returns(T::Array[Occurrence]) }
-        def locate_required_modules_array(value_start)
+        sig do
+          params(
+            value_start: Integer,
+            declaration_type: Symbol,
+            versioned_only: T::Boolean
+          ).returns(T::Array[Occurrence])
+        end
+        def locate_manifest_modules_array(value_start, declaration_type:, versioned_only:)
           body_range = balanced_paren_range(@content, value_start + 1)
           return [] unless body_range
 
           body_start, body_end = body_range
-          entries(@content[body_start...body_end].to_s, body_start, declaration_type: :required_modules)
+          entries(
+            @content[body_start...body_end].to_s,
+            body_start,
+            declaration_type: declaration_type,
+            versioned_only: versioned_only
+          )
         end
 
         # Handles `RequiredModules = @{ ... }`: a single hashtable declared
@@ -98,8 +142,14 @@ module Dependabot
         # The whole `@{...}` literal - including its `@` prefix and braces -
         # is treated as a single entry so its offsets can be used to locate
         # and rewrite its version field later.
-        sig { params(value_start: Integer).returns(T::Array[Occurrence]) }
-        def locate_required_modules_hashtable(value_start)
+        sig do
+          params(
+            value_start: Integer,
+            declaration_type: Symbol,
+            versioned_only: T::Boolean
+          ).returns(T::Array[Occurrence])
+        end
+        def locate_manifest_modules_hashtable(value_start, declaration_type:, versioned_only:)
           open_brace_index = value_start + 1
           body_range = balanced_paren_range(@content, open_brace_index)
           return [] unless body_range
@@ -107,7 +157,12 @@ module Dependabot
           _, body_end = body_range
           entry_start = open_brace_index - 1 # index of the '@' prefix
           entry_end = body_end + 1 # one past the closing '}'
-          entries(@content[entry_start...entry_end].to_s, entry_start, declaration_type: :required_modules)
+          entries(
+            @content[entry_start...entry_end].to_s,
+            entry_start,
+            declaration_type: declaration_type,
+            versioned_only: versioned_only
+          )
         end
 
         # Given content and the index of an opening `(`, returns the
@@ -149,22 +204,47 @@ module Dependabot
         # absolute start offset within the file, used to translate the
         # relative spans found here into absolute file offsets.
         sig do
-          params(text: String, base_offset: Integer, declaration_type: Symbol).returns(T::Array[Occurrence])
+          params(
+            text: String,
+            base_offset: Integer,
+            declaration_type: Symbol,
+            versioned_only: T::Boolean
+          ).returns(T::Array[Occurrence])
         end
-        def entries(text, base_offset, declaration_type:)
+        def entries(text, base_offset, declaration_type:, versioned_only: false)
           entry_spans(text).filter_map do |entry_start, entry_end|
             raw = text[entry_start...entry_end].to_s
-            declaration = FileParser::ModuleSpecificationParser.parse(raw, declaration_type: declaration_type)
-            next unless declaration
-
-            Occurrence.new(
-              name: declaration.name,
-              style: T.cast(declaration.metadata[:style], Symbol),
-              version_key: T.cast(declaration.metadata[:version_key], T.nilable(String)),
-              start_index: base_offset + entry_start,
-              end_index: base_offset + entry_end
+            occurrence_for(
+              raw,
+              base_offset + entry_start,
+              base_offset + entry_end,
+              declaration_type: declaration_type,
+              versioned_only: versioned_only
             )
           end
+        end
+
+        sig do
+          params(
+            raw: String,
+            start_index: Integer,
+            end_index: Integer,
+            declaration_type: Symbol,
+            versioned_only: T::Boolean
+          ).returns(T.nilable(Occurrence))
+        end
+        def occurrence_for(raw, start_index, end_index, declaration_type:, versioned_only: false)
+          declaration = FileParser::ModuleSpecificationParser.parse(raw, declaration_type: declaration_type)
+          return unless declaration
+          return if versioned_only && declaration.requirement.nil?
+
+          Occurrence.new(
+            name: declaration.name,
+            style: T.cast(declaration.metadata[:style], Symbol),
+            version_key: T.cast(declaration.metadata[:version_key], T.nilable(String)),
+            start_index: start_index,
+            end_index: end_index
+          )
         end
 
         # Splits `text` on top-level PowerShell entry separators (depth/quote

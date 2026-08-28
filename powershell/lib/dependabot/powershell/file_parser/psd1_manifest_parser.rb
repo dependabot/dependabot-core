@@ -8,8 +8,8 @@ require "dependabot/powershell/content_masker"
 module Dependabot
   module Powershell
     class FileParser < Dependabot::FileParsers::Base
-      # Parses the `RequiredModules` array from a PowerShell module manifest
-      # (`.psd1`) file into a list of ModuleDeclaration objects.
+      # Parses registry-resolvable module declarations from a PowerShell module
+      # manifest (`.psd1`) into a list of ModuleDeclaration objects.
       #
       # https://learn.microsoft.com/powershell/module/microsoft.powershell.core/new-modulemanifest
       class Psd1ManifestParser
@@ -19,6 +19,7 @@ module Dependabot
         # (`'RequiredModules' = @(...)`), so an optional matching quote
         # around it is recognized too.
         REQUIRED_MODULES_KEY = /(?<![A-Za-z0-9_])(?:(['"])RequiredModules\1|RequiredModules)\s*=\s*/i
+        NESTED_MODULES_KEY = /(?<![A-Za-z0-9_])(?:(['"])NestedModules\1|NestedModules)\s*=\s*/i
 
         sig { params(file: Dependabot::DependencyFile).void }
         def initialize(file:)
@@ -27,22 +28,37 @@ module Dependabot
 
         sig { returns(T::Array[ModuleDeclaration]) }
         def parse
-          required_modules_entries.filter_map do |entry|
-            ModuleSpecificationParser.parse(entry, declaration_type: :required_modules)
-          end
+          content = ContentMasker.mask(T.must(@file.content))
+
+          declarations_for(content, REQUIRED_MODULES_KEY, declaration_type: :required_modules) +
+            declarations_for(content, NESTED_MODULES_KEY, declaration_type: :nested_modules, versioned_only: true)
         end
 
         private
 
-        # Locates the `RequiredModules = ...` assignment and returns the
-        # individual entries it declares, regardless of whether it's written
-        # as an array (`@(...)`), a single hashtable (`@{...}`), or a single
-        # bare/quoted module name (`'Pester'`).
-        sig { returns(T::Array[String]) }
-        def required_modules_entries
-          content = ContentMasker.mask(T.must(@file.content))
+        sig do
+          params(
+            content: String,
+            key_pattern: Regexp,
+            declaration_type: Symbol,
+            versioned_only: T::Boolean
+          ).returns(T::Array[ModuleDeclaration])
+        end
+        def declarations_for(content, key_pattern, declaration_type:, versioned_only: false)
+          manifest_entries(content, key_pattern).filter_map do |entry|
+            declaration = ModuleSpecificationParser.parse(entry, declaration_type: declaration_type)
+            next unless declaration
+            next if versioned_only && declaration.requirement.nil?
 
-          assignment = ContentMasker.top_level_hashtable_assignment(content, REQUIRED_MODULES_KEY)
+            declaration
+          end
+        end
+
+        # Locates a module-list assignment and returns the individual entries,
+        # whether it is an array, a single hashtable, or a quoted scalar.
+        sig { params(content: String, key_pattern: Regexp).returns(T::Array[String]) }
+        def manifest_entries(content, key_pattern)
+          assignment = ContentMasker.top_level_hashtable_assignment(content, key_pattern)
           return [] unless assignment
 
           value_start = assignment[1]
