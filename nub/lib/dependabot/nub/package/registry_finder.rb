@@ -134,7 +134,7 @@ module Dependabot
 
           @first_registry_with_dependency_details ||=
             known_registries.find do |details|
-              url = "#{details['registry']&.gsub(%r{/+$}, '')}/#{escaped_dependency_name}"
+              url = "#{details['registry']&.gsub(%r{/++$}, '')}/#{escaped_dependency_name}"
               url = "https://#{url}" unless url.start_with?("http")
               response = Dependabot::RegistryClient.get(
                 url: url,
@@ -149,7 +149,9 @@ module Dependabot
               raise DependencyFileNotResolvable, e.message
             end&.fetch("registry")
 
-          @first_registry_with_dependency_details ||= global_registry.sub(%r{/+$}, "").sub(%r{^.*?//}, "")
+          @first_registry_with_dependency_details ||= global_registry
+                                                      .sub(%r{/++$}, "")
+                                                      .sub(%r{^[^/]*+(?:/[^/]*+)*?//}, "")
         end
 
         sig { returns(T.nilable(String)) }
@@ -168,7 +170,7 @@ module Dependabot
               "#{protocol}://#{registry}"
             end
 
-          url.gsub(%r{/+$}, "")
+          url.gsub(%r{/++$}, "")
         end
 
         sig { params(token: T.nilable(String)).returns(T::Hash[String, String]) }
@@ -409,10 +411,13 @@ module Dependabot
           @parsed_yarnrc_yml
         end
 
+        # Possessive quantifiers and the explicit non-slash runs keep these linear
+        # on pathological input instead of backtracking polynomially. They match
+        # identically to the greedy forms for real registry URLs.
         sig { params(url: String).returns(String) }
         def normalize_configured_registry(url)
-          url.sub(%r{/+$}, "")
-             .sub(%r{^.*?//}, "")
+          url.sub(%r{/++$}, "")
+             .sub(%r{^[^/]*+(?:/[^/]*+)*?//}, "")
              .gsub(/\s+/, "%20")
         end
       end
