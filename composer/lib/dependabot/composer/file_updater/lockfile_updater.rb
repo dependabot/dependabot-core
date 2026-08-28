@@ -9,7 +9,7 @@ require "dependabot/composer/version"
 require "dependabot/composer/requirement"
 require "dependabot/composer/native_helpers"
 require "dependabot/composer/helpers"
-require "dependabot/composer/update_checker/version_resolver"
+require "dependabot/composer/composer_error_handler"
 require "sorbet-runtime"
 
 # rubocop:disable Metrics/ClassLength
@@ -59,6 +59,7 @@ module Dependabot
           @credentials = credentials
           @composer_platform_extensions = T.let(initial_platform, T::Hash[String, T::Array[String]])
           @lock_git_deps = T.let(true, T::Boolean)
+          @error_handler = T.let(ComposerErrorHandler.new, ComposerErrorHandler)
         end
 
         sig { returns(String) }
@@ -88,6 +89,9 @@ module Dependabot
 
         sig { returns(T::Hash[String, T::Array[String]]) }
         attr_reader :composer_platform_extensions
+
+        sig { returns(ComposerErrorHandler) }
+        attr_reader :error_handler
 
         sig { returns(String) }
         def generate_updated_lockfile_content
@@ -164,8 +168,6 @@ module Dependabot
           error.message.start_with?("Could not authenticate against")
         end
 
-        # TODO: Extract error handling and share between the version resolver
-        #
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/MethodLength
@@ -246,6 +248,8 @@ module Dependabot
           if error.message.include?("Your requirements could not be resolved")
             raise DependencyFileNotResolvable, error.message
           end
+
+          error_handler.handle_composer_error(error)
 
           raise error
         end
