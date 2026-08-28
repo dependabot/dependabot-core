@@ -528,8 +528,9 @@ module Dependabot
         sig { params(index_url: String).returns(T::Boolean) }
         def main_pypi_index?(index_url)
           uri = URI.parse(index_url)
-          uri.scheme&.casecmp?("https") && uri.port == 443 && uri.path.split("/").reject(&:empty?) == ["simple"] &&
-            %w(pypi.org pypi.python.org).any? { |host| uri.host&.casecmp?(host) }
+          T.must(uri.scheme.to_s.casecmp("https")).zero? && uri.port == 443 &&
+            uri.path.to_s.split("/").reject(&:empty?) == ["simple"] &&
+            %w(pypi.org pypi.python.org).include?(uri.host.to_s.downcase)
         end
 
         sig { params(dep_name: String).returns(String) }
