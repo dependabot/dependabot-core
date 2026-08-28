@@ -233,8 +233,8 @@ module Dependabot
             relevant_versions = latest_version_finder(dependency)
                                 .possible_previous_versions_with_details
                                 .map(&:first)
-            reqs = dep.requirements.filter_map { |r| r[:requirement] }
-                                   .map { |r| requirement_class.requirements_array(r) }
+            reqs = dep.requirements.filter_map(&:requirement_string)
+                      .map { |r| requirement_class.requirements_array(r) }
 
             # Pick the lowest version from the max possible version from all
             # requirements. This matches the logic when combining the same
@@ -680,10 +680,10 @@ module Dependabot
           ).returns(String)
         end
         def version_install_arg(version:)
-          git_source = dependency.requirements.find { |req| req[:source] && req[:source][:type] == "git" }
+          git_source = dependency.requirements.find { |req| req.source_string("type") == "git" }
 
           if git_source
-            "#{dependency.name}@#{git_source[:source][:url]}##{version}"
+            "#{dependency.name}@#{git_source.source_string('url')}##{version}"
           else
             "#{dependency.name}@#{version}"
           end
@@ -749,13 +749,13 @@ module Dependabot
         def version_for_dependency(dep)
           return version_class.new(dep.version) if dep.version && version_class.correct?(dep.version)
 
-          dep.requirements.filter_map { |r| r[:requirement] }
-                          .reject { |req_string| req_string.start_with?("<") }
-                          .select { |req_string| req_string.match?(version_regex) }
-                          .map { |req_string| req_string.match(version_regex) }
-                          .select { |version| version_class.correct?(version.to_s) }
-                          .map { |version| version_class.new(version.to_s) }
-                          .max
+          dep.requirements.filter_map(&:requirement_string)
+             .reject { |req_string| req_string.start_with?("<") }
+             .select { |req_string| req_string.match?(version_regex) }
+             .map { |req_string| req_string.match(version_regex) }
+             .select { |version| version_class.correct?(version.to_s) }
+             .map { |version| version_class.new(version.to_s) }
+             .max
         end
 
         sig { returns(T.class_of(Dependabot::Version)) }

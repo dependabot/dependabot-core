@@ -339,13 +339,14 @@ module Dependabot
         sig { params(dependency: Dependabot::Dependency).void }
         def preliminary_check_for_update(dependency)
           T.must(dependency.previous_requirements).each do |req, _dep|
-            next if req.fetch(:requirement).nil?
+            requirement = req.requirement
+            next if requirement.nil?
 
             # some deps are patched with local patches, we don't need to update them
-            if req.fetch(:requirement).match?(Regexp.union(PATCH_PACKAGE))
+            if requirement.match?(Regexp.union(PATCH_PACKAGE))
               Dependabot.logger.info(
                 "Func: updated_requirements. dependency patched #{dependency.name}," \
-                " Requirement: '#{req.fetch(:requirement)}'"
+                " Requirement: '#{requirement}'"
               )
 
               raise DependencyFileNotResolvable,
@@ -353,11 +354,11 @@ module Dependabot
             end
 
             # some deps are added as local packages, we don't need to update them as they are referred to a local path
-            next unless req.fetch(:requirement).match?(Regexp.union(LOCAL_PACKAGE))
+            next unless requirement.match?(Regexp.union(LOCAL_PACKAGE))
 
             Dependabot.logger.info(
               "Func: updated_requirements. local package #{dependency.name}," \
-              " Requirement: '#{req.fetch(:requirement)}'"
+              " Requirement: '#{requirement}'"
             )
 
             raise DependencyFileNotResolvable,

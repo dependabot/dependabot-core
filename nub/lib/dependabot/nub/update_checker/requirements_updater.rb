@@ -35,7 +35,7 @@ module Dependabot
         sig do
           params(
             requirements: T::Array[Dependabot::DependencyRequirement],
-            updated_source: T.nilable(T::Hash[Symbol, T.untyped]),
+            updated_source: T.nilable(Dependabot::DependencyRequirement::ObjectHash),
             update_strategy: Dependabot::RequirementsUpdateStrategy,
             latest_resolvable_version: T.nilable(T.any(String, Gem::Version))
           )
@@ -71,8 +71,8 @@ module Dependabot
           requirements.map do |req|
             req = Dependabot::DependencyRequirement.create(req.merge(source: updated_source))
             next req unless latest_resolvable_version
-            next initial_req_after_source_change(req) unless req[:requirement]
-            next req if req[:requirement].match?(/^([A-Za-uw-z]|v[^\d])/)
+            next initial_req_after_source_change(req) unless req.requirement_string
+            next req if T.must(req.requirement_string).match?(/^([A-Za-uw-z]|v[^\d])/)
 
             case update_strategy
             when RequirementsUpdateStrategy::WidenRanges then widen_requirement(req)
@@ -89,7 +89,7 @@ module Dependabot
         sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :requirements
 
-        sig { returns(T.nilable(T::Hash[Symbol, T.untyped])) }
+        sig { returns(T.nilable(Dependabot::DependencyRequirement::ObjectHash)) }
         attr_reader :updated_source
 
         sig { returns(Dependabot::RequirementsUpdateStrategy) }
@@ -109,21 +109,21 @@ module Dependabot
         def updating_from_git_to_npm?
           return false unless updated_source.nil?
 
-          original_source = requirements.filter_map { |r| r[:source] }.first
-          original_source&.fetch(:type) == "git"
+          original_source = requirements.find(&:source)
+          original_source&.source_string("type") == "git"
         end
 
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def initial_req_after_source_change(req)
           return req unless updating_from_git_to_npm?
-          return req unless req[:requirement].nil?
+          return req unless req.requirement_string.nil?
 
           Dependabot::DependencyRequirement.create(req.merge(requirement: "^#{latest_resolvable_version}"))
         end
 
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_version_requirement(req)
-          current_requirement = req[:requirement]
+          current_requirement = T.must(req.requirement_string)
 
           if current_requirement.match?(/(<|-\s)/i)
             ruby_req = ruby_requirements(current_requirement).first
@@ -134,12 +134,12 @@ module Dependabot
           end
 
           reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
-          Dependabot::DependencyRequirement.create(req.merge(requirement: update_version_string(reqs.first)))
+          Dependabot::DependencyRequirement.create(req.merge(requirement: update_version_string(T.must(reqs.first))))
         end
 
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def update_version_requirement_if_needed(req)
-          current_requirement = req[:requirement]
+          current_requirement = T.must(req.requirement_string)
           version = latest_resolvable_version
           return req if current_requirement.strip == ""
 
@@ -151,7 +151,7 @@ module Dependabot
 
         sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
         def widen_requirement(req)
-          current_requirement = req[:requirement]
+          current_requirement = T.must(req.requirement_string)
           version = latest_resolvable_version
           return req if current_requirement.strip == ""
 
