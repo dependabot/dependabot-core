@@ -24,6 +24,7 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/maven_dependency_parser"
       require_relative "file_parser/property_value_finder"
+      require_relative "file_parser/wrapper_mojo"
 
       # The following "dependencies" are candidates for updating:
       # - The project's parent
@@ -73,6 +74,7 @@ module Dependabot
 
         pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
         extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
+        add_wrapper_dependencies(dependency_set)
 
         dependencies = []
         dependency_set.dependencies.each do |dep|
@@ -93,7 +95,24 @@ module Dependabot
         pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
         extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
         targetfiles.each { |target| dependency_set += targetfile_dependencies(target) }
+
+        add_wrapper_dependencies(dependency_set)
+
         dependency_set.dependencies
+      end
+
+      sig { params(dependency_set: DependencySet).void }
+      def add_wrapper_dependencies(dependency_set)
+        return unless Dependabot::Experiments.enabled?(:maven_wrapper_updater)
+
+        wrapper_properties_files.each do |properties_file|
+          dir = File.dirname(properties_file.name).sub(%r{/?\.mvn/wrapper$}, "")
+          dir = "." if dir.empty?
+          scripts = wrapper_script_files_for(dir)
+          FileParser::WrapperMojo.resolve_dependencies(properties_file, script_files: scripts).each do |dep|
+            dependency_set << dep
+          end
+        end
       end
 
       sig { returns(Ecosystem::VersionManager) }
@@ -470,6 +489,22 @@ module Dependabot
         )
       end
 
+      sig { returns(T::Array[Dependabot::DependencyFile]) }
+      def wrapper_properties_files
+        @wrapper_properties_files ||= T.let(
+          dependency_files.select { |f| f.name.end_with?("maven-wrapper.properties") },
+          T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { params(dir: String).returns(T::Array[Dependabot::DependencyFile]) }
+      def wrapper_script_files_for(dir)
+        script_names = %w(mvnw mvnw.cmd mvnwDebug mvnwDebug.cmd).map do |s|
+          dir == "." ? s : "#{dir}/#{s}"
+        end
+        dependency_files.select { |f| script_names.include?(f.name) }
+      end
+
       sig { returns(T::Array[String]) }
       def internal_dependency_names
         @internal_dependency_names ||= T.let(
@@ -506,48 +541,104 @@ module Dependabot
         merged = []
         used_indices = Set.new
         requirements.each_with_index do |dep_scan_req, i|
-          next if used_indices.include?(i) || dep_scan_req.dig(:metadata, :pom_file).nil?
-
-          # Look for another requirement where pom_file matches property_source
-          match_index = requirements.find_index.with_index do |parsing_req, j|
-            j > i &&
-              !used_indices.include?(j) &&
-              dep_scan_req.dig(:metadata, :pom_file) == parsing_req.fetch(:file)
-          end
-
-          if match_index
-            parsing_req = T.must(requirements[match_index])
-
-            # Merge the two requirements
-            # We prefer file and requirement properties from parsed requirements,
-            # because they include correct file and not evaluated property value.
-            merged_req = {
-              requirement: parsing_req[:requirement],
-              file: parsing_req[:file],
-              groups: [*dep_scan_req[:groups], *parsing_req[:groups]].uniq.compact,
-              source: dep_scan_req[:source],
-              metadata: merge_metadata(dep_scan_req[:metadata], parsing_req[:metadata])
-            }
-
-            merged << Dependabot::DependencyRequirement.create(merged_req)
-            used_indices.add(i)
-            used_indices.add(match_index)
-          else
-            # No match found, keep the requirement as is
-            merged << dep_scan_req
-            used_indices.add(i)
-          end
+          merge_requirement_at(requirements, dep_scan_req, i, merged, used_indices)
         end
 
         merged
       end
 
+      sig do
+        params(
+          requirements: T::Array[Dependabot::DependencyRequirement],
+          dep_scan_req: Dependabot::DependencyRequirement,
+          index: Integer,
+          merged: T::Array[Dependabot::DependencyRequirement],
+          used_indices: T::Set[Integer]
+        ).void
+      end
+      def merge_requirement_at(requirements, dep_scan_req, index, merged, used_indices)
+        return if used_indices.include?(index)
+
+        pom_file = dep_scan_req.metadata_string("pom_file")
+        return merged << dep_scan_req if pom_file.nil?
+
+        merge_matching_requirement(requirements, dep_scan_req, index, merged, used_indices)
+      end
+
+      sig do
+        params(
+          requirements: T::Array[Dependabot::DependencyRequirement],
+          dep_scan_req: Dependabot::DependencyRequirement,
+          index: Integer,
+          merged: T::Array[Dependabot::DependencyRequirement],
+          used_indices: T::Set[Integer]
+        ).void
+      end
+      def merge_matching_requirement(requirements, dep_scan_req, index, merged, used_indices)
+        # Look for another requirement where pom_file matches property_source
+        pom_file = T.must(dep_scan_req.metadata_string("pom_file"))
+        match_index = matching_requirement_index(requirements, pom_file, index, used_indices)
+        return merge_unmatched_requirement(dep_scan_req, index, merged, used_indices) unless match_index
+
+        parsing_req = T.must(requirements[match_index])
+        merged << merge_requirement(dep_scan_req, parsing_req)
+        used_indices.add(index)
+        used_indices.add(match_index)
+      end
+
+      sig do
+        params(
+          dep_scan_req: Dependabot::DependencyRequirement,
+          index: Integer,
+          merged: T::Array[Dependabot::DependencyRequirement],
+          used_indices: T::Set[Integer]
+        ).void
+      end
+      def merge_unmatched_requirement(dep_scan_req, index, merged, used_indices)
+        merged << dep_scan_req
+        used_indices.add(index)
+      end
+
+      sig do
+        params(
+          requirements: T::Array[Dependabot::DependencyRequirement],
+          pom_file: String,
+          index: Integer,
+          used_indices: T::Set[Integer]
+        ).returns(T.nilable(Integer))
+      end
+      def matching_requirement_index(requirements, pom_file, index, used_indices)
+        requirements.find_index.with_index do |parsing_req, i|
+          i > index && !used_indices.include?(i) && pom_file == parsing_req.file
+        end
+      end
+
+      sig do
+        params(
+          dep_scan_req: Dependabot::DependencyRequirement,
+          parsing_req: Dependabot::DependencyRequirement
+        ).returns(Dependabot::DependencyRequirement)
+      end
+      def merge_requirement(dep_scan_req, parsing_req)
+        # We prefer file and requirement properties from parsed requirements,
+        # because they include correct file and not evaluated property value.
+        merged_req = {
+          requirement: parsing_req.requirement,
+          file: parsing_req.file,
+          groups: [*dep_scan_req.groups, *parsing_req.groups].uniq.compact,
+          source: dep_scan_req.source,
+          metadata: merge_metadata(T.must(dep_scan_req.metadata), T.must(parsing_req.metadata))
+        }
+
+        Dependabot::DependencyRequirement.create(merged_req)
+      end
+
       # Merge metadata from two requirements, combining all keys
       sig do
         params(
-          metadata1: T::Hash[Symbol, Object],
-          metadata2: T::Hash[Symbol, Object]
-        ).returns(T::Hash[Symbol, Object])
+          metadata1: Dependabot::DependencyRequirement::ObjectHash,
+          metadata2: Dependabot::DependencyRequirement::ObjectHash
+        ).returns(Dependabot::DependencyRequirement::ObjectHash)
       end
       def merge_metadata(metadata1, metadata2)
         metadata1.merge(metadata2) do |_key, old_value, new_value|

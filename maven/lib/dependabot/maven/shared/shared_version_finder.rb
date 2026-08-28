@@ -52,10 +52,7 @@ module Dependabot
         # - Only hexadecimal characters (0-9, a-f)
         # - Case-insensitive
         # - At least one letter a-f to avoid purely numeric strings
-        GIT_COMMIT = T.let(
-          /\A(?=[0-9a-f]{#{MIN_GIT_SHA_LENGTH},#{MAX_GIT_SHA_LENGTH}}\z)(?=.*[a-f])/i,
-          Regexp
-        )
+        GIT_COMMIT = /\A(?=[0-9a-f]{#{MIN_GIT_SHA_LENGTH},#{MAX_GIT_SHA_LENGTH}}\z)(?=.*[a-f])/i
 
         sig { params(comparison_version: Dependabot::Version).returns(T::Boolean) }
         def matches_dependency_version_type?(comparison_version)
@@ -111,7 +108,7 @@ module Dependabot
           return true if dependency.numeric_version&.prerelease?
 
           dependency.requirements.any? do |req|
-            req_string = T.cast(req.fetch(:requirement), T.nilable(String)).to_s
+            req_string = req.requirement_string.to_s
             req_string.split(",").any? do |segment|
               normalized = segment.strip.gsub(/\A[\[\(]\s*/, "")
                                   .gsub(/\s*[\]\)]\z/, "")

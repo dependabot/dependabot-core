@@ -111,6 +111,201 @@ RSpec.describe Dependabot::NpmAndYarn::Package::PackageDetailsFetcher do
       end
     end
 
+    context "when known metadata fields are missing" do
+      before do
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: JSON.dump("name" => dependency_name)
+        )
+      end
+
+      it "returns no releases or dist-tags" do
+        expect(details.releases).to eq([])
+        expect(details.dist_tags).to be_nil
+      end
+    end
+
+    context "when time includes unpublished metadata" do
+      before do
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: JSON.dump(
+            "versions" => { "1.0.0" => {} },
+            "time" => {
+              "1.0.0" => "2024-01-01T00:00:00Z",
+              "unpublished" => {
+                "time" => "2024-01-02T00:00:00Z",
+                "versions" => ["0.9.0"]
+              }
+            }
+          )
+        )
+      end
+
+      it "ignores the metadata while parsing release timestamps" do
+        release = details.releases.find { |candidate| candidate.version.to_s == "1.0.0" }
+
+        expect(release&.released_at).to eq(Time.utc(2024, 1, 1))
+      end
+    end
+
+    context "when successful JSON has the wrong top-level shape" do
+      before do
+        stub_request(:get, registry_url).to_return(status: 200, body: "[]")
+      end
+
+      it "raises at the metadata boundary" do
+        expect { details }.to raise_error(TypeError, "npm registry package must be an object")
+      end
+    end
+
+    context "when a release entry has the wrong shape" do
+      before do
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: JSON.dump("versions" => { "1.0.0" => "invalid" })
+        )
+      end
+
+      it "raises at the release boundary" do
+        expect { details }.to raise_error(TypeError, "version 1.0.0 details must be an object")
+      end
+    end
+
+    context "when a version key is not valid semantic versioning" do
+      before do
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: JSON.dump(
+            "versions" => {
+              "not-a-version" => "invalid",
+              "also-not-a-version" => {
+                "engines" => "invalid",
+                "repository" => []
+              }
+            },
+            "time" => {
+              "not-a-version" => 1,
+              "also-not-a-version" => "invalid"
+            }
+          )
+        )
+      end
+
+      it "skips the release before parsing its metadata" do
+        expect(details.releases).to eq([])
+      end
+    end
+
+    context "when registry metadata uses a legacy engines array" do
+      before do
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: fixture("npm_responses", "lodash.json")
+        )
+      end
+
+      it "returns the release without a Node requirement" do
+        release = details.releases.find { |candidate| candidate.version.to_s == "0.1.0" }
+
+        expect(release).not_to be_nil
+        expect(release.language).to be_nil
+      end
+    end
+
+    context "when registry metadata uses a legacy engines string" do
+      before do
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: JSON.dump(
+            "versions" => {
+              "5.1.0" => { "engines" => ">=0.10.40" }
+            }
+          )
+        )
+      end
+
+      it "returns the release without a Node requirement" do
+        release = details.releases.find { |candidate| candidate.version.to_s == "5.1.0" }
+
+        expect(release).not_to be_nil
+        expect(release.language).to be_nil
+      end
+    end
+
+    [
+      ["time", { "versions" => { "1.0.0" => {} }, "time" => { "1.0.0" => 1 } }],
+      ["dist-tags", { "dist-tags" => { "latest" => 1 } }],
+      ["repository", { "versions" => { "1.0.0" => { "repository" => 1 } } }]
+    ].each do |field, response_body|
+      context "when #{field} has the wrong shape" do
+        before do
+          stub_request(:get, registry_url).to_return(status: 200, body: JSON.dump(response_body))
+        end
+
+        it "raises at the metadata boundary" do
+          expect { details }.to raise_error(TypeError)
+        end
+      end
+    end
+
+    context "when a release timestamp is invalid" do
+      before do
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: JSON.dump(
+            "versions" => { "1.0.0" => {} },
+            "time" => { "1.0.0" => "invalid" }
+          )
+        )
+      end
+
+      it "preserves the timestamp parsing failure" do
+        expect { details }.to raise_error(ArgumentError)
+      end
+    end
+
+    context "with a git dependency" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "16.6.0",
+          requirements: [{
+            requirement: nil,
+            file: "package.json",
+            groups: ["dependencies"],
+            source: {
+              type: "git",
+              url: "https://github.com/facebook/react",
+              ref: "v16.6.0"
+            }
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      context "when the registry returns invalid JSON" do
+        before do
+          stub_request(:get, registry_url).to_return(status: 200, body: "{")
+        end
+
+        it "keeps the existing empty-result fallback" do
+          expect(details.releases).to eq([])
+          expect(details.dist_tags).to be_nil
+        end
+      end
+
+      context "when the registry returns wrong-shaped valid JSON" do
+        before do
+          stub_request(:get, registry_url).to_return(status: 200, body: "[]")
+        end
+
+        it "raises at the metadata boundary" do
+          expect { details }.to raise_error(TypeError, "npm registry package must be an object")
+        end
+      end
+    end
+
     context "when lockfile source is private but credentials replace the base registry" do
       let(:dependency) do
         Dependabot::Dependency.new(

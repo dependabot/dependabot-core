@@ -20,12 +20,10 @@ module Dependabot
               <path>.*?</path>|
               <artifactItem>.*?</artifactItem>
             }mx
-        Requirement = T.type_alias { T.any(Dependabot::DependencyRequirement, T::Hash[Symbol, Object]) }
-
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
 
-        sig { returns(Requirement) }
+        sig { returns(Dependabot::DependencyRequirement) }
         attr_reader :declaring_requirement
 
         sig { returns(T::Array[Dependabot::DependencyFile]) }
@@ -35,13 +33,16 @@ module Dependabot
           params(
             dependency: Dependabot::Dependency,
             dependency_files: T::Array[Dependabot::DependencyFile],
-            declaring_requirement: Requirement
+            declaring_requirement: Dependabot::DependencyRequirement::Input
           ).void
         end
         def initialize(dependency:, dependency_files:, declaring_requirement:)
           @dependency = dependency
           @dependency_files = dependency_files
-          @declaring_requirement = declaring_requirement
+          @declaring_requirement = T.let(
+            Dependabot::DependencyRequirement.create(declaring_requirement),
+            Dependabot::DependencyRequirement
+          )
           @declaration_strings = T.let(nil, T.nilable(T::Array[String]))
           @property_value_finder = T.let(nil, T.nilable(Maven::FileParser::PropertyValueFinder))
         end
@@ -62,7 +63,7 @@ module Dependabot
 
         sig { returns(Dependabot::DependencyFile) }
         def declaring_pom
-          filename = declaring_requirement.fetch(:file) || declaring_requirement.dig(:metadata, :pom_file)
+          filename = declaring_requirement.file || declaring_requirement.metadata_string("pom_file")
           declaring_pom = dependency_files.find { |f| f.name == filename }
           return declaring_pom if declaring_pom
 
@@ -90,7 +91,7 @@ module Dependabot
             next false unless classifier_matches?(node)
             next false unless node_name == dependency_name
             next false unless packaging_type_matches?(node)
-            next false unless declaring_requirement.fetch(:groups) == ["plugin"] || scope_matches?(node)
+            next false unless declaring_requirement.groups == ["plugin"] || scope_matches?(node)
 
             declaring_requirement_matches?(node)
           end
@@ -115,7 +116,7 @@ module Dependabot
         def declaring_requirement_matches?(node)
           node_requirement = node.at_css("version")&.content&.strip
 
-          if declaring_requirement.dig(:metadata, :property_name)
+          if (declaring_property_name = declaring_requirement.metadata_string("property_name"))
             return false unless node_requirement
 
             property_name =
@@ -124,15 +125,15 @@ module Dependabot
               &.named_captures
               &.fetch("property")
 
-            property_name == declaring_requirement[:metadata][:property_name]
+            property_name == declaring_property_name
           else
-            node_requirement == declaring_requirement.fetch(:requirement)
+            node_requirement == declaring_requirement.requirement_string
           end
         end
 
         sig { params(node: Nokogiri::XML::Document).returns(T::Boolean) }
         def packaging_type_matches?(node)
-          type = declaring_requirement.dig(:metadata, :packaging_type)
+          type = declaring_requirement.metadata_string("packaging_type")
           type == packaging_type(node)
         end
 
@@ -141,13 +142,13 @@ module Dependabot
           return true unless node.at_xpath("./*/classifier")
 
           classifier = evaluated_value(node.at_xpath("./*/classifier").content.strip)
-          dep_classifier = dependency.requirements.first&.dig(:metadata, :classifier)
+          dep_classifier = dependency.requirements.first&.metadata_string("classifier")
           classifier == dep_classifier
         end
 
         sig { params(node: Nokogiri::XML::Document).returns(T::Boolean) }
         def scope_matches?(node)
-          dependency_type = declaring_requirement.fetch(:groups)
+          dependency_type = declaring_requirement.groups
 
           node_type = dependency_scope(node) == "test" ? ["test"] : []
 

@@ -53,6 +53,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
   let(:raise_on_ignored) { false }
   let(:ignored_versions) { [] }
   let(:security_advisories) { [] }
+  let(:options) { {} }
   let(:checker) do
     described_class.new(
       dependency: dependency,
@@ -61,7 +62,8 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       security_advisories: security_advisories,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
-      update_cooldown: update_cooldown
+      update_cooldown: update_cooldown,
+      options: options
     )
   end
   let(:update_cooldown) { nil }
@@ -133,6 +135,26 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:reference) { "v1.1.0" }
 
         it { is_expected.to be_falsey }
+
+        context "when SHA pinning is enabled" do
+          let(:options) { { github_actions_pin_to_sha: true } }
+
+          it "creates a requirement-only update" do
+            expect(checker.up_to_date?).to be(false)
+            expect(can_update).to be(true)
+
+            updated_dependency = checker.updated_dependencies(requirements_to_unlock: :own).first
+            expect(updated_dependency.version).to eq("1.1.0")
+            expect(updated_dependency.requirements.first.dig(:source, :ref))
+              .to eq("5273d0df9c603edc4284ac8402cf650b4f1f6686")
+          end
+        end
+
+        context "when SHA pinning is disabled" do
+          let(:options) { { github_actions_pin_to_sha: false } }
+
+          it { is_expected.to be_falsey }
+        end
       end
 
       context "when it is different and up-to-date" do
@@ -820,6 +842,48 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       it { is_expected.to eq(dependency.requirements) }
     end
 
+    context "with string-keyed source details" do
+      let(:reference) { "v1.0.1" }
+      let(:dependency_source) do
+        {
+          "type" => "git",
+          "url" => "https://github.com/#{dependency_name}",
+          "ref" => reference,
+          "branch" => nil,
+          "custom" => "preserved"
+        }
+      end
+
+      it "preserves the source payload and key style" do
+        source = updated_requirements.first.source_hash
+
+        expect(source).to include("ref" => "v1.1.0", "custom" => "preserved")
+        expect(source).not_to have_key(:ref)
+      end
+    end
+
+    context "with YAML source metadata" do
+      let(:reference) { "v1.0.1" }
+      let(:yaml_source) do
+        {
+          path: ["jobs", "build", "steps", 0, "uses"],
+          value: { kind: "scalar", start_line: 5, start_column: 14 },
+          target: { kind: "scalar", style: "plain", start_line: 5, start_column: 14 }
+        }
+      end
+
+      before do
+        dependency.requirements.first[:metadata] = {
+          declaration_string: "#{dependency_name}@#{reference}",
+          yaml_source: yaml_source
+        }
+      end
+
+      it "preserves the metadata when updating the ref" do
+        expect(updated_requirements.first.metadata&.fetch(:yaml_source)).to eq(yaml_source)
+      end
+    end
+
     context "when a root composite action is fetched with an invalid workflow lockfile" do
       let(:dependency_files) do
         [
@@ -1248,7 +1312,8 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           security_advisories: security_advisories,
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored,
-          update_cooldown: update_cooldown
+          update_cooldown: update_cooldown,
+          options: options
         )
       end
 
@@ -1313,6 +1378,17 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           expect(a_request(:get, service_pack_url)).to have_been_made.once
         end
 
+        context "when SHA pinning is enabled" do
+          let(:options) { { github_actions_pin_to_sha: true } }
+
+          it "uses the selected releases' full commit SHAs" do
+            expect(ref_for(updated_requirements, ".github/workflows/major.yml"))
+              .to match(/\A[0-9a-f]{40}\z/)
+            expect(ref_for(updated_requirements, ".github/workflows/patch.yml"))
+              .to match(/\A[0-9a-f]{40}\z/)
+          end
+        end
+
         context "when the combined major ref is already current" do
           let(:dependency_version) { "3" }
 
@@ -1359,9 +1435,19 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
       end
 
-      it "keeps metadata and rewritten version tag aligned to cooled-down target" do
-        expect(checker.latest_version).to eq(Dependabot::GithubActions::Version.new("2.7.0"))
-        expect(updated_requirements.first.dig(:source, :ref)).to eq("v2.7.0")
+      it "keeps the major-only precision instead of rewriting to a full version tag" do
+        expect(checker.latest_version).to eq(Dependabot::GithubActions::Version.new("2"))
+        expect(updated_requirements.first.dig(:source, :ref)).to eq("v2")
+      end
+
+      context "when SHA pinning is enabled" do
+        let(:options) { { github_actions_pin_to_sha: true } }
+
+        it "pins the cooldown-selected release instead of the filtered major" do
+          expect(checker.latest_version).to eq(Dependabot::GithubActions::Version.new("2"))
+          expect(updated_requirements.first.dig(:source, :ref))
+            .to eq("ee0669bd1cc54295c223e0bb666b733df41de1c5")
+        end
       end
     end
 
@@ -1643,6 +1729,60 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
+    context "when SHA pinning is enabled" do
+      let(:options) { { github_actions_pin_to_sha: true } }
+      let(:upload_pack_fixture) { "checkout" }
+      let(:dependency_name) { "actions/checkout" }
+
+      context "with an exact version tag" do
+        let(:reference) { "v2.1.0" }
+
+        it "returns the selected release's full commit SHA" do
+          expect(updated_requirements.first.dig(:source, :ref))
+            .to eq("8e5e7e5ab8b370d6c329ec480221332ada57f0ab")
+        end
+      end
+
+      context "with a floating version tag" do
+        let(:reference) { "v2" }
+        let(:ignored_versions) { [">= 3"] }
+
+        it "pins the concrete release selected for the floating tag" do
+          expect(updated_requirements.first.dig(:source, :ref))
+            .to eq("ee0669bd1cc54295c223e0bb666b733df41de1c5")
+        end
+      end
+
+      context "with a vulnerable version tag" do
+        let(:upload_pack_fixture) { "ghas-to-csv" }
+        let(:dependency_name) { "some-natalie/ghas-to-csv" }
+        let(:reference) { "v0.4.0" }
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: dependency_name,
+              package_manager: "github_actions",
+              vulnerable_versions: ["< 1.0"]
+            )
+          ]
+        end
+
+        it "returns the lowest security fix's full commit SHA" do
+          expect(updated_requirements.first.dig(:source, :ref))
+            .to eq("d0b521928fa734513b5cd9c7d9d8e09db50e884a")
+        end
+      end
+
+      context "with an existing SHA pin" do
+        let(:reference) { "01aecccf739ca6ff86c0539fbc67a7a5007bbc81" }
+
+        it "retains SHA-to-SHA update behavior" do
+          expect(updated_requirements.first.dig(:source, :ref))
+            .to eq("8e5e7e5ab8b370d6c329ec480221332ada57f0ab")
+        end
+      end
+    end
+
     context "when a dependency has a path based tag reference with semver" do
       let(:service_pack_url) do
         "https://github.com/gopidesupavan/monorepo-actions.git/info/refs" \
@@ -1695,6 +1835,14 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
 
       it { is_expected.to eq(expected_requirements) }
+
+      context "when SHA pinning is enabled" do
+        let(:options) { { github_actions_pin_to_sha: true } }
+
+        it "keeps the path-prefixed tag so its update stream remains identifiable" do
+          expect(updated_requirements.first.dig(:source, :ref)).to eq("run/v3.0.0")
+        end
+      end
     end
 
     context "when a dependency has a path based tag reference without semver" do

@@ -55,8 +55,7 @@ public class SerializationTests : TestBase
                     "type": "git_source",
                     "replaces-base": false
                   }
-                ],
-                "max-updater-run-time": 0
+                                ]
               }
             }
             """);
@@ -666,7 +665,7 @@ public class SerializationTests : TestBase
             : null;
         var create = new CreatePullRequest()
         {
-            Dependencies = [new() { Name = "dep", Version = "ver2", PreviousVersion = "ver1", Requirements = [new() { Requirement = "ver2", File = "project.csproj" }], PreviousRequirements = [new() { Requirement = "ver1", File = "project.csproj" }] }],
+            Dependencies = [new() { Name = "dep", Directory = "/", Version = "ver2", PreviousVersion = "ver1", Requirements = [new() { Requirement = "ver2", File = "project.csproj" }], PreviousRequirements = [new() { Requirement = "ver1", File = "project.csproj" }] }],
             UpdatedDependencyFiles = [new() { Name = "project.csproj", Directory = "/", Content = "updated content" }],
             BaseCommitSha = "TEST-COMMIT-SHA",
             CommitMessage = "commit message",
@@ -680,7 +679,7 @@ public class SerializationTests : TestBase
             ? """{"name":"test-group"}"""
             : "null";
         var expected = $$$"""
-            {"data":{"dependencies":[{"name":"dep","version":"ver2","requirements":[{"requirement":"ver2","file":"project.csproj","groups":[],"source":null}],"previous-version":"ver1","previous-requirements":[{"requirement":"ver1","file":"project.csproj","groups":[],"source":null}]}],"updated-dependency-files":[{"name":"project.csproj","content":"updated content","directory":"/","type":"file","support_file":false,"content_encoding":"utf-8","deleted":false,"operation":"update","mode":null}],"base-commit-sha":"TEST-COMMIT-SHA","commit-message":"commit message","pr-title":"pr title","pr-body":"pr body","dependency-group":{{{expectedDependencyGroupValue}}}}}
+            {"data":{"dependencies":[{"directory":"/","name":"dep","version":"ver2","requirements":[{"requirement":"ver2","file":"project.csproj","groups":[],"source":null}],"previous-version":"ver1","previous-requirements":[{"requirement":"ver1","file":"project.csproj","groups":[],"source":null}]}],"updated-dependency-files":[{"name":"project.csproj","content":"updated content","directory":"/","type":"file","support_file":false,"content_encoding":"utf-8","deleted":false,"operation":"update","mode":null}],"base-commit-sha":"TEST-COMMIT-SHA","commit-message":"commit message","pr-title":"pr title","pr-body":"pr body","dependency-group":{{{expectedDependencyGroupValue}}}}}
             """;
         Assert.Equal(expected, actual);
     }

@@ -13,7 +13,8 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       dependencies: dependencies,
       dependency_files: dependency_files,
       credentials: credentials,
-      index_urls: index_urls
+      index_urls: index_urls,
+      target_requirement: target_requirement
     )
   end
 
@@ -29,6 +30,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     )]
   end
   let(:index_urls) { [] }
+  let(:target_requirement) { nil }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -164,7 +166,8 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
       end
 
       it "raises an error" do
-        expect { updated_files }.to raise_error("Expected lockfile to change!")
+        expect { updated_files }
+          .to raise_error(Dependabot::DependencyFileContentNotChanged, "Expected lockfile to change!")
       end
     end
 
@@ -690,10 +693,10 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         ]
       end
 
-      it "includes --index flag only for non-explicit indices" do
+      it "omits --index flags for all indices defined in pyproject.toml" do
         options = lock_index_options.join(" ")
-        expect(options).not_to include("https://explicit_token@private-pypi.example.com/simple")
-        expect(options).to include("--index https://fallback_token@fallback-pypi.example.com/simple")
+        expect(options).not_to include("--index")
+        expect(options).not_to include("--default-index")
       end
     end
 
@@ -713,9 +716,9 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         ]
       end
 
-      it "includes --index flag for non-explicit indices defined in pyproject.toml" do
+      it "omits --index flag when the credential matches a non-explicit pyproject.toml index" do
         options = lock_index_options.join(" ")
-        expect(options).to include("--index https://token@private-pypi.example.com/simple")
+        expect(options).not_to include("--index")
         expect(options).not_to include("--default-index")
       end
     end
@@ -956,6 +959,29 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         expect(lock_index_options).to include("--index https://root_token@pypi.example.com/pypi")
       end
     end
+
+    context "with a pyproject.toml index URL containing embedded userinfo" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_index_with_userinfo.toml") }
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://private-pypi.example.com/simple",
+              "token" => "secret_token",
+              "replaces-base" => false
+            }
+          )
+        ]
+      end
+
+      it "matches URLs ignoring userinfo in the pyproject.toml URL" do
+        options = lock_index_options.join(" ")
+        expect(options).not_to include("--index")
+        expect(options).not_to include("--default-index")
+      end
+    end
   end
 
   describe "#pyproject_index_env_vars" do
@@ -1136,6 +1162,31 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         )
       end
     end
+
+    context "with a pyproject.toml index URL containing embedded userinfo" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_index_with_userinfo.toml") }
+
+      let(:credentials) do
+        [
+          Dependabot::Credential.new(
+            {
+              "type" => "python_index",
+              "index-url" => "https://private-pypi.example.com/simple",
+              "username" => "oauth2accesstoken",
+              "password" => "my_token",
+              "replaces-base" => false
+            }
+          )
+        ]
+      end
+
+      it "matches URLs ignoring userinfo and returns environment variables" do
+        expect(pyproject_index_env_vars).to include(
+          "UV_INDEX_COMPANY_PYPI_USERNAME" => "oauth2accesstoken",
+          "UV_INDEX_COMPANY_PYPI_PASSWORD" => "my_token"
+        )
+      end
+    end
   end
 
   describe "#uv_indices" do
@@ -1146,7 +1197,7 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
 
       it "parses index configuration correctly" do
         expect(uv_indices).to include(
-          "company_pypi" => { "url" => "https://private-pypi.example.com/simple", "explicit" => true }
+          "company_pypi" => { "url" => "https://private-pypi.example.com/simple" }
         )
       end
     end
@@ -1154,17 +1205,21 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     context "with mixed indices in pyproject.toml" do
       let(:pyproject_content) { fixture("pyproject_files", "uv_mixed_explicit_indices.toml") }
 
-      it "parses both explicit and non-explicit indices" do
-        expect(uv_indices["company_pypi"]["explicit"]).to be true
-        expect(uv_indices["fallback_pypi"]["explicit"]).to be_falsey
+      it "parses all named indices regardless of explicit flag" do
+        expect(uv_indices).to include(
+          "company_pypi" => { "url" => "https://private-pypi.example.com/simple" },
+          "fallback_pypi" => { "url" => "https://fallback-pypi.example.com/simple" }
+        )
       end
     end
 
     context "with non-explicit index in pyproject.toml" do
       let(:pyproject_content) { fixture("pyproject_files", "uv_non_explicit_index.toml") }
 
-      it "parses index without explicit flag as non-explicit" do
-        expect(uv_indices["company_pypi"]["explicit"]).to be_falsey
+      it "parses the index URL" do
+        expect(uv_indices).to include(
+          "company_pypi" => { "url" => "https://private-pypi.example.com/simple" }
+        )
       end
     end
 
@@ -1173,6 +1228,44 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
 
       it "returns empty hash" do
         expect(uv_indices).to eq({})
+      end
+    end
+  end
+
+  describe "#normalize_index_url" do
+    subject(:normalized) { updater.send(:normalize_index_url, url) }
+
+    context "with a trailing slash" do
+      let(:url) { "https://private-pypi.example.com/simple/" }
+
+      it "strips the trailing slash" do
+        expect(normalized).to eq("https://private-pypi.example.com/simple")
+      end
+    end
+
+    context "with embedded userinfo" do
+      let(:url) { "https://oauth2accesstoken@private-pypi.example.com/simple/" }
+
+      it "strips both the userinfo and trailing slash" do
+        expect(normalized).to eq("https://private-pypi.example.com/simple")
+      end
+    end
+
+    context "with embedded username and password" do
+      let(:url) { "https://user:secret@private-pypi.example.com/simple" }
+
+      it "strips the full userinfo" do
+        expect(normalized).to eq("https://private-pypi.example.com/simple")
+      end
+    end
+
+    context "when the URL cannot be parsed by URI.parse" do
+      # A userinfo password containing an unencoded slash raises URI::InvalidURIError;
+      # the method must fall back to trailing-slash normalization without raising.
+      let(:url) { "https://user:pa/ss@private-pypi.example.com/simple/" }
+
+      it "falls back to chomping the trailing slash" do
+        expect(normalized).to eq("https://user:pa/ss@private-pypi.example.com/simple")
       end
     end
   end
@@ -1321,6 +1414,24 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         expect(updater).to have_received(:run_command).with(
           expected_command,
           fingerprint: expected_fingerprint,
+          env: {}
+        )
+      end
+    end
+
+    context "with a target requirement" do
+      let(:target_requirement) { ">=2.19.0,<=2.20.0" }
+
+      it "constrains the package upgrade" do
+        expected_command = "pyenv exec uv lock --upgrade-package requests>=2.19.0,<=2.20.0 " \
+                           "--index https://token@example.com/simple " \
+                           "--default-index https://another_token@another.com/simple"
+
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          expected_command,
+          fingerprint: anything,
           env: {}
         )
       end
@@ -1544,7 +1655,15 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
   end
 
   describe "#replace_dep" do
-    subject(:replace_dep) { updater.send(:replace_dep, dependency, content, new_req, old_req) }
+    subject(:replace_dep) do
+      updater.send(
+        :replace_dep,
+        dependency,
+        content,
+        Dependabot::DependencyRequirement.create(new_req),
+        Dependabot::DependencyRequirement.create(old_req)
+      )
+    end
 
     let(:content) do
       <<~TOML

@@ -104,7 +104,7 @@ module Dependabot
 
         sig { params(dependency: Dependabot::Dependency).returns(T::Boolean) }
         def bzlmod_dependency?(dependency)
-          dependency.requirements.any? { |req| req[:file]&.end_with?("MODULE.bazel") }
+          dependency.requirements.any? { |req| req.file&.end_with?("MODULE.bazel") }
         end
 
         sig { returns(String) }

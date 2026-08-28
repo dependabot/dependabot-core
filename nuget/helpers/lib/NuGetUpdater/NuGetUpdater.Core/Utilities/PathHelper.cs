@@ -328,7 +328,7 @@ internal static class PathHelper
             pb.Append('$');
         }
 
-        var pattern = new Regex(pb.ToString(), caseSensitive ? RegexOptions.IgnoreCase : RegexOptions.None);
+        var pattern = new Regex(pb.ToString(), caseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase);
 
         // find all directories
         var allDirectories = Directory.EnumerateDirectories(rootDirectory, "*", SearchOption.AllDirectories)

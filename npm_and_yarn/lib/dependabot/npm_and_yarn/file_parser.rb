@@ -27,7 +27,7 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/lockfile_parser"
 
-      DEPENDENCY_TYPES = T.let(%w(dependencies devDependencies optionalDependencies).freeze, T::Array[String])
+      DEPENDENCY_TYPES = %w(dependencies devDependencies optionalDependencies).freeze
       GIT_URL_REGEX = %r{
         (?<git_prefix>^|^git.*?|^github:|^bitbucket:|^gitlab:|github\.com/)
         (?<username>[a-z0-9-]+)/

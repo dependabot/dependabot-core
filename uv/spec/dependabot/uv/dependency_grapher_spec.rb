@@ -338,6 +338,46 @@ RSpec.describe Dependabot::Uv::DependencyGrapher do
       end
     end
 
+    context "when a pinned package also appears as a versionless back-reference (issue #15259)" do
+      # Regression test for https://github.com/dependabot/dependabot-core/issues/15259
+      #
+      # uv.lock records a package's resolved version only once, on its own
+      # `[[package]] version = …` table. Every dependent refers back to it
+      # without a version (`{ name = "authlib" }`), and the project metadata
+      # only carries a `specifier` (a range, not a pin). The grapher must emit
+      # exactly one versioned node for the package (from its `[[package]]`
+      # table) and never an unversioned node for the back-references or the
+      # `specifier` row — an unversioned node matches every advisory range and
+      # produces false-positive alerts.
+      #
+      # The fixture is real `uv lock` output for a project requiring
+      # `authlib>=1.6.12` and `starlette-authlib` (which itself requires
+      # `authlib<1.8`). authlib resolves to 1.7.2 and is back-referenced
+      # versionlessly by both the root and the transitive `starlette-authlib`.
+      let(:uv_lock_content) { fixture("dependency_grapher", "uv_lock_versionless_backreference.lock") }
+
+      it "emits authlib only at its locked version, with no unversioned node" do
+        resolved = grapher.resolved_dependencies
+
+        # authlib resolves to the single [[package]] version, so advisories
+        # whose range is entirely below 1.7.2 no longer match.
+        expect(resolved).to have_key("pkg:pypi/authlib@1.7.2")
+
+        # No unversioned authlib node is ever emitted.
+        expect(resolved.keys).not_to include("pkg:pypi/authlib")
+        expect(resolved.keys.grep(%r{pkg:pypi/authlib(@|$)})).to eq(["pkg:pypi/authlib@1.7.2"])
+      end
+
+      it "resolves versionless back-references to the locked authlib version" do
+        resolved = grapher.resolved_dependencies
+
+        # The transitive dependent's versionless `{ name = "authlib" }`
+        # back-reference resolves to the locked authlib version.
+        expect(resolved.fetch("pkg:pypi/starlette-authlib@0.3.20").dependencies)
+          .to include("pkg:pypi/authlib@1.7.2")
+      end
+    end
+
     context "when uv.lock is invalid TOML" do
       let(:uv_lock_content) { "not valid toml {{{" }
 

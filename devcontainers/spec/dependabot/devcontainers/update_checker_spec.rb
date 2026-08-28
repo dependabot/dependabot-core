@@ -195,6 +195,31 @@ RSpec.describe Dependabot::Devcontainers::UpdateChecker do
         expect(updated_requirements.first[:requirement]).to eq("2")
         expect(checker.latest_version.to_s).to eq("2.0.0")
       end
+
+      context "with additional requirement payload" do
+        before do
+          dependency.requirements.first[:source] = { "type" => "feature", "custom" => "source" }
+          dependency.requirements.first[:metadata] = { "custom" => "metadata" }
+          dependency.requirements.first[:custom] = "top-level"
+        end
+
+        it "preserves the full requirement payload and nested key style" do
+          requirement = updated_requirements.first
+
+          expect(requirement[:custom]).to eq("top-level")
+          expect(requirement.metadata).to eq({ "custom" => "metadata" })
+          expect(requirement.source_hash).to eq({ "type" => "feature", "custom" => "source" })
+        end
+      end
+
+      context "with a malformed requirement" do
+        before { dependency.requirements.first[:requirement] = 123 }
+
+        it "raises a type error" do
+          expect { updated_requirements }
+            .to raise_error(TypeError, "requirement must be a string, :unfixable, or nil")
+        end
+      end
     end
 
     context "when published tags only include full semver without precision-matching tags (minor update)" do

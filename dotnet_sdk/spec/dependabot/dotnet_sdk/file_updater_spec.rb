@@ -6,6 +6,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/dotnet_sdk/file_updater"
 require "dependabot/dotnet_sdk/requirement"
+require "dependabot/dotnet_sdk/version"
 require_common_spec "file_updaters/shared_examples_for_file_updaters"
 
 RSpec.describe Dependabot::DotnetSdk::FileUpdater do
@@ -91,6 +92,53 @@ RSpec.describe Dependabot::DotnetSdk::FileUpdater do
 
       it "does not update the version in global.json when the requirement has not changed" do
         expect(updated_dependency_files.size).to eq(0)
+      end
+    end
+
+    context "when updating to a preview version" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "global.json",
+            content: <<~JSON
+              {
+                "sdk": {
+                  "version": "11.0.100-preview.5.26302.115"
+                }
+              }
+            JSON
+          )
+        ]
+      end
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "dotnet-sdk",
+            version: Dependabot::DotnetSdk::Version.new("11.0.100-preview.6.26359.118"),
+            previous_version: "11.0.100-preview.5.26302.115",
+            requirements: [{
+              requirement: "11.0.100-preview.6.26359.118",
+              file: "global.json",
+              groups: nil,
+              source: nil
+            }],
+            previous_requirements: [{
+              requirement: "11.0.100-preview.5.26302.115",
+              file: "global.json",
+              groups: nil,
+              source: nil
+            }],
+            package_manager: "dotnet_sdk"
+          )
+        ]
+      end
+
+      it "preserves the preview version in global.json" do
+        expect(updated_dependency_files.size).to eq(1)
+
+        config = updated_dependency_files.first
+        expect(config.name).to eq("global.json")
+        expect(JSON.parse(config.content).dig("sdk", "version")).to eq("11.0.100-preview.6.26359.118")
       end
     end
   end

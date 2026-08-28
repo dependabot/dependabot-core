@@ -35,13 +35,10 @@ module Dependabot
       # binary. Providers in these namespaces cannot be updated independently
       # because their version tracks the binary itself.
       # See: https://pkg.go.dev/github.com/opentofu/registry-address/v2#Provider.IsBuiltIn
-      BUILTIN_PROVIDER_NAMESPACES = T.let(
-        %w(
-          terraform.io/builtin
-          opentofu.org/builtin
-        ).freeze,
-        T::Array[String]
-      )
+      BUILTIN_PROVIDER_NAMESPACES = %w(
+        terraform.io/builtin
+        opentofu.org/builtin
+      ).freeze
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
@@ -170,8 +167,16 @@ module Dependabot
             next unless details["source"]
 
             source = source_from(details)
-            # Cannot update nil (interpolation sources) or local path modules, skip
+            # nil sources are unpinned; paths are local.
             next if source.nil? || source[:type] == "path"
+
+            # Cannot update modules using early evaluation yet
+            if source[:type] == "interpolation"
+              Dependabot.logger.warn(
+                "Cannot parse terragrunt module source with early evaluation in #{file.name}."
+              )
+              next
+            end
 
             dependency_set << build_terragrunt_dependency(file, source)
           end
@@ -440,8 +445,8 @@ module Dependabot
       # rubocop:disable Metrics/CyclomaticComplexity
       sig { params(source_string: String).returns(Symbol) }
       def source_type(source_string)
-        return :oci if source_string.include?("oci://")
         return :interpolation if source_string.include?("${")
+        return :oci if source_string.include?("oci://")
         return :path if source_string.start_with?(".")
         return :github if source_string.start_with?("github.com/")
         return :bitbucket if source_string.start_with?("bitbucket.org/")

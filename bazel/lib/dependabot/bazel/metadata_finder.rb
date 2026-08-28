@@ -1,4 +1,4 @@
-# typed: strict
+# typed: strong
 # frozen_string_literal: true
 
 require "dependabot/metadata_finders"
@@ -39,12 +39,12 @@ module Dependabot
       sig { returns(Symbol) }
       def source_type
         return :bazel_dep if dependency.requirements.empty?
-        return :bazel_dep if dependency.requirements.any? { |r| r[:source].nil? }
+        return :bazel_dep if dependency.requirements.any? { |requirement| requirement.source.nil? }
 
-        source_details = dependency.requirements.first&.dig(:source)
-        return :bazel_dep unless source_details
+        requirement = dependency.requirements.first
+        return :bazel_dep unless requirement
 
-        case source_details[:type]
+        case requirement.source_string("type")
         when "http_archive" then :http_archive
         when "git_repository" then :git_repository
         else :unknown
@@ -65,7 +65,7 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_http_archive
-        url = dependency.requirements.first&.dig(:source, :url)
+        url = dependency.requirements.first&.source_string("url")
         return nil unless url
 
         source_from_url(url)
@@ -73,7 +73,7 @@ module Dependabot
 
       sig { returns(T.nilable(Dependabot::Source)) }
       def find_source_from_git_repository
-        remote_url = dependency.requirements.first&.dig(:source, :remote)
+        remote_url = dependency.requirements.first&.source_string("remote")
         return nil unless remote_url
 
         Dependabot::Source.from_url(remote_url)

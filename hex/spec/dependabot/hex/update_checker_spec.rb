@@ -1142,6 +1142,30 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             }]
           )
       end
+
+      context "with string-keyed source details" do
+        let(:dependency_requirements) do
+          [{
+            requirement: nil,
+            file: "mix.exs",
+            groups: [],
+            source: {
+              "type" => "git",
+              "url" => "https://github.com/dependabot-fixtures/phoenix.git",
+              "branch" => "master",
+              "ref" => "v1.2.0",
+              "custom" => "preserved"
+            }
+          }]
+        end
+
+        it "preserves the source payload and key style" do
+          source = checker.updated_requirements.first.source_hash
+
+          expect(source).to include("ref" => "v1.3.2", "custom" => "preserved")
+          expect(source).not_to have_key(:ref)
+        end
+      end
     end
   end
 end

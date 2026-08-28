@@ -47,14 +47,16 @@ module Dependabot
       def updated_requirements
         return dependency.requirements unless latest_version
 
-        updated_reqs = dependency.requirements.map do |req|
-          case req.dig(:metadata, :type)
+        dependency.requirements.map do |req|
+          case req.metadata_symbol("type")
           when nil then req
           when :helm_chart then updated_chart_requirement(req)
-          else req.merge(requirement: latest_version.to_s) # image deps: exact overwrite
+          else
+            Dependabot::DependencyRequirement.create(
+              req.merge(requirement: latest_version.to_s)
+            ) # image deps: exact overwrite
           end
         end
-        wrap_requirements(updated_reqs)
       end
 
       private
@@ -68,7 +70,7 @@ module Dependabot
       sig { params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement) }
       def updated_chart_requirement(req)
         current_constraint = chart_constraint_for(req)
-        synthetic = T.cast(req.merge(requirement: current_constraint), Dependabot::DependencyRequirement)
+        synthetic = Dependabot::DependencyRequirement.create(req.merge(requirement: current_constraint))
 
         T.must(
           RequirementsUpdater.new(
@@ -85,7 +87,7 @@ module Dependabot
       # or ranges) into one dependency with a single combined version.
       sig { params(req: Dependabot::DependencyRequirement).returns(String) }
       def chart_constraint_for(req)
-        (req[:requirement] || req.dig(:source, :tag) || dependency.version).to_s
+        (req.requirement || req.source_string("tag") || dependency.version).to_s
       end
 
       sig { returns(Dependabot::RequirementsUpdateStrategy) }
@@ -111,7 +113,7 @@ module Dependabot
       sig { returns(Dependabot::Version) }
       def chart_anchor_version
         constraints = dependency.requirements
-                                .select { |r| r.dig(:metadata, :type) == :helm_chart }
+                                .select { |r| r.metadata_symbol("type") == :helm_chart }
                                 .map { |r| chart_constraint_for(r) }
         constraints = [dependency.version.to_s] if constraints.empty?
         T.must(constraints.map { |c| anchor_for_constraint(c) }.min)
@@ -233,16 +235,57 @@ module Dependabot
 
       sig { params(releases: T::Array[T::Hash[String, Object]]).returns(T::Array[T::Hash[String, Object]]) }
       def filter_valid_releases(releases)
-        releases.reject do |release|
-          release_version = version_class.new(T.cast(release["version"], String))
-          # Compare against current_version (the anchored floor) rather than
-          # dependency.version: for a range constraint (">=1.0.0 <2.0.0") the raw
-          # version string isn't a single parseable version.
-          release_version <= current_version ||
-            ignore_requirements.any? do |r|
-              r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(release_version)
-            end
+        # Compare against current_version (the anchored floor) rather than
+        # dependency.version: for a range constraint (">=1.0.0 <2.0.0") the raw
+        # version string isn't a single parseable version.
+        newer = releases.reject do |release|
+          version_class.new(T.cast(release["version"], String)) <= current_version
         end
+        filtered = newer.reject do |release|
+          release_version = version_class.new(T.cast(release["version"], String))
+          helm_ignore_requirements.any? { |r| r.satisfied_by?(release_version) }
+        end
+
+        record_ignore_outcome(newer: newer.any?, surviving: filtered.any?)
+        filtered
+      end
+
+      # Ignore conditions have to be parsed by Helm::Requirement here, not by the
+      # requirement class registered for helm: that is Docker::Requirement, whose
+      # #satisfied_by? is typed for Docker::Version and raises on the
+      # Helm::Version candidates below.
+      #
+      # This deliberately does not override the public #ignore_requirements.
+      # Base#can_update? compares that list against
+      # requirement_class.new(">= 0"), and a Helm::Requirement there puts a
+      # Helm::Version up against a plain Gem::Version, which Helm::Version#<=>'s
+      # sig rejects. So the registered class keeps serving Base, and only the
+      # filtering below uses the Helm parser.
+      sig { returns(T::Array[Dependabot::Requirement]) }
+      def helm_ignore_requirements
+        @helm_ignore_requirements ||= T.let(
+          ignored_versions.flat_map { |req| Helm::Requirement.requirements_array(req) },
+          T.nilable(T::Array[Dependabot::Requirement])
+        )
+      end
+
+      # The updater needs AllVersionsIgnored to tell "everything newer was
+      # ignored" from "nothing newer exists", but the decision cannot be made
+      # in the filters: a source that filters everything out returns nil so the
+      # next source gets a turn, and its list may well contain a version this
+      # one never saw. So each source only records what it saw, and
+      # fetch_latest_chart_version raises once the sources are exhausted.
+      sig { params(newer: T::Boolean, surviving: T::Boolean).void }
+      def record_ignore_outcome(newer:, surviving:)
+        @all_newer_ignored = T.let(
+          (@all_newer_ignored || false) || (newer && !surviving),
+          T.nilable(T::Boolean)
+        )
+      end
+
+      sig { returns(T::Boolean) }
+      def all_newer_ignored?
+        @all_newer_ignored == true
       end
 
       sig { params(repo_url: String).returns(String) }
@@ -283,12 +326,12 @@ module Dependabot
       # name across files/entries); an update is warranted if even one changes.
       sig { returns(T::Boolean) }
       def chart_requirement_changes?
-        chart_reqs = dependency.requirements.select { |r| r.dig(:metadata, :type) == :helm_chart }
+        chart_reqs = dependency.requirements.select { |r| r.metadata_symbol("type") == :helm_chart }
         chart_reqs = dependency.requirements if chart_reqs.empty?
         return true if chart_reqs.empty?
 
         chart_reqs.any? do |req|
-          updated_chart_requirement(req)[:requirement].to_s != chart_constraint_for(req)
+          updated_chart_requirement(req).requirement.to_s != chart_constraint_for(req)
         end
       end
 
@@ -307,7 +350,7 @@ module Dependabot
       sig { returns(Symbol) }
       def dependency_type
         req = dependency.requirements.first
-        type = T.must(req).dig(:metadata, :type)
+        type = T.must(req).metadata_symbol("type")
 
         type || :unknown
       end
@@ -350,8 +393,7 @@ module Dependabot
       sig { returns(T.nilable(Gem::Version)) }
       def fetch_latest_chart_version
         chart_name = dependency.name
-        source = dependency.requirements.first&.dig(:source)
-        repo_url = source&.dig(:registry)
+        repo_url = dependency.requirements.first&.source_string("registry")
         repo_name = extract_repo_name(repo_url)
         releases = fetch_releases_with_helm_cli(chart_name, repo_name, repo_url)
         return releases if releases
@@ -359,7 +401,15 @@ module Dependabot
         tag = fetch_latest_oci_tag(chart_name, repo_url) if repo_url&.start_with?("oci://")
         return tag if tag
 
-        fetch_releases_from_index(chart_name, repo_url)
+        from_index = fetch_releases_from_index(chart_name, repo_url)
+        return from_index if from_index
+
+        # Every source came up empty. If at least one of them had newer versions
+        # that an ignore rule removed, that is a different answer than "there is
+        # nothing newer", and the updater handles the two differently.
+        raise Dependabot::AllVersionsIgnored if raise_on_ignored && all_newer_ignored?
+
+        nil
       end
 
       sig { params(chart_name: String, repo_url: String).returns(T.nilable(Gem::Version)) }
@@ -442,12 +492,13 @@ module Dependabot
 
       sig { params(all_versions: T::Array[String]).returns(T::Array[String]) }
       def filter_valid_versions(all_versions)
-        all_versions.reject do |version|
-          version_class.new(version) <= current_version ||
-            ignore_requirements.any? do |r|
-              r.instance_of?(Dependabot::Requirement) && r.satisfied_by?(version_class.new(version))
-            end
+        newer = all_versions.reject { |version| version_class.new(version) <= current_version }
+        filtered = newer.reject do |version|
+          helm_ignore_requirements.any? { |r| r.satisfied_by?(version_class.new(version)) }
         end
+
+        record_ignore_outcome(newer: newer.any?, surviving: filtered.any?)
+        filtered
       end
 
       sig { returns(T.nilable(Gem::Version)) }
@@ -518,19 +569,20 @@ module Dependabot
 
       sig { returns(Dependabot::Dependency) }
       def build_docker_dependency
-        source = T.must(dependency.requirements.first)[:source]
+        requirement = T.must(dependency.requirements.first)
+        path = requirement.source_string("path")
         name = dependency.name
         version = dependency.version
 
-        if source[:path]
-          parts = source[:path].split(".")
+        if path
+          parts = path.split(".")
           if parts.length > 1 && (parts.last == "tag" || parts.last == "image")
             # The actual image name might be in image.repository
-            name = parts[0...-1].join(".")
+            name = T.must(parts[0...-1]).join(".")
           end
         end
 
-        registry = source[:registry] || nil
+        registry = requirement.source_string("registry")
 
         Dependency.new(
           name: name,
@@ -538,7 +590,7 @@ module Dependabot
           requirements: [{
             requirement: nil,
             groups: [],
-            file: T.must(dependency.requirements.first)[:file],
+            file: requirement.file,
             source: {
               registry: registry,
               tag: version

@@ -39,10 +39,10 @@ module Dependabot
         ).void
       end
       def initialize(dependency_snapshot, error_handler, job, group)
-        @dependency_snapshot = T.let(dependency_snapshot, Dependabot::DependencySnapshot)
-        @error_handler = T.let(error_handler, Dependabot::Updater::ErrorHandler)
-        @job = T.let(job, Dependabot::Job)
-        @group = T.let(group, Dependabot::DependencyGroup)
+        @dependency_snapshot = dependency_snapshot
+        @error_handler = error_handler
+        @job = job
+        @group = group
       end
 
       sig { returns(Dependabot::DependencySnapshot) }
@@ -158,7 +158,7 @@ module Dependabot
           updated_dependencies: group_changes.updated_dependencies,
           updated_dependency_files: group_changes.updated_dependency_files,
           dependency_group: group,
-          notices: notices
+          notices: notices + group_changes.notices
         )
 
         unless dependency_change.all_have_previous_version?
@@ -187,16 +187,11 @@ module Dependabot
         # Check if dependency has already been handled
         handled_dependency = dependency_snapshot.handled_dependencies.include?(dependency.name)
 
-        # Check if this is a group update
-        is_group_update = if Dependabot::Experiments.enabled?(:allow_refresh_group_with_all_dependencies)
-                            # this ensures dependency_group_to_refresh is set to the group name
-                            job.dependency_group_to_refresh == group.name
-                          else
-                            false
-                          end
+        # Check if the job is refreshing this specific group
+        refreshing_this_group = job.dependency_group_to_refresh == group.name
 
-        # Include all dependencies when performing a group update.
-        if handled_dependency && !is_group_update
+        # Include all dependencies when refreshing the group.
+        if handled_dependency && !refreshing_this_group
           Dependabot.logger.info(
             "Skipping #{dependency.name} in group #{group.name} as it has already been handled by a previous group"
           )

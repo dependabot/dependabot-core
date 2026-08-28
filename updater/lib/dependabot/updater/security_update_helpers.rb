@@ -163,14 +163,14 @@ module Dependabot
         params(
           checker: Dependabot::UpdateCheckers::Base,
           latest_allowed_version: String,
-          conflicting_dependencies: T::Array[T::Hash[String, String]]
+          conflicting_dependencies: T::Array[Dependabot::UpdateCheckers::Conflict]
         )
           .returns(String)
       end
       def security_update_not_possible_message(checker, latest_allowed_version, conflicting_dependencies)
         if conflicting_dependencies.any?
           dep_messages = conflicting_dependencies.map do |dep|
-            "  #{dep['explanation']}"
+            "  #{T.cast(dep['explanation'], String)}"
           end.join("\n")
 
           dependencies_pluralized =
@@ -197,11 +197,11 @@ module Dependabot
       # "hard" (enforced) ErrorHandler translation stay in lockstep on one label
       # set rather than re-listing the same strings in two places.
       module BlockedVersionsOperation
-        VERSION_UPDATE = T.let("version_update", String)
-        SECURITY_UPDATE = T.let("security_update", String)
-        REFRESH_SECURITY_UPDATE = T.let("refresh_security_update", String)
-        REFRESH_VERSION_UPDATE = T.let("refresh_version_update", String)
-        GROUP_UPDATE = T.let("group_update", String)
+        VERSION_UPDATE = "version_update"
+        SECURITY_UPDATE = "security_update"
+        REFRESH_SECURITY_UPDATE = "refresh_security_update"
+        REFRESH_VERSION_UPDATE = "refresh_version_update"
+        GROUP_UPDATE = "group_update"
       end
 
       private

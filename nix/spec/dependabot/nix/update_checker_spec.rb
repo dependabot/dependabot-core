@@ -539,6 +539,36 @@ RSpec.describe Dependabot::Nix::UpdateChecker do
         expect(updated.first[:source][:ref]).to eq("v0.6.2")
         expect(updated.first[:source][:branch]).to be_nil
       end
+
+      context "with string-keyed source details" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "devenv",
+            version: "abc123",
+            requirements: [{
+              file: "flake.lock",
+              requirement: nil,
+              groups: [],
+              source: {
+                "type" => "git",
+                "url" => "https://github.com/cachix/devenv",
+                "branch" => nil,
+                "ref" => "v0.5",
+                "custom" => "preserved"
+              }
+            }],
+            package_manager: "nix"
+          )
+        end
+
+        it "preserves the source payload and key style" do
+          source = checker.updated_requirements.first.source_hash
+
+          expect(source).to include("ref" => "v0.6.2", "custom" => "preserved")
+          expect(source).not_to have_key(:ref)
+          expect(source).not_to have_key(:branch)
+        end
+      end
     end
 
     context "with a versioned branch input" do

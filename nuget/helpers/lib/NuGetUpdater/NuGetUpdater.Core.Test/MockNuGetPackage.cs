@@ -409,7 +409,7 @@ namespace NuGetUpdater.Core.Test
 
         public static MockNuGetPackage WellKnownHostPackage(string packageName, string targetFramework, (string Path, byte[] Content)[]? files = null)
         {
-            string key = $"{packageName}/{targetFramework}";
+            string key = $"{packageName}.Host/{targetFramework}";
             if (!WellKnownPackages.ContainsKey(key))
             {
                 // for the current SDK, the file `Microsoft.NETCoreSdk.BundledVersions.props` contains the version of the
@@ -438,7 +438,7 @@ namespace NuGetUpdater.Core.Test
                 }
 
                 string expectedVersion = matchingAppHostPack.Attribute("AppHostPackVersion")!.Value;
-                return new(
+                WellKnownPackages[key] = new(
                     $"{packageName}.Host.{expectedRid}",
                     expectedVersion,
                     Files: files

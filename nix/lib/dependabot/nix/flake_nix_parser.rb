@@ -1,16 +1,14 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "uri"
 require "sorbet-runtime"
 
 require "dependabot/nix/channel"
 
 module Dependabot
   module Nix
-    # Parses flake.nix content to locate input URL declarations and extract
-    # their components (scheme, owner, repo, ref). Only handles the shorthand
-    # URL schemes (github:, gitlab:, sourcehut:) since those are the ones
-    # where the ref appears inline in the URL string.
+    # Parses flake.nix input URL declarations and updates their refs.
     class FlakeNixParser
       extend T::Sig
 
@@ -32,6 +30,9 @@ module Dependabot
         /(?<ref>[a-zA-Z0-9_\-\./]+)\z
       }x
       private_constant :INDIRECT_URL_PATTERN
+
+      GENERIC_GIT_SCHEME = /\Agit(?:\+[a-zA-Z][a-zA-Z0-9+.-]*)?\z/
+      private_constant :GENERIC_GIT_SCHEME
 
       # Matches an input URL assignment tied to a specific input name.
       # Covers the common syntactic forms:
@@ -66,7 +67,29 @@ module Dependabot
 
         build_shorthand_input(url_str, match) ||
           build_tarball_input(url_str, match) ||
+          build_git_input(url_str, match) ||
           build_indirect_input(url_str, match)
+      end
+
+      sig { params(url_str: String, match: T::Hash[Symbol, T.untyped]).returns(T.nilable(InputUrl)) }
+      def build_git_input(url_str, match)
+        uri = URI.parse(url_str)
+        return unless uri.scheme&.match?(GENERIC_GIT_SCHEME)
+
+        ref = URI.decode_www_form(uri.query || "").find { |key, _value| key == "ref" }&.last
+
+        InputUrl.new(
+          full_url: url_str,
+          scheme: "git",
+          owner: "",
+          repo: "",
+          ref: ref,
+          query: uri.query,
+          match_start: match[:url_start],
+          match_end: match[:url_end]
+        )
+      rescue URI::InvalidURIError
+        nil
       end
 
       sig { params(new_ref: String).returns(T.nilable(String)) }
@@ -216,10 +239,21 @@ module Dependabot
         when "tarball"
           old_channel = T.must(input_url.ref)
           input_url.full_url.sub("/#{old_channel}/", "/#{new_ref}/")
+        when "git"
+          update_git_ref(input_url.full_url, new_ref)
         else
           base = "#{input_url.scheme}:#{input_url.owner}/#{input_url.repo}/#{new_ref}"
           input_url.query ? "#{base}?#{input_url.query}" : base
         end
+      end
+
+      sig { params(url: String, new_ref: String).returns(String) }
+      def update_git_ref(url, new_ref)
+        uri = URI.parse(url)
+        query = URI.decode_www_form(uri.query || "")
+        query.each { |parameter| parameter[1] = new_ref if parameter.first == "ref" }
+        uri.query = URI.encode_www_form(query)
+        uri.to_s
       end
 
       # Represents a parsed flake input URL from flake.nix

@@ -16,14 +16,17 @@ module Dependabot
     # docker-image path.
     #
     # NOTE: this class is intentionally NOT registered as the requirement class
-    # for "helm" (that remains Docker::Requirement, used by the docker-image
-    # path and ignore conditions). It is used explicitly by the range-preserving
-    # requirements updater.
+    # for "helm" (that remains Docker::Requirement, used by the docker-image path
+    # and by Base, which compares against requirement_class.new(">= 0")). It is
+    # used explicitly by the range-preserving requirements updater, and by
+    # UpdateChecker#helm_ignore_requirements when filtering candidates, since
+    # Docker::Requirement#satisfied_by? is typed for Docker::Version and raises
+    # on a Helm::Version.
     class Requirement < Dependabot::Requirement
       extend T::Sig
 
-      AND_SEPARATOR = T.let(/(?<=[a-zA-Z0-9*])\s+(?:&+\s+)?(?!\s*[|-])/, Regexp)
-      OR_SEPARATOR = T.let(/(?<=[a-zA-Z0-9*])\s*\|+/, Regexp)
+      AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s+(?:&+\s+)?(?!\s*[|-])/
+      OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
 
       # Allow an optional 'v' prefix and an optional '+<build metadata/digest>'
       # suffix. Helm::Version supports the latter (e.g. "1.0.119807+<digest>"
@@ -33,7 +36,7 @@ module Dependabot
       version_pattern = "v?#{Gem::Version::VERSION_PATTERN}(?:\\+[0-9A-Za-z\\-.]+)?"
 
       PATTERN_RAW = T.let("\\s*(#{quoted})?\\s*(#{version_pattern})\\s*".freeze, String)
-      PATTERN = T.let(/\A#{PATTERN_RAW}\z/, Regexp)
+      PATTERN = /\A#{PATTERN_RAW}\z/
 
       # Always returns a Helm::Version (never the plain Gem::Version-backed
       # DefaultRequirement), so satisfaction comparisons stay Helm::Version vs

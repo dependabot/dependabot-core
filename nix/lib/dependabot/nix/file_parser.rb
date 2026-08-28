@@ -1,7 +1,6 @@
 # typed: strict
 # frozen_string_literal: true
 
-require "json"
 require "sorbet-runtime"
 
 require "dependabot/dependency"
@@ -9,6 +8,7 @@ require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
 require "dependabot/nix/channel"
+require "dependabot/nix/lockfile"
 require "dependabot/nix/package_manager"
 
 module Dependabot
@@ -17,7 +17,7 @@ module Dependabot
       extend T::Sig
 
       # Updatable source types: git-backed sources plus NixOS channel tarballs.
-      SUPPORTED_SOURCE_TYPES = T.let(%w(github gitlab sourcehut git tarball).freeze, T::Array[String])
+      SUPPORTED_SOURCE_TYPES = %w(github gitlab sourcehut git tarball).freeze
 
       SUPPORTED_LOCK_VERSION = 7
 
@@ -32,22 +32,17 @@ module Dependabot
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
-        lock_content = JSON.parse(T.must(flake_lock.content))
+        lockfile = Lockfile.new(T.must(flake_lock.content))
 
-        lock_version = lock_content["version"]
+        lock_version = lockfile.version
         if lock_version != SUPPORTED_LOCK_VERSION
           Dependabot.logger.warn(
             "flake.lock version #{lock_version.inspect} differs from expected #{SUPPORTED_LOCK_VERSION}"
           )
         end
 
-        root_name = lock_content.fetch("root", "root")
-        nodes = lock_content.fetch("nodes", {})
-        root_node = nodes.fetch(root_name, {})
-        root_inputs = root_node.fetch("inputs", {})
-
-        root_inputs.filter_map do |input_name, node_label|
-          node = resolve_node(node_label, nodes)
+        lockfile.root_input_names.filter_map do |input_name|
+          node = lockfile.input_node(input_name)
           next unless node
 
           build_dependency(input_name, node)
@@ -66,60 +61,6 @@ module Dependabot
       end
 
       private
-
-      # Resolves a node_label to its node in the lock file.
-      # node_label is either a string (direct reference) or an array ("follows" path
-      # that must be walked through nested inputs maps).
-      sig do
-        params(
-          node_label: T.any(String, T::Array[String]),
-          nodes: T::Hash[String, T.untyped]
-        ).returns(T.nilable(T::Hash[String, T.untyped]))
-      end
-      def resolve_node(node_label, nodes)
-        return nodes[node_label] unless node_label.is_a?(Array)
-        return nil if node_label.empty?
-
-        # Walk the "follows" path: e.g. ["nixpkgs", "flake-utils"] means
-        # follow root -> nixpkgs node -> its inputs -> flake-utils
-        resolved_label = resolve_follows_path(node_label, nodes)
-        resolved_label ? nodes[resolved_label] : nil
-      end
-
-      # Walks a "follows" path through nested inputs to find the final node label.
-      sig do
-        params(
-          path: T::Array[String],
-          nodes: T::Hash[String, T.untyped]
-        ).returns(T.nilable(String))
-      end
-      def resolve_follows_path(path, nodes)
-        current_node_label = T.let(nil, T.nilable(String))
-
-        path.each_with_index do |segment, index|
-          # For the first segment, look up in the root's inputs via nodes directly
-          target = if index.zero?
-                     # The first segment references a top-level node by name
-                     segment
-                   else
-                     # Subsequent segments look up inputs within the current node
-                     node = nodes[T.must(current_node_label)]
-                     return nil unless node.is_a?(Hash)
-
-                     inputs = node.fetch("inputs", nil)
-                     return nil unless inputs.is_a?(Hash)
-
-                     label = inputs[segment]
-                     return nil unless label.is_a?(String)
-
-                     label
-                   end
-
-          current_node_label = target
-        end
-
-        current_node_label
-      end
 
       sig do
         params(
@@ -218,7 +159,7 @@ module Dependabot
           "https://#{host}/#{locked['owner']}/#{locked['repo']}"
         when "sourcehut"
           host = locked["host"] || DEFAULT_HOSTS["sourcehut"]
-          "https://#{host}/~#{locked['owner']}/#{locked['repo']}"
+          "https://#{host}/#{locked['owner']}/#{locked['repo']}"
         when "git"
           locked["url"]
         end

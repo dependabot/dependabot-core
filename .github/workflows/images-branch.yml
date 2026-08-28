@@ -32,17 +32,17 @@ jobs:
       decision: ${{ steps.decision.outputs.decision }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           persist-credentials: false
 
       - name: Set PR
-        run: echo "PR=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+        run: echo "PR=${{ github.event.pull_request.number }}" >> "$GITHUB_ENV"
         if: github.event_name != 'workflow_dispatch'
 
       - name: Set PR when manually triggered (intended for forks)
-        run: echo "PR=${{ inputs.pr }}" >> $GITHUB_ENV
+        run: echo "PR=${{ inputs.pr }}" >> "$GITHUB_ENV"
         if: github.event_name == 'workflow_dispatch'
 
       # Skips push-updater-images by setting an output
@@ -51,118 +51,152 @@ jobs:
         run: |
           # For security, the `gh` call that retrieves the PR approval status *must* also retrieve the commit at the
           # tip of the PR to ensure that any subsequent unreviewed commits are not pulled into this action workflow.
-          DECISION=$(gh pr view ${{ env.PR }} --json reviewDecision,state,commits --jq '"\(.reviewDecision):\(.state):\(.commits | last .oid)"')
-          echo "decision=$DECISION" >> $GITHUB_OUTPUT
+          DECISION=$(gh pr view "$PR" --json reviewDecision,state,commits --jq '"\(.reviewDecision):\(.state):\(.commits | last .oid)"')
+          echo "decision=$DECISION" >> "$GITHUB_OUTPUT"
+
+  prepare:
+    runs-on: ubuntu-latest
+    needs: approval
+    if: startsWith(needs.approval.outputs.decision, 'APPROVED:OPEN')
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Generate ecosystem matrix
+        id: bake-matrix
+        uses: docker/bake-action/subaction/matrix@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
+        with:
+          target: ecosystem
+
+      - name: Remove internal targets
+        id: matrix
+        env:
+          BAKE_MATRIX: ${{ steps.bake-matrix.outputs.matrix }}
+        run: |
+          MATRIX=$(jq -c '[.[] | select(.target != "updater-core")]' <<< "$BAKE_MATRIX")
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
 
   push-updater-images:
     runs-on: ubuntu-latest
-    needs: approval
+    needs:
+      - approval
+      - prepare
     if: startsWith(needs.approval.outputs.decision, 'APPROVED:OPEN')
     strategy:
       fail-fast: false
       matrix:
-        suite:
-          - { name: bazel, ecosystem: bazel }
-          - { name: bun, ecosystem: bun }
-          - { name: bundler, ecosystem: bundler }
-          - { name: cargo, ecosystem: cargo }
-          - { name: conda, ecosystem: conda }
-          - { name: composer, ecosystem: composer }
-          - { name: deno, ecosystem: deno }
-          - { name: devcontainers, ecosystem: devcontainers }
-          - { name: docker_compose, ecosystem: docker-compose }
-          - { name: docker, ecosystem: docker }
-          - { name: dotnet_sdk, ecosystem: dotnet-sdk }
-          - { name: elm, ecosystem: elm }
-          - { name: git_submodules, ecosystem: gitsubmodule }
-          - { name: github_actions, ecosystem: github-actions }
-          - { name: go_modules, ecosystem: gomod }
-          - { name: gradle, ecosystem: gradle }
-          - { name: helm, ecosystem: helm }
-          - { name: hex, ecosystem: mix }
-          - { name: julia, ecosystem: julia }
-          - { name: maven, ecosystem: maven }
-          - { name: nix, ecosystem: nix }
-          - { name: npm_and_yarn, ecosystem: npm }
-          - { name: nuget, ecosystem: nuget }
-          - { name: pre_commit, ecosystem: pre-commit }
-          - { name: pub, ecosystem: pub }
-          - { name: python, ecosystem: pip }
-          - { name: rust_toolchain, ecosystem: rust-toolchain }
-          - { name: sbt, ecosystem: sbt }
-          - { name: swift, ecosystem: swift }
-          - { name: terraform, ecosystem: terraform }
-          - { name: opentofu, ecosystem: opentofu }
-          - { name: uv, ecosystem: uv }
-          - { name: vcpkg, ecosystem: vcpkg }
+        include: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     permissions:
       contents: read
       id-token: write
       packages: write
+      attestations: write
+      artifact-metadata: write
     env:
       DEPENDABOT_UPDATER_VERSION: ${{ github.sha }}
+      ECOSYSTEM: ${{ matrix.target }}
+      UPDATER_IMAGE: ghcr.io/dependabot/dependabot-updater-${{ matrix.target }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           persist-credentials: false
 
-      - uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+      - name: Preserve build definition
+        run: cp docker-bake.hcl "$RUNNER_TEMP/docker-bake.hcl"
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
-
-      - name: Expose GitHub Actions cache to Buildx
-        uses: crazy-max/ghaction-github-runtime@04d248b84655b509d8c44dc1d6f990c879747487 # v4.0.0
-
-      - name: Prepare tag
-        run: echo "DEPENDABOT_UPDATER_VERSION=${{ github.sha }}" >> $GITHUB_ENV
-        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review'
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
 
       - name: Prepare tag (forks)
+        env:
+          APPROVAL_DECISION: ${{ needs.approval.outputs.decision }}
         run: |
           gh pr checkout ${{ inputs.pr }}
 
           # Ensure the commit we've checked out matches our expected SHA from when we checked the PR's approval status above.
           # This is a security measure to prevent any unreviewed commits from getting pulled into this action workflow.
           # The format is "APPROVED:OPEN:<PR_COMMIT_SHA>", so compare the end of the string to the current commit.
-          [[ ${{needs.approval.outputs.decision}} =~ $(git rev-parse HEAD)$ ]]
+          [[ "$APPROVAL_DECISION" =~ $(git rev-parse HEAD)$ ]]
 
           git fetch origin main
-          git merge origin/main --ff-only || exit 1
+          git merge origin/main --ff-only
           git submodule update --init --recursive
-          echo "DEPENDABOT_UPDATER_VERSION=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "DEPENDABOT_UPDATER_VERSION=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
         if: github.event_name == 'workflow_dispatch'
 
-      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build ecosystem image
-        env:
-          BUILDX_GHA_CACHE: "1"
-        run: script/build ${{ matrix.suite.name }}
+      - name: Resolve build metadata
+        id: metadata
+        run: echo "version=$DEPENDABOT_UPDATER_VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Push branch image
+      - name: Build ecosystem image for validation
+        uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
+        with:
+          source: .
+          files: ${{ runner.temp }}/docker-bake.hcl
+          targets: ${{ matrix.target }}
+          provenance: false
+          set: |
+            ${{ matrix.target }}.output=type=docker
+            ${{ matrix.target }}.tags=${{ env.UPDATER_IMAGE }}:validation-${{ github.run_id }}
+
+      - name: Validate ecosystem image
+        env:
+          IMAGE: ${{ env.UPDATER_IMAGE }}:validation-${{ github.run_id }}
         run: |
-          docker tag "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}" "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$DEPENDABOT_UPDATER_VERSION"
-          docker push "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$DEPENDABOT_UPDATER_VERSION"
-          cosign sign --yes $(cosign triangulate --type=digest "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$DEPENDABOT_UPDATER_VERSION")
+          docker run --rm "$IMAGE" \
+            bash -lc "cd /home/dependabot/dependabot-updater && bundle check"
+
+          IMAGE_LAYERS=$(docker history -q "$IMAGE" | wc -l | sed -e 's/ //g')
+          echo "$IMAGE contains $IMAGE_LAYERS layers"
+          [[ $IMAGE_LAYERS -lt 126 ]]
+
+      - name: Build and push branch image
+        id: build
+        uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
+        with:
+          source: .
+          files: ${{ runner.temp }}/docker-bake.hcl
+          targets: ${{ matrix.target }}
+          provenance: false
+          set: |
+            ${{ matrix.target }}.output=type=registry
+            ${{ matrix.target }}.tags=${{ env.UPDATER_IMAGE }}:${{ steps.metadata.outputs.version }}
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ env.UPDATER_IMAGE }}
+          subject-digest: ${{ fromJSON(steps.build.outputs.metadata)[matrix.target]['containerimage.digest'] }}
+          push-to-registry: true
+          create-storage-record: true
 
       - name: Set summary
         run: |
-          echo "updater uploaded with tag \`$DEPENDABOT_UPDATER_VERSION\`" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$DEPENDABOT_UPDATER_VERSION" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "deploy for ${{ matrix.suite.ecosystem }}" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo ".dependabot set-ecosystem-version staging ${{ matrix.suite.ecosystem }} $DEPENDABOT_UPDATER_VERSION" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "deploy for all ecosystems" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo ".dependabot set-ecosystem-version staging * $DEPENDABOT_UPDATER_VERSION" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "updater uploaded with tag \`$DEPENDABOT_UPDATER_VERSION\`"
+            echo "\`\`\`"
+            echo "$UPDATER_IMAGE:$DEPENDABOT_UPDATER_VERSION"
+            echo "\`\`\`"
+            echo "deploy for $ECOSYSTEM"
+            echo "\`\`\`"
+            echo ".dependabot set-ecosystem-version staging $ECOSYSTEM $DEPENDABOT_UPDATER_VERSION"
+            echo "\`\`\`"
+            echo "deploy for all ecosystems"
+            echo "\`\`\`"
+            echo ".dependabot set-ecosystem-version staging * $DEPENDABOT_UPDATER_VERSION"
+            echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"

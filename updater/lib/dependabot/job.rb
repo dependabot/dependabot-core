@@ -38,40 +38,37 @@ module Dependabot
   class Job # rubocop:disable Metrics/ClassLength
     extend T::Sig
 
-    TOP_LEVEL_DEPENDENCY_TYPES = T.let(%w(direct production development).freeze, T::Array[String])
+    TOP_LEVEL_DEPENDENCY_TYPES = %w(direct production development).freeze
     # Default cooldown period (in days) applied when `default-days` is not configured.
     DEFAULT_COOLDOWN_DAYS = 3
-    PERMITTED_KEYS = T.let(
-      %i(
-        allowed_updates
-        command
-        commit_message_options
-        dependencies
-        exclude_paths
-        existing_pull_requests
-        existing_group_pull_requests
-        experiments
-        ignore_conditions
-        lockfile_only
-        package_manager
-        reject_external_code
-        repo_contents_path
-        requirements_update_strategy
-        security_advisories
-        security_updates_only
-        source
-        update_subdependencies
-        updating_a_pull_request
-        vendor_dependencies
-        dependency_groups
-        dependency_group_to_refresh
-        cooldown
-        repo_private
-        multi_ecosystem_update
-        blocked_versions
-      ).freeze,
-      T::Array[Symbol]
-    )
+    PERMITTED_KEYS = %i(
+      allowed_updates
+      command
+      commit_message_options
+      dependencies
+      exclude_paths
+      existing_pull_requests
+      existing_group_pull_requests
+      experiments
+      ignore_conditions
+      lockfile_only
+      package_manager
+      reject_external_code
+      repo_contents_path
+      requirements_update_strategy
+      security_advisories
+      security_updates_only
+      source
+      update_subdependencies
+      updating_a_pull_request
+      vendor_dependencies
+      dependency_groups
+      dependency_group_to_refresh
+      cooldown
+      repo_private
+      multi_ecosystem_update
+      blocked_versions
+    ).freeze
 
     sig { returns(T::Array[Dependabot::Job::AllowedUpdate]) }
     attr_reader :allowed_updates
@@ -528,7 +525,7 @@ module Dependabot
           next if req.empty?
 
           reason = bv.reason&.strip
-          [req, reason&.empty? ? nil : reason]
+          [req, reason && reason.empty? ? nil : reason]
         end,
         T::Array[[String, T.nilable(String)]]
       )

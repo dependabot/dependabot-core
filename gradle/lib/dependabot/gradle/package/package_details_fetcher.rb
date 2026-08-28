@@ -86,7 +86,7 @@ module Dependabot
           @dependency_files = dependency_files
           @credentials = credentials
           @forbidden_urls = forbidden_urls
-          @cooldown_options = T.let(cooldown_options, T.nilable(Dependabot::Package::ReleaseCooldownOptions))
+          @cooldown_options = cooldown_options
           @repositories = T.let(nil, T.nilable(T::Array[T::Hash[String, Object]]))
           @google_version_details = T.let(nil, T.nilable(Nokogiri::XML::Document))
           @dependency_repository_details = T.let(nil, T.nilable(T::Array[T::Hash[String, Object]]))
@@ -346,7 +346,7 @@ module Dependabot
         def dependency_repository_details
           requirement_files =
             dependency.requirements
-                      .map { |r| r.fetch(:file) }
+                      .filter_map(&:file)
                       .map { |nm| dependency_files.find { |f| f.name == nm } }
 
           @dependency_repository_details ||=
@@ -396,7 +396,7 @@ module Dependabot
 
         sig { returns(T.nilable(Dependabot::DependencyFile)) }
         def pom
-          filename = T.must(dependency.requirements.first).fetch(:file)
+          filename = T.must(dependency.requirements.first).file
           dependency_files.find { |f| f.name == filename }
         end
 
@@ -425,12 +425,12 @@ module Dependabot
 
         sig { returns(T::Boolean) }
         def plugin?
-          dependency.requirements.any? { |r| r.fetch(:groups).include? "plugins" }
+          dependency.requirements.any? { |r| r.groups&.include?("plugins") }
         end
 
         sig { returns(T.nilable(T::Boolean)) }
         def kotlin_plugin?
-          plugin? && dependency.requirements.any? { |r| r.fetch(:groups).include? "kotlin" }
+          plugin? && dependency.requirements.any? { |r| r.groups&.include?("kotlin") }
         end
 
         sig { returns(T::Boolean) }

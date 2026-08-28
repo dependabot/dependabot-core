@@ -11,6 +11,17 @@ require "dependabot/requirements_update_strategy"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
+  def build_vulnerability_audit(attributes)
+    Dependabot::UpdateCheckers::VulnerabilityAudit.from_object(
+      {
+        "dependency_name" => dependency.name,
+        "fix_available" => false,
+        "fix_updates" => [],
+        "top_level_ancestors" => []
+      }.merge(attributes)
+    )
+  end
+
   let(:dependency_version) { "1.0.0" }
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -60,18 +71,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   let(:registry_listing_url) { "#{registry_base}/#{escaped_dependency_name}" }
   let(:registry_base) { "https://registry.npmjs.org" }
 
-  # Variable to control the enabling feature flag for the corepack fix
-  let(:enable_corepack_for_npm_and_yarn) { true }
-
   before do
     stub_request(:get, registry_listing_url)
       .to_return(status: 200, body: registry_response)
     stub_request(:head, "#{registry_base}/#{dependency_name}/-/#{unscoped_dependency_name}-#{target_version}.tgz")
       .to_return(status: 200)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_corepack_for_npm_and_yarn).and_return(enable_corepack_for_npm_and_yarn)
-    allow(Dependabot::Experiments).to receive(:enabled?)
-      .with(:enable_private_registry_for_corepack).and_return(true)
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:enable_audit_fix_fallback).and_return(false)
   end
@@ -626,10 +630,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       before do
         allow(described_class::VulnerabilityAuditor).to receive(:new).and_return(vulnerability_auditor)
         allow(vulnerability_auditor).to receive(:audit).and_return(
-          {
+          build_vulnerability_audit(
             "fix_available" => true,
             "top_level_ancestors" => %w(applause lodash)
-          }
+          )
         )
       end
 
@@ -1926,7 +1930,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
       context "when a fix_update has the same target and current version" do
         let(:vulnerability_audit_result) do
-          {
+          build_vulnerability_audit(
             "fix_available" => true,
             "target_version" => "1.0.1",
             "fix_updates" => [
@@ -1938,7 +1942,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               }
             ],
             "top_level_ancestors" => ["@dependabot-fixtures/npm-parent-dependency"]
-          }
+          )
         end
 
         it "skips the no-op fix_update and updates the target dependency directly" do
@@ -1951,7 +1955,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
       context "when there are both no-op and real fix_updates" do
         let(:vulnerability_audit_result) do
-          {
+          build_vulnerability_audit(
             "fix_available" => true,
             "target_version" => "1.0.1",
             "fix_updates" => [
@@ -1969,7 +1973,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               }
             ],
             "top_level_ancestors" => ["@dependabot-fixtures/npm-parent-dependency"]
-          }
+          )
         end
 
         it "skips the no-op and includes the real update with information_only target" do

@@ -62,16 +62,16 @@ module Dependabot
           latest_allowable_version: nil,
           lock_ruby_version: true
         )
-          @dependency_files = T.let(dependency_files, T::Array[Dependabot::DependencyFile])
-          @dependency = T.let(dependency, Dependabot::Dependency)
-          @remove_git_source = T.let(remove_git_source, T::Boolean)
-          @unlock_requirement = T.let(unlock_requirement, T::Boolean)
-          @replacement_git_pin = T.let(replacement_git_pin, T.nilable(String))
+          @dependency_files = dependency_files
+          @dependency = dependency
+          @remove_git_source = remove_git_source
+          @unlock_requirement = unlock_requirement
+          @replacement_git_pin = replacement_git_pin
           @latest_allowable_version = T.let(
             latest_allowable_version&.to_s,
             T.nilable(String)
           )
-          @lock_ruby_version = T.let(lock_ruby_version, T::Boolean)
+          @lock_ruby_version = lock_ruby_version
         end
 
         # rubocop:disable Metrics/AbcSize

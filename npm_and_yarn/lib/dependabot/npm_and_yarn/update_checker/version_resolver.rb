@@ -463,9 +463,11 @@ module Dependabot
           latest_types_version = latest_types_package_version
           return false unless latest_types_version
 
+          latest_types_version = T.cast(latest_types_version, Version)
+
           latest_allowable_ver = latest_allowable_version
           return false unless latest_allowable_ver.is_a?(Version) && latest_allowable_ver.backwards_compatible_with?(
-            T.unsafe(latest_types_version)
+            latest_types_version
           )
 
           return false unless version_class.correct?(types_pkg.version)
@@ -689,7 +691,8 @@ module Dependabot
             .possible_versions_with_details
             .select do |versions_with_details|
               version, details = versions_with_details
-              next false unless satisfies_peer_reqs_on_dep?(T.unsafe(version))
+              version = T.cast(version, T.any(String, Gem::Version))
+              next false unless satisfies_peer_reqs_on_dep?(version)
               next true unless details["peerDependencies"]
               next true if version == version_for_dependency(dependency)
 
@@ -899,15 +902,24 @@ module Dependabot
         def run_yarn_classic_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
-                function: "yarn:checkPeerDependencies",
-                args: [
-                  Dir.pwd,
-                  dependency.name,
-                  T.unsafe(version),
-                  requirements_for_path(dependency.requirements, path)
-                ]
+              T.cast(
+                SharedHelpers.run_helper_subprocess(
+                  command: NativeHelpers.helper_path,
+                  function: "yarn:checkPeerDependencies",
+                  args: [
+                    Dir.pwd,
+                    dependency.name,
+                    version,
+                    requirements_for_path(dependency.requirements, path)
+                  ]
+                ),
+                T.nilable(
+                  T.any(
+                    T::Hash[String, T.untyped],
+                    String,
+                    T::Array[T::Hash[String, T.untyped]]
+                  )
+                )
               )
             end
           end
@@ -929,16 +941,25 @@ module Dependabot
 
               return run_npm8_checker(version: version) if Dependabot::NpmAndYarn::Helpers.parse_npm8?(package_lock)
 
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
-                function: "npm6:checkPeerDependencies",
-                args: [
-                  Dir.pwd,
-                  dependency.name,
-                  T.unsafe(version),
-                  requirements_for_path(dependency.requirements, path),
-                  top_level_dependencies.map(&:to_h)
-                ]
+              T.cast(
+                SharedHelpers.run_helper_subprocess(
+                  command: NativeHelpers.helper_path,
+                  function: "npm6:checkPeerDependencies",
+                  args: [
+                    Dir.pwd,
+                    dependency.name,
+                    version,
+                    requirements_for_path(dependency.requirements, path),
+                    top_level_dependencies.map(&:to_h)
+                  ]
+                ),
+                T.nilable(
+                  T.any(
+                    T::Hash[String, T.untyped],
+                    String,
+                    T::Array[T::Hash[String, T.untyped]]
+                  )
+                )
               )
             end
           end
@@ -950,29 +971,15 @@ module Dependabot
           ).returns(T.nilable(T.any(T::Hash[String, T.untyped], String, T::Array[T::Hash[String, T.untyped]])))
         end
         def run_npm8_checker(version:)
-          env = corepack_registry_override_env
           cmd =
             "install #{version_install_arg(version: version)} --package-lock-only --dry-run=true --ignore-scripts"
-          output = Helpers.run_npm_command(cmd, env: env)
+          output = Helpers.run_npm_command(cmd)
           if output.match?(NPM8_PEER_DEP_ERROR_REGEX)
             error_context = { command: cmd, process_exit_value: 1 }
             raise SharedHelpers::HelperSubprocessFailed.new(message: output, error_context: error_context)
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           raise if e.message.match?(NPM8_PEER_DEP_ERROR_REGEX)
-        end
-
-        sig { returns(T.nilable(T::Hash[String, String])) }
-        def corepack_registry_override_env
-          return nil unless Dependabot::Experiments.enabled?(:enable_corepack_for_npm_and_yarn)
-
-          replaces_base_cred = credentials.find { |cred| cred["type"] == "npm_registry" && cred.replaces_base? }
-          registry_url = replaces_base_cred&.[]("registry")
-          return nil unless registry_url
-
-          registry_url = Dependabot::NpmAndYarn::RegistryHelper.normalize_registry_url(registry_url)
-
-          { "npm_config_registry" => registry_url }
         end
 
         sig do

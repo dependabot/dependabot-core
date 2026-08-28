@@ -37,12 +37,12 @@ module Dependabot
           new_hash_version: nil,
           index_urls: nil
         )
-          @content = T.let(content, String)
+          @content = content
           @dependency_name = T.let(normalise(dependency_name), String)
-          @old_requirement = T.let(old_requirement, T.nilable(String))
-          @new_requirement = T.let(new_requirement, T.nilable(String))
-          @new_hash_version = T.let(new_hash_version, T.nilable(String))
-          @index_urls = T.let(index_urls, T.nilable(T::Array[T.nilable(String)]))
+          @old_requirement = old_requirement
+          @new_requirement = new_requirement
+          @new_hash_version = new_hash_version
+          @index_urls = index_urls
         end
 
         sig { returns(String) }

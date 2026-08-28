@@ -431,6 +431,196 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "when a project dependency needs another project's toolchain" do
+      # Resolving :app reaches into :lib's compile task, so every project has to be prepared before
+      # anything is resolved. Offline, like the cases below.
+      let(:mp_settings) do
+        Dependabot::DependencyFile.new(
+          name: "settings.gradle",
+          directory: "/",
+          content: "rootProject.name = 'mp'\ninclude('app', 'lib')\n"
+        )
+      end
+      let(:mp_app) do
+        Dependabot::DependencyFile.new(
+          name: "app/build.gradle",
+          directory: "/",
+          content: <<~GRADLE
+            plugins { id 'java' }
+
+            java { toolchain { languageVersion = JavaLanguageVersion.of(99) } }
+
+            dependencyLocking { lockAllConfigurations() }
+
+            repositories { maven { url = uri("../local-repo") } }
+
+            dependencies {
+              implementation project(':lib')
+              implementation "com.example:dummy:1.0"
+            }
+          GRADLE
+        )
+      end
+      let(:mp_lib) do
+        Dependabot::DependencyFile.new(
+          name: "lib/build.gradle",
+          directory: "/",
+          content: <<~GRADLE
+            plugins { id 'java' }
+
+            java { toolchain { languageVersion = JavaLanguageVersion.of(99) } }
+
+            dependencyLocking { lockAllConfigurations() }
+          GRADLE
+        )
+      end
+      let(:mp_lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "app/gradle.lockfile", directory: "/", content: "# stale\n"
+        )
+      end
+      let(:mp_pom) do
+        Dependabot::DependencyFile.new(
+          name: "local-repo/com/example/dummy/1.0/dummy-1.0.pom",
+          directory: "/",
+          content: <<~POM
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <groupId>com.example</groupId>
+              <artifactId>dummy</artifactId>
+              <version>1.0</version>
+            </project>
+          POM
+        )
+      end
+      let(:dependency_files) { [mp_settings, mp_app, mp_lib, mp_pom, mp_lockfile] }
+
+      it "resolves the dependent project" do
+        updated = lockfile_updater.update_lockfiles(mp_app)
+
+        expect(updated.find { |f| f.name == "app/gradle.lockfile" }.content)
+          .to include("com.example:dummy:1.0")
+      end
+    end
+
+    context "when the build has the configuration cache enabled" do
+      # Resolving from a task action is what the configuration cache rejects, so this covers that
+      # the resolution happens elsewhere. Offline, like the toolchain case below.
+      let(:cc_buildfile) do
+        Dependabot::DependencyFile.new(
+          name: "build.gradle",
+          directory: "/",
+          content: <<~GRADLE
+            plugins { id 'java' }
+
+            dependencyLocking { lockAllConfigurations() }
+
+            repositories { maven { url = uri("local-repo") } }
+
+            dependencies { implementation "com.example:dummy:1.0" }
+          GRADLE
+        )
+      end
+      let(:cc_properties) do
+        Dependabot::DependencyFile.new(
+          name: "gradle.properties",
+          directory: "/",
+          content: "org.gradle.configuration-cache=true\n"
+        )
+      end
+      let(:cc_pom) do
+        Dependabot::DependencyFile.new(
+          name: "local-repo/com/example/dummy/1.0/dummy-1.0.pom",
+          directory: "/",
+          content: <<~POM
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <groupId>com.example</groupId>
+              <artifactId>dummy</artifactId>
+              <version>1.0</version>
+            </project>
+          POM
+        )
+      end
+      let(:cc_lockfile) do
+        Dependabot::DependencyFile.new(name: "gradle.lockfile", directory: "/", content: "# stale\n")
+      end
+      let(:dependency_files) { [cc_buildfile, cc_properties, cc_pom, cc_lockfile] }
+      let(:observed_commands) { [] }
+
+      before do
+        original = Dependabot::SharedHelpers.method(:run_shell_command)
+        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, **kwargs|
+          observed_commands << command
+          original.call(command, **kwargs)
+        end
+      end
+
+      it "regenerates the lockfile with the cache left enabled" do
+        updated = lockfile_updater.update_lockfiles(cc_buildfile)
+
+        expect(observed_commands.last).not_to include("--no-configuration-cache")
+        expect(updated.find { |f| f.name == "gradle.lockfile" }.content)
+          .to include("com.example:dummy:1.0")
+      end
+    end
+
+    context "when the project requests a Java toolchain that is not installed" do
+      # Real Gradle, offline: java is a core plugin and the dependency comes from the file
+      # repository below, so the toolchain lookup is the only thing that can fail.
+      let(:toolchain_buildfile) do
+        Dependabot::DependencyFile.new(
+          name: "build.gradle",
+          directory: "/",
+          content: <<~GRADLE
+            plugins { id 'java' }
+
+            java {
+              toolchain {
+                languageVersion = JavaLanguageVersion.of(99)
+              }
+            }
+
+            dependencyLocking { lockAllConfigurations() }
+
+            repositories { maven { url = uri("local-repo") } }
+
+            dependencies { implementation "com.example:dummy:1.0" }
+          GRADLE
+        )
+      end
+      # Something to resolve is required: without it Gradle never computes the javaCompiler.
+      let(:toolchain_pom) do
+        Dependabot::DependencyFile.new(
+          name: "local-repo/com/example/dummy/1.0/dummy-1.0.pom",
+          directory: "/",
+          content: <<~POM
+            <project>
+              <modelVersion>4.0.0</modelVersion>
+              <groupId>com.example</groupId>
+              <artifactId>dummy</artifactId>
+              <version>1.0</version>
+            </project>
+          POM
+        )
+      end
+      let(:toolchain_lockfile) do
+        Dependabot::DependencyFile.new(
+          name: "gradle.lockfile",
+          directory: "/",
+          content: "# stale lockfile\n"
+        )
+      end
+      let(:dependency_files) { [toolchain_buildfile, toolchain_pom, toolchain_lockfile] }
+
+      it "falls back to the running JVM and resolves" do
+        updated = lockfile_updater.update_lockfiles(toolchain_buildfile)
+
+        expect(updated.find { |f| f.name == "gradle.lockfile" }.content)
+          .to include("com.example:dummy:1.0")
+      end
+    end
+
     context "when Gradle does not regenerate one of the lockfiles" do
       let(:dependency_files) { [root_settings, root_buildfile, root_lockfile, app_lockfile] }
 
@@ -637,19 +827,6 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
         end
       end
 
-      it "disables configuration cache for lockfile updates" do
-        observed_commands = []
-
-        allow(Dependabot::SharedHelpers).to receive(:run_shell_command) do |command, cwd:|
-          observed_commands << command
-          File.write(File.join(cwd, "gradle.lockfile"), "# updated lockfile\n")
-        end
-
-        lockfile_updater.update_lockfiles(root_buildfile)
-
-        expect(observed_commands.last).to include("--no-configuration-cache")
-      end
-
       it "generates an init script that resolves project configurations" do
         observed_init_script = nil
 
@@ -661,7 +838,8 @@ RSpec.describe Dependabot::Gradle::FileUpdater::LockfileUpdater do
 
         lockfile_updater.update_lockfiles(root_buildfile)
 
-        expect(observed_init_script).to match(/doLast \{\s+configurations\.findAll/)
+        expect(observed_init_script).to include("projectsEvaluated {")
+        expect(observed_init_script).to include("configurations.findAll")
         expect(observed_init_script).to include("it.resolutionStrategy.dependencyLockingEnabled")
         expect(observed_init_script).to include("it.allDependencies.any")
         expect(observed_init_script).to include("dependency instanceof org.gradle.api.artifacts.ModuleDependency")

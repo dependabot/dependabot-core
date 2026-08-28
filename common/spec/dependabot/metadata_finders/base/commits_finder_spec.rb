@@ -971,6 +971,25 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           it { is_expected.to eq([]) }
         end
 
+        context "when the commit response is malformed" do
+          before do
+            stub_request(
+              :get,
+              "https://api.github.com/repos/gocardless/business/commits?" \
+              "sha=v1.3.0"
+            ).to_return(
+              status: 200,
+              body: JSON.dump([{ sha: 1 }]),
+              headers: { "Content-Type" => "application/json" }
+            )
+          end
+
+          it "raises a bad response error" do
+            expect { commits }
+              .to raise_error(Dependabot::PrivateSourceBadResponse, /Malformed GitHub commit response/)
+          end
+        end
+
         context "when dealing with a monorepo" do
           let(:dependency_name) { "@pollyjs/ember" }
           let(:dependency_version) { "0.2.0" }
@@ -1149,6 +1168,23 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           )
         end
 
+        context "when the commit response is malformed" do
+          let(:azure_compare) do
+            JSON.dump(
+              value: [{
+                "comment" => "Malformed commit",
+                "commitId" => 1,
+                "remoteUrl" => "https://example.com/commit"
+              }]
+            )
+          end
+
+          it "raises a bad response error" do
+            expect { commits }
+              .to raise_error(Dependabot::PrivateSourceBadResponse, /Malformed Azure commit response/)
+          end
+        end
+
         context "with a dependency that has a git source" do
           let(:dependency_previous_requirements) do
             [{
@@ -1259,6 +1295,15 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
                         "e718899ddcdc666311d08497401199e126428163"
             }
           )
+        end
+
+        context "when the commit response is malformed" do
+          let(:gitlab_compare) { JSON.dump("commits" => {}) }
+
+          it "raises a bad response error" do
+            expect { commits }
+              .to raise_error(Dependabot::PrivateSourceBadResponse, /Malformed GitLab commit response/)
+          end
         end
 
         context "with a dependency that has a git source" do
