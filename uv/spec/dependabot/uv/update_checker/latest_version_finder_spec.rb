@@ -739,6 +739,51 @@ RSpec.describe Dependabot::Uv::UpdateChecker::LatestVersionFinder do
     end
   end
 
+  describe "#eligible_releases" do
+    subject(:eligible_versions) do
+      finder.eligible_releases(language_version: language_version)&.map(&:version)
+    end
+
+    let(:ignored_versions) { ["== 2.4.0"] }
+    let(:language_version) { nil }
+
+    it "applies the same release filters used for latest_version" do
+      expect(eligible_versions).to include(Gem::Version.new("2.6.0"))
+      expect(eligible_versions).not_to include(Gem::Version.new("2.4.0"))
+    end
+
+    context "with a detected Python version" do
+      let(:language_version) { "3.11.0" }
+      let(:supported_release) do
+        Dependabot::Package::PackageRelease.new(
+          version: Dependabot::Uv::Version.new("2.5.0"),
+          language: Dependabot::Package::PackageLanguage.new(
+            name: "python",
+            requirement: Dependabot::Uv::Requirement.new(">=3.11")
+          )
+        )
+      end
+      let(:unsupported_release) do
+        Dependabot::Package::PackageRelease.new(
+          version: Dependabot::Uv::Version.new("2.6.0"),
+          language: Dependabot::Package::PackageLanguage.new(
+            name: "python",
+            requirement: Dependabot::Uv::Requirement.new(">=3.12")
+          )
+        )
+      end
+
+      before do
+        allow(finder).to receive(:available_versions)
+          .and_return([supported_release, unsupported_release])
+      end
+
+      it "excludes releases that require a newer Python version" do
+        expect(eligible_versions).to eq([Dependabot::Uv::Version.new("2.5.0")])
+      end
+    end
+  end
+
   describe "#lowest_security_fix_version" do
     subject(:lowest_security_fix_version) { finder.lowest_security_fix_version }
 
