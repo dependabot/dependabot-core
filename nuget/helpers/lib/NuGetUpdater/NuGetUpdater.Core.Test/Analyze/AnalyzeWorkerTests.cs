@@ -2,6 +2,12 @@ using System.Text;
 using System.Text.Json;
 
 using NuGet;
+using NuGet.Common;
+using NuGet.Configuration;
+using NuGet.Packaging.Core;
+using NuGet.Protocol;
+using NuGet.Protocol.Core.Types;
+using NuGet.Versioning;
 
 using NuGetUpdater.Core.Analyze;
 using NuGetUpdater.Core.Run.ApiModel;
@@ -1503,5 +1509,132 @@ public partial class AnalyzeWorkerTests : AnalyzeWorkerTestBase
         var context = new NuGetContext(tempDir.DirectoryPath);
         var infoUrl = await context.GetPackageInfoUrlAsync("some.package", "1.0.0", CancellationToken.None);
         Assert.Null(infoUrl);
+    }
+
+    [Fact]
+    public async Task GetPackageInfoUrlAsyncFallsBackToMetadataWhenDownloadResourceIsNull()
+    {
+        var expectedUrl = new Uri("https://example.com/package");
+        using var context = await CreateNuGetContextAsync(downloadResource: null, expectedUrl);
+
+        var infoUrl = await context.GetPackageInfoUrlAsync("some.package", "1.0.0", CancellationToken.None);
+
+        Assert.Equal(expectedUrl.ToString(), infoUrl);
+    }
+
+    [Fact]
+    public async Task GetPackageInfoUrlAsyncFallsBackToMetadataWhenAvailableDownloadHasNoPackageReader()
+    {
+        var expectedUrl = new Uri("https://example.com/package");
+        var downloadResource = new TestDownloadResource(
+            new DownloadResourceResult(new MemoryStream(), packageReader: null, source: "test"));
+        using var context = await CreateNuGetContextAsync(downloadResource, expectedUrl);
+
+        var infoUrl = await context.GetPackageInfoUrlAsync("some.package", "1.0.0", CancellationToken.None);
+
+        Assert.Equal(expectedUrl.ToString(), infoUrl);
+    }
+
+    private static async Task<NuGetContext> CreateNuGetContextAsync(DownloadResource? downloadResource, Uri projectUrl)
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+            ("NuGet.Config", """
+                <configuration>
+                  <packageSources>
+                    <clear />
+                    <add key="test" value="https://example.com/v3/index.json" />
+                  </packageSources>
+                </configuration>
+                """)
+        );
+
+        return new NuGetContext(
+            tempDir.DirectoryPath,
+            sourceRepositoryFactory: source => new SourceRepository(
+                source,
+                [
+                    new TestResourceProvider<MetadataResource>(new TestMetadataResource()),
+                    new TestResourceProvider<DownloadResource>(downloadResource),
+                    new TestResourceProvider<PackageMetadataResource>(new TestPackageMetadataResource(projectUrl)),
+                ]));
+    }
+
+    private sealed class TestResourceProvider<TResource>(TResource? resource) : INuGetResourceProvider
+        where TResource : class, INuGetResource
+    {
+        public Type ResourceType => typeof(TResource);
+        public string Name => typeof(TResource).Name;
+        public IEnumerable<string> Before => [];
+        public IEnumerable<string> After => [];
+
+        public Task<Tuple<bool, INuGetResource?>> TryCreate(SourceRepository source, CancellationToken token) =>
+            Task.FromResult(Tuple.Create(true, (INuGetResource?)resource));
+    }
+
+    private sealed class TestMetadataResource : MetadataResource
+    {
+        public override Task<bool> Exists(
+            PackageIdentity identity,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) => Task.FromResult(true);
+
+        public override Task<bool> Exists(
+            string packageId,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) => Task.FromResult(true);
+
+        public override Task<IEnumerable<NuGetVersion>> GetVersions(
+            string packageId,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) => Task.FromResult<IEnumerable<NuGetVersion>>([]);
+
+        public override Task<IEnumerable<KeyValuePair<string, NuGetVersion>>> GetLatestVersions(
+            IEnumerable<string> packageIds,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) => Task.FromResult<IEnumerable<KeyValuePair<string, NuGetVersion>>>([]);
+    }
+
+    private sealed class TestDownloadResource(DownloadResourceResult result) : DownloadResource
+    {
+        public override Task<DownloadResourceResult> GetDownloadResourceResultAsync(
+            PackageIdentity identity,
+            PackageDownloadContext downloadContext,
+            string globalPackagesFolder,
+            NuGet.Common.ILogger logger,
+            CancellationToken token) => Task.FromResult(result);
+    }
+
+    private sealed class TestPackageMetadataResource(Uri projectUrl) : PackageMetadataResource
+    {
+        public override Task<IEnumerable<IPackageSearchMetadata>> GetMetadataAsync(
+            string packageId,
+            bool includePrerelease,
+            bool includeUnlisted,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) => Task.FromResult<IEnumerable<IPackageSearchMetadata>>([]);
+
+        public override Task<IPackageSearchMetadata> GetMetadataAsync(
+            PackageIdentity package,
+            SourceCacheContext sourceCacheContext,
+            NuGet.Common.ILogger log,
+            CancellationToken token) =>
+            Task.FromResult<IPackageSearchMetadata>(
+                new PackageSearchMetadataBuilder.ClonedPackageSearchMetadata
+                {
+                    Identity = package,
+                    ProjectUrl = projectUrl,
+                });
     }
 }
