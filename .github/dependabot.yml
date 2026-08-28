@@ -35,6 +35,8 @@ updates:
         update-types:
           - "minor"
           - "patch"
+      per-dependency:
+        group-by: "dependency-name"
 
   # Watch the per-ecosystem native helpers
   - package-ecosystem: "composer"
@@ -64,12 +66,26 @@ updates:
   - package-ecosystem: "docker"
     directories:
       - "/"
-      - "/go_modules"
       - "/cargo"
+      - "/docker"
+      - "/go_modules"
+      - "/gradle"
+      - "/helm"
+      - "/maven"
+      - "/nix"
     schedule:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+    groups:
+      container-tools:
+        patterns:
+          - "alpine/helm"
+          - "oras-project/oras"
+          - "regclient/regctl*"
+          - "sigstore/cosign/cosign*"
+      per-image:
+        group-by: "dependency-name"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -80,11 +96,27 @@ updates:
       all-actions:
         patterns: [ "*" ]
   - package-ecosystem: "gomod"
-    directory: "/go_modules/helpers"
+    directories:
+      - "/go_modules/helpers"
+      - "/silent/tests"
     schedule:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+    groups:
+      per-dependency:
+        group-by: "dependency-name"
+  - package-ecosystem: "julia"
+    directories:
+      - "/julia/helpers"
+      - "/julia/helpers/DependabotHelper.jl"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+    groups:
+      per-dependency:
+        group-by: "dependency-name"
   - package-ecosystem: "mix"
     directory: "/hex/helpers"
     schedule:
@@ -92,7 +124,10 @@ updates:
       day: "sunday"
       time: "16:00"
   - package-ecosystem: "npm"
-    directory: "/npm_and_yarn/helpers"
+    directories:
+      - "/bun/helpers"
+      - "/npm_and_yarn/helpers"
+      - "/nub/helpers"
     schedule:
       interval: "weekly"
       day: "sunday"
@@ -118,6 +153,8 @@ updates:
         update-types:
           - "minor"
           - "patch"
+      per-dependency:
+        group-by: "dependency-name"
     ignore:
       - dependency-name: "npm"
         update-types: [ "version-update:semver-major" ]
@@ -161,6 +198,10 @@ updates:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+    groups:
+      microsoft-build:
+        patterns:
+          - "Microsoft.Build*"
   - package-ecosystem: "dotnet-sdk"
     directory: "/nuget/helpers/lib/NuGetUpdater"
     schedule:
@@ -180,12 +221,6 @@ updates:
       day: "sunday"
       time: "16:00"
   - package-ecosystem: "docker"
-    directory: "/maven"
-    schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "16:00"
-  - package-ecosystem: "docker"
     directory: "/uv"
     multi-ecosystem-group: "uv-ecosystem"
     patterns: ["*"]
@@ -197,20 +232,3 @@ updates:
       # Ignore major updates as most major updates will need manual intervention
       - dependency-name: "*"
         update-types: [ "version-update:semver-major" ]
-  - package-ecosystem: "docker"
-    directory: "/docker"
-    schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "16:00"
-    groups:
-      regclient:
-        patterns:
-          - "regclient/regctl*"
-          - "sigstore/cosign/cosign*"
-  - package-ecosystem: "docker"
-    directory: "/gradle"
-    schedule:
-      interval: "weekly"
-      day: "sunday"
-      time: "16:00"
