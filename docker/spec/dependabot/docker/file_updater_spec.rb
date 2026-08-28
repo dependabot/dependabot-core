@@ -153,7 +153,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
           type: "docker_cooldown_date_unavailable",
           package_manager_name: "docker",
           title: "Docker cooldown was not applied",
-          description: "Cooldown was not applied because the registry did not provide a publication date.",
+          description: "Cooldown could not be applied because no publication date was available from the registry.",
           show_in_pr: true,
           show_alert: false
         )
