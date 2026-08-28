@@ -143,8 +143,8 @@ internal sealed class ProjectBuildFile : XmlBuildFile
         .Where(e =>
             e.Name.Equals("ProjectReference", StringComparison.OrdinalIgnoreCase) ||
             e.Name.Equals("ProjectFile", StringComparison.OrdinalIgnoreCase))
-        .Select(e => e.GetAttributeValueCaseInsensitive("Include"))
-        .OfType<string>()
+        .Select(e => e.GetAttributeValueCaseInsensitive("Include")
+            ?? throw new UnparseableFileException($"`{e.Name}` element missing `Include` attribute", Path))
         .Select(include => PathHelper.GetFullPathFromRelative(System.IO.Path.GetDirectoryName(Path)!, include));
 
     public void NormalizeDirectorySeparatorsInProject()
