@@ -43,7 +43,7 @@ RSpec.describe Dependabot::Bun::FileParser::LockfileParser do
         it "raises a DependencyFileNotSupported error" do
           expect { dependencies }
             .to raise_error(Dependabot::DependencyFileNotSupported) do |error|
-              expect(error.message).to include("Unsupported bun.lock 'lockfileVersion' 2")
+              expect(error.message).to include("Unsupported bun.lock 'lockfileVersion' 4")
               expect(error.message).to include(
                 "supports up to #{Dependabot::Bun::BunPackageManager::MAX_SUPPORTED_LOCKFILE_VERSION}"
               )
@@ -125,6 +125,40 @@ RSpec.describe Dependabot::Bun::FileParser::LockfileParser do
             version: "1.8.1"
           )
           expect(dependencies.length).to eq(17)
+        end
+      end
+
+      context "when dealing with v2 format" do
+        let(:dependency_files) { project_dependency_files("bun/simple_v2") }
+
+        it "parses dependencies properly" do
+          expect(dependencies.find { |d| d.name == "fetch-factory" }).to have_attributes(
+            name: "fetch-factory",
+            version: "0.0.1"
+          )
+          expect(dependencies.find { |d| d.name == "etag" }).to have_attributes(
+            name: "etag",
+            version: "1.8.1"
+          )
+          expect(dependencies.length).to eq(11)
+        end
+      end
+
+      # Bun only writes v3 for projects using nested or version-scoped overrides, which adds a
+      # top-level "overrides" object the parser has to ignore.
+      context "when dealing with v3 format" do
+        let(:dependency_files) { project_dependency_files("bun/simple_v3") }
+
+        it "parses dependencies properly" do
+          expect(dependencies.find { |d| d.name == "fetch-factory" }).to have_attributes(
+            name: "fetch-factory",
+            version: "0.0.1"
+          )
+          expect(dependencies.find { |d| d.name == "node-fetch" }).to have_attributes(
+            name: "node-fetch",
+            version: "1.7.3"
+          )
+          expect(dependencies.length).to eq(11)
         end
       end
 
