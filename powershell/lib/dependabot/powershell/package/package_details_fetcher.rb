@@ -165,9 +165,7 @@ module Dependabot
           ).returns(String)
         end
         def prepare_mar_page_url(next_url, visited_urls, pages)
-          if pages >= MAX_PAGES
-            raise InvalidMarResponse, "Tags feed for #{dependency.name} exceeded #{MAX_PAGES} pages"
-          end
+          raise InvalidMarResponse, "Tags feed for #{dependency.name} exceeded #{MAX_PAGES} pages" if pages >= MAX_PAGES
 
           current_url = URI.join("#{MAR_API_BASE}/", next_url).to_s
           if visited_urls[current_url]
@@ -186,9 +184,7 @@ module Dependabot
         def fetch_mar_tags_page(current_url, first_page:)
           docker_registry_client.doget(current_url)
         rescue DockerRegistry2::NotFound
-          unless first_page
-            raise InvalidMarResponse, "A later tags page was not found for #{dependency.name}"
-          end
+          raise InvalidMarResponse, "A later tags page was not found for #{dependency.name}" unless first_page
 
           Dependabot.logger.info(
             "#{dependency.name} is not available from Microsoft Artifact Registry; " \
