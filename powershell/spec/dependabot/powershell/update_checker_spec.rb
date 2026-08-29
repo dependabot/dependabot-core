@@ -259,6 +259,10 @@ RSpec.describe Dependabot::Powershell::UpdateChecker do
 
         expect(updated.requirement).to eq("= 5.5.2")
         expect(updated.metadata).to include(updated_guid: "17a2feff-488b-47f9-8729-e2cec094624c")
+        expect(updated.source).to eq(
+          type: "registry",
+          url: "https://mcr.microsoft.com"
+        )
       end
     end
 

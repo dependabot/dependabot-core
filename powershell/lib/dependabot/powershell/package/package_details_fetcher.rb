@@ -39,6 +39,14 @@ module Dependabot
         MAR_REPOSITORY_PREFIX = "psresource/"
         MAR_OPEN_TIMEOUT_IN_SECONDS = 2
         MAR_READ_TIMEOUT_IN_SECONDS = 60
+        MAR_SOURCE = T.let(
+          { type: "registry", url: MAR_API_BASE }.freeze,
+          T::Hash[Symbol, String]
+        )
+        PSGALLERY_SOURCE = T.let(
+          { type: "registry", url: PSGALLERY_API_BASE }.freeze,
+          T::Hash[Symbol, String]
+        )
 
         # Defends against pathological/looping feeds. In practice even the
         # most prolific PowerShell Gallery modules have far fewer than this
@@ -65,6 +73,19 @@ module Dependabot
 
         sig { returns(Dependabot::Dependency) }
         attr_reader :dependency
+
+        sig { returns(T::Boolean) }
+        def mar_source?
+          @registry_source == :mar
+        end
+
+        sig { returns(T.nilable(T::Hash[Symbol, String])) }
+        def selected_source
+          return MAR_SOURCE if @registry_source == :mar
+          return PSGALLERY_SOURCE if @registry_source == :psgallery
+
+          nil
+        end
 
         sig { returns(Dependabot::Package::PackageDetails) }
         def fetch
@@ -127,6 +148,10 @@ module Dependabot
               details: { "registry" => "mar" }
             )
           end
+        # Only an initial not-found response proves the module has no MAR
+        # identity. Failing closed on every other error prevents an outage or
+        # malformed response from downgrading a Microsoft module to a
+        # same-named community package.
         rescue DockerRegistry2::Exception, JSON::ParserError, InvalidMarResponse => e
           Dependabot.logger.error(
             "Microsoft Artifact Registry lookup failed for #{dependency.name}; " \

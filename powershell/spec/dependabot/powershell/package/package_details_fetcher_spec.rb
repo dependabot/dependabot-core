@@ -92,6 +92,10 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
           "4.0.0", "5.5.2", "5.6.0-preview"
         )
         expect(releases).to all(satisfy { |release| release.released_at.nil? })
+        expect(fetcher.selected_source).to eq(
+          type: "registry",
+          url: "https://mcr.microsoft.com"
+        )
         expect(a_request(:get, find_packages_by_id_url)).not_to have_been_made
       end
 
@@ -211,6 +215,10 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
 
       it "falls back to the PowerShell Gallery" do
         expect(fetcher.fetch.releases.map { |release| release.version.to_s }).to contain_exactly("5.4.0")
+        expect(fetcher.selected_source).to eq(
+          type: "registry",
+          url: "https://www.powershellgallery.com/api/v2"
+        )
         expect(a_request(:get, mar_tags_url)).to have_been_made.once
         expect(a_request(:get, find_packages_by_id_url)).to have_been_made.once
       end

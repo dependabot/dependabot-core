@@ -25,13 +25,6 @@ RSpec.describe Dependabot::Powershell::FileParser do
     )
   end
 
-  let(:psgallery_source) do
-    {
-      type: "registry",
-      url: "https://www.powershellgallery.com/api/v2"
-    }
-  end
-
   it_behaves_like "a dependency file parser"
 
   describe "parsing a .psd1 module manifest" do
@@ -53,7 +46,7 @@ RSpec.describe Dependabot::Powershell::FileParser do
         [{
           requirement: nil,
           groups: [],
-          source: psgallery_source,
+          source: nil,
           file: "MyModule.psd1",
           metadata: { declaration_type: :required_modules, style: :string }
         }]
@@ -537,7 +530,7 @@ RSpec.describe Dependabot::Powershell::FileParser do
         [{
           requirement: nil,
           groups: [],
-          source: psgallery_source,
+          source: nil,
           file: "Deploy.ps1",
           metadata: { declaration_type: :requires_directive, style: :string }
         }]

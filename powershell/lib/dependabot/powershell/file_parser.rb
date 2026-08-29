@@ -20,15 +20,6 @@ module Dependabot
       require_relative "file_parser/using_module_parser"
       require_relative "file_parser/psd1_manifest_parser"
 
-      # The only registry currently supported for PowerShell module resolution.
-      PSGALLERY_SOURCE = T.let(
-        {
-          type: "registry",
-          url: "https://www.powershellgallery.com/api/v2"
-        }.freeze,
-        T::Hash[Symbol, String]
-      )
-
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
         dependency_set = DependencySet.new
@@ -64,7 +55,7 @@ module Dependabot
           requirements: [{
             requirement: declaration.requirement,
             groups: [],
-            source: PSGALLERY_SOURCE,
+            source: nil,
             file: file.name,
             metadata: declaration.metadata
           }],

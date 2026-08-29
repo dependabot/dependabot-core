@@ -51,7 +51,7 @@ module Dependabot
         ).updated_requirements
 
         wrap_requirements(
-          requirements_with_updated_guid(requirements)
+          requirements_with_selected_source(requirements_with_updated_guid(requirements))
         )
       end
 
@@ -126,6 +126,19 @@ module Dependabot
           Dependabot::DependencyRequirement.create(
             requirement.merge(metadata: metadata.merge(updated_guid: target_guid))
           )
+        end
+      end
+
+      sig do
+        params(requirements: T::Array[Dependabot::DependencyRequirement])
+          .returns(T::Array[Dependabot::DependencyRequirement])
+      end
+      def requirements_with_selected_source(requirements)
+        selected_source = latest_version_finder.selected_source
+        return requirements unless selected_source
+
+        requirements.map do |requirement|
+          Dependabot::DependencyRequirement.create(requirement.merge(source: selected_source))
         end
       end
 
