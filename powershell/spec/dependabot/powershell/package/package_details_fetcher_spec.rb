@@ -28,6 +28,11 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
   let(:manifest_url) do
     "https://www.powershellgallery.com/packages/Pester/5.4.0/Content/Pester.psd1"
   end
+  let(:mar_tags_url) { "https://mcr.microsoft.com/v2/psresource/#{dependency.name.downcase}/tags/list" }
+
+  before do
+    stub_request(:get, mar_tags_url).to_return(status: 404, body: "")
+  end
 
   def entry_xml(version:, published: "2023-05-01T12:00:00", prerelease: "false")
     <<~XML
@@ -56,6 +61,98 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
   end
 
   describe "#fetch" do
+    context "when the module is available from Microsoft Artifact Registry" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Az.Accounts",
+          requirements: [{
+            requirement: "= 4.0.0",
+            groups: [],
+            source: { type: "registry", url: "https://www.powershellgallery.com/api/v2" },
+            file: "module.psd1"
+          }],
+          package_manager: "powershell"
+        )
+      end
+
+      before do
+        stub_request(:get, mar_tags_url).to_return(
+          status: 200,
+          body: JSON.dump(
+            "name" => "psresource/az.accounts",
+            "tags" => ["4.0.0", "5.5.2", "5.6.0-preview", "not-a-version"]
+          )
+        )
+      end
+
+      it "uses the lowercased MAR repository as the authoritative source" do
+        releases = fetcher.fetch.releases
+
+        expect(releases.map { |release| release.version.to_s }).to contain_exactly(
+          "4.0.0", "5.5.2", "5.6.0-preview"
+        )
+        expect(releases).to all(satisfy { |release| release.released_at.nil? })
+        expect(a_request(:get, find_packages_by_id_url)).not_to have_been_made
+      end
+
+      it "extracts the module GUID from the selected MAR manifest" do
+        metadata = {
+          "ModuleVersion" => "5.5.2",
+          "GUID" => "17a2feff-488b-47f9-8729-e2cec094624c"
+        }
+        stub_request(
+          :get,
+          "https://mcr.microsoft.com/v2/psresource/az.accounts/manifests/5.5.2"
+        ).to_return(
+          status: 200,
+          body: JSON.dump(
+            "schemaVersion" => 2,
+            "mediaType" => "application/vnd.oci.image.manifest.v1+json",
+            "config" => {
+              "mediaType" => "application/vnd.oci.image.config.v1+json",
+              "digest" => "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "size" => 0
+            },
+            "layers" => [{
+              "mediaType" => "application/vnd.oci.image.layer.v1.tar+gzip",
+              "digest" => "sha256:4465339b2c52cb19d0cb6ee16467076cd7f32633e9195df675373eb81e0e8cca",
+              "size" => 10_201_874,
+              "annotations" => { "metadata" => JSON.dump(metadata) }
+            }]
+          ),
+          headers: { "Content-Type" => "application/vnd.oci.image.manifest.v1+json" }
+        )
+
+        fetcher.fetch
+
+        expect(fetcher.manifest_guid_for("5.5.2")).to eq("17a2feff-488b-47f9-8729-e2cec094624c")
+      end
+    end
+
+    context "when the module is absent from Microsoft Artifact Registry" do
+      before do
+        body = feed_xml(entries: [entry_xml(version: "5.4.0")])
+        stub_request(:get, find_packages_by_id_url).to_return(status: 200, body: body)
+      end
+
+      it "falls back to the PowerShell Gallery" do
+        expect(fetcher.fetch.releases.map { |release| release.version.to_s }).to contain_exactly("5.4.0")
+        expect(a_request(:get, mar_tags_url)).to have_been_made.once
+        expect(a_request(:get, find_packages_by_id_url)).to have_been_made.once
+      end
+    end
+
+    context "when Microsoft Artifact Registry fails after finding the repository" do
+      before do
+        stub_request(:get, mar_tags_url).to_return(status: 500, body: "")
+      end
+
+      it "does not downgrade to the PowerShell Gallery" do
+        expect(fetcher.fetch.releases).to eq([])
+        expect(a_request(:get, find_packages_by_id_url)).not_to have_been_made
+      end
+    end
+
     context "when the feed returns a single page of releases" do
       before do
         body = feed_xml(

@@ -47,6 +47,7 @@ RSpec.describe Dependabot::Powershell::UpdateChecker::LatestVersionFinder do
   let(:find_packages_by_id_url) do
     "https://www.powershellgallery.com/api/v2/FindPackagesById()?id=%27Pester%27"
   end
+  let(:mar_tags_url) { "https://mcr.microsoft.com/v2/psresource/pester/tags/list" }
 
   def entry_xml(version:, published: "2023-05-01T12:00:00", prerelease: "false")
     <<~XML
@@ -70,6 +71,7 @@ RSpec.describe Dependabot::Powershell::UpdateChecker::LatestVersionFinder do
   end
 
   before do
+    stub_request(:get, mar_tags_url).to_return(status: 404, body: "")
     body = feed_xml(
       entries: [
         entry_xml(version: "5.4.0"),

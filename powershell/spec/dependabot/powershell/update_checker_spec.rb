@@ -26,6 +26,7 @@ RSpec.describe Dependabot::Powershell::UpdateChecker do
   let(:latest_manifest_url) do
     "https://www.powershellgallery.com/packages/Pester/5.4.0/Content/Pester.psd1"
   end
+  let(:mar_tags_url) { "https://mcr.microsoft.com/v2/psresource/#{dependency.name.downcase}/tags/list" }
   let(:available_versions) { %w(5.4.0 5.3.3) }
   let(:dependency_requirement) { "= 5.3.3" }
   let(:requirements) do
@@ -51,6 +52,7 @@ RSpec.describe Dependabot::Powershell::UpdateChecker do
   let(:ignored_versions) { [] }
 
   before do
+    stub_request(:get, mar_tags_url).to_return(status: 404, body: "")
     body = feed_xml(
       entries: available_versions.map { |version| entry_xml(version:) }
     )
@@ -197,6 +199,66 @@ RSpec.describe Dependabot::Powershell::UpdateChecker do
 
       it "does not add a GUID update to the requirement metadata" do
         expect(checker.updated_requirements.first.metadata).not_to have_key(:updated_guid)
+      end
+    end
+
+    context "when a GUID-qualified dependency is available from Microsoft Artifact Registry" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Az.Accounts",
+          version: "4.0.0",
+          requirements: [{
+            requirement: "= 4.0.0",
+            groups: [],
+            source: source,
+            file: "module.psd1",
+            metadata: {
+              version_key: "RequiredVersion",
+              guid: "11111111-1111-1111-1111-111111111111"
+            }
+          }],
+          package_manager: "powershell"
+        )
+      end
+
+      before do
+        stub_request(:get, mar_tags_url).to_return(
+          status: 200,
+          body: JSON.dump("name" => "psresource/az.accounts", "tags" => ["4.0.0", "5.5.2"])
+        )
+        stub_request(
+          :get,
+          "https://mcr.microsoft.com/v2/psresource/az.accounts/manifests/5.5.2"
+        ).to_return(
+          status: 200,
+          body: JSON.dump(
+            "schemaVersion" => 2,
+            "mediaType" => "application/vnd.oci.image.manifest.v1+json",
+            "config" => {
+              "mediaType" => "application/vnd.oci.image.config.v1+json",
+              "digest" => "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "size" => 0
+            },
+            "layers" => [{
+              "mediaType" => "application/vnd.oci.image.layer.v1.tar+gzip",
+              "digest" => "sha256:4465339b2c52cb19d0cb6ee16467076cd7f32633e9195df675373eb81e0e8cca",
+              "size" => 10_201_874,
+              "annotations" => {
+                "metadata" => JSON.dump(
+                  "ModuleVersion" => "5.5.2",
+                  "GUID" => "17a2feff-488b-47f9-8729-e2cec094624c"
+                )
+              }
+            }]
+          )
+        )
+      end
+
+      it "updates the version and GUID from the same MAR source" do
+        updated = checker.updated_requirements.first
+
+        expect(updated.requirement).to eq("= 5.5.2")
+        expect(updated.metadata).to include(updated_guid: "17a2feff-488b-47f9-8729-e2cec094624c")
       end
     end
 
