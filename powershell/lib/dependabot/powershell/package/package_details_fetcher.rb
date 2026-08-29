@@ -31,6 +31,8 @@ module Dependabot
       class PackageDetailsFetcher
         extend T::Sig
 
+        class InvalidMarResponse < StandardError; end
+
         PSGALLERY_API_BASE = "https://www.powershellgallery.com/api/v2"
         MAR_API_BASE = "https://mcr.microsoft.com"
         MAR_REPOSITORY_PREFIX = "psresource/"
@@ -109,32 +111,7 @@ module Dependabot
         sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
         def fetch_mar_package_releases
           Dependabot.logger.info("Fetching package (Microsoft Artifact Registry) info for #{dependency.name}")
-          response = docker_registry_client.tags(mar_repository_name, auto_paginate: true)
-          unless response.is_a?(Hash)
-            Dependabot.logger.error(
-              "Microsoft Artifact Registry returned an invalid response for #{dependency.name}"
-            )
-            return []
-          end
-
-          tags = response["tags"]
-
-          if tags.nil?
-            Dependabot.logger.error(
-              "Microsoft Artifact Registry returned no tags collection for #{dependency.name}"
-            )
-            return []
-          end
-
-          unless tags.is_a?(Array)
-            Dependabot.logger.error(
-              "Microsoft Artifact Registry returned an invalid tags collection for #{dependency.name}"
-            )
-            return []
-          end
-
-          tags.filter_map do |tag|
-            next unless tag.is_a?(String)
+          fetch_mar_tags.filter_map do |tag|
             next unless Powershell::Version.correct?(tag)
 
             Dependabot::Package::PackageRelease.new(
@@ -151,12 +128,29 @@ module Dependabot
             "#{dependency.name} is not available from Microsoft Artifact Registry; falling back to PowerShell Gallery"
           )
           nil
-        rescue DockerRegistry2::Exception, JSON::ParserError => e
+        rescue DockerRegistry2::Exception, JSON::ParserError, InvalidMarResponse => e
           Dependabot.logger.error(
             "Microsoft Artifact Registry lookup failed for #{dependency.name}; " \
             "PowerShell Gallery fallback is disabled for this failure: #{e.message}"
           )
           []
+        end
+
+        sig { returns(T::Array[String]) }
+        def fetch_mar_tags
+          tags = T.let([], T::Array[String])
+
+          docker_registry_client.paginate_doget("v2/#{mar_repository_name}/tags/list") do |response|
+            page = JSON.parse(response.body)
+            page_tags = page["tags"] if page.is_a?(Hash)
+            unless page_tags.is_a?(Array) && page_tags.all? { |tag| tag.is_a?(String) }
+              raise InvalidMarResponse, "Invalid tags response for #{dependency.name}"
+            end
+
+            tags.concat(T.cast(page_tags, T::Array[String]))
+          end
+
+          tags.uniq
         end
 
         sig { returns(T::Array[Dependabot::Package::PackageRelease]) }

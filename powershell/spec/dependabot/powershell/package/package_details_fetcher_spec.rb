@@ -127,6 +127,26 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
 
         expect(fetcher.manifest_guid_for("5.5.2")).to eq("17a2feff-488b-47f9-8729-e2cec094624c")
       end
+
+      context "when the tags response is paginated" do
+        before do
+          stub_request(:get, mar_tags_url).to_return(
+            status: 200,
+            body: JSON.dump("name" => "psresource/az.accounts", "tags" => ["4.0.0"]),
+            headers: {
+              "Link" => '</v2/psresource/az.accounts/tags/list?last=4.0.0>; rel="next"'
+            }
+          )
+          stub_request(:get, "#{mar_tags_url}?last=4.0.0").to_return(
+            status: 200,
+            body: JSON.dump("name" => "psresource/az.accounts", "tags" => ["5.5.2"])
+          )
+        end
+
+        it "combines every page before selecting releases" do
+          expect(fetcher.fetch.releases.map { |release| release.version.to_s }).to contain_exactly("4.0.0", "5.5.2")
+        end
+      end
     end
 
     context "when the module is absent from Microsoft Artifact Registry" do
