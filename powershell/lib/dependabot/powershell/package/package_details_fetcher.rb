@@ -140,7 +140,7 @@ module Dependabot
           tags = T.let([], T::Array[String])
           next_url = T.let("v2/#{mar_repository_name}/tags/list", T.nilable(String))
           visited_urls = T.let({}, T::Hash[String, T::Boolean])
-          first_page = true
+          first_page = T.let(true, T::Boolean)
           pages = 0
 
           while next_url
@@ -167,12 +167,14 @@ module Dependabot
             end
 
             page = JSON.parse(response.body)
-            page_tags = page["tags"] if page.is_a?(Hash)
+            raise InvalidMarResponse, "Invalid tags response for #{dependency.name}" unless page.is_a?(Hash)
+
+            page_tags = page["tags"]
             unless page_tags.is_a?(Array) && page_tags.all? { |tag| tag.is_a?(String) }
               raise InvalidMarResponse, "Invalid tags response for #{dependency.name}"
             end
 
-            tags.concat(T.cast(page_tags, T::Array[String]))
+            tags.concat(page_tags)
             next_url = mar_next_page_url(response)
             first_page = false
             pages += 1
