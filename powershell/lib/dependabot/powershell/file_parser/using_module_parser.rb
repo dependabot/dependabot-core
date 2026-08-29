@@ -68,7 +68,7 @@ module Dependabot
           return if text.empty?
 
           start_index = value_start
-          start_index += 1 while start_index < line_end && T.must(content[start_index]).match?(/[ \t]/)
+          start_index += 1 while start_index < end_index && T.must(content[start_index]).match?(/[ \t]/)
 
           Statement.new(
             text: text,
