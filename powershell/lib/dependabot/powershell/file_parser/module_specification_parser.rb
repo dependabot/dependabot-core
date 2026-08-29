@@ -3,7 +3,7 @@
 
 require "sorbet-runtime"
 require "dependabot/powershell/file_parser"
-require "dependabot/powershell/version"
+require "dependabot/powershell/module_specification_version"
 
 module Dependabot
   module Powershell
@@ -130,9 +130,9 @@ module Dependabot
           return nil unless valid_version_fields?(module_version, maximum_version, required_version)
 
           requirement, version = build_requirement(
-            module_version,
+            normalized_version(module_version),
             normalized_maximum_version(maximum_version),
-            required_version
+            normalized_version(required_version)
           )
           metadata = T.let(
             {
@@ -219,14 +219,13 @@ module Dependabot
         end
 
         # Returns true when `version` is nil (field not supplied) or is a
-        # well-formed version string per Powershell::Version's semver-based
-        # validation.
+        # well-formed System.Version value.
         sig { params(version: T.nilable(String)).returns(T::Boolean) }
         def self.valid_version?(version)
           return true if version.nil?
           return false if version.empty?
 
-          Version.correct?(version)
+          !normalized_version(version).nil?
         end
 
         sig { params(version: T.nilable(String)).returns(T::Boolean) }
@@ -234,21 +233,28 @@ module Dependabot
           return true if version.nil?
           return false if version.empty?
 
-          normalized = normalized_maximum_version(version)
-          !normalized.nil? && Version.correct?(normalized)
+          !normalized_maximum_version(version).nil?
+        end
+
+        sig { params(version: T.nilable(String)).returns(T.nilable(String)) }
+        def self.normalized_version(version)
+          return if version.nil?
+
+          ModuleSpecificationVersion.normalize(version)
         end
 
         # PowerShell expands a trailing MaximumVersion wildcard to four
         # numeric components before comparing versions.
         sig { params(version: T.nilable(String)).returns(T.nilable(String)) }
         def self.normalized_maximum_version(version)
-          return version unless version&.end_with?("*")
+          return if version.nil?
+          return normalized_version(version) unless version.end_with?("*")
 
           expanded = "#{version.delete_suffix('*')}#{MAXIMUM_VERSION_SEGMENT}"
           missing_segments = 3 - expanded.count(".")
           return nil if missing_segments.negative?
 
-          expanded + (".#{MAXIMUM_VERSION_SEGMENT}" * missing_segments)
+          normalized_version(expanded + (".#{MAXIMUM_VERSION_SEGMENT}" * missing_segments))
         end
 
         # Returns true only if every supplied (non-nil) version field is

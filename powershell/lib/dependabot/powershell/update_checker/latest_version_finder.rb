@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/errors"
 require "dependabot/package/package_latest_version_finder"
+require "dependabot/powershell/module_specification_version"
 require "dependabot/powershell/package/package_details_fetcher"
 require "dependabot/powershell/requirement"
 require "dependabot/powershell/update_checker"
@@ -32,6 +33,20 @@ module Dependabot
         sig { returns(T.nilable(T::Hash[Symbol, String])) }
         def selected_source
           package_details_fetcher.selected_source
+        end
+
+        sig { returns(T.nilable(Dependabot::Version)) }
+        def latest_declaration_version
+          releases = available_versions
+          return unless releases
+
+          releases = filter_yanked_versions(releases)
+          releases = filter_by_cooldown(releases)
+          releases = filter_unsupported_versions(releases, nil)
+          releases = filter_prerelease_versions(releases)
+          releases = filter_ignored_versions(releases)
+          releases = filter_module_specification_versions(releases)
+          releases.max { |left, right| compare_module_specification_releases(left, right) }&.version
         end
 
         protected
@@ -89,6 +104,8 @@ module Dependabot
                   .returns(T::Array[Dependabot::Package::PackageRelease])
         end
         def apply_post_fetch_lowest_security_fix_versions_filter(releases)
+          releases = filter_module_specification_versions(releases)
+
           floor = module_version_floor
           return releases unless floor
 
@@ -96,6 +113,29 @@ module Dependabot
         end
 
         private
+
+        sig do
+          params(releases: T::Array[Dependabot::Package::PackageRelease])
+            .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def filter_module_specification_versions(releases)
+          releases.select { |release| ModuleSpecificationVersion.parse(release.version.to_s) }
+        end
+
+        sig do
+          params(
+            left: Dependabot::Package::PackageRelease,
+            right: Dependabot::Package::PackageRelease
+          ).returns(Integer)
+        end
+        def compare_module_specification_releases(left, right)
+          left_version = left.to_s
+          right_version = right.to_s
+          comparison = T.must(ModuleSpecificationVersion.compare(left_version, right_version))
+          return comparison unless comparison.zero?
+
+          T.must(left_version <=> right_version)
+        end
 
         sig { returns(Dependabot::Powershell::Package::PackageDetailsFetcher) }
         def package_details_fetcher

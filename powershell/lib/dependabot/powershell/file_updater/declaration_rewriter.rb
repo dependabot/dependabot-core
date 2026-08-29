@@ -5,6 +5,7 @@ require "sorbet-runtime"
 require "dependabot/dependency_requirement"
 require "dependabot/powershell/file_updater"
 require "dependabot/powershell/file_updater/declaration_locator"
+require "dependabot/powershell/module_specification_version"
 
 module Dependabot
   module Powershell
@@ -172,8 +173,13 @@ module Dependabot
         def matching_change(changes, version_key, current_value)
           changes.find do |previous, _|
             previous_requirement = previous.requirement
-            previous_requirement.is_a?(String) &&
-              previous_version(previous, version_key) == current_value
+            next false unless previous_requirement.is_a?(String)
+
+            expected_value = previous_version(previous, version_key)
+            next false unless expected_value
+            next true if expected_value == current_value
+
+            ModuleSpecificationVersion.compare(expected_value, current_value)&.zero?
           end
         end
 

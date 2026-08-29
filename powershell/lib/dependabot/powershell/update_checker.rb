@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
+require "dependabot/powershell/module_specification_version"
 
 module Dependabot
   module Powershell
@@ -22,10 +23,9 @@ module Dependabot
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
       def latest_resolvable_version
         # The PowerShell Gallery has no dependency-resolution step of its
-        # own (module manifests don't pin transitive dependency versions in
-        # a way that requires a native resolver), so the latest version is
-        # always resolvable.
-        latest_version
+        # own. A release is resolvable for this updater only when it can also
+        # be represented in the native module specification being rewritten.
+        latest_version_finder.latest_declaration_version
       end
 
       sig { override.returns(T.nilable(T.any(String, Gem::Version))) }
@@ -41,6 +41,26 @@ module Dependabot
       sig { override.returns(T.nilable(Gem::Version)) }
       def lowest_resolvable_security_fix_version
         lowest_security_fix_version
+      end
+
+      sig do
+        override
+          .params(_updated_version: T.any(String, Gem::Version))
+          .returns(T.nilable(T.any(String, Gem::Version)))
+      end
+      def latest_resolvable_previous_version(_updated_version)
+        return dependency.version if dependency.version
+
+        updated = updated_requirements
+        previous_versions = dependency.requirements.each_with_index.filter_map do |requirement, index|
+          updated_requirement = updated[index]
+          next unless updated_requirement
+          next if requirement.requirement == updated_requirement.requirement
+
+          previous_requirement_version(requirement)
+        end.uniq
+
+        previous_versions.one? ? previous_versions.first : nil
       end
 
       sig { override.returns(T::Array[Dependabot::DependencyRequirement]) }
@@ -59,7 +79,15 @@ module Dependabot
 
       sig { override.returns(T::Boolean) }
       def version_up_to_date?
-        return latest_version.to_s == T.must(dependency.version) if exact_pin?
+        if exact_pin?
+          current_version = T.must(dependency.version)
+          candidate_version = latest_resolvable_version.to_s
+          comparison = ModuleSpecificationVersion.compare(current_version, candidate_version)
+
+          return comparison.zero? if comparison
+
+          return candidate_version == current_version
+        end
 
         super
       end
@@ -76,6 +104,24 @@ module Dependabot
           original = dependency.requirements[index]
           original && updated.requirement == original.requirement
         end
+      end
+
+      sig { override.params(requirements_to_unlock: T.nilable(Symbol)).returns(T::Boolean) }
+      def version_can_update?(requirements_to_unlock:)
+        if exact_pin? && requirements_to_unlock&.to_sym == :own
+          target_version = preferred_resolvable_version
+          current_version = dependency.version
+          comparison = ModuleSpecificationVersion.compare(target_version.to_s, current_version.to_s)
+
+          if comparison
+            requirements_updatable = updated_requirements.none? do |requirement|
+              requirement.requirement == :unfixable
+            end
+            return comparison.positive? && requirements_updatable
+          end
+        end
+
+        super
       end
 
       sig { override.returns(T::Boolean) }
@@ -162,6 +208,21 @@ module Dependabot
       def exact_pin?
         dependency.requirements.any? do |requirement|
           requirement.metadata&.fetch(:version_key, nil) == "RequiredVersion"
+        end
+      end
+
+      sig { params(requirement: Dependabot::DependencyRequirement).returns(T.nilable(String)) }
+      def previous_requirement_version(requirement)
+        requirement_string = requirement.requirement
+        version_key = requirement.metadata&.fetch(:version_key, nil)
+        return unless requirement_string.is_a?(String) && version_key.is_a?(String)
+
+        case version_key
+        when "ModuleVersion"
+          requirement_string.delete_prefix(">=").strip
+        when "MaximumVersion", "ModuleVersion+MaximumVersion"
+          maximum = requirement_string.split(",").map(&:strip).find { |constraint| constraint.start_with?("<=") }
+          maximum&.delete_prefix("<=")&.strip
         end
       end
     end

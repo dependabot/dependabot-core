@@ -162,6 +162,47 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
       end
     end
 
+    context "when a normalized RequiredVersion pin is bumped" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "LeadingZero.psd1",
+            content: <<~POWERSHELL
+              @{
+                ModuleVersion = '1.0.0'
+                RequiredModules = @(
+                  @{ ModuleName = 'Az.Exact'; RequiredVersion = '01.02' }
+                )
+              }
+            POWERSHELL
+          )
+        ]
+      end
+
+      let(:dependencies) do
+        [
+          build_dependency(
+            name: "Az.Exact",
+            version: "2.0",
+            previous_version: "1.2",
+            requirements: [
+              hashtable_requirement("= 2.0", file: "LeadingZero.psd1", version_key: "RequiredVersion")
+            ],
+            previous_requirements: [
+              hashtable_requirement("= 1.2", file: "LeadingZero.psd1", version_key: "RequiredVersion")
+            ]
+          )
+        ]
+      end
+
+      it "matches and rewrites the original noncanonical literal" do
+        content = updater.updated_dependency_files.first.content
+
+        expect(content).to include("RequiredVersion = '2.0'")
+        expect(content).not_to include("RequiredVersion = '01.02'")
+      end
+    end
+
     context "when a ModuleVersion minimum is bumped" do
       let(:dependencies) do
         [

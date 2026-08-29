@@ -4,6 +4,7 @@
 require "sorbet-runtime"
 
 require "dependabot/dependency_requirement"
+require "dependabot/powershell/module_specification_version"
 require "dependabot/powershell/requirement"
 require "dependabot/powershell/update_checker"
 require "dependabot/powershell/version"
@@ -80,7 +81,8 @@ module Dependabot
           requirement_string = requirement.requirement
           return requirement unless requirement_string.is_a?(String)
 
-          version_key = requirement.metadata&.fetch(:version_key, nil)
+          raw_version_key = requirement.metadata&.fetch(:version_key, nil)
+          version_key = raw_version_key.is_a?(String) ? raw_version_key : nil
 
           # A bare minimum-version constraint (ModuleVersion with no
           # MaximumVersion) is always "satisfied" by any newer version, so
@@ -88,7 +90,10 @@ module Dependabot
           # its original floor forever. Skip that shortcut for this style
           # so the floor is bumped to track the latest resolvable version,
           # same as every other declaration style.
-          return requirement if version_key != "ModuleVersion" && satisfied_by_latest_version?(requirement_string)
+          if version_key != "ModuleVersion" &&
+             satisfied_by_latest_version?(requirement_string, version_key)
+            return requirement
+          end
 
           new_requirement_string = build_new_requirement_string(requirement_string, requirement.metadata)
           return requirement if new_requirement_string.nil? || new_requirement_string == requirement_string
@@ -96,11 +101,56 @@ module Dependabot
           Dependabot::DependencyRequirement.create(requirement.merge(requirement: new_requirement_string))
         end
 
-        sig { params(requirement_string: String).returns(T::Boolean) }
-        def satisfied_by_latest_version?(requirement_string)
+        sig { params(requirement_string: String, version_key: T.nilable(String)).returns(T::Boolean) }
+        def satisfied_by_latest_version?(requirement_string, version_key)
+          native_result = module_specification_satisfaction(requirement_string, version_key)
+          return native_result unless native_result.nil?
+
           Requirement.requirements_array(requirement_string).all? do |requirement|
             requirement.satisfied_by?(latest_version)
           end
+        end
+
+        sig do
+          params(requirement_string: String, version_key: T.nilable(String)).returns(T.nilable(T::Boolean))
+        end
+        def module_specification_satisfaction(requirement_string, version_key)
+          target = latest_version
+          return unless target
+
+          case version_key
+          when "RequiredVersion"
+            current = requirement_string.delete_prefix("=").strip
+            comparison = ModuleSpecificationVersion.compare(target.to_s, current)
+            comparison&.zero?
+          when "MaximumVersion"
+            current = requirement_string.delete_prefix("<=").strip
+            comparison = ModuleSpecificationVersion.compare(target.to_s, current)
+            return unless comparison
+
+            comparison <= 0
+          when "ModuleVersion+MaximumVersion"
+            range_satisfaction(requirement_string, target.to_s)
+          end
+        end
+
+        sig { params(requirement_string: String, target: String).returns(T.nilable(T::Boolean)) }
+        def range_satisfaction(requirement_string, target)
+          minimum_comparison = bound_comparison(requirement_string, ">=", target)
+          maximum_comparison = bound_comparison(requirement_string, "<=", target)
+          return unless minimum_comparison && maximum_comparison
+
+          0.between?(maximum_comparison, minimum_comparison)
+        end
+
+        sig do
+          params(requirement_string: String, operator: String, target: String).returns(T.nilable(Integer))
+        end
+        def bound_comparison(requirement_string, operator, target)
+          constraint = requirement_string.split(",").map(&:strip).find { |item| item.start_with?(operator) }
+          return unless constraint
+
+          ModuleSpecificationVersion.compare(target, constraint.delete_prefix(operator).strip)
         end
 
         sig do
@@ -139,7 +189,7 @@ module Dependabot
           return nil unless Version.correct?(current_minimum)
 
           target_version = latest_version
-          return nil unless target_version && target_version > Version.new(current_minimum)
+          return nil unless target_version && newer_than_declaration?(target_version, current_minimum)
 
           ">= #{target_version}"
         end
@@ -163,9 +213,17 @@ module Dependabot
           return nil unless Version.correct?(current_maximum)
 
           target_version = latest_version
-          return nil unless target_version && target_version > Version.new(current_maximum)
+          return nil unless target_version && newer_than_declaration?(target_version, current_maximum)
 
           "#{minimum_constraint}, <= #{target_version}"
+        end
+
+        sig { params(target: Dependabot::Version, declaration: String).returns(T::Boolean) }
+        def newer_than_declaration?(target, declaration)
+          comparison = ModuleSpecificationVersion.compare(target.to_s, declaration)
+          return comparison.positive? if comparison
+
+          target > Version.new(declaration)
         end
       end
     end

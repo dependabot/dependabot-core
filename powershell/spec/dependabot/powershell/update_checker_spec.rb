@@ -6,6 +6,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/credential"
 require "dependabot/security_advisory"
+require "dependabot/config/ignore_condition"
 require "dependabot/powershell/update_checker"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
@@ -93,6 +94,55 @@ RSpec.describe Dependabot::Powershell::UpdateChecker do
     it "matches the latest version, since PowerShell has no separate resolution step" do
       expect(checker.latest_resolvable_version.to_s).to eq("5.4.0")
     end
+
+    context "when the latest registry release is not representable in a module specification" do
+      let(:available_versions) { ["2.0.0.0.1", "1.5.0", "1.0.0"] }
+      let(:dependency_version) { "1.0.0" }
+      let(:dependency_requirement) { "= 1.0.0" }
+
+      it "preserves registry discovery and selects the highest representable update candidate" do
+        expect(checker.latest_version.to_s).to eq("2.0.0.0.1")
+        expect(checker.latest_resolvable_version.to_s).to eq("1.5.0")
+
+        updated_dependency = checker.updated_dependencies(requirements_to_unlock: :own).first
+        expect(updated_dependency).to have_attributes(version: "1.5.0", previous_version: "1.0.0")
+        expect(updated_dependency.requirements.first.requirement).to eq("= 1.5.0")
+      end
+    end
+
+    context "when no registry release is representable in a module specification" do
+      let(:available_versions) { ["2.0.0.0.1"] }
+      let(:dependency_version) { "1.0.0" }
+      let(:dependency_requirement) { "= 1.0.0" }
+
+      it "does not emit an invalid native declaration update" do
+        expect(checker.latest_version.to_s).to eq("2.0.0.0.1")
+        expect(checker.latest_resolvable_version).to be_nil
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+        expect(checker.updated_dependencies(requirements_to_unlock: :own)).to be_empty
+      end
+    end
+
+    context "when representable releases are equal under registry SemVer but not native comparison" do
+      let(:dependency_version) { "1.1" }
+      let(:dependency_requirement) { "= 1.1" }
+
+      it "selects the longer native version regardless of registry order" do
+        [%w(1.2 1.2.0), %w(1.2.0 1.2)].each do |versions|
+          body = feed_xml(entries: versions.map { |version| entry_xml(version: version) })
+          stub_request(:get, find_packages_by_id_url).to_return(status: 200, body: body)
+          fresh_checker = described_class.new(
+            dependency: dependency,
+            dependency_files: [],
+            credentials: [],
+            ignored_versions: ignored_versions,
+            security_advisories: security_advisories
+          )
+
+          expect(fresh_checker.latest_resolvable_version.to_s).to eq("1.2.0")
+        end
+      end
+    end
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do
@@ -116,6 +166,56 @@ RSpec.describe Dependabot::Powershell::UpdateChecker do
 
     it "returns the lowest non-vulnerable version" do
       expect(checker.lowest_security_fix_version.to_s).to eq("5.4.0")
+    end
+
+    context "when the first safe release is a prerelease" do
+      let(:dependency_version) { "1.0.0" }
+      let(:dependency_requirement) { "= 1.0.0" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: "Pester",
+            package_manager: "powershell",
+            vulnerable_versions: ["<= 1.0.0"]
+          )
+        ]
+      end
+
+      before do
+        body = feed_xml(
+          entries: [
+            entry_xml(version: "1.0.0"),
+            entry_xml(version: "1.1.0-beta1", prerelease: "true"),
+            entry_xml(version: "1.1.0")
+          ]
+        )
+        stub_request(:get, find_packages_by_id_url).to_return(status: 200, body: body)
+      end
+
+      it "selects and writes the first safe native declaration version" do
+        expect(checker.lowest_security_fix_version.to_s).to eq("1.1.0")
+
+        updated_dependency = checker.updated_dependencies(requirements_to_unlock: :own).first
+        expect(updated_dependency).to have_attributes(version: "1.1.0", previous_version: "1.0.0")
+        expect(updated_dependency.requirements.first.requirement).to eq("= 1.1.0")
+      end
+
+      context "when no safe release is representable in a module specification" do
+        before do
+          body = feed_xml(
+            entries: [
+              entry_xml(version: "1.0.0"),
+              entry_xml(version: "1.1.0-beta1", prerelease: "true")
+            ]
+          )
+          stub_request(:get, find_packages_by_id_url).to_return(status: 200, body: body)
+        end
+
+        it "does not emit an invalid native declaration update" do
+          expect(checker.lowest_security_fix_version).to be_nil
+          expect(checker.updated_dependencies(requirements_to_unlock: :own)).to be_empty
+        end
+      end
     end
   end
 
@@ -305,6 +405,93 @@ RSpec.describe Dependabot::Powershell::UpdateChecker do
       it "is not up to date" do
         expect(checker.up_to_date?).to be(false)
       end
+
+      it "can update by unlocking its own requirement" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+      end
+
+      it "returns the padded version and requirement through the public update path" do
+        expect(checker.updated_requirements.first.requirement).to eq("= 0.12.0")
+
+        updated_dependency = checker.updated_dependencies(requirements_to_unlock: :own).first
+        expect(updated_dependency).to have_attributes(
+          version: "0.12.0",
+          previous_version: "0.12"
+        )
+        expect(updated_dependency.requirements.first.requirement).to eq("= 0.12.0")
+      end
+    end
+
+    context "when registry ordering treats native versions as equal" do
+      it "uses the native-sorted candidate for freshness regardless of release order" do
+        [%w(1.2 1.2.0), %w(1.2.0 1.2)].each do |versions|
+          body = feed_xml(entries: versions.map { |version| entry_xml(version: version) })
+          stub_request(:get, find_packages_by_id_url).to_return(status: 200, body: body)
+
+          current_checker = described_class.new(
+            dependency: Dependabot::Dependency.new(
+              name: "Pester",
+              version: "1.2.0",
+              requirements: [requirements.first.merge(requirement: "= 1.2.0")],
+              package_manager: "powershell"
+            ),
+            dependency_files: [],
+            credentials: [],
+            ignored_versions: [],
+            security_advisories: []
+          )
+          update_checker = described_class.new(
+            dependency: Dependabot::Dependency.new(
+              name: "Pester",
+              version: "1.2",
+              requirements: [requirements.first.merge(requirement: "= 1.2")],
+              package_manager: "powershell"
+            ),
+            dependency_files: [],
+            credentials: [],
+            ignored_versions: [],
+            security_advisories: []
+          )
+
+          expect(current_checker.up_to_date?).to be(true)
+          expect(current_checker.updated_dependencies(requirements_to_unlock: :own)).to be_empty
+          expect(update_checker.up_to_date?).to be(false)
+          expect(update_checker.updated_dependencies(requirements_to_unlock: :own).first.version).to eq("1.2.0")
+        end
+      end
+    end
+
+    context "when patch updates are ignored" do
+      let(:available_versions) { %w(1.2 1.2.0) }
+      let(:dependency_version) { "1.2" }
+      let(:dependency_requirement) { "= 1.2" }
+      let(:ignored_versions) do
+        Dependabot::Config::IgnoreCondition.new(
+          dependency_name: "Pester",
+          update_types: [Dependabot::Config::IgnoreCondition::PATCH_VERSION_TYPE]
+        ).ignored_versions(dependency, false)
+      end
+
+      it "does not emit a component-count-only patch update" do
+        expect(ignored_versions).to contain_exactly("> 1.2, < 1.3", "= 1.2.0", "= 1.2.0.0")
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+        expect(checker.updated_dependencies(requirements_to_unlock: :own)).to be_empty
+      end
+    end
+
+    context "when an exact pin differs from the latest version only by leading zeroes" do
+      let(:available_versions) { ["1.2"] }
+      let(:dependency_version) { "01.02" }
+      let(:dependency_requirement) { "= 01.02" }
+
+      it "is up to date" do
+        expect(checker.up_to_date?).to be(true)
+      end
+
+      it "does not produce an update for the normalized equivalent" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+        expect(checker.updated_dependencies(requirements_to_unlock: :own)).to be_empty
+      end
     end
 
     context "when the dependency has no version and a bounded range requirement" do
@@ -358,6 +545,144 @@ RSpec.describe Dependabot::Powershell::UpdateChecker do
 
       it "is not up to date, because the floor tracks the latest version" do
         expect(checker.up_to_date?).to be(false)
+      end
+    end
+
+    describe "requirement-only update versions" do
+      context "when a ModuleVersion minimum is updated" do
+        let(:available_versions) { ["1.3.0"] }
+        let(:dependency_version) { nil }
+        let(:dependency_requirement) { ">= 1.2.3" }
+        let(:requirements) do
+          [{
+            requirement: dependency_requirement,
+            groups: [],
+            source: source,
+            file: "module.psd1",
+            metadata: { version_key: "ModuleVersion" }
+          }]
+        end
+
+        it "uses the prior minimum as the previous version" do
+          updated_dependency = checker.updated_dependencies(requirements_to_unlock: :own).first
+
+          expect(updated_dependency).to have_attributes(version: "1.3.0", previous_version: "1.2.3")
+        end
+      end
+
+      context "when a MaximumVersion cap is updated" do
+        let(:available_versions) { ["1.2.4"] }
+        let(:dependency_version) { nil }
+        let(:dependency_requirement) { "<= 1.2.3" }
+        let(:requirements) do
+          [{
+            requirement: dependency_requirement,
+            groups: [],
+            source: source,
+            file: "module.psd1",
+            metadata: { version_key: "MaximumVersion" }
+          }]
+        end
+
+        it "uses the prior maximum as the previous version" do
+          updated_dependency = checker.updated_dependencies(requirements_to_unlock: :own).first
+
+          expect(updated_dependency).to have_attributes(version: "1.2.4", previous_version: "1.2.3")
+        end
+      end
+
+      context "when a bounded range maximum is updated" do
+        let(:available_versions) { ["2.0.0"] }
+        let(:dependency_version) { nil }
+        let(:dependency_requirement) { ">= 1.0.0, <= 1.2.3" }
+        let(:requirements) do
+          [{
+            requirement: dependency_requirement,
+            groups: [],
+            source: source,
+            file: "module.psd1",
+            metadata: { version_key: "ModuleVersion+MaximumVersion" }
+          }]
+        end
+
+        it "uses the prior maximum as the previous version" do
+          updated_dependency = checker.updated_dependencies(requirements_to_unlock: :own).first
+
+          expect(updated_dependency).to have_attributes(version: "2.0.0", previous_version: "1.2.3")
+        end
+      end
+
+      context "when the declaration has no version" do
+        let(:available_versions) { ["1.2.3"] }
+        let(:dependency_version) { nil }
+        let(:dependency_requirement) { nil }
+        let(:requirements) do
+          [{ requirement: nil, groups: [], source: source, file: "module.psd1", metadata: {} }]
+        end
+
+        it "does not invent a previous version" do
+          expect(checker.latest_resolvable_previous_version("1.2.3")).to be_nil
+        end
+      end
+
+      context "when an unchanged maximum precedes a changed minimum" do
+        let(:available_versions) { ["1.5.0"] }
+        let(:dependency_version) { nil }
+        let(:dependency_requirement) { nil }
+        let(:requirements) do
+          [
+            {
+              requirement: "<= 2.0.0",
+              groups: [],
+              source: source,
+              file: "module.psd1",
+              metadata: { version_key: "MaximumVersion" }
+            },
+            {
+              requirement: ">= 1.0.0",
+              groups: [],
+              source: source,
+              file: "module.psd1",
+              metadata: { version_key: "ModuleVersion" }
+            }
+          ]
+        end
+
+        it "uses the bound from the requirement that changed" do
+          updated_dependency = checker.updated_dependencies(requirements_to_unlock: :own).first
+
+          expect(updated_dependency).to have_attributes(version: "1.5.0", previous_version: "1.0.0")
+        end
+      end
+
+      context "when different prior bounds both change" do
+        let(:available_versions) { ["1.5.0"] }
+        let(:dependency_version) { nil }
+        let(:dependency_requirement) { nil }
+        let(:requirements) do
+          [
+            {
+              requirement: ">= 1.0.0",
+              groups: [],
+              source: source,
+              file: "module.psd1",
+              metadata: { version_key: "ModuleVersion" }
+            },
+            {
+              requirement: "<= 1.2.0",
+              groups: [],
+              source: source,
+              file: "module.psd1",
+              metadata: { version_key: "MaximumVersion" }
+            }
+          ]
+        end
+
+        it "leaves the previous version unset rather than misclassifying the update" do
+          updated_dependency = checker.updated_dependencies(requirements_to_unlock: :own).first
+
+          expect(updated_dependency).to have_attributes(version: "1.5.0", previous_version: nil)
+        end
       end
     end
   end

@@ -133,6 +133,25 @@ RSpec.describe Dependabot::Powershell::UpdateChecker::RequirementsUpdater do
       end
     end
 
+    context "when an exact pin differs from the latest version only by leading zeroes" do
+      let(:requirements) { [requirement("= 01.02", version_key: "RequiredVersion")] }
+      let(:latest_resolvable_version) { "1.2" }
+
+      it "leaves the equivalent declaration unchanged" do
+        expect(updater.updated_requirements).to eq(requirements)
+      end
+    end
+
+    context "when a maximum has fewer components than the latest version" do
+      let(:requirements) { [requirement("<= 1.2", version_key: "MaximumVersion")] }
+      let(:latest_resolvable_version) { "1.2.0" }
+
+      it "raises the maximum because the unspecified component is older than zero" do
+        updated = updater.updated_requirements.first
+        expect(updated[:requirement]).to eq("<= 1.2.0")
+      end
+    end
+
     context "with multiple requirements for the same dependency" do
       let(:requirements) do
         [
