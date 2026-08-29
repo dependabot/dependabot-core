@@ -5,8 +5,8 @@ Gem::Specification.new do |spec|
     Bundler.load_gemspec_uncached("../common/dependabot-common.gemspec")
 
   spec.name         = "dependabot-powershell"
-  spec.summary      = "Provides Dependabot support for Powershell"
-  spec.description  = "Dependabot-Powershell provides support for bumping Powershell dependencies via Dependabot. " \
+  spec.summary      = "Provides Dependabot support for PowerShell"
+  spec.description  = "Dependabot-PowerShell provides support for bumping PowerShell dependencies via Dependabot. " \
                       "If you want support for multiple package managers, you probably want the meta-gem " \
                       "dependabot-omnibus."
 

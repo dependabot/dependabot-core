@@ -31,7 +31,7 @@ module Dependabot
         unless allow_beta_ecosystems?
           raise Dependabot::DependencyFileNotFound.new(
             nil,
-            "Powershell support is currently in beta. Pass `--enable-beta-ecosystems` (dry-run) or " \
+            "PowerShell support is currently in beta. Pass `--enable-beta-ecosystems` (dry-run) or " \
             "otherwise enable the `enable_beta_ecosystems` experiment to use it."
           )
         end

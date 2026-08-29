@@ -1,15 +1,3 @@
 # Test Fixtures
 
-This directory contains test fixtures for the powershell ecosystem.
-
-Add sample manifest files, lockfiles, and other test data here.
-
-Example structure:
-```
-fixtures/
-├── manifest.json
-├── lockfile.lock
-└── projects/
-    ├── simple/
-    └── complex/
-```
+PowerShell fixtures are stored under [`spec/fixtures`](../../../fixtures), grouped by PowerShell file extension.
