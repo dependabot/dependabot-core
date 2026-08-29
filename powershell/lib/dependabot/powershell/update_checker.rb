@@ -157,13 +157,14 @@ module Dependabot
           .returns(T::Array[Dependabot::DependencyRequirement])
       end
       def requirements_with_updated_guid(requirements)
-        return requirements unless requirements.any? { |requirement| guid_qualified_required_version?(requirement) }
+        return requirements unless requirements.each_with_index.any? do |requirement, index|
+          guid_qualified_required_version_changed?(requirement, index)
+        end
 
         target_guid = target_manifest_guid
-        return requirements unless target_guid
 
-        requirements.map do |requirement|
-          next requirement unless guid_qualified_required_version?(requirement)
+        requirements.each_with_index.map do |requirement, index|
+          next requirement unless guid_qualified_required_version_changed?(requirement, index)
 
           metadata = T.must(requirement.metadata)
           current_guid = metadata.fetch(:guid, nil)
@@ -188,12 +189,9 @@ module Dependabot
         end
       end
 
-      sig { returns(T.nilable(String)) }
+      sig { returns(String) }
       def target_manifest_guid
-        target_version = preferred_resolvable_version
-        return unless target_version
-
-        latest_version_finder.manifest_guid_for(target_version.to_s)
+        latest_version_finder.manifest_guid_for(T.must(preferred_resolvable_version).to_s)
       end
 
       sig { params(requirement: Dependabot::DependencyRequirement).returns(T::Boolean) }
@@ -202,6 +200,14 @@ module Dependabot
         return false unless metadata
 
         metadata.fetch(:version_key, nil) == "RequiredVersion" && metadata.fetch(:guid, nil).is_a?(String)
+      end
+
+      sig { params(requirement: Dependabot::DependencyRequirement, index: Integer).returns(T::Boolean) }
+      def guid_qualified_required_version_changed?(requirement, index)
+        original = dependency.requirements[index]
+        guid_qualified_required_version?(requirement) &&
+          !original.nil? &&
+          requirement.requirement != original.requirement
       end
 
       sig { returns(T::Boolean) }

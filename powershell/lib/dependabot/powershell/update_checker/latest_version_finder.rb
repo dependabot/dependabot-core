@@ -25,7 +25,7 @@ module Dependabot
           @package_details ||= package_details_fetcher.fetch
         end
 
-        sig { params(version: String).returns(T.nilable(String)) }
+        sig { params(version: String).returns(String) }
         def manifest_guid_for(version)
           package_details_fetcher.manifest_guid_for(version)
         end
