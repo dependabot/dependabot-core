@@ -21,7 +21,7 @@ module Dependabot
         # absolute, drive-rooted, or referencing a module file directly)
         # point at a module outside the PowerShell Gallery and cannot be
         # resolved as a registry dependency.
-        PATH_INDICATORS = %r{\A(\.{1,2}[\\/]|[\\/]|[A-Za-z]:[\\/]|~[\\/])|\.(psd1|psm1|ps1)\z}i
+        PATH_INDICATORS = %r{\A(\.{1,2}[\\/]|[\\/]|[A-Za-z]:[\\/]|~[\\/])|\.(dll|psd1|psm1|ps1)\z}i
         CANONICAL_FIELDS = T.let(
           {
             "modulename" => "ModuleName",

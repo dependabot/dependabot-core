@@ -628,6 +628,7 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
       expect(content).to include("'./LocalNested.psm1'")
       expect(content).to include("'LocalNested.psm1'")
       expect(content).to include("'LocalNested.dll'")
+      expect(content).to include("@{ ModuleName = 'LocalVersioned.dll'; ModuleVersion = '1.0.0' }")
     end
   end
 

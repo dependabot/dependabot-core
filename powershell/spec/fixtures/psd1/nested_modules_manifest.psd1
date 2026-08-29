@@ -9,5 +9,6 @@
         './LocalNested.psm1'
         'LocalNested.psm1'
         'LocalNested.dll'
+        @{ ModuleName = 'LocalVersioned.dll'; ModuleVersion = '1.0.0' }
     )
 }
