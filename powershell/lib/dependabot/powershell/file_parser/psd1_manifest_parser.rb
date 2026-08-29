@@ -20,6 +20,7 @@ module Dependabot
         # around it is recognized too.
         REQUIRED_MODULES_KEY = /(?<![A-Za-z0-9_])(?:(['"])RequiredModules\1|RequiredModules)\s*=\s*/i
         NESTED_MODULES_KEY = /(?<![A-Za-z0-9_])(?:(['"])NestedModules\1|NestedModules)\s*=\s*/i
+        MODULE_VERSION_KEY = /(?<![A-Za-z0-9_])(?:(['"])ModuleVersion\1|ModuleVersion)\s*=\s*/i
 
         sig { params(file: Dependabot::DependencyFile).void }
         def initialize(file:)
@@ -29,6 +30,7 @@ module Dependabot
         sig { returns(T::Array[ModuleDeclaration]) }
         def parse
           content = ContentMasker.mask(T.must(@file.content))
+          return [] unless ContentMasker.top_level_hashtable_assignment(content, MODULE_VERSION_KEY)
 
           declarations_for(content, REQUIRED_MODULES_KEY, declaration_type: :required_modules) +
             declarations_for(content, NESTED_MODULES_KEY, declaration_type: :nested_modules, versioned_only: true)

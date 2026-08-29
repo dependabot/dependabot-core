@@ -117,6 +117,7 @@ module Dependabot
         outer_start = search_content.index("@{")
         return unless outer_start
 
+        anchored_key_pattern = Regexp.new("\\G(?:#{key_pattern.source})", key_pattern.options)
         depth = T.let(0, Integer)
         index = outer_start
 
@@ -130,7 +131,7 @@ module Dependabot
             depth -= 1
             return if depth.zero?
           else
-            assignment = outer_hashtable_assignment_at(search_content, key_pattern, index, depth)
+            assignment = outer_hashtable_assignment_at(search_content, anchored_key_pattern, index, depth)
             return assignment if assignment
           end
 
@@ -148,7 +149,7 @@ module Dependabot
         return unless depth == 1
 
         match = key_pattern.match(content, index)
-        return unless match && match.begin(0) == index
+        return unless match
 
         [match.begin(0), match.end(0)]
       end

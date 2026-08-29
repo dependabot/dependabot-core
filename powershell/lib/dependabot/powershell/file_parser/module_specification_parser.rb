@@ -33,6 +33,7 @@ module Dependabot
           T::Hash[String, String]
         )
         ENTRY_SEPARATORS = T.let([",", ";", "\n", "\r"].freeze, T::Array[String])
+        MAXIMUM_VERSION_SEGMENT = "999999999"
 
         # Splits top-level PowerShell array entries on commas, semicolons, and
         # newlines, ignoring separators inside quoted strings or nested
@@ -126,6 +127,7 @@ module Dependabot
           module_version = fields["ModuleVersion"]
           maximum_version = fields["MaximumVersion"]
           required_version = fields["RequiredVersion"]
+          return nil unless module_version || maximum_version || required_version
 
           # RequiredVersion is an exact pin and is invalid when combined with
           # a minimum/maximum range in the same module specification.
@@ -137,18 +139,27 @@ module Dependabot
           # building, etc.).
           return nil unless valid_versions?(module_version, maximum_version, required_version)
 
-          requirement, version = build_requirement(module_version, maximum_version, required_version)
+          requirement, version = build_requirement(
+            module_version,
+            normalized_maximum_version(maximum_version),
+            required_version
+          )
+          metadata = T.let(
+            {
+              declaration_type: declaration_type,
+              style: :hashtable,
+              guid: fields["GUID"],
+              version_key: version_key(module_version, maximum_version, required_version)
+            },
+            T::Hash[Symbol, ModuleDeclaration::MetadataValue]
+          )
+          metadata[:maximum_version] = maximum_version if maximum_version&.end_with?("*")
 
           ModuleDeclaration.new(
             name: name,
             version: version,
             requirement: requirement,
-            metadata: {
-              declaration_type: declaration_type,
-              style: :hashtable,
-              guid: fields["GUID"],
-              version_key: version_key(module_version, maximum_version, required_version)
-            }
+            metadata: metadata
           )
         end
 
@@ -222,9 +233,30 @@ module Dependabot
         # validation.
         sig { params(version: T.nilable(String)).returns(T::Boolean) }
         def self.valid_version?(version)
-          return true if version.nil? || version.empty?
+          return true if version.nil?
 
           Version.correct?(version)
+        end
+
+        sig { params(version: T.nilable(String)).returns(T::Boolean) }
+        def self.valid_maximum_version?(version)
+          return true if version.nil?
+
+          normalized = normalized_maximum_version(version)
+          !normalized.nil? && Version.correct?(normalized)
+        end
+
+        # PowerShell expands a trailing MaximumVersion wildcard to four
+        # numeric components before comparing versions.
+        sig { params(version: T.nilable(String)).returns(T.nilable(String)) }
+        def self.normalized_maximum_version(version)
+          return version unless version&.end_with?("*")
+
+          expanded = "#{version.delete_suffix('*')}#{MAXIMUM_VERSION_SEGMENT}"
+          missing_segments = 3 - expanded.count(".")
+          return nil if missing_segments.negative?
+
+          expanded + (".#{MAXIMUM_VERSION_SEGMENT}" * missing_segments)
         end
 
         # Returns true only if every supplied (non-nil) version field is
@@ -238,7 +270,9 @@ module Dependabot
           ).returns(T::Boolean)
         end
         def self.valid_versions?(module_version, maximum_version, required_version)
-          valid_version?(module_version) && valid_version?(maximum_version) && valid_version?(required_version)
+          valid_version?(module_version) &&
+            valid_maximum_version?(maximum_version) &&
+            valid_version?(required_version)
         end
       end
     end

@@ -130,6 +130,7 @@ RSpec.describe Dependabot::Powershell::FileParser do
           name: "MixedKeys.psd1",
           content: <<~POWERSHELL
             @{
+              ModuleVersion = '1.0.0'
               RequiredModules = @(
                 @{ modulename = "Az.Mixed"; requiredversion = "1.2.3" },
                 @{ ModuleName = 'Az.Range'; moduleversion = "1.0.0"; maximumversion = '2.0.0' }
@@ -157,6 +158,7 @@ RSpec.describe Dependabot::Powershell::FileParser do
           name: "Nested.psd1",
           content: <<~POWERSHELL
             @{
+              ModuleVersion = '1.0.0'
               PrivateData = @{
                 RequiredModules = @('Fake.PrivateModule')
               }
@@ -179,6 +181,7 @@ RSpec.describe Dependabot::Powershell::FileParser do
           name: "Malformed.psd1",
           content: <<~POWERSHELL
             @{
+              ModuleVersion = '1.0.0'
               RequiredModules = @(
                 @{ ModuleName = 'Az.Broken'; RequiredVersion = '1.0.0' } trailing,
                 'Az.Valid'
@@ -199,6 +202,7 @@ RSpec.describe Dependabot::Powershell::FileParser do
           name: "QuotedKeys.psd1",
           content: <<~POWERSHELL
             @{
+              ModuleVersion = '1.0.0'
               RequiredModules = @(
                 @{ 'ModuleName' = 'Az.Quoted'; "ModuleVersion" = '1.0.0' }
               )
@@ -221,6 +225,7 @@ RSpec.describe Dependabot::Powershell::FileParser do
           name: "BadVersion.psd1",
           content: <<~POWERSHELL
             @{
+              ModuleVersion = '1.0.0'
               RequiredModules = @(
                 @{ ModuleName = 'Az.BadVersion'; ModuleVersion = 'not-a-version' },
                 'Az.Valid'
@@ -235,6 +240,97 @@ RSpec.describe Dependabot::Powershell::FileParser do
       end
     end
 
+    context "when a hashtable entry has no version field" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "MissingVersion.psd1",
+          content: <<~POWERSHELL
+            @{
+              ModuleVersion = '1.0.0'
+              RequiredModules = @(
+                @{ ModuleName = 'Az.MissingVersion' },
+                'Az.Valid'
+              )
+            }
+          POWERSHELL
+        )
+      end
+
+      it "excludes the malformed module specification" do
+        expect(parser.parse.map(&:name)).to contain_exactly("Az.Valid")
+      end
+    end
+
+    context "when a hashtable entry supplies an empty version field" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "EmptyVersions.psd1",
+          content: <<~POWERSHELL
+            @{
+              ModuleVersion = '1.0.0'
+              RequiredModules = @(
+                @{ ModuleName = 'Az.EmptyRequired'; RequiredVersion = '' },
+                @{ ModuleName = 'Az.EmptyMinimum'; ModuleVersion = '' },
+                @{ ModuleName = 'Az.EmptyMaximum'; MaximumVersion = '' },
+                'Az.Valid'
+              )
+            }
+          POWERSHELL
+        )
+      end
+
+      it "excludes every malformed module specification" do
+        expect(parser.parse.map(&:name)).to contain_exactly("Az.Valid")
+      end
+    end
+
+    context "when MaximumVersion ends in a wildcard" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "WildcardMaximum.psd1",
+          content: <<~POWERSHELL
+            @{
+              ModuleVersion = '1.0.0'
+              RequiredModules = @(
+                @{ ModuleName = 'Az.Wildcard'; MaximumVersion = '5.*' }
+              )
+            }
+          POWERSHELL
+        )
+      end
+
+      it "expands the wildcard for version comparison and preserves its source value" do
+        dependency = parser.parse.first
+
+        expect(dependency.requirements.first.fetch(:requirement)).to eq(
+          "<= 5.999999999.999999999.999999999"
+        )
+        expect(dependency.requirements.first.fetch(:metadata)).to include(
+          version_key: "MaximumVersion",
+          maximum_version: "5.*"
+        )
+      end
+    end
+
+    context "when a data file is not a module manifest" do
+      let(:manifest_file) do
+        Dependabot::DependencyFile.new(
+          name: "ApplicationData.psd1",
+          content: <<~POWERSHELL
+            @{
+              RequiredModules = @(
+                @{ ModuleName = 'Not.A.Dependency'; RequiredVersion = '1.0.0' }
+              )
+            }
+          POWERSHELL
+        )
+      end
+
+      it "does not parse similarly named application data" do
+        expect(parser.parse).to eq([])
+      end
+    end
+
     context "when RequiredModules has many entries" do
       let(:manifest_file) do
         modules = (1..75).map { |index| "'Module#{index}'" }.join(",\n        ")
@@ -243,6 +339,7 @@ RSpec.describe Dependabot::Powershell::FileParser do
           name: "ManyModules.psd1",
           content: <<~POWERSHELL
             @{
+              ModuleVersion = '1.0.0'
               RequiredModules = @(
                 #{modules}
               )
@@ -266,6 +363,7 @@ RSpec.describe Dependabot::Powershell::FileParser do
           name: "Separated.psd1",
           content: <<~POWERSHELL
             @{
+              ModuleVersion = '1.0.0'
               RequiredModules = @(
                 'Az.First'
                 @{ ModuleName = 'Az.Second'; ModuleVersion = '1.0.0' };

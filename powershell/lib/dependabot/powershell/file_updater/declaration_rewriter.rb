@@ -173,8 +173,26 @@ module Dependabot
           changes.find do |previous, _|
             previous_requirement = previous.requirement
             previous_requirement.is_a?(String) &&
-              extract_version(previous_requirement, version_key) == current_value
+              previous_version(previous, version_key) == current_value
           end
+        end
+
+        sig do
+          params(
+            requirement: Dependabot::DependencyRequirement,
+            version_key: T.nilable(String)
+          ).returns(T.nilable(String))
+        end
+        def previous_version(requirement, version_key)
+          if version_key == "MaximumVersion" || version_key == "ModuleVersion+MaximumVersion"
+            maximum_version = requirement.metadata&.fetch(:maximum_version, nil)
+            return maximum_version if maximum_version.is_a?(String)
+          end
+
+          requirement_string = requirement.requirement
+          return unless requirement_string.is_a?(String)
+
+          extract_version(requirement_string, version_key)
         end
 
         sig do
@@ -239,13 +257,9 @@ module Dependabot
           raw = content[occurrence.start_index...occurrence.end_index]
           return nil unless raw
 
-          # Blank out `# ...` line comments (preserving length and quoted
-          # strings) before matching, so a commented-out field - e.g.
-          # `# RequiredVersion = '1.0.0'` sitting before the active
-          # field - can't be matched instead of the real one. Offsets stay
-          # aligned with `raw` (and therefore `content`) since comment text
-          # is replaced character-for-character.
-          scannable = blank_line_comments(raw)
+          # Comments are blanked without changing length, so their fields
+          # cannot match while offsets remain aligned with the source.
+          scannable = ContentMasker.mask(raw)
 
           # The field name may itself be quoted (e.g. `'ModuleVersion' =
           # '1.0.0'`), just like ModuleSpecificationParser accepts when
@@ -258,49 +272,6 @@ module Dependabot
           value_start = occurrence.start_index + match.begin(:value)
           value_end = occurrence.start_index + match.end(:value)
           [value_start, value_end]
-        end
-
-        # Replaces `# ...` line comments in `text` with equal-length spaces
-        # (newlines preserved), respecting quoted strings (which may
-        # themselves contain a `#`), so the returned string is the same
-        # length as `text` - keeping offsets found within it valid against
-        # `text` - but comment text can no longer match a field pattern.
-        sig { params(text: String).returns(String) }
-        def blank_line_comments(text)
-          result = +""
-          quote = T.let(nil, T.nilable(String))
-          in_comment = T.let(false, T::Boolean)
-
-          text.each_char do |char|
-            if in_comment
-              if char == "\n"
-                in_comment = false
-                result << char
-              else
-                result << " "
-              end
-              next
-            end
-
-            if quote
-              result << char
-              quote = nil if char == quote
-              next
-            end
-
-            case char
-            when "'", "\""
-              quote = char
-              result << char
-            when "#"
-              in_comment = true
-              result << " "
-            else
-              result << char
-            end
-          end
-
-          result
         end
 
         sig { params(content: String, edits: T::Array[Edit]).returns(String) }

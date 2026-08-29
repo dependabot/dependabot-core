@@ -39,10 +39,12 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
     version_key:,
     guid: nil,
     updated_guid: nil,
+    maximum_version: nil,
     declaration_type: :required_modules
   )
     metadata = { declaration_type: declaration_type, style: :hashtable, guid: guid, version_key: version_key }
     metadata[:updated_guid] = updated_guid if updated_guid
+    metadata[:maximum_version] = maximum_version if maximum_version
 
     {
       requirement: requirement_string,
@@ -212,6 +214,55 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
       end
     end
 
+    context "when a wildcard MaximumVersion is exceeded" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "Wildcard.psd1",
+            content: <<~POWERSHELL
+              @{
+                ModuleVersion = '1.0.0'
+                RequiredModules = @(
+                  @{ ModuleName = 'Az.Wildcard'; MaximumVersion = '5.*' }
+                )
+              }
+            POWERSHELL
+          )
+        ]
+      end
+
+      let(:dependencies) do
+        [
+          build_dependency(
+            name: "Az.Wildcard",
+            requirements: [
+              hashtable_requirement(
+                "<= 6.0.0",
+                file: "Wildcard.psd1",
+                version_key: "MaximumVersion",
+                maximum_version: "5.*"
+              )
+            ],
+            previous_requirements: [
+              hashtable_requirement(
+                "<= 5.999999999.999999999.999999999",
+                file: "Wildcard.psd1",
+                version_key: "MaximumVersion",
+                maximum_version: "5.*"
+              )
+            ]
+          )
+        ]
+      end
+
+      it "rewrites the wildcard with the selected version" do
+        content = updater.updated_dependency_files.first.content
+
+        expect(content).to include("MaximumVersion = '6.0.0'")
+        expect(content).not_to include("MaximumVersion = '5.*'")
+      end
+    end
+
     context "when other declarations are unaffected by an update" do
       let(:dependencies) do
         [
@@ -280,6 +331,7 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
             name: "MixedQuotes.psd1",
             content: <<~POWERSHELL
               @{
+                ModuleVersion = '1.0.0'
                 RequiredModules = @(
                   @{ modulename = "Az.Mixed"; requiredversion = "1.0.0" },
                   @{ ModuleName = "Az.Range"; moduleversion = "1.0.0"; maximumversion = "2.0.0" }
@@ -336,6 +388,7 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
             name: "QuotedKeys.psd1",
             content: <<~POWERSHELL
               @{
+                ModuleVersion = '1.0.0'
                 RequiredModules = @(
                   @{ 'ModuleName' = 'Az.Quoted'; 'RequiredVersion' = '1.0.0' }
                 )
@@ -876,6 +929,7 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
           name: "Nested.psd1",
           content: <<~POWERSHELL
             @{
+              ModuleVersion = '1.0.0'
               PrivateData = @{
                 RequiredModules = @('Fake.PrivateModule')
               }
@@ -917,6 +971,7 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
           name: "Separated.psd1",
           content: <<~POWERSHELL
             @{
+              ModuleVersion = '1.0.0'
               RequiredModules = @(
                 @{ ModuleName = 'Az.Real'; ModuleVersion = '1.0.0' }
                 @{ ModuleName = 'Az.Other'; ModuleVersion = '1.0.0' }
@@ -1089,6 +1144,57 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
 
       expect(content).to include("# RequiredVersion = '1.0.0'")
       expect(content).to include("RequiredVersion = '2.0.0'")
+    end
+  end
+
+  describe "rewriting a hashtable with a block-commented field before the active one" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "BlockCommentedField.psd1",
+          content: <<~POWERSHELL
+            @{
+              ModuleVersion = '1.0.0'
+              RequiredModules = @{
+                ModuleName = 'Pester'
+                <# RequiredVersion = '1.0.0' #>
+                RequiredVersion = '5.0.0'
+              }
+            }
+          POWERSHELL
+        )
+      ]
+    end
+
+    let(:dependencies) do
+      [
+        build_dependency(
+          name: "Pester",
+          version: "6.0.1",
+          previous_version: "5.0.0",
+          requirements: [
+            hashtable_requirement(
+              "= 6.0.1",
+              file: "BlockCommentedField.psd1",
+              version_key: "RequiredVersion"
+            )
+          ],
+          previous_requirements: [
+            hashtable_requirement(
+              "= 5.0.0",
+              file: "BlockCommentedField.psd1",
+              version_key: "RequiredVersion"
+            )
+          ]
+        )
+      ]
+    end
+
+    it "updates the active field and preserves the block comment" do
+      content = updater.updated_dependency_files.first.content
+
+      expect(content).to include("<# RequiredVersion = '1.0.0' #>")
+      expect(content).to include("RequiredVersion = '6.0.1'")
     end
   end
 end
