@@ -26,6 +26,7 @@
   "overrides": {
     "form-data": "2.5.6",
     "@sigstore/core": "3.2.1",
+    "@tootallnate/once": "2.0.1",
     "ansi-regex": "5.0.1",
     "brace-expansion": "1.1.18",
     "braces": "3.0.3",
