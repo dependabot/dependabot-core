@@ -9,6 +9,7 @@ require "dependabot/powershell/package/package_details_fetcher"
 require "dependabot/powershell/requirement"
 require "dependabot/powershell/update_checker"
 require "dependabot/powershell/version"
+require "dependabot/update_checkers/cooldown_calculation"
 
 module Dependabot
   module Powershell
@@ -28,11 +29,53 @@ module Dependabot
           package_details_fetcher.manifest_guid_for(version)
         end
 
+        sig { returns(T.nilable(T::Hash[Symbol, String])) }
+        def selected_source
+          package_details_fetcher.selected_source
+        end
+
         protected
 
         sig { override.returns(T::Boolean) }
         def cooldown_enabled?
           true
+        end
+
+        sig do
+          override.params(releases: T::Array[Dependabot::Package::PackageRelease])
+                  .returns(T::Array[Dependabot::Package::PackageRelease])
+        end
+        def filter_by_cooldown(releases)
+          return super unless package_details_fetcher.mar_source?
+          return releases if Dependabot::UpdateCheckers::CooldownCalculation.skip_cooldown?(
+            cooldown_options,
+            dependency.name,
+            cooldown_enabled: true
+          )
+
+          cooldown = T.must(cooldown_options)
+          current_version_string = dependency.version
+          current_version =
+            if version_class.correct?(current_version_string)
+              version_class.new(T.must(current_version_string))
+            end
+          filtered = releases.select do |release|
+            release.version.to_s == current_version_string ||
+              Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(
+                cooldown,
+                current_version,
+                release.version
+              ).zero?
+          end
+
+          if filtered.length < releases.length
+            Dependabot.logger.info(
+              "Skipped #{releases.length - filtered.length} Microsoft Artifact Registry versions for " \
+              "#{dependency.name} because MAR does not expose release timestamps required by the configured cooldown"
+            )
+          end
+
+          filtered
         end
 
         sig do

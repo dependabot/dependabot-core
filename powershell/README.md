@@ -17,7 +17,7 @@ Local module paths and unversioned nested components are left unchanged.
 
 Module versions are resolved from the Microsoft Artifact Registry (MAR) first, matching PowerShell's repository priority. When a module is not present in MAR, Dependabot falls back to the PowerShell Gallery. An operational or malformed MAR response does not fall back, which prevents an untrusted package with the same name from replacing a Microsoft-hosted module.
 
-MAR does not expose package publication timestamps through its OCI manifests, so release cooldowns cannot currently be applied to MAR-hosted versions. PowerShell Gallery releases continue to use their published timestamps for cooldown filtering.
+MAR does not expose package publication timestamps through its OCI manifests. When a configured cooldown applies to a MAR-hosted module, Dependabot leaves that module unchanged rather than bypassing the cooldown. PowerShell Gallery releases continue to use their published timestamps for cooldown filtering.
 
 ### Running locally
 

@@ -47,7 +47,7 @@ RSpec.describe Dependabot::Powershell::UpdateChecker::LatestVersionFinder do
   let(:find_packages_by_id_url) do
     "https://www.powershellgallery.com/api/v2/FindPackagesById()?id=%27Pester%27"
   end
-  let(:mar_tags_url) { "https://mcr.microsoft.com/v2/psresource/pester/tags/list" }
+  let(:mar_tags_url) { "https://mcr.microsoft.com/v2/psresource/#{dependency.name.downcase}/tags/list" }
 
   def entry_xml(version:, published: "2023-05-01T12:00:00", prerelease: "false")
     <<~XML
@@ -118,6 +118,42 @@ RSpec.describe Dependabot::Powershell::UpdateChecker::LatestVersionFinder do
 
       it "does not rely on gallery IsLatestVersion flags and skips the unlisted release" do
         expect(finder.latest_version.to_s).to eq("5.3.3")
+      end
+    end
+
+    context "when an applicable cooldown is configured for a MAR-hosted module" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "Az.Accounts",
+          version: "4.0.0",
+          requirements: [{
+            requirement: "= 4.0.0",
+            groups: [],
+            source: nil,
+            file: "module.psd1"
+          }],
+          package_manager: "powershell"
+        )
+      end
+      let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7) }
+
+      before do
+        stub_request(:get, mar_tags_url).to_return(
+          status: 200,
+          body: JSON.dump("name" => "psresource/az.accounts", "tags" => ["4.0.0", "5.5.2"])
+        )
+      end
+
+      it "keeps the current version rather than bypassing the cooldown" do
+        expect(finder.latest_version.to_s).to eq("4.0.0")
+      end
+
+      context "when the effective cooldown is zero days" do
+        let(:cooldown_options) { Dependabot::Package::ReleaseCooldownOptions.new(default_days: 0) }
+
+        it "allows the MAR update" do
+          expect(finder.latest_version.to_s).to eq("5.5.2")
+        end
       end
     end
   end
