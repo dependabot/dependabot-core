@@ -55,10 +55,7 @@ module Dependabot
 
           cooldown = T.must(cooldown_options)
           current_version_string = dependency.version
-          current_version =
-            if version_class.correct?(current_version_string)
-              version_class.new(T.must(current_version_string))
-            end
+          current_version = current_dependency_version
           filtered = releases.select do |release|
             release.version.to_s == current_version_string ||
               Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(
@@ -106,6 +103,14 @@ module Dependabot
             Dependabot::Powershell::Package::PackageDetailsFetcher.new(dependency: dependency),
             T.nilable(Dependabot::Powershell::Package::PackageDetailsFetcher)
           )
+        end
+
+        sig { returns(T.nilable(Dependabot::Version)) }
+        def current_dependency_version
+          current_version = dependency.version
+          return unless version_class.correct?(current_version)
+
+          version_class.new(T.must(current_version))
         end
 
         sig { returns(T.nilable(Dependabot::Version)) }
