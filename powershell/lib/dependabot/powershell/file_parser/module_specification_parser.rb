@@ -127,17 +127,7 @@ module Dependabot
           module_version = fields["ModuleVersion"]
           maximum_version = fields["MaximumVersion"]
           required_version = fields["RequiredVersion"]
-          return nil unless module_version || maximum_version || required_version
-
-          # RequiredVersion is an exact pin and is invalid when combined with
-          # a minimum/maximum range in the same module specification.
-          return nil if required_version && (module_version || maximum_version)
-
-          # Reject the whole declaration if any supplied version field isn't
-          # a well-formed version string; a malformed version would otherwise
-          # break downstream comparisons (update checking, requirement
-          # building, etc.).
-          return nil unless valid_versions?(module_version, maximum_version, required_version)
+          return nil unless valid_version_fields?(module_version, maximum_version, required_version)
 
           requirement, version = build_requirement(
             module_version,
@@ -234,6 +224,7 @@ module Dependabot
         sig { params(version: T.nilable(String)).returns(T::Boolean) }
         def self.valid_version?(version)
           return true if version.nil?
+          return false if version.empty?
 
           Version.correct?(version)
         end
@@ -241,6 +232,7 @@ module Dependabot
         sig { params(version: T.nilable(String)).returns(T::Boolean) }
         def self.valid_maximum_version?(version)
           return true if version.nil?
+          return false if version.empty?
 
           normalized = normalized_maximum_version(version)
           !normalized.nil? && Version.correct?(normalized)
@@ -273,6 +265,20 @@ module Dependabot
           valid_version?(module_version) &&
             valid_maximum_version?(maximum_version) &&
             valid_version?(required_version)
+        end
+
+        sig do
+          params(
+            module_version: T.nilable(String),
+            maximum_version: T.nilable(String),
+            required_version: T.nilable(String)
+          ).returns(T::Boolean)
+        end
+        def self.valid_version_fields?(module_version, maximum_version, required_version)
+          return false unless module_version || maximum_version || required_version
+          return false if required_version && (module_version || maximum_version)
+
+          valid_versions?(module_version, maximum_version, required_version)
         end
       end
     end
