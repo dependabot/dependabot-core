@@ -15,7 +15,7 @@ module Dependabot
           class InvalidManifest < DockerRegistry2::Exception; end
           class InvalidMetadata < DockerRegistry2::Exception; end
 
-          MAR_HOST = "mcr.microsoft.com"
+          MAR_HOST = PackageDetailsFetcher::MAR_HOST
           MAR_TOKEN_PATH = "/oauth2/token"
 
           sig { params(error: DockerRegistry2::RegistryHTTPException).returns(Integer) }

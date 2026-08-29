@@ -37,6 +37,13 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
     stub_request(:get, mar_tags_url).to_return(status: 404, body: "")
   end
 
+  describe "before selecting a registry" do
+    it "has neutral source state" do
+      expect(fetcher.selected_source).to be_nil
+      expect(fetcher.mar_source?).to be(false)
+    end
+  end
+
   def entry_xml(version:, published: "2023-05-01T12:00:00", prerelease: "false")
     <<~XML
       <entry>
@@ -99,6 +106,8 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
           type: "registry",
           url: "https://mcr.microsoft.com"
         )
+        expect(fetcher.mar_source?).to be(true)
+        expect(a_request(:get, mar_tags_url)).to have_been_made.once
         expect(a_request(:get, find_packages_by_id_url)).not_to have_been_made
       end
 
@@ -133,6 +142,10 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
         fetcher.fetch
 
         expect(fetcher.manifest_guid_for("5.5.2")).to eq("17a2feff-488b-47f9-8729-e2cec094624c")
+        expect(a_request(:get, mar_tags_url)).to have_been_made.once
+        expect(
+          a_request(:get, "https://mcr.microsoft.com/v2/psresource/az.accounts/manifests/5.5.2")
+        ).to have_been_made.once
       end
 
       context "when the tags response is paginated" do
@@ -271,7 +284,13 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
         it "raises a registry error without falling back to the PowerShell Gallery" do
           expect { fetcher.fetch }.to raise_error(Dependabot::RegistryError) do |error|
             expect(error.status).to eq(404)
+            expect(error.message).to eq(
+              "Microsoft Artifact Registry returned HTTP 404 for a later tags page for Az.Accounts"
+            )
+            expect(error.cause).to be_nil
           end
+          expect(a_request(:get, mar_tags_url)).to have_been_made.once
+          expect(a_request(:get, "#{mar_tags_url}?last=4.0.0")).to have_been_made.once
           expect(a_request(:get, find_packages_by_id_url)).not_to have_been_made
         end
       end
@@ -286,10 +305,12 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
         end
 
         it "raises a resolvability error without falling back to the PowerShell Gallery" do
-          expect { fetcher.fetch }.to raise_error(
-            Dependabot::DependencyFileNotResolvable,
-            /Microsoft Artifact Registry.*Az\.Accounts.*pagination/i
-          )
+          expect { fetcher.fetch }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to eq(
+              "Microsoft Artifact Registry response for Az.Accounts contained invalid pagination data"
+            )
+            expect(error.cause).to be_nil
+          end
           expect(a_request(:get, find_packages_by_id_url)).not_to have_been_made
         end
       end
@@ -395,6 +416,7 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
           type: "registry",
           url: "https://www.powershellgallery.com/api/v2"
         )
+        expect(fetcher.mar_source?).to be(false)
         expect(a_request(:get, mar_tags_url)).to have_been_made.once
         expect(a_request(:get, find_packages_by_id_url)).to have_been_made.once
       end
@@ -408,8 +430,13 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
       it "raises a registry error without downgrading to the PowerShell Gallery" do
         expect { fetcher.fetch }.to raise_error(Dependabot::RegistryError) do |error|
           expect(error.status).to eq(500)
-          expect(error.message).to include("Microsoft Artifact Registry", "Pester")
+          expect(error.message).to eq(
+            "Microsoft Artifact Registry returned HTTP 500 while fetching Pester"
+          )
+          expect(error.cause).to be_nil
         end
+        expect(fetcher.selected_source).to be_nil
+        expect(fetcher.mar_source?).to be(false)
         expect(a_request(:get, find_packages_by_id_url)).not_to have_been_made
       end
     end
@@ -802,6 +829,9 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
           )
 
           expect(fetcher.manifest_guid_for("5.4.0")).to eq("a699dea5-2c73-4616-a270-1f7abb777e71")
+          expect(fetcher.selected_source).to be_nil
+          expect(fetcher.mar_source?).to be(false)
+          expect(a_request(:get, manifest_url)).to have_been_made.once
         end
 
         it "raises when the module manifest has no GUID" do
@@ -1021,8 +1051,18 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
       it "raises a registry error with the HTTP status" do
         expect { fetcher.fetch }.to raise_error(Dependabot::RegistryError) do |error|
           expect(error.status).to eq(500)
-          expect(error.message).to include("PowerShell Gallery", "Pester")
+          expect(error.message).to eq(
+            "PowerShell Gallery returned HTTP 500 while fetching Pester"
+          )
+          expect(error.cause).to be_nil
         end
+        expect(fetcher.selected_source).to eq(
+          type: "registry",
+          url: "https://www.powershellgallery.com/api/v2"
+        )
+        expect(fetcher.mar_source?).to be(false)
+        expect(a_request(:get, mar_tags_url)).to have_been_made.once
+        expect(a_request(:get, find_packages_by_id_url)).to have_been_made.once
       end
     end
 
