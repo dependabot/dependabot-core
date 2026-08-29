@@ -153,6 +153,17 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
       end
     end
 
+    context "when Microsoft Artifact Registry returns malformed JSON data" do
+      before do
+        stub_request(:get, mar_tags_url).to_return(status: 200, body: "null")
+      end
+
+      it "returns no releases without falling back to the PowerShell Gallery" do
+        expect(fetcher.fetch.releases).to eq([])
+        expect(a_request(:get, find_packages_by_id_url)).not_to have_been_made
+      end
+    end
+
     context "when the feed returns a single page of releases" do
       before do
         body = feed_xml(

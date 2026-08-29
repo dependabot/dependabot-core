@@ -2,7 +2,9 @@
 # frozen_string_literal: true
 
 require "cgi"
+require "json"
 require "time"
+require "docker_registry2"
 require "nokogiri"
 require "sorbet-runtime"
 
@@ -16,7 +18,8 @@ module Dependabot
   module Powershell
     module Package
       # Fetches the full set of published versions for a PowerShell module from
-      # the PowerShell Gallery (the only registry currently supported).
+      # Microsoft's trusted artifact registry, falling back to the PowerShell
+      # Gallery when the module is not published there.
       #
       # The gallery exposes a NuGet v2 (OData/Atom) feed. `FindPackagesById()`
       # returns every version ever published for a module name, paginated via
@@ -29,6 +32,10 @@ module Dependabot
         extend T::Sig
 
         PSGALLERY_API_BASE = "https://www.powershellgallery.com/api/v2"
+        MAR_API_BASE = "https://mcr.microsoft.com"
+        MAR_REPOSITORY_PREFIX = "psresource/"
+        MAR_OPEN_TIMEOUT_IN_SECONDS = 2
+        MAR_READ_TIMEOUT_IN_SECONDS = 60
 
         # Defends against pathological/looping feeds. In practice even the
         # most prolific PowerShell Gallery modules have far fewer than this
@@ -45,10 +52,12 @@ module Dependabot
           (?<guid>[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12})
           ['"]
         /ix
+        GUID_PATTERN = /\A[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\z/i
 
         sig { params(dependency: Dependabot::Dependency).void }
         def initialize(dependency:)
           @dependency = dependency
+          @registry_source = T.let(nil, T.nilable(Symbol))
         end
 
         sig { returns(Dependabot::Dependency) }
@@ -64,6 +73,27 @@ module Dependabot
 
         sig { params(version: String).returns(T.nilable(String)) }
         def manifest_guid_for(version)
+          return mar_manifest_guid_for(version) if @registry_source == :mar
+
+          psgallery_manifest_guid_for(version)
+        end
+
+        sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
+        def fetch_package_releases
+          mar_releases = fetch_mar_package_releases
+          unless mar_releases.nil?
+            @registry_source = :mar
+            return mar_releases
+          end
+
+          @registry_source = :psgallery
+          fetch_psgallery_package_releases
+        end
+
+        private
+
+        sig { params(version: String).returns(T.nilable(String)) }
+        def psgallery_manifest_guid_for(version)
           response = Dependabot::RegistryClient.get(url: module_manifest_url(version))
           return unless response.status == 200
 
@@ -76,8 +106,61 @@ module Dependabot
           nil
         end
 
+        sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
+        def fetch_mar_package_releases
+          Dependabot.logger.info("Fetching package (Microsoft Artifact Registry) info for #{dependency.name}")
+          response = docker_registry_client.tags(mar_repository_name, auto_paginate: true)
+          unless response.is_a?(Hash)
+            Dependabot.logger.error(
+              "Microsoft Artifact Registry returned an invalid response for #{dependency.name}"
+            )
+            return []
+          end
+
+          tags = response["tags"]
+
+          if tags.nil?
+            Dependabot.logger.error(
+              "Microsoft Artifact Registry returned no tags collection for #{dependency.name}"
+            )
+            return []
+          end
+
+          unless tags.is_a?(Array)
+            Dependabot.logger.error(
+              "Microsoft Artifact Registry returned an invalid tags collection for #{dependency.name}"
+            )
+            return []
+          end
+
+          tags.filter_map do |tag|
+            next unless tag.is_a?(String)
+            next unless Powershell::Version.correct?(tag)
+
+            Dependabot::Package::PackageRelease.new(
+              version: Powershell::Version.new(tag),
+              released_at: nil,
+              yanked: false,
+              package_type: "powershell",
+              tag: tag,
+              details: { "registry" => "mar" }
+            )
+          end
+        rescue DockerRegistry2::NotFound
+          Dependabot.logger.info(
+            "#{dependency.name} is not available from Microsoft Artifact Registry; falling back to PowerShell Gallery"
+          )
+          nil
+        rescue DockerRegistry2::Exception, JSON::ParserError => e
+          Dependabot.logger.error(
+            "Microsoft Artifact Registry lookup failed for #{dependency.name}; " \
+            "PowerShell Gallery fallback is disabled for this failure: #{e.message}"
+          )
+          []
+        end
+
         sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
-        def fetch_package_releases
+        def fetch_psgallery_package_releases
           releases = T.let([], T::Array[Dependabot::Package::PackageRelease])
 
           begin
@@ -129,7 +212,53 @@ module Dependabot
           end
         end
 
-        private
+        sig { params(version: String).returns(T.nilable(String)) }
+        def mar_manifest_guid_for(version)
+          manifest = docker_registry_client.manifest(mar_repository_name, version)
+          layers = manifest["layers"]
+          return unless layers.is_a?(Array)
+
+          layer = layers.first
+          return unless layer.is_a?(Hash)
+
+          annotations = layer["annotations"]
+          return unless annotations.is_a?(Hash)
+
+          metadata_json = annotations["metadata"]
+          return unless metadata_json.is_a?(String)
+
+          metadata = JSON.parse(metadata_json)
+          return unless metadata.is_a?(Hash)
+
+          guid = metadata["GUID"]
+          guid if guid.is_a?(String) && guid.match?(GUID_PATTERN)
+        rescue DockerRegistry2::Exception, JSON::ParserError => e
+          Dependabot.logger.error(
+            "Error while fetching Microsoft Artifact Registry manifest for " \
+            "#{dependency.name} #{version}: #{e.message}"
+          )
+          nil
+        end
+
+        sig { returns(String) }
+        def mar_repository_name
+          "#{MAR_REPOSITORY_PREFIX}#{dependency.name.downcase}"
+        end
+
+        sig { returns(DockerRegistry2::Registry) }
+        def docker_registry_client
+          @docker_registry_client ||= T.let(
+            DockerRegistry2::Registry.new(
+              MAR_API_BASE,
+              user: nil,
+              password: nil,
+              open_timeout: MAR_OPEN_TIMEOUT_IN_SECONDS,
+              read_timeout: MAR_READ_TIMEOUT_IN_SECONDS,
+              http_options: { proxy: ENV.fetch("HTTPS_PROXY", nil) }
+            ),
+            T.nilable(DockerRegistry2::Registry)
+          )
+        end
 
         sig { returns(String) }
         def find_packages_by_id_url

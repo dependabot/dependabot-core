@@ -20,16 +20,12 @@ module Dependabot
 
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def package_details
-          @package_details ||= Dependabot::Powershell::Package::PackageDetailsFetcher
-                               .new(dependency: dependency)
-                               .fetch
+          @package_details ||= package_details_fetcher.fetch
         end
 
         sig { params(version: String).returns(T.nilable(String)) }
         def manifest_guid_for(version)
-          Dependabot::Powershell::Package::PackageDetailsFetcher
-            .new(dependency: dependency)
-            .manifest_guid_for(version)
+          package_details_fetcher.manifest_guid_for(version)
         end
 
         protected
@@ -51,6 +47,14 @@ module Dependabot
         end
 
         private
+
+        sig { returns(Dependabot::Powershell::Package::PackageDetailsFetcher) }
+        def package_details_fetcher
+          @package_details_fetcher ||= T.let(
+            Dependabot::Powershell::Package::PackageDetailsFetcher.new(dependency: dependency),
+            T.nilable(Dependabot::Powershell::Package::PackageDetailsFetcher)
+          )
+        end
 
         sig { returns(T.nilable(Dependabot::Version)) }
         def module_version_floor
