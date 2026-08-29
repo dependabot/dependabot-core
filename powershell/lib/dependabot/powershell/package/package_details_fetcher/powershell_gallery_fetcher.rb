@@ -30,10 +30,14 @@ module Dependabot
           def initialize(dependency:, max_pages:)
             @dependency = dependency
             @max_pages = max_pages
+            @releases = T.let(nil, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
+            @project_urls = T.let({}, T::Hash[String, String])
           end
 
           sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
           def fetch_releases
+            return @releases if @releases
+
             releases = T.let([], T::Array[Dependabot::Package::PackageRelease])
             Dependabot.logger.info("Fetching package (PowerShell Gallery) info for #{dependency.name}")
 
@@ -55,7 +59,7 @@ module Dependabot
               pages += 1
             end
 
-            releases
+            @releases = releases
           end
 
           sig { params(version: String).returns(String) }
@@ -68,6 +72,12 @@ module Dependabot
 
             raise Dependabot::DependencyFileNotResolvable,
                   "PowerShell Gallery manifest for #{dependency.name} #{version} did not contain a valid GUID"
+          end
+
+          sig { params(version: String).returns(T.nilable(String)) }
+          def project_url_for(version)
+            fetch_releases
+            @project_urls[version]
           end
 
           private
@@ -166,6 +176,7 @@ module Dependabot
 
             published = entry.at_css("properties > Published")&.text
             content_url = entry.at_css("content")&.attribute("src")&.value
+            record_project_url(entry, version_string)
 
             Dependabot::Package::PackageRelease.new(
               version: Powershell::Version.new(version_string),
@@ -173,6 +184,14 @@ module Dependabot
               yanked: unlisted?(published),
               url: content_url
             )
+          end
+
+          sig { params(entry: Nokogiri::XML::Element, version: String).void }
+          def record_project_url(entry, version)
+            project_url = entry.at_css("properties > ProjectUrl")&.text
+            return unless project_url&.valid_encoding?
+
+            @project_urls[version] = project_url.dup.freeze
           end
 
           sig { params(published: T.nilable(String)).returns(T::Boolean) }

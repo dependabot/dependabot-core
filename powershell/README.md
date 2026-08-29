@@ -45,7 +45,7 @@ This ecosystem is currently under development. See [NEW_ECOSYSTEMS.md](../NEW_EC
 - [x] FileUpdater
 
 #### Optional Classes
-- [ ] MetadataFinder
+- [x] MetadataFinder
 - [x] Version
 - [x] Requirement
 

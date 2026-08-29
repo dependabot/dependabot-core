@@ -30,6 +30,7 @@ module Dependabot
           def initialize(dependency:, max_pages:)
             @dependency = dependency
             @max_pages = max_pages
+            @manifest_metadata = T.let({}, T::Hash[String, T::Hash[String, Object]])
           end
 
           sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
@@ -69,13 +70,41 @@ module Dependabot
 
           sig { params(version: String).returns(String) }
           def manifest_guid_for(version)
-            manifest = docker_registry_client.manifest(repository_name, version)
-            metadata = MarRegistry.manifest_metadata(manifest)
+            metadata = manifest_metadata_for(version)
             guid = metadata["GUID"] if metadata.is_a?(Hash)
             return guid if guid.is_a?(String) && guid.valid_encoding? && guid.match?(GUID_PATTERN)
 
             raise Dependabot::DependencyFileNotResolvable,
                   "Microsoft Artifact Registry manifest for #{dependency.name} #{version} did not contain a valid GUID"
+          end
+
+          sig { params(version: String).returns(T.nilable(String)) }
+          def project_url_for(version)
+            private_data = manifest_metadata_for(version)["PrivateData"]
+            return unless private_data.is_a?(Hash)
+
+            ps_data = private_data["PSData"]
+            return unless ps_data.is_a?(Hash)
+
+            project_uri = ps_data["ProjectUri"]
+            return unless project_uri.is_a?(String) && project_uri.valid_encoding?
+
+            project_uri.dup.freeze
+          end
+
+          private
+
+          sig { returns(Dependabot::Dependency) }
+          attr_reader :dependency
+
+          sig { params(version: String).returns(T::Hash[String, Object]) }
+          def manifest_metadata_for(version)
+            cached_metadata = @manifest_metadata[version]
+            return cached_metadata if cached_metadata
+
+            manifest = docker_registry_client.manifest(repository_name, version)
+            metadata = MarRegistry.manifest_metadata(manifest)
+            @manifest_metadata[version] = metadata.freeze
           rescue DockerRegistry2::RegistryAuthenticationException,
                  DockerRegistry2::RegistryAuthorizationException
             raise Dependabot::PrivateSourceAuthenticationFailure.new(API_BASE), cause: nil
@@ -103,11 +132,6 @@ module Dependabot
               cause: nil
             )
           end
-
-          private
-
-          sig { returns(Dependabot::Dependency) }
-          attr_reader :dependency
 
           sig { returns(T.nilable(T::Array[String])) }
           def fetch_tags

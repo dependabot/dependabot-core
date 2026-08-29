@@ -54,6 +54,7 @@ module Dependabot
         def initialize(dependency:)
           @dependency = dependency
           @registry_source = T.let(nil, T.nilable(Symbol))
+          @package_releases = T.let(nil, T.nilable(T::Array[Dependabot::Package::PackageRelease]))
           @mar_fetcher = T.let(nil, T.nilable(MarFetcher))
           @powershell_gallery_fetcher = T.let(nil, T.nilable(PowershellGalleryFetcher))
         end
@@ -89,12 +90,25 @@ module Dependabot
           powershell_gallery_fetcher.manifest_guid_for(version)
         end
 
+        sig { params(version: String).returns(T.nilable(String)) }
+        def project_url_for(version)
+          releases = fetch_package_releases
+          return unless releases.any? { |release| release.to_s == version }
+
+          return mar_fetcher.project_url_for(version) if @registry_source == :mar
+          return powershell_gallery_fetcher.project_url_for(version) if @registry_source == :psgallery
+
+          nil
+        end
+
         sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
         def fetch_package_releases
+          return @package_releases if @package_releases
+
           mar_releases = mar_fetcher.fetch_releases
           unless mar_releases.nil?
             @registry_source = :mar
-            return mar_releases
+            return @package_releases = mar_releases
           end
 
           Dependabot.logger.info(
@@ -102,7 +116,7 @@ module Dependabot
             "falling back to PowerShell Gallery"
           )
           @registry_source = :psgallery
-          powershell_gallery_fetcher.fetch_releases
+          @package_releases = powershell_gallery_fetcher.fetch_releases
         end
 
         private
