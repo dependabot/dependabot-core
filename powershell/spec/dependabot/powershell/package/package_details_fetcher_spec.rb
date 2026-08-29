@@ -147,6 +147,39 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
           expect(fetcher.fetch.releases.map { |release| release.version.to_s }).to contain_exactly("4.0.0", "5.5.2")
         end
       end
+
+      context "when a later tags page is not found" do
+        before do
+          stub_request(:get, mar_tags_url).to_return(
+            status: 200,
+            body: JSON.dump("name" => "psresource/az.accounts", "tags" => ["4.0.0"]),
+            headers: {
+              "Link" => '</v2/psresource/az.accounts/tags/list?last=4.0.0>; rel="next"'
+            }
+          )
+          stub_request(:get, "#{mar_tags_url}?last=4.0.0").to_return(status: 404, body: "")
+        end
+
+        it "discards partial MAR results without falling back to the PowerShell Gallery" do
+          expect(fetcher.fetch.releases).to eq([])
+          expect(a_request(:get, find_packages_by_id_url)).not_to have_been_made
+        end
+      end
+
+      context "when the tags response has a malformed pagination link" do
+        before do
+          stub_request(:get, mar_tags_url).to_return(
+            status: 200,
+            body: JSON.dump("name" => "psresource/az.accounts", "tags" => ["4.0.0"]),
+            headers: { "Link" => "not-a-link" }
+          )
+        end
+
+        it "returns no releases without falling back to the PowerShell Gallery" do
+          expect(fetcher.fetch.releases).to eq([])
+          expect(a_request(:get, find_packages_by_id_url)).not_to have_been_made
+        end
+      end
     end
 
     context "when the module is absent from Microsoft Artifact Registry" do

@@ -4,6 +4,7 @@
 require "cgi"
 require "json"
 require "time"
+require "uri"
 require "docker_registry2"
 require "nokogiri"
 require "sorbet-runtime"
@@ -111,7 +112,10 @@ module Dependabot
         sig { returns(T.nilable(T::Array[Dependabot::Package::PackageRelease])) }
         def fetch_mar_package_releases
           Dependabot.logger.info("Fetching package (Microsoft Artifact Registry) info for #{dependency.name}")
-          fetch_mar_tags.filter_map do |tag|
+          tags = fetch_mar_tags
+          return nil unless tags
+
+          tags.filter_map do |tag|
             next unless Powershell::Version.correct?(tag)
 
             Dependabot::Package::PackageRelease.new(
@@ -123,11 +127,6 @@ module Dependabot
               details: { "registry" => "mar" }
             )
           end
-        rescue DockerRegistry2::NotFound
-          Dependabot.logger.info(
-            "#{dependency.name} is not available from Microsoft Artifact Registry; falling back to PowerShell Gallery"
-          )
-          nil
         rescue DockerRegistry2::Exception, JSON::ParserError, InvalidMarResponse => e
           Dependabot.logger.error(
             "Microsoft Artifact Registry lookup failed for #{dependency.name}; " \
@@ -136,11 +135,27 @@ module Dependabot
           []
         end
 
-        sig { returns(T::Array[String]) }
+        sig { returns(T.nilable(T::Array[String])) }
         def fetch_mar_tags
           tags = T.let([], T::Array[String])
+          next_url = T.let("v2/#{mar_repository_name}/tags/list", T.nilable(String))
+          first_page = true
 
-          docker_registry_client.paginate_doget("v2/#{mar_repository_name}/tags/list") do |response|
+          while next_url
+            begin
+              response = docker_registry_client.doget(next_url)
+            rescue DockerRegistry2::NotFound
+              if first_page
+                Dependabot.logger.info(
+                  "#{dependency.name} is not available from Microsoft Artifact Registry; " \
+                  "falling back to PowerShell Gallery"
+                )
+                return nil
+              end
+
+              raise InvalidMarResponse, "A later tags page was not found for #{dependency.name}"
+            end
+
             page = JSON.parse(response.body)
             page_tags = page["tags"] if page.is_a?(Hash)
             unless page_tags.is_a?(Array) && page_tags.all? { |tag| tag.is_a?(String) }
@@ -148,9 +163,25 @@ module Dependabot
             end
 
             tags.concat(T.cast(page_tags, T::Array[String]))
+            next_url = mar_next_page_url(response)
+            first_page = false
           end
 
           tags.uniq
+        end
+
+        sig { params(response: DockerRegistry2::Response).returns(T.nilable(String)) }
+        def mar_next_page_url(response)
+          link = response.headers[:link]
+          return unless link
+          raise InvalidMarResponse, "Invalid pagination header for #{dependency.name}" unless link.is_a?(String)
+
+          match = link.match(/<(?<url>[^>]+)>\s*;\s*rel="?next"?/i)
+          raise InvalidMarResponse, "Invalid pagination header for #{dependency.name}" unless match
+
+          URI.join(response.request_url, T.must(match[:url])).to_s
+        rescue URI::InvalidURIError => e
+          raise InvalidMarResponse, "Invalid pagination URL for #{dependency.name}: #{e.message}"
         end
 
         sig { returns(T::Array[Dependabot::Package::PackageRelease]) }
