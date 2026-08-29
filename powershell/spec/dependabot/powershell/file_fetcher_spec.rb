@@ -68,7 +68,7 @@ RSpec.describe Dependabot::Powershell::FileFetcher do
 
     before do
       allow(file_fetcher_instance).to receive_messages(allow_beta_ecosystems?: true, commit: "sha")
-      stub_request(:get, url + "?ref=sha")
+      stub_request(:get, directory_contents_url)
         .with(headers: { "Authorization" => "token token" })
         .to_return(
           status: 200,
@@ -78,7 +78,8 @@ RSpec.describe Dependabot::Powershell::FileFetcher do
     end
 
     def stub_content(name, content)
-      stub_request(:get, url + "#{name}?ref=sha")
+      path = [directory.delete_prefix("/"), name].reject(&:empty?).join("/")
+      stub_request(:get, url + "#{path}?ref=sha")
         .to_return(
           status: 200,
           body: JSON.dump(
@@ -90,6 +91,10 @@ RSpec.describe Dependabot::Powershell::FileFetcher do
           ),
           headers: { "content-type" => "application/json" }
         )
+    end
+
+    let(:directory_contents_url) do
+      url + "#{directory.delete_prefix('/')}?ref=sha"
     end
 
     context "when a .psd1 manifest exists" do
@@ -234,6 +239,61 @@ RSpec.describe Dependabot::Powershell::FileFetcher do
 
       it "raises DependencyFileNotFound" do
         expect { files }.to raise_error(Dependabot::DependencyFileNotFound)
+      end
+    end
+
+    context "when a configured subdirectory contains many mixed files" do
+      let(:directory) { "/src/modules" }
+      let(:manifest_content) { fixture("psd1", "nested_modules_manifest.psd1") }
+      let(:requires_content) { fixture("ps1", "requires_script.ps1") }
+      let(:using_content) { fixture("psm1", "using_module.psm1") }
+      let(:declaration_free_content) { fixture("ps1", "no_requires_script.ps1") }
+      let(:candidate_names) { %w(MyModule.PSD1 Deploy.Ps1 Library.pSm1 NoRequires.ps1) }
+      let(:irrelevant_entries) do
+        Array.new(995) { |index| { "name" => "notes-#{index}.txt", "type" => "file" } }
+      end
+      let(:repo_contents_json) do
+        JSON.dump(
+          irrelevant_entries +
+          [
+            { "name" => "MyModule.PSD1", "type" => "file" },
+            { "name" => "Deploy.Ps1", "type" => "file" },
+            { "name" => "Library.pSm1", "type" => "file" },
+            { "name" => "NoRequires.ps1", "type" => "file" },
+            { "name" => "Nested.psd1", "type" => "dir" }
+          ]
+        )
+      end
+
+      before do
+        stub_content("MyModule.PSD1", manifest_content)
+        stub_content("Deploy.Ps1", requires_content)
+        stub_content("Library.pSm1", using_content)
+        stub_content("NoRequires.ps1", declaration_free_content)
+      end
+
+      it "lists once, fetches each candidate once, and preserves supported files" do
+        expect(files.map { |file| [file.name, file.directory, file.type, file.content] }).to eq(
+          [
+            ["MyModule.PSD1", directory, "file", manifest_content],
+            ["Deploy.Ps1", directory, "file", requires_content],
+            ["Library.pSm1", directory, "file", using_content]
+          ]
+        )
+
+        expect(WebMock).to have_requested(:get, directory_contents_url).once
+        candidate_names.each do |name|
+          path = "#{directory.delete_prefix('/')}/#{name}"
+          expect(WebMock).to have_requested(:get, url + "#{path}?ref=sha").once
+        end
+        expect(WebMock).not_to have_requested(
+          :get,
+          url + "#{directory.delete_prefix('/')}/notes-0.txt?ref=sha"
+        )
+        expect(WebMock).not_to have_requested(
+          :get,
+          url + "#{directory.delete_prefix('/')}/Nested.psd1?ref=sha"
+        )
       end
     end
 

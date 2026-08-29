@@ -69,9 +69,7 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def manifest_files
         @manifest_files ||= T.let(
-          repo_contents(raise_errors: false)
-            .select { |f| f.type == "file" && self.class.manifest_file?(f.name) }
-            .map { |f| fetch_file_from_host(f.name) },
+          candidate_file_names.fetch(0).map { |name| fetch_file_from_host(name) },
           T.nilable(T::Array[Dependabot::DependencyFile])
         )
       end
@@ -79,11 +77,34 @@ module Dependabot
       sig { returns(T::Array[Dependabot::DependencyFile]) }
       def script_files_with_module_declarations
         @script_files_with_module_declarations ||= T.let(
-          repo_contents(raise_errors: false)
-            .select { |f| f.type == "file" && self.class.script_file?(f.name) }
-            .map { |f| fetch_file_from_host(f.name) }
+          candidate_file_names.fetch(1)
+            .map { |name| fetch_file_from_host(name) }
             .select { |f| module_declarations?(f) },
           T.nilable(T::Array[Dependabot::DependencyFile])
+        )
+      end
+
+      sig { returns(T::Array[T::Array[String]]) }
+      def candidate_file_names
+        @candidate_file_names ||= T.let(
+          begin
+            manifest_names = T.let([], T::Array[String])
+            script_names = T.let([], T::Array[String])
+
+            repo_contents(raise_errors: false).each do |entry|
+              next unless entry.type == "file"
+
+              extension = File.extname(entry.name).downcase
+              if extension == MANIFEST_EXTENSION
+                manifest_names << entry.name
+              elsif SCRIPT_EXTENSIONS.include?(extension)
+                script_names << entry.name
+              end
+            end
+
+            [manifest_names, script_names]
+          end,
+          T.nilable(T::Array[T::Array[String]])
         )
       end
 
