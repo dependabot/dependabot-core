@@ -1,6 +1,23 @@
 ## `dependabot-powershell`
 
-Powershell support for [`dependabot-core`][core-repo].
+PowerShell support for [`dependabot-core`][core-repo].
+
+### Supported dependency declarations
+
+Dependabot updates PowerShell module specifications declared in:
+
+- `#Requires -Modules` directives in `.ps1` and `.psm1` files
+- `using module` statements in `.ps1` and `.psm1` files
+- `RequiredModules` entries in `.psd1` module manifests
+- Versioned external `NestedModules` entries in `.psd1` module manifests
+
+Local module paths and unversioned nested components are left unchanged.
+
+### Registries
+
+Module versions are resolved from the Microsoft Artifact Registry (MAR) first, matching PowerShell's repository priority. When a module is not present in MAR, Dependabot falls back to the PowerShell Gallery. An operational or malformed MAR response does not fall back, which prevents an untrusted package with the same name from replacing a Microsoft-hosted module.
+
+MAR does not expose package publication timestamps through its OCI manifests, so release cooldowns cannot currently be applied to MAR-hosted versions. PowerShell Gallery releases continue to use their published timestamps for cooldown filtering.
 
 ### Running locally
 
