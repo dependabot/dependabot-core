@@ -144,43 +144,70 @@ module Dependabot
           pages = 0
 
           while next_url
-            raise InvalidMarResponse, "Tags feed for #{dependency.name} exceeded #{MAX_PAGES} pages" if pages >= MAX_PAGES
+            current_url = prepare_mar_page_url(next_url, visited_urls, pages)
+            response = fetch_mar_tags_page(current_url, first_page:)
+            return nil unless response
 
-            current_url = URI.join("#{MAR_API_BASE}/", next_url).to_s
-            if visited_urls[current_url]
-              raise InvalidMarResponse, "Tags feed for #{dependency.name} repeated a pagination URL"
-            end
-            visited_urls[current_url] = true
-
-            begin
-              response = docker_registry_client.doget(current_url)
-            rescue DockerRegistry2::NotFound
-              if first_page
-                Dependabot.logger.info(
-                  "#{dependency.name} is not available from Microsoft Artifact Registry; " \
-                  "falling back to PowerShell Gallery"
-                )
-                return nil
-              end
-
-              raise InvalidMarResponse, "A later tags page was not found for #{dependency.name}"
-            end
-
-            page = JSON.parse(response.body)
-            raise InvalidMarResponse, "Invalid tags response for #{dependency.name}" unless page.is_a?(Hash)
-
-            page_tags = page["tags"]
-            unless page_tags.is_a?(Array) && page_tags.all? { |tag| tag.is_a?(String) }
-              raise InvalidMarResponse, "Invalid tags response for #{dependency.name}"
-            end
-
-            tags.concat(page_tags)
+            tags.concat(mar_tags_from(response))
             next_url = mar_next_page_url(response)
             first_page = false
             pages += 1
           end
 
           tags.uniq
+        end
+
+        sig do
+          params(
+            next_url: String,
+            visited_urls: T::Hash[String, T::Boolean],
+            pages: Integer
+          ).returns(String)
+        end
+        def prepare_mar_page_url(next_url, visited_urls, pages)
+          if pages >= MAX_PAGES
+            raise InvalidMarResponse, "Tags feed for #{dependency.name} exceeded #{MAX_PAGES} pages"
+          end
+
+          current_url = URI.join("#{MAR_API_BASE}/", next_url).to_s
+          if visited_urls[current_url]
+            raise InvalidMarResponse, "Tags feed for #{dependency.name} repeated a pagination URL"
+          end
+
+          visited_urls[current_url] = true
+          current_url
+        rescue URI::InvalidURIError => e
+          raise InvalidMarResponse, "Invalid pagination URL for #{dependency.name}: #{e.message}"
+        end
+
+        sig do
+          params(current_url: String, first_page: T::Boolean).returns(T.nilable(DockerRegistry2::Response))
+        end
+        def fetch_mar_tags_page(current_url, first_page:)
+          docker_registry_client.doget(current_url)
+        rescue DockerRegistry2::NotFound
+          unless first_page
+            raise InvalidMarResponse, "A later tags page was not found for #{dependency.name}"
+          end
+
+          Dependabot.logger.info(
+            "#{dependency.name} is not available from Microsoft Artifact Registry; " \
+            "falling back to PowerShell Gallery"
+          )
+          nil
+        end
+
+        sig { params(response: DockerRegistry2::Response).returns(T::Array[String]) }
+        def mar_tags_from(response)
+          page = JSON.parse(response.body)
+          raise InvalidMarResponse, "Invalid tags response for #{dependency.name}" unless page.is_a?(Hash)
+
+          page_tags = page["tags"]
+          unless page_tags.is_a?(Array) && page_tags.all?(String)
+            raise InvalidMarResponse, "Invalid tags response for #{dependency.name}"
+          end
+
+          page_tags
         end
 
         sig { params(response: DockerRegistry2::Response).returns(T.nilable(String)) }

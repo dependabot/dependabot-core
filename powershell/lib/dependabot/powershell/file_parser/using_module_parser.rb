@@ -22,8 +22,8 @@ module Dependabot
 
         USING_MODULE_STATEMENT = /
           (?:\A|[\n;])[ \t]*
-          using(?:[ \t]+|[ \t]*`\r?\n[ \t]*)
-          module(?:[ \t]+|[ \t]*`\r?\n[ \t]*)
+          using(?:[ \t]*`\r?\n[ \t]*|[ \t]+)
+          module(?:[ \t]*`\r?\n[ \t]*|[ \t]+)
         /ix
 
         sig { params(file: Dependabot::DependencyFile).void }
@@ -87,22 +87,16 @@ module Dependabot
             char = T.must(content[index])
 
             if quote
-              if quote == "\"" && char == "`" && index + 1 < content.length
-                index += 2
-                next
-              end
-
-              if char == quote && content[index + 1] == quote
-                index += 2
-                next
-              end
-
-              quote = nil if char == quote
-            else
-              quote = char if char == "'" || char == "\""
-              return index if char == ";" || char == "\n"
+              index, quote = advance_quoted(content, index, quote)
+              next
             end
 
+            case char
+            when "'", "\""
+              quote = char
+            when ";", "\n"
+              return index
+            end
             index += 1
           end
 
@@ -133,18 +127,7 @@ module Dependabot
             char = T.must(content[index])
 
             if quote
-              if quote == "\"" && char == "`" && index + 1 < content.length
-                index += 2
-                next
-              end
-
-              if char == quote && content[index + 1] == quote
-                index += 2
-                next
-              end
-
-              quote = nil if char == quote
-              index += 1
+              index, quote = advance_quoted(content, index, quote)
               next
             end
 
@@ -164,6 +147,17 @@ module Dependabot
           nil
         end
         private_class_method :balanced_hashtable_end
+
+        sig { params(content: String, index: Integer, quote: String).returns([Integer, T.nilable(String)]) }
+        def self.advance_quoted(content, index, quote)
+          char = T.must(content[index])
+          return [index + 2, quote] if quote == "\"" && char == "`" && index + 1 < content.length
+          return [index + 2, quote] if char == quote && content[index + 1] == quote
+          return [index + 1, nil] if char == quote
+
+          [index + 1, quote]
+        end
+        private_class_method :advance_quoted
       end
     end
   end
