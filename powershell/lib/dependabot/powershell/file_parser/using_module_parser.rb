@@ -20,7 +20,11 @@ module Dependabot
           const :end_index, Integer
         end
 
-        USING_MODULE_LINE = /^[ \t]*using[ \t]+module[ \t]+/i
+        USING_MODULE_STATEMENT = /
+          (?:\A|[\n;])[ \t]*
+          using(?:[ \t]+|[ \t]*`\r?\n[ \t]*)
+          module(?:[ \t]+|[ \t]*`\r?\n[ \t]*)
+        /ix
 
         sig { params(file: Dependabot::DependencyFile).void }
         def initialize(file:)
@@ -42,7 +46,7 @@ module Dependabot
           search_from = 0
           search_content = ContentMasker.mask_quoted_strings(content)
 
-          while (match = USING_MODULE_LINE.match(search_content, search_from))
+          while (match = USING_MODULE_STATEMENT.match(search_content, search_from))
             statement = statement_at(content, match.end(0))
             if statement
               statements << statement
@@ -59,9 +63,8 @@ module Dependabot
         def self.statement_at(content, value_start)
           return hashtable_statement_at(content, value_start) if content[value_start, 2] == "@{"
 
-          line_end = content.index("\n", value_start) || content.length
-          text = T.must(content[value_start...line_end]).strip
-          text = text.delete_suffix(";").rstrip
+          end_index = bare_statement_end(content, value_start)
+          text = T.must(content[value_start...end_index]).strip
           return if text.empty?
 
           start_index = value_start
@@ -74,6 +77,38 @@ module Dependabot
           )
         end
         private_class_method :statement_at
+
+        sig { params(content: String, value_start: Integer).returns(Integer) }
+        def self.bare_statement_end(content, value_start)
+          quote = T.let(nil, T.nilable(String))
+          index = value_start
+
+          while index < content.length
+            char = T.must(content[index])
+
+            if quote
+              if quote == "\"" && char == "`" && index + 1 < content.length
+                index += 2
+                next
+              end
+
+              if char == quote && content[index + 1] == quote
+                index += 2
+                next
+              end
+
+              quote = nil if char == quote
+            else
+              quote = char if char == "'" || char == "\""
+              return index if char == ";" || char == "\n"
+            end
+
+            index += 1
+          end
+
+          content.length
+        end
+        private_class_method :bare_statement_end
 
         sig { params(content: String, value_start: Integer).returns(T.nilable(Statement)) }
         def self.hashtable_statement_at(content, value_start)

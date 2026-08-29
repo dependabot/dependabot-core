@@ -563,6 +563,72 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
         expect(content).to include("using module Microsoft.PowerShell.Management")
       end
     end
+
+    context "when statements use line continuation and semicolon separators" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "UsingModuleVariants.ps1",
+            content: fixture("ps1", "using_module_variants.ps1")
+          )
+        ]
+      end
+
+      let(:dependencies) do
+        [
+          build_dependency(
+            name: "Pester",
+            version: "6.0.1",
+            previous_version: "5.0.0",
+            requirements: [
+              hashtable_requirement(
+                "= 6.0.1",
+                file: "UsingModuleVariants.ps1",
+                version_key: "RequiredVersion",
+                declaration_type: :using_module
+              )
+            ],
+            previous_requirements: [
+              hashtable_requirement(
+                "= 5.0.0",
+                file: "UsingModuleVariants.ps1",
+                version_key: "RequiredVersion",
+                declaration_type: :using_module
+              )
+            ]
+          ),
+          build_dependency(
+            name: "PSScriptAnalyzer",
+            requirements: [
+              hashtable_requirement(
+                ">= 1.24.0",
+                file: "UsingModuleVariants.ps1",
+                version_key: "ModuleVersion",
+                declaration_type: :using_module
+              )
+            ],
+            previous_requirements: [
+              hashtable_requirement(
+                ">= 1.21.0",
+                file: "UsingModuleVariants.ps1",
+                version_key: "ModuleVersion",
+                declaration_type: :using_module
+              )
+            ]
+          )
+        ]
+      end
+
+      it "updates each versioned statement without changing separators" do
+        content = updater.updated_dependency_files.first.content
+
+        expect(content).to include("@{ ModuleName = 'Pester'; RequiredVersion = '6.0.1' }")
+        expect(content).to include(
+          "using module Microsoft.PowerShell.Management; " \
+          "using module @{ ModuleName = 'PSScriptAnalyzer'; ModuleVersion = '1.24.0' }"
+        )
+      end
+    end
   end
 
   describe "updating versioned external NestedModules" do

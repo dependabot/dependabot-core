@@ -582,6 +582,33 @@ RSpec.describe Dependabot::Powershell::FileParser do
         expect(parser.parse).to eq([])
       end
     end
+
+    context "when statements use line continuation and semicolon separators" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "UsingModuleVariants.ps1",
+            content: fixture("ps1", "using_module_variants.ps1")
+          )
+        ]
+      end
+
+      it "parses every statement independently" do
+        expect(parser.parse.map(&:name)).to contain_exactly(
+          "Pester",
+          "Microsoft.PowerShell.Management",
+          "PSScriptAnalyzer"
+        )
+      end
+
+      it "preserves each versioned statement's requirement" do
+        pester = parser.parse.find { |dependency| dependency.name == "Pester" }
+        analyzer = parser.parse.find { |dependency| dependency.name == "PSScriptAnalyzer" }
+
+        expect(pester.requirements.first.fetch(:requirement)).to eq("= 5.0.0")
+        expect(analyzer.requirements.first.fetch(:requirement)).to eq(">= 1.21.0")
+      end
+    end
   end
 
   describe "parsing a .psm1 script module" do
