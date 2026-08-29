@@ -12,7 +12,8 @@ module Dependabot
 
       MANIFEST_EXTENSION = ".psd1"
       SCRIPT_EXTENSIONS = T.let(%w(.ps1 .psm1).freeze, T::Array[String])
-      MODULE_DECLARATION_LINE = /^(?:[ \t]*#Requires\s+-Modules\b|[ \t]*using\s+module\b)/i
+      REQUIRES_MODULES_LINE = /^[ \t]*#Requires\s+-Modules\b/i
+      USING_MODULE_LINE = /^[ \t]*using\s+module\b/i
 
       sig { override.returns(String) }
       def self.required_files_message
@@ -91,7 +92,10 @@ module Dependabot
         content = file.content
         return false unless content
 
-        ContentMasker.mask(content).match?(MODULE_DECLARATION_LINE)
+        masked_content = ContentMasker.mask(content)
+        return true if masked_content.match?(REQUIRES_MODULES_LINE)
+
+        ContentMasker.mask_quoted_strings(masked_content).match?(USING_MODULE_LINE)
       end
     end
   end

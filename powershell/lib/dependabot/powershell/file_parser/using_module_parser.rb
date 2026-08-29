@@ -40,8 +40,9 @@ module Dependabot
         def self.statements(content)
           statements = []
           search_from = 0
+          search_content = ContentMasker.mask_quoted_strings(content)
 
-          while (match = USING_MODULE_LINE.match(content, search_from))
+          while (match = USING_MODULE_LINE.match(search_content, search_from))
             statement = statement_at(content, match.end(0))
             if statement
               statements << statement

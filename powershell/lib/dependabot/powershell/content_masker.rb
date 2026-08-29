@@ -49,7 +49,7 @@ module Dependabot
       # anchors on the `#` itself and is only used once already known to be
       # outside any string). Allows leading whitespace, since a real
       # directive line can be indented.
-      EMBEDDED_MODULE_DECLARATION_LINE = /\A\s*(?:#Requires\s+-Modules\b|using\s+module\b)/i
+      EMBEDDED_REQUIRES_DIRECTIVE_LINE = /\A\s*#Requires\s+-Modules\b/i
 
       sig { params(content: String).returns(String) }
       def self.mask(content)
@@ -408,7 +408,7 @@ module Dependabot
 
       # Called with `index` at the first character of a new line while
       # still inside a quoted string (from `.copy_quoted`). If that line
-      # matches `EMBEDDED_MODULE_DECLARATION_LINE` and doesn't also contain
+      # matches `EMBEDDED_REQUIRES_DIRECTIVE_LINE` and doesn't also contain
       # the string's own closing `quote_char`, blanks it (writing spaces to
       # `result` instead of copying it) and returns the index of its
       # trailing newline (or the content's end); otherwise leaves `result`
@@ -422,7 +422,7 @@ module Dependabot
         line_end = newline_index || content.length
         line = T.must(content[index...line_end])
 
-        return index unless line.match?(EMBEDDED_MODULE_DECLARATION_LINE) && !line.include?(quote_char)
+        return index unless line.match?(EMBEDDED_REQUIRES_DIRECTIVE_LINE) && !line.include?(quote_char)
 
         result << (" " * line.length)
         line_end

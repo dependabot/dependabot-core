@@ -135,6 +135,26 @@ RSpec.describe Dependabot::Powershell::FileFetcher do
       end
     end
 
+    context "when using module appears only inside a multiline string" do
+      let(:repo_contents_json) do
+        JSON.dump([{ "name" => "Documented.ps1", "type" => "file" }])
+      end
+
+      before do
+        stub_content(
+          "Documented.ps1",
+          <<~POWERSHELL
+            $description = "Example:
+            using module Pester"
+          POWERSHELL
+        )
+      end
+
+      it "raises DependencyFileNotFound" do
+        expect { files }.to raise_error(Dependabot::DependencyFileNotFound)
+      end
+    end
+
     context "when a .ps1 script without #Requires -Modules exists" do
       let(:repo_contents_json) do
         JSON.dump([{ "name" => "NoRequires.ps1", "type" => "file" }])

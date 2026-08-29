@@ -564,6 +564,24 @@ RSpec.describe Dependabot::Powershell::FileParser do
         )
       end
     end
+
+    context "when a multiline string documents a using module statement" do
+      let(:dependency_files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "Documented.ps1",
+            content: <<~POWERSHELL
+              $description = "Example:
+              using module Pester"
+            POWERSHELL
+          )
+        ]
+      end
+
+      it "does not parse the documentation as a dependency" do
+        expect(parser.parse).to eq([])
+      end
+    end
   end
 
   describe "parsing a .psm1 script module" do
