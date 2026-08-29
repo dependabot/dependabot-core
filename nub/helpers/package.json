@@ -10,7 +10,7 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
-    "@npmcli/arborist": "^8.0.0",
+    "@npmcli/arborist": "^9.4.0",
     "nock": "^13.5.6",
     "@pnpm/lockfile-file": "^9.1.2",
     "@pnpm/dependency-path": "^5.1.1",
