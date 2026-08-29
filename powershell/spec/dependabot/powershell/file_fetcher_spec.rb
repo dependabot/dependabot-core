@@ -155,6 +155,26 @@ RSpec.describe Dependabot::Powershell::FileFetcher do
       end
     end
 
+    context "when using and module are joined by a line continuation" do
+      let(:repo_contents_json) do
+        JSON.dump([{ "name" => "Continued.ps1", "type" => "file" }])
+      end
+
+      before do
+        stub_content(
+          "Continued.ps1",
+          <<~POWERSHELL
+            using `
+            module Pester
+          POWERSHELL
+        )
+      end
+
+      it "fetches the script file" do
+        expect(files.first.name).to eq("Continued.ps1")
+      end
+    end
+
     context "when a .ps1 script without #Requires -Modules exists" do
       let(:repo_contents_json) do
         JSON.dump([{ "name" => "NoRequires.ps1", "type" => "file" }])
