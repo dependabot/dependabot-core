@@ -139,11 +139,21 @@ module Dependabot
         def fetch_mar_tags
           tags = T.let([], T::Array[String])
           next_url = T.let("v2/#{mar_repository_name}/tags/list", T.nilable(String))
+          visited_urls = T.let({}, T::Hash[String, T::Boolean])
           first_page = true
+          pages = 0
 
           while next_url
+            raise InvalidMarResponse, "Tags feed for #{dependency.name} exceeded #{MAX_PAGES} pages" if pages >= MAX_PAGES
+
+            current_url = URI.join("#{MAR_API_BASE}/", next_url).to_s
+            if visited_urls[current_url]
+              raise InvalidMarResponse, "Tags feed for #{dependency.name} repeated a pagination URL"
+            end
+            visited_urls[current_url] = true
+
             begin
-              response = docker_registry_client.doget(next_url)
+              response = docker_registry_client.doget(current_url)
             rescue DockerRegistry2::NotFound
               if first_page
                 Dependabot.logger.info(
@@ -165,6 +175,7 @@ module Dependabot
             tags.concat(T.cast(page_tags, T::Array[String]))
             next_url = mar_next_page_url(response)
             first_page = false
+            pages += 1
           end
 
           tags.uniq

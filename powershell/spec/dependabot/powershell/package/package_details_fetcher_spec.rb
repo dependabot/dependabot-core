@@ -180,6 +180,27 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
           expect(a_request(:get, find_packages_by_id_url)).not_to have_been_made
         end
       end
+
+      context "when the tags response repeats a pagination link" do
+        before do
+          repeated_url = "#{mar_tags_url}?last=4.0.0"
+          stub_request(:get, mar_tags_url).to_return(
+            status: 200,
+            body: JSON.dump("name" => "psresource/az.accounts", "tags" => ["4.0.0"]),
+            headers: { "Link" => '</v2/psresource/az.accounts/tags/list?last=4.0.0>; rel="next"' }
+          )
+          stub_request(:get, repeated_url).to_return(
+            status: 200,
+            body: JSON.dump("name" => "psresource/az.accounts", "tags" => ["5.5.2"]),
+            headers: { "Link" => '</v2/psresource/az.accounts/tags/list?last=4.0.0>; rel="next"' }
+          )
+        end
+
+        it "returns no releases instead of looping or falling back" do
+          expect(fetcher.fetch.releases).to eq([])
+          expect(a_request(:get, find_packages_by_id_url)).not_to have_been_made
+        end
+      end
     end
 
     context "when the module is absent from Microsoft Artifact Registry" do
