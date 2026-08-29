@@ -13,7 +13,7 @@ module Dependabot
       MANIFEST_EXTENSION = ".psd1"
       SCRIPT_EXTENSIONS = T.let(%w(.ps1 .psm1).freeze, T::Array[String])
       REQUIRES_MODULES_LINE = /^[ \t]*#Requires\s+-Modules\b/i
-      USING_MODULE_STATEMENT = /^[ \t]*using(?:[ \t]*`\r?\n[ \t]*|[ \t]+)module\b/i
+      USING_MODULE_STATEMENT = /(?:\A|[\n;])[ \t]*using(?:[ \t]*`\r?\n[ \t]*|[ \t]+)module\b/i
 
       sig { override.returns(String) }
       def self.required_files_message
