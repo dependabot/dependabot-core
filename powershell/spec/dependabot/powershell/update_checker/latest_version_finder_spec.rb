@@ -155,6 +155,19 @@ RSpec.describe Dependabot::Powershell::UpdateChecker::LatestVersionFinder do
           expect(finder.latest_version.to_s).to eq("5.5.2")
         end
       end
+
+      context "when MAR no longer lists the current version" do
+        before do
+          stub_request(:get, mar_tags_url).to_return(
+            status: 200,
+            body: JSON.dump("name" => "psresource/az.accounts", "tags" => ["5.5.2"])
+          )
+        end
+
+        it "keeps the current version selectable while the update is deferred" do
+          expect(finder.latest_version.to_s).to eq("4.0.0")
+        end
+      end
     end
   end
 

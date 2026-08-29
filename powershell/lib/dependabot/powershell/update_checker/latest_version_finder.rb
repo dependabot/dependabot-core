@@ -75,6 +75,15 @@ module Dependabot
             )
           end
 
+          if filtered.empty? && current_version
+            return [
+              Dependabot::Package::PackageRelease.new(
+                version: current_version,
+                released_at: nil
+              )
+            ]
+          end
+
           filtered
         end
 
