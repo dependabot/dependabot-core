@@ -115,6 +115,11 @@
     "ecosystem": "opentofu"
   },
   {
+    "core": "powershell",
+    "test": "powershell",
+    "ecosystem": "powershell"
+  },
+  {
     "core": "pre_commit",
     "test": "pre-commit",
     "ecosystem": "pre-commit"
