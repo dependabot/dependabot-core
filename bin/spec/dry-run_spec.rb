@@ -29,6 +29,7 @@ RSpec.describe "bin/dry-run" do # rubocop:disable RSpec/DescribeClass
     expect(stdout).to include("usage: ruby bin/dry-run.rb [OPTIONS] PACKAGE_MANAGER REPO")
     expect(stdout).to include("--provider PROVIDER")
     expect(stdout).to include("--dir DIRECTORY")
+    expect(stdout).to include("--create-pull-request")
     expect(status.exitstatus).to eq(1) # Should exit with status 1 for missing args
   end
 
@@ -82,6 +83,7 @@ RSpec.describe "bin/dry-run" do # rubocop:disable RSpec/DescribeClass
       "--vendor-dependencies",
       "--security-updates-only",
       "--pull-request",
+      "--create-pull-request",
       "--enable-beta-ecosystems"
     ].each do |flag|
       it "accepts #{flag} flag" do
