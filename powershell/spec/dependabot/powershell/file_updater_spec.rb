@@ -114,6 +114,72 @@ RSpec.describe Dependabot::Powershell::FileUpdater do
     end
   end
 
+  describe "updating duplicate GUID-qualified declarations" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "DuplicateGuid.ps1",
+          content: <<~POWERSHELL
+            #Requires -Modules @{ ModuleName = 'Pester'; RequiredVersion = '5.0.0'; GUID = '22222222-2222-2222-2222-222222222222' }
+            #Requires -Modules @{ ModuleName = 'Pester'; RequiredVersion = '5.0.0'; GUID = '11111111-1111-1111-1111-111111111111' }
+          POWERSHELL
+        )
+      ]
+    end
+
+    let(:dependencies) do
+      [
+        build_dependency(
+          name: "Pester",
+          version: "6.0.0",
+          previous_version: "5.0.0",
+          requirements: [
+            hashtable_requirement(
+              "= 6.0.0",
+              file: "DuplicateGuid.ps1",
+              version_key: "RequiredVersion",
+              guid: "22222222-2222-2222-2222-222222222222",
+              declaration_type: :requires_directive
+            ),
+            hashtable_requirement(
+              "= 6.0.0",
+              file: "DuplicateGuid.ps1",
+              version_key: "RequiredVersion",
+              guid: "11111111-1111-1111-1111-111111111111",
+              updated_guid: "22222222-2222-2222-2222-222222222222",
+              declaration_type: :requires_directive
+            )
+          ],
+          previous_requirements: [
+            hashtable_requirement(
+              "= 5.0.0",
+              file: "DuplicateGuid.ps1",
+              version_key: "RequiredVersion",
+              guid: "22222222-2222-2222-2222-222222222222",
+              declaration_type: :requires_directive
+            ),
+            hashtable_requirement(
+              "= 5.0.0",
+              file: "DuplicateGuid.ps1",
+              version_key: "RequiredVersion",
+              guid: "11111111-1111-1111-1111-111111111111",
+              declaration_type: :requires_directive
+            )
+          ]
+        )
+      ]
+    end
+
+    it "uses each declaration's GUID to select its requirement change" do
+      content = updater.updated_dependency_files.first.content
+      lines = content.each_line.map(&:chomp)
+      expected = "#Requires -Modules @{ ModuleName = 'Pester'; RequiredVersion = '6.0.0'; " \
+                 "GUID = '22222222-2222-2222-2222-222222222222' }"
+
+      expect(lines).to eq([expected, expected])
+    end
+  end
+
   describe "updating a .psd1 module manifest" do
     let(:dependency_files) do
       [Dependabot::DependencyFile.new(name: "MyModule.psd1", content: fixture("psd1", "basic_manifest.psd1"))]

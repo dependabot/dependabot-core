@@ -25,6 +25,7 @@ module Dependabot
           const :name, String
           const :style, Symbol
           const :version_key, T.nilable(String)
+          const :guid, T.nilable(String)
           const :start_index, Integer
           const :end_index, Integer
         end
@@ -245,6 +246,7 @@ module Dependabot
             name: declaration.name,
             style: T.cast(declaration.metadata[:style], Symbol),
             version_key: T.cast(declaration.metadata[:version_key], T.nilable(String)),
+            guid: T.cast(declaration.metadata[:guid], T.nilable(String)),
             start_index: start_index,
             end_index: end_index
           )

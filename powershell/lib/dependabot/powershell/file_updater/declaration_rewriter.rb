@@ -139,7 +139,7 @@ module Dependabot
           current_value = content[value_span[0]...value_span[1]]
           return [] unless current_value
 
-          change = matching_change(changes, occurrence.version_key, current_value)
+          change = matching_change(changes, occurrence, current_value)
           return [] unless change
 
           new_value = updated_version(change[1], occurrence.version_key)
@@ -163,24 +163,41 @@ module Dependabot
 
         # Duplicate identical declarations collapse into a single requirement
         # change upstream, so every matching occurrence must be rewritten.
+        # Distinct GUID-qualified declarations remain separate and must select
+        # the change carrying their own GUID metadata.
         sig do
           params(
             changes: T::Array[RequirementChange],
-            version_key: T.nilable(String),
+            occurrence: DeclarationLocator::Occurrence,
             current_value: String
           ).returns(T.nilable(RequirementChange))
         end
-        def matching_change(changes, version_key, current_value)
+        def matching_change(changes, occurrence, current_value)
           changes.find do |previous, _|
             previous_requirement = previous.requirement
             next false unless previous_requirement.is_a?(String)
+            next false unless matching_guid?(previous, occurrence.guid)
 
-            expected_value = previous_version(previous, version_key)
+            expected_value = previous_version(previous, occurrence.version_key)
             next false unless expected_value
             next true if expected_value == current_value
 
             ModuleSpecificationVersion.compare(expected_value, current_value)&.zero?
           end
+        end
+
+        sig do
+          params(
+            requirement: Dependabot::DependencyRequirement,
+            occurrence_guid: T.nilable(String)
+          ).returns(T::Boolean)
+        end
+        def matching_guid?(requirement, occurrence_guid)
+          requirement_guid = requirement.metadata&.fetch(:guid, nil)
+          return requirement_guid.nil? if occurrence_guid.nil?
+          return false unless requirement_guid.is_a?(String)
+
+          requirement_guid.casecmp(occurrence_guid)&.zero? || false
         end
 
         sig do
