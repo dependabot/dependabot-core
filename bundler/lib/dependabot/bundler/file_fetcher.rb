@@ -62,6 +62,24 @@ module Dependabot
         filtered_files
       end
 
+      # The update phase re-materialises the persisted files into its own scratch
+      # directory (LockfileUpdater#write_temporary_dependency_files), so every
+      # fetched file must cross the fetch/update boundary. Narrowing here would
+      # starve the clone-less `bundle lock` run of manifests it has to evaluate.
+      sig { override.returns(T::Array[DependencyFile]) }
+      def files_to_persist
+        persisted = files
+        Dependabot.logger.info(
+          "[files_to_persist] persisting #{persisted.count} file(s) across the fetch/update boundary:"
+        )
+        persisted.each do |file|
+          Dependabot.logger.info(
+            "[files_to_persist]   #{file.path} (support_file=#{file.support_file?})"
+          )
+        end
+        persisted
+      end
+
       private
 
       sig { params(fetched_files: T::Array[DependencyFile]).returns(T::Array[DependencyFile]) }
