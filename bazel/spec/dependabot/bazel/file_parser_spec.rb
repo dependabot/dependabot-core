@@ -110,6 +110,26 @@ RSpec.describe Dependabot::Bazel::FileParser do
     end
   end
 
+  context "with multi-line .bazelversion file (e.g. BuildBuddy wrapper)" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "MODULE.bazel",
+          content: 'bazel_dep(name = "rules_cc", version = "0.1.1")'
+        ),
+        Dependabot::DependencyFile.new(
+          name: ".bazelversion",
+          content: "buildbuddy-io/5.0.321\n9.1.0\n"
+        )
+      ]
+    end
+
+    it "extracts the actual Bazel version ignoring the wrapper prefix" do
+      expect(parser.send(:bazel_version)).to eq("9.1.0")
+      expect(parser.ecosystem.package_manager.version.to_s).to eq("9.1.0")
+    end
+  end
+
   context "with *.MODULE.bazel files" do
     let(:dependency_files) { bazel_project_dependency_files("with_additional_module_files") }
 

@@ -433,6 +433,27 @@ RSpec.describe Dependabot::Bazel::FileFetcher do
       end
     end
 
+    context "with a multi-line .bazelversion file (BuildBuddy wrapper)" do
+      before do
+        stub_request(:get, url + "?ref=sha")
+          .to_return(
+            status: 200,
+            body: fixture("github", "contents_bazel_with_version.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        allow(file_fetcher_instance).to receive(:fetch_file_if_present).with(".bazelversion").and_return(
+          Dependabot::DependencyFile.new(
+            name: ".bazelversion",
+            content: "buildbuddy-io/5.0.321\n9.1.0\n"
+          )
+        )
+      end
+
+      it "extracts the Bazel version from the multi-line wrapper file" do
+        expect(ecosystem_versions).to eq({ package_managers: { "bazel" => "9.1.0" } })
+      end
+    end
+
     context "without a .bazelversion file" do
       before do
         stub_request(:get, url + "?ref=sha")
