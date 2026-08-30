@@ -18,7 +18,7 @@ module Dependabot
       class LatestVersionFinder < Dependabot::Package::PackageLatestVersionFinder
         extend T::Sig
 
-        MODULE_VERSION_KEYS = T.let(%w(ModuleVersion ModuleVersion+MaximumVersion).freeze, T::Array[String])
+        MODULE_VERSION_KEYS = %w(ModuleVersion ModuleVersion+MaximumVersion).freeze
 
         sig { override.returns(T.nilable(Dependabot::Package::PackageDetails)) }
         def package_details

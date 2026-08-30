@@ -32,7 +32,7 @@ module Dependabot
           }.freeze,
           T::Hash[String, String]
         )
-        ENTRY_SEPARATORS = T.let([",", ";", "\n", "\r"].freeze, T::Array[String])
+        ENTRY_SEPARATORS = [",", ";", "\n", "\r"].freeze
         MAXIMUM_VERSION_SEGMENT = "999999999"
 
         # Splits top-level PowerShell array entries on commas, semicolons, and

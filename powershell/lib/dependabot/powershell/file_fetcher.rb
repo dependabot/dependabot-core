@@ -11,7 +11,7 @@ module Dependabot
       extend T::Sig
 
       MANIFEST_EXTENSION = ".psd1"
-      SCRIPT_EXTENSIONS = T.let(%w(.ps1 .psm1).freeze, T::Array[String])
+      SCRIPT_EXTENSIONS = %w(.ps1 .psm1).freeze
       REQUIRES_MODULES_LINE = /^[ \t]*#Requires\s+-Modules\b/i
       USING_MODULE_STATEMENT = /(?:\A|[\n;])[ \t]*using(?:[ \t]*`\r?\n[ \t]*|[ \t]+)module\b/i
 
