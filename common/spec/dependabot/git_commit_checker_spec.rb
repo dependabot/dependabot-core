@@ -1394,6 +1394,20 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
       end
 
+      context "when fetching tag release dates raises" do
+        let(:refs_with_detail) { [] }
+
+        before do
+          allow(checker)
+            .to receive(:refs_for_tag_with_detail)
+            .and_raise(Dependabot::GitDependenciesNotReachable.new(["https://github.com/gocardless/business"]))
+        end
+
+        it "fails open and returns the latest version tag" do
+          expect(latest_tag[:tag]).to eq("v1.13.0")
+        end
+      end
+
       context "when the dependency is excluded from cooldown" do
         let(:cooldown_options) do
           Dependabot::Package::ReleaseCooldownOptions.new(default_days: 90, exclude: ["business"])
