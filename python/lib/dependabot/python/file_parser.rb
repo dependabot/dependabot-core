@@ -15,6 +15,7 @@ require "dependabot/python/name_normaliser"
 require "dependabot/python/pip_compile_file_matcher"
 require "dependabot/python/language_version_manager"
 require "dependabot/python/package_manager"
+require "dependabot/python/marker_evaluator"
 
 module Dependabot
   module Python
@@ -349,8 +350,8 @@ module Dependabot
         marker = dep["markers"]
         version = python_raw_version
 
-        if marker.include?("python_version")
-          !marker_satisfied?(marker, version)
+        if marker.match?(/\bpython(?:_full)?_version\b/)
+          !marker_evaluator.marker_satisfied?(marker: marker, python_version: version)
         else
           return true if dep["markers"].include?("<")
           return false if dep["markers"].include?(">")
@@ -360,53 +361,9 @@ module Dependabot
         end
       end
 
-      sig do
-        params(marker: T.untyped, python_version: T.any(String, Integer, Gem::Version)).returns(T::Boolean)
-      end
-      def marker_satisfied?(marker, python_version)
-        conditions = marker.split(/\s+(and|or)\s+/)
-
-        # Explicitly define the type of result as T::Boolean
-        result = T.let(evaluate_condition(conditions.shift, python_version), T::Boolean)
-
-        until conditions.empty?
-          operator = conditions.shift
-          next_condition = conditions.shift
-          next_result = evaluate_condition(next_condition, python_version)
-
-          result = if operator == "and"
-                     result && next_result
-                   else
-                     result || next_result
-                   end
-        end
-
-        result
-      end
-
-      sig do
-        params(
-          condition: T.untyped,
-          python_version: T.any(String, Integer, Gem::Version)
-        ).returns(T::Boolean)
-      end
-      def evaluate_condition(condition, python_version)
-        operator, version = condition.match(/([<>=!]=?)\s*"?([\d.]+)"?/)&.captures
-
-        case operator
-        when "<"
-          Dependabot::Python::Version.new(python_version) < Dependabot::Python::Version.new(version)
-        when "<="
-          Dependabot::Python::Version.new(python_version) <= Dependabot::Python::Version.new(version)
-        when ">"
-          Dependabot::Python::Version.new(python_version) > Dependabot::Python::Version.new(version)
-        when ">="
-          Dependabot::Python::Version.new(python_version) >= Dependabot::Python::Version.new(version)
-        when "=="
-          Dependabot::Python::Version.new(python_version) == Dependabot::Python::Version.new(version)
-        else
-          false
-        end
+      sig { returns(MarkerEvaluator) }
+      def marker_evaluator
+        @marker_evaluator ||= T.let(MarkerEvaluator.new, T.nilable(MarkerEvaluator))
       end
 
       sig { returns(DependencySet) }
