@@ -291,6 +291,30 @@ Here's an example of how to string all these together
   --updater-options=kubernetes_updates
 ```
 
+### Creating a pull request from a dry run
+
+`--create-pull-request` explicitly opts into creating one ready-for-review
+github.com pull request through Dependabot Core's existing pull request creator.
+GitHub Enterprise is not supported. The option requires exactly one dependency
+through `--dep`, does not permit `--cache`, and fails if the fetched base branch
+changes before creation. `--pull-request` remains a metadata-only output option.
+
+For GitHub, provide a token with `contents: write`, `pull-requests: write`, and
+`issues: write` permissions:
+
+```bash
+LOCAL_GITHUB_ACCESS_TOKEN="$GITHUB_TOKEN" \
+  bin/dry-run.rb powershell OWNER/REPOSITORY \
+  --enable-beta-ecosystems \
+  --dir /fixtures/mar \
+  --dep GitHub \
+  --create-pull-request
+```
+
+The selected dependency may require companion dependency changes, which are
+included in the same pull request. Pull requests created with a GitHub Actions
+workflow's `github.token` do not trigger most workflows in the target repository.
+
 ### Adding debug breakpoints
 
 You can add a `debugger` statement anywhere in the ruby code, for example:

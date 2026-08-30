@@ -29,6 +29,7 @@ RSpec.describe "bin/dry-run" do # rubocop:disable RSpec/DescribeClass
     expect(stdout).to include("usage: ruby bin/dry-run.rb [OPTIONS] PACKAGE_MANAGER REPO")
     expect(stdout).to include("--provider PROVIDER")
     expect(stdout).to include("--dir DIRECTORY")
+    expect(stdout).to include("--create-pull-request")
     expect(status.exitstatus).to eq(1) # Should exit with status 1 for missing args
   end
 
@@ -40,6 +41,14 @@ RSpec.describe "bin/dry-run" do # rubocop:disable RSpec/DescribeClass
     # Since we're using a fake repo, we expect it to attempt fetching but encounter an error
     expect(stdout + stderr).to include("fetching dependency files").or include("Invalid username or password")
     expect(status.exitstatus).to eq(1) # It should fail due to the fake repo
+  end
+
+  it "accepts powershell as a valid package manager" do
+    stdout, stderr, = Open3.capture3(
+      "ruby", script_path, "--enable-beta-ecosystems", "powershell", "fake/repo"
+    )
+
+    expect(stdout + stderr).not_to include("Invalid package manager: powershell")
   end
 
   # Test each command-line option
@@ -74,6 +83,7 @@ RSpec.describe "bin/dry-run" do # rubocop:disable RSpec/DescribeClass
       "--vendor-dependencies",
       "--security-updates-only",
       "--pull-request",
+      "--create-pull-request",
       "--enable-beta-ecosystems"
     ].each do |flag|
       it "accepts #{flag} flag" do

@@ -198,9 +198,10 @@ RSpec.describe Dependabot::Updater::UpdateTypeHelper do
         previous_version: previous_version,
         requirements: [],
         previous_requirements: [],
-        package_manager: "dummy"
+        package_manager: package_manager
       )
     end
+    let(:package_manager) { "dummy" }
 
     context "when it is a major update" do
       let(:previous_version) { "1.0.0" }

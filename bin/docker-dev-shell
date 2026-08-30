@@ -271,6 +271,11 @@ docker run --rm -ti \
   -v "$(pwd)/opentofu/lib:$CODE_DIR/opentofu/lib" \
   -v "$(pwd)/opentofu/script:$CODE_DIR/opentofu/script" \
   -v "$(pwd)/opentofu/spec:$CODE_DIR/opentofu/spec" \
+  -v "$(pwd)/powershell/.rubocop.yml:$CODE_DIR/powershell/.rubocop.yml" \
+  -v "$(pwd)/powershell/dependabot-powershell.gemspec:$CODE_DIR/powershell/dependabot-powershell.gemspec" \
+  -v "$(pwd)/powershell/lib:$CODE_DIR/powershell/lib" \
+  -v "$(pwd)/powershell/script:$CODE_DIR/powershell/script" \
+  -v "$(pwd)/powershell/spec:$CODE_DIR/powershell/spec" \
   -v "$(pwd)/pub/.rubocop.yml:$CODE_DIR/pub/.rubocop.yml" \
   -v "$(pwd)/pub/dependabot-pub.gemspec:$CODE_DIR/pub/dependabot-pub.gemspec" \
   -v "$(pwd)/pub/lib:$CODE_DIR/pub/lib" \

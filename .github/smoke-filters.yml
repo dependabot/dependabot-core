@@ -59,6 +59,9 @@ npm_and_yarn:
 nuget:
   - *common
   - 'nuget/**'
+powershell:
+  - *common
+  - 'powershell/**'
 pre_commit:
   - *common
   - 'pre_commit/**'

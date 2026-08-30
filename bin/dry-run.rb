@@ -3,8 +3,8 @@
 # frozen_string_literal: true
 
 # This script executes a full update run for a given repo (optionally for a
-# specific dependency only), and shows the proposed changes to any dependency
-# files without actually creating a pull request.
+# specific dependency only) and shows the proposed dependency file changes. It
+# creates a pull request only when explicitly requested.
 #
 # It's used regularly by the Dependabot team to manually debug issues, so
 # should always be up-to-date.
@@ -38,6 +38,7 @@
 # - npm_and_yarn
 # - nuget
 # - pip (includes pipenv)
+# - powershell
 # - pre_commit
 # - pub
 # - rust_toolchain
@@ -82,6 +83,7 @@ $LOAD_PATH << "./maven/lib"
 $LOAD_PATH << "./nix/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
+$LOAD_PATH << "./powershell/lib"
 $LOAD_PATH << "./pre_commit/lib"
 $LOAD_PATH << "./pub/lib"
 $LOAD_PATH << "./python/lib"
@@ -118,6 +120,7 @@ require "dependabot/file_updaters"
 require "dependabot/pull_request_creator"
 require "dependabot/config/file_fetcher"
 require "dependabot/simple_instrumentor"
+require_relative "lib/dependabot/dry_run/pull_request_mode"
 
 require "dependabot/bazel"
 require "dependabot/bun"
@@ -140,6 +143,7 @@ require "dependabot/julia"
 require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
+require "dependabot/powershell"
 require "dependabot/pre_commit"
 require "dependabot/pub"
 require "dependabot/python"
@@ -172,6 +176,7 @@ $options = {
   ignore_conditions: [],
   blocked_versions: [],
   pull_request: false,
+  create_pull_request: false,
   hostname: nil,
   cooldown: nil
 }
@@ -334,6 +339,13 @@ option_parse = OptionParser.new do |opts|
     $options[:pull_request] = true
   end
 
+  opts.on(
+    "--create-pull-request",
+    "Create one github.com pull request for the dependency selected by --dep"
+  ) do
+    $options[:create_pull_request] = true
+  end
+
   opts.on("--enable-beta-ecosystems", "Enable beta ecosystems") do |_value|
     Dependabot::Experiments.register(:enable_beta_ecosystems, true)
   end
@@ -393,6 +405,7 @@ valid_package_managers = %w(
   npm_and_yarn
   nuget
   pip
+  powershell
   pre_commit
   pub
   python
@@ -630,6 +643,16 @@ begin
 
   $source = Dependabot::Source.new(**source_options)
 
+  pull_request_mode =
+    if $options[:create_pull_request]
+      Dependabot::DryRun::PullRequestMode.new(
+        source: $source,
+        credentials: $options[:credentials],
+        dependency_names: $options[:dependency_names],
+        cache_steps: $options[:cache_steps]
+      ).tap(&:validate!)
+    end
+
   $repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/")))
 
   # Initial fetcher_args for config file fetching (without update_config)
@@ -662,7 +685,10 @@ begin
 
   fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**fetcher_args)
   $files = fetch_files(fetcher)
+  pull_request_mode&.validate_dependency_files!($files)
   return if $files.empty?
+
+  base_commit = fetcher.commit if pull_request_mode
 
   ecosystem_versions = fetcher.ecosystem_versions
   puts "🎈 Ecosystem Versions log: #{ecosystem_versions}" unless ecosystem_versions.nil?
@@ -686,6 +712,7 @@ begin
       $options[:dependency_names].include?(d.name.downcase)
     end
   end
+  pull_request_mode&.validate_dependency_selection!(dependencies)
 
   def update_checker_for(dependency)
     Dependabot::UpdateCheckers.for_package_manager($package_manager).new(
@@ -946,12 +973,29 @@ begin
       puts "--description--\n#{msg.pr_message}\n--/description--"
       puts "--commit--\n#{msg.commit_message}\n--/commit--"
     end
+
+    if pull_request_mode
+      evidence = pull_request_mode.create(
+        base_commit: base_commit,
+        dependencies: updated_deps,
+        files: updated_files,
+        message: msg,
+        commit_message_options: $update_config.commit_message_options.to_h
+      )
+      puts evidence.message
+    end
   rescue StandardError => e
+    raise if pull_request_mode
+
     error_details = Dependabot.updater_error_details(e)
     raise unless error_details
 
     puts " => handled error whilst updating #{dep.name}: #{error_details.error_type} " \
          "#{error_details.error_detail}"
+  end
+
+  if pull_request_mode && !pull_request_mode.created?
+    raise "No pull request was created for #{$options[:dependency_names].first}"
   end
 
   StackProf.stop if $options[:profile]

@@ -39,6 +39,7 @@ variable "ECOSYSTEMS" {
     { name = "nix", image = "nix", dockerfile = "nix/Dockerfile" },
     { name = "npm_and_yarn", image = "npm", dockerfile = "npm_and_yarn/Dockerfile" },
     { name = "nuget", image = "nuget", dockerfile = "nuget/Dockerfile" },
+    { name = "powershell", image = "powershell", dockerfile = "powershell/Dockerfile" },
     { name = "pre_commit", image = "pre-commit", dockerfile = "pre_commit/Dockerfile" },
     { name = "pub", image = "pub", dockerfile = "pub/Dockerfile" },
     { name = "python", image = "pip", dockerfile = "python/Dockerfile" },
