@@ -834,6 +834,22 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
           expect(a_request(:get, manifest_url)).to have_been_made.once
         end
 
+        it "ignores commented GUID assignments" do
+          stub_request(:get, manifest_url).to_return(
+            status: 200,
+            body: <<~HTML
+              <html><body><pre>
+                @{
+                  # GUID = '11111111-1111-1111-1111-111111111111'
+                  GUID = '22222222-2222-2222-2222-222222222222'
+                }
+              </pre></body></html>
+            HTML
+          )
+
+          expect(fetcher.manifest_guid_for("5.4.0")).to eq("22222222-2222-2222-2222-222222222222")
+        end
+
         it "raises when the module manifest has no GUID" do
           stub_request(:get, manifest_url).to_return(status: 200, body: "@{ ModuleVersion = '5.4.0' }")
 
@@ -864,6 +880,36 @@ RSpec.describe Dependabot::Powershell::Package::PackageDetailsFetcher do
           expect { fetcher.manifest_guid_for("5.4.0") }
             .to raise_error(Dependabot::DependencyFileNotResolvable, /Pester.*5\.4\.0.*valid GUID/i)
         end
+      end
+    end
+
+    context "when a listed release has no Published timestamp" do
+      before do
+        body = feed_xml(entries: [entry_xml(version: "5.4.0", published: "")])
+        stub_request(:get, find_packages_by_id_url).to_return(status: 200, body: body)
+      end
+
+      it "rejects the incomplete release" do
+        expect { fetcher.fetch }
+          .to raise_error(Dependabot::DependencyFileNotResolvable, /Pester.*5\.4\.0.*publication timestamp/i) do |error|
+            expect(error.cause).to be_nil
+          end
+      end
+    end
+
+    context "when a listed release has a malformed Published timestamp" do
+      before do
+        body = feed_xml(entries: [entry_xml(version: "5.4.0", published: "GALLERY_TIMESTAMP_SECRET")])
+        stub_request(:get, find_packages_by_id_url).to_return(status: 200, body: body)
+      end
+
+      it "rejects the release without exposing response content" do
+        expect { fetcher.fetch }
+          .to raise_error(Dependabot::DependencyFileNotResolvable, /Pester.*5\.4\.0.*publication timestamp/i) do |error|
+            expect(error.message).not_to include("GALLERY_TIMESTAMP_SECRET")
+            expect(error.full_message).not_to include("GALLERY_TIMESTAMP_SECRET")
+            expect(error.cause).to be_nil
+          end
       end
     end
 

@@ -9,6 +9,7 @@ require "sorbet-runtime"
 
 require "dependabot/errors"
 require "dependabot/registry_client"
+require "dependabot/powershell/content_masker"
 require "dependabot/powershell/package/package_details_fetcher"
 require "dependabot/powershell/version"
 require "dependabot/package/package_release"
@@ -66,7 +67,7 @@ module Dependabot
           def manifest_guid_for(version)
             response = fetch_page(module_manifest_url(version))
 
-            manifest = Nokogiri::HTML(response.body).text.tr("\u00a0", " ")
+            manifest = ContentMasker.mask(Nokogiri::HTML(response.body).text.tr("\u00a0", " "))
             guid = MANIFEST_GUID_PATTERN.match(manifest)&.[](:guid)
             return guid if guid
 
@@ -176,11 +177,12 @@ module Dependabot
 
             published = entry.at_css("properties > Published")&.text
             content_url = entry.at_css("content")&.attribute("src")&.value
+            released_at = parse_published_time(published, version_string)
             record_project_url(entry, version_string)
 
             Dependabot::Package::PackageRelease.new(
               version: Powershell::Version.new(version_string),
-              released_at: parse_published_time(published),
+              released_at: released_at,
               yanked: unlisted?(published),
               url: content_url
             )
@@ -201,14 +203,21 @@ module Dependabot
             published.start_with?(UNLISTED_PUBLISHED_DATE)
           end
 
-          sig { params(published: T.nilable(String)).returns(T.nilable(Time)) }
-          def parse_published_time(published)
-            return nil if published.nil? || published.empty?
+          sig { params(published: T.nilable(String), version: String).returns(T.nilable(Time)) }
+          def parse_published_time(published, version)
+            if published.nil? || published.empty? || !published.valid_encoding?
+              raise Dependabot::DependencyFileNotResolvable, invalid_published_time_message(version)
+            end
             return nil if unlisted?(published)
 
-            Time.parse(published)
+            Time.iso8601(published)
           rescue ArgumentError
-            nil
+            raise Dependabot::DependencyFileNotResolvable.new(invalid_published_time_message(version)), cause: nil
+          end
+
+          sig { params(version: String).returns(String) }
+          def invalid_published_time_message(version)
+            "PowerShell Gallery release for #{dependency.name} #{version} had an invalid publication timestamp"
           end
         end
       end
