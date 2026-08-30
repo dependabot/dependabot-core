@@ -27,6 +27,26 @@ RSpec.describe Dependabot::Powershell::FileParser do
 
   it_behaves_like "a dependency file parser"
 
+  describe "#ecosystem" do
+    subject(:ecosystem) { parser.ecosystem }
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "MyModule.psd1",
+          content: fixture("psd1", "basic_manifest.psd1")
+        )
+      ]
+    end
+
+    it "reports the PowerShell package manager metadata" do
+      expect(ecosystem.name).to eq("powershell")
+      expect(ecosystem.package_manager.name).to eq("powershell")
+      expect(ecosystem.package_manager.version_to_s).to eq("1.0.0")
+      expect(ecosystem.language).to be_nil
+    end
+  end
+
   describe "parsing a .psd1 module manifest" do
     let(:dependency_files) { [manifest_file] }
 

@@ -6,6 +6,7 @@ require "sorbet-runtime"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
+require "dependabot/powershell/package_manager"
 
 module Dependabot
   module Powershell
@@ -31,6 +32,17 @@ module Dependabot
         end
 
         dependency_set.dependencies
+      end
+
+      sig { override.returns(Dependabot::Ecosystem) }
+      def ecosystem
+        @ecosystem ||= T.let(
+          Dependabot::Ecosystem.new(
+            name: PackageManager::NAME,
+            package_manager: PackageManager.new
+          ),
+          T.nilable(Dependabot::Ecosystem)
+        )
       end
 
       private
