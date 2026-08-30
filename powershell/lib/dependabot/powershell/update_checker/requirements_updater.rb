@@ -164,7 +164,7 @@ module Dependabot
 
           case version_key
           when "RequiredVersion"
-            "= #{latest_version}"
+            bump_required_version(requirement_string)
           when "ModuleVersion"
             bump_minimum(requirement_string)
           when "MaximumVersion"
@@ -172,6 +172,17 @@ module Dependabot
           when "ModuleVersion+MaximumVersion"
             bump_range_maximum(requirement_string)
           end
+        end
+
+        sig { params(requirement_string: String).returns(T.nilable(String)) }
+        def bump_required_version(requirement_string)
+          current_version = requirement_string.delete_prefix("=").strip
+          return nil unless Version.correct?(current_version)
+
+          target_version = latest_version
+          return nil unless target_version && newer_than_declaration?(target_version, current_version)
+
+          "= #{target_version}"
         end
 
         # Raises a bare minimum-version ("ModuleVersion") constraint to the

@@ -65,6 +65,22 @@ RSpec.describe Dependabot::Powershell::UpdateChecker::RequirementsUpdater do
       end
     end
 
+    context "when exact pins span both sides of the latest resolvable version" do
+      let(:latest_resolvable_version) { "2.0.0" }
+      let(:requirements) do
+        [
+          requirement("= 1.0.0", version_key: "RequiredVersion"),
+          requirement("= 3.0.0", version_key: "RequiredVersion")
+        ]
+      end
+
+      it "bumps only the older pin" do
+        updated = updater.updated_requirements
+
+        expect(updated.map { |requirement| requirement[:requirement] }).to eq(["= 2.0.0", "= 3.0.0"])
+      end
+    end
+
     context "when the requirement is a ModuleVersion minimum" do
       let(:requirements) { [requirement(">= 1.0.0", version_key: "ModuleVersion")] }
 
