@@ -3,7 +3,7 @@
 set -e
 
 bundle install
-bundle exec turbo_tests --verbose
+bundle exec turbo_tests2 --verbose
 
 # Should we only run these on one of the CI_NODE_INDEX's?
 cd /opt/nub && npm run lint && cd -
