@@ -172,8 +172,14 @@ RSpec.describe Dependabot::Maven::FileParser::WrapperMojo do
     context "when distributionUrl is missing" do
       let(:content) { "wrapperVersion=3.3.4\n" }
 
-      it "raises a missing mandatory property error" do
-        expect { props }.to raise_error(RuntimeError, /Missing mandatory property: distributionUrl/)
+      it "returns nil so the wrapper is skipped rather than aborting parsing" do
+        expect(props).to be_nil
+      end
+
+      it "logs that the wrapper was skipped" do
+        expect(Dependabot.logger).to receive(:warn)
+          .with(/distributionUrl property is missing, skipping Maven Wrapper update/)
+        props
       end
     end
 
@@ -182,8 +188,14 @@ RSpec.describe Dependabot::Maven::FileParser::WrapperMojo do
         "distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.9/apache-maven-3.9.9-bin.zip\n"
       end
 
-      it "raises an error about the unresolvable wrapper version" do
-        expect { props }.to raise_error(RuntimeError, /Could not determine Maven Wrapper version/)
+      it "returns nil so the wrapper is skipped rather than aborting parsing" do
+        expect(props).to be_nil
+      end
+
+      it "logs that the wrapper version could not be determined" do
+        expect(Dependabot.logger).to receive(:warn)
+          .with(/could not determine Maven Wrapper version.*skipping Maven Wrapper update/)
+        props
       end
     end
   end
@@ -224,9 +236,8 @@ RSpec.describe Dependabot::Maven::FileParser::WrapperMojo do
       expect(described_class.extract_distribution_version(url)).to eq("3.8.6")
     end
 
-    it "raises when the URL contains no recognizable version path segment" do
-      expect { described_class.extract_distribution_version("https://example.com/some-artifact.zip") }
-        .to raise_error(described_class::UnparseableDistributionUrl, /Could not extract Maven version/)
+    it "returns nil when the URL contains no recognizable version path segment" do
+      expect(described_class.extract_distribution_version("https://example.com/some-artifact.zip")).to be_nil
     end
   end
 
@@ -333,26 +344,165 @@ RSpec.describe Dependabot::Maven::FileParser::WrapperMojo do
 
       it "logs that wrapper tracking was skipped" do
         expect(Dependabot.logger).to receive(:warn)
-          .with(/Could not extract Maven version from distributionUrl, skipping wrapper update/)
+          .with(/could not extract Maven version from distributionUrl, skipping Maven Wrapper update/)
         described_class.resolve_dependencies(properties_file)
       end
     end
 
-    context "when the wrapperUrl points to a Takari distribution" do
-      let(:takari_url) { "https://repo.maven.apache.org/maven2/io/takari/maven-wrapper/0.5.6/maven-wrapper-0.5.6.jar" }
+    context "when the wrapperUrl points to a non-Apache wrapper (e.g. legacy Takari)" do
+      let(:wrapper_url) { "https://repo.maven.apache.org/maven2/io/takari/maven-wrapper/0.5.6/maven-wrapper-0.5.6.jar" }
       let(:dist_url) do
         "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.6.3/apache-maven-3.6.3-bin.zip"
       end
-      let(:content) { "distributionUrl=#{dist_url}\nwrapperUrl=#{takari_url}\n" }
+      let(:content) { "distributionUrl=#{dist_url}\nwrapperUrl=#{wrapper_url}\n" }
 
       it "returns an empty array" do
         expect(described_class.resolve_dependencies(properties_file)).to eq([])
       end
 
-      it "logs a warning that Takari is not supported" do
+      it "logs a warning that the wrapper is not an Apache Maven Wrapper" do
         expect(Dependabot.logger).to receive(:warn)
-          .with(/Takari distribution is not supported/)
+          .with(/wrapperUrl is not an Apache Maven Wrapper/)
         described_class.resolve_dependencies(properties_file)
+      end
+    end
+
+    context "when a non-Apache wrapperUrl carries the Apache coordinate only in its query string" do
+      let(:dist_url) do
+        "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.6.3/apache-maven-3.6.3-bin.zip"
+      end
+      let(:wrapper_url) do
+        "https://evil.example.com/io/takari/maven-wrapper/0.5.6/maven-wrapper-0.5.6.jar" \
+          "?redirect=/org/apache/maven/wrapper/maven-wrapper/"
+      end
+      let(:content) { "distributionUrl=#{dist_url}\nwrapperUrl=#{wrapper_url}\n" }
+
+      it "skips the wrapper because the coordinate is not in the URL path" do
+        expect(Dependabot.logger).to receive(:warn)
+          .with(/wrapperUrl is not an Apache Maven Wrapper/)
+        expect(described_class.resolve_dependencies(properties_file)).to eq([])
+      end
+    end
+
+    context "when a foreign JAR is hosted under the Apache maven-wrapper artifact directory" do
+      let(:dist_url) do
+        "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.6.3/apache-maven-3.6.3-bin.zip"
+      end
+      let(:wrapper_url) do
+        "https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper/3.3.4/foreign-3.3.4.jar"
+      end
+      let(:content) { "distributionUrl=#{dist_url}\nwrapperUrl=#{wrapper_url}\n" }
+
+      it "skips the wrapper because the filename is not the maven-wrapper artifact" do
+        expect(Dependabot.logger).to receive(:warn)
+          .with(/wrapperUrl is not an Apache Maven Wrapper/)
+        expect(described_class.resolve_dependencies(properties_file)).to eq([])
+      end
+    end
+
+    context "when a non-artifact filename sits under the Apache maven-wrapper version directory" do
+      let(:content) do
+        "distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.9/" \
+          "apache-maven-3.9.9-bin.zip\nwrapperVersion=3.3.4\n" \
+          "wrapperUrl=https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper/" \
+          "3.3.4/maven-wrapper-foreign.jar\n"
+      end
+
+      it "skips the wrapper even though a valid wrapperVersion is present" do
+        expect(Dependabot.logger).to receive(:warn)
+          .with(/wrapperUrl is not an Apache Maven Wrapper/)
+        expect(described_class.resolve_dependencies(properties_file)).to eq([])
+      end
+    end
+
+    context "when the wrapperUrl version directory and filename version disagree" do
+      let(:content) do
+        "distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.9/" \
+          "apache-maven-3.9.9-bin.zip\n" \
+          "wrapperUrl=https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper/" \
+          "3.3.4/maven-wrapper-9.9.9.jar\n"
+      end
+
+      it "skips the wrapper because the coordinate version is inconsistent" do
+        expect(Dependabot.logger).to receive(:warn)
+          .with(/wrapperUrl is not an Apache Maven Wrapper/)
+        expect(described_class.resolve_dependencies(properties_file)).to eq([])
+      end
+    end
+
+    context "when a legacy wrapper omits wrapperVersion, wrapperUrl, and a script banner" do
+      let(:dist_url) do
+        "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.6.0/apache-maven-3.6.0-bin.zip"
+      end
+      let(:content) { "distributionUrl=#{dist_url}\n" }
+      let(:mvnw_file) do
+        make_properties_file(
+          "mvnw",
+          "#!/bin/sh\njarUrl=\"https://repo.maven.apache.org/maven2/io/takari/maven-wrapper/0.4.2/" \
+          "maven-wrapper-0.4.2.jar\"\n"
+        )
+      end
+
+      it "skips the wrapper without raising" do
+        expect(described_class.resolve_dependencies(properties_file, script_files: [mvnw_file])).to eq([])
+      end
+    end
+
+    context "when an Apache wrapper is served from a private registry" do
+      let(:content) do
+        "distributionUrl=https://nexus.corp.example/repository/maven/org/apache/maven/apache-maven/" \
+          "3.9.9/apache-maven-3.9.9-bin.zip\n" \
+          "wrapperUrl=https://nexus.corp.example/repository/maven/org/apache/maven/wrapper/maven-wrapper/" \
+          "3.3.4/maven-wrapper-3.3.4.jar\n"
+      end
+
+      it "recognises the wrapper by its artifact path and tracks both dependencies" do
+        deps = described_class.resolve_dependencies(properties_file)
+        expect(deps.map(&:name)).to contain_exactly(
+          "org.apache.maven:apache-maven",
+          "org.apache.maven.wrapper:maven-wrapper"
+        )
+      end
+    end
+
+    context "when a supported Apache wrapper retains a commented-out wrapperUrl" do
+      let(:content) do
+        "distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.9/" \
+          "apache-maven-3.9.9-bin.zip\ndistributionType=only-script\nwrapperVersion=3.3.4\n" \
+          "#wrapperUrl=https://repo.maven.apache.org/maven2/io/takari/maven-wrapper/0.4.2/" \
+          "maven-wrapper-0.4.2.jar\n"
+      end
+
+      it "ignores the commented-out line and still tracks both dependencies" do
+        deps = described_class.resolve_dependencies(properties_file)
+        expect(deps.map(&:name)).to contain_exactly(
+          "org.apache.maven:apache-maven",
+          "org.apache.maven.wrapper:maven-wrapper"
+        )
+      end
+    end
+
+    context "when the wrapper has only a distributionUrl and a non-banner mvnw script" do
+      let(:content) do
+        "distributionUrl=https://repo1.maven.org/maven2/org/apache/maven/apache-maven/3.5.3/" \
+          "apache-maven-3.5.3-bin.zip\n"
+      end
+      let(:mvnw_file) do
+        make_properties_file(
+          "mvnw",
+          "#!/bin/sh\nexec \"$JAVACMD\" -classpath \"$BASE/.mvn/wrapper/maven-wrapper.jar\" \"$@\"\n"
+        )
+      end
+
+      it "skips the wrapper instead of aborting Maven parsing" do
+        expect(described_class.resolve_dependencies(properties_file, script_files: [mvnw_file])).to eq([])
+      end
+
+      it "logs that the wrapper version could not be determined" do
+        allow(Dependabot.logger).to receive(:warn)
+        described_class.resolve_dependencies(properties_file, script_files: [mvnw_file])
+        expect(Dependabot.logger).to have_received(:warn)
+          .with(/could not determine Maven Wrapper version.*skipping Maven Wrapper update/)
       end
     end
 

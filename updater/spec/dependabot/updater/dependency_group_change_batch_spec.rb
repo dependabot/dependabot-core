@@ -38,7 +38,8 @@ RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
       change = instance_double(
         Dependabot::DependencyChange,
         updated_dependencies: [],
-        updated_dependency_files: [updated_file, vendored_file]
+        updated_dependency_files: [updated_file, vendored_file],
+        notices: []
       )
 
       batch.merge(change)
@@ -50,12 +51,14 @@ RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
       first_change = instance_double(
         Dependabot::DependencyChange,
         updated_dependencies: [],
-        updated_dependency_files: [updated_file]
+        updated_dependency_files: [updated_file],
+        notices: []
       )
       second_change = instance_double(
         Dependabot::DependencyChange,
         updated_dependencies: [],
-        updated_dependency_files: [second_update]
+        updated_dependency_files: [second_update],
+        notices: []
       )
 
       batch.merge(first_change)
@@ -63,6 +66,28 @@ RSpec.describe Dependabot::Updater::DependencyGroupChangeBatch do
       batch.merge(second_change)
 
       expect(batch.updated_dependency_files).to eq([second_update])
+    end
+
+    it "deduplicates notices from dependency changes" do
+      notice = Dependabot::Notice.new(
+        mode: Dependabot::Notice::NoticeMode::WARN,
+        type: "docker_cooldown_date_unavailable",
+        package_manager_name: "docker",
+        description: "Cooldown was not applied.",
+        show_in_pr: true,
+        show_alert: false
+      )
+      change = instance_double(
+        Dependabot::DependencyChange,
+        updated_dependencies: [],
+        updated_dependency_files: [],
+        notices: [notice]
+      )
+
+      batch.merge(change)
+      batch.merge(change)
+
+      expect(batch.notices).to contain_exactly(notice)
     end
   end
 

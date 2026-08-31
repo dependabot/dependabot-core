@@ -18,7 +18,7 @@ require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/shared_helpers"
 
-# rubocop:disable Metrics/ClassLength
+# rubocop:disable-next Metrics/ClassLength
 module Dependabot
   module NpmAndYarn
     class UpdateChecker
@@ -1085,4 +1085,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

@@ -63,7 +63,7 @@ module Dependabot
         def update_requirement(content:, filename:, dependency:)
           updated_req =
             dependency.requirements.find { |r| r.file == filename }
-                                   &.requirement_string
+                      &.requirement_string
 
           old_req =
             dependency.previous_requirements
@@ -84,7 +84,7 @@ module Dependabot
         def update_git_pin(content:, filename:, dependency:)
           updated_pin =
             dependency.requirements.find { |r| r.file == filename }
-                                   &.source_string("ref")
+                      &.source_string("ref")
 
           old_pin =
             dependency.previous_requirements
