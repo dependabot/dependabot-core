@@ -188,11 +188,11 @@ RSpec.describe Dependabot::Bun::FileUpdater do
           updated_files
 
           expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
-            a_string_matching(/^install .+ --save-text-lockfile --ignore-scripts$/),
-            fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
+            a_string_matching(/^install .+ --save-text-lockfile --ignore-scripts --lockfile-only$/),
+            fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts --lockfile-only"
           )
           expect(Dependabot::Bun::Helpers).to have_received(:run_bun_command).with(
-            "install --save-text-lockfile --ignore-scripts"
+            "install --save-text-lockfile --ignore-scripts --lockfile-only"
           )
         end
       end

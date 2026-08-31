@@ -93,15 +93,15 @@ module Dependabot
           end.join(" ")
 
           Helpers.run_bun_command(
-            "install #{dependency_updates} --save-text-lockfile --ignore-scripts",
-            fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts"
+            "install #{dependency_updates} --save-text-lockfile --ignore-scripts --lockfile-only",
+            fingerprint: "install <dependency_updates> --save-text-lockfile --ignore-scripts --lockfile-only"
           )
         end
 
         sig { void }
         def run_bun_install
           Helpers.run_bun_command(
-            "install --save-text-lockfile --ignore-scripts"
+            "install --save-text-lockfile --ignore-scripts --lockfile-only"
           )
         end
 
