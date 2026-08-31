@@ -27,6 +27,53 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
   it_behaves_like "a dependency file parser"
 
+  describe ".mask_literals_and_comments" do
+    it "blanks string contents while preserving length and newlines" do
+      content = %(a("keep { brace")\nb)
+      masked = described_class.mask_literals_and_comments(content, kotlin: false)
+      expect(masked.length).to eq(content.length)
+      expect(masked).to start_with("a(")
+      expect(masked).to end_with(")\nb")
+      expect(masked).not_to include("{")
+    end
+
+    context "with a Groovy build file (kotlin: false)" do
+      it "closes a block comment at the first terminator (comments do not nest)" do
+        content = "/* open /* inner */ real {"
+        masked = described_class.mask_literals_and_comments(content, kotlin: false)
+        # Groovy closes the comment at the first `*/`, so the brace after it is
+        # real code and stays unmasked.
+        expect(masked).to include("real {")
+      end
+
+      it "masks the contents of a slashy string" do
+        content = "a = /see { ticket/\nb"
+        masked = described_class.mask_literals_and_comments(content, kotlin: false)
+        expect(masked.length).to eq(content.length)
+        expect(masked).to start_with("a = ")
+        expect(masked).to end_with("\nb")
+        expect(masked).not_to include("{")
+      end
+    end
+
+    context "with a Kotlin build file (kotlin: true)" do
+      it "allows block comments to nest" do
+        content = "/* open /* inner */ still */ real {"
+        masked = described_class.mask_literals_and_comments(content, kotlin: true)
+        # Kotlin nests, so the comment only ends at the second `*/`; the brace
+        # after it is real code and stays unmasked.
+        expect(masked).to include("real {")
+      end
+
+      it "does not treat a slash after a newline as a slashy string" do
+        content = "val x = a\n/ b\nfoo { }"
+        masked = described_class.mask_literals_and_comments(content, kotlin: true)
+        # `/` is division, not a string, so the later brace is untouched.
+        expect(masked).to include("foo { }")
+      end
+    end
+  end
+
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
@@ -210,15 +257,21 @@ RSpec.describe Dependabot::Gradle::FileParser do
       let(:buildfile_fixture_name) { "dependency_substitution.gradle" }
 
       # Only the real dependencies are parsed; the substitution rules are ignored
-      its(:length) { is_expected.to eq(3) }
+      its(:length) { is_expected.to eq(4) }
 
       it "parses the real dependencies and ignores the substitution targets" do
         expect(dependencies.map(&:name))
           .to contain_exactly(
             "io.airlift:aircompressor",
             "org.apache.commons:commons-lang3",
-            "com.google.guava:guava"
+            "com.google.guava:guava",
+            "org.example:custom-lib"
           )
+      end
+
+      it "does not treat a closure whose name ends with dependencySubstitution as a substitution block" do
+        dependency = dependencies.find { |d| d.name == "org.example:custom-lib" }
+        expect(dependency.version).to eq("1.0.0")
       end
 
       it "does not pick up the substituted version for aircompressor" do

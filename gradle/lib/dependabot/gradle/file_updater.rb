@@ -23,7 +23,7 @@ module Dependabot
       #   resolutionStrategy.dependencySubstitution {
       # Coordinates inside such a block are substitution targets, not real
       # dependency declarations, and must never be rewritten.
-      SUBSTITUTION_BLOCK_START_REGEX = /dependencySubstitution\s*\{/
+      SUBSTITUTION_BLOCK_START_REGEX = /\bdependencySubstitution\s*\{/
 
       sig { override.returns(T::Array[::Dependabot::DependencyFile]) }
       def updated_dependency_files
@@ -261,7 +261,7 @@ module Dependabot
         file = T.must(requirement.file)
         buildfile = T.must(buildfiles.find { |f| f.name == file })
         content = T.must(buildfile.content)
-        substitution_ranges = substitution_block_line_ranges(content)
+        substitution_ranges = substitution_block_line_ranges(content, kotlin: file.end_with?(".kts"))
 
         content.lines.each_with_index.filter_map do |line, index|
           next if substitution_ranges.any? { |range| range.cover?(index) }
@@ -293,10 +293,10 @@ module Dependabot
       # blocks, so lines inside them can be excluded regardless of formatting.
       # Braces inside strings/comments are masked so the matching closing brace
       # is located correctly.
-      sig { params(content: String).returns(T::Array[T::Range[Integer]]) }
-      def substitution_block_line_ranges(content)
+      sig { params(content: String, kotlin: T::Boolean).returns(T::Array[T::Range[Integer]]) }
+      def substitution_block_line_ranges(content, kotlin: false)
         ranges = T.let([], T::Array[T::Range[Integer]])
-        masked = Gradle::FileParser.mask_literals_and_comments(content)
+        masked = Gradle::FileParser.mask_literals_and_comments(content, kotlin: kotlin)
 
         masked.to_enum(:scan, SUBSTITUTION_BLOCK_START_REGEX).each do
           match = T.must(Regexp.last_match)

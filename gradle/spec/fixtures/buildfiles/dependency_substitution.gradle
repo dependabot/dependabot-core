@@ -12,7 +12,7 @@ repositories {
 configurations.all {
     resolutionStrategy.dependencySubstitution {
         // upstream regression tracked in JIRA }
-        /* outer /* nested } */ still outer } */
+        /* pending cleanup } see notes */
         substitute module("io.airlift:aircompressor:2.0.2") using module("io.airlift:aircompressor:2.0.3")
             .because(/see ticket {/)
             .because("tracked // elsewhere {")
@@ -26,6 +26,14 @@ configurations.all {
 
 configurations.all {
     resolutionStrategy.dependencySubstitution {}
+}
+
+// A custom closure whose name merely ends with "dependencySubstitution" must
+// not be treated as a real substitution block.
+configurations.all {
+    mydependencySubstitution {
+        implementation group: 'org.example', name: 'custom-lib', version: '1.0.0'
+    }
 }
 
 dependencies {

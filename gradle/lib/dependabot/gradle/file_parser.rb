@@ -44,7 +44,7 @@ module Dependabot
       DEPENDENCY_SET_ENTRY_REGEX = /entry\s+['"](?<name>#{PART})['"]/o
       PLUGIN_BLOCK_DECLARATION_REGEX = /(?:^|\s)plugins\s*\{/
       PLUGIN_ID_REGEX = /['"](?<id>#{PART})['"]/o
-      DEPENDENCY_SUBSTITUTION_DECLARATION_REGEX = /dependencySubstitution\s*\{/
+      DEPENDENCY_SUBSTITUTION_DECLARATION_REGEX = /\bdependencySubstitution\s*\{/
 
       sig { override.returns(T::Array[Dependabot::Dependency]) }
       def parse
@@ -91,14 +91,18 @@ module Dependabot
       # locate structural `{`/`}` braces without being confused by braces that
       # appear inside quoted strings (e.g. `because("see issue {")`), Groovy
       # slashy/dollar-slashy strings (`/.../`, `$/.../$`) or comments.
-      sig { params(content: String).returns(String) }
-      def self.mask_literals_and_comments(content)
+      #
+      # `kotlin` selects the build-file dialect: Kotlin (`.gradle.kts`) allows
+      # nested block comments but has no slashy strings, whereas Groovy
+      # (`.gradle`) has slashy strings but non-nested block comments.
+      sig { params(content: String, kotlin: T::Boolean).returns(String) }
+      def self.mask_literals_and_comments(content, kotlin: false)
         masked = content.dup
         index = 0
         length = content.length
 
         while index < length
-          stop = literal_or_comment_end(content, index, length)
+          stop = literal_or_comment_end(content, index, length, kotlin: kotlin)
           if stop
             mask_region!(masked, content, index, stop)
             index = stop
@@ -112,8 +116,8 @@ module Dependabot
 
       # Returns the index just past a string literal or comment that starts at
       # `index`, or `nil` when `index` is not the start of one.
-      sig { params(content: String, index: Integer, length: Integer).returns(T.nilable(Integer)) }
-      def self.literal_or_comment_end(content, index, length) # rubocop:disable Metrics/PerceivedComplexity
+      sig { params(content: String, index: Integer, length: Integer, kotlin: T::Boolean).returns(T.nilable(Integer)) }
+      def self.literal_or_comment_end(content, index, length, kotlin: false) # rubocop:disable Metrics/PerceivedComplexity
         three = content[index, 3]
         two = content[index, 2]
         char = T.must(content[index])
@@ -121,28 +125,29 @@ module Dependabot
         if three == '"""' || three == "'''"
           close = content.index(three, index + 3)
           close ? close + 3 : length
-        elsif two == "$/"
+        elsif !kotlin && two == "$/"
           dollar_slashy_string_end(content, index, length)
         elsif char == '"' || char == "'"
           single_quote_string_end(content, index, char, length)
         elsif two == "//"
           content.index("\n", index) || length
         elsif two == "/*"
-          block_comment_end(content, index, length)
-        elsif char == "/" && slashy_string_start?(content, index)
+          block_comment_end(content, index, length, nested: kotlin)
+        elsif !kotlin && char == "/" && slashy_string_start?(content, index)
           slashy_string_end(content, index, length)
         end
       end
 
       # Finds the index just past the closing `*/` of a block comment starting at
-      # `start_index`, tracking nested `/*`/`*/` pairs (allowed in Kotlin `.kts`).
-      sig { params(content: String, start_index: Integer, length: Integer).returns(Integer) }
-      def self.block_comment_end(content, start_index, length)
+      # `start_index`. Kotlin (`.gradle.kts`) permits nested `/*`/`*/` pairs;
+      # Groovy closes at the first `*/`.
+      sig { params(content: String, start_index: Integer, length: Integer, nested: T::Boolean).returns(Integer) }
+      def self.block_comment_end(content, start_index, length, nested: false)
         depth = 1
         stop = start_index + 2
         while stop < length
           pair = content[stop, 2]
-          if pair == "/*"
+          if nested && pair == "/*"
             depth += 1
             stop += 2
           elsif pair == "*/"
@@ -660,7 +665,10 @@ module Dependabot
         # are masked so the matching closing brace is located correctly, and each
         # block is deleted by its exact offsets. Doing this before the comment
         # stripping keeps string literals intact so the masker can see them.
-        prepared_content = remove_dependency_substitution_blocks(T.must(buildfile.content))
+        prepared_content = remove_dependency_substitution_blocks(
+          T.must(buildfile.content),
+          kotlin: buildfile.name.end_with?(".kts")
+        )
 
         # Remove any comments
         prepared_content = prepared_content
@@ -678,10 +686,10 @@ module Dependabot
         prepared_content
       end
 
-      sig { params(content: String).returns(String) }
-      def remove_dependency_substitution_blocks(content)
+      sig { params(content: String, kotlin: T::Boolean).returns(String) }
+      def remove_dependency_substitution_blocks(content, kotlin: false)
         result = content.dup
-        masked = FileParser.mask_literals_and_comments(content)
+        masked = FileParser.mask_literals_and_comments(content, kotlin: kotlin)
         block_ranges = T.let([], T::Array[T::Range[Integer]])
         masked.to_enum(:scan, DEPENDENCY_SUBSTITUTION_DECLARATION_REGEX).each do
           mtch = T.must(Regexp.last_match)
