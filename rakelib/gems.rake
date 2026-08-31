@@ -3,7 +3,7 @@
 
 require_relative "support/helpers"
 
-# rubocop:disable Metrics/BlockLength
+# rubocop:disable-next Metrics/BlockLength
 namespace :gems do
   task build: :clean do
     root_path = Dir.getwd
@@ -61,4 +61,3 @@ namespace :gems do
     FileUtils.rm(Dir["pkg/*.gem", "pkg/*.sigstore.json"])
   end
 end
-# rubocop:enable Metrics/BlockLength

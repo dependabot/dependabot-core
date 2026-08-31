@@ -18,7 +18,7 @@ require "dependabot/update_checkers/base"
 
 module Dependabot
   module Python
-    # rubocop:disable Metrics/ClassLength
+    # rubocop:disable-next Metrics/ClassLength
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
@@ -528,7 +528,6 @@ module Dependabot
         dependency_files.select { |f| f.name.end_with?(".in") }
       end
     end
-    # rubocop:enable Metrics/ClassLength
   end
 end
 
