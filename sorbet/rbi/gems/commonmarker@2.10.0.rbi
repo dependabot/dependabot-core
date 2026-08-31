@@ -105,7 +105,7 @@ class Commonmarker::Node
 
   # Public: Iterate over the children (if any) of the current pointer.
   #
-  # pkg:gem/commonmarker#lib/commonmarker/node.rb:24
+  # pkg:gem/commonmarker#lib/commonmarker/node.rb:36
   def each; end
 
   # pkg:gem/commonmarker#lib/commonmarker/extension.rb:7
@@ -157,7 +157,16 @@ class Commonmarker::Node
   def list_type=(_arg0); end
 
   # pkg:gem/commonmarker#lib/commonmarker/extension.rb:7
+  def literal; end
+
+  # pkg:gem/commonmarker#lib/commonmarker/extension.rb:7
+  def literal=(_arg0); end
+
+  # pkg:gem/commonmarker#lib/commonmarker/extension.rb:7
   def next_sibling; end
+
+  # pkg:gem/commonmarker#lib/commonmarker/extension.rb:7
+  def node_supports?(_arg0); end
 
   # pkg:gem/commonmarker#lib/commonmarker/extension.rb:7
   def node_to_commonmark(*_arg0); end
@@ -176,6 +185,16 @@ class Commonmarker::Node
 
   # pkg:gem/commonmarker#lib/commonmarker/extension.rb:7
   def replace(_arg0); end
+
+  # Public: Whether this node responds to the given method.
+  #
+  # name        - A {Symbol} or {String} naming the method.
+  # include_all - A {Boolean} indicating whether to consider private methods.
+  #
+  # Returns a {Boolean}.
+  #
+  # pkg:gem/commonmarker#lib/commonmarker/node.rb:17
+  def respond_to?(name, include_all = T.unsafe(nil)); end
 
   # pkg:gem/commonmarker#lib/commonmarker/extension.rb:7
   def source_position; end
@@ -199,7 +218,7 @@ class Commonmarker::Node
   #
   # Returns a {String}.
   #
-  # pkg:gem/commonmarker#lib/commonmarker/node.rb:56
+  # pkg:gem/commonmarker#lib/commonmarker/node.rb:68
   def to_commonmark(options: T.unsafe(nil), plugins: T.unsafe(nil)); end
 
   # Public: Converts a node to an HTML string.
@@ -209,7 +228,7 @@ class Commonmarker::Node
   #
   # Returns a {String} of HTML.
   #
-  # pkg:gem/commonmarker#lib/commonmarker/node.rb:41
+  # pkg:gem/commonmarker#lib/commonmarker/node.rb:53
   def to_html(options: T.unsafe(nil), plugins: T.unsafe(nil)); end
 
   # pkg:gem/commonmarker#lib/commonmarker/extension.rb:7
@@ -225,7 +244,7 @@ class Commonmarker::Node
   #
   # blk - A {Proc} representing the action to take for each child
   #
-  # pkg:gem/commonmarker#lib/commonmarker/node.rb:14
+  # pkg:gem/commonmarker#lib/commonmarker/node.rb:26
   def walk(&block); end
 
   class << self

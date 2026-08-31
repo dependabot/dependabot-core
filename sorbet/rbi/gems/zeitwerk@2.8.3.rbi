@@ -885,7 +885,7 @@ module Zeitwerk::Loader::EagerLoad
   # In order to invoke this method, the caller has to ensure `child` is a
   # strict namespace descendant of `root_namespace`.
   #
-  # pkg:gem/zeitwerk#lib/zeitwerk/loader/eager_load.rb:191
+  # pkg:gem/zeitwerk#lib/zeitwerk/loader/eager_load.rb:193
   def eager_load_child_namespace(child, child_name, root_dir, root_namespace); end
 end
 
