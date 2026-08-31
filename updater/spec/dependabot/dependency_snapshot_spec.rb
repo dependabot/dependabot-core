@@ -109,6 +109,7 @@ RSpec.describe Dependabot::DependencySnapshot do
   let(:unsupported_error_enabled) { false }
 
   before do
+    allow(Dependabot::Experiments).to receive(:enabled?).and_call_original
     allow(Dependabot::Experiments).to receive(:enabled?)
       .with(:bundler_v1_unsupported_error)
       .and_return(unsupported_error_enabled)
@@ -443,6 +444,75 @@ RSpec.describe Dependabot::DependencySnapshot do
 
       snapshot.current_directory = "/bar"
       expect(snapshot.handled_dependencies).to eq(Set.new(%w(dummy-pkg-a)))
+    end
+
+    context "when the group restricts the update types it accepts" do
+      let(:dependency_groups) do
+        [
+          {
+            "name" => "group-a",
+            "rules" => {
+              "patterns" => ["dummy-pkg-*"],
+              "exclude-patterns" => ["dummy-pkg-b"],
+              "update-types" => %w(minor patch)
+            }
+          }
+        ]
+      end
+
+      let(:existing_group_pull_requests) { [] }
+      let(:experiment_enabled) { true }
+
+      before do
+        Dependabot::Experiments.register(:individual_prs_for_semver_excluded_dependencies, experiment_enabled)
+      end
+
+      it "defers the dependencies to the group rather than marking them handled" do
+        snapshot = create_dependency_snapshot
+        group = snapshot.groups.first
+        snapshot.mark_group_handled(group, defer_update_types: true)
+
+        %w(/foo /bar).each do |directory|
+          snapshot.current_directory = directory
+
+          expect(snapshot.handled_dependencies).to be_empty
+          expect(snapshot.groups_deferred_by_semver_rules("dummy-pkg-a")).to eq([group])
+          expect(snapshot.ungrouped_dependencies.map(&:name)).to include("dummy-pkg-a")
+        end
+      end
+
+      it "marks the dependencies handled when the caller does not defer" do
+        snapshot = create_dependency_snapshot
+        snapshot.mark_group_handled(snapshot.groups.first)
+        snapshot.current_directory = "/foo"
+
+        expect(snapshot.handled_dependencies).to eq(Set.new(%w(dummy-pkg-a)))
+        expect(snapshot.groups_deferred_by_semver_rules("dummy-pkg-a")).to be_empty
+      end
+
+      it "does not defer dependencies the group never claimed" do
+        snapshot = create_dependency_snapshot
+        snapshot.mark_group_handled(snapshot.groups.first, defer_update_types: true)
+        snapshot.current_directory = "/foo"
+
+        expect(snapshot.groups_deferred_by_semver_rules("dummy-pkg-b")).to be_empty
+      end
+
+      context "when the experiment is disabled" do
+        let(:experiment_enabled) { false }
+
+        it "marks the dependencies handled" do
+          snapshot = create_dependency_snapshot
+          snapshot.mark_group_handled(snapshot.groups.first, defer_update_types: true)
+
+          %w(/foo /bar).each do |directory|
+            snapshot.current_directory = directory
+
+            expect(snapshot.handled_dependencies).to eq(Set.new(%w(dummy-pkg-a)))
+            expect(snapshot.groups_deferred_by_semver_rules("dummy-pkg-a")).to be_empty
+          end
+        end
+      end
     end
 
     context "when there are no existing group pull requests" do
