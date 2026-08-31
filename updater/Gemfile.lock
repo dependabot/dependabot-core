@@ -562,14 +562,16 @@ GEM
       citrus (~> 3.0, > 3.0)
       racc (~> 1.7)
     tsort (0.2.0)
-    turbo_tests (2.2.5)
-      parallel_tests (>= 3.3.0, < 5)
+    turbo_tests2 (3.2.7)
+      parallel_tests (>= 3.3.0, < 6)
       rspec (>= 3.10)
+      version_gem (~> 1.1, >= 1.1.15)
     unicode-display_width (3.2.0)
       unicode-emoji (~> 4.1)
     unicode-emoji (4.2.0)
     uri (1.1.1)
     vcr (6.4.0)
+    version_gem (1.1.15)
     webmock (3.26.2)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
@@ -655,7 +657,7 @@ DEPENDENCIES
   sentry-ruby (~> 6.5)
   simplecov (~> 1.1)
   terminal-table (~> 4.0)
-  turbo_tests (~> 2.2.5)
+  turbo_tests2 (~> 3.2.7)
   vcr (~> 6.1)
   webmock (~> 3.25)
   webrick (~> 1.9)
@@ -841,11 +843,12 @@ CHECKSUMS
   terminal-table (4.0.0) sha256=f504793203f8251b2ea7c7068333053f0beeea26093ec9962e62ea79f94301d2
   toml-rb (4.2.0) sha256=10a48c91613e20cf63483a7a776767dfb3cd7d70e9327c0237443da601e13776
   tsort (0.2.0) sha256=9650a793f6859a43b6641671278f79cfead60ac714148aabe4e3f0060480089f
-  turbo_tests (2.2.5) sha256=3fa31497d12976d11ccc298add29107b92bda94a90d8a0a5783f06f05102509f
+  turbo_tests2 (3.2.7) sha256=b0fbc681d15aa1aa8158d7826575155d2fc084124a1903b45db02a0ea9a9c0e7
   unicode-display_width (3.2.0) sha256=0cdd96b5681a5949cdbc2c55e7b420facae74c4aaf9a9815eee1087cb1853c42
   unicode-emoji (4.2.0) sha256=519e69150f75652e40bf736106cfbc8f0f73aa3fb6a65afe62fefa7f80b0f80f
   uri (1.1.1) sha256=379fa58d27ffb1387eaada68c749d1426738bd0f654d812fcc07e7568f5c57c6
   vcr (6.4.0) sha256=077ac92cc16efc5904eb90492a18153b5e6ca5398046d8a249a7c96a9ea24ae6
+  version_gem (1.1.15) sha256=a73241587b29252e3567e0c818ded80730eb754d43b508f6ce4db22ca9ba27d0
   webmock (3.26.2) sha256=774556f2ea6371846cca68c01769b2eac0d134492d21f6d0ab5dd643965a4c90
   webrick (1.9.2) sha256=beb4a15fc474defed24a3bda4ffd88a490d517c9e4e6118c3edce59e45864131
   zeitwerk (2.8.2) sha256=7212a61311083c604184b1ea2574b9aa05cd14f855a0841c06985cabe9181d12
