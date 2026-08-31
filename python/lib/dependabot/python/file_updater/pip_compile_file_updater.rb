@@ -17,7 +17,7 @@ require "dependabot/python/authed_url_builder"
 module Dependabot
   module Python
     class FileUpdater
-      # rubocop:disable Metrics/ClassLength
+      # rubocop:disable-next Metrics/ClassLength
       class PipCompileFileUpdater
         extend T::Sig
 
@@ -466,7 +466,7 @@ module Dependabot
         end
 
         sig { params(name: String, version: String, algorithm: String).returns(T::Array[String]) }
-        # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable-next Metrics/PerceivedComplexity
         def package_hashes_for(name:, version:, algorithm:)
           index_urls = @index_urls || [nil]
           hashes = []
@@ -504,8 +504,6 @@ module Dependabot
 
           hashes
         end
-        # rubocop:enable Metrics/PerceivedComplexity
-
         sig { params(requirement_string: String).returns(T.nilable(String)) }
         def hash_separator(requirement_string)
           hash_regex = RequirementParser::HASH
@@ -816,7 +814,6 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?("setup.cfg") }
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end

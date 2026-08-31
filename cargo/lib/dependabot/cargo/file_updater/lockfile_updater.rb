@@ -13,7 +13,7 @@ require "dependabot/shared_helpers"
 module Dependabot
   module Cargo
     class FileUpdater
-      # rubocop:disable Metrics/ClassLength
+      # rubocop:disable-next Metrics/ClassLength
       class LockfileUpdater
         extend T::Sig
 
@@ -794,7 +794,6 @@ module Dependabot
           end
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end

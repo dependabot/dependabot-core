@@ -21,7 +21,7 @@ module Dependabot
   class Updater
     extend T::Sig
 
-    # rubocop:disable Metrics/ModuleLength
+    # rubocop:disable-next Metrics/ModuleLength
     module GroupUpdateCreation
       extend T::Sig
       extend T::Helpers
@@ -757,6 +757,5 @@ module Dependabot
         record_security_update_ignored(checker)
       end
     end
-    # rubocop:enable Metrics/ModuleLength
   end
 end

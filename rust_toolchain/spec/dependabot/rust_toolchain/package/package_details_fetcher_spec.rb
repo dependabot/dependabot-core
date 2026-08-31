@@ -81,7 +81,7 @@ RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
       expect(nightly_channel.version).to be_nil
     end
 
-    # rubocop:disable Naming/VariableNumber
+    # rubocop:disable-next Naming/VariableNumber
     it "parses specific version releases correctly" do
       package_details = finder.fetch
       version_releases = package_details.releases.select do |r|
@@ -107,7 +107,6 @@ RSpec.describe Dependabot::RustToolchain::Package::PackageDetailsFetcher do
       expect(channel_1_42_0.date).to be_nil
       expect(channel_1_42_0.stability).to be_nil
     end
-    # rubocop:enable Naming/VariableNumber
 
     it "handles network errors gracefully" do
       allow(Dependabot::RegistryClient).to receive(:get)

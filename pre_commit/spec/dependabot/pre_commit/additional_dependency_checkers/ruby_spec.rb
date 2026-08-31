@@ -50,9 +50,8 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Ruby do
   let(:current_version) { "0.52.0" }
 
   describe "#latest_version" do
-    # rubocop:disable RSpec/VerifiedDoubleReference
+    # rubocop:disable-next RSpec/VerifiedDoubleReference
     let(:bundler_checker_class) { class_double("Dependabot::Bundler::UpdateChecker") }
-    # rubocop:enable RSpec/VerifiedDoubleReference
     let(:bundler_checker) { instance_double(Dependabot::UpdateCheckers::Base) }
     let(:latest_version_obj) { Gem::Version.new("0.60.0") }
 
@@ -292,9 +291,8 @@ RSpec.describe Dependabot::PreCommit::AdditionalDependencyCheckers::Ruby do
       )
     end
 
-    # rubocop:disable RSpec/VerifiedDoubleReference
+    # rubocop:disable-next RSpec/VerifiedDoubleReference
     let(:bundler_checker_class) { class_double("Dependabot::Bundler::UpdateChecker") }
-    # rubocop:enable RSpec/VerifiedDoubleReference
     let(:bundler_checker) { instance_double(Dependabot::UpdateCheckers::Base) }
 
     before do

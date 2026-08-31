@@ -18,7 +18,7 @@ require "dependabot/uv/authed_url_builder"
 module Dependabot
   module Uv
     class FileUpdater
-      # rubocop:disable Metrics/ClassLength
+      # rubocop:disable-next Metrics/ClassLength
       class CompileFileUpdater
         extend T::Sig
 
@@ -672,7 +672,6 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?(".txt") }
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end
