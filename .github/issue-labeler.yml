@@ -79,6 +79,9 @@
 "L: bazel":
     - '(bazel)'
 
+"L: codeql":
+    - '(codeql)'
+
 "L: julia":
     - '(julia)'
 

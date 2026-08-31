@@ -64,6 +64,8 @@ module Dependabot
           "bun" => "bun",
           "bundler" => "bundler",
           "cargo" => "cargo",
+          "codeql" => "codeql",
+          "codeql-pack" => "codeql",
           "composer" => "composer",
           "deno" => "deno",
           "conda" => "conda",

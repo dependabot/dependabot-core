@@ -24,6 +24,12 @@ PATH
       dependabot-common (= 0.394.0)
 
 PATH
+  remote: ../codeql
+  specs:
+    dependabot-codeql (0.394.0)
+      dependabot-common (= 0.394.0)
+
+PATH
   remote: ../common
   specs:
     dependabot-common (0.394.0)
@@ -595,6 +601,7 @@ DEPENDENCIES
   dependabot-bun!
   dependabot-bundler!
   dependabot-cargo!
+  dependabot-codeql!
   dependabot-common!
   dependabot-composer!
   dependabot-conda!
@@ -685,6 +692,7 @@ CHECKSUMS
   dependabot-bun (0.394.0)
   dependabot-bundler (0.394.0)
   dependabot-cargo (0.394.0)
+  dependabot-codeql (0.394.0)
   dependabot-common (0.394.0)
   dependabot-composer (0.394.0)
   dependabot-conda (0.394.0)
