@@ -23,6 +23,7 @@
 # - bun
 # - bundler
 # - cargo
+# - codeql
 # - composer
 # - conda
 # - devcontainers
@@ -63,6 +64,7 @@ $LOAD_PATH << "./bazel/lib"
 $LOAD_PATH << "./bun/lib"
 $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
+$LOAD_PATH << "./codeql/lib"
 $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
 $LOAD_PATH << "./conda/lib"
@@ -123,6 +125,7 @@ require "dependabot/bazel"
 require "dependabot/bun"
 require "dependabot/bundler"
 require "dependabot/cargo"
+require "dependabot/codeql"
 require "dependabot/composer"
 require "dependabot/conda"
 require "dependabot/deno"
@@ -374,6 +377,7 @@ valid_package_managers = %w(
   bun
   bundler
   cargo
+  codeql
   composer
   conda
   deno

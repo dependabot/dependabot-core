@@ -7,6 +7,9 @@ common: &common
 bazel:
   - *common
   - 'bazel/**'
+codeql:
+  - *common
+  - 'codeql/**'
 deno:
   - *common
   - 'deno/**'

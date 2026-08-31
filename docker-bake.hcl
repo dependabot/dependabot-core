@@ -20,6 +20,7 @@ variable "ECOSYSTEMS" {
     { name = "bun", image = "bun", dockerfile = "bun/Dockerfile" },
     { name = "bundler", image = "bundler", dockerfile = "bundler/Dockerfile" },
     { name = "cargo", image = "cargo", dockerfile = "cargo/Dockerfile" },
+    { name = "codeql", image = "codeql", dockerfile = "codeql/Dockerfile" },
     { name = "composer", image = "composer", dockerfile = "composer/Dockerfile" },
     { name = "conda", image = "conda", dockerfile = "conda/Dockerfile" },
     { name = "deno", image = "deno", dockerfile = "deno/Dockerfile" },
