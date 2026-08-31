@@ -239,7 +239,7 @@ if ENV.key?("COOLDOWN") && !ENV["COOLDOWN"].to_s.strip.empty?
   $options[:cooldown] = JSON.parse(ENV.fetch("COOLDOWN", "{}"))
 end
 
-# rubocop:disable Metrics/BlockLength
+# rubocop:disable-next Metrics/BlockLength
 option_parse = OptionParser.new do |opts|
   opts.banner = "usage: ruby bin/dry-run.rb [OPTIONS] PACKAGE_MANAGER REPO"
 
@@ -361,7 +361,6 @@ option_parse = OptionParser.new do |opts|
     $options[:api_endpoint] = File.join(value, "api", "v3")
   end
 end
-# rubocop:enable Metrics/BlockLength
 
 # Parse options before validating arguments
 option_parse.parse!
@@ -480,7 +479,7 @@ begin
   # rubocop:disable Metrics/AbcSize
   # rubocop:disable Metrics/MethodLength
   # rubocop:disable Metrics/CyclomaticComplexity
-  # rubocop:disable Metrics/PerceivedComplexity
+  # rubocop:disable-next Metrics/PerceivedComplexity
   def cached_dependency_files_read
     cache_dir = dependency_files_cache_dir
     cache_manifest_path = File.join(
@@ -543,7 +542,6 @@ begin
       data
     end
   end
-  # rubocop:enable Metrics/PerceivedComplexity
   # rubocop:enable Metrics/CyclomaticComplexity
   # rubocop:enable Metrics/MethodLength
   # rubocop:enable Metrics/AbcSize

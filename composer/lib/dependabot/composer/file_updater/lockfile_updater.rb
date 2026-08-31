@@ -12,7 +12,7 @@ require "dependabot/composer/helpers"
 require "dependabot/composer/composer_error_handler"
 require "sorbet-runtime"
 
-# rubocop:disable Metrics/ClassLength
+# rubocop:disable-next Metrics/ClassLength
 module Dependabot
   module Composer
     class FileUpdater
@@ -328,7 +328,7 @@ module Dependabot
 
             old_req =
               dep.requirements.find { |r| r.file == PackageManager::MANIFEST_FILENAME }
-                              &.requirement_string
+                 &.requirement_string
 
             # When updating a subdep there won't be an old requirement
             next content unless old_req
@@ -621,4 +621,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

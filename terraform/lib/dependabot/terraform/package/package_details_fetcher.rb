@@ -72,8 +72,6 @@ module Dependabot
           # Sort the result lines by tag in descending order
           result_lines.sort_by(&:tag).reverse
         end
-        # RuboCop:enable Metrics/AbcSize, Metrics/MethodLength
-
         sig { returns(T::Array[GitTagWithDetail]) }
         def fetch_tag_and_release_date_from_module
           return [] unless dependency_source_details

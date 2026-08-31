@@ -59,7 +59,7 @@ deps_shared_with_common = %w(
   simplecov
   stackprof
   strscan
-  turbo_tests
+  turbo_tests2
   vcr
   webmock
   webrick
