@@ -19,7 +19,7 @@ require "dependabot/nub/update_checker"
 require "dependabot/nub/version"
 require "dependabot/shared_helpers"
 
-# rubocop:disable Metrics/ClassLength
+# rubocop:disable-next Metrics/ClassLength
 module Dependabot
   module Nub
     class UpdateChecker
@@ -776,4 +776,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength
