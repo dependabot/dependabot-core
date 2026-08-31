@@ -16,7 +16,7 @@ require "dependabot/clients/bitbucket_with_retries"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/shared_helpers"
 
-# rubocop:disable Metrics/ClassLength
+# rubocop:disable-next Metrics/ClassLength
 module Dependabot
   module FileFetchers
     class RepositoryContent < T::ImmutableStruct
@@ -1030,4 +1030,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

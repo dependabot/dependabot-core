@@ -48,7 +48,7 @@ require "dependabot/experiments"
 
 module Dependabot
   module Docker
-    # rubocop:disable Metrics/ClassLength
+    # rubocop:disable-next Metrics/ClassLength
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       extend T::Sig
 
@@ -1714,7 +1714,6 @@ module Dependabot
         )
       end
     end
-    # rubocop:enable Metrics/ClassLength
   end
 end
 

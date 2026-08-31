@@ -17,7 +17,7 @@ require "dependabot/python/authed_url_builder"
 module Dependabot
   module Python
     class FileUpdater
-      # rubocop:disable Metrics/ClassLength
+      # rubocop:disable-next Metrics/ClassLength
       class PipCompileFileUpdater
         extend T::Sig
 
@@ -816,7 +816,6 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?("setup.cfg") }
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end
