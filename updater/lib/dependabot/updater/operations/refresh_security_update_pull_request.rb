@@ -58,8 +58,6 @@ module Dependabot
           Dependabot.logger.info("Starting update job for #{job.source.repo}")
           Dependabot.logger.info("Checking and updating security pull requests...")
 
-          return if abort_multi_directory_refresh?
-
           # Retrieve the list of initial notices from dependency snapshot
           @notices = dependency_snapshot.notices
           # More notices can be added during the update process
@@ -73,30 +71,6 @@ module Dependabot
         end
 
         private
-
-        # A multi-directory pull request should be refreshed through the group
-        # operation, which carries a dependency-group-to-refresh. When such a
-        # payload reaches this individual strategy we end the job cleanly and
-        # report a non-fatal exception instead of raising an unknown error.
-        sig { returns(T::Boolean) }
-        def abort_multi_directory_refresh?
-          directories = job.source.directories
-          return false unless directories && directories.count > 1
-
-          Dependabot.logger.warn(
-            "Skipping refresh for #{T.must(job.dependencies).join(', ')}: an individual pull request " \
-            "refresh cannot span multiple directories (#{directories.join(', ')})."
-          )
-
-          service.capture_exception(
-            error: Dependabot::DependabotError.new(
-              "Individual pull request refresh received multiple directories without a group to refresh."
-            ),
-            job: job
-          )
-
-          true
-        end
 
         sig { returns(Dependabot::Job) }
         attr_reader :job
