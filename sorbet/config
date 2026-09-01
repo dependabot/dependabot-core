@@ -16,6 +16,7 @@
 --ignore=common/spec/
 --ignore=composer/spec/
 --ignore=conda/spec/
+--ignore=codeql/spec/
 --ignore=deno/spec/
 --ignore=devcontainers/spec/
 --ignore=docker/spec/
