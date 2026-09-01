@@ -142,6 +142,52 @@ RSpec.describe Dependabot::Uv::FileUpdater do
       end
     end
 
+    context "with a uv.lock file and requirement txt files" do
+      let(:uv_lock_file) do
+        Dependabot::DependencyFile.new(
+          name: "uv.lock",
+          content: "version = 1\n"
+        )
+      end
+      let(:pyproject_file) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: "[project]\nname = \"test\"\ndependencies = [\"psycopg2>=2.8.1\"]"
+        )
+      end
+      let(:dependency_files) { [pyproject_file, uv_lock_file, requirements] }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "psycopg2",
+          version: "2.8.1",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.8.1",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: ">=2.6.1",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "uv"
+        )
+      end
+
+      it "only delegates to LockFileUpdater and does not update txt files" do
+        lock_updater = instance_double(described_class::LockFileUpdater)
+        updated_lock = Dependabot::DependencyFile.new(name: "uv.lock", content: "updated")
+
+        allow(described_class::LockFileUpdater).to receive(:new).and_return(lock_updater)
+        allow(lock_updater).to receive(:updated_dependency_files).and_return([updated_lock])
+
+        expect(described_class::CompileFileUpdater).not_to receive(:new)
+        expect(updated_files.map(&:name)).to eq(["uv.lock"])
+      end
+    end
+
     describe "with no Pipfile or pip-compile files" do
       let(:dependency_files) { [requirements] }
 
@@ -153,41 +199,24 @@ RSpec.describe Dependabot::Uv::FileUpdater do
       end
     end
 
-    context "when compile and lock updaters both return the same manifest file" do
-      let(:dependency_files) { [requirements] }
-      let(:manifest_from_compile_updater) do
-        Dependabot::DependencyFile.new(
-          name: "libs/testing_tools/pyproject.toml",
-          content: "compile updater content"
-        )
-      end
-      let(:manifest_from_lock_updater) do
-        Dependabot::DependencyFile.new(
-          name: "libs/testing_tools/pyproject.toml",
-          content: "lock updater content"
-        )
-      end
-      let(:lockfile_from_lock_updater) do
+    context "with a uv.lock file and requirement txt files but no pyproject" do
+      let(:uv_lock_file) do
         Dependabot::DependencyFile.new(
           name: "uv.lock",
-          content: "updated lock content"
+          content: "version = 1\n"
         )
       end
+      let(:dependency_files) { [requirements, uv_lock_file] }
 
-      it "deduplicates files by name and keeps the lock updater version" do
+      it "delegates to CompileFileUpdater" do
+        updated_requirements = Dependabot::DependencyFile.new(name: "requirements.txt", content: "updated")
         compile_updater = instance_double(described_class::CompileFileUpdater)
-        lock_updater = instance_double(described_class::LockFileUpdater)
 
         allow(described_class::CompileFileUpdater).to receive(:new).and_return(compile_updater)
-        allow(described_class::LockFileUpdater).to receive(:new).and_return(lock_updater)
-        allow(compile_updater).to receive(:updated_dependency_files).and_return([manifest_from_compile_updater])
-        allow(lock_updater).to receive(:updated_dependency_files).and_return(
-          [manifest_from_lock_updater, lockfile_from_lock_updater]
-        )
+        allow(compile_updater).to receive(:updated_dependency_files).and_return([updated_requirements])
 
-        expect(updated_files.map(&:name)).to contain_exactly("libs/testing_tools/pyproject.toml", "uv.lock")
-        expect(updated_files.find { |file| file.name == "libs/testing_tools/pyproject.toml" }&.content)
-          .to eq("lock updater content")
+        expect(described_class::LockFileUpdater).not_to receive(:new)
+        expect(updated_files.map(&:name)).to eq(["requirements.txt"])
       end
     end
 
