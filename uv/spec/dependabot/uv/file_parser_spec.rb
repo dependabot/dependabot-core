@@ -738,6 +738,30 @@ RSpec.describe Dependabot::Uv::FileParser do
       its(:length) { is_expected.to eq(3) }
     end
 
+    context "with dependencies pinned to uv sources" do
+      let(:files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "uv_mixed_sources.toml")
+        )
+      end
+
+      # tagged-package survives: its tag gives an ordering, so the pin can be updated from the remote
+      # rather than resolved against an index it is not on
+      it "omits the dependencies pinned to a source that can never be updated" do
+        expect(dependencies.map(&:name))
+          .to contain_exactly(
+            "requests",
+            "local-package",
+            "registry-package",
+            "tagged-package",
+            "setuptools",
+            "wheel"
+          )
+      end
+    end
+
     context "with a pyproject.toml file with no dependencies" do
       let(:files) { [pyproject] }
       let(:pyproject) do
