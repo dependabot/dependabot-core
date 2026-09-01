@@ -46,6 +46,28 @@ RSpec.describe Dependabot::Config::File do
         expect(update_config).to be_a(Dependabot::Config::UpdateConfig)
         expect(update_config.commit_message_options.prefix).to be_nil
       end
+
+      it "uses codeql as the canonical package-ecosystem spelling" do
+        config = described_class.parse(<<~YAML)
+          version: 2
+          updates:
+            - package-ecosystem: codeql
+              directory: /
+              ignore:
+                - dependency-name: codeql/java-all
+                  versions: ["1.2.3"]
+              commit-message:
+                prefix: codeql
+              exclude-paths:
+                - excluded
+        YAML
+
+        update_config = config.update_config("codeql")
+
+        expect(update_config.ignore_conditions.map(&:dependency_name)).to eq(["codeql/java-all"])
+        expect(update_config.commit_message_options.prefix).to eq("codeql")
+        expect(update_config.exclude_paths).to eq(["excluded"])
+      end
     end
 
     describe "#parse" do
