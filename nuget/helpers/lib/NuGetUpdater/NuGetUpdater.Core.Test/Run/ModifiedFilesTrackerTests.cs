@@ -25,6 +25,7 @@ public class ModifiedFilesTrackerTests
             "#:package Some.Package@1.0.0\r\n\r\nConsole.WriteLine();\r\n",
             bomEncoding,
             TestContext.Current.CancellationToken);
+        await GitTestHelper.InitializeRepositoryAsync(tempDirectory.DirectoryPath, ["app.cs"]);
 
         var repoContentsPath = new DirectoryInfo(tempDirectory.DirectoryPath);
         var initialFiles = ModifiedFilesTracker.GetInitiallyExistingFiles(repoContentsPath);
