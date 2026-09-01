@@ -116,9 +116,8 @@ RSpec.describe Dependabot::PreCommit do
         )
       end
 
-      # rubocop:disable RSpec/VerifiedDoubleReference
+      # rubocop:disable-next RSpec/VerifiedDoubleReference
       let(:npm_checker_class) { class_double("Dependabot::NpmAndYarn::UpdateChecker") }
-      # rubocop:enable RSpec/VerifiedDoubleReference
       let(:npm_checker) { instance_double(Dependabot::UpdateCheckers::Base) }
       let(:latest_version_obj) { Gem::Version.new("9.0.0") }
 

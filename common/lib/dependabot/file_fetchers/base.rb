@@ -16,7 +16,7 @@ require "dependabot/clients/bitbucket_with_retries"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/shared_helpers"
 
-# rubocop:disable Metrics/ClassLength
+# rubocop:disable-next Metrics/ClassLength
 module Dependabot
   module FileFetchers
     class RepositoryContent < T::ImmutableStruct
@@ -503,7 +503,7 @@ module Dependabot
         params(path: String, fetch_submodules: T::Boolean, raise_errors: T::Boolean)
           .returns(T::Array[RepositoryContent])
       end
-      def _fetch_repo_contents(path, fetch_submodules: false, raise_errors: true) # rubocop:disable Metrics/PerceivedComplexity
+      def _fetch_repo_contents(path, fetch_submodules: false, raise_errors: true)
         path = path.gsub(" ", "%20")
         specification = _full_specification_for(path, fetch_submodules: fetch_submodules)
         provider = specification.provider
@@ -512,11 +512,7 @@ module Dependabot
         commit = specification.commit
 
         entries = _fetch_repo_contents_fully_specified(provider, repo, tmp_path, commit)
-        if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files)
-          filter_excluded(entries)
-        else
-          entries
-        end
+        filter_excluded(entries)
       rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::DirectoryNotFound, directory if path == directory.gsub(%r{^/*}, "")
 
@@ -597,11 +593,7 @@ module Dependabot
             size: 0 # NOTE: added for parity with github contents API
           )
         end
-        if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files)
-          filter_excluded(entries)
-        else
-          entries
-        end
+        filter_excluded(entries)
       end
 
       # Filters out any entries whose paths match one of the exclude_paths globs.
@@ -1038,4 +1030,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

@@ -1,0 +1,12 @@
+on: [push]
+
+name: Reused anchors
+jobs:
+  first:
+    runs-on: ubuntu-latest
+    env: { ACTION: &pin actions/checkout@v2.1.0 }
+    steps: [{ uses: *pin }]
+  second:
+    runs-on: ubuntu-latest
+    env: { ACTION: &pin actions/setup-node@v3.0.0 }
+    steps: [{ uses: *pin }]

@@ -239,7 +239,7 @@ Style/HashSlice:
 Style/SafeNavigationChainLength:
   Enabled: false
 
-# Offense count: 758
+# Offense count: 712
 Sorbet/ForbidTUntyped:
   Exclude:
     - "bun/lib/dependabot/bun.rb"
@@ -250,7 +250,6 @@ Sorbet/ForbidTUntyped:
     - "bun/lib/dependabot/bun/file_parser/bun_lock.rb"
     - "bun/lib/dependabot/bun/file_parser/lockfile_parser.rb"
     - "bun/lib/dependabot/bun/metadata_finder.rb"
-    - "bun/lib/dependabot/bun/package/package_details_fetcher.rb"
     - "bun/lib/dependabot/bun/package/registry_finder.rb"
     - "bun/lib/dependabot/bun/package_manager.rb"
     - "bun/lib/dependabot/bun/registry_helper.rb"
@@ -324,7 +323,6 @@ Sorbet/ForbidTUntyped:
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/file_updater/yarn_lockfile_updater.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/helpers.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/metadata_finder.rb"
-    - "npm_and_yarn/lib/dependabot/npm_and_yarn/package/package_details_fetcher.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/package/registry_finder.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/package_manager.rb"
     - "npm_and_yarn/lib/dependabot/npm_and_yarn/registry_helper.rb"
@@ -346,7 +344,6 @@ Sorbet/ForbidTUntyped:
     - "python/lib/dependabot/python/file_fetcher.rb"
     - "python/lib/dependabot/python/file_parser.rb"
     - "python/lib/dependabot/python/file_parser/pipfile_files_parser.rb"
-    - "python/lib/dependabot/python/file_parser/pyproject_files_parser.rb"
     - "python/lib/dependabot/python/file_parser/setup_file_parser.rb"
     - "python/lib/dependabot/python/file_updater/pip_compile_file_updater.rb"
     - "python/lib/dependabot/python/file_updater/pipfile_file_updater.rb"
@@ -373,7 +370,6 @@ Sorbet/ForbidTUntyped:
     - "uv/lib/dependabot/uv/dependency_grapher.rb"
     - "uv/lib/dependabot/uv/file_fetcher/workspace_fetcher.rb"
     - "uv/lib/dependabot/uv/file_parser.rb"
-    - "uv/lib/dependabot/uv/file_parser/pyproject_files_parser.rb"
     - "uv/lib/dependabot/uv/file_updater/compile_file_updater.rb"
     - "uv/lib/dependabot/uv/file_updater/lock_file_error_handler.rb"
     - "uv/lib/dependabot/uv/file_updater/lock_file_updater.rb"

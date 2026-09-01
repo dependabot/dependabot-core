@@ -206,13 +206,23 @@ module Dependabot
           .map { |fp| fetch_file_from_host(fp, fetch_submodules: true) }
       end
 
+      # `Bundler::Source::Path#path` is not the value the lockfile declared: it is re-relativised
+      # against `Bundler.root`, and `..` segments that escape the filesystem root are dropped
+      # rather than preserved. A `remote:` reaching further up than `Bundler.root` is deep
+      # therefore resolves to a shallower, wrong directory. The lockfile's own value survives
+      # verbatim in the source's options, so read it from there.
+      sig { params(source: ::Bundler::Source::Path).returns(String) }
+      def lockfile_path_source_path(source)
+        (source.options["path"] || source.path).to_s
+      end
+
       sig { returns(T::Array[String]) }
       def fetch_path_gemspec_paths
         if lockfile
           parsed_lockfile = CachedLockfileParser.parse(T.must(sanitized_lockfile_content))
           parsed_lockfile.specs
                          .select { |s| s.source.instance_of?(::Bundler::Source::Path) }
-                         .map { |s| s.source.path }.uniq
+                         .map { |s| lockfile_path_source_path(s.source) }.uniq
         else
           gemfiles = ([gemfile] + child_gemfiles).compact
           gemfiles.flat_map do |file|
@@ -259,8 +269,7 @@ module Dependabot
           next if file.name == path
 
           # Skip excluded child Gemfiles
-          if Dependabot::Experiments.enabled?(:enable_exclude_paths_subdirectory_manifest_files) &&
-             !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(path, @exclude_paths)
+          if !@exclude_paths.empty? && Dependabot::FileFiltering.exclude_path?(path, @exclude_paths)
             raise Dependabot::DependencyFileNotEvaluatable,
                   "Cannot process requirements: '#{file.name}' references excluded file '#{path}'. " \
                   "Please either remove the reference from '#{file.name}' " \

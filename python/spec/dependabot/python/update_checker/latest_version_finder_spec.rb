@@ -12,11 +12,19 @@ require "dependabot/python/update_checker/latest_version_finder"
 RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
   before do
     stub_request(:get, pypi_url)
-      .with(headers: { "Accept" => "text/html" })
+      .with(headers: { "Accept" => registry_accept })
       .to_return(status: 200, body: pypi_response)
   end
 
   let(:pypi_url) { "https://pypi.org/simple/luigi/" }
+  let(:registry_accept) do
+    if pypi_url.start_with?("https://pypi.org/", "https://pypi.python.org/")
+      "text/html"
+    else
+      "application/vnd.pypi.simple.v1+json, " \
+        "application/vnd.pypi.simple.v1+html;q=0.2, text/html;q=0.01"
+    end
+  end
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:finder) do
     described_class.new(
@@ -331,6 +339,44 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         let(:dependency_files) { [requirements_file] }
 
         it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+
+        context "when distributions have different Python requirements" do
+          subject(:latest_python_version) do
+            finder.latest_version(language_version: Dependabot::Python::Version.new("3.8"))
+          end
+
+          let(:pypi_response) do
+            JSON.dump(
+              "meta" => { "api-version" => "1.1" },
+              "files" => [
+                {
+                  "filename" => "luigi-3.0.0-py3-none-any.whl",
+                  "url" => "../files/a.whl",
+                  "requires-python" => ">=4.0",
+                  "yanked" => false
+                },
+                {
+                  "filename" => "luigi-3.0.0.tar.gz",
+                  "url" => "../files/z.tar.gz",
+                  "requires-python" => ">=3.8",
+                  "yanked" => false
+                }
+              ]
+            )
+          end
+
+          before do
+            stub_request(:get, pypi_url)
+              .with(headers: { "Accept" => registry_accept })
+              .to_return(
+                status: 200,
+                headers: { "Content-Type" => "application/vnd.pypi.simple.v1+json" },
+                body: pypi_response
+              )
+          end
+
+          it { is_expected.to eq(Gem::Version.new("3.0.0")) }
+        end
 
         context "when the url is invalid" do
           let(:requirements_fixture_name) { "custom_index_invalid.txt" }

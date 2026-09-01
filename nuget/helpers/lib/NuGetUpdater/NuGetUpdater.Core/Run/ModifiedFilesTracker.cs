@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Text;
 
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run.ApiModel;
@@ -13,9 +14,10 @@ public class ModifiedFilesTracker
     public readonly DirectoryInfo RepoContentsPath;
     private WorkspaceDiscoveryResult? _currentDiscoveryResult = null;
     private readonly ILogger _logger;
+    private readonly IEOLMetadataProvider _eolMetadataProvider;
 
     private readonly Dictionary<string, string> _originalDependencyFileContents = [];
-    private readonly Dictionary<string, EOLType> _originalDependencyFileEOFs = [];
+    private readonly Dictionary<string, EOLType> _originalDependencyFileEOLs = [];
     private readonly Dictionary<string, bool> _originalDependencyFileBOMs = [];
     private string[] _nonProjectFiles = [];
     private readonly HashSet<string> _initiallyExistingFiles;
@@ -42,14 +44,23 @@ public class ModifiedFilesTracker
     ];
 
     public IReadOnlyDictionary<string, string> OriginalDependencyFileContents => _originalDependencyFileContents;
-    //public IReadOnlyDictionary<string, EOLType> OriginalDependencyFileEOFs => _originalDependencyFileEOFs;
     public IReadOnlyDictionary<string, bool> OriginalDependencyFileBOMs => _originalDependencyFileBOMs;
 
     public ModifiedFilesTracker(DirectoryInfo repoContentsPath, HashSet<string> initiallyExistingFiles, ILogger logger)
+        : this(repoContentsPath, initiallyExistingFiles, logger, new GitEOLMetadataProvider())
+    {
+    }
+
+    internal ModifiedFilesTracker(
+        DirectoryInfo repoContentsPath,
+        HashSet<string> initiallyExistingFiles,
+        ILogger logger,
+        IEOLMetadataProvider eolMetadataProvider)
     {
         RepoContentsPath = repoContentsPath;
         _initiallyExistingFiles = initiallyExistingFiles;
         _logger = logger;
+        _eolMetadataProvider = eolMetadataProvider;
     }
 
     /// <summary>
@@ -88,7 +99,7 @@ public class ModifiedFilesTracker
             var content = await File.ReadAllTextAsync(localFullPath);
             var rawContent = await File.ReadAllBytesAsync(localFullPath);
             _originalDependencyFileContents[repoFullPath] = content;
-            _originalDependencyFileEOFs[repoFullPath] = content.GetPredominantEOL();
+            _originalDependencyFileEOLs[repoFullPath] = content.GetPredominantEOL();
             _originalDependencyFileBOMs[repoFullPath] = rawContent.HasBOM();
         }
 
@@ -134,6 +145,7 @@ public class ModifiedFilesTracker
         }
 
         var updatedDependencyFiles = new Dictionary<string, DependencyFile>();
+        var updatedDependencyFileRepoPaths = new Dictionary<string, string>();
         async Task AddUpdatedFileIfDifferentAsync(string directory, string fileName)
         {
             var repoFullPath = CorrectRepoRelativePathCasing(directory, fileName);
@@ -141,7 +153,7 @@ public class ModifiedFilesTracker
             var originalContent = _originalDependencyFileContents[repoFullPath];
             var updatedContent = await File.ReadAllTextAsync(localFullPath);
 
-            updatedContent = updatedContent.SetEOL(_originalDependencyFileEOFs[repoFullPath]);
+            updatedContent = updatedContent.SetEOL(_originalDependencyFileEOLs[repoFullPath]);
             var updatedRawContent = updatedContent.SetBOM(_originalDependencyFileBOMs[repoFullPath]);
             await File.WriteAllBytesAsync(localFullPath, updatedRawContent);
 
@@ -162,11 +174,12 @@ public class ModifiedFilesTracker
                     Content = reportedContent,
                     ContentEncoding = encoding,
                 };
+                updatedDependencyFileRepoPaths[localFullPath] = repoFullPath;
 
                 if (restoreOriginalContents)
                 {
                     var originalRawContent = originalContent
-                        .SetEOL(_originalDependencyFileEOFs[repoFullPath])
+                        .SetEOL(_originalDependencyFileEOLs[repoFullPath])
                         .SetBOM(_originalDependencyFileBOMs[repoFullPath]);
                     await File.WriteAllBytesAsync(localFullPath, originalRawContent);
                 }
@@ -199,6 +212,46 @@ public class ModifiedFilesTracker
             await AddUpdatedFileIfDifferentAsync(_currentDiscoveryResult.Path, nonProjectFile);
         }
 
+        var updatedRepoRelativePaths = updatedDependencyFiles.Values
+            .Select(GetRepoRelativePath)
+            .ToArray();
+        var indexEOLs = await _eolMetadataProvider.GetIndexEOLsAsync(RepoContentsPath, updatedRepoRelativePaths);
+        foreach (var (localFullPath, dependencyFile) in updatedDependencyFiles.ToArray())
+        {
+            var repoRelativePath = GetRepoRelativePath(dependencyFile);
+            if (!indexEOLs.TryGetValue(repoRelativePath, out var indexEOL))
+            {
+                continue;
+            }
+
+            var content = dependencyFile.ContentEncoding == "base64"
+                ? GetBase64ContentWithoutBOM(dependencyFile.Content)
+                : dependencyFile.Content;
+            var trackedRepoPath = updatedDependencyFileRepoPaths[localFullPath];
+            var currentEOL = _originalDependencyFileEOLs[trackedRepoPath];
+            if (currentEOL != indexEOL)
+            {
+                _logger.Info($"Updating line endings for [{repoRelativePath}] from {currentEOL} to {indexEOL} to match the Git index.");
+            }
+            else
+            {
+                _logger.Info($"Line endings for [{repoRelativePath}] already match the Git index: {indexEOL}.");
+            }
+
+            var normalizedContent = content.SetEOL(indexEOL);
+            var hasBOM = _originalDependencyFileBOMs[trackedRepoPath];
+            var normalizedRawContent = normalizedContent.SetBOM(hasBOM);
+            updatedDependencyFiles[localFullPath] = dependencyFile with
+            {
+                Content = hasBOM ? Convert.ToBase64String(normalizedRawContent) : normalizedContent,
+            };
+
+            if (!restoreOriginalContents)
+            {
+                await File.WriteAllBytesAsync(localFullPath, normalizedRawContent);
+            }
+        }
+
         _currentDiscoveryResult = null;
 
         var updatedDependencyFileList = updatedDependencyFiles
@@ -206,6 +259,18 @@ public class ModifiedFilesTracker
             .Select(kvp => kvp.Value)
             .ToImmutableArray();
         return updatedDependencyFileList;
+    }
+
+    private static string GetRepoRelativePath(DependencyFile dependencyFile)
+    {
+        return Path.Join(dependencyFile.Directory, dependencyFile.Name).NormalizePathToUnix().TrimStart('/');
+    }
+
+    private static string GetBase64ContentWithoutBOM(string base64Content)
+    {
+        var rawContent = Convert.FromBase64String(base64Content);
+        var bomLength = rawContent.HasBOM() ? Encoding.UTF8.GetPreamble().Length : 0;
+        return Encoding.UTF8.GetString(rawContent.AsSpan(bomLength));
     }
 
     private string CorrectRepoRelativePathCasing(string directory, string fileName)

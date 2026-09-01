@@ -4,8 +4,11 @@ using System.Text;
 
 using NuGetUpdater.Core.Discover;
 using NuGetUpdater.Core.Run;
+using NuGetUpdater.Core.Utilities;
 
 using Xunit;
+
+using static NuGetUpdater.Core.Utilities.EOLHandling;
 
 namespace NuGetUpdater.Core.Test.Run;
 
@@ -162,7 +165,7 @@ public class ModifiedFilesTrackerTests
         };
 
         // Create tracker with initial files
-        var tracker = new ModifiedFilesTracker(repoContentsPath, initialFiles, logger);
+        var tracker = new ModifiedFilesTracker(repoContentsPath, initialFiles, logger, new TestEOLMetadataProvider([]));
         await tracker.StartTrackingAsync(discoveryResult);
 
         // The lock file SHOULD be tracked
@@ -275,7 +278,7 @@ public class ModifiedFilesTrackerTests
         };
 
         // Create tracker with initial files
-        var tracker = new ModifiedFilesTracker(repoContentsPath, initialFiles, logger);
+        var tracker = new ModifiedFilesTracker(repoContentsPath, initialFiles, logger, new TestEOLMetadataProvider([]));
         await tracker.StartTrackingAsync(discoveryResult);
 
         // The props file SHOULD be tracked
@@ -486,6 +489,141 @@ public class ModifiedFilesTrackerTests
     }
 
     [Fact]
+    public async Task UpdatedFileUsesGitIndexLineEndings()
+    {
+        const string originalContent = "<Project>\r\n  <PropertyGroup />\r\n</Project>\r\n";
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", originalContent));
+        var repoContentsPath = new DirectoryInfo(tempDirectory.DirectoryPath);
+        var logger = new StringLogger();
+        var tracker = CreateTracker(repoContentsPath, new()
+        {
+            ["project.csproj"] = EOLType.LF,
+        }, logger);
+        await tracker.StartTrackingAsync(CreateDiscoveryResult());
+
+        var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
+        await File.WriteAllTextAsync(projectPath, "<Project>\r\n  <PropertyGroup>\r\n    <Version>2.0.0</Version>\r\n  </PropertyGroup>\r\n</Project>\r\n", TestContext.Current.CancellationToken);
+
+        var updatedFiles = await tracker.StopTrackingAsync();
+
+        var updatedFile = Assert.Single(updatedFiles);
+        Assert.DoesNotContain("\r", updatedFile.Content);
+        Assert.DoesNotContain("\r", await File.ReadAllTextAsync(projectPath, TestContext.Current.CancellationToken));
+        Assert.Contains(
+            logger.Messages,
+            message => message.Contains("Updating line endings for [project.csproj] from CRLF to LF to match the Git index."));
+    }
+
+    [Fact]
+    public async Task UpdatedFileUsesCRLFGitIndexLineEndings()
+    {
+        const string originalContent = "<Project>\n  <PropertyGroup />\n</Project>\n";
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", originalContent));
+        var repoContentsPath = new DirectoryInfo(tempDirectory.DirectoryPath);
+        var tracker = CreateTracker(repoContentsPath, new()
+        {
+            ["project.csproj"] = EOLType.CRLF,
+        });
+        await tracker.StartTrackingAsync(CreateDiscoveryResult());
+
+        var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
+        await File.WriteAllTextAsync(projectPath, "<Project>\n  <PropertyGroup>\n    <Version>2.0.0</Version>\n  </PropertyGroup>\n</Project>\n", TestContext.Current.CancellationToken);
+
+        var updatedFiles = await tracker.StopTrackingAsync();
+
+        var updatedFile = Assert.Single(updatedFiles);
+        Assert.DoesNotMatch("(?<!\r)\n", updatedFile.Content);
+        Assert.DoesNotMatch("(?<!\r)\n", await File.ReadAllTextAsync(projectPath, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task UpdatedFileLogsWhenLineEndingsMatchGitIndex()
+    {
+        const string originalContent = "<Project>\n  <PropertyGroup />\n</Project>\n";
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", originalContent));
+        var repoContentsPath = new DirectoryInfo(tempDirectory.DirectoryPath);
+        var logger = new StringLogger();
+        var tracker = CreateTracker(repoContentsPath, new()
+        {
+            ["project.csproj"] = EOLType.LF,
+        }, logger);
+        await tracker.StartTrackingAsync(CreateDiscoveryResult());
+
+        var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
+        await File.WriteAllTextAsync(projectPath, "<Project>\n  <PropertyGroup>\n    <Version>2.0.0</Version>\n  </PropertyGroup>\n</Project>\n", TestContext.Current.CancellationToken);
+
+        await tracker.StopTrackingAsync();
+
+        Assert.Contains(
+            logger.Messages,
+            message => message.Contains("Line endings for [project.csproj] already match the Git index: LF."));
+    }
+
+    [Fact]
+    public async Task IndexLineEndingsDoNotCauseUnchangedFileToBeReported()
+    {
+        const string originalContent = "<Project>\r\n  <PropertyGroup />\r\n</Project>\r\n";
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", originalContent));
+        var repoContentsPath = new DirectoryInfo(tempDirectory.DirectoryPath);
+        var tracker = CreateTracker(repoContentsPath, new()
+        {
+            ["project.csproj"] = EOLType.LF,
+        });
+        await tracker.StartTrackingAsync(CreateDiscoveryResult());
+
+        var updatedFiles = await tracker.StopTrackingAsync();
+
+        Assert.Empty(updatedFiles);
+    }
+
+    [Fact]
+    public async Task UpdatedFileUsesGitIndexLineEndingsWhileOriginalContentsAreRestored()
+    {
+        const string originalContent = "<Project>\r\n  <PropertyGroup />\r\n</Project>\r\n";
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", originalContent));
+        var repoContentsPath = new DirectoryInfo(tempDirectory.DirectoryPath);
+        var tracker = CreateTracker(repoContentsPath, new()
+        {
+            ["project.csproj"] = EOLType.LF,
+        });
+        await tracker.StartTrackingAsync(CreateDiscoveryResult());
+
+        var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
+        await File.WriteAllTextAsync(projectPath, "<Project>\r\n  <PropertyGroup>\r\n    <Version>2.0.0</Version>\r\n  </PropertyGroup>\r\n</Project>\r\n", TestContext.Current.CancellationToken);
+
+        var updatedFiles = await tracker.StopTrackingAsync(restoreOriginalContents: true);
+
+        var updatedFile = Assert.Single(updatedFiles);
+        Assert.DoesNotContain("\r", updatedFile.Content);
+        Assert.Equal(originalContent, await File.ReadAllTextAsync(projectPath, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task UpdatedFilePreservesBOMWhenUsingGitIndexLineEndings()
+    {
+        const string originalContent = "<Project>\r\n  <PropertyGroup />\r\n</Project>\r\n";
+        using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(("project.csproj", originalContent));
+        var projectPath = Path.Join(tempDirectory.DirectoryPath, "project.csproj");
+        await File.WriteAllBytesAsync(projectPath, originalContent.SetBOM(setBOM: true), TestContext.Current.CancellationToken);
+        var repoContentsPath = new DirectoryInfo(tempDirectory.DirectoryPath);
+        var tracker = CreateTracker(repoContentsPath, new()
+        {
+            ["project.csproj"] = EOLType.LF,
+        });
+        await tracker.StartTrackingAsync(CreateDiscoveryResult());
+
+        await File.WriteAllTextAsync(projectPath, "<Project>\r\n  <PropertyGroup>\r\n    <Version>2.0.0</Version>\r\n  </PropertyGroup>\r\n</Project>\r\n", TestContext.Current.CancellationToken);
+
+        var updatedFiles = await tracker.StopTrackingAsync();
+
+        var updatedFile = Assert.Single(updatedFiles);
+        Assert.Equal("base64", updatedFile.ContentEncoding);
+        var rawContent = Convert.FromBase64String(updatedFile.Content);
+        Assert.True(rawContent.HasBOM());
+        Assert.DoesNotContain((byte)'\r', rawContent);
+    }
+
+    [Fact]
     public async Task GetInitiallyExistingFiles_FindsAllEditableFileTypes()
     {
         using var tempDirectory = await TemporaryDirectory.CreateWithContentsAsync(
@@ -544,5 +682,47 @@ public class ModifiedFilesTrackerTests
     public void MatchesAllowedEditablePattern(string fileName, bool expected)
     {
         Assert.Equal(expected, ModifiedFilesTracker.MatchesAllowedEditablePattern(fileName));
+    }
+
+    private static ModifiedFilesTracker CreateTracker(
+        DirectoryInfo repoContentsPath,
+        Dictionary<string, EOLType> indexEOLs,
+        ILogger? logger = null)
+    {
+        var initialFiles = ModifiedFilesTracker.GetInitiallyExistingFiles(repoContentsPath);
+        return new ModifiedFilesTracker(
+            repoContentsPath,
+            initialFiles,
+            logger ?? new TestLogger(),
+            new TestEOLMetadataProvider(indexEOLs));
+    }
+
+    private static WorkspaceDiscoveryResult CreateDiscoveryResult()
+    {
+        return new WorkspaceDiscoveryResult()
+        {
+            Path = "/",
+            Projects = [
+                new ProjectDiscoveryResult()
+                {
+                    FilePath = "project.csproj",
+                    Dependencies = [],
+                    TargetFrameworks = ["net9.0"],
+                    ReferencedProjectPaths = [],
+                    ImportedFiles = [],
+                    AdditionalFiles = [],
+                }
+            ],
+        };
+    }
+
+    private sealed class TestEOLMetadataProvider(Dictionary<string, EOLType> indexEOLs) : IEOLMetadataProvider
+    {
+        public Task<Dictionary<string, EOLType>> GetIndexEOLsAsync(
+            DirectoryInfo repoContentsPath,
+            IReadOnlyCollection<string> repoRelativePaths)
+        {
+            return Task.FromResult(indexEOLs);
+        }
     }
 }
