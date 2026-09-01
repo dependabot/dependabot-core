@@ -93,8 +93,8 @@ module Dependabot
           filter_by_cooldown(
             registry_client
               .tags(dependency.name)
-              .select { |tag| version_class.correct?(tag) }
-              .map { |tag| version_class.new(tag) }
+              .select { |tag| Version.correct?(tag) }
+              .map { |tag| Version.new(tag) }
               .reject { |version| version.prerelease? && !current_version_prerelease? }
               .reject { |version| ignore_requirements.any? { |req| req.satisfied_by?(version) } }
           ),

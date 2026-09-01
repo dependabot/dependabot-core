@@ -20,9 +20,10 @@ module Dependabot
       def parse
         manifest = load_yaml(qlpack_content)
         lock_data = load_yaml(lockfile_content)
+        lock_dependencies = dependencies_from(lock_data)
 
-        dependencies = manifest.fetch("dependencies", {}).filter_map do |name, requirement|
-          build_dependency(name: name, requirement: requirement, lock_data: lock_data)
+        dependencies = dependencies_from(manifest).filter_map do |name, requirement|
+          build_dependency(name: name, requirement: requirement, lock_dependencies: lock_dependencies)
         end
 
         dependencies.sort_by(&:name)
@@ -49,18 +50,32 @@ module Dependabot
       sig { params(content: T.nilable(String)).returns(T::Hash[String, Object]) }
       def load_yaml(content)
         data = YAML.safe_load(content || "{}", permitted_classes: [Symbol], aliases: true) || {}
-        data.is_a?(Hash) ? data.transform_keys(&:to_s) : {}
+        return {} unless data.is_a?(Hash)
+
+        data.each_with_object({}) do |(key, value), hash|
+          hash[key.to_s] = value
+        end
+      end
+
+      sig { params(data: T::Hash[String, Object]).returns(T::Hash[String, Object]) }
+      def dependencies_from(data)
+        dependencies = data["dependencies"]
+        return {} unless dependencies.is_a?(Hash)
+
+        dependencies.each_with_object({}) do |(name, requirement), hash|
+          hash[name.to_s] = requirement
+        end
       end
 
       sig do
-        params(name: String, requirement: Object, lock_data: T::Hash[String, Object])
+        params(name: String, requirement: Object, lock_dependencies: T::Hash[String, Object])
           .returns(T.nilable(Dependabot::Dependency))
       end
-      def build_dependency(name:, requirement:, lock_data:)
+      def build_dependency(name:, requirement:, lock_dependencies:)
         return if requirement == "${workspace}"
-        return if requirement == "*" && !lock_data.dig("dependencies", name)
+        return if requirement == "*" && !lock_dependencies.key?(name)
 
-        locked_version = lock_data.dig("dependencies", name, "version")
+        locked_version = locked_version(lock_dependencies[name])
 
         Dependency.new(
           name: name,
@@ -73,6 +88,14 @@ module Dependabot
             source: { type: "codeql_pack_registry" }
           }]
         )
+      end
+
+      sig { params(dependency: T.nilable(Object)).returns(T.nilable(String)) }
+      def locked_version(dependency)
+        return unless dependency.is_a?(Hash)
+
+        version = dependency["version"]
+        version if version.is_a?(String)
       end
 
       sig { returns(T.nilable(String)) }
