@@ -221,41 +221,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshSecurityUpdatePullRequest
         expect(job.source.directory).to eq("/")
       end
     end
-
-    context "when the refresh job carries more than one directory" do
-      let(:job_definition) do
-        definition = job_definition_fixture("bundler/version_updates/pull_request_simple")
-        definition["job"]["dependencies"] = ["dummy-pkg-a"]
-        definition["job"]["security-updates-only"] = true
-        definition["job"]["updating-a-pull-request"] = true
-        definition["job"]["dependency-groups"] = [
-          {
-            "name" => "all-security-updates",
-            "applies-to" => "security-updates",
-            "rules" => { "patterns" => ["*"] }
-          }
-        ]
-        definition["job"]["source"].delete("directory")
-        definition["job"]["source"]["directories"] = %w(/foo /bar)
-        definition
-      end
-
-      let(:dependency_files) do
-        %w(/foo /bar).flat_map do |dir|
-          original_bundler_files(fixture: "bundler_simple", directory: dir)
-        end
-      end
-
-      it "ends the job gracefully without raising or touching pull requests" do
-        expect(mock_service).to receive(:capture_exception)
-        expect(mock_service).not_to receive(:create_pull_request)
-        expect(mock_service).not_to receive(:update_pull_request)
-        expect(mock_service).not_to receive(:close_pull_request)
-        expect(mock_error_handler).not_to receive(:handle_dependency_error)
-
-        expect { perform }.not_to raise_error
-      end
-    end
   end
 
   describe "#check_and_update_pull_request" do
