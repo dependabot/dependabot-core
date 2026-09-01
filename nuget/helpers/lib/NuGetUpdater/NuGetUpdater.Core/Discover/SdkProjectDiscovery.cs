@@ -654,6 +654,22 @@ internal static class SdkProjectDiscovery
                 }
             }
 
+            // Add MSBuild SDK references parsed directly from the project file (e.g. <Project Sdk="Name/version">,
+            // <Sdk Name="Name" Version="version" />, <Import Sdk="Name" Version="version" />).
+            // These are not surfaced by the binlog-based resolution above, so we parse the XML directly.
+            // Only include SDKs with an explicit version; version-less SDKs are handled by GlobalJsonUpdater.
+            if (File.Exists(projectPath))
+            {
+                var projectBuildFile = ProjectBuildFile.Open(workspacePath, projectPath);
+                foreach (var sdkDep in projectBuildFile.GetDependencies().Where(d => d.Type == DependencyType.MSBuildSdk && d.Version is not null))
+                {
+                    if (!groupedDependencies.ContainsKey(sdkDep.Name))
+                    {
+                        groupedDependencies[sdkDep.Name] = sdkDep;
+                    }
+                }
+            }
+
             var dependencies = groupedDependencies.Values
                 .OrderBy(d => d.Name)
                 .ThenBy(d => d.Version)

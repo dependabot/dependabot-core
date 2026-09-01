@@ -153,6 +153,18 @@ public class XmlFileWriter : IFileWriter
                 return newlyAddedNode;
             }
 
+            // Check for MSBuild SDK references: <Project Sdk="SdkName/version"> and <Sdk Name="SdkName" Version="version" />
+            var sdkUpdated = TryUpdateSdkVersion(filesAndContents, requiredPackageVersion.Name, oldVersion, requiredVersion, ReplaceNode, _logger);
+            if (sdkUpdated)
+            {
+                updatesPerformed[requiredPackageVersion.Name] = true;
+                if (packageReferenceElementsAndPaths.Length == 0)
+                {
+                    continue; // SDK-only reference; no <PackageReference> elements to update
+                }
+                // A PackageReference with the same ID also exists; fall through to update it too
+            }
+
             if (packageReferenceElementsAndPaths.Length == 0)
             {
                 // no matching `<PackageReference>` elements found; pin it as a transitive dependency
@@ -985,5 +997,187 @@ public class XmlFileWriter : IFileWriter
         var nodeLeadingLineTrivia = nodeLeadingLineTrivias
             .FirstOrDefault(t => !string.IsNullOrEmpty(t));
         return nodeLeadingLineTrivia ?? "  ";
+    }
+
+    private static bool TryUpdateSdkVersion(
+        Dictionary<string, XmlDocumentSyntax> filesAndContents,
+        string sdkName,
+        NuGetVersion oldVersion,
+        NuGetVersion requiredVersion,
+        Func<string, SyntaxNode, SyntaxNode, SyntaxNode> replaceNode,
+        ILogger logger)
+    {
+        var sdkFound = false;
+
+        foreach (var (filePath, doc) in filesAndContents)
+        {
+            var rootElement = doc.RootSyntax;
+            if (rootElement is null)
+            {
+                continue;
+            }
+
+            sdkFound |= TryUpdateProjectSdkAttribute(filePath, rootElement);
+            sdkFound |= TryUpdateSdkChildElement(filePath, rootElement);
+            sdkFound |= TryUpdateImportSdkAttribute(filePath, rootElement);
+        }
+
+        return sdkFound;
+
+        // <Project Sdk="SdkName/version"> or <Project Sdk="Sdk1;SdkName/version">
+        bool TryUpdateProjectSdkAttribute(string filePath, IXmlElementSyntax rootElement)
+        {
+            var sdkAttribute = rootElement.GetAttributeCaseInsensitive("Sdk");
+            if (sdkAttribute is null)
+            {
+                return false;
+            }
+
+            var sdkParts = sdkAttribute.Value.Split(';');
+            for (int i = 0; i < sdkParts.Length; i++)
+            {
+                var part = sdkParts[i].Trim();
+                var slashIndex = part.IndexOf('/');
+                if (slashIndex < 0)
+                {
+                    continue;
+                }
+
+                var partName = part[..slashIndex];
+                var partVersion = part[(slashIndex + 1)..];
+                if (!partName.Equals(sdkName, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (!NuGetVersion.TryParse(partVersion, out var candidateVersion))
+                {
+                    continue;
+                }
+
+                if (candidateVersion == requiredVersion)
+                {
+                    logger.Info($"Sdk {sdkName} is already at version {requiredVersion} in {filePath}; no update needed.");
+                    return true;
+                }
+
+                if (candidateVersion != oldVersion)
+                {
+                    continue;
+                }
+
+                // Preserve original surrounding whitespace in each part
+                var rawSlashIndex = sdkParts[i].IndexOf('/');
+                var rawSuffix = sdkParts[i][(rawSlashIndex + 1)..];
+                var trailingSuffix = rawSuffix[rawSuffix.TrimEnd().Length..]; // trailing whitespace after version
+                sdkParts[i] = sdkParts[i][..(rawSlashIndex + 1)] + requiredVersion + trailingSuffix;
+                var newSdkValue = string.Join(";", sdkParts);
+                logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
+                replaceNode(filePath, sdkAttribute, sdkAttribute.WithValue(newSdkValue));
+                return true;
+            }
+
+            return false;
+        }
+
+        // <Sdk Name="SdkName" Version="version" />
+        bool TryUpdateSdkChildElement(string filePath, IXmlElementSyntax rootElement)
+        {
+            var found = false;
+            foreach (var sdkElement in rootElement.GetElements("Sdk", StringComparison.OrdinalIgnoreCase))
+            {
+                var nameAttr = sdkElement.GetAttributeCaseInsensitive("Name");
+                if (nameAttr is null || !nameAttr.Value.Equals(sdkName, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var versionAttr = sdkElement.GetAttributeCaseInsensitive("Version");
+                if (versionAttr is null)
+                {
+                    continue;
+                }
+
+                if (!NuGetVersion.TryParse(versionAttr.Value, out var candidateVersion))
+                {
+                    continue;
+                }
+
+                found = true;
+
+                if (candidateVersion == requiredVersion)
+                {
+                    logger.Info($"Sdk {sdkName} is already at version {requiredVersion} in {filePath}; no update needed.");
+                    continue;
+                }
+
+                if (candidateVersion != oldVersion)
+                {
+                    continue;
+                }
+
+                logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
+                var annotation = versionAttr.GetAnnotations(UpdaterAnnotationKind).First();
+                var currentVersionAttr = (XmlAttributeSyntax)filesAndContents[filePath]
+                    .DescendantNodes()
+                    .OfType<XmlAttributeSyntax>()
+                    .First(a => a.GetAnnotations(UpdaterAnnotationKind).Any(an => an == annotation));
+                replaceNode(filePath, currentVersionAttr, currentVersionAttr.WithValue(requiredVersion.ToString()));
+            }
+
+            return found;
+        }
+
+        // <Import Project="Sdk.props" Sdk="SdkName" Version="version" />
+        // Note: the embedded Sdk="Name/version" slash form is NOT valid on <Import> elements (MSBuild cannot resolve it)
+        bool TryUpdateImportSdkAttribute(string filePath, IXmlElementSyntax rootElement)
+        {
+            var found = false;
+            var importElements = rootElement.GetElements("Import", StringComparison.OrdinalIgnoreCase)
+                .Concat(rootElement.GetElements("ImportGroup", StringComparison.OrdinalIgnoreCase)
+                    .SelectMany(g => g.GetElements("Import", StringComparison.OrdinalIgnoreCase)));
+            foreach (var importElement in importElements)
+            {
+                var importSdkAttr = importElement.GetAttributeCaseInsensitive("Sdk");
+                if (importSdkAttr is null || !importSdkAttr.Value.Equals(sdkName, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var versionAttr = importElement.GetAttributeCaseInsensitive("Version");
+                if (versionAttr is null)
+                {
+                    continue;
+                }
+
+                if (!NuGetVersion.TryParse(versionAttr.Value, out var candidateVersion))
+                {
+                    continue;
+                }
+
+                found = true;
+
+                if (candidateVersion == requiredVersion)
+                {
+                    logger.Info($"Sdk {sdkName} is already at version {requiredVersion} in {filePath}; no update needed.");
+                    continue;
+                }
+
+                if (candidateVersion != oldVersion)
+                {
+                    continue;
+                }
+
+                logger.Info($"Updated Sdk {sdkName} from version {oldVersion} to {requiredVersion} in {filePath}.");
+                var annotation = versionAttr.GetAnnotations(UpdaterAnnotationKind).First();
+                var currentVersionAttr = (XmlAttributeSyntax)filesAndContents[filePath]
+                    .DescendantNodes()
+                    .OfType<XmlAttributeSyntax>()
+                    .First(a => a.GetAnnotations(UpdaterAnnotationKind).Any(an => an == annotation));
+                replaceNode(filePath, currentVersionAttr, currentVersionAttr.WithValue(requiredVersion.ToString()));
+            }
+
+            return found;
+        }
     }
 }

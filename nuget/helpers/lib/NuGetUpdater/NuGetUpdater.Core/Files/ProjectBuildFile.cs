@@ -24,7 +24,9 @@ internal sealed class ProjectBuildFile : XmlBuildFile
         .GetElements("Sdk", StringComparison.OrdinalIgnoreCase);
 
     public IEnumerable<IXmlElementSyntax> ImportNodes => ProjectNode
-        .GetElements("Import", StringComparison.OrdinalIgnoreCase);
+        .GetElements("Import", StringComparison.OrdinalIgnoreCase)
+        .Concat(ProjectNode.GetElements("ImportGroup", StringComparison.OrdinalIgnoreCase)
+            .SelectMany(g => g.GetElements("Import", StringComparison.OrdinalIgnoreCase)));
 
     public IEnumerable<IXmlElementSyntax> PropertyNodes => ProjectNode
         .GetElements("PropertyGroup", StringComparison.OrdinalIgnoreCase)
@@ -56,7 +58,10 @@ internal sealed class ProjectBuildFile : XmlBuildFile
         List<Dependency> dependencies = [];
         if (ProjectNode.GetAttributeValueCaseInsensitive("Sdk") is string sdk)
         {
-            dependencies.Add(GetMSBuildSdkDependency(sdk));
+            foreach (var sdkPart in sdk.Split(';', StringSplitOptions.RemoveEmptyEntries))
+            {
+                dependencies.Add(GetMSBuildSdkDependency(sdkPart.Trim()));
+            }
         }
 
         foreach (var sdkNode in SdkNodes)
@@ -78,6 +83,14 @@ internal sealed class ProjectBuildFile : XmlBuildFile
             if (name is not null)
             {
                 dependencies.Add(GetMSBuildSdkDependency(name, version));
+            }
+
+            // <Import Project="Sdk.props" Sdk="SdkName" Version="version" /> form
+            // Note: the Sdk="SdkName/version" embedded slash form is NOT valid for <Import> elements
+            var sdkAttr = importNode.GetAttributeValueCaseInsensitive("Sdk");
+            if (sdkAttr is not null && !sdkAttr.Contains('/'))
+            {
+                dependencies.Add(GetMSBuildSdkDependency(sdkAttr, version));
             }
         }
 
