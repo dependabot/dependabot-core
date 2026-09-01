@@ -19,6 +19,12 @@ module Dependabot
 
       SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
 
+      # Matches the start of a Gradle dependency substitution block, e.g.
+      #   resolutionStrategy.dependencySubstitution {
+      # Coordinates inside such a block are substitution targets, not real
+      # dependency declarations, and must never be rewritten.
+      SUBSTITUTION_BLOCK_START_REGEX = /\bdependencySubstitution\s*\{/
+
       sig { override.returns(T::Array[::Dependabot::DependencyFile]) }
       def updated_dependency_files
         updated_files = buildfiles.dup
@@ -252,30 +258,69 @@ module Dependabot
         # single line.
         file = T.must(requirement.file)
         buildfile = T.must(buildfiles.find { |f| f.name == file })
+        content = T.must(buildfile.content)
+        substitution_ranges = substitution_block_line_ranges(content, kotlin: file.end_with?(".kts"))
 
-        T.must(buildfile.content).lines.select do |line|
-          line = evaluate_properties(line, buildfile)
-          line = line.gsub(%r{(?<=^|\s)//.*$}, "")
+        content.lines.each_with_index.filter_map do |line, index|
+          next if substitution_ranges.any? { |range| range.cover?(index) }
+
+          evaluated = evaluate_properties(line, buildfile)
+          evaluated = evaluated.gsub(%r{(?<=^|\s)//.*$}, "")
 
           if dependency.name.include?(":")
             dep_parts = dependency.name.split(":")
-            next false unless line.include?(T.must(dep_parts.first)) || line.include?(T.must(dep_parts.last))
+            next unless evaluated.include?(T.must(dep_parts.first)) || evaluated.include?(T.must(dep_parts.last))
           elsif file.end_with?(".properties")
             property = requirement.source_string("property")
-            next false unless property && line.start_with?(property)
+            next unless property && evaluated.start_with?(property)
           elsif file.end_with?(".toml")
-            next false unless line.include?(dependency.name)
+            next unless evaluated.include?(dependency.name)
           else
             name_regex_value = /['"]#{Regexp.quote(dependency.name)}['"]/
             name_regex = /(id|kotlin)(\s+#{name_regex_value}|\(#{name_regex_value}\))/
-            next false unless line.match?(name_regex)
+            next unless evaluated.match?(name_regex)
           end
 
-          line.include?(T.must(requirement.requirement_string))
+          line if evaluated.include?(T.must(requirement.requirement_string))
         end
       end
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
+
+      # Returns the (0-based) line-index ranges covered by dependencySubstitution
+      # blocks, so lines inside them can be excluded regardless of formatting.
+      # Braces inside strings/comments are masked so the matching closing brace
+      # is located correctly.
+      sig { params(content: String, kotlin: T::Boolean).returns(T::Array[T::Range[Integer]]) }
+      def substitution_block_line_ranges(content, kotlin: false)
+        ranges = T.let([], T::Array[T::Range[Integer]])
+        masked = Gradle::FileParser.mask_literals_and_comments(content, kotlin: kotlin)
+
+        masked.to_enum(:scan, SUBSTITUTION_BLOCK_START_REGEX).each do
+          match = T.must(Regexp.last_match)
+          start_offset = match.begin(0)
+          close_offset = match.end(0) + closing_bracket_index(T.must(masked[match.end(0)..]))
+
+          start_line = T.must(masked[0...start_offset]).count("\n")
+          end_line = T.must(masked[0..close_offset]).count("\n")
+          ranges << (start_line..end_line)
+        end
+
+        ranges
+      end
+
+      sig { params(string: String).returns(Integer) }
+      def closing_bracket_index(string)
+        closes_required = 1
+
+        string.chars.each_with_index do |char, index|
+          closes_required += 1 if char == "{"
+          closes_required -= 1 if char == "}"
+          return index if closes_required.zero?
+        end
+
+        0
+      end
 
       sig { params(string: String, buildfile: Dependabot::DependencyFile).returns(String) }
       def evaluate_properties(string, buildfile)
