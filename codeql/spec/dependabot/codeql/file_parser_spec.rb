@@ -136,6 +136,24 @@ RSpec.describe Dependabot::Codeql::FileParser do
         expect(dependencies).to be_empty
       end
     end
+
+    context "with an empty dependencies section" do
+      let(:qlpack_content) { "name: example/queries\nversion: 1.0.0\ndependencies:\n" }
+      let(:lockfile_content) { "dependencies: {}\n" }
+
+      it "returns no dependencies" do
+        expect(dependencies).to be_empty
+      end
+    end
+
+    context "with a non-map dependencies section" do
+      let(:qlpack_content) { "name: example/queries\nversion: 1.0.0\ndependencies: []\n" }
+      let(:lockfile_content) { "dependencies: {}\n" }
+
+      it "returns no dependencies" do
+        expect(dependencies).to be_empty
+      end
+    end
   end
 
   describe "#check_required_files" do
