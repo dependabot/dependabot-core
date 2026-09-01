@@ -1192,6 +1192,13 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
         it { is_expected.to eq("3.7.0a2") }
       end
+
+      context "when a stable version is available after the pre-release" do
+        let(:version) { "3.7.0a2" }
+        let(:tags_fixture_name) { "python_with_stable_37.json" }
+
+        it { is_expected.to eq("3.7.0") }
+      end
     end
 
     context "when the 'latest' version is a newer version with more precision, and the API does not provide digests" do
@@ -1709,6 +1716,24 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it "still returns the latest version instead of crashing" do
         expect(latest_version).to eq("17.10")
       end
+
+      it "marks the dependency with the missing cooldown date" do
+        latest_version
+
+        expect(dependency.metadata[:docker_cooldown_date_unavailable]).to be(true)
+      end
+
+      context "when no cooldown days are configured" do
+        let(:update_cooldown) do
+          Dependabot::Package::ReleaseCooldownOptions.new(default_days: 0)
+        end
+
+        it "does not mark the dependency" do
+          latest_version
+
+          expect(dependency.metadata).not_to include(:docker_cooldown_date_unavailable)
+        end
+      end
     end
 
     describe "with cooldown options when digest request raises authentication error" do
@@ -1789,18 +1814,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
                 .and_return(Time.now - (2 * 86_400))
             end
 
-            it "falls back to the config created date and respects cooldown" do
-              expect(can_update).to be false
-            end
-          end
-
-          context "when the config blob created date is outside the cooldown window" do
-            before do
-              allow(checker).to receive(:fetch_image_config_created)
-                .and_return(Time.now - (30 * 86_400))
-            end
-
-            it "falls back to the config created date and proposes the update" do
+            it "ignores the publisher-controlled created date and fails open" do
               expect(can_update).to be true
             end
           end
@@ -1812,6 +1826,12 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
             it "fails open and proposes the update" do
               expect(can_update).to be true
+            end
+
+            it "marks the dependency with the missing cooldown date" do
+              can_update
+
+              expect(dependency.metadata[:docker_cooldown_date_unavailable]).to be(true)
             end
           end
         end
@@ -3533,10 +3553,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         allow(checker).to receive(:fetch_image_config_created).with("1.0.0").and_return(config_created)
       end
 
-      it "falls back to the image config blob created timestamp" do
+      it "does not fall back to the publisher-controlled config blob created timestamp" do
         result = get_tag_publication_details
         expect(result).to be_a(Dependabot::Package::PackageRelease)
-        expect(result.released_at).to eq(config_created)
+        expect(result.released_at).to be_nil
+        expect(checker).not_to have_received(:fetch_image_config_created)
       end
     end
 

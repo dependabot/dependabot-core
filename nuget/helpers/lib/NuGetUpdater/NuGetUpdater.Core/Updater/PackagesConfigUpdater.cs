@@ -57,7 +57,7 @@ internal static partial class PackagesConfigUpdater
         var restoreArgs = new List<string>
         {
             "restore",
-            projectPath,
+            packagesConfigPath,
             "-PackagesDirectory",
             packagesDirectory,
             "-NonInteractive",
@@ -80,11 +80,10 @@ internal static partial class PackagesConfigUpdater
         var msbuildDirectory = MSBuildHelper.MSBuildPath;
         if (msbuildDirectory is not null)
         {
-            foreach (var args in new[] { restoreArgs, updateArgs })
-            {
-                args.Add("-MSBuildPath");
-                args.Add(msbuildDirectory); // e.g., /usr/share/dotnet/sdk/7.0.203
-            }
+            // Restoring packages.config directly does not require MSBuild. The update command does, and our embedded
+            // NuGet.CommandLine override supports the SDK MSBuild instance already registered by MSBuildLocator.
+            updateArgs.Add("-MSBuildPath");
+            updateArgs.Add(msbuildDirectory); // e.g., /usr/share/dotnet/sdk/10.0.400
         }
 
         using (new SpecialImportsConditionPatcher(projectPath))
@@ -260,7 +259,7 @@ internal static partial class PackagesConfigUpdater
     private static bool IsHintPathNode(this IXmlElementSyntax element)
     {
         if (element.Name.Equals("HintPath", StringComparison.OrdinalIgnoreCase) &&
-            element.Parent.Name.Equals("Reference", StringComparison.OrdinalIgnoreCase))
+            element.Parent?.Name.Equals("Reference", StringComparison.OrdinalIgnoreCase) == true)
         {
             return true;
         }

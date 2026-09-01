@@ -52,16 +52,10 @@ module Dependabot
           end
         end
 
-        parsed_manifest_file = T.let(false, T::Boolean)
         manifest_files.each do |file|
           dependency_set += workfile_file_dependencies(file)
-          parsed_manifest_file = true
         rescue Dependabot::DependencyFileNotParseable => e
           Dependabot.logger.warn("Failed to parse YAML file #{file.path}: #{e.message}")
-        end
-
-        if dockerfiles.empty? && manifest_files.any? && !parsed_manifest_file
-          raise Dependabot::DependencyFileNotFound.new(nil, "No parseable Dockerfiles or YAML files found")
         end
 
         dependency_set.dependencies

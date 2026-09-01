@@ -2526,7 +2526,7 @@ RSpec.describe Dependabot::Updater do
     service
   end
 
-  # rubocop:disable Metrics/MethodLength
+  # rubocop:disable-next Metrics/MethodLength
   def build_job(
     requested_dependencies: nil,
     allowed_updates: default_allowed_updates,
@@ -2589,7 +2589,6 @@ RSpec.describe Dependabot::Updater do
       cooldown: update_cooldown
     )
   end
-  # rubocop:enable Metrics/MethodLength
 
   def default_allowed_updates
     [
@@ -2604,7 +2603,7 @@ RSpec.describe Dependabot::Updater do
     ]
   end
 
-  # rubocop:disable Metrics/MethodLength
+  # rubocop:disable-next Metrics/MethodLength
   def stub_update_checker(stubs = {})
     update_checker =
       instance_double(
@@ -2660,5 +2659,4 @@ RSpec.describe Dependabot::Updater do
     allow(update_checker).to receive(:can_update?).with(requirements_to_unlock: :all).and_return(false)
     update_checker
   end
-  # rubocop:enable Metrics/MethodLength
 end
