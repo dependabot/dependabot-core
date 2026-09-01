@@ -1096,6 +1096,7 @@ public class FileWriterWorkerTests : TestBase
     {
         var targetFramework = await GetFileBasedAppDefaultTargetFrameworkAsync();
 
+        // The isolated test feed does not contain the runtime and AOT packs required by the file-app default.
         await TestAsync(
             dependencyName: "FileApp.Locked.Dependency",
             oldDependencyVersion: "1.0.0",
@@ -1103,6 +1104,7 @@ public class FileWriterWorkerTests : TestBase
             projectName: "app.cs",
             projectContents: """
                 #:property RestorePackagesWithLockFile=true
+                #:property PublishAot=false
                 #:package FileApp.Locked.Dependency@1.0.0
 
                 Console.WriteLine("Hello");
@@ -1120,6 +1122,7 @@ public class FileWriterWorkerTests : TestBase
             fileWriter: null,
             expectedProjectContents: """
                 #:property RestorePackagesWithLockFile=true
+                #:property PublishAot=false
                 #:package FileApp.Locked.Dependency@2.0.0
 
                 Console.WriteLine("Hello");
