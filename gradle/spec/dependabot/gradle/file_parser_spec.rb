@@ -496,7 +496,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name)
             .to eq("org.jetbrains.kotlinx:kotlinx-coroutines-core")
-          expect(dependency.version).to eq("0.19.3")
+          expect(dependency.version).to eq("0.26.1-eap13")
           expect(dependency.requirements).to eq(
             [{
               requirement: "0.19.3",
@@ -860,7 +860,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name)
               .to eq("org.jetbrains.kotlinx:kotlinx-coroutines-core")
-            expect(dependency.version).to eq("0.19.3")
+            expect(dependency.version).to eq("0.26.1-eap13")
             expect(dependency.requirements).to eq(
               [{
                 requirement: "0.19.3",
@@ -1048,7 +1048,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.version).to eq("9.0.0")
+          expect(dependency.version).to eq("10.0.0")
           expect(dependency.requirements).to eq(
             [{
               requirement: "10.0.0",
