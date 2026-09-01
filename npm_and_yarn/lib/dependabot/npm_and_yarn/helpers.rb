@@ -44,11 +44,12 @@ module Dependabot
         /^.*(?<error>The "yarn-path" option has been set \(in [^)]+\), but the specified location doesn't exist)/
 
       # NPM Version Constants
+      NPM_V12 = 12
       NPM_V11 = 11
       NPM_V10 = 10
       NPM_V8 = 8
       NPM_V6 = 6
-      NPM_DEFAULT_VERSION = NPM_V11
+      NPM_DEFAULT_VERSION = NPM_V12
 
       # Minimum npm version that supports the `--min-release-age` CLI flag.
       NPM_MINIMUM_RELEASE_AGE_VERSION = "11.10.0"
@@ -183,7 +184,7 @@ module Dependabot
         lockfile_version = lockfile_version_str.to_i
 
         # Using npm 8 as the default for lockfile_version > 2.
-        return NPM_V11 if lockfile_version >= 3
+        return NPM_V12 if lockfile_version >= 3
         return NPM_V8 if lockfile_version >= 2
 
         NPM_V6 if lockfile_version >= 1
