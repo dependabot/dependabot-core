@@ -62,6 +62,8 @@ jobs:
           source: .
           targets: updater-core-context
           provenance: false
+          vars: |
+            BUILD_CACHE_WRITE=true
           set: |
             updater-core-context.output=type=registry
             updater-core-context.tags=${{ env.UPDATER_CORE_IMAGE }}:ecosystem-${{ env.COMMIT_SHA }}
@@ -194,6 +196,7 @@ jobs:
           targets: ${{ matrix.target }}
           provenance: false
           vars: |
+            BUILD_CACHE_WRITE=true
             UPDATER_CORE_CONTEXT=${{ env.UPDATER_CORE_CONTEXT }}
           set: |
             ${{ matrix.target }}.output=type=registry
