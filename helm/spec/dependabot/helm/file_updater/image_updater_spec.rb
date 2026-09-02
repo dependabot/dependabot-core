@@ -136,6 +136,87 @@ RSpec.describe Dependabot::Helm::FileUpdater::ImageUpdater do
       end
     end
 
+    context "with a registry-prefixed scalar image reference" do
+      let(:dependency_name) { "docker.io/nginx" }
+      let(:dependency_version) { "1.21.0" }
+      let(:dependency_previous_version) { "1.20.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "values.yaml",
+          requirement: dependency_version,
+          groups: [],
+          source: {
+            type: "docker_registry",
+            registry: "docker.io",
+            tag: dependency_previous_version
+          },
+          metadata: { type: :docker_image }
+        }]
+      end
+      let(:dependency_previous_requirements) do
+        [{
+          file: "values.yaml",
+          requirement: dependency_previous_version,
+          groups: [],
+          source: {
+            type: "docker_registry",
+            registry: "docker.io",
+            tag: dependency_previous_version
+          },
+          metadata: { type: :docker_image }
+        }]
+      end
+
+      let(:fixture_content) do
+        "image: docker.io/nginx:1.20.0\n"
+      end
+
+      it "updates the tag without doubling the registry" do
+        updated_content = updater.updated_values_yaml_content("values.yaml")
+
+        expect(updated_content).to eq("image: docker.io/nginx:1.21.0\n")
+      end
+    end
+
+    context "with a digest-pinned scalar image reference" do
+      let(:dependency_name) { "nginx" }
+      let(:dependency_version) { "1.21.0" }
+      let(:dependency_previous_version) { "1.20.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "values.yaml",
+          requirement: dependency_version,
+          groups: [],
+          source: {
+            type: "docker_registry",
+            tag: dependency_previous_version,
+            digest: "sha256:abc123"
+          },
+          metadata: { type: :docker_image }
+        }]
+      end
+      let(:dependency_previous_requirements) do
+        [{
+          file: "values.yaml",
+          requirement: dependency_previous_version,
+          groups: [],
+          source: {
+            type: "docker_registry",
+            tag: dependency_previous_version,
+            digest: "sha256:abc123"
+          },
+          metadata: { type: :docker_image }
+        }]
+      end
+
+      let(:fixture_content) { "image: nginx:1.20.0@sha256:abc123\n" }
+
+      it "raises an error instead of bumping the tag while keeping the stale digest" do
+        expect { updater.updated_values_yaml_content("values.yaml") }
+          .to raise_error("Expected content to change!")
+      end
+    end
+
     context "with multiple documents in the YAML file" do
       let(:fixture_content) do
         <<~YAML
