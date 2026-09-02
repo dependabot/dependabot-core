@@ -133,12 +133,22 @@ module Dependabot
 
         sig { returns(String) }
         def property_name
-          T.must(property_requirement.metadata_string("property_name"))
+          @property_name ||= T.let(
+            property_requirement.metadata_string("property_name"),
+            T.nilable(String)
+          )
+
+          raise "No requirement with a property name!" unless @property_name
+
+          @property_name
         end
 
         sig { returns(T.nilable(String)) }
         def property_source
-          property_requirement.metadata_string("property_source")
+          @property_source ||= T.let(
+            property_requirement.metadata_string("property_source"),
+            T.nilable(String)
+          )
         end
 
         sig { returns(Dependabot::DependencyRequirement) }
