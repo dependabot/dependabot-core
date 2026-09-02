@@ -4,7 +4,6 @@
 require "sorbet-runtime"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
-require "dependabot/notices"
 require "dependabot/shared/shared_file_updater"
 
 module Dependabot
@@ -28,21 +27,6 @@ module Dependabot
       sig { override.returns(Regexp) }
       def container_image_regex
         %r{^#{FROM_REGEX}\s+(docker\.io/)?}o
-      end
-
-      sig { override.returns(T::Array[Dependabot::Notice]) }
-      def notices
-        return [] unless dependencies.any? { |dependency| dependency.metadata[:docker_cooldown_date_unavailable] }
-
-        [Dependabot::Notice.new(
-          mode: Dependabot::Notice::NoticeMode::WARN,
-          type: "docker_cooldown_date_unavailable",
-          package_manager_name: "docker",
-          title: "Docker cooldown was not applied",
-          description: "Cooldown could not be applied because no publication date was available from the registry.",
-          show_in_pr: true,
-          show_alert: false
-        )]
       end
     end
   end

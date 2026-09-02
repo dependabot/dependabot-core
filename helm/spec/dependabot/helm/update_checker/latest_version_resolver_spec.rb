@@ -95,6 +95,19 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
       end
     end
 
+    context "when a release date is unavailable" do
+      let(:tags_with_release_date) do
+        [Dependabot::GitTagWithDetail.new(tag: "2.0.0", release_date: nil)]
+      end
+
+      it "keeps the tag and marks the dependency" do
+        result = resolver.filter_versions_in_cooldown_period_using_oci(tags.dup, tags_with_release_date)
+
+        expect(result).to eq(tags)
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+    end
+
     context "when select_tags_which_in_cooldown_using_oci returns nil" do
       before do
         allow(resolver).to receive(:select_tags_which_in_cooldown_using_oci)

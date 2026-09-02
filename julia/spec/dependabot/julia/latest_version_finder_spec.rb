@@ -88,6 +88,15 @@ RSpec.describe Dependabot::Julia::LatestVersionFinder do
       end
     end
 
+    context "when the release date is unavailable" do
+      let(:release_dates) { { "1.5.0" => nil } }
+
+      it "allows the release and marks the dependency" do
+        expect(finder.latest_version).to eq(Dependabot::Julia::Version.new("1.5.0"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+    end
+
     context "when the dependency is excluded by exact name" do
       let(:exclude_patterns) { ["Example"] }
 

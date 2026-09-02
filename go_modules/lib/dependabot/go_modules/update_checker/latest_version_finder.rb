@@ -196,42 +196,19 @@ module Dependabot
           filtered_versions
         end
 
-        # rubocop:disable Metrics/AbcSize
-        sig { params(release: Dependabot::Package::PackageRelease).returns(T::Boolean) }
-        def in_cooldown_period?(release)
-          begin
-            dependency_name = AzureDevopsPathNormalizer.normalize(dependency.name)
-            release_info = SharedHelpers.run_shell_command(
-              "go list -m -json #{dependency_name}@#{release.details.[]('version_string')}",
-              fingerprint: "go list -m -json <dependency_name>"
-            )
-          rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
-            Dependabot.logger.info("Error while fetching release date info: #{e.message}")
-            return false
-          end
-
-          release.instance_variable_set(
-            :@released_at, JSON.parse(release_info)["Time"] ? Time.parse(JSON.parse(release_info)["Time"]) : nil
+        sig { override.params(release: Dependabot::Package::PackageRelease).returns(T.nilable(Time)) }
+        def released_at_for(release)
+          dependency_name = AzureDevopsPathNormalizer.normalize(dependency.name)
+          release_info = SharedHelpers.run_shell_command(
+            "go list -m -json #{dependency_name}@#{release.details.[]('version_string')}",
+            fingerprint: "go list -m -json <dependency_name>"
           )
-
-          return false unless release.released_at
-
-          current_version = version_class.correct?(dependency.version) ? version_class.new(dependency.version) : nil
-          days = cooldown_days_for(current_version, release.version)
-          in_cooldown = Dependabot::UpdateCheckers::CooldownCalculation
-                        .within_cooldown_window?(T.must(release.released_at), days)
-
-          if in_cooldown
-            passed_days = (Time.now.to_i - release.released_at.to_i) / (24 * 60 * 60)
-            Dependabot.logger.info(
-              "Version #{release.version}, Release date: #{release.released_at}." \
-              " Days since release: #{passed_days} (cooldown days: #{days})"
-            )
-          end
-
-          in_cooldown
+          published_at = JSON.parse(release_info)["Time"]
+          published_at ? Time.parse(published_at) : nil
+        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+          Dependabot.logger.info("Error while fetching release date info: #{e.message}")
+          nil
         end
-        # rubocop:enable Metrics/AbcSize
 
         sig do
           override.returns(T.nilable(Dependabot::Package::PackageDetails))

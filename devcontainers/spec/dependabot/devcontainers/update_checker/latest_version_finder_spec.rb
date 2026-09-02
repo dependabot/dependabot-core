@@ -36,9 +36,11 @@ RSpec.describe namespace::LatestVersionFinder do
       credentials: github_credentials,
       security_advisories: security_advisories,
       ignored_versions: ignored_versions,
-      raise_on_ignored: raise_on_ignored
+      raise_on_ignored: raise_on_ignored,
+      cooldown_options: cooldown_options
     )
   end
+  let(:cooldown_options) { nil }
 
   describe "#release_versions" do
     subject(:release_versions) do
@@ -73,6 +75,35 @@ RSpec.describe namespace::LatestVersionFinder do
 
         expect(release).to be_a(Dependabot::Devcontainers::Version)
         expect(release.version).to eq("1.2.0")
+      end
+    end
+
+    context "when cooldown is configured and the release date is unavailable" do
+      let(:cooldown_options) do
+        Dependabot::Package::ReleaseCooldownOptions.new(default_days: 7)
+      end
+      let(:release) do
+        Dependabot::Package::PackageRelease.new(
+          version: Dependabot::Devcontainers::Version.new("2.0.0"),
+          released_at: nil
+        )
+      end
+      let(:package_details_fetcher) do
+        instance_double(
+          Dependabot::Devcontainers::Package::PackageDetailsFetcher,
+          fetch_package_releases: [release],
+          fetch_release_metadata: release
+        )
+      end
+
+      before do
+        allow(Dependabot::Devcontainers::Package::PackageDetailsFetcher)
+          .to receive(:new).with(dependency: dependency).and_return(package_details_fetcher)
+      end
+
+      it "allows the release and marks the dependency" do
+        expect(release_versions.map(&:to_s)).to eq(["2.0.0"])
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
       end
     end
   end

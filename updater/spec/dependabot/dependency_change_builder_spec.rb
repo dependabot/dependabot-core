@@ -194,6 +194,45 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         updated_file_names = dependency_change.updated_dependency_files.map(&:name)
         expect(updated_file_names).not_to include("sub_dep", "sub_dep.lock")
       end
+
+      context "when cooldown could not be applied" do
+        before do
+          Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
+            lead_dependency_change_source,
+            cooldown_days: 1
+          )
+          stub_file_updater(
+            updated_dependency_files: dependency_files.reject(&:support_file?),
+            notices: []
+          )
+        end
+
+        it "adds the warning independently of file updater notices" do
+          expect(create_change.notices.map(&:to_h)).to contain_exactly(
+            mode: Dependabot::Notice::NoticeMode::WARN,
+            type: "cooldown_date_unavailable",
+            package_manager_name: "bundler",
+            title: "Cooldown was not applied",
+            description: "Cooldown could not be applied because no publication date was available from the registry.",
+            show_in_pr: true,
+            show_alert: false
+          )
+        end
+
+        it "does not duplicate an existing cooldown warning" do
+          notices << Dependabot::Notice.new(
+            mode: Dependabot::Notice::NoticeMode::WARN,
+            type: "cooldown_date_unavailable",
+            package_manager_name: "bundler",
+            title: "Cooldown was not applied",
+            description: "Cooldown could not be applied because no publication date was available from the registry.",
+            show_in_pr: true,
+            show_alert: false
+          )
+
+          expect(create_change.notices.count { |notice| notice.type == "cooldown_date_unavailable" }).to eq(1)
+        end
+      end
     end
 
     context "when the source is a dependency group" do

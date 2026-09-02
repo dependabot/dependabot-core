@@ -444,7 +444,10 @@ module Dependabot
           # If we can't determine publication details, skip cooldown for this tag and use it
           # rather than blocking the update when the registry doesn't support the required API calls
           if !details || !details.released_at
-            mark_cooldown_date_unavailable if cooldown_days_for(tag).positive?
+            Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
+              dependency,
+              cooldown_days: cooldown_days_for(tag)
+            )
             return [tag]
           end
 
@@ -1068,11 +1071,6 @@ module Dependabot
         )
       end
 
-      sig { void }
-      def mark_cooldown_date_unavailable
-        dependency.metadata[:docker_cooldown_date_unavailable] = true
-      end
-
       # Builds the PackageRelease version for a tag. Non-comparable tags (e.g.
       # "alpine") have no semver, so Docker::Version.new would raise. The version
       # is only consumed by semver-aware version-tag cooldown; the digest cooldown
@@ -1101,7 +1099,10 @@ module Dependabot
 
         released_at = publication_detail(Tag.new(tag_name))&.released_at
         unless released_at
-          mark_cooldown_date_unavailable if cooldown.default_days.positive?
+          Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
+            dependency,
+            cooldown_days: cooldown.default_days
+          )
           return false
         end
 

@@ -392,8 +392,8 @@ RSpec.describe Dependabot::Updater::GroupUpdateCreation do
       let(:notice) do
         Dependabot::Notice.new(
           mode: Dependabot::Notice::NoticeMode::WARN,
-          type: "docker_cooldown_date_unavailable",
-          package_manager_name: "docker",
+          type: "cooldown_date_unavailable",
+          package_manager_name: "bundler",
           description: "Cooldown was not applied.",
           show_in_pr: true,
           show_alert: false

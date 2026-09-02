@@ -106,5 +106,10 @@ RSpec.describe Dependabot::Opentofu::UpdateChecker::LatestVersionResolver do
       release_date = (Time.now - (100 * 24 * 60 * 60)).iso8601 # 100 days ago
       expect(resolver.check_if_version_in_cooldown_period?(release_date)).to be false
     end
+
+    it "marks the dependency when the release date is unavailable" do
+      expect(resolver.check_if_version_in_cooldown_period?(nil)).to be false
+      expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+    end
   end
 end

@@ -673,6 +673,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
         it "filters out the version" do
           expect(in_cooldown).to be true
+          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
         end
 
         it "logs that release date is not available and filtering out" do

@@ -9,6 +9,8 @@ require "dependabot/experiments"
 require "dependabot/file_parsers"
 require "dependabot/file_updaters"
 require "dependabot/dependency_group"
+require "dependabot/notices"
+require "dependabot/update_checkers/cooldown_calculation"
 require "dependabot/updater/blocked_version_detector"
 
 # This class is responsible for generating a DependencyChange for a given
@@ -169,10 +171,41 @@ module Dependabot
       # Collect notices from file updater after update attempt
       updater_notices = T.let(file_updater.notices, T::Array[Dependabot::Notice])
       @notices.concat(updater_notices)
+      add_cooldown_notice
 
       updated_files = all_files.reject(&:support_file?)
       updated_files = all_files if updated_files.empty? && all_files.any?
       updated_files
+    end
+
+    sig { void }
+    def add_cooldown_notice
+      return unless cooldown_date_unavailable?
+
+      notice = Dependabot::Notice.new(
+        mode: Dependabot::Notice::NoticeMode::WARN,
+        type: "cooldown_date_unavailable",
+        package_manager_name: job.package_manager,
+        title: "Cooldown was not applied",
+        description: "Cooldown could not be applied because no publication date was available from the registry.",
+        show_in_pr: true,
+        show_alert: false
+      )
+      @notices << notice unless @notices.any? { |existing_notice| existing_notice.to_h == notice.to_h }
+    end
+
+    sig { returns(T::Boolean) }
+    def cooldown_date_unavailable?
+      dependencies = updated_dependencies.dup
+      if change_source.is_a?(Dependabot::Dependency)
+        dependencies << change_source
+      else
+        dependencies.concat(change_source.dependencies)
+      end
+
+      dependencies.any? do |dependency|
+        Dependabot::UpdateCheckers::CooldownCalculation.cooldown_date_unavailable?(dependency)
+      end
     end
 
     sig { returns(String) }

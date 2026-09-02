@@ -177,7 +177,13 @@ module Dependabot
         filtered_versions = sorted_versions.reject do |version|
           details = publication_detail(version)
 
-          next false unless details&.released_at
+          unless details&.released_at
+            Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
+              dependency,
+              cooldown_days: cooldown_days_for(version)
+            )
+            next false
+          end
 
           if cooldown_period?(T.must(details.released_at), version)
             Dependabot.logger.info("Skipping version #{version} due to cooldown period")
@@ -225,13 +231,20 @@ module Dependabot
 
       sig { params(release_date: Time, version_string: String).returns(T::Boolean) }
       def cooldown_period?(release_date, version_string)
+        Dependabot::UpdateCheckers::CooldownCalculation.within_cooldown_window?(
+          release_date,
+          cooldown_days_for(version_string)
+        )
+      end
+
+      sig { params(version_string: String).returns(Integer) }
+      def cooldown_days_for(version_string)
         cooldown = update_cooldown
-        return false unless cooldown
+        return 0 unless cooldown
 
         current_version = dependency.version ? version_class.new(dependency.version) : nil
         new_version = version_class.new(version_string)
-        days = Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(cooldown, current_version, new_version)
-        Dependabot::UpdateCheckers::CooldownCalculation.within_cooldown_window?(release_date, days)
+        Dependabot::UpdateCheckers::CooldownCalculation.cooldown_days_for(cooldown, current_version, new_version)
       end
 
       sig { returns(T::Boolean) }

@@ -559,6 +559,17 @@ RSpec.describe namespace::LatestVersionFinder do
           expect(selected_tags).to be_empty
         end
       end
+
+      context "when a release date is unavailable" do
+        let(:git_tags_with_dates) do
+          [Dependabot::GitTagWithDetail.new(tag: "v1.0.0", release_date: nil)]
+        end
+
+        it "keeps the tag and marks the dependency" do
+          expect(selected_tags).to be_empty
+          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+        end
+      end
     end
   end
 

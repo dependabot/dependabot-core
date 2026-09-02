@@ -374,12 +374,21 @@ module Dependabot
 
         sig { params(release_date: T.nilable(String)).returns(T::Boolean) }
         def check_if_version_in_cooldown_period?(release_date)
-          return false unless release_date&.length&.positive?
-          return false unless cooldown_options
-          return false unless T.must(cooldown_options).included?(dependency.name)
+          cooldown = cooldown_options
+          return false if Dependabot::UpdateCheckers::CooldownCalculation.skip_cooldown?(
+            cooldown, dependency.name, cooldown_enabled: cooldown_enabled?
+          )
 
-          release_time = Time.parse(T.must(release_date))
-          cooldown_days = T.must(cooldown_options).default_days
+          cooldown_days = T.must(cooldown).default_days
+          unless release_date&.length&.positive?
+            Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
+              dependency,
+              cooldown_days: cooldown_days
+            )
+            return false
+          end
+
+          release_time = Time.parse(release_date)
 
           is_in_cooldown = Dependabot::UpdateCheckers::CooldownCalculation.within_cooldown_window?(
             release_time,

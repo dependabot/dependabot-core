@@ -730,6 +730,32 @@ RSpec.describe Dependabot::Package::PackageLatestVersionFinder do
       end
     end
 
+    context "when a release date is unavailable" do
+      let(:available_releases) do
+        [{ version: "6.0.1", released_at: nil, yanked: false }]
+      end
+
+      it "allows the version and marks the dependency" do
+        expect(finder.latest_version).to eq(TestVersion.new("6.0.1"))
+        expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+      end
+
+      context "when the dependency is excluded from cooldown" do
+        let(:cooldown_options) do
+          Dependabot::Package::ReleaseCooldownOptions.new(
+            default_days: 7,
+            exclude: [dependency_name]
+          )
+        end
+
+        it "does not mark the dependency" do
+          finder.latest_version
+
+          expect(dependency.metadata).not_to include(:cooldown_date_unavailable)
+        end
+      end
+    end
+
     context "when dependency has no current version" do
       let(:dependency_version) { nil }
 
