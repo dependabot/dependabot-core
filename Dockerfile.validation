@@ -1,0 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1.20
+FROM ecosystem-image
+
+RUN bash -lc "cd /home/dependabot/dependabot-updater && bundle check"

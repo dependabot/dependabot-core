@@ -30,7 +30,11 @@ if [[ "$(jq -r 'index("shared") != null' <<< "$changed_targets")" == "true" ]]; 
 fi
 changed_targets=$(jq -c '[.[] | select(. != "shared")]' <<< "$changed_targets")
 
-targets=$(jq -c '[.[] | select(.target != "updater-core") | .target]' <<< "$BAKE_MATRIX")
+targets=$(
+  jq -c \
+    '[.[] | select(.target != "updater-core" and (.target | endswith("-raw") | not)) | .target]' \
+    <<< "$BAKE_MATRIX"
+)
 unknown_targets=$(jq -cn --argjson changed "$changed_targets" --argjson targets "$targets" '$changed - $targets')
 
 if [[ "$(jq 'length' <<< "$unknown_targets")" -ne 0 ]]; then
@@ -42,7 +46,10 @@ jq -c \
   --arg force_all "$force_all" \
   --argjson changed "$changed_targets" \
   '
-    [.[] | select(.target != "updater-core")] as $matrix
+    [
+      .[]
+      | select(.target != "updater-core" and (.target | endswith("-raw") | not))
+    ] as $matrix
     | if $force_all == "true" then
         {
           reason: "force-all",

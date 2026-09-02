@@ -133,7 +133,7 @@ jobs:
         env:
           BAKE_MATRIX: ${{ steps.publication-bake-matrix.outputs.matrix }}
         run: |
-          MATRIX=$(jq -c '[.[] | select(.target != "updater-core")]' <<< "$BAKE_MATRIX")
+          MATRIX=$(jq -c '[.[] | select(.target != "updater-core" and (.target | endswith("-raw") | not))]' <<< "$BAKE_MATRIX")
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
 
       - name: Resolve proposed image matrix
@@ -220,29 +220,7 @@ jobs:
         id: metadata
         run: echo "version=$DEPENDABOT_UPDATER_VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Build ecosystem image for validation
-        uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
-        with:
-          source: .
-          files: ${{ runner.temp }}/docker-bake.hcl
-          targets: ${{ matrix.target }}
-          provenance: false
-          set: |
-            ${{ matrix.target }}.output=type=docker
-            ${{ matrix.target }}.tags=${{ env.UPDATER_IMAGE }}:validation-${{ github.run_id }}
-
-      - name: Validate ecosystem image
-        env:
-          IMAGE: ${{ env.UPDATER_IMAGE }}:validation-${{ github.run_id }}
-        run: |
-          docker run --rm "$IMAGE" \
-            bash -lc "cd /home/dependabot/dependabot-updater && bundle check"
-
-          IMAGE_LAYERS=$(docker history -q "$IMAGE" | wc -l | sed -e 's/ //g')
-          echo "$IMAGE contains $IMAGE_LAYERS layers"
-          [[ $IMAGE_LAYERS -lt 126 ]]
-
-      - name: Build and push branch image
+      - name: Build and push validated branch image
         id: build
         uses: docker/bake-action@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
         with:
@@ -253,6 +231,18 @@ jobs:
           set: |
             ${{ matrix.target }}.output=type=registry
             ${{ matrix.target }}.tags=${{ env.UPDATER_IMAGE }}:${{ steps.metadata.outputs.version }}
+
+      - name: Validate image manifest
+        env:
+          IMAGE_DIGEST: ${{ fromJSON(steps.build.outputs.metadata)[matrix.target]['containerimage.digest'] }}
+        run: |
+          IMAGE="${UPDATER_IMAGE}@${IMAGE_DIGEST}"
+          IMAGE_LAYERS=$(docker buildx imagetools inspect --raw "$IMAGE" | jq '.layers | length')
+          echo "$IMAGE contains $IMAGE_LAYERS layers"
+          [[ $IMAGE_LAYERS -lt 126 ]]
+
+          TAG_DIGEST=$(docker buildx imagetools inspect "${UPDATER_IMAGE}:${{ steps.metadata.outputs.version }}" --format '{{json .Manifest.Digest}}' | jq -r '.')
+          [[ "$TAG_DIGEST" == "$IMAGE_DIGEST" ]]
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
