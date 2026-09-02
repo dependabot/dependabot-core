@@ -235,13 +235,14 @@ jobs:
       - name: Validate image manifest
         env:
           IMAGE_DIGEST: ${{ fromJSON(steps.build.outputs.metadata)[matrix.target]['containerimage.digest'] }}
+          IMAGE_TAG: ${{ steps.metadata.outputs.version }}
         run: |
           IMAGE="${UPDATER_IMAGE}@${IMAGE_DIGEST}"
           IMAGE_LAYERS=$(docker buildx imagetools inspect --raw "$IMAGE" | jq '.layers | length')
           echo "$IMAGE contains $IMAGE_LAYERS layers"
           [[ $IMAGE_LAYERS -lt 126 ]]
 
-          TAG_DIGEST=$(docker buildx imagetools inspect "${UPDATER_IMAGE}:${{ steps.metadata.outputs.version }}" --format '{{json .Manifest.Digest}}' | jq -r '.')
+          TAG_DIGEST=$(docker buildx imagetools inspect "${UPDATER_IMAGE}:${IMAGE_TAG}" --format '{{json .Manifest.Digest}}' | jq -r '.')
           [[ "$TAG_DIGEST" == "$IMAGE_DIGEST" ]]
 
       - name: Generate artifact attestation
