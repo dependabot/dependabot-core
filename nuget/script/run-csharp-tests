@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NUGET_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 UPDATER_DIR="$NUGET_DIR/helpers/lib/NuGetUpdater"
 SOLUTION="$UPDATER_DIR/NuGetUpdater.slnx"
+CORE_TEST_PROJECT="$UPDATER_DIR/NuGetUpdater.Core.Test/NuGetUpdater.Core.Test.csproj"
 LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/nuget-csharp-tests.XXXXXX")"
 
 trap 'rm -rf -- "$LOG_DIR"' EXIT
@@ -42,6 +43,22 @@ start_test() {
   phase_labels+=("$label")
   phase_logs+=("$log_file")
   phase_pids+=("$!")
+}
+
+core_remainder_filter=""
+
+start_core_shard() {
+  local label="$1"
+  shift
+
+  local filter=""
+  local pattern
+  for pattern in "$@"; do
+    filter+="${filter:+|}FullyQualifiedName~$pattern"
+    core_remainder_filter+="${core_remainder_filter:+&}FullyQualifiedName!~$pattern"
+  done
+
+  start_test "NuGetUpdater.Core.Test.$label" "$CORE_TEST_PROJECT" "$filter"
 }
 
 wait_for_phase() {
@@ -92,22 +109,22 @@ phase_logs=()
 phase_pids=()
 phase_statuses=()
 
-start_test \
-  "NuGetUpdater.Core.Test.EndToEndTests" \
-  "$UPDATER_DIR/NuGetUpdater.Core.Test/NuGetUpdater.Core.Test.csproj" \
-  "FullyQualifiedName~NuGetUpdater.Core.Test.Run.EndToEndTests"
-start_test \
-  "NuGetUpdater.Core.Test.DiscoveryWorkerTests" \
-  "$UPDATER_DIR/NuGetUpdater.Core.Test/NuGetUpdater.Core.Test.csproj" \
-  "FullyQualifiedName~NuGetUpdater.Core.Test.Discover.DiscoveryWorkerTests"
-start_test \
-  "NuGetUpdater.Core.Test.FileWriterAndSdkProjectDiscoveryTests" \
-  "$UPDATER_DIR/NuGetUpdater.Core.Test/NuGetUpdater.Core.Test.csproj" \
-  "FullyQualifiedName~NuGetUpdater.Core.Test.Update.FileWriters.FileWriterWorkerTests|FullyQualifiedName~NuGetUpdater.Core.Test.Discover.SdkProjectDiscoveryTests"
+start_core_shard \
+  "EndToEndTests" \
+  "NuGetUpdater.Core.Test.Run.EndToEndTests"
+start_core_shard \
+  "DiscoveryWorkerTests" \
+  "NuGetUpdater.Core.Test.Discover.DiscoveryWorkerTests"
+start_core_shard \
+  "FileWriterAndSdkProjectDiscoveryTests" \
+  "NuGetUpdater.Core.Test.Update.FileWriters.FileWriterWorkerTests" \
+  "NuGetUpdater.Core.Test.Discover.SdkProjectDiscoveryTests"
+
+# Any test that does not match a named shard runs here.
 start_test \
   "NuGetUpdater.Core.Test.RemainingTests" \
-  "$UPDATER_DIR/NuGetUpdater.Core.Test/NuGetUpdater.Core.Test.csproj" \
-  "FullyQualifiedName!~NuGetUpdater.Core.Test.Run.EndToEndTests&FullyQualifiedName!~NuGetUpdater.Core.Test.Discover.DiscoveryWorkerTests&FullyQualifiedName!~NuGetUpdater.Core.Test.Update.FileWriters.FileWriterWorkerTests&FullyQualifiedName!~NuGetUpdater.Core.Test.Discover.SdkProjectDiscoveryTests"
+  "$CORE_TEST_PROJECT" \
+  "$core_remainder_filter"
 
 if ! wait_for_phase; then
   overall_status=1
