@@ -145,13 +145,22 @@ module Dependabot
         def property_requirement
           property_requirements = dependency.requirements.select { |r| r.metadata_string("property_name") }
           matching_requirement = property_requirements.find do |requirement|
-            requirement.requirement_string == dependency.version
+            normalized_requirement_version(requirement) == dependency.version
           end
           requirement = matching_requirement || property_requirements.first
 
           raise "No requirement with a property name!" unless requirement
 
           requirement
+        end
+
+        sig { params(requirement: Dependabot::DependencyRequirement).returns(T.nilable(String)) }
+        def normalized_requirement_version(requirement)
+          requirement_string = requirement.requirement_string
+          return unless requirement_string
+          return if requirement_string.include?(",")
+
+          requirement_string.gsub(/[\(\)\[\]]/, "").strip
         end
 
         sig { params(string: String).returns(T::Boolean) }

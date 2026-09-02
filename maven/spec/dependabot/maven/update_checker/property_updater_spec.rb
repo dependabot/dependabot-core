@@ -302,8 +302,10 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
         Dependabot::DependencyFile.new(
           name: "docker/pom.xml",
           content: fixture("poms", "prefix_overlapping_property_names_docker.xml")
+                   .gsub(">1.0.7<", ">#{property_version}<")
         )
       end
+      let(:property_version) { "1.0.7" }
       let(:parsed_dependencies) do
         Dependabot::Maven::FileParser.new(dependency_files: dependency_files, source: nil).parse
       end
@@ -340,6 +342,20 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
           "product-catalogue-market-domain-contract.version" => "2.9.9",
           "product-catalogue-market-domain-contract-proto-prod.version" => "1.0.11"
         )
+      end
+
+      context "when the matching property uses an exact version range" do
+        let(:property_version) { "[1.0.7]" }
+
+        it "updates the matching property" do
+          expect(updated_dependencies).to contain_exactly(
+            have_attributes(
+              name: dependency_name,
+              version: "1.0.11",
+              previous_version: "[1.0.7]"
+            )
+          )
+        end
       end
     end
 
