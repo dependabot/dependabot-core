@@ -138,10 +138,16 @@ RSpec.describe Dependabot::Package::NpmRegistryPackage do
         {
           "versions" => {
             "0.0.4" => {
-              "repository" => [{
-                "type" => "git",
-                "url" => "git://github.com/raszi/tmp.git"
-              }]
+              "repository" => [
+                {
+                  "type" => "npm",
+                  "url" => "https://registry.npmjs.org/example"
+                },
+                {
+                  "type" => "git",
+                  "url" => "git://github.com/raszi/tmp.git"
+                }
+              ]
             }
           }
         }
