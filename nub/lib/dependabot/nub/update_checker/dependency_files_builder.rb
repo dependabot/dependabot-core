@@ -5,6 +5,7 @@ require "sorbet-runtime"
 
 require "dependabot/nub/file_updater/npmrc_builder"
 require "dependabot/nub/file_updater/package_json_preparer"
+require "dependabot/nub/update_checker"
 
 module Dependabot
   module Nub

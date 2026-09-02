@@ -4,6 +4,7 @@
 require "json"
 require "sorbet-runtime"
 
+require "dependabot/nub/file_updater"
 require "dependabot/nub/helpers"
 require "dependabot/nub/package/registry_finder"
 require "dependabot/nub/registry_parser"
