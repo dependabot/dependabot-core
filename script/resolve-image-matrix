@@ -51,6 +51,17 @@ jq -c \
       | select(.target != "updater-core" and (.target | endswith("-raw") | not))
     ] as $matrix
     | (
+        $changed +
+        (
+          if ($changed | index("docker")) or ($changed | index("docker-compose")) then
+            ["docker", "docker-compose"]
+          else
+            []
+          end
+        )
+        | unique
+      ) as $effective_changed
+    | (
         if $force_all == "true" then
           {
             reason: "force-all",
@@ -64,28 +75,35 @@ jq -c \
             reason: "changed-targets",
             build: [
               $matrix[] as $item
-              | select($changed | index($item.target))
+              | select($effective_changed | index($item.target))
               | $item
             ],
             promote: [
               $matrix[] as $item
-              | select(($changed | index($item.target)) | not)
+              | select(($effective_changed | index($item.target)) | not)
               | $item
             ],
             build_count: ([
               $matrix[] as $item
-              | select($changed | index($item.target))
+              | select($effective_changed | index($item.target))
             ] | length),
             promote_count: ([
               $matrix[] as $item
-              | select(($changed | index($item.target)) | not)
+              | select(($effective_changed | index($item.target)) | not)
             ] | length)
           }
         end
       )
     | . + {
+        build_docker_family: any(.build[]; .target == "docker" or .target == "docker-compose"),
         build_precommit: any(.build[]; .target == "pre-commit"),
-        generic_build: [.build[] | select(.target != "pre-commit")],
-        generic_build_count: ([.build[] | select(.target != "pre-commit")] | length)
+        generic_build: [
+          .build[]
+          | select(.target != "docker" and .target != "docker-compose" and .target != "pre-commit")
+        ],
+        generic_build_count: ([
+          .build[]
+          | select(.target != "docker" and .target != "docker-compose" and .target != "pre-commit")
+        ] | length)
       }
   ' <<< "$BAKE_MATRIX"
