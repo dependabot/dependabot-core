@@ -2,7 +2,10 @@
 # frozen_string_literal: true
 
 require "docker_registry2"
+require "excon"
+require "json"
 require "sorbet-runtime"
+require "uri"
 
 begin
   require "rest-client"
@@ -36,6 +39,7 @@ end
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/update_checkers/cooldown_calculation"
+require "dependabot/registry_client"
 require "dependabot/errors"
 require "dependabot/docker/tag"
 require "dependabot/docker/file_parser"
@@ -82,6 +86,9 @@ module Dependabot
       # collect the remaining tags.
       TAGS_PAGE_SIZE = 100
 
+      GITHUB_PACKAGES_PAGE_SIZE = 100
+      GITHUB_PACKAGES_MAX_PAGES = 5
+
       DockerSource = T.type_alias do
         T::Hash[Symbol, T.nilable(String)]
       end
@@ -89,6 +96,9 @@ module Dependabot
       ManifestHash = T.type_alias do
         T::Hash[T.any(String, Symbol), Object]
       end
+
+      GithubPackageVersion = T.type_alias { T::Hash[String, Object] }
+      PublicationDateResult = T.type_alias { [T.nilable(Time), T::Boolean] }
 
       ManifestList = T.type_alias do
         T::Array[ManifestHash]
@@ -476,17 +486,8 @@ module Dependabot
         first_digest = extract_digest_from_response(digest_info, tag)
         return nil unless first_digest
 
-        # When digest_info is an Array the registry returned a manifest list
-        # (OCI image index) and the extracted digest points at a platform-
-        # specific *manifest*, not a blob.  Use the correct endpoint so the
-        # HEAD request succeeds on registries like ghcr.io.
-        endpoint = digest_info.is_a?(Array) ? "manifests" : "blobs"
-        head_response = with_retries(max_attempts: 3, errors: transient_docker_errors) do
-          client = docker_registry_client
-          client.dohead "v2/#{docker_repo_name}/#{endpoint}/#{first_digest}"
-        end
-
-        published_date = published_date_from_response_headers(head_response.headers, tag.name)
+        published_date, details_available = publication_date_for(tag, digest_info, first_digest)
+        return nil unless details_available
 
         Dependabot::Package::PackageRelease.new(
           version: release_version_for(tag),
@@ -506,6 +507,216 @@ module Dependabot
           "skipping cooldown: #{e.class} - #{e.message}"
         )
         nil
+      end
+
+      sig do
+        params(
+          tag: Dependabot::Docker::Tag,
+          digest_info: Object,
+          first_digest: String
+        ).returns(PublicationDateResult)
+      end
+      def publication_date_for(tag, digest_info, first_digest)
+        header_date = publication_date_from_registry_headers(tag, digest_info, first_digest)
+        [header_date || registry_tag_release_date(tag), true]
+      rescue *transient_docker_errors,
+             DockerRegistry2::RegistryAuthenticationException,
+             DockerRegistry2::RegistryAuthorizationException,
+             RestClient::Forbidden,
+             RestClient::TooManyRequests => e
+        fallback_date = registry_tag_release_date(tag)
+        return [fallback_date, true] if fallback_date
+
+        Dependabot.logger.warn(
+          "Failed to fetch publication details for #{docker_repo_name}:#{tag.name}, " \
+          "skipping cooldown: #{e.class} - #{e.message}"
+        )
+        [nil, false]
+      end
+
+      sig do
+        params(
+          tag: Dependabot::Docker::Tag,
+          digest_info: Object,
+          first_digest: String
+        ).returns(T.nilable(Time))
+      end
+      def publication_date_from_registry_headers(tag, digest_info, first_digest)
+        endpoint = digest_info.is_a?(Array) ? "manifests" : "blobs"
+        head_response = with_retries(max_attempts: 3, errors: transient_docker_errors) do
+          docker_registry_client.dohead "v2/#{docker_repo_name}/#{endpoint}/#{first_digest}"
+        end
+        published_date_from_response_headers(head_response.headers, tag.name)
+      end
+
+      sig { params(tag: Dependabot::Docker::Tag).returns(T.nilable(Time)) }
+      def registry_tag_release_date(tag)
+        return docker_hub_tag_release_date(tag) if using_dockerhub?
+
+        github_container_registry_tag_release_date(tag) if registry_hostname == "ghcr.io"
+      rescue JSON::ParserError, ArgumentError, TypeError, Excon::Error::Socket, Excon::Error::Timeout,
+             *transient_docker_errors,
+             DockerRegistry2::RegistryAuthenticationException,
+             DockerRegistry2::RegistryAuthorizationException,
+             RestClient::Forbidden,
+             RestClient::TooManyRequests => e
+        Dependabot.logger.info(
+          "Failed to fetch registry tag metadata for #{docker_repo_name}:#{tag.name}: #{e.message}"
+        )
+        nil
+      end
+
+      sig { params(tag: Dependabot::Docker::Tag).returns(T.nilable(Time)) }
+      def docker_hub_tag_release_date(tag)
+        namespace, repository = docker_repo_name.split("/", 2)
+        return unless namespace && repository
+
+        digest = docker_registry_client.manifest_digest(docker_repo_name, tag.name)
+        return unless digest
+
+        response = Dependabot::RegistryClient.get(
+          url: docker_hub_tag_url(namespace, repository, tag.name),
+          headers: { "Accept" => "application/json" },
+          options: {
+            connect_timeout: docker_open_timeout_in_seconds,
+            read_timeout: docker_read_timeout_in_seconds,
+            write_timeout: docker_read_timeout_in_seconds
+          }
+        )
+        return unless response.status == 200
+
+        metadata = JSON.parse(response.body)
+        return unless matching_digest?(metadata["digest"], digest)
+
+        timestamp = metadata["tag_last_pushed"]
+        Time.iso8601(timestamp) if timestamp.is_a?(String)
+      end
+
+      sig { params(namespace: String, repository: String, tag: String).returns(String) }
+      def docker_hub_tag_url(namespace, repository, tag)
+        escaped = [namespace, repository, tag].map { |value| URI.encode_www_form_component(value) }
+        "https://hub.docker.com/v2/namespaces/#{escaped[0]}/repositories/#{escaped[1]}/tags/#{escaped[2]}"
+      end
+
+      sig { params(tag: Dependabot::Docker::Tag).returns(T.nilable(Time)) }
+      def github_container_registry_tag_release_date(tag)
+        digest = docker_registry_client.manifest_digest(docker_repo_name, tag.name)
+        return unless digest
+
+        version = github_package_versions.find do |candidate|
+          matching_digest?(candidate["name"], digest) && github_package_version_tags(candidate).include?(tag.name)
+        end
+        return unless version
+
+        timestamp = version["updated_at"]
+        Time.iso8601(timestamp) if timestamp.is_a?(String)
+      end
+
+      sig { returns(T::Array[GithubPackageVersion]) }
+      def github_package_versions
+        @github_package_versions ||= T.let(
+          fetch_github_package_versions,
+          T.nilable(T::Array[GithubPackageVersion])
+        )
+      end
+
+      sig { returns(T::Array[GithubPackageVersion]) }
+      def fetch_github_package_versions
+        owner, package = docker_repo_name.split("/", 2)
+        token = github_packages_token
+        return [] unless owner && package && token
+
+        owner_type = "orgs"
+        first_response = github_package_versions_response(owner_type, owner, package, token, 1)
+        if first_response.status == 404
+          owner_type = "users"
+          first_response = github_package_versions_response(owner_type, owner, package, token, 1)
+        end
+        return [] unless first_response.status == 200
+
+        versions = parse_github_package_versions(first_response.body)
+        page = 2
+        page_full = T.let(versions.length == GITHUB_PACKAGES_PAGE_SIZE, T::Boolean)
+        while page_full && page <= GITHUB_PACKAGES_MAX_PAGES
+          response = github_package_versions_response(owner_type, owner, package, token, page)
+          break unless response.status == 200
+
+          page_versions = parse_github_package_versions(response.body)
+          versions.concat(page_versions)
+          page_full = page_versions.length == GITHUB_PACKAGES_PAGE_SIZE
+          page += 1
+        end
+        versions
+      end
+
+      sig do
+        params(
+          owner_type: String,
+          owner: String,
+          package: String,
+          token: String,
+          page: Integer
+        ).returns(Excon::Response)
+      end
+      def github_package_versions_response(owner_type, owner, package, token, page)
+        escaped_owner = URI.encode_www_form_component(owner)
+        escaped_package = URI.encode_www_form_component(package)
+        url = "https://api.github.com/#{owner_type}/#{escaped_owner}/packages/container/#{escaped_package}/versions"
+        with_retries(max_attempts: 3, errors: [Excon::Error::Socket, Excon::Error::Timeout]) do
+          Dependabot::RegistryClient.get(
+            url: url,
+            headers: {
+              "Accept" => "application/vnd.github+json",
+              "Authorization" => "Bearer #{token}",
+              "X-GitHub-Api-Version" => "2022-11-28"
+            },
+            options: {
+              query: { per_page: GITHUB_PACKAGES_PAGE_SIZE, page: page },
+              connect_timeout: docker_open_timeout_in_seconds,
+              read_timeout: docker_read_timeout_in_seconds,
+              write_timeout: docker_read_timeout_in_seconds
+            }
+          )
+        end
+      end
+
+      sig { params(body: String).returns(T::Array[GithubPackageVersion]) }
+      def parse_github_package_versions(body)
+        parsed = JSON.parse(body)
+        return [] unless parsed.is_a?(Array)
+
+        parsed.grep(Hash)
+      end
+
+      sig { params(version: GithubPackageVersion).returns(T::Array[String]) }
+      def github_package_version_tags(version)
+        metadata = version["metadata"]
+        return [] unless metadata.is_a?(Hash)
+
+        container = metadata["container"]
+        return [] unless container.is_a?(Hash)
+
+        tags = container["tags"]
+        tags.is_a?(Array) ? tags.grep(String) : []
+      end
+
+      sig { params(first: Object, second: Object).returns(T::Boolean) }
+      def matching_digest?(first, second)
+        return false unless first.is_a?(String) && second.is_a?(String)
+
+        first.delete_prefix("sha256:").casecmp?(second.delete_prefix("sha256:")) || false
+      end
+
+      sig { returns(T.nilable(String)) }
+      def github_packages_token
+        registry_token = registry_credentials&.fetch("password", nil)
+        return registry_token if registry_token.is_a?(String)
+
+        github_credentials = credentials.find do |credential|
+          credential["type"] == "git_source" && credential["host"] == "github.com"
+        end
+        github_token = github_credentials&.fetch("password", nil)
+        github_token if github_token.is_a?(String)
       end
 
       sig { params(headers: T::Hash[Symbol, String], tag_name: String).returns(T.nilable(Time)) }
