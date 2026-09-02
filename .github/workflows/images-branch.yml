@@ -192,8 +192,6 @@ jobs:
         run: |
           gh pr checkout "$PR"
           [[ "$(git rev-parse HEAD)" == "$APPROVED_HEAD_SHA" ]]
-          git fetch origin main
-          git merge origin/main --ff-only
           git submodule update --init --recursive
 
       - name: Set up Docker Buildx
@@ -275,8 +273,6 @@ jobs:
         run: |
           gh pr checkout "$PR"
           [[ "$(git rev-parse HEAD)" == "$APPROVED_HEAD_SHA" ]]
-          git fetch origin main
-          git merge origin/main --ff-only
           git submodule update --init --recursive
 
       - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
