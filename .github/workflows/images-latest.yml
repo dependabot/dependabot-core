@@ -8,11 +8,6 @@ on: # yamllint disable-line rule:truthy
     paths-ignore:
       - "common/lib/dependabot.rb"
   workflow_dispatch:
-    inputs:
-      force_all:
-        description: Build every ecosystem image
-        type: boolean
-        default: true
 permissions: {}
 
 jobs:
@@ -78,7 +73,7 @@ jobs:
         env:
           BAKE_MATRIX: ${{ steps.bake-matrix.outputs.matrix }}
           CHANGED_TARGETS: ${{ steps.changes.outputs.changes || '[]' }}
-          FORCE_ALL: ${{ github.event_name != 'push' || inputs.force_all || steps.changes.outcome != 'success' }}
+          FORCE_ALL: ${{ github.event_name != 'push' || steps.changes.outcome != 'success' }}
         run: |
           RESULT=$(script/resolve-image-matrix)
           echo "build_count=$(jq -r '.build_count' <<< "$RESULT")" >> "$GITHUB_OUTPUT"

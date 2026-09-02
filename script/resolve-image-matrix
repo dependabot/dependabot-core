@@ -25,6 +25,11 @@ if [[ "$force_all" != "true" && "$force_all" != "false" ]]; then
   exit 1
 fi
 
+if [[ "$(jq -r 'index("shared") != null' <<< "$changed_targets")" == "true" ]]; then
+  force_all=true
+fi
+changed_targets=$(jq -c '[.[] | select(. != "shared")]' <<< "$changed_targets")
+
 targets=$(jq -c '[.[] | select(.target != "updater-core") | .target]' <<< "$BAKE_MATRIX")
 unknown_targets=$(jq -cn --argjson changed "$changed_targets" --argjson targets "$targets" '$changed - $targets')
 

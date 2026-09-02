@@ -40,6 +40,15 @@ result=$(
 assert_equal '3' "$(jq -r '.build_count' <<< "$result")" "forced build count"
 assert_equal '0' "$(jq -r '.promote_count' <<< "$result")" "forced promotion count"
 
+result=$(
+  BAKE_MATRIX="$matrix" \
+  CHANGED_TARGETS='["shared"]' \
+  script/resolve-image-matrix
+)
+assert_equal '3' "$(jq -r '.build_count' <<< "$result")" "shared build count"
+assert_equal '0' "$(jq -r '.promote_count' <<< "$result")" "shared promotion count"
+assert_equal '"force-all"' "$(jq -c '.reason' <<< "$result")" "shared selection reason"
+
 if BAKE_MATRIX="$matrix" CHANGED_TARGETS='["unknown"]' script/resolve-image-matrix > /dev/null 2>&1; then
   echo "unknown target should fail" >&2
   exit 1
