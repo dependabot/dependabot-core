@@ -132,8 +132,16 @@ module Dependabot
             type: type,
             git: type == "git"
           )
+        when Array
+          repositories = T.let([], T::Array[Repository])
+          value.each do |repository|
+            parsed_repository = parse_repository(repository, version)
+            repositories << parsed_repository if parsed_repository
+          end
+
+          repositories.find(&:git?) || repositories.first
         else
-          raise TypeError, "version #{version} repository must be a string or object"
+          raise TypeError, "version #{version} repository must be a string, object, or array"
         end
       end
       private_class_method :parse_repository
