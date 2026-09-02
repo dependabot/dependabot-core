@@ -33,6 +33,18 @@ variable "BUILD_CACHE_WRITE" {
   default = false
 }
 
+variable "PRE_COMMIT_BUNDLER_CONTEXT" {
+  default = "target:bundler-raw"
+}
+
+variable "PRE_COMMIT_GOMOD_CONTEXT" {
+  default = "target:gomod-raw"
+}
+
+variable "PRE_COMMIT_PUB_CONTEXT" {
+  default = "target:pub-raw"
+}
+
 variable "ECOSYSTEMS" {
   default = [
     { name = "bazel", image = "bazel", dockerfile = "bazel/Dockerfile" },
@@ -172,9 +184,9 @@ target "_ecosystem" {
       (UPDATER_CORE_IMAGE) = UPDATER_CORE_CONTEXT
     },
     item.name == "pre_commit" ? {
-      "${UPDATER_IMAGE_PREFIX}gomod:latest"   = "target:gomod-raw"
-      "${UPDATER_IMAGE_PREFIX}bundler:latest" = "target:bundler-raw"
-      "${UPDATER_IMAGE_PREFIX}pub:latest"     = "target:pub-raw"
+      "${UPDATER_IMAGE_PREFIX}gomod:latest"   = PRE_COMMIT_GOMOD_CONTEXT
+      "${UPDATER_IMAGE_PREFIX}bundler:latest" = PRE_COMMIT_BUNDLER_CONTEXT
+      "${UPDATER_IMAGE_PREFIX}pub:latest"     = PRE_COMMIT_PUB_CONTEXT
     } : {}
   )
   cache-from = [
