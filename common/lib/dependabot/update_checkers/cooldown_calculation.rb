@@ -19,6 +19,13 @@ module Dependabot
       DAY_IN_SECONDS = T.let(24 * 60 * 60, Integer)
       DATE_UNAVAILABLE_METADATA_KEY = :cooldown_date_unavailable
 
+      # Shared by the pull request notice and the job-level warning so both channels
+      # report the same diagnostic, whether or not the update produced a pull request.
+      DATE_UNAVAILABLE_NOTICE_TYPE = "cooldown_date_unavailable"
+      DATE_UNAVAILABLE_TITLE = "Cooldown was not applied"
+      DATE_UNAVAILABLE_DESCRIPTION =
+        "Cooldown could not be applied because no publication date was available from the registry."
+
       sig { params(release_date: Time, cooldown_days: Integer).returns(T::Boolean) }
       def self.within_cooldown_window?(release_date, cooldown_days)
         return false if cooldown_days <= 0

@@ -184,10 +184,12 @@ module Dependabot
 
       notice = Dependabot::Notice.new(
         mode: Dependabot::Notice::NoticeMode::WARN,
-        type: "cooldown_date_unavailable",
+        type: Dependabot::UpdateCheckers::CooldownCalculation::DATE_UNAVAILABLE_NOTICE_TYPE,
         package_manager_name: job.package_manager,
-        title: "Cooldown was not applied",
-        description: "Cooldown could not be applied because no publication date was available from the registry.",
+        title: Dependabot::UpdateCheckers::CooldownCalculation::DATE_UNAVAILABLE_TITLE,
+        description: Dependabot::UpdateCheckers::CooldownCalculation::DATE_UNAVAILABLE_DESCRIPTION,
+        # The job-level warning covers runs that never build a pull request, so this
+        # channel only has to render the notice in the pull request body.
         show_in_pr: true,
         show_alert: false
       )
