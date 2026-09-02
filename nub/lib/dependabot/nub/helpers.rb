@@ -54,10 +54,13 @@ module Dependabot
 
       sig { returns(T.nilable(String)) }
       def self.nub_version
-        version = run_nub_command("--version", fingerprint: "--version").strip
-        if version.include?("+")
-          version.split("+").first # Remove build info, if present
-        end
+        # `nub --version` reports a "v" prefix ("v0.8.0") and may append
+        # "+<metadata>" on a prerelease build. It also writes a diagnostic line
+        # about the resolved Node to stderr, which run_shell_command folds into
+        # the output, so extract just the version rather than returning the
+        # whole string.
+        output = run_nub_command("--version", fingerprint: "--version")
+        output[/^v?(\d+\.\d+\.\d+)/, 1]
       rescue StandardError => e
         Dependabot.logger.error("Error retrieving Nub version: #{e.message}")
         nil
