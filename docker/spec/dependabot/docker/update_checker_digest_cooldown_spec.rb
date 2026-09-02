@@ -99,8 +99,54 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   context "when the registry omits the Last-Modified header" do
     let(:blob_response) { instance_double(RestClient::Response, headers: {}) }
 
+    before do
+      stub_request(
+        :get,
+        "https://hub.docker.com/v2/namespaces/library/repositories/golang/tags/alpine"
+      ).to_return(status: 404)
+    end
+
     it "fails open and proposes the update" do
       expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+    end
+
+    context "when Docker Hub reports a recent tag push" do
+      before do
+        stub_request(
+          :get,
+          "https://hub.docker.com/v2/namespaces/library/repositories/golang/tags/alpine"
+        ).to_return(
+          status: 200,
+          body: {
+            digest: "sha256:98e6cffc31ccc44c7c15d83df1d69891efee8115a5bb7ede2bf30a38af3e3c92",
+            tag_last_pushed: (Time.now - (5 * 86_400)).iso8601
+          }.to_json
+        )
+      end
+
+      it "holds the digest-only update in cooldown" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
+        expect(golang_dependency.metadata).not_to include(:docker_cooldown_date_unavailable)
+      end
+    end
+
+    context "when Docker Hub reports an old tag push" do
+      before do
+        stub_request(
+          :get,
+          "https://hub.docker.com/v2/namespaces/library/repositories/golang/tags/alpine"
+        ).to_return(
+          status: 200,
+          body: {
+            digest: "sha256:98e6cffc31ccc44c7c15d83df1d69891efee8115a5bb7ede2bf30a38af3e3c92",
+            tag_last_pushed: (Time.now - (30 * 86_400)).iso8601
+          }.to_json
+        )
+      end
+
+      it "proposes the digest-only update" do
+        expect(checker.can_update?(requirements_to_unlock: :own)).to be(true)
+      end
     end
   end
 end
