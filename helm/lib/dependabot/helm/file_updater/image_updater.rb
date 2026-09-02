@@ -171,7 +171,7 @@ module Dependabot
             next if req.source_string("digest")
 
             old_declaration = scalar_image_declaration(dependency_name, req, old_tag)
-            next unless value_node.value == old_declaration
+            next unless value_node.value.chomp == old_declaration
 
             new_declaration = scalar_image_declaration(dependency_name, req, dependency_version)
             replace_within_node_span(value_node, content, old_declaration, new_declaration)
