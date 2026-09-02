@@ -198,11 +198,12 @@ module Dependabot
 
     sig { returns(T::Boolean) }
     def cooldown_date_unavailable?
+      source = change_source
       dependencies = updated_dependencies.dup
-      if change_source.is_a?(Dependabot::Dependency)
-        dependencies << change_source
+      if source.is_a?(Dependabot::Dependency)
+        dependencies << source
       else
-        dependencies.concat(change_source.dependencies)
+        dependencies.concat(source.dependencies)
       end
 
       dependencies.any? do |dependency|

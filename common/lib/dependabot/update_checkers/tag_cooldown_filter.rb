@@ -41,7 +41,7 @@ module Dependabot
       # Nil when the registry gave no usable date, so the caller can flag the dependency.
       sig { params(release_date: T.nilable(String)).returns(T.nilable(Integer)) }
       def release_date_to_seconds(release_date)
-        return nil unless release_date&.length&.positive?
+        return nil if release_date.nil? || release_date.empty?
 
         Time.parse(release_date).to_i
       rescue ArgumentError => e
