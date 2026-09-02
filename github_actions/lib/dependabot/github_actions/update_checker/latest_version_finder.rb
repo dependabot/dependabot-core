@@ -380,15 +380,14 @@ module Dependabot
           )
 
           cooldown_days = T.must(cooldown).default_days
-          unless release_date&.length&.positive?
+          release_time = release_date&.length&.positive? ? parse_release_date(release_date) : nil
+          unless release_time
             Dependabot::UpdateCheckers::CooldownCalculation.mark_cooldown_date_unavailable(
               dependency,
               cooldown_days: cooldown_days
             )
             return false
           end
-
-          release_time = Time.parse(release_date)
 
           is_in_cooldown = Dependabot::UpdateCheckers::CooldownCalculation.within_cooldown_window?(
             release_time,
@@ -405,6 +404,14 @@ module Dependabot
         rescue StandardError => e
           Dependabot.logger.debug("Error parsing release date: #{e.message}")
           false
+        end
+
+        sig { params(release_date: String).returns(T.nilable(Time)) }
+        def parse_release_date(release_date)
+          Time.parse(release_date)
+        rescue ArgumentError => e
+          Dependabot.logger.debug("Error parsing release date: #{e.message}")
+          nil
         end
 
         sig { returns(String) }

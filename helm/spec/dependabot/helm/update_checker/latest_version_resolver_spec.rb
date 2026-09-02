@@ -196,10 +196,17 @@ RSpec.describe Dependabot::Helm::LatestVersionResolver do
       expect(resolver.release_date_to_seconds(release_date)).to eq(Time.parse(release_date).to_i)
     end
 
-    it "returns 0 for an invalid release date" do
+    it "returns nil for an invalid release date" do
       invalid_release_date = "invalid-date"
       expect(Dependabot.logger).to receive(:error).with(/Invalid release date format/)
-      expect(resolver.release_date_to_seconds(invalid_release_date)).to eq(0)
+      expect(resolver.release_date_to_seconds(invalid_release_date)).to be_nil
+    end
+
+    it "marks the dependency when the release date cannot be parsed" do
+      allow(Dependabot.logger).to receive(:error)
+
+      expect(resolver.check_if_version_in_cooldown_period?("invalid-date")).to be false
+      expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
     end
   end
 end

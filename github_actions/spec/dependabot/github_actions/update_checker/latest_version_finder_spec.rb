@@ -570,6 +570,17 @@ RSpec.describe namespace::LatestVersionFinder do
           expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
         end
       end
+
+      context "when a release date cannot be parsed" do
+        let(:git_tags_with_dates) do
+          [Dependabot::GitTagWithDetail.new(tag: "v1.0.0", release_date: "not-a-date")]
+        end
+
+        it "keeps the tag and marks the dependency" do
+          expect(selected_tags).to be_empty
+          expect(dependency.metadata[:cooldown_date_unavailable]).to be(true)
+        end
+      end
     end
   end
 

@@ -29,22 +29,24 @@ module Dependabot
         cooldown_days = T.must(cooldown).default_days
         return false unless cooldown_days.positive?
 
-        unless release_date&.length&.positive?
+        released_at = release_date_to_seconds(release_date)
+        unless released_at
           CooldownCalculation.mark_cooldown_date_unavailable(dependency, cooldown_days: cooldown_days)
           return false
         end
 
-        passed_seconds = Time.now.to_i - release_date_to_seconds(release_date)
-        passed_seconds < cooldown_days * CooldownCalculation::DAY_IN_SECONDS
+        (Time.now.to_i - released_at) < cooldown_days * CooldownCalculation::DAY_IN_SECONDS
       end
 
-      # An unparseable date is treated as long past, so it never blocks an update.
-      sig { params(release_date: String).returns(Integer) }
+      # Nil when the registry gave no usable date, so the caller can flag the dependency.
+      sig { params(release_date: T.nilable(String)).returns(T.nilable(Integer)) }
       def release_date_to_seconds(release_date)
+        return nil unless release_date&.length&.positive?
+
         Time.parse(release_date).to_i
       rescue ArgumentError => e
         Dependabot.logger.error("Invalid release date format: #{release_date} and error: #{e.message}")
-        0
+        nil
       end
     end
   end
