@@ -76,11 +76,10 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
-      proposed_build_count: ${{ steps.proposed.outputs.build_count }}
-      proposed_build_matrix: ${{ steps.proposed.outputs.build_matrix }}
-      proposed_promote_count: ${{ steps.proposed.outputs.promote_count }}
-      proposed_promote_matrix: ${{ steps.proposed.outputs.promote_matrix }}
+      build_count: ${{ steps.selection.outputs.build_count }}
+      build_matrix: ${{ steps.selection.outputs.build_matrix }}
+      promote_count: ${{ steps.selection.outputs.promote_count }}
+      promote_matrix: ${{ steps.selection.outputs.promote_matrix }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -112,12 +111,6 @@ jobs:
           [[ "$(git rev-parse HEAD)" == "$APPROVED_HEAD_SHA" ]]
           git fetch origin "$BASE_REF"
 
-      - name: Generate publication matrix
-        id: publication-bake-matrix
-        uses: docker/bake-action/subaction/matrix@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
-        with:
-          target: ecosystem
-
       - name: Find affected ecosystems
         id: changes
         continue-on-error: true
@@ -128,30 +121,24 @@ jobs:
           ref: ${{ needs.approval.outputs.head_sha }}
           filters: ${{ runner.temp }}/image-filters.yml
 
-      - name: Remove internal targets
-        id: matrix
-        env:
-          BAKE_MATRIX: ${{ steps.publication-bake-matrix.outputs.matrix }}
-        run: |
-          MATRIX=$(jq -c '[.[] | select(.target != "updater-core" and (.target | endswith("-raw") | not))]' <<< "$BAKE_MATRIX")
-          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
-
-      - name: Resolve proposed image matrix
-        id: proposed
-        continue-on-error: true
+      - name: Resolve image matrix
+        id: selection
         env:
           BAKE_MATRIX: ${{ steps.bake-matrix.outputs.matrix }}
           CHANGED_TARGETS: ${{ steps.changes.outputs.changes || '[]' }}
           FORCE_ALL: ${{ inputs.force_all || steps.changes.outcome != 'success' }}
         run: |
-          RESULT=$("$RUNNER_TEMP/resolve-image-matrix")
+          if ! RESULT=$("$RUNNER_TEMP/resolve-image-matrix"); then
+            echo "::warning::Image selection failed; building every ecosystem"
+            RESULT=$(CHANGED_TARGETS='[]' FORCE_ALL=true "$RUNNER_TEMP/resolve-image-matrix")
+          fi
           echo "build_count=$(jq -r '.build_count' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
           echo "build_matrix=$(jq -c '.build' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
           echo "promote_count=$(jq -r '.promote_count' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
           echo "promote_matrix=$(jq -c '.promote' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
 
           {
-            echo "## Proposed image selection"
+            echo "## Image selection"
             echo
             echo "Build: $(jq -r '.build_count' <<< "$RESULT")"
             jq -r '.build[]? | "- `\(.target)`"' <<< "$RESULT"
@@ -162,8 +149,12 @@ jobs:
 
   build-updater-core:
     runs-on: ubuntu-latest
-    needs: approval
-    if: startsWith(needs.approval.outputs.decision, 'APPROVED:OPEN')
+    needs:
+      - approval
+      - prepare
+    if: >-
+      startsWith(needs.approval.outputs.decision, 'APPROVED:OPEN') &&
+      needs.prepare.outputs.build_count != '0'
     permissions:
       contents: read
       id-token: write
@@ -239,11 +230,13 @@ jobs:
       - approval
       - build-updater-core
       - prepare
-    if: startsWith(needs.approval.outputs.decision, 'APPROVED:OPEN')
+    if: >-
+      startsWith(needs.approval.outputs.decision, 'APPROVED:OPEN') &&
+      needs.prepare.outputs.build_count != '0'
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+        include: ${{ fromJSON(needs.prepare.outputs.build_matrix) }}
     permissions:
       contents: read
       id-token: write
@@ -340,3 +333,57 @@ jobs:
             echo ".dependabot set-ecosystem-version staging * $DEPENDABOT_UPDATER_VERSION"
             echo "\`\`\`"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  promote-unchanged-images:
+    runs-on: ubuntu-latest
+    needs:
+      - approval
+      - prepare
+    if: >-
+      startsWith(needs.approval.outputs.decision, 'APPROVED:OPEN') &&
+      needs.prepare.outputs.promote_count != '0'
+    permissions:
+      attestations: read
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.prepare.outputs.promote_matrix) }}
+    env:
+      APPROVED_HEAD_SHA: ${{ needs.approval.outputs.head_sha }}
+      IMAGE_PREFIX: ghcr.io/dependabot/dependabot-updater-
+      TARGET: ${{ matrix.target }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Promote existing image digest
+        run: |
+          echo "## Promoted unchanged image" >> "$GITHUB_STEP_SUMMARY"
+          TARGETS_JSON=$(jq -cn --arg target "$TARGET" '[{target: $target}]')
+          TAGS_JSON=$(jq -cn --arg tag "$APPROVED_HEAD_SHA" '[$tag]')
+          export TARGETS_JSON TAGS_JSON
+          script/promote-image-tags
+
+          {
+            echo
+            echo "deploy for $TARGET"
+            echo "\`\`\`"
+            echo ".dependabot set-ecosystem-version staging $TARGET $APPROVED_HEAD_SHA"
+            echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify existing artifact attestation
+        run: gh attestation verify "oci://${IMAGE_PREFIX}${TARGET}:${APPROVED_HEAD_SHA}" --owner dependabot

@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if [[ -z "${IMAGE_PREFIX:-}" ]]; then
+  echo "IMAGE_PREFIX must contain the image name prefix" >&2
+  exit 1
+fi
+
+targets_json="${TARGETS_JSON:-[]}"
+tags_json="${TAGS_JSON:-[]}"
+source_tag="${SOURCE_TAG:-latest}"
+
+if ! jq -e 'type == "array" and all(.[]; (.target | type) == "string")' <<< "$targets_json" > /dev/null; then
+  echo "TARGETS_JSON must be an array of target objects" >&2
+  exit 1
+fi
+
+if ! jq -e 'type == "array" and length > 0 and all(.[]; type == "string" and length > 0)' <<< "$tags_json" > /dev/null; then
+  echo "TAGS_JSON must be a non-empty array of tags" >&2
+  exit 1
+fi
+
+mapfile -t targets < <(jq -r '.[].target' <<< "$targets_json")
+mapfile -t tags < <(jq -r '.[]' <<< "$tags_json")
+
+for target in "${targets[@]}"; do
+  if [[ ! "$target" =~ ^[a-z0-9][a-z0-9.-]*$ ]]; then
+    echo "Invalid image target: $target" >&2
+    exit 1
+  fi
+
+  image="${IMAGE_PREFIX}${target}"
+  source_digest=$(
+    docker buildx imagetools inspect \
+      "${image}:${source_tag}" \
+      --format '{{json .Manifest.Digest}}' |
+      jq -er 'select(type == "string" and startswith("sha256:"))'
+  )
+
+  create_args=(buildx imagetools create --prefer-index=false)
+  for tag in "${tags[@]}"; do
+    create_args+=(--tag "${image}:${tag}")
+  done
+  create_args+=("${image}@${source_digest}")
+
+  docker "${create_args[@]}"
+
+  for tag in "${tags[@]}"; do
+    promoted_digest=$(
+      docker buildx imagetools inspect \
+        "${image}:${tag}" \
+        --format '{{json .Manifest.Digest}}' |
+        jq -er 'select(type == "string" and startswith("sha256:"))'
+    )
+    if [[ "$promoted_digest" != "$source_digest" ]]; then
+      echo "${image}:${tag} resolved to $promoted_digest instead of $source_digest" >&2
+      exit 1
+    fi
+  done
+
+  echo -e "${target}\t${source_digest}"
+  if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+    echo "- \`${image}@${source_digest}\`" >> "$GITHUB_STEP_SUMMARY"
+  fi
+done
