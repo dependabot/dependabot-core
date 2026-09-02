@@ -233,6 +233,31 @@ RSpec.describe Dependabot::NpmAndYarn::Package::PackageDetailsFetcher do
       end
     end
 
+    context "when registry metadata uses a repository array" do
+      before do
+        stub_request(:get, registry_url).to_return(
+          status: 200,
+          body: JSON.dump(
+            "versions" => {
+              "0.0.4" => {
+                "repository" => [{
+                  "type" => "git",
+                  "url" => "git://github.com/raszi/tmp.git"
+                }]
+              }
+            }
+          )
+        )
+      end
+
+      it "returns the release as a Git package" do
+        release = details.releases.find { |candidate| candidate.version.to_s == "0.0.4" }
+
+        expect(release).not_to be_nil
+        expect(release.package_type).to eq("git")
+      end
+    end
+
     [
       ["time", { "versions" => { "1.0.0" => {} }, "time" => { "1.0.0" => 1 } }],
       ["dist-tags", { "dist-tags" => { "latest" => 1 } }],
