@@ -174,12 +174,35 @@ module Dependabot
             next unless value_node.value == old_declaration
 
             new_declaration = scalar_image_declaration(dependency_name, req, dependency_version)
-
-            line = value_node.start_line
-            content[line] = T.must(content[line]).sub(old_declaration, new_declaration)
+            replace_within_node_span(value_node, content, old_declaration, new_declaration)
           end
 
           content
+        end
+
+        sig do
+          params(
+            value_node: Psych::Nodes::Scalar,
+            content: T::Array[String],
+            old_declaration: String,
+            new_declaration: String
+          ).void
+        end
+        def replace_within_node_span(value_node, content, old_declaration, new_declaration)
+          start_line = value_node.start_line
+          end_line = value_node.end_line
+
+          if start_line == end_line
+            line = T.must(content[start_line])
+            prefix = line[0...value_node.start_column]
+            rest = T.must(line[value_node.start_column..])
+            content[start_line] = "#{prefix}#{rest.sub(old_declaration, new_declaration)}"
+          else
+            # block/folded scalar: the declaration text lives on a line after start_line, so
+            # search the node's whole line span rather than just the line Psych anchors it to
+            segment = T.must(content[start_line..end_line]).join("\n")
+            content[start_line..end_line] = segment.sub(old_declaration, new_declaration).split("\n", -1)
+          end
         end
 
         sig do
