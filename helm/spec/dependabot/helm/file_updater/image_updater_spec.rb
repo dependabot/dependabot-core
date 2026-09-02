@@ -94,6 +94,48 @@ RSpec.describe Dependabot::Helm::FileUpdater::ImageUpdater do
       end
     end
 
+    context "with a scalar image reference" do
+      let(:dependency_name) { "otel/opentelemetry-collector-contrib" }
+      let(:dependency_version) { "0.159.0" }
+      let(:dependency_previous_version) { "0.139.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "values.yaml",
+          requirement: dependency_version,
+          groups: [],
+          source: {
+            type: "docker_registry",
+            tag: dependency_previous_version
+          },
+          metadata: { type: :docker_image }
+        }]
+      end
+      let(:dependency_previous_requirements) do
+        [{
+          file: "values.yaml",
+          requirement: dependency_previous_version,
+          groups: [],
+          source: {
+            type: "docker_registry",
+            tag: dependency_previous_version
+          },
+          metadata: { type: :docker_image }
+        }]
+      end
+
+      let(:fixture_content) do
+        "collector:\n  image: otel/opentelemetry-collector-contrib:0.139.0\n"
+      end
+
+      it "updates the image tag and preserves the final newline" do
+        updated_content = updater.updated_values_yaml_content("values.yaml")
+
+        expect(updated_content).to eq(
+          "collector:\n  image: otel/opentelemetry-collector-contrib:0.159.0\n"
+        )
+      end
+    end
+
     context "with multiple documents in the YAML file" do
       let(:fixture_content) do
         <<~YAML
@@ -327,9 +369,9 @@ RSpec.describe Dependabot::Helm::FileUpdater::ImageUpdater do
         YAML
       end
 
-      it "processes the image tag and preserving complex structures" do
-        updated_content = updater.updated_values_yaml_content("values.yaml")
-        expect(updated_content).to include("- 1.20.0")
+      it "raises an error because a list-valued tag is not a supported form" do
+        expect { updater.updated_values_yaml_content("values.yaml") }
+          .to raise_error("Expected content to change!")
       end
     end
   end
