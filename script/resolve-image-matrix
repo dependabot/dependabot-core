@@ -32,7 +32,15 @@ changed_targets=$(jq -c '[.[] | select(. != "shared")]' <<< "$changed_targets")
 
 targets=$(
   jq -c \
-    '[.[] | select(.target != "updater-core" and (.target | endswith("-raw") | not)) | .target]' \
+    '[
+      .[]
+      | select(
+          .target != "python-runtime" and
+          .target != "updater-core" and
+          (.target | endswith("-raw") | not)
+        )
+      | .target
+    ]' \
     <<< "$BAKE_MATRIX"
 )
 unknown_targets=$(jq -cn --argjson changed "$changed_targets" --argjson targets "$targets" '$changed - $targets')
@@ -48,7 +56,11 @@ jq -c \
   '
     [
       .[]
-      | select(.target != "updater-core" and (.target | endswith("-raw") | not))
+      | select(
+          .target != "python-runtime" and
+          .target != "updater-core" and
+          (.target | endswith("-raw") | not)
+        )
     ] as $matrix
     | (
         $changed +
@@ -97,13 +109,28 @@ jq -c \
     | . + {
         build_docker_family: any(.build[]; .target == "docker" or .target == "docker-compose"),
         build_precommit: any(.build[]; .target == "pre-commit"),
+        build_python_family: any(.build[]; .target == "pip" or .target == "uv"),
+        python_build: [.build[] | select(.target == "pip" or .target == "uv")],
+        python_build_count: ([.build[] | select(.target == "pip" or .target == "uv")] | length),
         generic_build: [
           .build[]
-          | select(.target != "docker" and .target != "docker-compose" and .target != "pre-commit")
+          | select(
+              .target != "docker" and
+              .target != "docker-compose" and
+              .target != "pip" and
+              .target != "pre-commit" and
+              .target != "uv"
+            )
         ],
         generic_build_count: ([
           .build[]
-          | select(.target != "docker" and .target != "docker-compose" and .target != "pre-commit")
+          | select(
+              .target != "docker" and
+              .target != "docker-compose" and
+              .target != "pip" and
+              .target != "pre-commit" and
+              .target != "uv"
+            )
         ] | length)
       }
   ' <<< "$BAKE_MATRIX"

@@ -29,8 +29,8 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-ENV REQUESTS_CA_BUNDLE /etc/ssl/certs/ca-certificates.crt
-ENV SSL_CERT_FILE /etc/ssl/certs/ca-certificates.crt
+ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch $PYENV_VERSION --single-branch --depth=1 /usr/local/.pyenv
 
@@ -127,29 +127,14 @@ RUN PYENV_VERSION=$PY_3_14 pyenv exec python --version | grep "Python $PY_3_14" 
 RUN bash /opt/python/helpers/build $PY_3_14
 # This is the default Python, so no need to tar it
 
-FROM python-core
-# Install C-libs needed to build users' Python packages. Please document why each package is needed.
-USER root
-RUN apt-get update \
-  && apt-get upgrade -y \
-  && apt-get install -y --no-install-recommends \
-    # Used by pycurl
-    libcurl4-openssl-dev \
-    # Used by mysqlclient
-    libmysqlclient-dev \
-    pkg-config \
-    # Used by psycopg Postgres Client
-    libpq-dev \
-    # Used by python zoneinfo core lib
-    tzdata \
-    # Needed to build `gssapi`/`krb5`
-    libkrb5-dev \
-    # Used by pycairo and pygobject
-    libcairo2-dev \
-    libgirepository-2.0-dev \
-  && rm -rf /var/lib/apt/lists/*
-
-USER dependabot
+FROM ghcr.io/dependabot/dependabot-updater-python-runtime
+ARG PY_3_14
+ARG PY_3_13
+ARG PY_3_12
+ARG PY_3_11
+ARG PY_3_10
+ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+  SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 COPY --chown=dependabot:dependabot --parents python common $DEPENDABOT_HOME/
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
@@ -165,23 +150,6 @@ COPY --from=python-3.14 $PYENV_ROOT/versions/ $PYENV_ROOT/versions/
 COPY --from=python-3.14 /opt/python/ /opt/python/
 
 RUN pyenv global $PY_3_14
-
-USER root
-
-# Install Rust
-ENV RUSTUP_HOME=/opt/rust \
-  CARGO_HOME=/opt/rust \
-  CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse \
-  PATH="${PATH}:/opt/rust/bin"
-RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
-
-USER dependabot
-
-COPY --from=rust /usr/local/rustup $RUSTUP_HOME
-COPY --from=rust /usr/local/cargo $CARGO_HOME
-
-# Configure cargo to use Git CLI so the Git shim works
-RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo/config.toml
 
 COPY --chown=dependabot:dependabot --parents cargo common $DEPENDABOT_HOME/
 
