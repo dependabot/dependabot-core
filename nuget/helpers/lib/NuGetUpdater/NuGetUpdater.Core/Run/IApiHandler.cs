@@ -7,6 +7,11 @@ public interface IApiHandler
     Task SendAsync(string endpoint, object body, string method);
 }
 
+internal interface IApiRetryDelayProvider
+{
+    Task DelayAsync(TimeSpan delay);
+}
+
 public static class IApiHandlerExtensions
 {
     public static async Task RecordUpdateJobError(this IApiHandler handler, JobErrorBase error, ILogger logger)
@@ -70,7 +75,15 @@ public static class IApiHandlerExtensions
                 (ex.StatusCode is null || ((int)ex.StatusCode) / 100 == 5))
             {
                 retryCount++;
-                await Task.Delay(TimeSpan.FromSeconds(Random.Shared.Next(MinRetryDelay, MaxRetryDelay)));
+                var delay = TimeSpan.FromSeconds(Random.Shared.Next(MinRetryDelay, MaxRetryDelay));
+                if (handler is IApiRetryDelayProvider delayProvider)
+                {
+                    await delayProvider.DelayAsync(delay);
+                }
+                else
+                {
+                    await Task.Delay(delay);
+                }
             }
         }
     }

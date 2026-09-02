@@ -284,6 +284,79 @@ public class MSBuildHelperTests : TestBase
         AssertEx.Equal(expectedDependencies, actualDependencies);
     }
 
+    [Fact]
+    public async Task MultipleProjectPropertiesCanBeEvaluated()
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+        [
+            ("project.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+                  </PropertyGroup>
+                </Project>
+                """)
+        ]);
+        var projectPath = Path.Combine(tempDir.DirectoryPath, "project.csproj");
+        var properties = await MSBuildHelper.GetProjectPropertiesAsync(
+            projectPath,
+            ["TargetFrameworks", "NETCoreSdkVersion"],
+            new TestLogger()
+        );
+
+        Assert.NotNull(properties);
+        Assert.Equal("net8.0;net9.0", properties["TargetFrameworks"]);
+        Assert.False(string.IsNullOrEmpty(properties["NETCoreSdkVersion"]));
+    }
+
+    [Theory]
+    [InlineData("TargetFrameworks")]
+    [InlineData("TargetFrameworks", "targetframeworks")]
+    public async Task SingleDistinctProjectPropertyCanBeEvaluated(params string[] propertyNames)
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+        [
+            ("project.csproj", """
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+                  </PropertyGroup>
+                </Project>
+                """)
+        ]);
+        var projectPath = Path.Combine(tempDir.DirectoryPath, "project.csproj");
+        var properties = await MSBuildHelper.GetProjectPropertiesAsync(
+            projectPath,
+            propertyNames,
+            new TestLogger()
+        );
+
+        Assert.NotNull(properties);
+        Assert.Single(properties);
+        Assert.Equal("net8.0;net9.0", properties["TARGETFRAMEWORKS"]);
+    }
+
+    [Theory]
+    [InlineData(".sln")]
+    [InlineData(".slnx")]
+    public async Task MultipleProjectPropertiesAreNotEvaluatedForSolutions(string extension)
+    {
+        using var tempDir = await TemporaryDirectory.CreateWithContentsAsync(
+        [
+            ($"solution{extension}", string.Empty)
+        ]);
+        var solutionPath = Path.Combine(tempDir.DirectoryPath, $"solution{extension}");
+        var logger = new StringLogger();
+        var properties = await MSBuildHelper.GetProjectPropertiesAsync(
+            solutionPath,
+            ["TargetFrameworks", "NETCoreSdkVersion"],
+            logger
+        );
+
+        Assert.Null(properties);
+        Assert.Empty(logger.Messages);
+    }
+
     [Theory]
     [MemberData(nameof(GetTargetFrameworkValuesFromProjectData))]
     public async Task GetTargetFrameworkValuesFromProject(string projectContents, string[] expectedTfms)
