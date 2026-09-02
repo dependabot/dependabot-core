@@ -167,6 +167,8 @@ module Dependabot
 
             old_tag = req.source_string("tag")
             next unless old_tag
+            # digest-pinned images resolve by digest, so a tag-only bump would silently keep the old image
+            next if req.source_string("digest")
 
             old_declaration = scalar_image_declaration(dependency_name, req, old_tag)
             next unless value_node.value == old_declaration
@@ -189,12 +191,9 @@ module Dependabot
         end
         def scalar_image_declaration(name, req, tag)
           registry = req.source_string("registry")
-          digest = req.source_string("digest")
-
-          declaration = registry ? "#{registry}/#{name}" : name
-          declaration += ":#{tag}"
-          declaration += "@sha256:#{digest.delete_prefix('sha256:')}" if digest
-          declaration
+          # the parser already folds a detected registry into the name itself (e.g. "docker.io/nginx")
+          declaration = registry && !name.start_with?("#{registry}/") ? "#{registry}/#{name}" : name
+          "#{declaration}:#{tag}"
         end
       end
     end
