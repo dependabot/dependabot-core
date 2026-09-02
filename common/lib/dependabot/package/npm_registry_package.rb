@@ -134,8 +134,9 @@ module Dependabot
           )
         when Array
           repositories = T.let([], T::Array[Repository])
-          value.each do |repository|
-            parsed_repository = parse_repository(repository, version)
+          value.each do |raw_repository|
+            repository_value = T.cast(raw_repository, Object)
+            parsed_repository = parse_repository(repository_value, version)
             repositories << parsed_repository if parsed_repository
           end
 
