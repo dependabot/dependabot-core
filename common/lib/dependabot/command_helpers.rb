@@ -11,7 +11,7 @@ module Dependabot
 
     module TIMEOUTS
       NO_TIME_OUT = -1 # No timeout
-      GRARECFULLY_STOP = 5 # 5 seconds for graceful termination
+      GRACEFULLY_STOP = 5 # 5 seconds for graceful termination
       LOCAL = 30 # 30 seconds
       NETWORK = 120 # 2 minutes
       LONG_RUNNING = 300 # 5 minutes
@@ -185,8 +185,8 @@ module Dependabot
               if observation&.dig(:gracefully_stop)
                 message = observation[:reason] || "Terminated by output_observer"
                 # If the observer indicates a graceful stop, terminate the process
-                # by adjusting the remaining timeout 5 seconds
-                timeout = [timeout, ((Time.now - last_output_time) + 5).to_i].min
+                # by adjusting the remaining timeout
+                timeout = [timeout, ((Time.now - last_output_time) + TIMEOUTS::GRACEFULLY_STOP).to_i].min
                 Dependabot.logger.warn("Terminating process due to observer signal: #{message}")
               end
             rescue EOFError
