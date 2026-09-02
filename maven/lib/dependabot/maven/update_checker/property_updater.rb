@@ -133,26 +133,25 @@ module Dependabot
 
         sig { returns(String) }
         def property_name
-          @property_name ||= T.let(
-            dependency.requirements
-                      .find { |r| r.metadata_string("property_name") }
-                      &.metadata_string("property_name"),
-            T.nilable(String)
-          )
-
-          raise "No requirement with a property name!" unless @property_name
-
-          @property_name
+          T.must(property_requirement.metadata_string("property_name"))
         end
 
         sig { returns(T.nilable(String)) }
         def property_source
-          @property_source ||= T.let(
-            dependency.requirements
-                      .find { |r| r.metadata_string("property_name") == property_name }
-                      &.metadata_string("property_source"),
-            T.nilable(String)
-          )
+          property_requirement.metadata_string("property_source")
+        end
+
+        sig { returns(Dependabot::DependencyRequirement) }
+        def property_requirement
+          property_requirements = dependency.requirements.select { |r| r.metadata_string("property_name") }
+          matching_requirement = property_requirements.find do |requirement|
+            requirement.requirement_string == dependency.version
+          end
+          requirement = matching_requirement || property_requirements.first
+
+          raise "No requirement with a property name!" unless requirement
+
+          requirement
         end
 
         sig { params(string: String).returns(T::Boolean) }

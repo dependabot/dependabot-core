@@ -292,6 +292,57 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
       end
     end
 
+    context "when the same dependency uses different properties in a parent and child POM" do
+      let(:group_id) { "com.flutter.product.catalogue.market.domain.contract" }
+      let(:dependency_name) { "#{group_id}:product-catalogue-market-domain-contract-proto" }
+      let(:ignored_versions) { [">= 2.a0", ">= 1.1.a0, < 2.a0"] }
+      let(:dependency_files) { [pom, docker_pom] }
+      let(:pom_body) { fixture("poms", "prefix_overlapping_property_names.xml") }
+      let(:docker_pom) do
+        Dependabot::DependencyFile.new(
+          name: "docker/pom.xml",
+          content: fixture("poms", "prefix_overlapping_property_names_docker.xml")
+        )
+      end
+      let(:parsed_dependencies) do
+        Dependabot::Maven::FileParser.new(dependency_files: dependency_files, source: nil).parse
+      end
+      let(:dependency) do
+        T.must(parsed_dependencies.find { |parsed_dependency| parsed_dependency.name == dependency_name })
+      end
+      let(:target_version_details) do
+        {
+          version: version_class.new("1.0.11"),
+          source_url: "https://repo.maven.apache.org/maven2"
+        }
+      end
+      let(:version_finder) do
+        instance_double(Dependabot::Maven::UpdateChecker::VersionFinder, releases: [])
+      end
+
+      before do
+        allow(Dependabot::Maven::UpdateChecker::VersionFinder).to receive(:new).and_return(version_finder)
+      end
+
+      it "updates the matching property in the patch-production group" do
+        expect(updated_dependencies).to contain_exactly(
+          have_attributes(
+            name: dependency_name,
+            version: "1.0.11",
+            previous_version: "1.0.7"
+          )
+        )
+
+        updated_requirements = updated_dependencies.first.requirements.to_h do |requirement|
+          [requirement.metadata_string("property_name"), requirement.requirement_string]
+        end
+        expect(updated_requirements).to include(
+          "product-catalogue-market-domain-contract.version" => "2.9.9",
+          "product-catalogue-market-domain-contract-proto-prod.version" => "1.0.11"
+        )
+      end
+    end
+
     context "when one dependency is missing the target version" do
       before do
         body = fixture("maven_central_metadata", "missing_latest.xml")
