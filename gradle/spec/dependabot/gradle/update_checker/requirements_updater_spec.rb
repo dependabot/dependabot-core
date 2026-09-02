@@ -216,6 +216,33 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::RequirementsUpdater do
         )
       end
 
+      context "with a custom distribution URL" do
+        let(:requirements) { [distribution_req] }
+        let(:distribution_req) do
+          {
+            requirement: "8.14.2",
+            file: "gradle/wrapper/gradle-wrapper.properties",
+            source: {
+              type: "gradle-distribution",
+              url: "https://jfrog.example.com/artifactory/gradle/gradle-8.14.2-bin.zip?download=true",
+              property: "distributionUrl"
+            },
+            groups: []
+          }
+        end
+
+        it "updates only the version in the custom URL" do
+          expect(updater.updated_requirements.first).to include(
+            requirement: "9.0.0",
+            source: {
+              type: "gradle-distribution",
+              url: "https://jfrog.example.com/artifactory/gradle/gradle-9.0.0-bin.zip?download=true",
+              property: "distributionUrl"
+            }
+          )
+        end
+      end
+
       context "when no checksum is available" do
         let(:requirements) { [distribution_req] }
 

@@ -38,7 +38,19 @@ RSpec.describe Dependabot::Gradle::FileUpdater::Wrapper::CommandBuilder do
     expect(args).to include("--distribution-type", "bin")
   end
 
-  context "with a mirror host that contains 'bin' in the domain" do
+  context "with an escaped canonical URL" do
+    before do
+      requirements.first[:source][:url] = "https\\://services.gradle.org/distributions/gradle-9.0.0-bin.zip"
+    end
+
+    it "uses the version and distribution type options" do
+      expect(args).to include("--gradle-version", "9.0.0")
+      expect(args).to include("--distribution-type", "bin")
+      expect(args).not_to include("--gradle-distribution-url")
+    end
+  end
+
+  context "with a custom mirror host that contains 'bin' in the domain" do
     let(:requirements) do
       [{
         file: "gradle/wrapper/gradle-wrapper.properties",
@@ -52,9 +64,13 @@ RSpec.describe Dependabot::Gradle::FileUpdater::Wrapper::CommandBuilder do
       }]
     end
 
-    it "derives the type from the filename suffix, not the host" do
-      expect(args).to include("--distribution-type", "all")
-      expect(args).not_to include("bin")
+    it "passes the complete URL without separate version or type options" do
+      expect(args).to include(
+        "--gradle-distribution-url",
+        "https://bin.example.com/dists/gradle-9.0.0-all.zip"
+      )
+      expect(args).not_to include("--gradle-version")
+      expect(args).not_to include("--distribution-type")
     end
   end
 
@@ -159,8 +175,66 @@ RSpec.describe Dependabot::Gradle::FileUpdater::Wrapper::CommandBuilder do
       }]
     end
 
-    it "omits the distribution-type flag" do
+    it "passes the complete URL" do
+      expect(args).to include(
+        "--gradle-distribution-url",
+        "https://mirror.example.com/gradle-9.0.0.zip"
+      )
+      expect(args).not_to include("--gradle-version")
       expect(args).not_to include("--distribution-type")
+    end
+  end
+
+  context "with an escaped custom URL" do
+    before do
+      requirements.first[:source][:url] = "https\\://mirror.example.com/gradle-9.0.0-bin.zip"
+    end
+
+    it "passes the unescaped URL to Gradle" do
+      expect(args).to include(
+        "--gradle-distribution-url",
+        "https://mirror.example.com/gradle-9.0.0-bin.zip"
+      )
+    end
+  end
+
+  context "with a query string on the distribution URL" do
+    before do
+      requirements.first[:source][:url] =
+        "https://services.gradle.org/distributions/gradle-9.0.0-bin.zip?source=mirror"
+    end
+
+    it "preserves the query string" do
+      expect(args).to include(
+        "--gradle-distribution-url",
+        "https://services.gradle.org/distributions/gradle-9.0.0-bin.zip?source=mirror"
+      )
+      expect(args).not_to include("--distribution-type")
+    end
+  end
+
+  context "with a custom URL and checksum" do
+    before do
+      requirements.first[:source][:url] = "https://mirror.example.com/gradle-9.0.0-bin.zip"
+      requirements << {
+        file: "gradle/wrapper/gradle-wrapper.properties",
+        requirement: "deadbeef",
+        groups: [],
+        source: {
+          type: "gradle-distribution",
+          url: "https://mirror.example.com/gradle-9.0.0-bin.zip.sha256",
+          property: "distributionSha256Sum"
+        }
+      }
+    end
+
+    it "passes both the complete URL and checksum" do
+      expect(args).to include(
+        "--gradle-distribution-url",
+        "https://mirror.example.com/gradle-9.0.0-bin.zip",
+        "--gradle-distribution-sha256-sum",
+        "deadbeef"
+      )
     end
   end
 end
