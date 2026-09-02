@@ -86,12 +86,53 @@ module Dependabot
               @current_dependency = dependency_to_update
               next if previous_line_already_replaced?
 
+              lockfile_before = File.read("Cargo.lock")
               run_cargo_command(
                 "cargo update -p #{dependency_spec}",
                 fingerprint: "cargo update -p <dependency_spec>"
               )
+
+              force_precise_update if precise_update_needed?(lockfile_before)
             end
           end
+        end
+
+        sig { void }
+        def force_precise_update
+          run_cargo_command(
+            "cargo update -p #{dependency_spec} --precise #{dependency.version}",
+            fingerprint: "cargo update -p <dependency_spec> --precise <version>"
+          )
+        end
+
+        # `cargo update -p name:version` won't move a package whose bump
+        # requires lockstep updates to sibling crates shared with other members
+        # (e.g. the `futures` family: 0.3.34 needs `futures-*` at `^0.3.34`).
+        # Cargo leaves the line unchanged and a later validation fails, so we
+        # retry with `--precise` to force the exact target and cascade the
+        # siblings.
+        #
+        # Only retry on a genuine no-op. Comparing the dependency's entries
+        # *and* its incoming edges before/after the plain command distinguishes
+        # a stuck line from one Cargo did resolve — including an edge repointed
+        # onto an already-present target entry, where forcing `--precise` would
+        # wrongly fail.
+        sig { params(lockfile_before: String).returns(T::Boolean) }
+        def precise_update_needed?(lockfile_before)
+          return false if git_dependency?
+
+          version = dependency.version
+          return false unless version && version_class.correct?(version)
+
+          previous_version = dependency.previous_version
+          return false unless previous_version && version_class.correct?(previous_version)
+          return false if previous_version == version
+
+          lockfile_after = File.read("Cargo.lock")
+          return false if dependency_move_signature(lockfile_before, dependency) !=
+                          dependency_move_signature(lockfile_after, dependency)
+
+          package_version_count(lockfile_after, dependency, previous_version).positive?
         end
 
         # An earlier command in this run may already have resolved this
@@ -708,6 +749,78 @@ module Dependabot
             entries.select! { |entry| entry.match?(/^source = "(?!git\+)/) }
           end
           entries
+        end
+
+        # A "did this dependency move?" signature: the dependency's own package
+        # identity plus its incoming edges. An edge repointed onto an
+        # already-present target entry moves the dependency without changing any
+        # `[[package]]` block, so identity alone is not a reliable signal.
+        sig do
+          params(lockfile_content: String, dependency: Dependabot::Dependency)
+            .returns(T::Array[String])
+        end
+        def dependency_move_signature(lockfile_content, dependency)
+          dependency_identity_signature(lockfile_content, dependency) +
+            dependency_reference_edges(lockfile_content, dependency)
+        end
+
+        # Identity of each of the dependency's own `[[package]]` blocks, reduced
+        # to the fields that define which crate instance is present: `name`,
+        # `version` and `source`.
+        #
+        # This deliberately excludes the block's outgoing `dependencies` array
+        # (and checksum): during a grouped update Cargo may add or drop version
+        # qualifiers on this crate's own outgoing edges when a sibling starts or
+        # stops coexisting, even though this crate itself did not move. Folding
+        # the whole block in would misread that as movement and wrongly suppress
+        # the `--precise` fallback, leaving the requested version stuck.
+        sig do
+          params(lockfile_content: String, dependency: Dependabot::Dependency)
+            .returns(T::Array[String])
+        end
+        def dependency_identity_signature(lockfile_content, dependency)
+          dependency_lockfile_entries(lockfile_content, dependency).map do |entry|
+            entry.lines.filter_map do |line|
+              stripped = line.strip
+              stripped if stripped.match?(/\A(?:name|version|source) = /)
+            end.join("\n")
+          end.sort
+        end
+
+        # Incoming edges to the dependency (`"futures"` or `"futures 0.3.33"`
+        # inside other packages' `dependencies` arrays), each qualified by the
+        # parent package that owns it. Cargo only appends the version when
+        # several versions of the crate coexist, so a repointed edge is visible
+        # here even when both entries stay in place. Qualifying by parent means a
+        # pair of edges swapping targets between two parents (`foo 1` -> `foo 2`
+        # in one, `foo 2` -> `foo 1` in another) is still detected as movement
+        # rather than cancelling out in a globally-sorted list.
+        #
+        # The parent is identified by Cargo's full package identity
+        # (name/version/source), not just name/version: a lockfile can carry the
+        # same name *and* version from different sources (see the
+        # `duplicate_source_versions` fixture), and dropping the source would let
+        # such a pair swap edges without the signature changing.
+        sig do
+          params(lockfile_content: String, dependency: Dependabot::Dependency)
+            .returns(T::Array[String])
+        end
+        def dependency_reference_edges(lockfile_content, dependency)
+          edge_regex = /\A"#{Regexp.escape(dependency.name)}( [^"]+)?",?\z/
+          edges = T.let([], T::Array[String])
+          lockfile_content.scan(LOCKFILE_ENTRY_REGEX) do
+            block = Regexp.last_match.to_s
+            parent_id = [
+              block[/^name = "[^"]+"$/],
+              block[/^version = "[^"]+"$/],
+              block[/^source = "[^"]+"$/]
+            ].compact.join(" ")
+            block.lines.each do |line|
+              stripped = line.strip
+              edges << "#{parent_id} => #{stripped}" if stripped.match?(edge_regex)
+            end
+          end
+          edges.sort
         end
 
         # A git dependency can legitimately resolve to a different commit than
