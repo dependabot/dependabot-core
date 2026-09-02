@@ -236,7 +236,9 @@ jobs:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || needs.approval.outputs.base_sha }}
 
       - name: Preserve build definition
-        run: cp docker-bake.hcl "$RUNNER_TEMP/docker-bake.hcl"
+        run: |
+          cp docker-bake.hcl "$RUNNER_TEMP/docker-bake.hcl"
+          cp script/promote-image-tags "$RUNNER_TEMP/promote-image-tags"
 
       - name: Checkout approved pull request
         env:
@@ -437,8 +439,6 @@ jobs:
         run: |
           gh pr checkout "$PR"
           [[ "$(git rev-parse HEAD)" == "$APPROVED_HEAD_SHA" ]]
-          git fetch origin main
-          git merge origin/main --ff-only
           git submodule update --init --recursive
 
       - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
@@ -479,7 +479,7 @@ jobs:
           SOURCE_TARGET=docker
           SOURCE_TAG="$DEPENDABOT_UPDATER_VERSION"
           export TARGETS_JSON TAGS_JSON SOURCE_TARGET SOURCE_TAG
-          script/promote-image-tags
+          "$RUNNER_TEMP/promote-image-tags"
 
       - name: Generate Docker artifact attestation
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
