@@ -85,6 +85,7 @@ npm:
   - npm_and_yarn/**
 nuget:
   - *shared
+  - .gitmodules
   - nuget/**
 opentofu:
   - *shared

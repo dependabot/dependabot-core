@@ -34,6 +34,7 @@ jobs:
       pull-requests: read
     outputs:
       base_ref: ${{ steps.decision.outputs.base_ref }}
+      base_sha: ${{ steps.decision.outputs.base_sha }}
       decision: ${{ steps.decision.outputs.decision }}
       head_sha: ${{ steps.decision.outputs.head_sha }}
       pr: ${{ steps.decision.outputs.pr }}
@@ -58,10 +59,11 @@ jobs:
         run: |
           # For security, the `gh` call that retrieves the PR approval status *must* also retrieve the commit at the
           # tip of the PR to ensure that any subsequent unreviewed commits are not pulled into this action workflow.
-          PR_DATA=$(gh pr view "$PR" --json baseRefName,commits,reviewDecision,state)
+          PR_DATA=$(gh pr view "$PR" --json baseRefName,baseRefOid,commits,reviewDecision,state)
           HEAD_SHA=$(jq -r '.commits | last | .oid' <<< "$PR_DATA")
           DECISION=$(jq -r --arg head_sha "$HEAD_SHA" '"\(.reviewDecision):\(.state):\($head_sha)"' <<< "$PR_DATA")
           echo "base_ref=$(jq -r '.baseRefName' <<< "$PR_DATA")" >> "$GITHUB_OUTPUT"
+          echo "base_sha=$(jq -r '.baseRefOid' <<< "$PR_DATA")" >> "$GITHUB_OUTPUT"
           echo "decision=$DECISION" >> "$GITHUB_OUTPUT"
           echo "head_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
           echo "pr=$PR" >> "$GITHUB_OUTPUT"
@@ -85,6 +87,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+          ref: ${{ needs.approval.outputs.base_sha }}
 
       - name: Preserve trusted image selection
         run: |
