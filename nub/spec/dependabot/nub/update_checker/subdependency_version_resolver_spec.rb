@@ -54,12 +54,25 @@ RSpec.describe Dependabot::Nub::UpdateChecker::SubdependencyVersionResolver do
     allow(Dependabot::Nub::Helpers).to receive(:run_nub_command)
   end
 
-  it "runs nub update with --ignore-scripts for subdependency lockfile updates" do
+  it "pins the allowable version so the update cannot exceed it" do
     expect(latest_resolvable_version).to eq(Gem::Version.new("1.0.1"))
 
     expect(Dependabot::Nub::Helpers).to have_received(:run_nub_command).with(
-      "update @dependabot-fixtures/npm-transitive-dependency --lockfile-only --ignore-scripts",
-      fingerprint: "update <dependency_name> --lockfile-only --ignore-scripts"
+      "update @dependabot-fixtures/npm-transitive-dependency@1.0.1 --lockfile-only --ignore-scripts",
+      fingerprint: "update <dependency_name>@<latest_allowable_version> --lockfile-only --ignore-scripts"
     )
+  end
+
+  context "when no allowable version has been resolved" do
+    let(:latest_allowable_version) { nil }
+
+    it "lets nub select the version" do
+      latest_resolvable_version
+
+      expect(Dependabot::Nub::Helpers).to have_received(:run_nub_command).with(
+        "update @dependabot-fixtures/npm-transitive-dependency --lockfile-only --ignore-scripts",
+        fingerprint: "update <dependency_name> --lockfile-only --ignore-scripts"
+      )
+    end
   end
 end

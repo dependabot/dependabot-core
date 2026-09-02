@@ -127,12 +127,30 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               Helpers.run_nub_command(
-                "update #{dependency.name} --lockfile-only --ignore-scripts",
-                fingerprint: "update <dependency_name> --lockfile-only --ignore-scripts"
+                nub_update_command,
+                fingerprint: nub_update_fingerprint
               )
               { lockfile_name => File.read(lockfile_name) }
             end
           end
+        end
+
+        # Pin the resolved version when one is known. Without it nub picks its own
+        # latest, which for a transitive security update can land on a release the
+        # ignore, security and cooldown constraints already excluded.
+        sig { returns(String) }
+        def nub_update_command
+          name = dependency.name
+          return "update #{name} --lockfile-only --ignore-scripts" unless latest_allowable_version
+
+          "update #{name}@#{latest_allowable_version} --lockfile-only --ignore-scripts"
+        end
+
+        sig { returns(String) }
+        def nub_update_fingerprint
+          return "update <dependency_name> --lockfile-only --ignore-scripts" unless latest_allowable_version
+
+          "update <dependency_name>@<latest_allowable_version> --lockfile-only --ignore-scripts"
         end
 
         sig { returns(T.class_of(Dependabot::Version)) }
