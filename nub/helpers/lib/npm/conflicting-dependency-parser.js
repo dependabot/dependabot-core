@@ -25,7 +25,7 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
       for (const edge of node.edgesIn) {
         if (!semver.satisfies(targetVersion, edge.spec)) {
           findTopLevelEdges(edge).forEach((topLevel) => {
-            explanation = buildExplanation(node, edge, topLevel);
+            const explanation = buildExplanation(node, edge, topLevel);
 
             parents.push({
               explanation: explanation,

@@ -15,7 +15,7 @@ async function parse(directory) {
   });
 
   return Object.entries(lockfile.packages ?? {})
-    .filter(([depPath, pkgSnapshot]) => {
+    .filter(([depPath, _pkgSnapshot]) => {
       let dp = dependencyPath.parse(depPath);
       return dp && dp.name // null or undefined checked for dependency path (dp) and empty name dps are filtered.
     })
@@ -46,7 +46,7 @@ function nameVerDevFromPkgSnapshot(depPath, pkgSnapshot, projectSnapshots) {
       return false;
     }
 
-    currentSpecifier = projectSpecifiers[name];
+    const currentSpecifier = projectSpecifiers[name];
 
     if (!currentSpecifier) {
       return true;
