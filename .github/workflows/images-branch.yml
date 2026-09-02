@@ -16,6 +16,10 @@ on: # yamllint disable-line rule:truthy
         required: true
         type: number
         description: PR number
+      force_all:
+        description: Build every ecosystem image
+        type: boolean
+        default: false
 permissions: {}
 
 jobs:
@@ -29,7 +33,10 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
+      base_ref: ${{ steps.decision.outputs.base_ref }}
       decision: ${{ steps.decision.outputs.decision }}
+      head_sha: ${{ steps.decision.outputs.head_sha }}
+      pr: ${{ steps.decision.outputs.pr }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -51,8 +58,13 @@ jobs:
         run: |
           # For security, the `gh` call that retrieves the PR approval status *must* also retrieve the commit at the
           # tip of the PR to ensure that any subsequent unreviewed commits are not pulled into this action workflow.
-          DECISION=$(gh pr view "$PR" --json reviewDecision,state,commits --jq '"\(.reviewDecision):\(.state):\(.commits | last .oid)"')
+          PR_DATA=$(gh pr view "$PR" --json baseRefName,commits,reviewDecision,state)
+          HEAD_SHA=$(jq -r '.commits | last | .oid' <<< "$PR_DATA")
+          DECISION=$(jq -r --arg head_sha "$HEAD_SHA" '"\(.reviewDecision):\(.state):\($head_sha)"' <<< "$PR_DATA")
+          echo "base_ref=$(jq -r '.baseRefName' <<< "$PR_DATA")" >> "$GITHUB_OUTPUT"
           echo "decision=$DECISION" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          echo "pr=$PR" >> "$GITHUB_OUTPUT"
 
   prepare:
     runs-on: ubuntu-latest
@@ -60,19 +72,52 @@ jobs:
     if: startsWith(needs.approval.outputs.decision, 'APPROVED:OPEN')
     permissions:
       contents: read
+      pull-requests: read
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
+      proposed_build_count: ${{ steps.proposed.outputs.build_count }}
+      proposed_build_matrix: ${{ steps.proposed.outputs.build_matrix }}
+      proposed_promote_count: ${{ steps.proposed.outputs.promote_count }}
+      proposed_promote_matrix: ${{ steps.proposed.outputs.promote_matrix }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
+
+      - name: Preserve trusted image selection
+        run: |
+          cp docker-bake.hcl "$RUNNER_TEMP/docker-bake.hcl"
+          cp .github/image-filters.yml "$RUNNER_TEMP/image-filters.yml"
+          cp script/resolve-image-matrix "$RUNNER_TEMP/resolve-image-matrix"
 
       - name: Generate ecosystem matrix
         id: bake-matrix
         uses: docker/bake-action/subaction/matrix@d3418bd7d0e9324001bca92fa8ba175ea7e6dc9b # v7.3.0
         with:
+          files: ${{ runner.temp }}/docker-bake.hcl
           target: ecosystem
+
+      - name: Checkout approved pull request
+        env:
+          APPROVED_HEAD_SHA: ${{ needs.approval.outputs.head_sha }}
+          BASE_REF: ${{ needs.approval.outputs.base_ref }}
+          PR: ${{ needs.approval.outputs.pr }}
+        run: |
+          gh pr checkout "$PR"
+          [[ "$(git rev-parse HEAD)" == "$APPROVED_HEAD_SHA" ]]
+          git fetch origin "$BASE_REF"
+
+      - name: Find affected ecosystems
+        id: changes
+        continue-on-error: true
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          token: ''
+          base: ${{ needs.approval.outputs.base_ref }}
+          ref: ${{ needs.approval.outputs.head_sha }}
+          filters: ${{ runner.temp }}/image-filters.yml
 
       - name: Remove internal targets
         id: matrix
@@ -81,6 +126,29 @@ jobs:
         run: |
           MATRIX=$(jq -c '[.[] | select(.target != "updater-core")]' <<< "$BAKE_MATRIX")
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve proposed image matrix
+        id: proposed
+        env:
+          BAKE_MATRIX: ${{ steps.bake-matrix.outputs.matrix }}
+          CHANGED_TARGETS: ${{ steps.changes.outputs.changes || '[]' }}
+          FORCE_ALL: ${{ inputs.force_all || steps.changes.outcome != 'success' }}
+        run: |
+          RESULT=$("$RUNNER_TEMP/resolve-image-matrix")
+          echo "build_count=$(jq -r '.build_count' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
+          echo "build_matrix=$(jq -c '.build' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
+          echo "promote_count=$(jq -r '.promote_count' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
+          echo "promote_matrix=$(jq -c '.promote' <<< "$RESULT")" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Proposed image selection"
+            echo
+            echo "Build: $(jq -r '.build_count' <<< "$RESULT")"
+            jq -r '.build[]? | "- `\(.target)`"' <<< "$RESULT"
+            echo
+            echo "Promote unchanged: $(jq -r '.promote_count' <<< "$RESULT")"
+            jq -r '.promote[]? | "- `\(.target)`"' <<< "$RESULT"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   push-updater-images:
     runs-on: ubuntu-latest

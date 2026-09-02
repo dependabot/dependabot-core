@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+matrix='[
+  {"target":"updater-core","dockerfile":"Dockerfile.updater-core"},
+  {"target":"bundler","dockerfile":"bundler/Dockerfile"},
+  {"target":"nuget","dockerfile":"nuget/Dockerfile"},
+  {"target":"pre-commit","dockerfile":"pre_commit/Dockerfile"}
+]'
+
+assert_equal() {
+  local expected="$1"
+  local actual="$2"
+  local message="$3"
+
+  if [[ "$expected" != "$actual" ]]; then
+    echo "$message: expected $expected, got $actual" >&2
+    exit 1
+  fi
+}
+
+result=$(
+  BAKE_MATRIX="$matrix" \
+  CHANGED_TARGETS='["nuget","pre-commit"]' \
+  script/resolve-image-matrix
+)
+assert_equal '2' "$(jq -r '.build_count' <<< "$result")" "filtered build count"
+assert_equal '1' "$(jq -r '.promote_count' <<< "$result")" "filtered promotion count"
+assert_equal '["nuget","pre-commit"]' "$(jq -c '[.build[].target] | sort' <<< "$result")" "filtered targets"
+
+result=$(
+  BAKE_MATRIX="$matrix" \
+  CHANGED_TARGETS='[]' \
+  FORCE_ALL=true \
+  script/resolve-image-matrix
+)
+assert_equal '3' "$(jq -r '.build_count' <<< "$result")" "forced build count"
+assert_equal '0' "$(jq -r '.promote_count' <<< "$result")" "forced promotion count"
+
+if BAKE_MATRIX="$matrix" CHANGED_TARGETS='["unknown"]' script/resolve-image-matrix > /dev/null 2>&1; then
+  echo "unknown target should fail" >&2
+  exit 1
+fi
+
+bake_targets=$(
+  docker buildx bake --print ecosystem 2> /dev/null |
+    jq -c '.group.ecosystem.targets | map(select(. != "updater-core")) | sort'
+)
+filter_targets=$(
+  ruby -ryaml -rjson -e '
+    filters = YAML.safe_load_file(ARGV.fetch(0), aliases: true)
+    puts JSON.generate(filters.keys.reject { |key| key == "shared" }.sort)
+  ' .github/image-filters.yml
+)
+assert_equal "$bake_targets" "$filter_targets" "filter and Bake targets"
+
+ruby -ryaml -e '
+  filters = YAML.safe_load_file(ARGV.fetch(0), aliases: true)
+  expected = {
+    "conda" => ["python/**"],
+    "gradle" => ["maven/**"],
+    "helm" => ["docker/**"],
+    "pip" => ["cargo/**", "python/**"],
+    "pre-commit" => [
+      "bundler/**",
+      "cargo/**",
+      "go_modules/**",
+      "npm_and_yarn/**",
+      "pub/**",
+      "python/**"
+    ],
+    "sbt" => ["maven/**"],
+    "uv" => ["cargo/**", "python/**"]
+  }
+
+  expected.each do |target, paths|
+    missing = paths - filters.fetch(target).flatten
+    abort("#{target} is missing paths: #{missing.join(", ")}") unless missing.empty?
+  end
+' .github/image-filters.yml

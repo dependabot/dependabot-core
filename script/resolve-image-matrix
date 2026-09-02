@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if [[ -z "${BAKE_MATRIX:-}" ]]; then
+  echo "BAKE_MATRIX must contain the Docker Bake matrix JSON" >&2
+  exit 1
+fi
+
+changed_targets="${CHANGED_TARGETS:-[]}"
+force_all="${FORCE_ALL:-false}"
+
+if ! jq -e 'type == "array" and all(.[]; (.target | type) == "string")' <<< "$BAKE_MATRIX" > /dev/null; then
+  echo "BAKE_MATRIX must be an array of target objects" >&2
+  exit 1
+fi
+
+if ! jq -e 'type == "array" and all(.[]; type == "string")' <<< "$changed_targets" > /dev/null; then
+  echo "CHANGED_TARGETS must be an array of target names" >&2
+  exit 1
+fi
+
+if [[ "$force_all" != "true" && "$force_all" != "false" ]]; then
+  echo "FORCE_ALL must be true or false" >&2
+  exit 1
+fi
+
+targets=$(jq -c '[.[] | select(.target != "updater-core") | .target]' <<< "$BAKE_MATRIX")
+unknown_targets=$(jq -cn --argjson changed "$changed_targets" --argjson targets "$targets" '$changed - $targets')
+
+if [[ "$(jq 'length' <<< "$unknown_targets")" -ne 0 ]]; then
+  echo "CHANGED_TARGETS contains unknown targets: $(jq -c '.' <<< "$unknown_targets")" >&2
+  exit 1
+fi
+
+jq -c \
+  --arg force_all "$force_all" \
+  --argjson changed "$changed_targets" \
+  '
+    [.[] | select(.target != "updater-core")] as $matrix
+    | if $force_all == "true" then
+        {
+          reason: "force-all",
+          build: $matrix,
+          promote: [],
+          build_count: ($matrix | length),
+          promote_count: 0
+        }
+      else
+        {
+          reason: "changed-targets",
+          build: [
+            $matrix[] as $item
+            | select($changed | index($item.target))
+            | $item
+          ],
+          promote: [
+            $matrix[] as $item
+            | select(($changed | index($item.target)) | not)
+            | $item
+          ],
+          build_count: ([
+            $matrix[] as $item
+            | select($changed | index($item.target))
+          ] | length),
+          promote_count: ([
+            $matrix[] as $item
+            | select(($changed | index($item.target)) | not)
+          ] | length)
+        }
+      end
+  ' <<< "$BAKE_MATRIX"
