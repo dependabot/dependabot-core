@@ -20,9 +20,10 @@ RSpec.describe Dependabot::Nix::Channel do
       expect(described_class.channel_url?("https://example.com/archive/v1.0.0.tar.gz")).to be(false)
     end
 
-    it "recognises gzip and bzip2 channel tarballs" do
+    it "recognises gzip, bzip2, and zst channel tarballs" do
       expect(described_class.channel_url?("https://channels.nixos.org/nixos-26.05/nixexprs.tar.gz")).to be(true)
       expect(described_class.channel_url?("https://channels.nixos.org/nixos-26.05/nixexprs.tar.bz2")).to be(true)
+      expect(described_class.channel_url?("https://channels.nixos.org/nixos-26.05/nixexprs.tar.zst")).to be(true)
     end
 
     it "handles nil" do
@@ -46,6 +47,7 @@ RSpec.describe Dependabot::Nix::Channel do
       expect(described_class.extension_from_url("https://channels.nixos.org/nixos-26.05/nixexprs.tar.xz")).to eq("xz")
       expect(described_class.extension_from_url("https://channels.nixos.org/nixos-26.05/nixexprs.tar.gz")).to eq("gz")
       expect(described_class.extension_from_url("https://channels.nixos.org/nixos-26.05/nixexprs.tar.bz2")).to eq("bz2")
+      expect(described_class.extension_from_url("https://channels.nixos.org/nixos-26.05/nixexprs.tar.zst")).to eq("zst")
     end
 
     it "returns nil for non-channel URLs" do
