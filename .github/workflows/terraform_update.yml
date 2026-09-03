@@ -90,6 +90,12 @@ jobs:
               echo "SKIP_REASON=existing_pr"
               echo "EXISTING_PR_NUMBER=$EXISTING_PR"
             } >> "$GITHUB_ENV"
+          elif gh api "repos/${GITHUB_REPOSITORY}/git/refs/heads/${BRANCH_NAME}" >/dev/null 2>&1; then
+            # A branch from a prior partial run (e.g. push succeeded but PR creation
+            # failed) with no open PR referencing it is stale - remove it so this run
+            # can push a fresh branch instead of failing non-fast-forward later.
+            echo "Removing stale remote branch $BRANCH_NAME with no open PR."
+            gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/${BRANCH_NAME}"
           fi
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
