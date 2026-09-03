@@ -405,6 +405,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PnpmLockfileUpdater do
       end
     end
 
+    context "when minimumReleaseAgeStrict conflicts with --no-save" do
+      let(:project_name) { "pnpm/simple" }
+
+      before do
+        allow(Dependabot::NpmAndYarn::Helpers).to receive(:run_pnpm_command)
+          .and_raise(
+            Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+              message: "[ERR_PNPM_STRICT_MIN_RELEASE_AGE_REQUIRES_SAVE] minimumReleaseAgeStrict cannot be " \
+                       "combined with --no-save",
+              error_context: {}
+            )
+          )
+      end
+
+      it "raises a helpful error" do
+        expect { updated_pnpm_lock_content }
+          .to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to include("minimumReleaseAgeStrict")
+        end
+      end
+    end
+
     context "when there is a private repo we don't have access to and returns a 4xx error" do
       let(:project_name) { "pnpm/private_repo_no_access" }
       let(:dependency_name) { "@dsp-testing/node" }
