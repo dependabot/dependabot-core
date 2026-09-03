@@ -9,6 +9,7 @@ require "dependabot/service"
 require "dependabot/logger"
 require "dependabot/logger/formats"
 require "dependabot/environment"
+require "dependabot/sentry/error_fingerprint"
 
 module Dependabot
   class RunFailure < StandardError; end
@@ -67,12 +68,14 @@ module Dependabot
 
     sig { params(err: StandardError).void }
     def handle_unknown_error(err)
-      fingerprint = (if err.respond_to?(:sentry_context)
-                       T.cast(
-                         err,
-                         Dependabot::HasSentryContext
-                       ).sentry_context[:fingerprint]
-                     end)
+      fingerprint = if err.respond_to?(:sentry_context)
+                      T.cast(
+                        err,
+                        Dependabot::HasSentryContext
+                      ).sentry_context[:fingerprint]
+                    else
+                      Dependabot::Sentry::ErrorFingerprint.for(error: err, package_manager: job.package_manager)
+                    end
 
       error_details = {
         ErrorAttributes::CLASS => err.class.to_s,

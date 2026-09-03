@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "dependabot/errors"
+require "dependabot/sentry/error_fingerprint"
 require "dependabot/updater/errors"
 require "dependabot/updater/security_update_helpers"
 require "octokit"
@@ -277,7 +278,7 @@ module Dependabot
           return fingerprint.map { |value| T.cast(value, Object).to_s } if fingerprint.is_a?(Array)
         end
 
-        nil
+        Dependabot::Sentry::ErrorFingerprint.for(error: error, package_manager: job.package_manager)
       end
     end
   end
