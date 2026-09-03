@@ -20,7 +20,7 @@ module Dependabot
       CHANNEL_URL_PATTERN = %r{
         \Ahttps?://channels\.nixos\.org/
         (?<channel>[a-zA-Z0-9][a-zA-Z0-9._-]*)
-        /nixexprs\.tar\.(?<extension>xz|gz|bz2)\z
+        /nixexprs\.tar\.(?<extension>xz|gz|bz2|zst)\z
       }x
 
       sig { params(url: T.nilable(String)).returns(T::Boolean) }
@@ -37,7 +37,7 @@ module Dependabot
         CHANNEL_URL_PATTERN.match(url)&.[](:channel)
       end
 
-      # The compression suffix (xz, gz, bz2) of a channel tarball URL.
+      # The compression suffix (xz, gz, bz2, zst) of a channel tarball URL.
       sig { params(url: T.nilable(String)).returns(T.nilable(String)) }
       def self.extension_from_url(url)
         return unless url
