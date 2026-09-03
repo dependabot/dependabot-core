@@ -73,6 +73,7 @@ jobs:
     needs: approval
     if: startsWith(needs.approval.outputs.decision, 'APPROVED:OPEN')
     permissions:
+      attestations: read
       contents: read
       pull-requests: read
     outputs:
@@ -115,6 +116,11 @@ jobs:
             if ! docker buildx imagetools inspect "$image" > /dev/null 2>&1; then
               AVAILABLE=false
               MISSING+=("$target")
+              continue
+            fi
+            if ! gh attestation verify "oci://${image}" --owner dependabot > /dev/null 2>&1; then
+              AVAILABLE=false
+              MISSING+=("$target (attestation)")
             fi
           done < <(
             jq -r '

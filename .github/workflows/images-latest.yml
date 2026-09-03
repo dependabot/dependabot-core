@@ -94,6 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository == 'dependabot/dependabot-core' && github.ref == 'refs/heads/main'
     permissions:
+      attestations: read
       contents: read
     outputs:
       build_count: ${{ steps.selection.outputs.build_count }}
@@ -127,6 +128,7 @@ jobs:
         if: github.event_name == 'push'
         env:
           BAKE_MATRIX: ${{ steps.bake-matrix.outputs.matrix }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SOURCE_TAG: ${{ github.event.before }}
         run: |
           AVAILABLE=true
@@ -136,6 +138,11 @@ jobs:
             if ! docker buildx imagetools inspect "$image" > /dev/null 2>&1; then
               AVAILABLE=false
               MISSING+=("$target")
+              continue
+            fi
+            if ! gh attestation verify "oci://${image}" --owner dependabot > /dev/null 2>&1; then
+              AVAILABLE=false
+              MISSING+=("$target (attestation)")
             fi
           done < <(
             jq -r '
