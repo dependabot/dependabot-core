@@ -173,10 +173,15 @@ module Dependabot
               T::Array[Dependabot::DependencyChange]
             )
 
-            # merge the changes together into one
-            dependency_change = T.let(T.must(dependency_changes.first), Dependabot::DependencyChange)
-            dependency_change.merge_changes!(T.must(dependency_changes[1..-1])) if dependency_changes.count > 1
-            @dependency_change = T.let(dependency_change, T.nilable(Dependabot::DependencyChange))
+            # `filter_map` drops directories that produced no change, so the array is empty
+            # when nothing could update across every directory. Return nil like the
+            # single-directory branch above (the caller logs and closes out) instead of
+            # `T.must`-ing `first` on an empty array, which raised `TypeError: Passed nil`.
+            first_change = dependency_changes.first
+            if first_change && dependency_changes.count > 1
+              first_change.merge_changes!(T.must(dependency_changes[1..-1]))
+            end
+            @dependency_change = T.let(first_change, T.nilable(Dependabot::DependencyChange))
           end
 
           # Apply GroupDependencySelector filtering to ensure only group-eligible dependencies
