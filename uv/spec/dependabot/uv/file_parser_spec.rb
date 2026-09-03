@@ -738,6 +738,92 @@ RSpec.describe Dependabot::Uv::FileParser do
       its(:length) { is_expected.to eq(3) }
     end
 
+    context "with dependencies pinned to a uv git source" do
+      let(:files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "uv_git_tag_sources.toml")
+        )
+      end
+
+      # The requirement goes with the source: keeping the PEP 508 constraint makes
+      # requirements_up_to_date? compare it against the newest tag, so a floor above that tag would
+      # report the pin as current and it would never be updated
+      it "drops the requirement of the ones it enriches, and keeps the others'" do
+        expect(dependencies.map { |dep| [dep.name, dep.requirements.first[:requirement]] }).to eq(
+          [
+            ["requests", ">=2.31.0"],
+            ["malformed-package", "*"],
+            ["tagged-package", nil],
+            ["acme-tagged-package", nil],
+            ["other-tagged-package", nil],
+            ["array-package", "*"],
+            ["branch-package", "*"],
+            ["untagged-package", "*"],
+            ["quoted-package", nil]
+          ]
+        )
+      end
+
+      it "gives a git source to every tag it can rewrite, and to nothing else" do
+        expect(dependencies.map { |dep| [dep.name, dep.requirements.first[:source]] }).to eq(
+          [
+            ["requests", nil],
+            ["malformed-package", nil],
+            ["tagged-package", { type: "git", url: "https://github.com/example/tagged.git", ref: "1.2.3" }],
+            ["acme-tagged-package",
+             { type: "git", url: "https://github.com/example/acme-tagged.git", ref: "1.2.3" }],
+            # The key is written `Other_Tagged_Package`; uv resolves it under PEP 508 normalisation
+            ["other-tagged-package", { type: "git", url: "https://github.com/example/other.git", ref: "7.8.9" }],
+            # Valid uv, in forms the rewrite cannot reach
+            ["array-package", nil],
+            ["branch-package", nil],
+            ["untagged-package", nil],
+            # Quoting is the only legal spelling for a name carrying a dot, so it is supported
+            ["quoted-package",
+             { type: "git", url: "https://github.com/example/quoted.git", ref: "3.2.1" }]
+          ]
+        )
+      end
+
+      context "with the uv.lock a real repository has" do
+        let(:files) { [pyproject, lockfile] }
+        let(:lockfile) do
+          Dependabot::DependencyFile.new(
+            name: "uv.lock",
+            content: fixture("uv_locks", "git_tag_sources.lock")
+          )
+        end
+
+        # The version comes from the lock, and for a git pin it is the package's own distribution
+        # version rather than a commit sha. Several shared code paths key on that difference, so the
+        # shape tested without a lockfile is not the shape a repository actually has.
+        it "carries the locked version alongside the git source" do
+          dep = dependencies.find { |d| d.name == "tagged-package" }
+
+          expect(dep.version).to eq("0.3.0")
+          expect(dep.requirements.first[:source])
+            .to eq(type: "git", url: "https://github.com/example/tagged.git", ref: "1.2.3")
+        end
+      end
+
+      context "when a source carries a tag that is not a string" do
+        let(:pyproject) do
+          Dependabot::DependencyFile.new(
+            name: "pyproject.toml",
+            content: fixture("pyproject_files", "uv_git_tag_sources.toml").sub('tag = "1.2.3" }', "tag = 1.2 }")
+          )
+        end
+
+        it "skips that entry rather than failing the whole manifest" do
+          expect(dependencies.map(&:name)).to include("requests", "tagged-package")
+          expect(dependencies.find { |dep| dep.name == "acme-tagged-package" }.requirements.first[:source])
+            .to be_nil
+        end
+      end
+    end
+
     context "with a pyproject.toml file with no dependencies" do
       let(:files) { [pyproject] }
       let(:pyproject) do

@@ -81,6 +81,12 @@ module Dependabot
 
       sig { override.returns(T.nilable(Gem::Version)) }
       def lowest_security_fix_version
+        # A git dependency's version is whatever the lockfile records for that package, not a commit
+        # sha, so `existing_version_is_sha?` does not exclude it from security updates the way it does
+        # elsewhere. Its index has no bearing on the pinned ref: answering with a version from there
+        # would title the pull request with a fix the diff does not apply.
+        return nil if git_dependency?
+
         latest_version_finder.lowest_security_fix_version
       end
 
