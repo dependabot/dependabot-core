@@ -97,12 +97,26 @@ module Dependabot
           end
         end
 
+        # The `--precise` retry is a best-effort recovery, not a hard gate. If
+        # the movement detector misfires (e.g. an earlier command already
+        # repointed this dependency while another consumer legitimately keeps
+        # the old version), forcing `--precise` can fail on the surviving
+        # transitive requirement. Swallow that failure, restore the plain
+        # result, and let `validate_updates` decide — it tolerates "Cargo
+        # selected a different valid version" and fails only on a real no-op.
         sig { void }
         def force_precise_update
+          lockfile_before_precise = File.read("Cargo.lock")
           run_cargo_command(
             "cargo update -p #{dependency_spec} --precise #{dependency.version}",
             fingerprint: "cargo update -p <dependency_spec> --precise <version>"
           )
+        rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+          Dependabot.logger.info(
+            "Precise fallback for #{dependency.name} failed (#{e.message.lines.first&.strip}); " \
+            "keeping the plain update result for validation"
+          )
+          File.write("Cargo.lock", lockfile_before_precise)
         end
 
         # `cargo update -p name:version` won't move a package whose bump
