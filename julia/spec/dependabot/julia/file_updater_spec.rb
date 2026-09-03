@@ -255,10 +255,10 @@ RSpec.describe Dependabot::Julia::FileUpdater do
 
       before do
         allow(registry_client_double).to receive(:update_manifest).and_return(
-          {
-            "manifest_content" => updated_manifest_content,
-            "manifest_path" => "Manifest.toml"
-          }
+          Dependabot::Julia::RegistryClient::Result::ManifestUpdate.new(
+            manifest_content: updated_manifest_content,
+            manifest_path: "Manifest.toml"
+          )
         )
       end
 
@@ -303,10 +303,10 @@ RSpec.describe Dependabot::Julia::FileUpdater do
 
       before do
         allow(registry_client_double).to receive(:update_manifest).and_return(
-          {
-            "manifest_content" => updated_manifest_content,
-            "manifest_path" => "../Manifest.toml"
-          }
+          Dependabot::Julia::RegistryClient::Result::ManifestUpdate.new(
+            manifest_content: updated_manifest_content,
+            manifest_path: "../Manifest.toml"
+          )
         )
       end
 
@@ -337,10 +337,10 @@ RSpec.describe Dependabot::Julia::FileUpdater do
 
       before do
         allow(registry_client_double).to receive(:update_manifest).and_return(
-          {
-            "manifest_content" => updated_manifest_content,
-            "manifest_path" => "Manifest-v1.12.toml"
-          }
+          Dependabot::Julia::RegistryClient::Result::ManifestUpdate.new(
+            manifest_content: updated_manifest_content,
+            manifest_path: "Manifest-v1.12.toml"
+          )
         )
       end
 
@@ -356,9 +356,9 @@ RSpec.describe Dependabot::Julia::FileUpdater do
     context "when Julia helper returns a resolver error" do
       before do
         allow(registry_client_double).to receive(:update_manifest).and_return(
-          {
-            "error" => "Unsatisfiable requirements detected for package JSON"
-          }
+          Dependabot::Julia::RegistryClient::Result::Failure.new(
+            message: "Unsatisfiable requirements detected for package JSON"
+          )
         )
       end
 

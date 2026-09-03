@@ -39,8 +39,39 @@ RSpec.describe Dependabot::Julia::RegistryClient do
       it "returns empty hash when dependencies list is empty" do
         result = client.batch_fetch_package_info([])
 
-        expect(result).to be_a(Hash)
-        expect(result).to be_empty
+        expect(result).to be_a(Dependabot::Julia::RegistryClient::Result::PackageInfoBatch)
+        expect(result.packages).to be_empty
+      end
+
+      it "parses successful and failed package fields" do
+        allow(client).to receive(:call_julia_helper).and_return(
+          {
+            "Example" => {
+              "available_versions" => ["0.5.4", "0.5.5"],
+              "latest_version" => "0.5.5",
+              "metadata" => {
+                "name" => "Example",
+                "uuid" => "7876af07-990d-54b4-ab0e-23690620f79a",
+                "latest_version" => "0.5.5",
+                "available_versions" => ["0.5.4", "0.5.5"]
+              }
+            },
+            "Missing" => {
+              "available_versions" => { "error" => "No versions found" },
+              "latest_version" => { "error" => "Package not found" }
+            }
+          }
+        )
+
+        result = client.batch_fetch_package_info(dependencies)
+
+        expect(result).to be_a(Dependabot::Julia::RegistryClient::Result::PackageInfoBatch)
+        example = result.packages.fetch("Example")
+        missing = result.packages.fetch("Missing")
+        expect(example).to be_a(Dependabot::Julia::RegistryClient::Result::PackageInfo)
+        expect(example.latest_version).to have_attributes(version: "0.5.5")
+        expect(missing.available_versions).to be_a(Dependabot::Julia::RegistryClient::Result::Failure)
+        expect(missing.available_versions.message).to eq("No versions found")
       end
     end
 
@@ -67,8 +98,25 @@ RSpec.describe Dependabot::Julia::RegistryClient do
       it "returns empty hash when dependencies list is empty" do
         result = client.batch_fetch_available_versions([])
 
-        expect(result).to be_a(Hash)
-        expect(result).to be_empty
+        expect(result).to be_a(Dependabot::Julia::RegistryClient::Result::AvailableVersionsBatch)
+        expect(result.packages).to be_empty
+      end
+
+      it "preserves per-package failures" do
+        allow(client).to receive(:call_julia_helper).and_return(
+          {
+            "Example" => { "versions" => ["0.5.4", "0.5.5"] },
+            "Missing" => { "error" => "No versions found" }
+          }
+        )
+
+        result = client.batch_fetch_available_versions(dependencies)
+
+        expect(result.packages.fetch("Example")).to have_attributes(versions: ["0.5.4", "0.5.5"])
+        expect(result.packages.fetch("Missing")).to be_a(
+          Dependabot::Julia::RegistryClient::Result::Failure
+        )
+        expect(result.packages.fetch("Missing").message).to eq("No versions found")
       end
     end
 
@@ -91,8 +139,32 @@ RSpec.describe Dependabot::Julia::RegistryClient do
       it "returns empty hash structure when packages_versions is empty" do
         result = client.batch_fetch_version_release_dates([])
 
-        expect(result).to be_a(Hash)
-        expect(result).to be_empty
+        expect(result).to be_a(Dependabot::Julia::RegistryClient::Result::ReleaseDatesBatch)
+        expect(result.packages).to be_empty
+      end
+
+      it "parses dates, missing dates, and per-version failures" do
+        allow(client).to receive(:call_julia_helper).and_return(
+          {
+            "Example" => {
+              "0.5.0" => "2023-01-01T00:00:00Z",
+              "0.5.1" => nil,
+              "0.5.2" => { "error" => "Date unavailable" }
+            }
+          }
+        )
+
+        requests = packages_versions.map do |package|
+          Dependabot::Julia::RegistryClient::Result::PackageVersionsRequest.new(**package)
+        end
+        result = client.batch_fetch_version_release_dates(requests)
+        dates = result.packages.fetch("Example")
+
+        expect(dates).to be_a(Dependabot::Julia::RegistryClient::Result::ReleaseDates)
+        expect(dates.dates.fetch("0.5.0")).to have_attributes(release_date: "2023-01-01T00:00:00Z")
+        expect(dates.dates.fetch("0.5.1")).to have_attributes(release_date: nil)
+        expect(dates.dates.fetch("0.5.2")).to be_a(Dependabot::Julia::RegistryClient::Result::Failure)
+        expect(dates.dates.fetch("0.5.2").message).to eq("Date unavailable")
       end
     end
   end

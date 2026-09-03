@@ -21,8 +21,8 @@ RSpec.describe Dependabot::Julia::RegistryClient do
           metadata = registry_client.fetch_package_metadata(package_name, package_uuid)
 
           # If metadata works but fetch_latest_version doesn't, that's unexpected
-          if metadata && metadata["latest_version"]
-            raise "fetch_latest_version returned nil, but metadata shows latest_version: #{metadata['latest_version']}"
+          if metadata.is_a?(Dependabot::Julia::RegistryClient::Result::PackageMetadata)
+            raise "fetch_latest_version returned nil, but metadata shows latest_version: #{metadata.latest_version}"
           end
 
           # Otherwise, the package might not be in the registry (expected case)
@@ -36,20 +36,17 @@ RSpec.describe Dependabot::Julia::RegistryClient do
       it "fetches actual source URL" do
         result = registry_client.find_package_source_url(package_name, package_uuid)
 
-        expect(result).to be_a(Hash)
-        expect(result["source_url"]).to be_a(String)
-        expect(result["source_url"]).to include("github.com")
+        expect(result).to be_a(Dependabot::Julia::RegistryClient::Result::Source)
+        expect(result.source_url).to include("github.com")
       end
 
       it "fetches package metadata" do
         result = registry_client.fetch_package_metadata(package_name, package_uuid)
 
-        expect(result).to be_a(Hash)
-        # The metadata returns direct package info, not nested under "result"
-        expect(result).to have_key("name")
-        expect(result).to have_key("uuid")
-        expect(result).to have_key("latest_version")
-        expect(result["latest_version"]).to match(/\d+\.\d+\.\d+/)
+        expect(result).to be_a(Dependabot::Julia::RegistryClient::Result::PackageMetadata)
+        expect(result.name).to eq(package_name)
+        expect(result.uuid).to eq(package_uuid)
+        expect(result.latest_version).to match(/\d+\.\d+\.\d+/)
       end
     end
 
@@ -79,19 +76,6 @@ RSpec.describe Dependabot::Julia::RegistryClient do
       it "get_latest_version works via registry client" do
         result = registry_client.fetch_latest_version(package_name, package_uuid)
         expect(result).to be_a(Gem::Version).or(be_nil)
-      end
-
-      it "get_latest_version works directly" do
-        # Test the Julia helper function directly
-        args = { package_name: package_name, package_uuid: package_uuid }
-        result = registry_client.send(:call_julia_helper, function: "get_latest_version", args: args)
-
-        # The result should contain version directly (not nested under "result")
-        expect(result).to have_key("version")
-        expect(result["version"]).to match(/\d+\.\d+\.\d+/)
-
-        version = Gem::Version.new(result["version"])
-        expect(version).to be_a(Gem::Version)
       end
     end
   end
