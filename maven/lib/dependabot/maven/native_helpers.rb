@@ -3,10 +3,12 @@
 
 require "fileutils"
 require "open3"
+require "tempfile"
 require "uri"
 require "sorbet-runtime"
 require "nokogiri"
 require "dependabot/errors"
+require "dependabot/command_helpers"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -32,6 +34,11 @@ module Dependabot
       # output (e.g. `-Dstyle.color=always`), wrapping markers like `[ERROR]` in escape
       # codes; we strip these so classification and the surfaced summary see plain text.
       ANSI_ESCAPE_REGEX = %r{\e\[[0-9;?]*[ -/]*[@-~]}
+
+      # Bounded inactivity timeout for the wrapper download. `run_shell_command`'s watchdog
+      # resets on output, and with transfer progress restored a healthy download keeps it
+      # alive, so this only trips on genuine silence — well below the 900s DEFAULT.
+      WRAPPER_DOWNLOAD_TIMEOUT = CommandHelpers::TIMEOUTS::LONG_RUNNING
 
       pom_path = File.join(__dir__, "pom.xml")
 
@@ -86,21 +93,32 @@ module Dependabot
           wrapper_plugin_version: String,
           env: T::Hash[String, String],
           distribution_type: String,
+          registry_base: T.nilable(String),
           extra_args: T::Array[String],
           cwd: T.nilable(String)
         ).void
       end
-      def self.run_mvnw_wrapper(version:, wrapper_plugin_version:, env:, distribution_type:, extra_args: [], cwd: nil)
+      def self.run_mvnw_wrapper(
+        version:,
+        wrapper_plugin_version:,
+        env:,
+        distribution_type:,
+        registry_base: nil,
+        extra_args: [],
+        cwd: nil
+      )
         # Use the fully-qualified plugin goal so the exact plugin version is
         # invoked regardless of the project's plugin group configuration.
         plugin_goal = "org.apache.maven.plugins:maven-wrapper-plugin:" \
                       "#{wrapper_plugin_version}:wrapper"
 
+        # Do NOT add `--no-transfer-progress`: Maven's transfer progress is the liveness signal
+        # that keeps `run_shell_command`'s inactivity watchdog alive during a large download.
+        # Suppressing it made a healthy-but-slow fetch look hung and get killed at the timeout.
         standard_args = [
           plugin_goal,
           "-Dmaven=#{version}",
-          "-Dtype=#{distribution_type}",
-          "--no-transfer-progress"
+          "-Dtype=#{distribution_type}"
         ] + extra_args
 
         # Pass the argument vector directly instead of a pre-joined shell string.
@@ -111,7 +129,22 @@ module Dependabot
         cmd = ["mvn"] + standard_args
         run_cwd = cwd && cwd != "." ? cwd : nil
 
-        output = SharedHelpers.run_shell_command(cmd, env: env, cwd: run_cwd)
+        # Route the native `mvn`'s plugin/distribution resolution to the registry that served the
+        # resolved version via a generated settings mirror; without it `mvn` falls back to Central
+        # and hangs behind a no-egress registry. Absent when no version resolved, leaving the baked
+        # Central default. The bounded timeout is explained on WRAPPER_DOWNLOAD_TIMEOUT.
+        settings_file = registry_base && wrapper_settings_file(registry_base)
+        settings_args = settings_file ? ["-s", T.must(settings_file.path)] : []
+        begin
+          output = SharedHelpers.run_shell_command(
+            cmd + settings_args,
+            env: env,
+            cwd: run_cwd,
+            timeout: WRAPPER_DOWNLOAD_TIMEOUT
+          )
+        ensure
+          settings_file&.close! # deletes the temp file
+        end
         Dependabot.logger.info("mvn wrapper output: STDOUT:#{output}")
         output
       rescue SharedHelpers::HelperSubprocessFailed => e
@@ -122,6 +155,46 @@ module Dependabot
         # the `run_mvn_dependency_tree_plugin` path.
         Dependabot.logger.warn("mvn wrapper command failed:\n#{e.message}")
         handle_wrapper_error(e)
+      end
+
+      # Writes a temporary Maven settings file that keeps the proxy block and adds a
+      # mirror pointing every external repository at the resolved base. Registry
+      # auth still flows through the Dependabot proxy; no credentials are written here.
+      # The caller is responsible for deleting the returned file (via `close!`).
+      sig { params(registry_base: String).returns(Tempfile) }
+      def self.wrapper_settings_file(registry_base)
+        file = Tempfile.new(["dependabot-mvn-wrapper-settings", ".xml"])
+        file.write(wrapper_settings_xml(registry_base))
+        file.close
+        file
+      end
+
+      # Builds the settings XML used for the wrapper invocation: the same proxy block as
+      # the baked settings (auth is injected by the proxy) plus a `mirrorOf=external:*`
+      # mirror so plugin, transitive POM, and distribution resolution all route through
+      # the resolved base instead of Central.
+      sig { params(registry_base: String).returns(String) }
+      def self.wrapper_settings_xml(registry_base)
+        <<~XML
+          <settings>
+            <proxies>
+              <proxy>
+                <id>dependabot-proxy</id>
+                <active>true</active>
+                <protocol>http</protocol>
+                <host>${env.PROXY_HOST}</host>
+                <port>1080</port>
+              </proxy>
+            </proxies>
+            <mirrors>
+              <mirror>
+                <id>dependabot-wrapper-mirror</id>
+                <mirrorOf>external:*</mirrorOf>
+                <url>#{registry_base.encode(xml: :text)}</url>
+              </mirror>
+            </mirrors>
+          </settings>
+        XML
       end
 
       # Classifies a failed Maven Wrapper invocation into an actionable Dependabot

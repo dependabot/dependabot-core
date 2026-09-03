@@ -36,6 +36,21 @@ RSpec.describe Dependabot::Bun::FileParser do
     it_behaves_like "a dependency file parser"
   end
 
+  describe "#ecosystem" do
+    let(:files) { project_dependency_files("javascript/exact_version_requirements_no_lockfile") }
+
+    before do
+      allow(Dependabot::Bun::Helpers).to receive_messages(
+        bun_version: "1.1.39",
+        node_version: "20.0.0"
+      )
+    end
+
+    it "builds package-manager metadata from the typed manifest config" do
+      expect(parser.ecosystem.package_manager.name).to eq("bun")
+    end
+  end
+
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
