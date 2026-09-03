@@ -298,6 +298,8 @@ RSpec.describe Dependabot::Maven::FileUpdater::WrapperUpdater do
         "distributionUrl=#{dist_url}\ndistributionType=only-script\nwrapperVersion=3.3.3\n"
       end
 
+      let(:resolved_source_url) { nil }
+
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "org.apache.maven.wrapper:maven-wrapper",
@@ -313,7 +315,7 @@ RSpec.describe Dependabot::Maven::FileUpdater::WrapperUpdater do
               },
               groups: [],
               metadata: { wrapper_version: "3.3.4", distribution_version: "3.9.9", distribution_type: "only-script",
-                          include_debug_script: false }
+                          include_debug_script: false, source_url: resolved_source_url }
             },
             {
               requirement: "3.9.9",
@@ -363,34 +365,50 @@ RSpec.describe Dependabot::Maven::FileUpdater::WrapperUpdater do
         expect(received[:extra_args]).to include("-DdistributionUrl=#{dist_url}")
       end
 
-      context "with only the wrapper requirement and a private distribution URL" do
-        let(:dist_url) do
-          "https://repo.example.test/maven/releases/org/apache/maven/apache-maven/" \
-            "3.9.9/apache-maven-3.9.9-bin.zip"
-        end
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "org.apache.maven.wrapper:maven-wrapper",
-            version: "3.3.4",
-            previous_version: "3.3.3",
-            requirements: [{
-              requirement: "3.3.4",
-              file: ".mvn/wrapper/maven-wrapper.properties",
-              source: { type: "maven-distribution", property: "wrapperVersion" },
-              groups: [],
-              metadata: { wrapper_version: "3.3.4", distribution_version: "3.9.9",
-                          distribution_type: "only-script", include_debug_script: false }
-            }],
-            package_manager: "maven"
-          )
-        end
+      context "when the version resolved from a private registry" do
+        let(:resolved_source_url) { "https://repo.example.test/maven/releases" }
 
-        it "derives MVNW_REPOURL from the existing properties" do
+        it "routes the native helper through the resolved registry base" do
           received = {}
           allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvnw_wrapper) { |**kwargs| received = kwargs }
           updater.update_files(buildfile)
 
-          expect(received[:env]).to include("MVNW_REPOURL" => "https://repo.example.test/maven/releases")
+          expect(received[:registry_base]).to eq("https://repo.example.test/maven/releases")
+          expect(received[:env]).not_to have_key("MVNW_REPOURL")
+        end
+
+        context "when the resolved base has a trailing slash" do
+          let(:resolved_source_url) { "https://repo.example.test/maven/releases/" }
+
+          it "strips it so Maven builds a canonical base path without redirects" do
+            received = {}
+            allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvnw_wrapper) { |**kwargs| received = kwargs }
+            updater.update_files(buildfile)
+
+            expect(received[:registry_base]).to eq("https://repo.example.test/maven/releases")
+          end
+        end
+      end
+
+      context "when the version resolved from Maven Central" do
+        let(:resolved_source_url) { "https://repo.maven.apache.org/maven2" }
+
+        it "passes the resolved registry base through unchanged" do
+          received = {}
+          allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvnw_wrapper) { |**kwargs| received = kwargs }
+          updater.update_files(buildfile)
+
+          expect(received[:registry_base]).to eq("https://repo.maven.apache.org/maven2")
+        end
+      end
+
+      context "without a resolved registry source_url" do
+        it "passes no registry base, leaving the Central default in place" do
+          received = {}
+          allow(Dependabot::Maven::NativeHelpers).to receive(:run_mvnw_wrapper) { |**kwargs| received = kwargs }
+          updater.update_files(buildfile)
+
+          expect(received[:registry_base]).to be_nil
         end
       end
     end
