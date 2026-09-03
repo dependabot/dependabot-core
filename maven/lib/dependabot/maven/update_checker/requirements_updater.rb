@@ -86,13 +86,13 @@ module Dependabot
         sig { returns(T::Array[Dependabot::DependencyRequirement]) }
         attr_reader :requirements
 
-        # Bumps a wrapper (maven-wrapper.properties) requirement. As well as the requirement
-        # string, it updates the fields the FileUpdater actually reads so a real update regenerates
-        # the *new* release rather than the old one:
-        #   - distributionUrl  -> metadata[:distribution_version] and the versioned source url
-        #   - wrapperVersion   -> metadata[:wrapper_version]
-        # The wrapperUrl tag-along requirement (present only on the distribution dependency) is left
-        # otherwise untouched, since bumping the distribution does not change the wrapper JAR.
+        # Bumps a wrapper (maven-wrapper.properties) requirement to the resolved version, keeping the
+        # fields the FileUpdater reads in sync so it regenerates the *new* release, not the old one:
+        #   - distributionUrl -> metadata[:distribution_version] + the versioned source url
+        #   - wrapperVersion  -> metadata[:wrapper_version]
+        #   - both            -> metadata[:source_url] (registry that served the version, so the
+        #                        FileUpdater can mirror the native `mvn` there)
+        #   - wrapperUrl      -> left untouched (tag-along; bumping the distribution doesn't move it)
         sig do
           params(req: Dependabot::DependencyRequirement)
             .returns(Dependabot::DependencyRequirement)
@@ -105,13 +105,30 @@ module Dependabot
           when "distributionUrl"
             updated = Dependabot::DependencyRequirement.create(req.merge(requirement: new_version))
             updated = merge_metadata_version(updated, :distribution_version, new_version)
-            merge_source_url(updated, old_version, new_version)
+            updated = merge_source_url(updated, old_version, new_version)
+            merge_registry_source_url(updated)
           when "wrapperVersion"
             updated = Dependabot::DependencyRequirement.create(req.merge(requirement: new_version))
-            merge_metadata_version(updated, :wrapper_version, new_version)
+            updated = merge_metadata_version(updated, :wrapper_version, new_version)
+            merge_registry_source_url(updated)
           else
             req
           end
+        end
+
+        # Stamps the registry that served the resolved version (source_url = release.url) onto the
+        # wrapper requirement metadata, so the FileUpdater can mirror the native `mvn` regeneration
+        # to the same registry the version was resolved and vetted against. Nil when no version
+        # resolved (no key added), leaving the wrapper's Central default.
+        sig do
+          params(req: Dependabot::DependencyRequirement).returns(Dependabot::DependencyRequirement)
+        end
+        def merge_registry_source_url(req)
+          base = source_url
+          return req unless base
+
+          metadata = req.metadata || {}
+          Dependabot::DependencyRequirement.create(req.merge(metadata: metadata.merge(source_url: base)))
         end
 
         sig do
