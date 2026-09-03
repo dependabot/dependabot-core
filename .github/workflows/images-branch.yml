@@ -415,6 +415,7 @@ jobs:
       DEPENDABOT_UPDATER_VERSION: ${{ needs.approval.outputs.head_sha }}
       DOCKER_COMPOSE_IMAGE: ghcr.io/dependabot/dependabot-updater-docker-compose
       DOCKER_IMAGE: ghcr.io/dependabot/dependabot-updater-docker
+      FAIL_ON_CONFLICT: true
       IMAGE_PREFIX: ghcr.io/dependabot/dependabot-updater-
       UPDATER_CORE_CONTEXT: docker-image://ghcr.io/dependabot/dependabot-updater-core@${{ needs.build-updater-core.outputs.digest }}
     steps:
