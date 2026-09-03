@@ -490,6 +490,224 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
     end
   end
 
+  describe "#updated_pyproject_content_for" do
+    subject(:updated_content) { updater.send(:updated_pyproject_content_for, pyproject_file) }
+
+    context "when only the git tag of a [tool.uv.sources] pin moved" do
+      let(:pyproject_content) { fixture("pyproject_files", "uv_git_tag_sources.toml") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "tagged-package",
+          version: nil,
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", url: "https://github.com/example/tagged.git", ref: "1.3.0" }
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", url: "https://github.com/example/tagged.git", ref: "1.2.3" }
+          }],
+          package_manager: "uv"
+        )
+      end
+
+      context "when the file spells the key differently from the dependency name" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "other-tagged-package",
+            version: nil,
+            requirements: [{
+              file: "pyproject.toml", requirement: nil, groups: [],
+              source: { type: "git", url: "https://github.com/example/other.git", ref: "8.0.0" }
+            }],
+            previous_requirements: [{
+              file: "pyproject.toml", requirement: nil, groups: [],
+              source: { type: "git", url: "https://github.com/example/other.git", ref: "7.8.9" }
+            }],
+            package_manager: "uv"
+          )
+        end
+
+        # The table key is Other_Tagged_Package; uv resolves it under PEP 508 normalisation, so the
+        # updater has to find the file's own spelling back from the normalised dependency name
+        it "finds the key back and moves its tag" do
+          expect(updated_content).to include("Other_Tagged_Package = { git = ")
+          expect(updated_content).to include('other.git", tag = "8.0.0" }')
+        end
+      end
+
+      it "moves that entry's tag and no other" do
+        # acme-tagged-package precedes it in the file, ends with its name and carries the same tag,
+        # so an unanchored substitution would move this line instead
+        expect(updated_content).to include('acme-tagged.git", tag = "1.2.3"')
+        expect(updated_content).to include('tagged.git", tag = "1.3.0"')
+        expect(updated_content).to include('other.git", tag = "7.8.9"')
+        expect(updated_content).to include('branch = "main"')
+        expect(updated_content).to include('untagged-package = { git = "https://github.com/example/untagged.git" }')
+      end
+
+      # The table boundary is written to, so an off-by-one on the span eats the next table's bracket
+      # and the updater emits invalid TOML
+      it "leaves the table that follows byte for byte" do
+        expect(updated_content).to include("\n[tool.other]\n")
+        expect(updated_content).to include('decoy.git", tag = "1.2.3"')
+      end
+    end
+  end
+
+  describe "#moved_tag?" do
+    let(:table) do
+      <<~TOML
+        [tool.uv.sources]
+        pkg = { git = "https://example.com/pkg.git", tag = "1.4.0" }
+      TOML
+    end
+
+    it { expect(updater.send(:moved_tag?, table, "pkg", "1.4.0")).to be(true) }
+    it { expect(updater.send(:moved_tag?, table, "pkg", "9.9.9")).to be(false) }
+    it { expect(updater.send(:moved_tag?, table, "absent", "1.4.0")).to be(false) }
+    it { expect(updater.send(:moved_tag?, "[tool.uv.sources\npkg = {", "pkg", "1.4.0")).to be(false) }
+  end
+
+  describe "#updated_pyproject_content_for with a quoted copy of the sources table" do
+    subject(:updated) { updater.send(:updated_pyproject_content_for, pyproject_file) }
+
+    # The table is found by pattern over raw text, so a copy quoted inside a string can answer for
+    # the real one. Editing prose and reporting a bump is the outcome to prevent.
+    let(:pyproject_content) do
+      <<~TOML
+        [project]
+        name = "example"
+        version = "0.1.0"
+        requires-python = ">=3.9"
+        dependencies = ["pkg"]
+        readme = { content-type = "text/markdown", text = """
+        [tool.uv.sources]
+        pkg = { git = "https://example.com/pkg.git", tag = "1.2.3" }
+        """ }
+
+        [tool.uv.sources]
+        pkg = { git = "https://example.com/pkg.git", tag = "1.2.3" }
+      TOML
+    end
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "pkg",
+        version: "0.1.0",
+        requirements: [{
+          file: "pyproject.toml", requirement: nil, groups: [],
+          source: { type: "git", url: "https://example.com/pkg.git", ref: "1.4.0" }
+        }],
+        previous_requirements: [{
+          file: "pyproject.toml", requirement: nil, groups: [],
+          source: { type: "git", url: "https://example.com/pkg.git", ref: "1.2.3" }
+        }],
+        package_manager: "uv"
+      )
+    end
+
+    it "reports no change rather than editing the prose" do
+      expect { updated }.to raise_error(Dependabot::DependencyFileContentNotChanged)
+    end
+  end
+
+  describe "#updated_pyproject_content_for on a manifest that does not declare the source" do
+    subject(:updated) { updater.send(:updated_pyproject_content_for, member_file) }
+
+    # updated_git_requirements stamps the resolved source onto every requirement of the merged
+    # dependency, including one from a workspace member that declares only the package. That file has
+    # nothing to rewrite, and had nothing to rewrite before this either.
+    let(:member_file) do
+      Dependabot::DependencyFile.new(
+        name: "packages/member/pyproject.toml",
+        content: "[project]\nname = \"m\"\nversion = \"0.1.0\"\ndependencies = [\"pkg\"]\n"
+      )
+    end
+    let(:dependency_files) { [pyproject_file, member_file, lockfile] }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "pkg",
+        version: "0.1.0",
+        requirements: [{
+          file: "packages/member/pyproject.toml", requirement: nil, groups: [],
+          source: { type: "git", url: "https://example.com/pkg.git", ref: "1.4.0" }
+        }],
+        previous_requirements: [{
+          file: "packages/member/pyproject.toml", requirement: nil, groups: [], source: nil
+        }],
+        package_manager: "uv"
+      )
+    end
+
+    it "hands the file back unchanged instead of failing the job" do
+      expect(updated).to eq(member_file.content)
+    end
+  end
+
+  describe "#raw_source_key" do
+    let(:content) { fixture("pyproject_files", "uv_git_tag_sources.toml") }
+
+    # uv resolves a source under PEP 508 normalisation, so the dependency name reaching the updater is
+    # normalised while the file keeps the author's spelling; the updater has to find that back
+    it "returns the key as the file spells it" do
+      expect(updater.send(:raw_source_key, content, "other-tagged-package", "7.8.9")).to eq("Other_Tagged_Package")
+    end
+
+    it "returns nil when no key matches" do
+      expect(updater.send(:raw_source_key, content, "absent-package", "1.0.0")).to be_nil
+    end
+
+    it "returns nil when the manifest has no sources table" do
+      expect(updater.send(:raw_source_key, "[project]\nname = \"p\"\n", "pkg", "1.0.0")).to be_nil
+    end
+
+    # Two keys normalising the same is what made a shared regex insufficient: only the ref says which
+    # entry the parser attached, and picking the other one fails the job
+    it "picks the key whose entry carries the ref, not merely the first that normalises" do
+      colliding = <<~TOML
+        [tool.uv.sources]
+        pkg = { git = "https://example.com/a.git", branch = "main" }
+        Pkg = { git = "https://example.com/b.git", tag = "1.2.3" }
+      TOML
+
+      expect(updater.send(:raw_source_key, colliding, "pkg", "1.2.3")).to eq("Pkg")
+    end
+
+    # TomlRB is stricter than the tomli the Python helper uses, and the text handed here has been
+    # rewritten by regex, so a refusal must leave the pin alone rather than fail the job
+    it "returns nil when the manifest is not valid TOML" do
+      expect(updater.send(:raw_source_key, "[tool.uv.sources\npkg = {", "pkg", "1.0.0")).to be_nil
+    end
+  end
+
+  describe "#git_tag_moved?" do
+    let(:git) { { type: "git", url: "https://github.com/example/tagged.git", ref: "1.2.3" } }
+
+    def req(source)
+      Dependabot::DependencyRequirement.create(
+        file: "pyproject.toml", requirement: "*", groups: [], source: source
+      )
+    end
+
+    it { expect(updater.send(:git_tag_moved?, req(git.merge(ref: "1.3.0")), req(git))).to be(true) }
+    it { expect(updater.send(:git_tag_moved?, req(git), req(git))).to be(false) }
+    it { expect(updater.send(:git_tag_moved?, req(git.merge(ref: nil)), req(git))).to be(false) }
+    it { expect(updater.send(:git_tag_moved?, req(git.merge(type: "registry")), req(git))).to be(false) }
+    it { expect(updater.send(:git_tag_moved?, req(git.merge(ref: "1.3.0")), req(nil))).to be(false) }
+    it { expect(updater.send(:git_tag_moved?, req(git), req(git.merge(ref: nil)))).to be(false) }
+
+    # The only shape the nil-ref guard below does not already cover: a previous source that is not
+    # git and still carries a ref. Taking the git path there loses the ordinary requirement rewrite.
+    it "is false when the previous source carries a ref under another type" do
+      expect(updater.send(:git_tag_moved?, req(git.merge(ref: "1.3.0")), req(git.merge(type: "registry"))))
+        .to be(false)
+    end
+  end
+
   describe "with a requirements.txt or requirements.in file only" do
     let(:dependencies) do
       [
@@ -1337,6 +1555,92 @@ RSpec.describe Dependabot::Uv::FileUpdater::LockFileUpdater do
         fingerprint: expected_fingerprint,
         env: {}
       )
+    end
+
+    context "when the dependency is pinned to a git tag" do
+      let(:credentials) { [] }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "tagged-package",
+          version: "1.3.0",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", url: "https://github.com/example/tagged.git", ref: "1.3.0" }
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: nil,
+            groups: [],
+            source: { type: "git", url: "https://github.com/example/tagged.git", ref: "1.2.3" }
+          }],
+          previous_version: "1.2.3",
+          package_manager: "uv"
+        )
+      end
+
+      context "when the source is a registry rather than git" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "tagged-package",
+            version: "1.3.0",
+            requirements: [{
+              file: "pyproject.toml", requirement: nil, groups: [],
+              source: { type: "registry", url: "https://example.com/simple" }
+            }],
+            package_manager: "uv"
+          )
+        end
+
+        it "keeps the version specifier" do
+          run_update_command
+
+          expect(updater).to have_received(:run_command).with(
+            "pyenv exec uv lock --upgrade-package tagged-package==1.3.0 ",
+            fingerprint: "pyenv exec uv lock --upgrade-package <dependency_name> ",
+            env: {}
+          )
+        end
+      end
+
+      # A workspace where one member pins the git source and another only states a constraint merges
+      # into a single dependency. There is still no index the pin can be resolved against.
+      context "when only one of the manifests pins the git source" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "tagged-package",
+            version: "1.3.0",
+            requirements: [{
+              file: "pyproject.toml", requirement: nil, groups: [],
+              source: { type: "git", url: "https://github.com/example/tagged.git", ref: "1.3.0" }
+            }, {
+              file: "member/pyproject.toml", requirement: ">=1.0.0", groups: [], source: nil
+            }],
+            package_manager: "uv"
+          )
+        end
+
+        it "still asks uv to re-resolve the package by name" do
+          run_update_command
+
+          expect(updater).to have_received(:run_command).with(
+            "pyenv exec uv lock --upgrade-package tagged-package ",
+            fingerprint: "pyenv exec uv lock --upgrade-package <dependency_name> ",
+            env: {}
+          )
+        end
+      end
+
+      it "asks uv to re-resolve the package by name, with no version specifier" do
+        run_update_command
+
+        expect(updater).to have_received(:run_command).with(
+          "pyenv exec uv lock --upgrade-package tagged-package ",
+          fingerprint: "pyenv exec uv lock --upgrade-package <dependency_name> ",
+          env: {}
+        )
+      end
     end
 
     context "when dependency has extras" do
